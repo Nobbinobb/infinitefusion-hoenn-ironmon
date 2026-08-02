@@ -100,7 +100,7 @@ Acceptance criteria:
 
 ### Step 1.3: Ironmon configuration screen
 
-Status: **Planned**
+Status: **Complete**
 
 - Show the screen after selecting Ironmon and before generating mappings.
 - Configure the wild Pokemon fusion policy.

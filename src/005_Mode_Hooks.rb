@@ -39,7 +39,20 @@ def select_game_mode
     when cmd_mode_ironmon
       choices = [_INTL("Back"), _INTL("Play Ironmon")]
       text = _INTL("\\C[1]Ironmon\\C[0] starts with Pokemon, trainers and items fully randomized. Press F7 to return to the starter selection with a fresh randomization.")
-      game_mode = :IRONMON if pbMessage(text, choices) == 1
+      if pbMessage(text, choices) == 1
+        stored_configuration = if $PokemonGlobal
+                                 $PokemonGlobal.ironmon_configuration
+                               else
+                                 nil
+                               end
+        selected_configuration = Ironmon::ConfigurationScreen.new(
+          stored_configuration
+        ).run
+        if selected_configuration
+          Ironmon.configuration = selected_configuration
+          game_mode = :IRONMON
+        end
+      end
     when cmd_mode_legendary
       choices = [_INTL("Back"), _INTL("Play Legendary Mode")]
       text = _INTL("In \\C[1]Legendary mode\\C[0], every trainer Pokemon is fused with a legendary Pokemon and you receive legendary eggs and a legendary starter.")

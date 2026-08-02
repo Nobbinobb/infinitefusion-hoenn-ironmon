@@ -17,11 +17,12 @@ file in `Data/Scripts` as Ruby.
 
 1. `001_Core.rb`: constants, runtime state, metadata, and compatibility check.
 2. `002_Configuration.rb`: save-backed policy settings and migrations.
-3. `002_Randomization.rb`: the proof-of-concept randomizer preset and mappings.
-4. `003_Checkpoint_Reset.rb`: checkpoint persistence and F7 reset lifecycle.
-5. `004_Encounter_Hooks.rb`: scripted, static, fused, and placeholder hooks.
-6. `005_Mode_Hooks.rb`: mode-menu integration and preset activation.
-7. `006_Scene_Hooks.rb`: map scene integration for resets and static refreshes.
+3. `002_Configuration_Screen.rb`: transactional policy selection and summary.
+4. `002_Randomization.rb`: the proof-of-concept randomizer preset and mappings.
+5. `003_Checkpoint_Reset.rb`: checkpoint persistence and F7 reset lifecycle.
+6. `004_Encounter_Hooks.rb`: scripted, static, fused, and placeholder hooks.
+7. `005_Mode_Hooks.rb`: mode-menu integration and preset activation.
+8. `006_Scene_Hooks.rb`: map scene integration for resets and static refreshes.
 
-Version `0.3.0` supports Infinite Fusion game version `6.8.0`. An unsupported
+Version `0.4.0` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.

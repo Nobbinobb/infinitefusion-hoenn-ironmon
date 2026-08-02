@@ -22,3 +22,10 @@ Before an F7 reset, Ironmon snapshots the current configuration. It restores
 that snapshot after loading the pre-starter checkpoint and before generating
 the new run mappings. The new run receives a different seed while retaining the
 same policy identifiers.
+
+## Selection flow
+
+The configuration screen keeps wild and trainer selections in a local draft.
+Policy descriptions are shown while selecting each value. Back from the screen
+discards the draft; only confirming the final summary stores the configuration
+and allows run generation to begin. F7 resets bypass this screen.
