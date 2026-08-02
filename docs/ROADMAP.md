@@ -195,7 +195,7 @@ Acceptance criteria:
 
 ### Step 1.7: Six-Pokemon Gym Leaders
 
-Status: **Planned**
+Status: **Complete**
 
 - Create an explicit, versioned method of identifying Gym Leaders.
 - Expand Gym Leader parties to six after normal team loading and randomization.

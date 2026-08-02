@@ -32,6 +32,7 @@ module Ironmon
     $PokemonGlobal.ironmon_mode = true
     configuration
     $PokemonGlobal.ironmon_seed = generate_run_seed
+    $PokemonGlobal.ironmon_gym_leader_teams = {}
     ensure_checkpoint_id
     record_custom_fusion_pool_metadata
     return false if !prepare_species_mappings

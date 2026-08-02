@@ -3,7 +3,7 @@
 #===============================================================================
 
 module Ironmon
-  VERSION = "0.7.0"
+  VERSION = "0.8.0"
   SUPPORTED_GAME_VERSIONS = ["6.8.0"].freeze
   RESET_KEY = Input::F7
   FULL_RANDOM_BST_RANGE = 999
@@ -62,6 +62,7 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_species_generator_version
   attr_accessor :ironmon_wild_species_map
   attr_accessor :ironmon_trainer_species_map
+  attr_accessor :ironmon_gym_leader_teams
 end
 
 Ironmon.check_compatibility

@@ -12,8 +12,8 @@ and a fast reset to starter selection.
 - `tools/Build-Distribution.ps1` synchronizes the source into `dist/` and the
   local game installation.
 
-The current implementation covers Roadmap Steps 1.1 through 1.5 plus the
-implementation portion of Step 1.6. See `docs/ROADMAP.md` for status and
+The current implementation covers Roadmap Steps 1.1 through 1.6 plus the
+implementation portion of Step 1.7. See `docs/ROADMAP.md` for status and
 acceptance criteria.
 
 This repository is maintained independently from the official Pokemon Infinite
