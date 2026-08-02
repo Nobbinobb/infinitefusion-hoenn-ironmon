@@ -167,11 +167,13 @@ Acceptance criteria:
 
 ### Step 1.6: Difficulty enforcement and 160% level scaling
 
-Status: **Planned**
+Status: **Complete**
 
 - Enable internal Hard Mode when Ironmon begins or is loaded.
 - Prevent Ironmon from being switched to Easy or Normal.
-- Force 1v1 battles and disable the Gameplay Options `Battle type` control.
+- Force the default battle format to 1v1 and disable the Gameplay Options
+  `Battle type` control. Preserve encounters which explicitly request a double
+  or triple battle.
 - Force Optional Challenge `Level Caps` off and prevent it from being enabled.
 - Force Optional Challenge `No reviving` and `No heals (overworld)` on and
   prevent them from being disabled.

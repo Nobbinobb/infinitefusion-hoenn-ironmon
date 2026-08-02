@@ -41,6 +41,7 @@ module Ironmon
     $game_switches[SWITCH_RANDOM_WILD] = true
     $game_switches[SWITCH_RANDOM_TRAINERS] = true
     $game_switches[SWITCH_RANDOM_ITEMS_GENERAL] = true
+    enforce_difficulty_settings
 
     $game_variables[VAR_RANDOMIZER_WILD_POKE_BST] = FULL_RANDOM_BST_RANGE
     $game_switches[SWITCH_RANDOM_WILD_AREA] = false
