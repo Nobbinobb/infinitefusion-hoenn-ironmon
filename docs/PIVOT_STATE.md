@@ -7,7 +7,9 @@ whole pivot transaction without relying on runtime-only variables.
 ## State contents
 
 - `pending_pivot` holds at most one transaction and always has a stable
-  acquisition identifier plus the `:pending` status.
+  acquisition identifier plus the `:pending` status. Once caught-fusion
+  unfusion selects a canonical component, its index is also stored here so
+  retries and save/load cannot reconsider the selection.
 - `completed_acquisition_ids` prevents a resolved acquisition from being
   reopened after loading.
 - `fusion_mappings` stores one canonical custom-fusion species ID under a
@@ -35,16 +37,19 @@ preserves all three player settings.
 
 ## Pokemon markers
 
-Pokemon objects have two serialized fields:
+Pokemon objects have three serialized fields:
 
 - `ironmon_fusion_origin`: `:player_created`, `:caught`, or
   `:processed_caught` for marked fusions.
 - `ironmon_transformation_right`: `:caught_pivot` only while a caught fusion
   has its immediate pivot opportunity, otherwise `:none`.
+- `ironmon_party_exclusion`: `:utility_slave` for the one HM/gift-only party
+  member, or another exclusion reason for audited temporary acquisitions.
 
 Because these are ordinary Pokemon instance variables, party movement, box
 storage, cloning, and save serialization retain them. Unmarked legacy Pokemon
 have no transformation right and cannot accidentally gain one.
 
-Temporary Pokemon may additionally carry `ironmon_party_exclusion`. These
-marked instances and Eggs do not count toward the one-usable-Pokemon limit.
+Pokemon carrying `ironmon_party_exclusion` and Eggs do not count toward the
+one-usable-Pokemon limit. A utility marker survives cloning and save/load, so
+the Pokemon cannot silently become a battler after serialization.

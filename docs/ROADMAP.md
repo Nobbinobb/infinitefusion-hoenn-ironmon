@@ -284,6 +284,8 @@ Status: **Complete**
 - Prevent PC withdrawal and other storage behavior from bypassing the rule.
 - Make replacement transactional so a failed pivot preserves the current
   Pokemon.
+- Allow one replaceable HM/gift-only utility Pokemon without treating it as a
+  usable battler or reserve team member.
 
 Acceptance criteria:
 
@@ -292,6 +294,9 @@ Acceptance criteria:
 - Completing or failing a transaction never duplicates or accidentally loses
   the current Pokemon.
 - Excluded acquisition paths remain playable and are recorded for later audit.
+- The utility Pokemon can satisfy hidden-move and approved story-gift checks,
+  but cannot enter battle, protect the last battler from removal, or generate
+  passive post-battle rewards.
 
 ### Step 2.3: Blind pivot interface
 
@@ -299,7 +304,8 @@ Status: **Complete**
 
 - Present only the actions legal for the current and newly obtained Pokemon.
 - Block summary inspection of stats, moves, ability, and nature until commit.
-- Support Take, Swap, Fuse, Swap and Reverse, and Swap and Unfuse as applicable.
+- Support Take, Swap, Fuse, Swap and Reverse, Swap and Unfuse, and Slave as
+  applicable.
 - Prevent cancellation after a successful covered acquisition.
 - Permanently discard the previous Pokemon and unused results after commit.
 
@@ -334,7 +340,7 @@ Acceptance criteria:
 
 ### Step 2.5: Caught-fusion reversal and unfusion
 
-Status: **Planned**
+Status: **Complete**
 
 - Allow a newly caught fusion one immediate keep, reverse, or unfuse outcome.
 - Implement both Player Choice and Random Component unfusion behavior.

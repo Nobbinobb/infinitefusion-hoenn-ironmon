@@ -36,6 +36,10 @@ file in `Data/Scripts` as Ruby.
     transactional pivot result preparation, and non-cancellable completion.
 17. `012_Player_Fusion_Gamble.rb`: unordered-pair player-fusion mappings,
     reversible custom-result validation, orientation, and discovery tracking.
+18. `013_Caught_Fusion_Transformations.rb`: acquisition-stable caught-fusion
+    component selection and Ironmon-only DNA item blocking.
+19. `014_Utility_Slaves.rb`: one persistent HM/gift-only party slot, replacement
+    transactions, Wally eligibility, and combat exclusion.
 
 Version `0.1.0` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.

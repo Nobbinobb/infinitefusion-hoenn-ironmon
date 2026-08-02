@@ -4,8 +4,9 @@
 
 Ironmon enforces its pivot rules in-game instead of relying on the player to
 remember voluntary restrictions. The player normally owns one usable party
-Pokemon. Obtaining an eligible Pokemon starts an immediate, blind pivot that
-ends with exactly one usable Pokemon.
+Pokemon and may also keep one non-combat utility Pokemon for hidden field moves
+or required story gifts. Obtaining an eligible Pokemon starts an immediate,
+blind pivot that ends with exactly one usable Pokemon.
 
 The system is intended to make every catch a commitment while preserving
 fusion as a high-risk, seed-consistent gamble. It must not permit repeated
@@ -15,6 +16,8 @@ optimization exercise.
 ## Core invariants
 
 - The usable party contains at most one Pokemon.
+- At most one additional utility Pokemon may exist, and it never counts as
+  usable or enters battle.
 - An eligible acquisition must be resolved before normal play continues.
 - A completed pivot leaves exactly one usable Pokemon.
 - The previous Pokemon and every unused result are permanently discarded.
@@ -44,9 +47,9 @@ single usable party Pokemon.
 | --- | --- | --- |
 | None | Normal | Take |
 | None | Fusion | Take, reverse and take, or unfuse and take one component |
-| Normal | Normal | Swap or fuse |
-| Fusion | Normal | Swap only |
-| Any | Fusion | Swap, swap and reverse, or swap and unfuse |
+| Normal | Normal | Swap, fuse, or slave |
+| Fusion | Normal | Swap or slave |
+| Any | Fusion | Swap, swap and reverse, swap and unfuse, or slave |
 
 Actions have the following effects:
 
@@ -59,10 +62,19 @@ Actions have the following effects:
 - **Swap and unfuse:** split a newly obtained fusion, resolve one eligible
   component according to the configured selection rule, install it, and
   discard the other component and previous Pokemon.
+- **Slave:** retain the new Pokemon in the single replaceable utility slot
+  without changing the current usable Pokemon. It may provide hidden field
+  moves or be given away in an approved story gift, but cannot battle or
+  provide post-battle ability rewards.
 
 If the current Pokemon is fused and the new Pokemon is normal, swap is the only
 legal action. Unfusing the current Pokemon to enable fusion would be a forbidden
 chain. A newly obtained fusion cannot itself be fused with the current Pokemon.
+
+Slave is offered only when one current usable Pokemon exists. This prevents a
+new run or corrupted party from ending with a utility Pokemon as its only
+member. Selecting Slave again permanently replaces the previous utility
+Pokemon, so the option cannot accumulate a reserve team.
 
 ## Fusion gamble mapping
 
@@ -175,5 +187,8 @@ one-Pokemon invariant to be bypassed.
 - Reloading cannot reroll a random unfusion component.
 - PC, item, gift, static, trade, and story paths cannot create an extra usable
   party Pokemon or bypass a pending pivot.
+- A utility Pokemon remains available to hidden-move and approved gift checks,
+  but is excluded from battles, able-party counts, passive post-battle rewards,
+  PC storage, and checks that protect the last usable Pokemon.
 - A failed pivot transaction preserves the current Pokemon and reports a clear
   error.

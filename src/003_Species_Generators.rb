@@ -287,7 +287,7 @@ module Ironmon
   # original rejection behavior.
   def self.wally_rejects_gift?(pokemon)
     return pokemon.isFusion? if !active?
-    return false
+    return !utility_slave?(pokemon)
   end
 
   def self.patch_wally_gift_event
