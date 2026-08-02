@@ -14,6 +14,7 @@ class Scene_Map
   def update
     return if Ironmon.show_pending_reset_notice
     return if Ironmon.handle_reset_hotkey
+    Ironmon.enforce_party_limit if Ironmon.active?
     ironmon_original_update
   end
 end

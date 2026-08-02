@@ -20,7 +20,7 @@ module Ironmon
   ].freeze
 
   class PivotState
-    SCHEMA_VERSION = 1
+    SCHEMA_VERSION = 2
 
     attr_reader :schema_version
     attr_reader :pending_pivot
@@ -28,6 +28,8 @@ module Ironmon
     attr_reader :discovered_fusion_mappings
     attr_reader :completed_acquisition_ids
     attr_reader :next_acquisition_sequence
+    attr_reader :quarantined_pokemon
+    attr_reader :excluded_acquisition_log
 
     def initialize
       @schema_version = SCHEMA_VERSION
@@ -36,6 +38,8 @@ module Ironmon
       @discovered_fusion_mappings = {}
       @completed_acquisition_ids = {}
       @next_acquisition_sequence = 0
+      @quarantined_pokemon = []
+      @excluded_acquisition_log = []
     end
 
     def migrate!
@@ -51,6 +55,10 @@ module Ironmon
          @next_acquisition_sequence < 0
         @next_acquisition_sequence = 0
       end
+      @quarantined_pokemon = [] if !@quarantined_pokemon.is_a?(Array)
+      if !@excluded_acquisition_log.is_a?(Array)
+        @excluded_acquisition_log = []
+      end
       discard_completed_pending_pivot
       @schema_version = SCHEMA_VERSION
       return self
@@ -64,6 +72,8 @@ module Ironmon
       return false if !@completed_acquisition_ids.is_a?(Hash)
       return false if !@next_acquisition_sequence.is_a?(Integer)
       return false if @next_acquisition_sequence < 0
+      return false if !@quarantined_pokemon.is_a?(Array)
+      return false if !@excluded_acquisition_log.is_a?(Array)
       if @pending_pivot
         acquisition_id = @pending_pivot[:acquisition_id]
         return false if @pending_pivot[:status] != :pending
@@ -114,6 +124,19 @@ module Ironmon
       return false if @pending_pivot[:acquisition_id] != acquisition_id.to_s
       @pending_pivot = nil
       return true
+    end
+
+    def quarantine_pokemon(pokemon, reason)
+      @quarantined_pokemon << {
+        :pokemon => pokemon,
+        :reason => reason
+      }
+      return pokemon
+    end
+
+    def record_excluded_acquisition(entry)
+      @excluded_acquisition_log << entry.dup
+      return entry
     end
 
     def self.from(value)

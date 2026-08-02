@@ -275,7 +275,7 @@ Acceptance criteria:
 
 ### Step 2.2: One-Pokemon party and acquisition interception
 
-Status: **Planned**
+Status: **Complete**
 
 - Enforce at most one usable party Pokemon.
 - Intercept permanent wild catches, static Pokemon, gifts, and trades before

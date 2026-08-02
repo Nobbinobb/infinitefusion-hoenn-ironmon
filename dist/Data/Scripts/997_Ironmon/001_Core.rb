@@ -69,6 +69,7 @@ end
 class Pokemon
   attr_accessor :ironmon_fusion_origin
   attr_accessor :ironmon_transformation_right
+  attr_accessor :ironmon_party_exclusion
 end
 
 Ironmon.check_compatibility

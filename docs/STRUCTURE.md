@@ -30,6 +30,8 @@ file in `Data/Scripts` as Ruby.
 12. `007_Difficulty_Enforcement.rb`: locked challenge settings and 1.6 scaling.
 13. `008_Gym_Leader_Parties.rb`: persistent six-Pokemon Gym Leader expansion.
 14. `009_Diagnostics.rb`: run, load, and reset diagnostic records.
+15. `010_Pivot_Acquisition.rb`: transactional catches, gifts, trades, party
+    enforcement, exclusions, and PC movement safeguards.
 
 Version `0.1.0` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.
