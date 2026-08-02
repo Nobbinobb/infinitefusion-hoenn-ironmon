@@ -40,6 +40,9 @@ file in `Data/Scripts` as Ruby.
     component selection and Ironmon-only DNA item blocking.
 19. `014_Utility_Slaves.rb`: one persistent HM/gift-only party slot, replacement
     transactions, Wally eligibility, and combat exclusion.
+20. `015_Pivot_Integration.rb`: legacy mapping migration support, Egg-hatch and
+    duplicate-evolution pivots, Day Care protection, and temporary-mode party
+    eligibility safeguards.
 
-Version `0.1.0` supports Infinite Fusion game version `6.8.0`. An unsupported
+Version `0.2.0` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.

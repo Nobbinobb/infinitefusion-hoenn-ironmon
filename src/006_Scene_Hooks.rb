@@ -14,7 +14,14 @@ class Scene_Map
   def update
     return if Ironmon.show_pending_reset_notice
     return if Ironmon.handle_reset_hotkey
-    Ironmon.enforce_party_limit if Ironmon.active?
+    if Ironmon.active?
+      Ironmon.enforce_party_limit
+      pending = Ironmon.pivot_state.pending_pivot
+      if pending
+        Ironmon.resolve_pending_pivot(pending[:acquisition_id])
+        return
+      end
+    end
     ironmon_original_update
   end
 end

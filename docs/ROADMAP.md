@@ -359,7 +359,7 @@ Acceptance criteria:
 
 ### Step 2.6: Pivot integration and regression pass
 
-Status: **Planned**
+Status: **Complete**
 
 - Audit catches, visible encounters, gifts, static Pokemon, trades, storage,
   scripted acquisitions, and mandatory party assumptions.

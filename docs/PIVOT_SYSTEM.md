@@ -152,10 +152,16 @@ encountered copies of C must expose the same run-consistent ability slots.
 
 ## Acquisition coverage
 
-The forced pivot applies to permanent wild catches, static Pokemon, and gifts.
-Trades replace the outgoing current Pokemon with the received Pokemon. Eggs and
-temporary story Pokemon are excluded until their flows are audited; an Egg must
-not become the only usable party member before it can battle.
+The forced pivot applies to permanent wild catches, static Pokemon, gifts,
+hatched Pokemon, and duplicate Pokemon created by evolution. Trades replace the
+outgoing current Pokemon with the received Pokemon. Trading the utility Pokemon
+keeps the received Pokemon in that same non-combat role.
+
+Eggs remain excluded while unhatched and may move through storage. Hatching
+immediately removes the Egg exclusion and starts a normal forced pivot before
+play resumes. Temporary rentals remain explicitly excluded and are not treated
+as permanent acquisitions. Day Care deposit is blocked because it would store
+the sole usable Pokemon outside the protected party and PC paths.
 
 Every acquisition path must be intercepted before a new Pokemon is sent to
 ordinary PC storage. PC withdrawal and other storage paths must not allow the
@@ -168,8 +174,12 @@ one-Pokemon invariant to be bypassed.
 - Same-species input pairs are valid and receive one deterministic result.
 - Triple and special fusions are excluded from the gamble pool until explicitly
   designed and tested.
-- Scripted party requirements and mandatory story acquisitions require an audit
-  before this system is considered complete.
+- Cosmetic forms follow the game's shared base-species identity; mechanically
+  distinct species/forms retain their own source mapping where the game assigns
+  them a distinct species ID.
+- Battle facilities and temporary challenge teams retain their original
+  restoration lifecycle. Utility Pokemon fail able-team eligibility and are
+  removed from the battle-facing party if a temporary selector includes them.
 
 ## Acceptance criteria
 

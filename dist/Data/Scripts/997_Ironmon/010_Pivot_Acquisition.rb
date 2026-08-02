@@ -77,7 +77,8 @@ module Ironmon
     return acquisition_id
   end
 
-  def self.intercept_acquisition(pokemon, source = nil)
+  def self.intercept_acquisition(pokemon, source = nil,
+                                 action_selector = nil)
     raise PivotTransactionError, "No Pokemon was supplied." if !pokemon
     source ||= current_acquisition_source
     exclusion = current_acquisition_exclusion
@@ -102,7 +103,7 @@ module Ironmon
       :candidate => pokemon,
       :current_personal_id => current ? current.personalID : nil
     })
-    return resolve_pending_pivot(acquisition_id)
+    return resolve_pending_pivot(acquisition_id, action_selector)
   rescue PivotTransactionError => e
     echoln "Ironmon acquisition failed: #{e.message}"
     begin
@@ -178,15 +179,24 @@ module Ironmon
     end
   end
 
-  def self.record_trade_acquisition(pokemon)
+  def self.record_trade_acquisition(pokemon, utility_trade = false)
     return if !pokemon.is_a?(Pokemon)
-    enforce_party_limit
     mark_processed_caught_fusion(pokemon) if pokemon.isFusion?
+    if utility_trade
+      pokemon.ironmon_party_exclusion = UTILITY_SLAVE_EXCLUSION
+      if usable_party.length != 1 || utility_slaves != [pokemon]
+        raise PivotTransactionError, "The utility trade party is invalid."
+      end
+    else
+      pokemon.ironmon_party_exclusion = nil
+      enforce_party_limit
+    end
     acquisition_id = reserve_acquisition_id
+    current = usable_party[0]
     pivot_state.begin_pivot(acquisition_id, {
-      :source => :trade,
+      :source => utility_trade ? :utility_trade : :trade,
       :candidate => pokemon,
-      :current_personal_id => pokemon.personalID
+      :current_personal_id => current ? current.personalID : nil
     })
     pivot_state.complete_pivot(acquisition_id)
     return pokemon
@@ -315,10 +325,12 @@ def pbStartTrade(pokemonIndex, newpoke, nickname, trainerName,
     pbMessage(_INTL("Another Pokemon acquisition must be resolved before trading."))
     return nil
   end
+  utility_trade = Ironmon.active? &&
+    Ironmon.utility_slave?($Trainer.party[pokemonIndex])
   pokemon = ironmon_pivot_original_pb_start_trade(
     pokemonIndex, newpoke, nickname, trainerName, trainerGender, savegame
   )
-  Ironmon.record_trade_acquisition(pokemon) if Ironmon.active?
+  Ironmon.record_trade_acquisition(pokemon, utility_trade) if Ironmon.active?
   return pokemon
 end
 
@@ -373,6 +385,12 @@ class PokeBattle_RealBattlePeer
 end
 
 class PokemonStorageScreen
+  alias ironmon_pivot_original_able pbAble?
+  def pbAble?(pokemon)
+    return false if Ironmon.active? && Ironmon.utility_slave?(pokemon)
+    return ironmon_pivot_original_able(pokemon)
+  end
+
   alias ironmon_pivot_original_withdraw pbWithdraw
   def pbWithdraw(selected, heldpoke)
     pokemon = heldpoke || @storage[selected[0], selected[1]]
@@ -422,5 +440,34 @@ class PokemonStorageScreen
       return false
     end
     return ironmon_pivot_original_swap(selected)
+  end
+
+  alias ironmon_pivot_original_hold_multi pbHoldMulti
+  def pbHoldMulti(box, selected_index)
+    if Ironmon.active? && box == -1
+      selected = getMultiSelection(box, nil)
+      blocked = selected.any? do |index|
+        Ironmon.pc_movement_blocked?(@storage[box, index])
+      end
+      if blocked
+        Ironmon.pc_movement_message(self)
+        return false
+      end
+    end
+    return ironmon_pivot_original_hold_multi(box, selected_index)
+  end
+
+  alias ironmon_pivot_original_place_multi pbPlaceMulti
+  def pbPlaceMulti(box, selected_index)
+    if Ironmon.active? && box == -1 && @multiheldpkmn
+      blocked = @multiheldpkmn.any? do |held|
+        Ironmon.pc_movement_blocked?(held[0])
+      end
+      if blocked
+        Ironmon.pc_movement_message(self)
+        return false
+      end
+    end
+    return ironmon_pivot_original_place_multi(box, selected_index)
   end
 end

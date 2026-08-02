@@ -402,7 +402,16 @@ module Game
     alias ironmon_original_load load
     def load(save_data)
       Ironmon.reset_species_generator_cache
-      return ironmon_original_load(save_data)
+      result = ironmon_original_load(save_data)
+      if Ironmon.active? && !Ironmon.current_species_mappings?
+        if !Ironmon.prepare_species_mappings
+          raise Ironmon::SpeciesGenerationError,
+                Ironmon.species_generation_error_message
+        end
+        Ironmon.record_custom_fusion_pool_metadata
+        echoln "Ironmon migrated legacy species mappings to the current generator."
+      end
+      return result
     end
   end
 end

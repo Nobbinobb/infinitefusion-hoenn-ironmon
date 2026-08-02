@@ -1,6 +1,6 @@
-# Installing Ironmon Milestone 1
+# Installing Ironmon Milestone 2
 
-Ironmon Milestone 1 (`0.1.0`) targets Pokemon Infinite Fusion 2 version 6.8.0.
+Ironmon Milestone 2 (`0.2.0`) targets Pokemon Infinite Fusion 2 version 6.8.0.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
 
@@ -8,7 +8,7 @@ official game's Git repository.
 
 1. Fully close Pokemon Infinite Fusion 2.
 2. Keep a backup of saves you care about.
-3. Extract `Ironmon-Milestone-1-v0.1.0.zip` into the game's root directory—the
+3. Extract `Ironmon-v0.2.0-pivot-system.zip` into the game's root directory—the
    directory containing `InfiniteFusion2.exe`.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
    directory. The package installs only Ruby files under
@@ -21,7 +21,7 @@ reset with F7 to generate the current mappings.
 
 ## Build the package from this repository
 
-Run `tools/Build-Milestone1.ps1` from PowerShell. It synchronizes `src` into
+Run `tools/Build-Milestone2.ps1` from PowerShell. It synchronizes `src` into
 `dist` and the adjacent local game installation, then creates the release ZIP
 and SHA-256 checksum in `release`.
 

@@ -75,6 +75,7 @@ end
 class Player
   alias ironmon_utility_original_able_party able_party
   def able_party
+    return ironmon_utility_original_able_party if !Ironmon.active?
     return ironmon_utility_original_able_party.reject do |pokemon|
       Ironmon.utility_slave?(pokemon)
     end
@@ -82,6 +83,21 @@ class Player
 
   def able_pokemon_count
     return able_party.length
+  end
+
+  alias ironmon_utility_original_first_pokemon first_pokemon
+  def first_pokemon
+    return ironmon_utility_original_first_pokemon if !Ironmon.active?
+    current = Ironmon.usable_party[0]
+    return current if current
+    return pokemon_party[0]
+  end
+
+  alias ironmon_utility_original_highest_level highest_level_pokemon_in_party
+  def highest_level_pokemon_in_party
+    return ironmon_utility_original_highest_level if !Ironmon.active?
+    highest = Ironmon.usable_party.map { |pokemon| pokemon.level }.max
+    return highest || 0
   end
 
   def remove_pokemon_at_index(index)

@@ -8,15 +8,15 @@ and a fast reset to starter selection.
 
 - `src/` contains the canonical Ruby source.
 - `docs/` contains the roadmap, design notes, and validation records.
-- `docs/PIVOT_SYSTEM.md` specifies the planned automated one-Pokemon pivot and
+- `docs/PIVOT_SYSTEM.md` specifies the automated one-Pokemon pivot and
   deterministic fusion-gamble rules.
 - `dist/` contains the copy-ready game directory layout.
 - `tools/Build-Distribution.ps1` synchronizes the source into `dist/` and the
   local game installation.
-- `tools/Build-Milestone1.ps1` creates the copy-ready Milestone 1 ZIP and
+- `tools/Build-Milestone2.ps1` creates the copy-ready Milestone 2 ZIP and
   SHA-256 checksum in `release/`.
 
-Milestone 1 is complete at version `0.1.0`. See `docs/ROADMAP.md` for its
+Milestone 2 is complete at version `0.2.0`. See `docs/ROADMAP.md` for its
 implemented scope and validation record, and `docs/INSTALLATION.md` for
 installation steps.
 

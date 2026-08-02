@@ -12,6 +12,8 @@
   quarantine rather than deleted or sent to ordinary storage.
 - [x] Eggs and explicitly temporary rental Pokemon do not count as usable and
   are recorded in the exclusion audit.
+- [x] Hatching removes the Egg exclusion and forces an immediate pivot before
+  the new Pokemon can enter battle.
 - [x] Lower-level PC copy, move-to-party, and move-to-box methods reject usable
   Pokemon.
 - [x] Quarantine and exclusion records survive save serialization.
