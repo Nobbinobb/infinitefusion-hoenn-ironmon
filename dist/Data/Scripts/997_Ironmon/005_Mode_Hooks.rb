@@ -76,7 +76,7 @@ alias ironmon_original_apply_game_mode apply_game_mode
 def apply_game_mode(game_mode)
   if game_mode == :IRONMON
     if !Ironmon.apply_preset
-      pbMessage(Ironmon.custom_fusion_pool_error_message)
+      pbMessage(Ironmon.species_generation_error_message)
     end
     return
   end

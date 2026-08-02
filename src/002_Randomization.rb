@@ -3,26 +3,6 @@
 #===============================================================================
 
 module Ironmon
-  # Returns the run's mapped species for script-created encounters. The built-in
-  # randomizer handles ordinary grass encounters itself, but Hoenn's static
-  # overworld events and some trainer placeholders bypass that entry point.
-  def self.randomized_species_for(species)
-    return species if !active? || !$PokemonGlobal.psuedoBSTHash
-    species_data = GameData::Species.try_get(species)
-    return species if !species_data
-    dex_number = species_data.id_number
-    return species if dex_number <= 0
-    if dex_number > NB_POKEMON
-      return species if !species_data.respond_to?(:get_body_species_symbol)
-      mapped_body = randomized_species_for(species_data.get_body_species_symbol)
-      mapped_head = randomized_species_for(species_data.get_head_species_symbol)
-      return getFusionSpeciesSymbol(mapped_body, mapped_head)
-    end
-    mapped_number = $PokemonGlobal.psuedoBSTHash[dex_number]
-    return species if !mapped_number
-    return GameData::Species.get(mapped_number).id
-  end
-
   # The starting map is constructed before its mode is selected. Refresh any
   # static encounters that were therefore created before Ironmon became active.
   def self.randomize_loaded_static_events
@@ -54,6 +34,7 @@ module Ironmon
     $PokemonGlobal.ironmon_seed = generate_run_seed
     ensure_checkpoint_id
     record_custom_fusion_pool_metadata
+    return false if !prepare_species_mappings
 
     $game_switches[SWITCH_RANDOMIZED_AT_LEAST_ONCE] = true
     $game_switches[SWITCH_RANDOMIZED_MODE_INTRO] = false
@@ -63,7 +44,9 @@ module Ironmon
 
     $game_variables[VAR_RANDOMIZER_WILD_POKE_BST] = FULL_RANDOM_BST_RANGE
     $game_switches[SWITCH_RANDOM_WILD_AREA] = false
-    $game_switches[SWITCH_WILD_RANDOM_GLOBAL] = true
+    # Ironmon maps each encounter at its final creation path. Leaving the
+    # built-in global map enabled would map ordinary encounters twice.
+    $game_switches[SWITCH_WILD_RANDOM_GLOBAL] = false
     $game_switches[SWITCH_RANDOM_WILD_TO_FUSION] = false
     $game_switches[SWITCH_RANDOM_WILD_ONLY_CUSTOMS] = false
     $game_switches[SWITCH_RANDOM_WILD_LEGENDARIES] = true
@@ -93,8 +76,6 @@ module Ironmon
     $game_switches[SWITCH_RANDOM_SHOP_ITEMS] = true
     $game_switches[SWITCH_RANDOM_HELD_ITEMS] = true
 
-    Kernel.pbShuffleDex(FULL_RANDOM_BST_RANGE, 1)
-    Kernel.pbShuffleTrainers(FULL_RANDOM_BST_RANGE)
     pbShuffleItems
     pbShuffleTMs
     randomize_loaded_static_events

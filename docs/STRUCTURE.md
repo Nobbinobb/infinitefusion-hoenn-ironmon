@@ -19,11 +19,12 @@ file in `Data/Scripts` as Ruby.
 2. `002_Configuration.rb`: save-backed policy settings and migrations.
 3. `002_Configuration_Screen.rb`: transactional policy selection and summary.
 4. `002_Custom_Fusion_Pool.rb`: validated, cached custom-fusion candidates.
-5. `002_Randomization.rb`: the proof-of-concept randomizer preset and mappings.
+5. `002_Randomization.rb`: Ironmon preset activation and run setup.
 6. `003_Checkpoint_Reset.rb`: checkpoint persistence and F7 reset lifecycle.
-7. `004_Encounter_Hooks.rb`: scripted, static, fused, and placeholder hooks.
-8. `005_Mode_Hooks.rb`: mode-menu integration and preset activation.
-9. `006_Scene_Hooks.rb`: map scene integration for resets and static refreshes.
+7. `003_Species_Generators.rb`: deterministic wild and trainer policy mappings.
+8. `004_Encounter_Hooks.rb`: wild, gift, starter, scripted, and trainer hooks.
+9. `005_Mode_Hooks.rb`: mode-menu integration and preset activation.
+10. `006_Scene_Hooks.rb`: map scene integration for resets and static refreshes.
 
-Version `0.5.0` supports Infinite Fusion game version `6.8.0`. An unsupported
+Version `0.6.0` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.

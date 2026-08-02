@@ -183,5 +183,6 @@ module Ironmon
   def self.reset_custom_fusion_pool_cache
     @custom_fusion_pool_service = nil
     @custom_fusion_pool_error_message = nil
+    @custom_fusion_species_index = nil
   end
 end

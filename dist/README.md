@@ -1,4 +1,4 @@
-# Ironmon 0.5.0
+# Ironmon 0.6.0
 
 This distribution targets Pokemon Infinite Fusion 2 version 6.8.0.
 

@@ -141,7 +141,7 @@ Acceptance criteria:
 
 ### Step 1.5: Separate wild and trainer species generators
 
-Status: **Planned**
+Status: **Complete**
 
 - Replace direct dependence on the built-in shared species mapping where the
   separate policies require different results.
@@ -150,6 +150,10 @@ Status: **Planned**
 - Implement Custom Fusions Only and Normal Only.
 - Route ordinary, static, scripted, gift, starter, and trainer-placeholder paths
   through the appropriate mapping.
+- Apply the trainer mapping to cloned battle parties for story-owned teams that
+  catch, fuse, unfuse, reverse, or evolve between battles.
+- Allow required NPC gift/fusion sequences to accept policy-generated fusions
+  and flatten them into legal two-base story fusions.
 
 Acceptance criteria:
 
@@ -157,6 +161,9 @@ Acceptance criteria:
 - Wild and trainer policies operate independently.
 - The same source species maps consistently within the same category and run.
 - The scripted opening battle follows the wild policy.
+- Wally, the Hoenn rival, and rematch trainers cannot bypass the trainer policy
+  through story-created party changes.
+- Custom Fusions Only cannot block Wally's required gift sequence.
 
 ### Step 1.6: Difficulty enforcement and 160% level scaling
 
