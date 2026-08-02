@@ -23,6 +23,23 @@ that snapshot after loading the pre-starter checkpoint and before generating
 the new run mappings. The new run receives a different seed while retaining the
 same policy identifiers.
 
+## Planned schema version 2
+
+The automated pivot system adds an unfusion component-selection setting with
+two stable identifiers:
+
+- `:random_component` (default)
+- `:player_choice`
+
+Random Component commits the unfusion and then reveals one seed-derived
+component. Player Choice shows only the two component identities and allows one
+to be selected without opening either summary.
+
+The setting is selected before run generation, stored with the existing
+configuration, and preserved across save/load and F7. Missing or invalid values
+migrate to `:random_component`. See `PIVOT_SYSTEM.md` for the complete pivot and
+determinism rules.
+
 ## Selection flow
 
 The configuration screen keeps wild and trainer selections in a local draft.
