@@ -313,7 +313,7 @@ Acceptance criteria:
 
 ### Step 2.4: Deterministic fusion gamble
 
-Status: **Planned**
+Status: **Complete**
 
 - Map each unordered pair of normal input species to one validated custom-sprite
   fusion using a dedicated seed namespace.

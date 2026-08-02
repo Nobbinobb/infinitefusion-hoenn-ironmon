@@ -184,5 +184,7 @@ module Ironmon
     @custom_fusion_pool_service = nil
     @custom_fusion_pool_error_message = nil
     @custom_fusion_species_index = nil
+    reset_player_fusion_mapper_cache if
+      respond_to?(:reset_player_fusion_mapper_cache)
   end
 end

@@ -34,6 +34,8 @@ file in `Data/Scripts` as Ruby.
     enforcement, exclusions, and PC movement safeguards.
 16. `011_Blind_Pivot_Interface.rb`: legal-action selection, blind decisions,
     transactional pivot result preparation, and non-cancellable completion.
+17. `012_Player_Fusion_Gamble.rb`: unordered-pair player-fusion mappings,
+    reversible custom-result validation, orientation, and discovery tracking.
 
 Version `0.1.0` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.

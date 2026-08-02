@@ -10,8 +10,12 @@ whole pivot transaction without relying on runtime-only variables.
   acquisition identifier plus the `:pending` status.
 - `completed_acquisition_ids` prevents a resolved acquisition from being
   reopened after loading.
-- `fusion_mappings` stores deterministic unordered-pair results.
-- `discovered_fusion_mappings` records which mapped results the player may see.
+- `fusion_mappings` stores one canonical custom-fusion species ID under a
+  stable `lower_input_id:higher_input_id` key. Input orientation is applied
+  only when the result is requested.
+- `discovered_fusion_mappings` stores the same canonical result only after its
+  party transaction commits, and therefore records which result identities the
+  player may see in later pivot choices.
 - `next_acquisition_sequence` produces acquisition identifiers namespaced by
   the current run seed.
 - `quarantined_pokemon` safely removes extra usable Pokemon found in legacy

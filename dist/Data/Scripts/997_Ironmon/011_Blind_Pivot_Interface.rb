@@ -26,8 +26,22 @@ module Ironmon
     return [:swap, :fuse]
   end
 
-  def self.choose_blind_pivot_action(actions)
-    commands = actions.map { |action| PIVOT_ACTION_LABELS[action] }
+  def self.pivot_action_label(action, current = nil, candidate = nil)
+    label = PIVOT_ACTION_LABELS[action]
+    return label if action != :fuse || !current || !candidate
+    known_species = known_player_fusion_species(current.species,
+                                                candidate.species)
+    return label if !known_species
+    return _INTL("Fuse (Known: {1})",
+                 GameData::Species.get(known_species).real_name)
+  rescue StandardError
+    return label
+  end
+
+  def self.choose_blind_pivot_action(actions, current = nil, candidate = nil)
+    commands = actions.map do |action|
+      pivot_action_label(action, current, candidate)
+    end
     loop do
       choice = pbMessage(
         _INTL("Choose the new Pokemon's fate. Its hidden data cannot be inspected before this choice."),
@@ -53,18 +67,20 @@ module Ironmon
     end
     actions = pivot_actions(current, candidate)
 
+    action = nil
     loop do
-      action = if action_selector
-                 action_selector.call(actions.dup)
-               else
-                 choose_blind_pivot_action(actions)
-               end
+      action ||= if action_selector
+                   action_selector.call(actions.dup)
+                 else
+                   choose_blind_pivot_action(actions, current, candidate)
+                 end
       if !actions.include?(action)
         raise PivotTransactionError, "The selected pivot action is not legal."
       end
       begin
-        result = build_pivot_result(action, current, candidate)
-        commit_pending_result(acquisition_id, result)
+        result = build_pivot_result(action, current, candidate,
+                                    !action_selector)
+        commit_pending_result(acquisition_id, result, action)
         pbMessage(_INTL("The pivot is complete. You kept {1}.", result.name)) if
           !action_selector
         return true
@@ -73,19 +89,19 @@ module Ironmon
           raise e
         end
         echoln "Ironmon pivot action failed: #{e.message}"
-        pbMessage(_INTL("That result could not be created. Your current Pokemon was preserved; choose again."))
+        pbMessage(_INTL("That result could not be created. Your current Pokemon was preserved; the chosen action will be retried."))
       end
     end
   end
 
-  def self.build_pivot_result(action, current, candidate)
+  def self.build_pivot_result(action, current, candidate, interactive = false)
     case action
     when :take, :swap
       result = candidate.clone
       mark_processed_caught_fusion(result) if result.isFusion?
       return result
     when :fuse
-      return build_blind_fusion_result(current, candidate)
+      return build_blind_fusion_result(current, candidate, interactive)
     when :reverse_and_take, :swap_and_reverse
       return build_reversed_caught_result(candidate)
     when :unfuse_and_take, :swap_and_unfuse
@@ -94,29 +110,80 @@ module Ironmon
     raise PivotTransactionError, "The selected pivot action is unknown."
   end
 
-  # Step 2.4 replaces the ordinary orientation below with the run-seeded,
-  # custom-sprite fusion mapping. Preparing a clone here keeps Step 2.3 fully
-  # transactional and prevents either input from entering storage.
-  def self.build_blind_fusion_result(current, candidate)
+  def self.build_blind_fusion_result(current, candidate, interactive = false)
     if !current || current.isFusion? || candidate.isFusion?
       raise PivotTransactionError, "Only two normal Pokemon can be fused."
     end
     body = current.clone
     head = candidate.clone
-    result_species = getFusionSpecies(body.species, head.species)
+    result_species = player_fusion_species(body.species, head.species)
     body.original_body = current.clone
     body.original_head = candidate.clone
     body.exp_when_fused_body = current.exp
     body.exp_when_fused_head = candidate.exp
     body.exp_gained_since_fused = 0
+    body.body_original_ability_index = current.ability_index
+    body.head_original_ability_index = candidate.ability_index
     body.body_shiny = current.shiny?
     body.head_shiny = candidate.shiny?
     body.pif_sprite = nil
     body.species = result_species
-    body.name = result_species.real_name if
+    apply_normal_fusion_instance_data(body, head, interactive)
+    body.name = GameData::Species.get(result_species).real_name if
       current.name == current.species_data.real_name
     body.calc_stats
     mark_player_created_fusion(body)
+    return body
+  end
+
+  def self.apply_normal_fusion_instance_data(body, head, interactive)
+    GameData::Stat.each_main do |stat|
+      body.iv[stat.id] = ((body.iv[stat.id] + head.iv[stat.id]) / 2).floor
+    end
+    high_level = [body.level, head.level].max
+    low_level = [body.level, head.level].min
+    body.level = ((2 * high_level) + low_level) / 3
+    available_moves = (body.moves + head.moves).uniq { |move| move.id }
+    if available_moves.length <= 4
+      body.moves = available_moves.map { |move| move.clone }
+    elsif interactive
+      scene = FusionMovesOptionsScene.new(body, head)
+      screen = PokemonOptionScreen.new(scene)
+      screen.pbStartScreen
+      body.moves = scene.getSelectedMoves.map { |move| move.clone }
+    else
+      body.moves = available_moves[0, 4].map { |move| move.clone }
+    end
+
+    if interactive && body.nature.id != head.nature.id
+      natures = [body.nature, head.nature]
+      loop do
+        choice = pbMessage(
+          _INTL("Choose the fused Pokemon's nature."),
+          natures.map { |nature| nature.real_name },
+          -1
+        )
+        if choice && choice >= 0 && choice < natures.length
+          body.nature = natures[choice].id
+          break
+        end
+        pbMessage(_INTL("The fusion choice cannot be cancelled."))
+      end
+    end
+
+    learned_moves = []
+    learned_moves.concat(body.learned_moves) if body.learned_moves
+    learned_moves.concat(head.learned_moves) if head.learned_moves
+    available_moves.each do |move|
+      learned_moves << move.id if !learned_moves.include?(move.id)
+    end
+    learned_moves.each { |move| body.add_learned_move(move) }
+
+    return_items = [body.item, head.item].compact
+    body.item = nil
+    body.instance_variable_set(:@ironmon_pivot_return_items, return_items)
+    body.obtain_method = 0
+    body.calc_stats
     return body
   end
 

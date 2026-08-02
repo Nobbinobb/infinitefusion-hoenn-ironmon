@@ -118,7 +118,7 @@ module Ironmon
     return commit_pending_result(acquisition_id, candidate)
   end
 
-  def self.commit_pending_result(acquisition_id, result_pokemon)
+  def self.commit_pending_result(acquisition_id, result_pokemon, action = nil)
     state = pivot_state
     pending = state.pending_pivot
     if !state.pending? || pending[:acquisition_id] != acquisition_id.to_s
@@ -129,6 +129,8 @@ module Ironmon
     end
 
     original_party = $Trainer.party.dup
+    discovery_snapshot = state.discovered_fusion_mappings.dup
+    original_bag = $PokemonBag
     begin
       retained = original_party.find_all do |pokemon|
         pokemon && party_excluded_pokemon?(pokemon)
@@ -137,10 +139,38 @@ module Ironmon
       if usable_party.length != 1 || usable_party[0] != result_pokemon
         raise PivotTransactionError, "The replacement party is invalid."
       end
+      returned_items = result_pokemon.instance_variable_get(
+        :@ironmon_pivot_return_items
+      )
+      if returned_items && !returned_items.empty? && original_bag
+        staged_bag = Marshal.load(Marshal.dump(original_bag))
+        returned_items.each do |item|
+          if item && !staged_bag.pbStoreItem(item, 1)
+            raise PivotTransactionError,
+                  "There is no room for the fused Pokemon's held items."
+          end
+        end
+        $PokemonBag = staged_bag
+      end
+      if result_pokemon.instance_variable_defined?(
+        :@ironmon_pivot_return_items
+      )
+        result_pokemon.remove_instance_variable(:@ironmon_pivot_return_items)
+      end
+      if action == :fuse
+        previous = original_party.find do |pokemon|
+          pokemon && !party_excluded_pokemon?(pokemon)
+        end
+        record_player_fusion_discovery(previous, pending[:candidate],
+                                       result_pokemon)
+      end
       state.complete_pivot(acquisition_id)
       return true
     rescue Exception => e
       $Trainer.party = original_party
+      $PokemonBag = original_bag
+      state.discovered_fusion_mappings.clear
+      state.discovered_fusion_mappings.update(discovery_snapshot)
       if e.is_a?(PivotTransactionError)
         raise e
       end
