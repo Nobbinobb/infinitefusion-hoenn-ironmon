@@ -15,6 +15,10 @@ module Ironmon
     _INTL("No reviving"),
     _INTL("No heals (overworld)")
   ].freeze
+  DIFFICULTY_COMMON_EVENT_NAMES = [
+    "game difficulty selection",
+    "game difficulty selection_hoenn"
+  ].freeze
 
   def self.scaled_level(original_level)
     scaled = (original_level.to_i * LEVEL_MULTIPLIER).ceil
@@ -64,6 +68,13 @@ module Ironmon
       option.respond_to?(:name) && locked_names.include?(option.name)
     end
   end
+
+  def self.difficulty_selection_common_event?(event_id)
+    return false if !$data_common_events
+    event = $data_common_events[event_id]
+    return false if !event
+    return DIFFICULTY_COMMON_EVENT_NAMES.include?(event.name)
+  end
 end
 
 # Keep direct assignments from menus or event scripts from changing the locked
@@ -90,6 +101,18 @@ alias ironmon_original_set_difficulty setDifficulty
 def setDifficulty(index)
   return ironmon_original_set_difficulty(2) if Ironmon.active?
   return ironmon_original_set_difficulty(index)
+end
+
+class Interpreter
+  alias ironmon_original_command_117 command_117
+  def command_117
+    if Ironmon.active? &&
+       Ironmon.difficulty_selection_common_event?(@parameters[0])
+      Ironmon.enforce_difficulty_settings
+      return true
+    end
+    return ironmon_original_command_117
+  end
 end
 
 class GameplayOptionsScene

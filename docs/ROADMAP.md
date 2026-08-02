@@ -214,7 +214,7 @@ Acceptance criteria:
 
 ### Step 1.8: Milestone integration and regression pass
 
-Status: **Planned**
+Status: **Complete**
 
 - Test all nine fusion-policy combinations.
 - Test initial generation, save/load, and repeated F7 resets.

@@ -32,7 +32,7 @@ module Ironmon
   def self.finish_pending_reset
     return if !@reset_in_progress
     begin
-      generated = apply_preset
+      generated = apply_preset(:f7_reset)
       if !generated
         @reset_notice = :generation_failed
       elsif @reset_save_slot

@@ -25,7 +25,7 @@ module Ironmon
     randomize_loaded_static_events if @static_refresh_pending
   end
 
-  def self.apply_preset
+  def self.apply_preset(context = :new_run)
     return if !$PokemonGlobal || !$game_switches || !$game_variables
     return false if !prepare_custom_fusion_pool
 
@@ -81,6 +81,7 @@ module Ironmon
     pbShuffleItems
     pbShuffleTMs
     randomize_loaded_static_events
+    log_run_diagnostics(context)
     return true
   end
 end

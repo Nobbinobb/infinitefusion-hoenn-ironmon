@@ -1,7 +1,10 @@
-# Ironmon 0.8.0
+# Ironmon 1.0.0
 
 This distribution targets Pokemon Infinite Fusion 2 version 6.8.0.
 
 Copy the included `Data` directory into the game directory and merge it with
 the existing `Data` directory. Only Ruby files are installed beneath
 `Data/Scripts/997_Ironmon`.
+
+See the included `INSTALLATION.md` for complete installation, compatibility,
+diagnostics, and removal instructions.

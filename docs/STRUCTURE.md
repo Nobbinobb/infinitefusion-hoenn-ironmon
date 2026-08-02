@@ -25,6 +25,9 @@ file in `Data/Scripts` as Ruby.
 8. `004_Encounter_Hooks.rb`: wild, gift, starter, scripted, and trainer hooks.
 9. `005_Mode_Hooks.rb`: mode-menu integration and preset activation.
 10. `006_Scene_Hooks.rb`: map scene integration for resets and static refreshes.
+11. `007_Difficulty_Enforcement.rb`: locked challenge settings and 1.6 scaling.
+12. `008_Gym_Leader_Parties.rb`: persistent six-Pokemon Gym Leader expansion.
+13. `009_Diagnostics.rb`: run, load, and reset diagnostic records.
 
-Version `0.6.0` supports Infinite Fusion game version `6.8.0`. An unsupported
+Version `1.0.0` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.
