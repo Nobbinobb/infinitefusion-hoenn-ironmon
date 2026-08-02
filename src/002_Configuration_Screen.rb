@@ -16,10 +16,21 @@ module Ironmon
       Configuration::POLICY_NORMAL_ONLY => _INTL("Choose only non-fused Pokemon.")
     }.freeze
 
+    UNFUSION_LABELS = {
+      Configuration::UNFUSION_RANDOM_COMPONENT => _INTL("Random Component"),
+      Configuration::UNFUSION_PLAYER_CHOICE => _INTL("Player Choice")
+    }.freeze
+
+    UNFUSION_DESCRIPTIONS = {
+      Configuration::UNFUSION_RANDOM_COMPONENT => _INTL("Commit first, then reveal one component selected consistently for this acquisition."),
+      Configuration::UNFUSION_PLAYER_CHOICE => _INTL("Show both component identities and choose one without inspecting either summary.")
+    }.freeze
+
     def initialize(stored_configuration = nil)
       initial_configuration = copy_configuration(stored_configuration)
       @wild_policy = initial_configuration.wild_policy
       @trainer_policy = initial_configuration.trainer_policy
+      @unfusion_setting = initial_configuration.unfusion_setting
     end
 
     def run
@@ -27,11 +38,12 @@ module Ironmon
         commands = [
           _INTL("Wild Pokemon: {1}", policy_label(@wild_policy)),
           _INTL("Trainer Pokemon: {1}", policy_label(@trainer_policy)),
+          _INTL("Caught-fusion unfusion: {1}", unfusion_label(@unfusion_setting)),
           _INTL("Confirm"),
           _INTL("Back")
         ]
         message = _INTL("Configure this Ironmon run. Settings are applied only after final confirmation.")
-        choice = pbMessage(message, commands, 4)
+        choice = pbMessage(message, commands, 5)
         case choice
         when 0
           selected_policy = choose_policy(@wild_policy, _INTL("Choose the wild Pokemon fusion policy."))
@@ -40,9 +52,12 @@ module Ironmon
           selected_policy = choose_policy(@trainer_policy, _INTL("Choose the trainer Pokemon fusion policy."))
           @trainer_policy = selected_policy if selected_policy
         when 2
+          selected_setting = choose_unfusion_setting(@unfusion_setting)
+          @unfusion_setting = selected_setting if selected_setting
+        when 3
           configuration = confirmed_configuration
           return configuration if configuration
-        when 3
+        when 4
           return nil
         end
       end
@@ -75,17 +90,36 @@ module Ironmon
 
     def confirmed_configuration
       summary = _INTL(
-        "Begin Ironmon with these settings?\nWild Pokemon: {1}\nTrainer Pokemon: {2}",
+        "Begin Ironmon with these settings?\nWild Pokemon: {1}\nTrainer Pokemon: {2}\nCaught-fusion unfusion: {3}",
         policy_label(@wild_policy),
-        policy_label(@trainer_policy)
+        policy_label(@trainer_policy),
+        unfusion_label(@unfusion_setting)
       )
       commands = [_INTL("Back"), _INTL("Begin Ironmon")]
       return nil if pbMessage(summary, commands, 1) != 1
-      return Configuration.new(@wild_policy, @trainer_policy)
+      return Configuration.new(@wild_policy, @trainer_policy,
+                               @unfusion_setting)
+    end
+
+    def choose_unfusion_setting(current_setting)
+      setting_ids = Configuration::UNFUSION_SETTING_IDS
+      commands = setting_ids.map { |setting| unfusion_label(setting) }
+      descriptions = setting_ids.map { |setting| UNFUSION_DESCRIPTIONS[setting] }
+      commands << _INTL("Back")
+      descriptions << _INTL("Return without changing this setting.")
+      default_index = setting_ids.index(current_setting) || 0
+      choice = pbShowCommandsWithHelp(nil, commands, descriptions, 3,
+                                      default_index)
+      return nil if choice < 0 || choice >= setting_ids.length
+      return setting_ids[choice]
     end
 
     def policy_label(policy)
       return POLICY_LABELS[policy] || policy.to_s
+    end
+
+    def unfusion_label(setting)
+      return UNFUSION_LABELS[setting] || setting.to_s
     end
   end
 end

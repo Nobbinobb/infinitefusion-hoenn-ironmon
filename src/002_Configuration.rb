@@ -4,7 +4,7 @@
 
 module Ironmon
   class Configuration
-    SCHEMA_VERSION = 1
+    SCHEMA_VERSION = 2
 
     POLICY_MIXED = :mixed
     POLICY_CUSTOM_FUSIONS_ONLY = :custom_fusions_only
@@ -18,15 +18,26 @@ module Ironmon
     DEFAULT_WILD_POLICY = POLICY_MIXED
     DEFAULT_TRAINER_POLICY = POLICY_MIXED
 
+    UNFUSION_RANDOM_COMPONENT = :random_component
+    UNFUSION_PLAYER_CHOICE = :player_choice
+    UNFUSION_SETTING_IDS = [
+      UNFUSION_RANDOM_COMPONENT,
+      UNFUSION_PLAYER_CHOICE
+    ].freeze
+    DEFAULT_UNFUSION_SETTING = UNFUSION_RANDOM_COMPONENT
+
     attr_reader :schema_version
     attr_reader :wild_policy
     attr_reader :trainer_policy
+    attr_reader :unfusion_setting
 
     def initialize(wild_policy = DEFAULT_WILD_POLICY,
-                   trainer_policy = DEFAULT_TRAINER_POLICY)
+                   trainer_policy = DEFAULT_TRAINER_POLICY,
+                   unfusion_setting = DEFAULT_UNFUSION_SETTING)
       @schema_version = SCHEMA_VERSION
       self.wild_policy = wild_policy
       self.trainer_policy = trainer_policy
+      self.unfusion_setting = unfusion_setting
     end
 
     def wild_policy=(policy)
@@ -37,9 +48,18 @@ module Ironmon
       @trainer_policy = normalize_policy(policy, DEFAULT_TRAINER_POLICY)
     end
 
+    def unfusion_setting=(setting)
+      @unfusion_setting = normalize_value(
+        setting,
+        UNFUSION_SETTING_IDS,
+        DEFAULT_UNFUSION_SETTING
+      )
+    end
+
     def migrate!
       self.wild_policy = @wild_policy
       self.trainer_policy = @trainer_policy
+      self.unfusion_setting = @unfusion_setting
       @schema_version = SCHEMA_VERSION
       return self
     end
@@ -48,6 +68,7 @@ module Ironmon
       return false if @schema_version != SCHEMA_VERSION
       return false if !POLICY_IDS.include?(@wild_policy)
       return false if !POLICY_IDS.include?(@trainer_policy)
+      return false if !UNFUSION_SETTING_IDS.include?(@unfusion_setting)
       return true
     end
 
@@ -55,7 +76,8 @@ module Ironmon
       return {
         :schema_version => @schema_version,
         :wild_policy => @wild_policy,
-        :trainer_policy => @trainer_policy
+        :trainer_policy => @trainer_policy,
+        :unfusion_setting => @unfusion_setting
       }
     end
 
@@ -64,7 +86,9 @@ module Ironmon
       if value.is_a?(Hash)
         wild_policy = value[:wild_policy] || value["wild_policy"]
         trainer_policy = value[:trainer_policy] || value["trainer_policy"]
-        return new(wild_policy, trainer_policy)
+        unfusion_setting = value[:unfusion_setting] ||
+                           value["unfusion_setting"]
+        return new(wild_policy, trainer_policy, unfusion_setting)
       end
       return new
     rescue Exception => e
@@ -75,10 +99,15 @@ module Ironmon
     private
 
     def normalize_policy(policy, default_policy)
-      POLICY_IDS.each do |policy_id|
-        return policy_id if policy == policy_id || policy == policy_id.to_s
+      return normalize_value(policy, POLICY_IDS, default_policy)
+    end
+
+    def normalize_value(value, allowed_values, default_value)
+      allowed_values.each do |allowed_value|
+        return allowed_value if value == allowed_value ||
+                                value == allowed_value.to_s
       end
-      return default_policy
+      return default_value
     end
   end
 

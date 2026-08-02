@@ -257,7 +257,7 @@ specified in `PIVOT_SYSTEM.md`.
 
 ### Step 2.1: Pivot configuration and persistent state
 
-Status: **Planned**
+Status: **Complete**
 
 - Add the `:random_component` and `:player_choice` unfusion setting.
 - Add persistent run state for pending pivots, discovered fusion mappings, and

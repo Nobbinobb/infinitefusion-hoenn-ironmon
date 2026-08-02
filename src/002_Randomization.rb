@@ -33,6 +33,7 @@ module Ironmon
     configuration
     $PokemonGlobal.ironmon_seed = generate_run_seed
     $PokemonGlobal.ironmon_gym_leader_teams = {}
+    reset_pivot_state
     ensure_checkpoint_id
     record_custom_fusion_pool_metadata
     return false if !prepare_species_mappings

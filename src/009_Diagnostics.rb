@@ -40,6 +40,7 @@ module Ironmon
     return "[Ironmon #{VERSION}] context=#{context} seed=#{seed} " +
       "wild_policy=#{configuration_value.wild_policy} " +
       "trainer_policy=#{configuration_value.trainer_policy} " +
+      "unfusion_setting=#{configuration_value.unfusion_setting} " +
       "custom_pool_size=#{pool_size} " +
       "custom_pool_fingerprint=#{pool_fingerprint} " +
       "wild_mappings=#{wild_count} trainer_mappings=#{trainer_count}"

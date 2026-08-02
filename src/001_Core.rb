@@ -63,6 +63,12 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_wild_species_map
   attr_accessor :ironmon_trainer_species_map
   attr_accessor :ironmon_gym_leader_teams
+  attr_accessor :ironmon_pivot_state
+end
+
+class Pokemon
+  attr_accessor :ironmon_fusion_origin
+  attr_accessor :ironmon_transformation_right
 end
 
 Ironmon.check_compatibility

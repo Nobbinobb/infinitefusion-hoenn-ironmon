@@ -18,16 +18,18 @@ file in `Data/Scripts` as Ruby.
 1. `001_Core.rb`: constants, runtime state, metadata, and compatibility check.
 2. `002_Configuration.rb`: save-backed policy settings and migrations.
 3. `002_Configuration_Screen.rb`: transactional policy selection and summary.
-4. `002_Custom_Fusion_Pool.rb`: validated, cached custom-fusion candidates.
-5. `002_Randomization.rb`: Ironmon preset activation and run setup.
-6. `003_Checkpoint_Reset.rb`: checkpoint persistence and F7 reset lifecycle.
-7. `003_Species_Generators.rb`: deterministic wild and trainer policy mappings.
-8. `004_Encounter_Hooks.rb`: wild, gift, starter, scripted, and trainer hooks.
-9. `005_Mode_Hooks.rb`: mode-menu integration and preset activation.
-10. `006_Scene_Hooks.rb`: map scene integration for resets and static refreshes.
-11. `007_Difficulty_Enforcement.rb`: locked challenge settings and 1.6 scaling.
-12. `008_Gym_Leader_Parties.rb`: persistent six-Pokemon Gym Leader expansion.
-13. `009_Diagnostics.rb`: run, load, and reset diagnostic records.
+4. `002_Pivot_State.rb`: save-backed pivot transactions, mappings, identifiers,
+   and Pokemon transformation markers.
+5. `002_Custom_Fusion_Pool.rb`: validated, cached custom-fusion candidates.
+6. `002_Randomization.rb`: Ironmon preset activation and run setup.
+7. `003_Checkpoint_Reset.rb`: checkpoint persistence and F7 reset lifecycle.
+8. `003_Species_Generators.rb`: deterministic wild and trainer policy mappings.
+9. `004_Encounter_Hooks.rb`: wild, gift, starter, scripted, and trainer hooks.
+10. `005_Mode_Hooks.rb`: mode-menu integration and preset activation.
+11. `006_Scene_Hooks.rb`: map scene integration for resets and static refreshes.
+12. `007_Difficulty_Enforcement.rb`: locked challenge settings and 1.6 scaling.
+13. `008_Gym_Leader_Parties.rb`: persistent six-Pokemon Gym Leader expansion.
+14. `009_Diagnostics.rb`: run, load, and reset diagnostic records.
 
 Version `0.1.0` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.
