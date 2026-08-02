@@ -83,7 +83,7 @@ Acceptance criteria:
 
 ### Step 1.2: Persistent Ironmon configuration model
 
-Status: **In progress - implementation complete; in-game acceptance pass pending**
+Status: **Complete**
 
 - Add a configuration object stored in save metadata.
 - Store wild and trainer fusion policies separately.

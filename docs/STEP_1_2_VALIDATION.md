@@ -12,8 +12,9 @@ verified that separate policy values survive a metadata Marshal round trip.
 
 ## In-game acceptance pass
 
-- [ ] Configuration survives saving and loading.
-- [ ] F7 changes the run seed without changing either policy.
-- [ ] A proof-of-concept Ironmon save loads with Mixed defaults.
+- [x] Configuration survives saving and loading.
+- [x] F7 changes the run seed without changing either policy.
+- [x] A proof-of-concept Ironmon save loads with Mixed defaults.
 
-Step 1.2 remains in progress until the in-game checks pass.
+Step 1.2 passed its acceptance criteria on 2026-08-02. The temporary F6
+acceptance helper was removed after validation.
