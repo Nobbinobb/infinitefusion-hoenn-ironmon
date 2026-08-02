@@ -32,6 +32,8 @@ file in `Data/Scripts` as Ruby.
 14. `009_Diagnostics.rb`: run, load, and reset diagnostic records.
 15. `010_Pivot_Acquisition.rb`: transactional catches, gifts, trades, party
     enforcement, exclusions, and PC movement safeguards.
+16. `011_Blind_Pivot_Interface.rb`: legal-action selection, blind decisions,
+    transactional pivot result preparation, and non-cancellable completion.
 
 Version `0.1.0` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.

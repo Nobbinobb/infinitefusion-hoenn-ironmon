@@ -295,7 +295,7 @@ Acceptance criteria:
 
 ### Step 2.3: Blind pivot interface
 
-Status: **Planned**
+Status: **Complete**
 
 - Present only the actions legal for the current and newly obtained Pokemon.
 - Block summary inspection of stats, moves, ability, and nature until commit.

@@ -102,7 +102,7 @@ module Ironmon
       :candidate => pokemon,
       :current_personal_id => current ? current.personalID : nil
     })
-    return commit_pending_swap(acquisition_id)
+    return resolve_pending_pivot(acquisition_id)
   rescue PivotTransactionError => e
     echoln "Ironmon acquisition failed: #{e.message}"
     begin
@@ -112,18 +112,20 @@ module Ironmon
     return false
   end
 
-  # Step 2.3 replaces this single legal fallback with the complete blind action
-  # interface. Keeping the operation here transactional makes the Step 2.2
-  # build playable without allowing a second Pokemon into party or storage.
   def self.commit_pending_swap(acquisition_id)
+    pending = pivot_state.pending_pivot
+    candidate = pending ? pending[:candidate] : nil
+    return commit_pending_result(acquisition_id, candidate)
+  end
+
+  def self.commit_pending_result(acquisition_id, result_pokemon)
     state = pivot_state
     pending = state.pending_pivot
     if !state.pending? || pending[:acquisition_id] != acquisition_id.to_s
       raise PivotTransactionError, "The pending acquisition does not match."
     end
-    candidate = pending[:candidate]
-    if !candidate.is_a?(Pokemon) || candidate.egg?
-      raise PivotTransactionError, "The candidate is invalid."
+    if !result_pokemon.is_a?(Pokemon) || result_pokemon.egg?
+      raise PivotTransactionError, "The pivot result is invalid."
     end
 
     original_party = $Trainer.party.dup
@@ -131,9 +133,8 @@ module Ironmon
       retained = original_party.find_all do |pokemon|
         pokemon && party_excluded_pokemon?(pokemon)
       end
-      mark_processed_caught_fusion(candidate) if candidate.isFusion?
-      $Trainer.party = [candidate] + retained
-      if usable_party.length != 1 || usable_party[0] != candidate
+      $Trainer.party = [result_pokemon] + retained
+      if usable_party.length != 1 || usable_party[0] != result_pokemon
         raise PivotTransactionError, "The replacement party is invalid."
       end
       state.complete_pivot(acquisition_id)
