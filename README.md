@@ -14,7 +14,7 @@ and a fast reset to starter selection.
 - `tools/Build-Milestone1.ps1` creates the copy-ready Milestone 1 ZIP and
   SHA-256 checksum in `release/`.
 
-Milestone 1 is complete at version `1.0.0`. See `docs/ROADMAP.md` for its
+Milestone 1 is complete at version `0.1.0`. See `docs/ROADMAP.md` for its
 implemented scope and validation record, and `docs/INSTALLATION.md` for
 installation steps.
 

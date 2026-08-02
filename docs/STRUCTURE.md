@@ -29,5 +29,5 @@ file in `Data/Scripts` as Ruby.
 12. `008_Gym_Leader_Parties.rb`: persistent six-Pokemon Gym Leader expansion.
 13. `009_Diagnostics.rb`: run, load, and reset diagnostic records.
 
-Version `1.0.0` supports Infinite Fusion game version `6.8.0`. An unsupported
+Version `0.1.0` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.
