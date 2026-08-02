@@ -49,6 +49,10 @@ def select_game_mode
           stored_configuration
         ).run
         if selected_configuration
+          if !Ironmon.prepare_custom_fusion_pool
+            pbMessage(Ironmon.custom_fusion_pool_error_message)
+            next
+          end
           Ironmon.configuration = selected_configuration
           game_mode = :IRONMON
         end
@@ -71,7 +75,9 @@ end
 alias ironmon_original_apply_game_mode apply_game_mode
 def apply_game_mode(game_mode)
   if game_mode == :IRONMON
-    Ironmon.apply_preset
+    if !Ironmon.apply_preset
+      pbMessage(Ironmon.custom_fusion_pool_error_message)
+    end
     return
   end
   ironmon_original_apply_game_mode(game_mode)

@@ -3,7 +3,7 @@
 #===============================================================================
 
 module Ironmon
-  VERSION = "0.4.0"
+  VERSION = "0.5.0"
   SUPPORTED_GAME_VERSIONS = ["6.8.0"].freeze
   RESET_KEY = Input::F7
   FULL_RANDOM_BST_RANGE = 999
@@ -56,6 +56,9 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_seed
   attr_accessor :ironmon_checkpoint_id
   attr_accessor :ironmon_configuration
+  attr_accessor :ironmon_custom_fusion_pool_version
+  attr_accessor :ironmon_custom_fusion_pool_size
+  attr_accessor :ironmon_custom_fusion_pool_fingerprint
 end
 
 Ironmon.check_compatibility

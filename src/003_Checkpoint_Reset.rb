@@ -32,8 +32,10 @@ module Ironmon
   def self.finish_pending_reset
     return if !@reset_in_progress
     begin
-      apply_preset
-      if @reset_save_slot
+      generated = apply_preset
+      if !generated
+        @reset_notice = :generation_failed
+      elsif @reset_save_slot
         $Trainer.save_slot = @reset_save_slot
         saved = Game.save(@reset_save_slot)
         @reset_notice = saved ? :success : :save_failed
@@ -50,7 +52,9 @@ module Ironmon
     return false if !@reset_notice
     notice = @reset_notice
     @reset_notice = nil
-    if notice == :save_failed
+    if notice == :generation_failed
+      pbMessage(custom_fusion_pool_error_message)
+    elsif notice == :save_failed
       pbMessage(_INTL("The run restarted, but the save slot could not be updated. Please save manually."))
     else
       pbMessage(_INTL("A new Ironmon run has been generated. Choose your starter."))

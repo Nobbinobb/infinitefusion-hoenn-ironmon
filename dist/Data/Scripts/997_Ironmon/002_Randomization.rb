@@ -47,11 +47,13 @@ module Ironmon
 
   def self.apply_preset
     return if !$PokemonGlobal || !$game_switches || !$game_variables
+    return false if !prepare_custom_fusion_pool
 
     $PokemonGlobal.ironmon_mode = true
     configuration
     $PokemonGlobal.ironmon_seed = generate_run_seed
     ensure_checkpoint_id
+    record_custom_fusion_pool_metadata
 
     $game_switches[SWITCH_RANDOMIZED_AT_LEAST_ONCE] = true
     $game_switches[SWITCH_RANDOMIZED_MODE_INTRO] = false
@@ -96,5 +98,6 @@ module Ironmon
     pbShuffleItems
     pbShuffleTMs
     randomize_loaded_static_events
+    return true
   end
 end
