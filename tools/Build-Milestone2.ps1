@@ -4,9 +4,9 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $buildScript = Join-Path $PSScriptRoot "Build-Distribution.ps1"
 $distribution = Join-Path $projectRoot "dist"
 $releaseDirectory = Join-Path $projectRoot "release"
-$archiveName = "Ironmon-v0.2.0-pivot-system.zip"
+$archiveName = "Ironmon-v0.2.1-pivot-system.zip"
 $archive = Join-Path $releaseDirectory $archiveName
-$checksum = Join-Path $releaseDirectory "Ironmon-v0.2.0-pivot-system.sha256.txt"
+$checksum = Join-Path $releaseDirectory "Ironmon-v0.2.1-pivot-system.sha256.txt"
 
 & $buildScript
 New-Item -ItemType Directory -Force -Path $releaseDirectory | Out-Null

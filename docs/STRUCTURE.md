@@ -44,5 +44,5 @@ file in `Data/Scripts` as Ruby.
     duplicate-evolution pivots, Day Care protection, and temporary-mode party
     eligibility safeguards.
 
-Version `0.2.0` supports Infinite Fusion game version `6.8.0`. An unsupported
+Version `0.2.1` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.

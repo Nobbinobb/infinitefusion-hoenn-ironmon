@@ -211,10 +211,7 @@ module Ironmon
   def self.build_reversed_caught_result(candidate)
     validate_caught_fusion_right(candidate)
     result = candidate.clone
-    reversed_species = reverseFusionSpecies(result.species)
-    if GameData::Species.get(reversed_species).species == result.species
-      raise PivotTransactionError, "This special fusion cannot be reversed."
-    end
+    reversed_species = paired_custom_fusion_species(result.species)
     result.exp_when_fused_body, result.exp_when_fused_head =
       result.exp_when_fused_head, result.exp_when_fused_body
     result.head_shiny, result.body_shiny =

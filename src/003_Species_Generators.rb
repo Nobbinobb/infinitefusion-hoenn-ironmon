@@ -38,7 +38,10 @@ module Ironmon
 
     def map_id(source_id)
       stored = @mapping[source_id]
-      return stored if stored
+      if stored
+        return stored if allowed_species_id?(stored)
+        @mapping.delete(source_id)
+      end
       pool = select_pool(source_id)
       if !pool || pool.empty?
         raise SpeciesGenerationError,
@@ -51,6 +54,36 @@ module Ironmon
     end
 
     private
+
+    def allowed_species_id?(species_id)
+      case @policy
+      when Configuration::POLICY_NORMAL_ONLY
+        @normal_pool_index ||= pool_index(@normal_pool)
+        return @normal_pool_index[species_id] == true
+      when Configuration::POLICY_CUSTOM_FUSIONS_ONLY
+        @fusion_pool_index ||= pool_index(@fusion_pool)
+        return @fusion_pool_index[species_id] == true
+      else
+        @normal_pool_index ||= pool_index(@normal_pool)
+        @fusion_pool_index ||= pool_index(@fusion_pool)
+        return @normal_pool_index[species_id] == true ||
+               @fusion_pool_index[species_id] == true
+      end
+    end
+
+    def pool_index(pool)
+      index = {}
+      pool.each do |species|
+        match = /\AB(\d+)H(\d+)\z/.match(species.to_s)
+        species_id = if match
+                       (match[1].to_i * NB_POKEMON) + match[2].to_i
+                     else
+                       GameData::Species.get(species).id_number
+                     end
+        index[species_id] = true
+      end
+      return index
+    end
 
     def select_pool(source_id)
       case @policy
@@ -379,6 +412,15 @@ module Ironmon
     return false
   end
 
+  def self.refresh_invalid_species_mappings
+    return false if !$PokemonGlobal
+    [:wild, :trainer].each do |kind|
+      generator = species_generator(kind)
+      (1..NB_POKEMON).each { |species_id| generator.map_id(species_id) }
+    end
+    return true
+  end
+
   def self.species_generation_error_message
     return @species_generation_error_message || custom_fusion_pool_error_message
   end
@@ -410,6 +452,11 @@ module Game
         end
         Ironmon.record_custom_fusion_pool_metadata
         echoln "Ironmon migrated legacy species mappings to the current generator."
+      end
+      if Ironmon.active?
+        Ironmon.prepare_player_fusion_pairing
+        Ironmon.refresh_invalid_species_mappings
+        Ironmon.record_custom_fusion_pool_metadata
       end
       return result
     end

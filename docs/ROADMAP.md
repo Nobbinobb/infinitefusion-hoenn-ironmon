@@ -321,8 +321,8 @@ Acceptance criteria:
 
 Status: **Complete**
 
-- Map each unordered pair of normal input species to one validated custom-sprite
-  fusion using a dedicated seed namespace.
+- Map each unordered pair of normal input species to two validated custom-sprite
+  fusions using a dedicated seed namespace.
 - Apply orientation by reversing the shared mapped result rather than rolling a
   second result.
 - Hide undiscovered results until the first fusion is committed.
@@ -332,7 +332,8 @@ Status: **Complete**
 
 Acceptance criteria:
 
-- A+B always produces C within one run and B+A produces only reversed C.
+- A+B always produces C within one run, B+A produces D, and Ironmon reversal
+  swaps C and D without requiring either natural reverse sprite.
 - Save/load preserves mappings and discoveries; F7 generates new mappings.
 - Results contain only validated normal two-species custom fusions.
 - Runtime call order, personal IDs, preview cancellation, and reversal cannot
@@ -366,7 +367,8 @@ Status: **Complete**
 - Test every current/candidate combination and both unfusion settings.
 - Test save/load, F7, failure recovery, and repeated discovered mappings.
 - Document deferred Egg, temporary-party, form, and special-fusion behavior.
-- Package release `0.2.0` as `Ironmon-v0.2.0-pivot-system.zip`.
+- Package the corrected Milestone 2 release `0.2.1` as
+  `Ironmon-v0.2.1-pivot-system.zip`.
 
 Acceptance criteria:
 

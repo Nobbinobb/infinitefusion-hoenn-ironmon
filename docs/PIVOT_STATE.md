@@ -12,11 +12,11 @@ whole pivot transaction without relying on runtime-only variables.
   retries and save/load cannot reconsider the selection.
 - `completed_acquisition_ids` prevents a resolved acquisition from being
   reopened after loading.
-- `fusion_mappings` stores one canonical custom-fusion species ID under a
-  stable `lower_input_id:higher_input_id` key. Input orientation is applied
-  only when the result is requested.
-- `discovered_fusion_mappings` stores the same canonical result only after its
-  party transaction commits, and therefore records which result identities the
+- `fusion_mappings` stores two custom-fusion species IDs under a stable
+  `lower_input_id:higher_input_id` key. The first is used for `A+B`; the second
+  is used for `B+A`, and Ironmon treats them as reverse partners.
+- `discovered_fusion_mappings` stores the result pair only after its party
+  transaction commits, and therefore records which result identities the
   player may see in later pivot choices.
 - `next_acquisition_sequence` produces acquisition identifiers namespaced by
   the current run seed.
@@ -28,6 +28,12 @@ whole pivot transaction without relying on runtime-only variables.
 The transaction API refuses to start a second pending pivot, reopen a completed
 identifier, or complete an identifier other than the pending one. Migration
 also removes any legacy pending record already listed as completed.
+
+Development saves from the original fusion-mapping design may contain one
+species ID instead of a result pair. The first result is preserved and receives
+a deterministic custom-sprite reverse partner when that mapping is next used.
+Mappings containing an entry no longer eligible after selectable-sprite
+validation are rerolled; valid existing results remain unchanged.
 
 Old saves have no pivot state. Their first Ironmon access creates a clean
 schema-version-2 state. Schema-version-1 state migrates by adding empty

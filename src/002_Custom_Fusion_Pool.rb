@@ -6,7 +6,7 @@ module Ironmon
   class CustomFusionPoolError < StandardError; end
 
   class CustomFusionPool
-    SCHEMA_VERSION = 1
+    SCHEMA_VERSION = 2
     FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
     FNV_PRIME = 1_099_511_628_211
     FNV_MASK = 0xFFFFFFFFFFFFFFFF
@@ -65,6 +65,7 @@ module Ironmon
       @rejected_entry_count = 0
       accepted = {}
       valid_base_ids = valid_base_species_ids
+      selectable_sprite_keys = selectable_custom_sprite_keys
       source_keys.each do |sprite_key|
         match = /\AB(\d+)H(\d+)\z/.match(sprite_key.to_s)
         if !match
@@ -75,6 +76,10 @@ module Ironmon
         body_id = match[1].to_i
         head_id = match[2].to_i
         if !valid_base_ids[body_id] || !valid_base_ids[head_id]
+          @rejected_entry_count += 1
+          next
+        end
+        if !selectable_sprite_keys[sprite_key]
           @rejected_entry_count += 1
           next
         end
@@ -94,6 +99,13 @@ module Ironmon
               "no valid custom-sprite fusion species were found"
       end
 
+      # Two-way Ironmon reversal requires an even-sized pool. Exclude one
+      # deterministic tail entry if the selectable catalogue is odd.
+      if accepted.length.odd?
+        accepted.delete(accepted.keys.max)
+        @rejected_entry_count += 1
+      end
+
       @pool = accepted.keys.sort.map { |dex_number| accepted[dex_number] }
       @pool.freeze
       @fingerprint = fingerprint_for(@pool)
@@ -111,6 +123,31 @@ module Ironmon
         end
       end
       return valid_ids
+    end
+
+    def selectable_custom_sprite_keys
+      path = Settings::CREDITS_FILE_PATH
+      if !path || !File.file?(path)
+        raise CustomFusionPoolError,
+              "the sprite credits index is unavailable"
+      end
+      selectable = {}
+      File.foreach(path) do |line|
+        row = line.strip.split(',')
+        next if row.length < 3
+        status = row[2].to_s.downcase
+        next if status != "main" && status != "temp"
+        match = /\A(\d+)\.(\d+)[a-zA-Z]*\z/.match(row[0].to_s)
+        next if !match
+        head_id = match[1].to_i
+        body_id = match[2].to_i
+        selectable["B#{body_id}H#{head_id}".to_sym] = true
+      end
+      if selectable.empty?
+        raise CustomFusionPoolError,
+              "the sprite credits index has no selectable custom sprites"
+      end
+      return selectable
     end
 
     def fingerprint_for(species_pool)

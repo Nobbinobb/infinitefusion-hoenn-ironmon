@@ -16,7 +16,7 @@ and a fast reset to starter selection.
 - `tools/Build-Milestone2.ps1` creates the copy-ready Milestone 2 ZIP and
   SHA-256 checksum in `release/`.
 
-Milestone 2 is complete at version `0.2.0`. See `docs/ROADMAP.md` for its
+Milestone 2 is complete at version `0.2.1`. See `docs/ROADMAP.md` for its
 implemented scope and validation record, and `docs/INSTALLATION.md` for
 installation steps.
 
