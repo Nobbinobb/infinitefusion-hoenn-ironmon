@@ -368,8 +368,8 @@ Status: **Complete**
 - Test every current/candidate combination and both unfusion settings.
 - Test save/load, F7, failure recovery, and repeated discovered mappings.
 - Document deferred Egg, temporary-party, form, and special-fusion behavior.
-- Package the corrected Milestone 2 release `0.2.2` as
-  `Ironmon-v0.2.2-pivot-system.zip`.
+- Package the final corrected Milestone 2 release `0.2.3` as
+  `Ironmon-v0.2.3-pivot-system.zip`.
 
 Acceptance criteria:
 

@@ -7,6 +7,7 @@ module Ironmon
 
   @acquisition_source = nil
   @acquisition_exclusion = nil
+  @starter_acquisition = false
 
   def self.with_acquisition_source(source)
     previous_source = @acquisition_source
@@ -22,6 +23,30 @@ module Ironmon
     return yield
   ensure
     @acquisition_exclusion = previous_exclusion
+  end
+
+  def self.with_starter_acquisition
+    previous = @starter_acquisition
+    @starter_acquisition = true
+    return yield
+  ensure
+    @starter_acquisition = previous
+  end
+
+  def self.starter_acquisition?
+    return @starter_acquisition == true
+  end
+
+  def self.mark_starter_pokemon(pokemon)
+    pokemon.instance_variable_set(:@ironmon_starter_pokemon, true)
+    return pokemon
+  end
+
+  def self.starter_pokemon?(pokemon)
+    return pokemon &&
+      pokemon.instance_variable_get(:@ironmon_starter_pokemon) == true
+  rescue StandardError
+    return false
   end
 
   def self.current_acquisition_source
@@ -95,6 +120,7 @@ module Ironmon
                                  action_selector = nil)
     raise PivotTransactionError, "No Pokemon was supplied." if !pokemon
     source ||= current_acquisition_source
+    source = :starter if starter_pokemon?(pokemon)
     exclusion = current_acquisition_exclusion
     if pokemon.egg?
       record_excluded_acquisition(pokemon, :egg, source)
@@ -111,12 +137,18 @@ module Ironmon
     end
     acquisition_id = reserve_acquisition_id
     current = usable_party[0]
-    mark_caught_fusion(pokemon) if pokemon.isFusion?
+    starter = starter_pokemon?(pokemon)
+    mark_caught_fusion(pokemon) if pokemon.isFusion? && !starter
     state.begin_pivot(acquisition_id, {
       :source => source,
       :candidate => pokemon,
       :current_personal_id => current ? current.personalID : nil
     })
+    if starter
+      action_selector = proc do |actions|
+        actions.include?(:take) ? :take : :swap
+      end
+    end
     return resolve_pending_pivot(acquisition_id, action_selector)
   rescue PivotTransactionError => e
     echoln "Ironmon acquisition failed: #{e.message}"
@@ -250,6 +282,8 @@ def pbAddPokemonSilent(pokemon, level = 1, see_form = true)
   ) if !Ironmon.active?
   return false if !pokemon
   pokemon = Pokemon.new(pokemon, level) if !pokemon.is_a?(Pokemon)
+  Ironmon.mark_starter_pokemon(pokemon) if
+    Ironmon.starter_acquisition?
   if Ironmon.current_acquisition_exclusion
     Ironmon.record_excluded_acquisition(
       pokemon, Ironmon.current_acquisition_exclusion, :gift_or_static
@@ -261,7 +295,8 @@ def pbAddPokemonSilent(pokemon, level = 1, see_form = true)
   $Trainer.pokedex.register(pokemon) if see_form
   $Trainer.pokedex.set_owned(pokemon.species)
   pokemon.record_first_moves
-  return Ironmon.intercept_acquisition(pokemon, :gift_or_static)
+  source = Ironmon.starter_pokemon?(pokemon) ? :starter : :gift_or_static
+  return Ironmon.intercept_acquisition(pokemon, source)
 end
 
 alias ironmon_pivot_original_pb_add_to_party_silent pbAddToPartySilent

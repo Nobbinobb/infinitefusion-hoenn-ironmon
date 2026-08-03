@@ -20,6 +20,8 @@ optimization exercise.
   or count as usable party members.
 - HM rewards become their corresponding permanent field tools, so field-move
   progression never requires a spare party Pokemon.
+- The chosen starter is automatically taken exactly as generated. A fused
+  starter receives no reversal or unfusion choice.
 - An eligible acquisition must be resolved before normal play continues.
 - A completed pivot leaves exactly one usable Pokemon.
 - The previous Pokemon and every unused result are permanently discarded.

@@ -16,6 +16,8 @@
 - [x] Wally receives a generated normal Pokemon and cannot remove the sole
   battler, even when the sole Pokemon is fainted and cannot perform Wally's
   original demonstration catch.
+- [x] Starter acquisition automatically takes the selected Pokemon during both
+  its temporary rescue-battle addition and its permanent lab addition.
 - [x] Legacy utility Pokemon are removed from the live party and preserved in
   quarantine during save migration.
 - [x] HM rewards are replaced by the corresponding field tools before item

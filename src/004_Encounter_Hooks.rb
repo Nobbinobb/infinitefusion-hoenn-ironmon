@@ -5,7 +5,16 @@
 alias ironmon_original_hoenn_select_starter hoennSelectStarter
 def hoennSelectStarter
   Ironmon.capture_checkpoint
-  return ironmon_original_hoenn_select_starter
+  return Ironmon.with_starter_acquisition do
+    ironmon_original_hoenn_select_starter
+  end
+end
+
+alias ironmon_original_hoenn_select_custom_starter hoennSelectCustomStarter
+def hoennSelectCustomStarter
+  return Ironmon.with_starter_acquisition do
+    ironmon_original_hoenn_select_custom_starter
+  end
 end
 
 # Both fixed map encounters and the optional visible overworld encounters use
