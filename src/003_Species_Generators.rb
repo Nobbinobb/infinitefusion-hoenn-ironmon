@@ -314,30 +314,45 @@ module Ironmon
     return clone
   end
 
-  # The unmodified Wally event rejects fused gifts after allowing the player to
-  # select them. Custom Fusions Only could therefore loop forever. Its event
-  # command is redirected here at startup; non-Ironmon modes retain the exact
-  # original rejection behavior.
-  def self.wally_rejects_gift?(pokemon)
-    return pokemon.isFusion? if !active?
-    return !utility_slave?(pokemon)
-  end
-
   def self.patch_wally_gift_event
     return if @wally_gift_event_patched
     return if !$data_common_events
     $data_common_events.compact.each do |event|
       next if event.name != "Wally_partner_dialogues"
       event.list.each do |command|
-        next if command.code != 355 && command.code != 655
+        next if command.code != 111
+        next if !command.parameters || command.parameters.length < 2
+        if command.parameters[0] == 12 &&
+           command.parameters[1] == "$Trainer.party.length >= 2"
+          command.parameters[1] = "Ironmon.wally_gift_available?"
+        elsif command.parameters[0] == 0 && command.parameters[1] == 2123
+          command.parameters = [12, "Ironmon.wally_gift_story_ready?"]
+        end
+      end
+      event.list.each_with_index do |command, index|
+        next if command.code != 355
         next if !command.parameters || command.parameters.empty?
-        next if command.parameters[0] != "pbSet(3,pokemon.isFusion?)"
-        command.parameters[0] =
-          "pbSet(3,Ironmon.wally_rejects_gift?(pokemon))"
+        next if command.parameters[0] != "pbChoosePokemon(1,2,"
+        command.parameters[0] = "Ironmon.choose_wally_gift_pokemon(1,2)"
+        3.times do |offset|
+          continuation = event.list[index + offset + 1]
+          continuation.parameters[0] = "" if continuation &&
+            continuation.code == 655 && continuation.parameters
+        end
         @wally_gift_event_patched = true
         return
       end
     end
+  end
+
+  def self.wally_gift_available?
+    return true if active?
+    return $Trainer && $Trainer.party && $Trainer.party.length >= 2
+  end
+
+  def self.wally_gift_story_ready?
+    return true if active?
+    return $game_switches && $game_switches[2123]
   end
 
   # Kept as a compatibility name for the Step 1.1 encounter hooks.
@@ -457,6 +472,8 @@ module Game
         Ironmon.prepare_player_fusion_pairing
         Ironmon.refresh_invalid_species_mappings
         Ironmon.record_custom_fusion_pool_metadata
+        Ironmon.enforce_party_limit
+        Ironmon.convert_owned_hms_to_tools
       end
       return result
     end

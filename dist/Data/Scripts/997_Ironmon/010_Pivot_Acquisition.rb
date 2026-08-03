@@ -40,6 +40,12 @@ module Ironmon
     return false
   end
 
+  def self.legacy_utility_pokemon?(pokemon)
+    return pokemon && pokemon.ironmon_party_exclusion == :utility_slave
+  rescue Exception
+    return false
+  end
+
   def self.usable_party
     return [] if !$Trainer || !$Trainer.party
     return $Trainer.party.find_all do |pokemon|
@@ -49,6 +55,14 @@ module Ironmon
 
   def self.enforce_party_limit
     return true if !$Trainer || !$Trainer.party
+    $Trainer.party.find_all do |pokemon|
+      legacy_utility_pokemon?(pokemon)
+    end.each do |pokemon|
+      $Trainer.party.delete(pokemon)
+      pivot_state.quarantine_pokemon(pokemon, :removed_utility_slot)
+      echoln "Ironmon removed a legacy utility Pokemon: #{pokemon.species}"
+    end
+    $Trainer.party.compact!
     usable = usable_party
     return true if usable.length <= 1
     usable[1..-1].each do |pokemon|
@@ -179,29 +193,6 @@ module Ironmon
     end
   end
 
-  def self.record_trade_acquisition(pokemon, utility_trade = false)
-    return if !pokemon.is_a?(Pokemon)
-    mark_processed_caught_fusion(pokemon) if pokemon.isFusion?
-    if utility_trade
-      pokemon.ironmon_party_exclusion = UTILITY_SLAVE_EXCLUSION
-      if usable_party.length != 1 || utility_slaves != [pokemon]
-        raise PivotTransactionError, "The utility trade party is invalid."
-      end
-    else
-      pokemon.ironmon_party_exclusion = nil
-      enforce_party_limit
-    end
-    acquisition_id = reserve_acquisition_id
-    current = usable_party[0]
-    pivot_state.begin_pivot(acquisition_id, {
-      :source => utility_trade ? :utility_trade : :trade,
-      :candidate => pokemon,
-      :current_personal_id => current ? current.personalID : nil
-    })
-    pivot_state.complete_pivot(acquisition_id)
-    return pokemon
-  end
-
   def self.pc_movement_blocked?(pokemon)
     return false if !active? || !pokemon
     return !pokemon.egg?
@@ -325,12 +316,27 @@ def pbStartTrade(pokemonIndex, newpoke, nickname, trainerName,
     pbMessage(_INTL("Another Pokemon acquisition must be resolved before trading."))
     return nil
   end
-  utility_trade = Ironmon.active? &&
-    Ironmon.utility_slave?($Trainer.party[pokemonIndex])
-  pokemon = ironmon_pivot_original_pb_start_trade(
-    pokemonIndex, newpoke, nickname, trainerName, trainerGender, savegame
-  )
-  Ironmon.record_trade_acquisition(pokemon, utility_trade) if Ironmon.active?
+  if Ironmon.active?
+    outgoing = $Trainer.party[pokemonIndex]
+    if !Ironmon.progression_trade_pokemon?(outgoing)
+      outgoing = Ironmon.prepare_progression_trade_pokemon({
+        :species => outgoing.species,
+        :context => [:trade, newpoke, trainerName]
+      })
+      pokemonIndex = $Trainer.party.index(outgoing)
+    end
+  end
+  pokemon = nil
+  begin
+    pokemon = ironmon_pivot_original_pb_start_trade(
+      pokemonIndex, newpoke, nickname, trainerName, trainerGender, savegame
+    )
+  ensure
+    Ironmon.cleanup_progression_trade_pokemon if Ironmon.active?
+  end
+  if Ironmon.active?
+    Ironmon.resolve_party_acquisition(pokemon, :trade)
+  end
   return pokemon
 end
 
@@ -385,12 +391,6 @@ class PokeBattle_RealBattlePeer
 end
 
 class PokemonStorageScreen
-  alias ironmon_pivot_original_able pbAble?
-  def pbAble?(pokemon)
-    return false if Ironmon.active? && Ironmon.utility_slave?(pokemon)
-    return ironmon_pivot_original_able(pokemon)
-  end
-
   alias ironmon_pivot_original_withdraw pbWithdraw
   def pbWithdraw(selected, heldpoke)
     pokemon = heldpoke || @storage[selected[0], selected[1]]

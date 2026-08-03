@@ -57,35 +57,3 @@ class << PokemonEvolutionScene
     return Ironmon.intercept_acquisition(duplicate, :evolution_duplicate)
   end
 end
-
-alias ironmon_integration_original_first_able_pokemon pbFirstAblePokemon
-def pbFirstAblePokemon(variable_id)
-  return ironmon_integration_original_first_able_pokemon(variable_id) if
-    !Ironmon.active?
-  $Trainer.party.each_with_index do |pokemon, index|
-    next if !pokemon || !pokemon.able? || Ironmon.utility_slave?(pokemon)
-    pbSet(variable_id, index)
-    return pokemon
-  end
-  pbSet(variable_id, -1)
-  return nil
-end
-
-class AblePokemonRestriction
-  alias ironmon_integration_original_valid isValid?
-  def isValid?(pokemon)
-    return false if Ironmon.active? && Ironmon.utility_slave?(pokemon)
-    return ironmon_integration_original_valid(pokemon)
-  end
-end
-
-class BugContestState
-  alias ironmon_integration_original_set_pokemon pbSetPokemon
-  def pbSetPokemon(chosen_pokemon)
-    if Ironmon.active? &&
-       Ironmon.utility_slave?($Trainer.party[chosen_pokemon])
-      chosen_pokemon = $Trainer.party.index(Ironmon.usable_party[0])
-    end
-    return ironmon_integration_original_set_pokemon(chosen_pokemon)
-  end
-end

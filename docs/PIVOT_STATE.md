@@ -56,13 +56,15 @@ Pokemon objects have three serialized fields:
   `:processed_caught` for marked fusions.
 - `ironmon_transformation_right`: `:caught_pivot` only while a caught fusion
   has its immediate pivot opportunity, otherwise `:none`.
-- `ironmon_party_exclusion`: `:utility_slave` for the one HM/gift-only party
-  member, or another exclusion reason for audited temporary acquisitions.
+- `ironmon_party_exclusion`: an exclusion reason for audited temporary
+  acquisitions, including `:progression_trade` while a generated story Pokemon
+  is waiting to be consumed.
 
 Because these are ordinary Pokemon instance variables, party movement, box
 storage, cloning, and save serialization retain them. Unmarked legacy Pokemon
 have no transformation right and cannot accidentally gain one.
 
 Pokemon carrying `ironmon_party_exclusion` and Eggs do not count toward the
-one-usable-Pokemon limit. A utility marker survives cloning and save/load, so
-the Pokemon cannot silently become a battler after serialization.
+one-usable-Pokemon limit. Legacy `:utility_slave` party members are removed on
+load and preserved in pivot-state quarantine with the
+`:removed_utility_slot` reason.

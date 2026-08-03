@@ -38,11 +38,13 @@ file in `Data/Scripts` as Ruby.
     reversible custom-result validation, orientation, and discovery tracking.
 18. `013_Caught_Fusion_Transformations.rb`: acquisition-stable caught-fusion
     component selection and Ironmon-only DNA item blocking.
-19. `014_Utility_Slaves.rb`: one persistent HM/gift-only party slot, replacement
-    transactions, Wally eligibility, and combat exclusion.
-20. `015_Pivot_Integration.rb`: legacy mapping migration support, Egg-hatch and
+19. `015_Pivot_Integration.rb`: legacy mapping migration support, Egg-hatch and
     duplicate-evolution pivots, Day Care protection, and temporary-mode party
     eligibility safeguards.
+20. `016_Progression_Support.rb`: deterministic temporary Pokemon for required
+    gifts and trades without exposing the current party Pokemon.
+21. `017_HM_Tools.rb`: HM reward interception and transactional migration to
+    permanent field-tool key items.
 
-Version `0.2.1` supports Infinite Fusion game version `6.8.0`. An unsupported
+Version `0.2.2` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.

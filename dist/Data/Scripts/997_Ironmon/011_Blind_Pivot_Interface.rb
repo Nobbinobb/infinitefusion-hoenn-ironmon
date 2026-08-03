@@ -10,8 +10,7 @@ module Ironmon
     :reverse_and_take => _INTL("Reverse and Take"),
     :unfuse_and_take => _INTL("Unfuse and Take One"),
     :swap_and_reverse => _INTL("Swap and Reverse"),
-    :swap_and_unfuse => _INTL("Swap and Unfuse"),
-    :slave => _INTL("Slave (HM/Gift Only)")
+    :swap_and_unfuse => _INTL("Swap and Unfuse")
   }.freeze
 
   def self.pivot_actions(current, candidate)
@@ -28,7 +27,6 @@ module Ironmon
               else
                 [:swap, :fuse]
               end
-    actions << :slave if current
     return actions
   end
 
@@ -86,19 +84,9 @@ module Ironmon
       begin
         result = build_pivot_result(action, current, candidate,
                                     !action_selector, acquisition_id)
-        if action == :slave
-          commit_pending_utility_slave(acquisition_id, result)
-        else
-          commit_pending_result(acquisition_id, result, action)
-        end
+        commit_pending_result(acquisition_id, result, action)
         if !action_selector
-          message = if action == :slave
-                      _INTL("{1} became your HM/gift slave and cannot battle.",
-                            result.name)
-                    else
-                      _INTL("The pivot is complete. You kept {1}.", result.name)
-                    end
-          pbMessage(message)
+          pbMessage(_INTL("The pivot is complete. You kept {1}.", result.name))
         end
         return true
       rescue StandardError => e
@@ -125,8 +113,6 @@ module Ironmon
     when :unfuse_and_take, :swap_and_unfuse
       return build_unfused_caught_result(candidate, acquisition_id,
                                          interactive)
-    when :slave
-      return build_utility_slave(candidate)
     end
     raise PivotTransactionError, "The selected pivot action is unknown."
   end

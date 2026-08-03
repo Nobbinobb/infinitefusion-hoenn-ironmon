@@ -3,10 +3,10 @@
 ## Purpose
 
 Ironmon enforces its pivot rules in-game instead of relying on the player to
-remember voluntary restrictions. The player normally owns one usable party
-Pokemon and may also keep one non-combat utility Pokemon for hidden field moves
-or required story gifts. Obtaining an eligible Pokemon starts an immediate,
-blind pivot that ends with exactly one usable Pokemon.
+remember voluntary restrictions. The player owns one party Pokemon. Required
+story gifts and trades use short-lived generated Pokemon rather than permanent
+party exceptions. Obtaining an eligible Pokemon starts an immediate, blind
+pivot that ends with exactly one usable Pokemon.
 
 The system is intended to make every catch a commitment while preserving
 fusion as a high-risk, seed-consistent gamble. It must not permit repeated
@@ -16,8 +16,10 @@ optimization exercise.
 ## Core invariants
 
 - The usable party contains at most one Pokemon.
-- At most one additional utility Pokemon may exist, and it never counts as
-  usable or enters battle.
+- Temporary progression Pokemon never survive their required story transaction
+  or count as usable party members.
+- HM rewards become their corresponding permanent field tools, so field-move
+  progression never requires a spare party Pokemon.
 - An eligible acquisition must be resolved before normal play continues.
 - A completed pivot leaves exactly one usable Pokemon.
 - The previous Pokemon and every unused result are permanently discarded.
@@ -47,9 +49,9 @@ single usable party Pokemon.
 | --- | --- | --- |
 | None | Normal | Take |
 | None | Fusion | Take, reverse and take, or unfuse and take one component |
-| Normal | Normal | Swap, fuse, or slave |
-| Fusion | Normal | Swap or slave |
-| Any | Fusion | Swap, swap and reverse, swap and unfuse, or slave |
+| Normal | Normal | Swap or fuse |
+| Fusion | Normal | Swap |
+| Any | Fusion | Swap, swap and reverse, or swap and unfuse |
 
 Actions have the following effects:
 
@@ -62,19 +64,10 @@ Actions have the following effects:
 - **Swap and unfuse:** split a newly obtained fusion, resolve one eligible
   component according to the configured selection rule, install it, and
   discard the other component and previous Pokemon.
-- **Slave:** retain the new Pokemon in the single replaceable utility slot
-  without changing the current usable Pokemon. It may provide hidden field
-  moves or be given away in an approved story gift, but cannot battle or
-  provide post-battle ability rewards.
 
 If the current Pokemon is fused and the new Pokemon is normal, swap is the only
 legal action. Unfusing the current Pokemon to enable fusion would be a forbidden
 chain. A newly obtained fusion cannot itself be fused with the current Pokemon.
-
-Slave is offered only when one current usable Pokemon exists. This prevents a
-new run or corrupted party from ending with a utility Pokemon as its only
-member. Selecting Slave again permanently replaces the previous utility
-Pokemon, so the option cannot accumulate a reserve team.
 
 ## Fusion gamble mapping
 
@@ -157,9 +150,10 @@ encountered copies of C must expose the same run-consistent ability slots.
 ## Acquisition coverage
 
 The forced pivot applies to permanent wild catches, static Pokemon, gifts,
-hatched Pokemon, and duplicate Pokemon created by evolution. Trades replace the
-outgoing current Pokemon with the received Pokemon. Trading the utility Pokemon
-keeps the received Pokemon in that same non-combat role.
+hatched Pokemon, and duplicate Pokemon created by evolution. Required trades
+generate a temporary outgoing Pokemon that satisfies the trade rule without
+consuming the player's current Pokemon. The received Pokemon then enters the
+normal forced-pivot flow.
 
 Eggs remain excluded while unhatched and may move through storage. Hatching
 immediately removes the Egg exclusion and starts a normal forced pivot before
@@ -202,8 +196,7 @@ one-Pokemon invariant to be bypassed.
 - Reloading cannot reroll a random unfusion component.
 - PC, item, gift, static, trade, and story paths cannot create an extra usable
   party Pokemon or bypass a pending pivot.
-- A utility Pokemon remains available to hidden-move and approved gift checks,
-  but is excluded from battles, able-party counts, passive post-battle rewards,
-  PC storage, and checks that protect the last usable Pokemon.
+- Required gifts and trades cannot consume the current Pokemon or leave a
+  generated progression Pokemon in the party.
 - A failed pivot transaction preserves the current Pokemon and reports a clear
   error.

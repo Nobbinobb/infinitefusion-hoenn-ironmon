@@ -5,11 +5,10 @@
 - [x] No current Pokemon plus a normal candidate exposes only Take.
 - [x] No current Pokemon plus a fusion exposes Take, Reverse and Take, and
   Unfuse and Take One.
-- [x] A normal current Pokemon plus a normal candidate exposes Swap, Fuse, and
-  the later-added Slave utility action.
-- [x] A fused current Pokemon plus a normal candidate exposes Swap and Slave.
+- [x] A normal current Pokemon plus a normal candidate exposes Swap and Fuse.
+- [x] A fused current Pokemon plus a normal candidate exposes only Swap.
 - [x] Any current Pokemon plus a fusion exposes Swap, Swap and Reverse, Swap and
-  Unfuse, and Slave.
+  Unfuse.
 - [x] Swap, Fuse, Swap and Reverse, and Swap and Unfuse each finish with exactly
   one usable Pokemon and clear the pending acquisition.
 - [x] Swap permanently removes the previous Pokemon from the party.

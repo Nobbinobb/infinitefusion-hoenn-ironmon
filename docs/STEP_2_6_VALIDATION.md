@@ -5,30 +5,32 @@
 - [x] Wild catches, visible encounters, static encounters, gifts, silent gifts,
   direct storage, and battle-peer storage all enter the protected acquisition
   boundary before ordinary party or PC storage.
-- [x] Main-Pokemon trades remain direct replacements. Trading the utility
-  Pokemon transfers its non-combat role to the received Pokemon.
+- [x] Required trades preserve the current Pokemon through a generated outgoing
+  Pokemon and route the received Pokemon into the forced pivot.
 - [x] Eggs remain excluded while unhatched; hatching starts an immediate pivot
   before normal play resumes.
 - [x] Shedinja-style duplicate evolution results start an immediate pivot
   instead of being appended as a second battler.
 - [x] Day Care deposit is blocked, while withdrawal from a legacy Day Care uses
   the ordinary acquisition boundary.
-- [x] Wally accepts only the utility Pokemon in Ironmon and cannot remove the
-  sole battler.
-- [x] Utility Pokemon are excluded from battles, challenge eligibility,
-  first-Pokemon encounter effects, highest-level helpers, passive post-battle
-  rewards, and last-usable-Pokemon checks.
+- [x] Wally receives a generated normal Pokemon and cannot remove the sole
+  battler, even when the sole Pokemon is fainted and cannot perform Wally's
+  original demonstration catch.
+- [x] Legacy utility Pokemon are removed from the live party and preserved in
+  quarantine during save migration.
+- [x] HM rewards are replaced by the corresponding field tools before item
+  randomization, and existing HMs migrate transactionally on load.
 - [x] Single and multiselect PC movement cannot transfer a non-Egg between the
-  party and storage; PC release counts ignore the utility Pokemon as a battler.
+  party and storage.
 
 ## Full embedded-runtime regression
 
-- [x] All five current/candidate combinations expose the documented actions,
-  including the conditional Slave action.
-- [x] Take, Swap, Fuse, Reverse, Unfuse, and Slave all commit atomically and
+- [x] All five current/candidate combinations expose the documented actions
+  without a permanent-party exception.
+- [x] Take, Swap, Fuse, Reverse, and Unfuse all commit atomically and
   leave exactly one usable Pokemon.
-- [x] Player-fusion discovery, caught-fusion transformation rights, utility
-  replacement, and battle-party filtering remain intact.
+- [x] Player-fusion discovery, caught-fusion transformation rights, generated
+  progression transactions, and battle-party filtering remain intact.
 - [x] Random Component and Player Choice retain their selected component after
   pivot-state serialization and reload.
 - [x] A serialized pending pivot resumes and completes; an invalid action
