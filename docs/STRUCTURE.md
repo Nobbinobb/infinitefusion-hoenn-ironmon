@@ -24,27 +24,29 @@ file in `Data/Scripts` as Ruby.
 6. `002_Randomization.rb`: Ironmon preset activation and run setup.
 7. `003_Checkpoint_Reset.rb`: checkpoint persistence and F7 reset lifecycle.
 8. `003_Species_Generators.rb`: deterministic wild and trainer policy mappings.
-9. `004_Encounter_Hooks.rb`: wild, gift, starter, scripted, and trainer hooks.
-10. `005_Mode_Hooks.rb`: mode-menu integration and preset activation.
-11. `006_Scene_Hooks.rb`: map scene integration for resets and static refreshes.
-12. `007_Difficulty_Enforcement.rb`: locked challenge settings and 1.6 scaling.
-13. `008_Gym_Leader_Parties.rb`: persistent six-Pokemon Gym Leader expansion.
-14. `009_Diagnostics.rb`: run, load, and reset diagnostic records.
-15. `010_Pivot_Acquisition.rb`: transactional catches, gifts, trades, party
+9. `003_Ability_Randomization.rb`: deterministic ability slots, fusion
+   inheritance, evolution fallback, hidden-ability paths, and debug inspection.
+10. `004_Encounter_Hooks.rb`: wild, gift, starter, scripted, and trainer hooks.
+11. `005_Mode_Hooks.rb`: mode-menu integration and preset activation.
+12. `006_Scene_Hooks.rb`: map scene integration for resets and static refreshes.
+13. `007_Difficulty_Enforcement.rb`: locked challenge settings and 1.6 scaling.
+14. `008_Gym_Leader_Parties.rb`: persistent six-Pokemon Gym Leader expansion.
+15. `009_Diagnostics.rb`: run, load, and reset diagnostic records.
+16. `010_Pivot_Acquisition.rb`: transactional catches, gifts, trades, party
     enforcement, exclusions, and PC movement safeguards.
-16. `011_Blind_Pivot_Interface.rb`: legal-action selection, blind decisions,
+17. `011_Blind_Pivot_Interface.rb`: legal-action selection, blind decisions,
     transactional pivot result preparation, and non-cancellable completion.
-17. `012_Player_Fusion_Gamble.rb`: unordered-pair player-fusion mappings,
+18. `012_Player_Fusion_Gamble.rb`: unordered-pair player-fusion mappings,
     reversible custom-result validation, orientation, and discovery tracking.
-18. `013_Caught_Fusion_Transformations.rb`: acquisition-stable caught-fusion
+19. `013_Caught_Fusion_Transformations.rb`: acquisition-stable caught-fusion
     component selection and Ironmon-only DNA item blocking.
-19. `015_Pivot_Integration.rb`: legacy mapping migration support, Egg-hatch and
+20. `015_Pivot_Integration.rb`: legacy mapping migration support, Egg-hatch and
     duplicate-evolution pivots, Day Care protection, and temporary-mode party
     eligibility safeguards.
-20. `016_Progression_Support.rb`: deterministic temporary Pokemon for required
+21. `016_Progression_Support.rb`: deterministic temporary Pokemon for required
     gifts and trades without exposing the current party Pokemon.
-21. `017_HM_Tools.rb`: HM reward interception and transactional migration to
+22. `017_HM_Tools.rb`: HM reward interception and transactional migration to
     permanent field-tool key items.
 
-Version `0.2.3` supports Infinite Fusion game version `6.8.0`. An unsupported
+Version `0.3.2` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.

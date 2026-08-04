@@ -27,6 +27,7 @@ module Ironmon
 
   def self.apply_preset(context = :new_run)
     return if !$PokemonGlobal || !$game_switches || !$game_variables
+    @ability_randomization_error_message = nil
     return false if !prepare_custom_fusion_pool
 
     $PokemonGlobal.ironmon_mode = true
@@ -37,6 +38,7 @@ module Ironmon
     prepare_player_fusion_pairing
     ensure_checkpoint_id
     record_custom_fusion_pool_metadata
+    return false if !prepare_ability_randomization
     return false if !prepare_species_mappings
 
     $game_switches[SWITCH_RANDOMIZED_AT_LEAST_ONCE] = true

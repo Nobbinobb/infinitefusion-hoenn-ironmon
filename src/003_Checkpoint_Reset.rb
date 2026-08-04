@@ -53,7 +53,7 @@ module Ironmon
     notice = @reset_notice
     @reset_notice = nil
     if notice == :generation_failed
-      pbMessage(species_generation_error_message)
+      pbMessage(generation_error_message)
     elsif notice == :save_failed
       pbMessage(_INTL("The run restarted, but the save slot could not be updated. Please save manually."))
     else

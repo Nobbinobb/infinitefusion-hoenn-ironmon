@@ -148,6 +148,11 @@ For a mapped result C composed of X and Y:
 Ability randomization must therefore derive C's available abilities from the
 randomized abilities of X and Y, not from the sacrificed A and B. Directly
 encountered copies of C must expose the same run-consistent ability slots.
+The same displayed-component ownership applies to randomized base stats and
+level-up learnsets. Fusion evolution maps the complete fusion to a deterministic
+custom-sprite fusion target rather than naturally evolving only one component.
+The shared Milestone 3 rules are specified in
+`POKEMON_DATA_RANDOMIZATION.md`.
 
 ## Acquisition coverage
 

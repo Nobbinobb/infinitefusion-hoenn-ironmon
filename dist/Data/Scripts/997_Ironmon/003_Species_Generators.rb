@@ -440,6 +440,12 @@ module Ironmon
     return @species_generation_error_message || custom_fusion_pool_error_message
   end
 
+  def self.generation_error_message
+    return @ability_randomization_error_message if
+      @ability_randomization_error_message
+    return species_generation_error_message
+  end
+
   def self.reset_species_generator_cache
     @wild_species_generator = nil
     @trainer_species_generator = nil

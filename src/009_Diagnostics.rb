@@ -37,12 +37,30 @@ module Ironmon
                       0
                     end
     seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : nil
+    ability_version = if $PokemonGlobal
+                        $PokemonGlobal.ironmon_ability_generator_version
+                      else
+                        nil
+                      end
+    ability_pool_size = if $PokemonGlobal
+                          $PokemonGlobal.ironmon_ability_pool_size
+                        else
+                          nil
+                        end
+    ability_fingerprint = if $PokemonGlobal
+                            $PokemonGlobal.ironmon_ability_pool_fingerprint
+                          else
+                            nil
+                          end
     return "[Ironmon #{VERSION}] context=#{context} seed=#{seed} " +
       "wild_policy=#{configuration_value.wild_policy} " +
       "trainer_policy=#{configuration_value.trainer_policy} " +
       "unfusion_setting=#{configuration_value.unfusion_setting} " +
       "custom_pool_size=#{pool_size} " +
       "custom_pool_fingerprint=#{pool_fingerprint} " +
+      "ability_generator=#{ability_version} " +
+      "ability_pool_size=#{ability_pool_size} " +
+      "ability_pool_fingerprint=#{ability_fingerprint} " +
       "wild_mappings=#{wild_count} trainer_mappings=#{trainer_count}"
   end
 

@@ -385,13 +385,18 @@ step produces a cumulative, installable release build. Minor versions represent
 new randomization features; patch versions are reserved for fixes to an existing
 release. Version `1.0.0` remains reserved for the complete first public version.
 
+The shared determinism, species ownership, component inheritance, and fusion
+evolution rules are defined in `POKEMON_DATA_RANDOMIZATION.md`. Each step below
+finalizes only the feature-specific pools, limits, and safety rules that remain
+open for that data type.
+
 Planned release sequence:
 
 1. Ability randomization: `0.3.0`.
 2. Base-stat randomization: `0.4.0`.
 3. Level-up move randomization: `0.5.0`.
 4. Evolution randomization: `0.6.0`.
-5. Fusion inheritance rules: `0.7.0`.
+5. Fusion data integration: `0.7.0`.
 6. Milestone-wide integration and regression: `0.8.0`.
 
 Release builds are cumulative. For example, `0.5.0` contains ability,
@@ -399,22 +404,37 @@ base-stat, and level-up move randomization.
 
 ### Step 3.1: Ability randomization
 
-Status: **Planned**
+Status: **Complete**
+
+Design: **Complete** in `ABILITY_RANDOMIZATION.md`
 
 - Generate seeded, run-consistent ability assignments.
-- Define handling for normal ability slots and hidden abilities.
-- Define exclusions or restrictions for disruptive abilities.
-- Apply the assignments consistently to normal Pokemon and fusions.
+- Generate assignments on demand without persisting per-species or per-fusion
+  mappings.
+- Preserve and independently randomize each species' defined normal and hidden
+  slots without within-species duplicates.
+- Use the documented universal, exact-species, and component-compatible
+  eligibility pools while retaining abilities that are merely powerful or
+  detrimental.
+- Apply the documented component-inheritance rule consistently to normal
+  Pokemon and fusions.
+- Preserve ability slot identity across evolution with documented fallbacks.
+- Route permanent forced, hidden-ability, Capsule, and Patch behavior through
+  generated slots while preserving temporary battle ability effects.
 - Add an in-game inspection tool for generated abilities.
-- Package release `0.3.0` as `Ironmon-v0.3.0-abilities.zip`.
+- Package the optimized contextual-eligibility implementation as patch release
+  `0.3.2` in `Ironmon-v0.3.2-abilities.zip`.
 
 Acceptance criteria:
 
 - The same species and ability slot resolve consistently throughout one run.
 - A new run seed generates new assignments.
 - Save/load preserves assignments and F7 generates new assignments.
-- Every assigned ability is valid under the agreed restrictions.
+- Every assigned ability is valid for its universal or contextual eligibility.
 - Normal Pokemon and fusions follow the documented inheritance behavior.
+- Permanent ability-changing paths cannot bypass generated species slots.
+- Temporary battle ability effects continue to work without changing generated
+  assignments.
 - The inspection tool displays enough information to validate assignments.
 
 ### Step 3.2: Base-stat randomization
@@ -425,6 +445,8 @@ Status: **Planned**
 - Establish safe minimum and maximum values.
 - Handle unusual species such as Shedinja explicitly.
 - Generate seeded, run-consistent base stats.
+- Calculate fusion stats from the generated stats of their displayed
+  components using the game's fusion-stat formula.
 - Extend the inspection tool to display original and generated stats.
 - Package release `0.4.0` as `Ironmon-v0.4.0-base-stats.zip`.
 
@@ -444,6 +466,8 @@ Status: **Planned**
 - Guarantee usable early-game attacking options.
 - Cover level-1, level-up, and evolution-learned moves where applicable.
 - Generate seeded, run-consistent learnsets.
+- Combine fusion learnsets from the generated learnsets of their displayed
+  components.
 - Extend the inspection tool to display generated learnsets.
 - Package release `0.5.0` as `Ironmon-v0.5.0-level-up-moves.zip`.
 
@@ -463,6 +487,8 @@ Status: **Planned**
 - Prevent loops, invalid targets, and broken evolution chains.
 - Handle level, item, trade, friendship, and special methods.
 - Generate seeded, run-consistent evolution mappings.
+- Map each eligible fusion component branch to a deterministic, stronger,
+  custom-sprite fusion target rather than naturally evolving one component.
 - Extend the inspection tool to display generated evolution chains.
 - Package release `0.6.0` as `Ironmon-v0.6.0-evolutions.zip`.
 
@@ -474,18 +500,19 @@ Acceptance criteria:
 - Save/load preserves mappings and F7 generates new mappings.
 - Fusions evolve according to the documented inheritance behavior.
 
-### Step 3.5: Fusion data inheritance rules
+### Step 3.5: Fusion data integration
 
 Status: **Planned**
 
-- Finalize how head and body data combine for randomized abilities.
-- Finalize how head and body data combine for randomized base stats.
-- Finalize how head and body data combine for randomized learnsets.
-- Finalize how component evolutions affect fused Pokemon.
+- Audit the implemented component rules for randomized abilities.
+- Audit the implemented component rules for randomized base stats.
+- Audit the implemented component rules for randomized learnsets.
+- Audit deterministic complete-fusion evolution targets for every supported
+  evolution branch.
 - Cover directly encountered and pivot-generated fusions without losing run
   consistency.
 - Respect the pivot system's prohibition on later reversal and unfusion.
-- Package release `0.7.0` as `Ironmon-v0.7.0-fusion-inheritance.zip`.
+- Package release `0.7.0` as `Ironmon-v0.7.0-fusion-integration.zip`.
 
 Acceptance criteria:
 
