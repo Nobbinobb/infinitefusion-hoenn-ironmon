@@ -1,6 +1,6 @@
-# Installing Ironmon 0.3.2
+# Installing Ironmon 0.3.3
 
-Ironmon `0.3.2` targets Pokemon Infinite Fusion 2 version 6.8.0.
+Ironmon `0.3.3` targets Pokemon Infinite Fusion 2 version 6.8.0.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
 
@@ -8,16 +8,17 @@ official game's Git repository.
 
 1. Fully close Pokemon Infinite Fusion 2.
 2. Keep a backup of saves you care about.
-3. Extract `Ironmon-v0.3.2-abilities.zip` into the game's root directory—the
+3. Extract `Ironmon-v0.3.3-abilities.zip` into the game's root directory—the
    directory containing `InfiniteFusion2.exe`.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
    directory. The package installs only Ruby files under
    `Data/Scripts/997_Ironmon`.
 5. Start the game and select Ironmon when beginning a supported Hoenn run.
 
-Existing non-Ironmon saves retain their normal behavior. Because 0.3.1 changes
-the deterministic ability rules, an Ironmon development save made with the
-earlier ability schema must start a fresh run with F7.
+Existing non-Ironmon saves retain their normal behavior. Ironmon 0.3.1 and
+0.3.2 runs migrate automatically to the schema-3 fusion-slot rules without
+rerolling genuine component assignments. Development saves using the older
+schema-1 ability generator must start a fresh run with F7.
 
 ## Build the package from this repository
 

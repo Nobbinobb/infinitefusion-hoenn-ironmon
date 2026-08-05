@@ -158,3 +158,65 @@ of Ironmon generation:
 - [x] All temporary startup profiling code and output were removed.
 - [x] The rejected local-only starter preview experiment was completely
   reverted and was not retained as a release.
+
+## Standalone inspector development validation
+
+The message-window ability inspector was replaced in post-0.3.2 development by
+the standalone screen specified in `IRONMON_INSPECTOR.md`.
+
+- [x] The game embedded runtime loaded the new inspector source without a
+  syntax or startup error.
+- [x] A normal Pokemon produced 14 Overview entries and 5 Abilities entries
+  without displaying body or head component rows.
+- [x] A fusion produced 17 Overview entries and 15 Abilities entries, including
+  displayed body, displayed head, final inherited slots, and both components'
+  generated slots.
+- [x] The embedded-runtime screen test rendered a normal Pokemon, changed from
+  Overview to Abilities, moved the selected row, and closed the scene.
+- [x] Native 512 by 384 screenshots were inspected for both implemented pages.
+  The revised layout owns its complete background, contains no normal-summary
+  tabs or EXP bar, aligns the page counter within its header, and uses a slim
+  scroll-position bar.
+- [x] Font-aware row heights vertically center labels within section and
+  selection backgrounds without overlapping the following row.
+- [x] List-row baselines include a four-pixel visual correction for the pixel
+  font's unreported descenders, keeping `g`, `p`, and `y` inside each row and
+  selection background.
+- [x] Normal Overview, normal Abilities, fusion Overview, fusion Abilities, and
+  the bottom of the longest scrolled fusion page were visually inspected.
+- [x] Visible row labels and footer summaries use concise text that fits their
+  columns; Confirm retains access to the complete diagnostic details.
+- [x] The inspector reads the existing generated ability APIs and creates no
+  persisted or secondary mappings.
+- [x] Temporary runtime hooks, screenshots, result files, and game processes
+  were removed after validation.
+
+## Genuine fusion-slot revision
+
+Ability-generator schema 3 removes the normal game's missing-slot duplication
+from Ironmon fusion assembly while retaining assignment algorithm version 2.
+
+- [x] Bulbasaur seed 76 still generates Wonder Guard in its primary slot,
+  confirming that the schema migration does not reroll component assignments.
+- [x] A Bulbasaur/Charmander fusion with no secondary normal component slots
+  leaves hidden-array positions 0 and 1 empty while preserving the genuine body
+  and head hidden abilities in positions 2 and 3.
+- [x] A fusion whose component genuinely defines a secondary normal slot keeps
+  that generated ability in hidden-array position 0 or 1.
+- [x] A component with no hidden ability does not receive a secondary or primary
+  fallback in hidden-array position 2 or 3.
+- [x] Trailing empty positions are removed while internal empty positions retain
+  their stable component-slot indexes.
+- [x] Legacy active hidden-array position 0 and 1 fallbacks remap to normal
+  positions 0 and 1 when no genuine secondary slot exists.
+- [x] Legacy hidden positions 2 and 3 retain their indexes when genuine hidden
+  abilities exist; a missing legacy hidden ability remaps to its genuine
+  secondary slot or primary normal source.
+- [x] Schema-2 metadata migrates to schema 3 with the existing pool size and
+  fingerprint unchanged.
+- [x] The inspector omits missing hidden-array positions while continuing to
+  display genuine secondary and hidden component slots.
+- [x] Canonical, distribution, and installed source copies match after the
+  revision.
+- [x] Two consecutive 0.3.3 package builds produced SHA-256
+  `4dbe94e286996c50d35612898fa2f009a074ef790f36ea2f68104794dfe7fd67`.

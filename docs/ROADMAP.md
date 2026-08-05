@@ -388,7 +388,9 @@ release. Version `1.0.0` remains reserved for the complete first public version.
 The shared determinism, species ownership, component inheritance, and fusion
 evolution rules are defined in `POKEMON_DATA_RANDOMIZATION.md`. Each step below
 finalizes only the feature-specific pools, limits, and safety rules that remain
-open for that data type.
+open for that data type. The agreed standalone, scrollable development
+interface for inspecting normal Pokemon and fusions is defined in
+`IRONMON_INSPECTOR.md`.
 
 Planned release sequence:
 
@@ -418,12 +420,16 @@ Design: **Complete** in `ABILITY_RANDOMIZATION.md`
   detrimental.
 - Apply the documented component-inheritance rule consistently to normal
   Pokemon and fusions.
+- Include only genuinely defined fusion component slots; do not manufacture
+  duplicate abilities for missing secondary or hidden slots.
 - Preserve ability slot identity across evolution with documented fallbacks.
 - Route permanent forced, hidden-ability, Capsule, and Patch behavior through
   generated slots while preserving temporary battle ability effects.
-- Add an in-game inspection tool for generated abilities.
-- Package the optimized contextual-eligibility implementation as patch release
-  `0.3.2` in `Ironmon-v0.3.2-abilities.zip`.
+- Add the summary-style in-game inspection tool defined in
+  `IRONMON_INSPECTOR.md`. Its Overview and Abilities pages support normal
+  Pokemon and fusions, including scrolling and row details.
+- Package the standalone inspector and genuine fusion-slot refinement as patch
+  release `0.3.3` in `Ironmon-v0.3.3-abilities.zip`.
 
 Acceptance criteria:
 

@@ -6,7 +6,9 @@ module Ironmon
   class AbilityRandomizationError < StandardError; end
 
   class AbilityGenerator
-    SCHEMA_VERSION = 2
+    SCHEMA_VERSION = 3
+    LEGACY_FUSION_FALLBACK_SCHEMA_VERSION = 2
+    ASSIGNMENT_SCHEMA_VERSION = 2
     POOL_RULES_VERSION = 2
     FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
     FNV_PRIME = 1_099_511_628_211
@@ -83,17 +85,16 @@ module Ironmon
 
       body = component_slots_for(species_data.body_pokemon)
       head = component_slots_for(species_data.head_pokemon)
-      body_secondary = body[:normal][1] || body[:normal][0]
-      head_secondary = head[:normal][1] || head[:normal][0]
       normal = Ironmon.fusion_ability_slots(
         species_data, [body[:normal][0], head[:normal][0]], :normal
       ).freeze
       hidden = Ironmon.fusion_ability_slots(species_data, [
-        body_secondary,
-        head_secondary,
-        body[:hidden][0] || body_secondary,
-        head[:hidden][0] || head_secondary
-      ], :hidden).freeze
+        body[:normal][1],
+        head[:normal][1],
+        body[:hidden][0],
+        head[:hidden][0]
+      ], :hidden)
+      hidden = Ironmon.trim_trailing_nil_ability_slots(hidden).freeze
       result = { :normal => normal, :hidden => hidden }.freeze
       @fusion_slot_cache[identity] = result
       return result
@@ -135,7 +136,7 @@ module Ironmon
 
     def deterministic_value(*parts)
       value = FNV_OFFSET_BASIS
-      input = [SCHEMA_VERSION, @seed, "ability", *parts].join("|")
+      input = [ASSIGNMENT_SCHEMA_VERSION, @seed, "ability", *parts].join("|")
       input.each_byte do |byte|
         value ^= byte
         value = (value * FNV_PRIME) & FNV_MASK
@@ -237,6 +238,32 @@ module Ironmon
     return false
   end
 
+  def self.legacy_fusion_fallback_ability_randomization?
+    return false if !$PokemonGlobal
+    return false if $PokemonGlobal.ironmon_ability_generator_version !=
+      AbilityGenerator::LEGACY_FUSION_FALLBACK_SCHEMA_VERSION
+    return false if $PokemonGlobal.ironmon_ability_pool_size !=
+      allowed_ability_pool.length
+    return false if $PokemonGlobal.ironmon_ability_pool_fingerprint !=
+      ability_pool_fingerprint
+    return true
+  rescue Exception
+    return false
+  end
+
+  def self.migrate_legacy_fusion_fallback_abilities
+    $PokemonGlobal.ironmon_ability_generator_version =
+      AbilityGenerator::SCHEMA_VERSION
+    reset_ability_generator_cache
+    ability_generator
+    @ability_randomization_ready = true
+    if $Trainer && $Trainer.party
+      $Trainer.party.each { |pokemon| normalize_ability_index(pokemon) }
+    end
+    echoln "Ironmon migrated fusion abilities to omit missing-slot fallbacks."
+    return true
+  end
+
   def self.ensure_ability_randomization
     @ability_randomization_ready = false
     return false if !$PokemonGlobal
@@ -245,6 +272,9 @@ module Ironmon
       generated = prepare_ability_randomization
       echoln "Ironmon migrated ability randomization metadata." if generated
       return generated
+    end
+    if legacy_fusion_fallback_ability_randomization?
+      return migrate_legacy_fusion_fallback_abilities
     end
     if !current_ability_randomization?
       raise AbilityRandomizationError,
@@ -378,14 +408,13 @@ module Ironmon
       head_normal = original_normal_abilities(species_data.head_pokemon)
       body_hidden = original_hidden_abilities(species_data.body_pokemon)
       head_hidden = original_hidden_abilities(species_data.head_pokemon)
-      body_secondary = body_normal[1] || body_normal[0]
-      head_secondary = head_normal[1] || head_normal[0]
-      return [
-        body_secondary,
-        head_secondary,
-        body_hidden[0] || body_secondary,
-        head_hidden[0] || head_secondary
+      slots = [
+        body_normal[1],
+        head_normal[1],
+        body_hidden[0],
+        head_hidden[0]
       ]
+      return trim_trailing_nil_ability_slots(slots)
     end
     return species_data.ironmon_unrandomized_hidden_abilities.dup
   end
@@ -410,20 +439,51 @@ module Ironmon
     return ability_generator.slots_for(species_data)[:hidden]
   end
 
-  def self.normalize_ability_index(pokemon, requested_index = nil)
-    return pokemon if !pokemon || !ability_randomization_active?
-    requested_index = pokemon.ability_index if requested_index.nil?
-    normal = generated_normal_abilities(pokemon.species_data)
-    hidden = generated_hidden_abilities(pokemon.species_data)
+  def self.trim_trailing_nil_ability_slots(slots)
+    result = slots.dup
+    result.pop while !result.empty? && !result[-1]
+    return result
+  end
+
+  def self.resolved_ability_index(pokemon, requested_index, slots)
     resolved_index = requested_index.to_i
-    if resolved_index >= 2
-      if !hidden[resolved_index - 2]
+    normal = slots[:normal]
+    hidden = slots[:hidden]
+    if resolved_index >= 2 && !hidden[resolved_index - 2]
+      if fusion_ability_species?(pokemon.species_data)
+        case resolved_index
+        when 2
+          resolved_index = 0
+        when 3
+          resolved_index = 1
+        when 4
+          resolved_index = hidden[0] ? 2 : 0
+        when 5
+          resolved_index = hidden[1] ? 3 : 1
+        else
+          resolved_index = pokemon.personalID.to_i & 1
+        end
+      else
         resolved_index = pokemon.personalID.to_i & 1
       end
+    end
+    if resolved_index >= 2 && !hidden[resolved_index - 2]
+      resolved_index = pokemon.personalID.to_i & 1
     end
     if resolved_index < 2 && !normal[resolved_index]
       resolved_index = 0
     end
+    return resolved_index
+  end
+
+  def self.normalize_ability_index(pokemon, requested_index = nil)
+    return pokemon if !pokemon || !ability_randomization_active?
+    requested_index = pokemon.ability_index if requested_index.nil?
+    slots = {
+      :normal => generated_normal_abilities(pokemon.species_data),
+      :hidden => generated_hidden_abilities(pokemon.species_data)
+    }
+    resolved_index = resolved_ability_index(pokemon, requested_index, slots)
     pokemon.ability_index = resolved_index
     pokemon.ability = nil
     return pokemon
@@ -542,12 +602,12 @@ class Pokemon
                 :normal => species_value.ironmon_unrandomized_abilities,
                 :hidden => species_value.ironmon_unrandomized_hidden_abilities
               }
-            end
-    index = ability_index
+    end
+    index = Ironmon.resolved_ability_index(self, ability_index, slots)
+    @ability_index = index if @ability_index != index
     selected = nil
     if index >= 2
       selected = slots[:hidden][index - 2]
-      index = (@personalID & 1) if !selected
     end
     selected ||= slots[:normal][index] || slots[:normal][0]
     return selected
@@ -626,24 +686,6 @@ def pbHatch(pokemon)
     Ironmon.normalize_ability_index(pokemon)
   end
   return result
-end
-
-if defined?(PokemonDebugMenuCommands)
-  PokemonDebugMenuCommands.register("ironmon_ability_inspector", {
-    "parent"      => "main",
-    "name"        => _INTL("Inspect Ironmon abilities"),
-    "always_show" => true,
-    "effect"      => proc { |pkmn, _pkmnid, _heldpoke, _settingUpBattle, screen|
-      if !Ironmon.active?
-        screen.pbDisplay(_INTL("Ironmon is not active."))
-      elsif !Ironmon.current_ability_randomization?
-        screen.pbDisplay(Ironmon.ability_randomization_error_message)
-      else
-        screen.pbDisplay(Ironmon.ability_inspection_text(pkmn))
-      end
-      next false
-    }
-  })
 end
 
 module Game

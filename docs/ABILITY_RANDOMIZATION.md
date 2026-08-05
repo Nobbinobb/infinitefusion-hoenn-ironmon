@@ -120,8 +120,17 @@ Fusion slots preserve the normal game's component structure:
 
 - Normal fusion slot 0 uses X's generated primary normal ability.
 - Normal fusion slot 1 uses Y's generated primary normal ability.
-- Additional and hidden fusion slots use the corresponding generated normal
-  and hidden component slots with the normal game's fallback behavior.
+- Hidden-array slot 0 uses X's generated secondary normal ability only when X
+  genuinely defines that slot.
+- Hidden-array slot 1 uses Y's generated secondary normal ability only when Y
+  genuinely defines that slot.
+- Hidden-array slots 2 and 3 use X's and Y's generated hidden ability
+  respectively, only when that component genuinely defines a hidden slot.
+
+Missing component slots remain empty. Fusion assembly does not duplicate a
+primary, secondary, or hidden ability merely to fill another position. This
+retains every genuinely generated component option without manufacturing
+fallback choices.
 
 A component-compatible ability is inherited only when its required component
 is present. If an exact-species-only ability occupies a component slot, the
@@ -132,6 +141,11 @@ Directly encountered and pivot-generated copies of C expose the same available
 ability slots. Reversing a caught fusion changes the displayed species and uses
 the reversed species' component assignments. It does not carry the previously
 active ability across as species-owned data.
+
+Ability-generator schema 3 introduces the missing-slot rule while retaining
+assignment algorithm version 2. Migrating a schema-2 run therefore preserves
+all genuine component assignments. An active legacy duplicate slot is remapped
+to the real slot that supplied the same ability.
 
 ## Evolution behavior
 

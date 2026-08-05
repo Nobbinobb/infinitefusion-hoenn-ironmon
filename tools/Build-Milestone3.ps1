@@ -4,9 +4,9 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $buildScript = Join-Path $PSScriptRoot "Build-Distribution.ps1"
 $distribution = Join-Path $projectRoot "dist"
 $releaseDirectory = Join-Path $projectRoot "release"
-$archiveName = "Ironmon-v0.3.2-abilities.zip"
+$archiveName = "Ironmon-v0.3.3-abilities.zip"
 $archive = Join-Path $releaseDirectory $archiveName
-$checksum = Join-Path $releaseDirectory "Ironmon-v0.3.2-abilities.sha256.txt"
+$checksum = Join-Path $releaseDirectory "Ironmon-v0.3.3-abilities.sha256.txt"
 
 & $buildScript
 New-Item -ItemType Directory -Force -Path $releaseDirectory | Out-Null

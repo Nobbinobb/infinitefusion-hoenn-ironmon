@@ -14,6 +14,8 @@ and a fast reset to starter selection.
   fusion data ownership, and fusion evolution behavior.
 - `docs/ABILITY_RANDOMIZATION.md` specifies the agreed Step 3.1 slot, ability
   pool, fusion inheritance, evolution, and inspection rules.
+- `docs/IRONMON_INSPECTOR.md` specifies the standalone, scrollable development
+  interface used to inspect cumulative Milestone 3 generated data.
 - `docs/DEVELOPMENT.md` explains the local debug-mode helper and ability
   inspector access.
 - `dist/` contains the copy-ready game directory layout.
@@ -22,7 +24,7 @@ and a fast reset to starter selection.
 - `tools/Build-Milestone3.ps1` creates the cumulative ability-release ZIP and
   SHA-256 checksum in `release/`.
 
-Milestone 3 Step 3.1 is implemented at version `0.3.2`. See
+Milestone 3 Step 3.1 is implemented at version `0.3.3`. See
 `docs/ABILITY_RANDOMIZATION.md` for its rules, `docs/ROADMAP.md` for cumulative
 scope, and `docs/INSTALLATION.md` for installation steps.
 
