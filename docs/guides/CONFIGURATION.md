@@ -33,8 +33,8 @@ are also migrated, with their existing wild and trainer policies preserved.
 Before an F7 reset, Ironmon snapshots the current configuration. It restores
 that snapshot after loading the pre-starter checkpoint and before generating
 the new run mappings. The new run receives a different seed while retaining the
-same policy and unfusion-setting identifiers. See `PIVOT_SYSTEM.md` for the
-complete pivot and determinism rules.
+same policy and unfusion-setting identifiers. See
+`../design/PIVOT_SYSTEM.md` for the complete pivot and determinism rules.
 
 ## Selection flow
 

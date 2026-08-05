@@ -4,7 +4,11 @@ Ironmon is maintained outside the game's script directory and packaged into the
 game only as Ruby source files.
 
 - `src/` contains the canonical, load-ordered Ruby source files.
-- `docs/` contains the roadmap and project documentation.
+- `docs/README.md` indexes all project documentation.
+- `docs/guides/` contains operational documentation for users and developers.
+- `docs/design/` contains stable behavior and architecture specifications.
+- `docs/releases/` contains versioned release notes.
+- `docs/validation/` contains milestone-specific validation evidence.
 - `dist/` contains the copy-ready release layout.
 - `tools/Build-Distribution.ps1` copies the canonical source into both the
   distribution and the local game installation.

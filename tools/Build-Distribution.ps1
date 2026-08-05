@@ -5,7 +5,7 @@ $gameRoot = Split-Path -Parent $projectRoot
 $source = Join-Path $projectRoot "src"
 $distribution = Join-Path $projectRoot "dist\Data\Scripts\997_Ironmon"
 $distributionRoot = Join-Path $projectRoot "dist"
-$installationGuide = Join-Path $projectRoot "docs\INSTALLATION.md"
+$installationGuide = Join-Path $projectRoot "docs\guides\INSTALLATION.md"
 $installation = Join-Path $gameRoot "Data\Scripts\997_Ironmon"
 
 New-Item -ItemType Directory -Force -Path $distribution | Out-Null

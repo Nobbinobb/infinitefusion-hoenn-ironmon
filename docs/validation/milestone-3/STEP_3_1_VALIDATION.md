@@ -162,7 +162,7 @@ of Ironmon generation:
 ## Standalone inspector development validation
 
 The message-window ability inspector was replaced in post-0.3.2 development by
-the standalone screen specified in `IRONMON_INSPECTOR.md`.
+the standalone screen specified in `../../design/IRONMON_INSPECTOR.md`.
 
 - [x] The game embedded runtime loaded the new inspector source without a
   syntax or startup error.

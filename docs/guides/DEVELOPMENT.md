@@ -22,7 +22,7 @@ Run `tools/Disable-Development.ps1` from PowerShell, then restart the game.
 The standalone summary-style inspector presents generated data on scrollable
 pages. It currently includes Overview and Abilities; later Milestone 3 releases
 extend it with Stats, Learnset, and Evolutions as defined in
-`IRONMON_INSPECTOR.md`.
+`../design/IRONMON_INSPECTOR.md`.
 
 With development mode enabled:
 

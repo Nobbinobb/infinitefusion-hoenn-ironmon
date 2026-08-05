@@ -51,7 +51,7 @@ much larger fusion pool from making normal Pokemon effectively disappear.
   usable Pokemon.
 
 The detailed action table, fusion mapping, data ownership, exclusions, and
-acceptance criteria are defined in `PIVOT_SYSTEM.md`.
+acceptance criteria are defined in `design/PIVOT_SYSTEM.md`.
 
 ### Difficulty
 
@@ -253,7 +253,7 @@ Milestone 2 enforces the challenge's catch-and-pivot loop in-game. The usable
 party is limited to one Pokemon, every covered acquisition is resolved through
 one immediate blind decision, and fusion becomes a deterministic gamble rather
 than a voluntary post-catch optimization tool. The complete agreed behavior is
-specified in `PIVOT_SYSTEM.md`.
+specified in `design/PIVOT_SYSTEM.md`.
 
 ### Step 2.1: Pivot configuration and persistent state
 
@@ -310,7 +310,8 @@ Status: **Complete**
 
 Acceptance criteria:
 
-- The action table in `PIVOT_SYSTEM.md` is enforced for every combination.
+- The action table in `design/PIVOT_SYSTEM.md` is enforced for every
+  combination.
 - The player cannot inspect hidden candidate data before choosing.
 - Every successful action ends with exactly one usable party Pokemon.
 - No cancelled screen or error can leave a duplicate, missing, or pending
@@ -373,7 +374,7 @@ Status: **Complete**
 
 Acceptance criteria:
 
-- The full checklist in `PIVOT_SYSTEM.md` passes on a clean installation.
+- The full checklist in `design/PIVOT_SYSTEM.md` passes on a clean installation.
 - No covered acquisition or item path bypasses the one-Pokemon invariant.
 - No known story progression path is blocked by the party restriction.
 - The release build is reproducible and includes its validation record.
@@ -386,11 +387,11 @@ new randomization features; patch versions are reserved for fixes to an existing
 release. Version `1.0.0` remains reserved for the complete first public version.
 
 The shared determinism, species ownership, component inheritance, and fusion
-evolution rules are defined in `POKEMON_DATA_RANDOMIZATION.md`. Each step below
-finalizes only the feature-specific pools, limits, and safety rules that remain
-open for that data type. The agreed standalone, scrollable development
+evolution rules are defined in `design/POKEMON_DATA_RANDOMIZATION.md`. Each step
+below finalizes only the feature-specific pools, limits, and safety rules that
+remain open for that data type. The agreed standalone, scrollable development
 interface for inspecting normal Pokemon and fusions is defined in
-`IRONMON_INSPECTOR.md`.
+`design/IRONMON_INSPECTOR.md`.
 
 Planned release sequence:
 
@@ -408,7 +409,7 @@ base-stat, and level-up move randomization.
 
 Status: **Complete**
 
-Design: **Complete** in `ABILITY_RANDOMIZATION.md`
+Design: **Complete** in `design/ABILITY_RANDOMIZATION.md`
 
 - Generate seeded, run-consistent ability assignments.
 - Generate assignments on demand without persisting per-species or per-fusion
@@ -426,7 +427,7 @@ Design: **Complete** in `ABILITY_RANDOMIZATION.md`
 - Route permanent forced, hidden-ability, Capsule, and Patch behavior through
   generated slots while preserving temporary battle ability effects.
 - Add the summary-style in-game inspection tool defined in
-  `IRONMON_INSPECTOR.md`. Its Overview and Abilities pages support normal
+  `design/IRONMON_INSPECTOR.md`. Its Overview and Abilities pages support normal
   Pokemon and fusions, including scrolling and row details.
 - Package the standalone inspector and genuine fusion-slot refinement as patch
   release `0.3.3` in `Ironmon-v0.3.3-abilities.zip`.

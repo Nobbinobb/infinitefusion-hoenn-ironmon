@@ -7,17 +7,12 @@ and a fast reset to starter selection.
 ## Project layout
 
 - `src/` contains the canonical Ruby source.
-- `docs/` contains the roadmap, design notes, and validation records.
-- `docs/PIVOT_SYSTEM.md` specifies the automated one-Pokemon pivot and
-  deterministic fusion-gamble rules.
-- `docs/POKEMON_DATA_RANDOMIZATION.md` specifies Milestone 3 determinism,
-  fusion data ownership, and fusion evolution behavior.
-- `docs/ABILITY_RANDOMIZATION.md` specifies the agreed Step 3.1 slot, ability
-  pool, fusion inheritance, evolution, and inspection rules.
-- `docs/IRONMON_INSPECTOR.md` specifies the standalone, scrollable development
-  interface used to inspect cumulative Milestone 3 generated data.
-- `docs/DEVELOPMENT.md` explains the local debug-mode helper and ability
-  inspector access.
+- `docs/README.md` is the documentation index.
+- `docs/ROADMAP.md` tracks milestone scope and status.
+- `docs/guides/` contains installation, configuration, and development guides.
+- `docs/design/` contains stable behavior and architecture specifications.
+- `docs/releases/` contains versioned release notes.
+- `docs/validation/` contains milestone-specific validation records.
 - `dist/` contains the copy-ready game directory layout.
 - `tools/Build-Distribution.ps1` synchronizes the source into `dist/` and the
   local game installation.
@@ -25,8 +20,8 @@ and a fast reset to starter selection.
   SHA-256 checksum in `release/`.
 
 Milestone 3 Step 3.1 is implemented at version `0.3.3`. See
-`docs/ABILITY_RANDOMIZATION.md` for its rules, `docs/ROADMAP.md` for cumulative
-scope, and `docs/INSTALLATION.md` for installation steps.
+`docs/design/ABILITY_RANDOMIZATION.md` for its rules, `docs/ROADMAP.md` for
+cumulative scope, and `docs/guides/INSTALLATION.md` for installation steps.
 
 This repository is maintained independently from the official Pokemon Infinite
 Fusion game repository.

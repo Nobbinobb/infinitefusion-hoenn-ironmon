@@ -43,7 +43,7 @@ regression hook was removed afterward.
 - [x] Save, reload, and use F7 once; confirm the run restarts at starter
   selection with a different seed in `Ironmon.log`.
 - [x] Confirm the copy-ready archive installs into a clean game directory using
-  `docs/INSTALLATION.md`.
+  `../../guides/INSTALLATION.md`.
 - [x] A fresh Ironmon selection skips the base game's redundant difficulty
   question and enters the run with Hard Mode enforced.
 
