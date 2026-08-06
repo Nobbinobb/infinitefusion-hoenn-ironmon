@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj" />
+    <Project Path="src/Ironmon.Tracker.Connection/Ironmon.Tracker.Connection.csproj" />
     <Project Path="src/Ironmon.Tracker.Core/Ironmon.Tracker.Core.csproj" />
     <Project Path="src/Ironmon.Tracker.Protocol/Ironmon.Tracker.Protocol.csproj" />
   </Folder>

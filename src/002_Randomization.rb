@@ -33,6 +33,7 @@ module Ironmon
     $PokemonGlobal.ironmon_mode = true
     configuration
     $PokemonGlobal.ironmon_seed = generate_run_seed
+    start_tracker_run
     $PokemonGlobal.ironmon_gym_leader_teams = {}
     reset_pivot_state
     prepare_player_fusion_pairing

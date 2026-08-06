@@ -30,7 +30,7 @@ public static class MoveDiscoveryRules
         return discoveries
             .Where(move => IsApplicable(move, pokemonLevel))
             .GroupBy(move => move.MoveId, StringComparer.Ordinal)
-            .Select(group => group.OrderByDescending(move => move.LearnedLevel).ThenByDescending(move => move.LearnOrder).First())
+            .Select(SelectNewestDiscovery)
             .OrderBy(move => move.LearnedLevel)
             .ThenBy(move => move.LearnOrder)
             .TakeLast(MaximumDisplayedMoves)
@@ -44,4 +44,12 @@ public static class MoveDiscoveryRules
     /// <param name="pokemonLevel">The level of the Pokemon being displayed.</param>
     /// <returns>True when the move is an applicable level-up move; otherwise false.</returns>
     private static bool IsApplicable(DiscoveredMove move, int pokemonLevel) => move.LearnSource == MoveLearnSource.LevelUp && move.LearnedLevel <= pokemonLevel;
+
+    /// <summary>
+    /// Selects the newest observed learnset entry for one move identifier.
+    /// </summary>
+    /// <param name="discoveries">The observations grouped by move identifier.</param>
+    /// <returns>The newest observation.</returns>
+    private static DiscoveredMove SelectNewestDiscovery(IGrouping<string, DiscoveredMove> discoveries) =>
+        discoveries.OrderByDescending(move => move.LearnedLevel).ThenByDescending(move => move.LearnOrder).First();
 }

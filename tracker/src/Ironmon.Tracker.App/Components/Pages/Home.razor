@@ -1,4 +1,6 @@
 @page "/"
+@implements IDisposable
+@inject TrackerConnectionState ConnectionState
 
 <PageTitle>Ironmon Tracker</PageTitle>
 
@@ -8,9 +10,9 @@
             <p class="eyebrow">IRONMON COMPANION</p>
             <h1>Tracker</h1>
         </div>
-        <div class="connection-state" role="status">
-            <span class="connection-dot" aria-hidden="true"></span>
-            <span>Waiting for game</span>
+        <div class="connection-state" role="status" title="@GetConnectionDetail()">
+            <span class="@GetConnectionDotClass()" aria-hidden="true"></span>
+            <span>@GetConnectionText()</span>
         </div>
     </header>
 
@@ -117,7 +119,17 @@
 @code {
     private readonly string[] _stats = ["HP", "ATK", "DEF", "SpA", "SpD", "SPE"];
     private readonly int[] _moveSlots = [1, 2, 3, 4];
+    private TrackerConnectionSnapshot _connection = new(TrackerConnectionStatus.Stopped, null, null, null);
     private TrackerView _selectedView = TrackerView.Player;
+
+    /// <summary>
+    /// Subscribes the tracker shell to connection state changes.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        _connection = ConnectionState.Snapshot;
+        ConnectionState.Changed += HandleConnectionChanged;
+    }
 
     /// <summary>
     /// Selects the requested primary tracker view.
@@ -147,4 +159,59 @@
     /// <param name="view">The tab's tracker view.</param>
     /// <returns>The tab CSS classes.</returns>
     private string GetTabClass(TrackerView view) => view == _selectedView ? "view-tab selected" : "view-tab";
+
+    /// <summary>
+    /// Gets the concise connection state shown in the tracker header.
+    /// </summary>
+    /// <returns>The connection state label.</returns>
+    private string GetConnectionText() => _connection.Status switch
+    {
+        TrackerConnectionStatus.Waiting => "Waiting for game",
+        TrackerConnectionStatus.Handshaking => "Connecting",
+        TrackerConnectionStatus.Connected => "Game connected",
+        TrackerConnectionStatus.Error => "Connection error",
+        TrackerConnectionStatus.Stopped => "Tracker stopped",
+        _ => "Unknown state"
+    };
+
+    /// <summary>
+    /// Gets the detailed connection information shown as a tooltip.
+    /// </summary>
+    /// <returns>The connection detail.</returns>
+    private string GetConnectionDetail()
+    {
+        if (_connection.LastError is not null)
+            return _connection.LastError;
+        if (_connection.Game is not null)
+            return $"Infinite Fusion {_connection.Game.GameVersion} · Ironmon {_connection.Game.IronmonVersion}";
+        return "Listening on 127.0.0.1:38521";
+    }
+
+    /// <summary>
+    /// Gets the CSS classes for the connection state indicator.
+    /// </summary>
+    /// <returns>The connection indicator CSS classes.</returns>
+    private string GetConnectionDotClass() => _connection.Status switch
+    {
+        TrackerConnectionStatus.Connected => "connection-dot connected",
+        TrackerConnectionStatus.Error => "connection-dot error",
+        TrackerConnectionStatus.Handshaking => "connection-dot handshaking",
+        _ => "connection-dot"
+    };
+
+    /// <summary>
+    /// Refreshes the Razor shell after a background connection change.
+    /// </summary>
+    /// <param name="sender">The connection state raising the event.</param>
+    /// <param name="args">The connection change event arguments.</param>
+    private void HandleConnectionChanged(object? sender, EventArgs args)
+    {
+        _connection = ConnectionState.Snapshot;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Removes the connection state subscription when the component is disposed.
+    /// </summary>
+    public void Dispose() => ConnectionState.Changed -= HandleConnectionChanged;
 }

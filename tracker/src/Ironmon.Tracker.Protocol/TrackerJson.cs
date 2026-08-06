@@ -27,6 +27,29 @@ public static class TrackerJson
     }
 
     /// <summary>
+    /// Converts a protocol payload into its strongly typed representation.
+    /// </summary>
+    /// <typeparam name="TPayload">The payload type.</typeparam>
+    /// <param name="payload">The JSON payload to deserialize.</param>
+    /// <returns>The deserialized payload.</returns>
+    /// <exception cref="TrackerProtocolException">Thrown when the payload is malformed or null.</exception>
+    public static TPayload DeserializePayload<TPayload>(JsonElement payload)
+    {
+        try
+        {
+            TPayload? result = payload.Deserialize<TPayload>(Options);
+            if (result is null)
+                throw new TrackerProtocolException("The tracker payload was null.");
+
+            return result;
+        }
+        catch (JsonException exception)
+        {
+            throw new TrackerProtocolException("The tracker payload contains invalid JSON.", exception);
+        }
+    }
+
+    /// <summary>
     /// Creates the canonical serializer options.
     /// </summary>
     /// <returns>The configured serializer options.</returns>

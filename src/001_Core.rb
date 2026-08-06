@@ -67,6 +67,8 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_trainer_species_map
   attr_accessor :ironmon_gym_leader_teams
   attr_accessor :ironmon_pivot_state
+  attr_accessor :ironmon_run_id
+  attr_accessor :ironmon_tracker_sequence
 end
 
 class Pokemon

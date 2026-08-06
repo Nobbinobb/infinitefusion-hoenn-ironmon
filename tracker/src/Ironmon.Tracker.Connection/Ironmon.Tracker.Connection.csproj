@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Ironmon.Tracker.Protocol\Ironmon.Tracker.Protocol.csproj" />
+  </ItemGroup>
+</Project>

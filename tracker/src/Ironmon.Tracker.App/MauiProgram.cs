@@ -1,3 +1,6 @@
+using Ironmon.Tracker.Connection;
+using Ironmon.Tracker.Protocol;
+
 namespace Ironmon.Tracker.App;
 
 /// <summary>
@@ -14,6 +17,9 @@ public static class MauiProgram
         MauiAppBuilder builder = MauiApp.CreateBuilder();
         builder.UseMauiApp<App>().ConfigureFonts(ConfigureFonts);
         builder.Services.AddMauiBlazorWebView();
+        builder.Services.AddSingleton(CreateConnectionOptions());
+        builder.Services.AddSingleton<TrackerConnectionState>();
+        builder.Services.AddSingleton<TrackerConnectionService>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
@@ -27,4 +33,16 @@ public static class MauiProgram
     /// </summary>
     /// <param name="fonts">The MAUI font collection.</param>
     private static void ConfigureFonts(IFontCollection fonts) => fonts.AddFont("OpenSans-Regular.ttf", "TrackerSans");
+
+    /// <summary>
+    /// Creates the production loopback listener and tracker handshake options.
+    /// </summary>
+    /// <returns>The production tracker connection options.</returns>
+    private static TrackerConnectionOptions CreateConnectionOptions()
+    {
+        string version = typeof(MauiProgram).Assembly.GetName().Version?.ToString() ?? "0.1.0";
+        string[] arguments = Environment.GetCommandLineArgs();
+        bool debugRequested = arguments.Any(argument => argument.Equals("--debug", StringComparison.OrdinalIgnoreCase));
+        return new TrackerConnectionOptions(TrackerProtocol.Port, version, debugRequested, TimeSpan.FromSeconds(5));
+    }
 }

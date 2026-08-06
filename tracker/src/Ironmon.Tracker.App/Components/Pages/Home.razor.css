@@ -54,6 +54,21 @@ h1 {
     box-shadow: 0 0 0 0.2rem rgb(226 170 79 / 13%);
 }
 
+.connection-dot.handshaking {
+    background: var(--accent-soft);
+    box-shadow: 0 0 0 0.2rem rgb(183 164 255 / 13%);
+}
+
+.connection-dot.connected {
+    background: #65d49a;
+    box-shadow: 0 0 0 0.2rem rgb(101 212 154 / 13%);
+}
+
+.connection-dot.error {
+    background: var(--enemy-soft);
+    box-shadow: 0 0 0 0.2rem rgb(240 139 160 / 13%);
+}
+
 .view-tabs {
     display: grid;
     grid-template-columns: 1fr 1fr;

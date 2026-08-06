@@ -2,7 +2,8 @@
 
 The production tracker is being implemented in reviewable parts under `src/`
 and `tests/`. See `IMPLEMENTATION_STATUS.md` for the completed boundary and
-`../docs/design/TRACKER.md` for the agreed design.
+`../docs/design/TRACKER.md` for the agreed design. The exact implemented
+connection subset is recorded in `PROTOCOL.md`.
 
 ## Run the desktop shell
 

@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Ironmon.Tracker.Connection\Ironmon.Tracker.Connection.csproj" />
     <ProjectReference Include="..\Ironmon.Tracker.Core\Ironmon.Tracker.Core.csproj" />
     <ProjectReference Include="..\Ironmon.Tracker.Protocol\Ironmon.Tracker.Protocol.csproj" />
   </ItemGroup>

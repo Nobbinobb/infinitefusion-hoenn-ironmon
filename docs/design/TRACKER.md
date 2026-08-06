@@ -3,7 +3,7 @@
 This document defines the agreed architecture and first-version behavior of the
 external Ironmon Tracker.
 
-Status: **First-version design agreed; Part 2 desktop shell awaiting review**
+Status: **First-version design agreed; Part 3 connection awaiting review**
 
 An earlier browser-based TCP prototype proved that the bundled game runtime can
 send structured Pokemon data to a .NET process. It was removed before

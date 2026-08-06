@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Ironmon.Tracker.Connection\Ironmon.Tracker.Connection.csproj" />
     <ProjectReference Include="..\..\src\Ironmon.Tracker.Core\Ironmon.Tracker.Core.csproj" />
     <ProjectReference Include="..\..\src\Ironmon.Tracker.Protocol\Ironmon.Tracker.Protocol.csproj" />
   </ItemGroup>

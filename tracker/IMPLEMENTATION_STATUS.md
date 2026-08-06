@@ -8,8 +8,8 @@ product behavior remains defined by `../docs/design/TRACKER.md`.
 | Part | Scope | Status |
 | --- | --- | --- |
 | 1 | Production solution, domain foundation, protocol envelope and framing | Reviewed |
-| 2 | .NET 10 Blazor Hybrid desktop shell | Implemented; awaiting review |
-| 3 | Persistent TCP connection and Ruby bridge | Not started |
+| 2 | .NET 10 Blazor Hybrid desktop shell | Reviewed |
+| 3 | Persistent TCP connection and Ruby bridge | Implemented; awaiting review |
 | 4 | Player battle tracking and healing inventory | Not started |
 | 5 | Enemy tracking, remembered moves, and annotations | Not started |
 | 6 | Deterministic post-run search and lookup | Not started |
@@ -109,7 +109,7 @@ Part 1 was accepted after its C# convention revisions.
 
 ## Part 2: Blazor Hybrid desktop shell
 
-Status: **Implemented; awaiting review**
+Status: **Reviewed**
 
 Implemented on 2026-08-06:
 
@@ -162,4 +162,75 @@ Review should confirm:
 4. the waiting states before the game connection exists; and
 5. the deliberately inactive data and annotation controls.
 
-Part 3 must not begin until Part 2 is accepted or revised.
+Part 2 was accepted after application and code review.
+
+## Part 3: Persistent connection and Ruby bridge
+
+Status: **Implemented; awaiting review**
+
+Implemented on 2026-08-06:
+
+- Added a platform-neutral connection library used by the desktop application.
+- Added a single-client TCP listener bound only to IPv4 loopback port `38521`.
+- Added a five-second first-message timeout and validation that
+  `game_connected` is the first game message.
+- Added tracker/game handshake exchange and tracker version reporting.
+- Added an immediate correlated `current_state` recovery request after every
+  handshake.
+- Added connection status snapshots for waiting, handshaking, connected,
+  error, and stopped states.
+- Connected the Razor header indicator to background connection changes.
+- Added game and run connection-level state payload contracts.
+- Added persistent run identifiers and monotonically increasing tracker event
+  sequences to Ironmon save metadata.
+- Added `run_started` notification when a run begins while connected.
+- Added the production Ruby bridge using a background connection thread and
+  zero-timeout readiness checks for established socket reads and writes.
+- Added restrained retry, safe disconnect, unknown-command errors, framing
+  limits, JSON-key normalization for the bundled runtime, and reconnect state
+  recovery.
+- Added the exact implemented connection subset to `PROTOCOL.md`.
+
+### Validation
+
+- The complete solution builds with 0 warnings and 0 errors.
+- The test suite contains **15 passing tests**, including duplex handshake,
+  current-state recovery, run-start updates, invalid first messages, and silent
+  handshake timeouts.
+- The canonical scripts were synchronized through `Build-Distribution.ps1`.
+- Infinite Fusion's bundled runtime loads the bridge without JSON, socket API,
+  schema, or timeout errors.
+- The game remains running when the tracker is absent.
+- Tracker-first and game-first startup establish the loopback connection.
+- Closing and restarting the tracker causes the running game to reconnect and
+  recover state without restarting the game.
+- The final restart test retained exactly one established game connection and
+  stopped only the exact processes started by the test.
+
+### Deliberately not implemented
+
+Part 3 does not contain:
+
+- battle lifecycle identifiers or events;
+- player Pokemon snapshots or updates;
+- healing inventory state;
+- enemy state or move discovery events;
+- persisted tracker-owned discoveries, annotations, or settings;
+- post-run lookup commands;
+- debug inspection commands; or
+- release publication.
+
+These behaviors remain assigned to later reviewable parts.
+
+### Part 3 review points
+
+Review should confirm:
+
+1. the connection library boundary between MAUI and protocol code;
+2. the fixed IPv4 loopback listener and one-client lifecycle;
+3. the handshake and immediate `current_state` recovery sequence;
+4. the bundled-runtime-compatible non-blocking Ruby design;
+5. the UI connection states and error presentation; and
+6. the new persisted run identifier and sequence metadata.
+
+Part 4 must not begin until Part 3 is accepted or revised.
