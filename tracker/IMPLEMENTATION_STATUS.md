@@ -9,8 +9,8 @@ product behavior remains defined by `../docs/design/TRACKER.md`.
 | --- | --- | --- |
 | 1 | Production solution, domain foundation, protocol envelope and framing | Reviewed |
 | 2 | .NET 10 Blazor Hybrid desktop shell | Reviewed |
-| 3 | Persistent TCP connection and Ruby bridge | Implemented; awaiting review |
-| 4 | Player battle tracking and healing inventory | Not started |
+| 3 | Persistent TCP connection and Ruby bridge | Reviewed |
+| 4 | Player battle tracking and healing inventory | Implemented; awaiting review |
 | 5 | Enemy tracking, remembered moves, and annotations | Not started |
 | 6 | Deterministic post-run search and lookup | Not started |
 | 7 | Debug-mode inspector parity | Not started |
@@ -166,7 +166,7 @@ Part 2 was accepted after application and code review.
 
 ## Part 3: Persistent connection and Ruby bridge
 
-Status: **Implemented; awaiting review**
+Status: **Reviewed**
 
 Implemented on 2026-08-06:
 
@@ -233,4 +233,76 @@ Review should confirm:
 5. the UI connection states and error presentation; and
 6. the new persisted run identifier and sequence metadata.
 
-Part 4 must not begin until Part 3 is accepted or revised.
+Part 3 was accepted and committed as `e3c30f4`.
+
+## Part 4: Player battle tracking and healing inventory
+
+Status: **Implemented; awaiting review**
+
+Implemented on 2026-08-06:
+
+- Added battle identifiers and `battle_started`/`battle_ended` lifecycle events.
+- Initialized the player card only after the game's real player send-out path.
+- Added complete player snapshots with identity, species/form, sprite path,
+  level, HP, status, types, ability, held item, calculated stats, BST, nature,
+  moves, PP, power, accuracy, and healing inventory.
+- Added a throttled snapshot comparison that sends `player_state_changed` only
+  after legal live data changes.
+- Continued player and healing-inventory updates outside battle after the first
+  legal send-out initializes the player card.
+- Covered damage, healing, status, levels, stat recalculation, move learning or
+  replacement, PP, held items, and bag healing changes through complete state.
+- Added temporary confusion tracking alongside persistent major status, with
+  combined display such as `Poisoned · Confused` when both apply.
+- Added game-owned healing calculations for fixed heals, Sitrus Berry,
+  maximum-HP medicine, healing berries, and the conditional Rage Candy Bar.
+- Added a thread-safe tracker run-state store and reconnection recovery for the
+  active battle and player snapshot.
+- Replaced the player waiting placeholders with the populated live card,
+  including a locally loaded sprite, HP bar, details, stats, healing capacity,
+  and four move rows.
+- Applied review revisions that use culture-independent HP-bar widths, label
+  unknown HP bars, preserve the detail and summary rows before initialization,
+  retain four move slots for Pokemon with shorter move lists, and give the
+  enemy waiting card the same overall information structure.
+- Extended the exact protocol document with the Part 4 event payloads and
+  healing rules.
+
+### Validation
+
+- The complete solution builds with 0 warnings and 0 errors.
+- The test suite contains **17 passing tests**, including complete player
+  serialization, Part 3 recovery compatibility, and live battle/player event
+  dispatch through the persistent connection.
+- Canonical scripts were synchronized through `Build-Distribution.ps1`.
+- Infinite Fusion's bundled runtime loads the new battle hooks and remains
+  running without the tracker.
+- The native tracker and bundled game remain running together and establish
+  both sides of one IPv4 loopback connection on port `38521`.
+- Only the exact tracker and game processes started for smoke validation were
+  stopped afterward.
+
+### Deliberately not implemented
+
+Part 4 does not contain:
+
+- enemy snapshots, automatic Enemy-tab selection, or move discovery;
+- functional enemy annotations;
+- tracker-owned persistence;
+- post-run lookup commands;
+- debug inspection commands; or
+- release publication.
+
+These behaviors remain assigned to Parts 5 through 8.
+
+### Part 4 review points
+
+Review should confirm:
+
+1. initialization happens on actual send-out rather than party position;
+2. the complete player card remains current during battle;
+3. healing item counts and potential HP match the game-owned rules;
+4. the local sprite and compact populated layout render correctly; and
+5. battle/player recovery works after reconnecting the tracker.
+
+Part 5 must not begin until Part 4 is accepted or revised.

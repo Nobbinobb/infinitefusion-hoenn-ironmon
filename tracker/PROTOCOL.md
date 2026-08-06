@@ -1,7 +1,8 @@
 # Ironmon Tracker protocol v1
 
-This document records the implemented Part 3 connection subset. Later parts
-extend the payload catalog without changing the common envelope or transport.
+This document records the implemented connection and player-tracking subset
+through Part 4. Later parts extend the payload catalog without changing the
+common envelope or transport.
 
 ## Transport
 
@@ -50,8 +51,8 @@ handshake and state-recovery sequence without restarting the game.
 }
 ```
 
-`run_id` is present after an Ironmon run begins. `battle_id` remains null until
-battle lifecycle tracking is implemented.
+`run_id` is present after an Ironmon run begins. `battle_id` is present while a
+battle is active.
 
 ## Tracker handshake
 
@@ -87,7 +88,7 @@ Request:
 }
 ```
 
-Part 3 response:
+Recovery response before a player Pokemon has been sent out:
 
 ```json
 {
@@ -107,8 +108,93 @@ Part 3 response:
 }
 ```
 
-Player, enemy, battle, and healing snapshots are deliberately absent until
-their payload contracts are implemented in Parts 4 and 5.
+During battle, `battle` contains the active battle identifier. Once a player
+Pokemon has actually been sent out, `player` contains the same complete player
+snapshot used by the live events below. Enemy data remains absent until Part 5.
+
+## Battle lifecycle
+
+`battle_started` is emitted immediately before the game begins its normal
+battle flow. Its payload is:
+
+```json
+{
+  "battle_id": "battle-run-123-456789"
+}
+```
+
+`battle_ended` uses the same payload after the complete battle flow returns.
+The tracker clears the active battle but retains the last player card.
+
+## Player state
+
+`player_sent_out` is emitted after the game's real send-out operation. Party
+position alone never initializes the production player view.
+
+```json
+{
+  "pokemon_id": "184467",
+  "species_id": "ESPEON:0",
+  "nickname": "Espeon",
+  "species_name": "Espeon",
+  "sprite_path": "Graphics/Battlers/196.png",
+  "level": 5,
+  "current_hp": 24,
+  "maximum_hp": 24,
+  "status": "NONE",
+  "confused": false,
+  "types": ["PSYCHIC"],
+  "ability": "Synchronize",
+  "held_item": null,
+  "attack": 14,
+  "defense": 16,
+  "special_attack": 21,
+  "special_defense": 18,
+  "speed": 15,
+  "base_stat_total": 525,
+  "nature": "Hardy",
+  "moves": [
+    {
+      "id": "PSYCHIC",
+      "name": "Psychic",
+      "type": "PSYCHIC",
+      "current_pp": 10,
+      "total_pp": 10,
+      "power": 90,
+      "accuracy": 100
+    }
+  ],
+  "healing": {
+    "item_count": 1,
+    "potential_hp": 20,
+    "percentage": 83.3
+  }
+}
+```
+
+After initialization, `player_state_changed` sends the same complete payload
+when any serialized value changes. The game checks at most ten times per
+second and sends nothing when the snapshot is unchanged. This covers HP,
+status, temporary battle confusion, level, calculated stats, types, ability,
+held item, moves, PP, sprite, nature, and healing inventory without creating
+per-frame network traffic. Confusion may appear alongside a persistent status
+and becomes false when its counter expires, it is cured, or battle ends.
+Tracking continues outside battle after the first real send-out, so bag item
+changes update healing capacity before the next encounter.
+
+Power zero represents a status move. Accuracy zero represents the game's
+always-hit value.
+
+## Healing inventory
+
+The game counts carried, non-revival HP-healing items and healing berries. It
+includes fixed healing, quarter-maximum-HP Sitrus Berries, and maximum-HP Max
+Potions and Full Restores. Rage Candy Bars count only when the current game
+rules make them an HP item. Status-only medicine and held items are excluded.
+
+`potential_hp` is the combined nominal restoration against the active
+Pokemon's current maximum HP. `percentage` is
+`potential_hp / maximum_hp * 100` and may exceed 100.
 
 ## Run lifecycle
 

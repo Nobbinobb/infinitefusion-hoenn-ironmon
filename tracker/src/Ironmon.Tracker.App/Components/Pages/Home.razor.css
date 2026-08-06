@@ -153,6 +153,23 @@ h1 {
     background: radial-gradient(circle at 45% 35%, rgb(238 103 124 / 14%), transparent 60%), var(--surface-soft);
 }
 
+.sprite-placeholder.live {
+    border-style: solid;
+}
+
+.sprite-placeholder img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.identity-placeholder h2 small {
+    color: var(--muted-strong);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
 .identity-placeholder h2 {
     margin: 0.28rem 0 0.25rem;
     font-size: 1.15rem;
@@ -166,21 +183,80 @@ h1 {
     line-height: 1.45;
 }
 
-.placeholder-bar {
+.hp-block {
+    display: grid;
+    gap: 0.35rem;
+    margin: 1rem 0 0.65rem;
+}
+
+.hp-block > div:first-child {
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 0.72rem;
+}
+
+.hp-block strong {
+    color: var(--text);
+}
+
+.hp-bar {
     overflow: hidden;
     height: 0.48rem;
-    margin: 1rem 0;
     border-radius: 999px;
     background: var(--surface-soft);
 }
 
-.placeholder-bar span {
+.hp-bar span {
     display: block;
-    width: 28%;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--accent), var(--accent-soft));
-    opacity: 0.35;
+    background: linear-gradient(90deg, #4fbd82, #79e0aa);
+}
+
+.hp-bar.unknown {
+    border: 1px solid var(--border);
+    background: rgb(255 255 255 / 1.5%);
+}
+
+.hp-bar.unknown span {
+    width: 100%;
+    background: repeating-linear-gradient(135deg, transparent 0 0.35rem, rgb(255 255 255 / 4%) 0.35rem 0.7rem);
+}
+
+.hp-bar.unknown.enemy span {
+    background: repeating-linear-gradient(135deg, transparent 0 0.35rem, rgb(238 103 124 / 7%) 0.35rem 0.7rem);
+}
+
+.placeholder-content {
+    min-height: 1.85rem;
+}
+
+.detail-strip,
+.summary-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.36rem;
+    min-height: 1.85rem;
+    margin-bottom: 0.72rem;
+}
+
+.detail-strip span,
+.summary-row span {
+    padding: 0.32rem 0.48rem;
+    border: 1px solid var(--border);
+    border-radius: 0.42rem;
+    color: var(--muted);
+    background: var(--surface-soft);
+    font-size: 0.68rem;
+}
+
+.summary-row {
+    margin: 0.55rem 0 0;
+}
+
+.summary-row strong {
+    color: var(--muted-strong);
 }
 
 .stat-grid,
@@ -233,7 +309,7 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 2.15rem;
+    min-height: 2.85rem;
     padding: 0 0.72rem;
     border: 1px solid var(--border);
     border-radius: 0.58rem;
@@ -245,6 +321,29 @@ h1 {
 .move-placeholder span:last-child,
 .move-placeholder.unknown {
     color: var(--muted);
+}
+
+.move-placeholder.empty-move {
+    color: var(--muted);
+}
+
+.live-move > div {
+    display: grid;
+    gap: 0.15rem;
+}
+
+.live-move > div:last-child {
+    text-align: right;
+}
+
+.live-move strong {
+    color: var(--text);
+}
+
+.live-move small {
+    color: var(--muted);
+    font-size: 0.62rem;
+    text-transform: uppercase;
 }
 
 .tracker-footer {

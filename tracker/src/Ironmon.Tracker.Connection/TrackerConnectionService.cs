@@ -11,6 +11,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
 {
     private readonly object _lifecycleSync = new();
     private readonly TrackerConnectionOptions _options;
+    private readonly TrackerRunState _runState;
     private readonly TrackerConnectionState _state;
     private CancellationTokenSource? _cancellation;
     private TcpListener? _listener;
@@ -22,13 +23,16 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// </summary>
     /// <param name="options">The listener and handshake options.</param>
     /// <param name="state">The shared connection state.</param>
+    /// <param name="runState">The shared live run state.</param>
     /// <exception cref="ArgumentNullException">Thrown when an argument is null.</exception>
-    public TrackerConnectionService(TrackerConnectionOptions options, TrackerConnectionState state)
+    public TrackerConnectionService(TrackerConnectionOptions options, TrackerConnectionState state, TrackerRunState runState)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(runState);
         _options = options;
         _state = state;
+        _runState = runState;
     }
 
     /// <summary>
@@ -129,6 +133,10 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 break;
             }
             catch (SocketException) when (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
             {
                 break;
             }
@@ -243,6 +251,13 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             {
                 GameCurrentStatePayload startedState = TrackerJson.DeserializePayload<GameCurrentStatePayload>(message.Payload);
                 _state.Publish(TrackerConnectionStatus.Connected, game, startedState);
+                _runState.Recover(startedState);
+                continue;
+            }
+
+            if (message.Type == TrackerMessageType.Event)
+            {
+                ApplyGameEvent(message);
                 continue;
             }
 
@@ -253,6 +268,24 @@ public sealed class TrackerConnectionService : IAsyncDisposable
 
             GameCurrentStatePayload currentState = TrackerJson.DeserializePayload<GameCurrentStatePayload>(message.Payload);
             _state.Publish(TrackerConnectionStatus.Connected, game, currentState);
+            _runState.Recover(currentState);
         }
+    }
+
+    /// <summary>
+    /// Applies one supported live game event to the tracker run-state store.
+    /// </summary>
+    /// <param name="message">The validated game event.</param>
+    private void ApplyGameEvent(TrackerMessage message)
+    {
+        Action apply = message.Event switch
+        {
+            "battle_started" => () => _runState.StartBattle(TrackerJson.DeserializePayload<BattleSnapshot>(message.Payload)),
+            "battle_ended" => _runState.EndBattle,
+            "player_sent_out" or "player_state_changed" => () =>
+                _runState.UpdatePlayer(TrackerJson.DeserializePayload<PlayerPokemonSnapshot>(message.Payload)),
+            _ => () => { }
+        };
+        apply();
     }
 }

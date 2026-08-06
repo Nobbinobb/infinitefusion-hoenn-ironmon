@@ -19,6 +19,7 @@ public static class MauiProgram
         builder.Services.AddMauiBlazorWebView();
         builder.Services.AddSingleton(CreateConnectionOptions());
         builder.Services.AddSingleton<TrackerConnectionState>();
+        builder.Services.AddSingleton<TrackerRunState>();
         builder.Services.AddSingleton<TrackerConnectionService>();
 
 #if DEBUG

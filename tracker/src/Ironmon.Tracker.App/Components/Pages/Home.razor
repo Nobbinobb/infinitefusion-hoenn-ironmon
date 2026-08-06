@@ -1,6 +1,7 @@
 @page "/"
 @implements IDisposable
 @inject TrackerConnectionState ConnectionState
+@inject TrackerRunState RunState
 
 <PageTitle>Ironmon Tracker</PageTitle>
 
@@ -38,39 +39,111 @@
     @if (_selectedView == TrackerView.Player)
     {
         <section class="pokemon-card" role="tabpanel" aria-label="Player Pokemon">
-            <div class="card-heading">
-                <div class="sprite-placeholder" aria-hidden="true">
-                    <span>?</span>
-                </div>
-                <div class="identity-placeholder">
-                    <p class="card-kicker">ACTIVE POKEMON</p>
-                    <h2>Waiting for player</h2>
-                    <p>Send your Pokemon into battle to initialize this view.</p>
-                </div>
-            </div>
-
-            <div class="placeholder-bar"><span></span></div>
-
-            <div class="stat-grid" aria-label="Stats waiting for game data">
-                @foreach (string stat in _stats)
-                {
-                    <div class="stat-row">
-                        <span>@stat</span>
-                        <strong>--</strong>
+            @if (_run.Player is null)
+            {
+                <div class="card-heading">
+                    <div class="sprite-placeholder" aria-hidden="true"><span>?</span></div>
+                    <div class="identity-placeholder">
+                        <p class="card-kicker">ACTIVE POKEMON</p>
+                        <h2>Waiting for player</h2>
+                        <p>Send your Pokemon into battle to initialize this view.</p>
                     </div>
-                }
-            </div>
-
-            <div class="move-list" aria-label="Moves waiting for game data">
-                <p class="section-label">MOVES</p>
-                @foreach (int slot in _moveSlots)
-                {
-                    <div class="move-placeholder">
-                        <span>Move @slot</span>
-                        <span>-- / -- PP</span>
+                </div>
+                <div class="hp-block placeholder-content">
+                    <div><span>HP</span><strong>-- / --</strong></div>
+                    <div class="hp-bar unknown" aria-label="HP unknown"><span></span></div>
+                </div>
+                <div class="detail-strip placeholder-content" aria-label="Pokemon details waiting for game data">
+                    <span>Status --</span>
+                    <span>Ability --</span>
+                    <span>No item</span>
+                </div>
+                <div class="stat-grid" aria-label="Stats waiting for game data">
+                    @foreach (string stat in _playerStats)
+                    {
+                        <div class="stat-row"><span>@stat</span><strong>--</strong></div>
+                    }
+                </div>
+                <div class="summary-row placeholder-content" aria-label="Pokemon summary waiting for game data">
+                    <span>BST <strong>--</strong></span>
+                    <span>Nature <strong>--</strong></span>
+                    <span>Heals <strong>-- · --%</strong></span>
+                </div>
+                <div class="move-list" aria-label="Moves waiting for game data">
+                    <p class="section-label">MOVES</p>
+                    @foreach (int slot in _moveSlots)
+                    {
+                        <div class="move-placeholder"><span>Move @slot</span><span>-- / -- PP</span></div>
+                    }
+                </div>
+            }
+            else
+            {
+                PlayerPokemonSnapshot player = _run.Player!;
+                <div class="card-heading">
+                    <div class="sprite-placeholder live" aria-hidden="true">
+                        @if (_spriteSource is not null)
+                        {
+                            <img src="@_spriteSource" alt="" />
+                        }
+                        else
+                        {
+                            <span>?</span>
+                        }
                     </div>
-                }
-            </div>
+                    <div class="identity-placeholder">
+                        <p class="card-kicker">ACTIVE POKEMON</p>
+                        <h2>@player.Nickname <small>Lv. @player.Level</small></h2>
+                        <p>@player.SpeciesName · @string.Join(" / ", player.Types)</p>
+                    </div>
+                </div>
+
+                <div class="hp-block">
+                    <div><span>HP</span><strong>@player.CurrentHp / @player.MaximumHp</strong></div>
+                    <div class="hp-bar"><span style="@GetHpStyle(player)"></span></div>
+                </div>
+
+                <div class="detail-strip">
+                    <span>@GetConditionText(player)</span>
+                    <span>@player.Ability</span>
+                    <span>@(player.HeldItem ?? "No item")</span>
+                </div>
+
+                <div class="stat-grid" aria-label="Calculated Pokemon stats">
+                    @foreach ((string Name, int Value) stat in GetStats(player))
+                    {
+                        <div class="stat-row"><span>@stat.Name</span><strong>@stat.Value</strong></div>
+                    }
+                </div>
+
+                <div class="summary-row">
+                    <span>BST <strong>@player.BaseStatTotal</strong></span>
+                    <span>Nature <strong>@(player.Nature ?? "Hidden")</strong></span>
+                    <span>Heals <strong>@player.Healing.ItemCount · @FormatPercentage(player.Healing.Percentage)</strong></span>
+                </div>
+
+                <div class="move-list" aria-label="Current Pokemon moves">
+                    <p class="section-label">MOVES</p>
+                    @foreach (int slot in _moveSlots)
+                    {
+                        PlayerMoveSnapshot? move = player.Moves.ElementAtOrDefault(slot - 1);
+                        @if (move is not null)
+                        {
+                            <div class="move-placeholder live-move">
+                                <div><strong>@move.Name</strong><small>@move.Type</small></div>
+                                <div><span>@move.CurrentPp / @move.TotalPp PP</span><small>@FormatPower(move.Power) · @FormatAccuracy(move.Accuracy)</small></div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="move-placeholder empty-move">
+                                <span>Empty move slot</span>
+                                <span>-- / -- PP</span>
+                            </div>
+                        }
+                    }
+                </div>
+            }
         </section>
     }
     else
@@ -87,14 +160,31 @@
                 </div>
             </div>
 
+            <div class="hp-block placeholder-content">
+                <div><span>HP</span><strong>-- / --</strong></div>
+                <div class="hp-bar unknown enemy" aria-label="Enemy HP unknown"><span></span></div>
+            </div>
+
+            <div class="detail-strip placeholder-content" aria-label="Hidden enemy details">
+                <span>Status hidden</span>
+                <span>Ability hidden</span>
+                <span>Item hidden</span>
+            </div>
+
             <div class="enemy-stat-grid" aria-label="Enemy annotations waiting for game data">
-                @foreach (string stat in _stats)
+                @foreach (string stat in _enemyStats)
                 {
                     <div class="enemy-stat-row">
                         <span>@stat</span>
                         <button type="button" disabled aria-label="@stat annotation unavailable">&nbsp;</button>
                     </div>
                 }
+            </div>
+
+            <div class="summary-row placeholder-content" aria-label="Enemy summary waiting for game data">
+                <span>BST <strong>--</strong></span>
+                <span>Nature <strong>Hidden</strong></span>
+                <span>Moves <strong>0 / 4</strong></span>
             </div>
 
             <div class="move-list" aria-label="Discovered moves waiting for game data">
@@ -117,10 +207,14 @@
 </main>
 
 @code {
-    private readonly string[] _stats = ["HP", "ATK", "DEF", "SpA", "SpD", "SPE"];
+    private readonly string[] _enemyStats = ["HP", "ATK", "DEF", "SpA", "SpD", "SPE"];
     private readonly int[] _moveSlots = [1, 2, 3, 4];
+    private readonly string[] _playerStats = ["ATK", "DEF", "SpA", "SpD", "SPE"];
     private TrackerConnectionSnapshot _connection = new(TrackerConnectionStatus.Stopped, null, null, null);
+    private TrackerRunStateSnapshot _run = new(null, null);
     private TrackerView _selectedView = TrackerView.Player;
+    private string? _spriteKey;
+    private string? _spriteSource;
 
     /// <summary>
     /// Subscribes the tracker shell to connection state changes.
@@ -128,7 +222,10 @@
     protected override void OnInitialized()
     {
         _connection = ConnectionState.Snapshot;
+        _run = RunState.Snapshot;
+        RefreshSprite();
         ConnectionState.Changed += HandleConnectionChanged;
+        RunState.Changed += HandleRunChanged;
     }
 
     /// <summary>
@@ -211,7 +308,135 @@
     }
 
     /// <summary>
+    /// Refreshes the Razor shell after live run data changes.
+    /// </summary>
+    /// <param name="sender">The run state raising the event.</param>
+    /// <param name="args">The run-state change event arguments.</param>
+    private void HandleRunChanged(object? sender, EventArgs args)
+    {
+        _run = RunState.Snapshot;
+        RefreshSprite();
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Loads the active Pokemon sprite from the connected local game installation.
+    /// </summary>
+    private void RefreshSprite()
+    {
+        string? spritePath = _run.Player?.SpritePath;
+        string? gameRoot = _connection.Game?.GameRoot;
+        string? key = gameRoot is null || spritePath is null ? null : $"{gameRoot}|{spritePath}";
+        if (key == _spriteKey)
+            return;
+
+        _spriteKey = key;
+        _spriteSource = null;
+        if (gameRoot is null || spritePath is null)
+            return;
+
+        try
+        {
+            string root = Path.GetFullPath(gameRoot);
+            string rootPrefix = root.EndsWith(Path.DirectorySeparatorChar) ? root : $"{root}{Path.DirectorySeparatorChar}";
+            string path = Path.GetFullPath(Path.Combine(root, spritePath));
+            if (!path.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase) || !File.Exists(path))
+                return;
+
+            string extension = Path.GetExtension(path).ToLowerInvariant();
+            string mediaType = extension == ".gif" ? "image/gif" : "image/png";
+            _spriteSource = $"data:{mediaType};base64,{Convert.ToBase64String(File.ReadAllBytes(path))}";
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            _spriteSource = null;
+        }
+    }
+
+    /// <summary>
+    /// Gets the calculated stats displayed by the player card.
+    /// </summary>
+    /// <param name="player">The active player Pokemon.</param>
+    /// <returns>The labeled calculated stats.</returns>
+    private static IReadOnlyList<(string Name, int Value)> GetStats(PlayerPokemonSnapshot player) =>
+        [("ATK", player.Attack), ("DEF", player.Defense), ("SpA", player.SpecialAttack),
+         ("SpD", player.SpecialDefense), ("SPE", player.Speed)];
+
+    /// <summary>
+    /// Calculates the bounded HP-bar percentage.
+    /// </summary>
+    /// <param name="player">The active player Pokemon.</param>
+    /// <returns>The HP percentage from zero through one hundred.</returns>
+    private static double GetHpPercentage(PlayerPokemonSnapshot player) =>
+        player.MaximumHp <= 0 ? 0 : Math.Clamp(player.CurrentHp * 100.0 / player.MaximumHp, 0, 100);
+
+    /// <summary>
+    /// Gets a culture-independent CSS width for the current HP percentage.
+    /// </summary>
+    /// <param name="player">The active player Pokemon.</param>
+    /// <returns>The inline HP width declaration.</returns>
+    private static string GetHpStyle(PlayerPokemonSnapshot player)
+    {
+        double percentage = GetHpPercentage(player);
+        return string.Create(CultureInfo.InvariantCulture, $"width: {percentage:0.##}%");
+    }
+
+    /// <summary>
+    /// Formats the game status identifier for display.
+    /// </summary>
+    /// <param name="status">The game status identifier.</param>
+    /// <returns>The display status.</returns>
+    private static string FormatStatus(string status) => status.ToUpperInvariant() switch
+    {
+        "NONE" => "Healthy",
+        "POISON" => "Poisoned",
+        "BURN" => "Burned",
+        "PARALYSIS" => "Paralyzed",
+        "SLEEP" => "Asleep",
+        "FROZEN" => "Frozen",
+        _ => status
+    };
+
+    /// <summary>
+    /// Formats the combined persistent status and temporary confusion condition.
+    /// </summary>
+    /// <param name="player">The active player Pokemon.</param>
+    /// <returns>The current condition text.</returns>
+    private static string GetConditionText(PlayerPokemonSnapshot player)
+    {
+        string status = FormatStatus(player.Status);
+        if (!player.Confused)
+            return status;
+        return status == "Healthy" ? "Confused" : $"{status} · Confused";
+    }
+
+    /// <summary>
+    /// Formats a healing percentage without unnecessary decimal places.
+    /// </summary>
+    /// <param name="percentage">The healing percentage.</param>
+    /// <returns>The display percentage.</returns>
+    private static string FormatPercentage(double percentage) => $"{percentage:0.#}%";
+
+    /// <summary>
+    /// Formats move power for status moves.
+    /// </summary>
+    /// <param name="power">The base move power.</param>
+    /// <returns>The display power.</returns>
+    private static string FormatPower(int power) => power == 0 ? "— Pow" : $"{power} Pow";
+
+    /// <summary>
+    /// Formats move accuracy for always-hit moves.
+    /// </summary>
+    /// <param name="accuracy">The move accuracy.</param>
+    /// <returns>The display accuracy.</returns>
+    private static string FormatAccuracy(int accuracy) => accuracy == 0 ? "— Acc" : $"{accuracy}% Acc";
+
+    /// <summary>
     /// Removes the connection state subscription when the component is disposed.
     /// </summary>
-    public void Dispose() => ConnectionState.Changed -= HandleConnectionChanged;
+    public void Dispose()
+    {
+        ConnectionState.Changed -= HandleConnectionChanged;
+        RunState.Changed -= HandleRunChanged;
+    }
 }
