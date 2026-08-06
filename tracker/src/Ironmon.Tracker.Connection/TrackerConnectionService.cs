@@ -10,6 +10,7 @@ namespace Ironmon.Tracker.Connection;
 public sealed class TrackerConnectionService : IAsyncDisposable
 {
     private readonly object _lifecycleSync = new();
+    private readonly TrackerKnowledgeStore _knowledge;
     private readonly TrackerConnectionOptions _options;
     private readonly TrackerRunState _runState;
     private readonly TrackerConnectionState _state;
@@ -24,15 +25,18 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// <param name="options">The listener and handshake options.</param>
     /// <param name="state">The shared connection state.</param>
     /// <param name="runState">The shared live run state.</param>
+    /// <param name="knowledge">The tracker-owned discovery and annotation store.</param>
     /// <exception cref="ArgumentNullException">Thrown when an argument is null.</exception>
-    public TrackerConnectionService(TrackerConnectionOptions options, TrackerConnectionState state, TrackerRunState runState)
+    public TrackerConnectionService(TrackerConnectionOptions options, TrackerConnectionState state, TrackerRunState runState, TrackerKnowledgeStore knowledge)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(runState);
+        ArgumentNullException.ThrowIfNull(knowledge);
         _options = options;
         _state = state;
         _runState = runState;
+        _knowledge = knowledge;
     }
 
     /// <summary>
@@ -178,6 +182,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
 
         TrackerMessage handshakeMessage = await ReadHandshakeAsync(reader, cancellationToken).ConfigureAwait(false);
         GameHandshakePayload game = ValidateGameHandshake(handshakeMessage);
+        _knowledge.SelectRun(game.RunId);
         TrackerHandshakePayload tracker = new(_options.TrackerVersion, _options.DebugRequested);
         TrackerMessage trackerHandshake = TrackerMessageFactory.CreateEvent("tracker_connected", 0, tracker, game.RunId, game.BattleId);
         await writer.WriteAsync(trackerHandshake, cancellationToken).ConfigureAwait(false);
@@ -250,8 +255,10 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             if (message.Type == TrackerMessageType.Event && message.Event == "run_started")
             {
                 GameCurrentStatePayload startedState = TrackerJson.DeserializePayload<GameCurrentStatePayload>(message.Payload);
+                _knowledge.SelectRun(startedState.RunId);
                 _state.Publish(TrackerConnectionStatus.Connected, game, startedState);
                 _runState.Recover(startedState);
+                ObserveRecoveredKnowledge(startedState);
                 continue;
             }
 
@@ -267,8 +274,10 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 throw new TrackerProtocolException(message.Error?.Message ?? "The current_state request failed.");
 
             GameCurrentStatePayload currentState = TrackerJson.DeserializePayload<GameCurrentStatePayload>(message.Payload);
+            _knowledge.SelectRun(currentState.RunId);
             _state.Publish(TrackerConnectionStatus.Connected, game, currentState);
             _runState.Recover(currentState);
+            ObserveRecoveredKnowledge(currentState);
         }
     }
 
@@ -278,14 +287,69 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// <param name="message">The validated game event.</param>
     private void ApplyGameEvent(TrackerMessage message)
     {
+        _knowledge.SelectRun(message.RunId);
         Action apply = message.Event switch
         {
             "battle_started" => () => _runState.StartBattle(TrackerJson.DeserializePayload<BattleSnapshot>(message.Payload)),
             "battle_ended" => _runState.EndBattle,
-            "player_sent_out" or "player_state_changed" => () =>
-                _runState.UpdatePlayer(TrackerJson.DeserializePayload<PlayerPokemonSnapshot>(message.Payload)),
+            "player_sent_out" or "player_state_changed" => () => ApplyPlayerUpdate(message),
+            "enemy_sent_out" or "enemy_state_changed" => () => ApplyEnemyUpdate(message),
+            "enemy_move_used" => () =>
+                _knowledge.ObserveEnemyMove(TrackerJson.DeserializePayload<EnemyMoveUsedPayload>(message.Payload)),
             _ => () => { }
         };
         apply();
+    }
+
+    /// <summary>
+    /// Applies a complete player update and its legal move discoveries.
+    /// </summary>
+    /// <param name="message">The player update event.</param>
+    private void ApplyPlayerUpdate(TrackerMessage message)
+    {
+        PlayerPokemonSnapshot player = TrackerJson.DeserializePayload<PlayerPokemonSnapshot>(message.Payload);
+        _runState.UpdatePlayer(player);
+        _knowledge.ObservePlayer(player);
+    }
+
+    /// <summary>
+    /// Applies an enemy update and remembers its most recently observed move.
+    /// </summary>
+    /// <param name="message">The enemy state event.</param>
+    private void ApplyEnemyUpdate(TrackerMessage message)
+    {
+        EnemyPokemonSnapshot enemy = TrackerJson.DeserializePayload<EnemyPokemonSnapshot>(message.Payload);
+        _runState.UpdateEnemy(enemy);
+        ObserveEnemyMove(enemy);
+    }
+
+    /// <summary>
+    /// Restores legally observable knowledge included in a complete game-state snapshot.
+    /// </summary>
+    /// <param name="state">The recovered game state.</param>
+    private void ObserveRecoveredKnowledge(GameCurrentStatePayload state)
+    {
+        if (state.Player is not null)
+            _knowledge.ObservePlayer(state.Player);
+        foreach (EnemyPokemonSnapshot enemy in state.Enemies)
+            ObserveEnemyMove(enemy);
+    }
+
+    /// <summary>
+    /// Remembers a move included in an enemy snapshot when one is present.
+    /// </summary>
+    /// <param name="enemy">The complete legal enemy snapshot.</param>
+    private void ObserveEnemyMove(EnemyPokemonSnapshot enemy)
+    {
+        if (enemy.LastMove is null)
+            return;
+        EnemyMoveUsedPayload observation = new()
+        {
+            EnemyId = enemy.EnemyId,
+            SpeciesId = enemy.SpeciesId,
+            EnemyLevel = enemy.Level,
+            Move = enemy.LastMove
+        };
+        _knowledge.ObserveEnemyMove(observation);
     }
 }

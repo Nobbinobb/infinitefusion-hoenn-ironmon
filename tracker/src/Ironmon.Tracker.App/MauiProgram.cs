@@ -18,8 +18,10 @@ public static class MauiProgram
         builder.UseMauiApp<App>().ConfigureFonts(ConfigureFonts);
         builder.Services.AddMauiBlazorWebView();
         builder.Services.AddSingleton(CreateConnectionOptions());
+        builder.Services.AddSingleton(CreateKnowledgeOptions());
         builder.Services.AddSingleton<TrackerConnectionState>();
         builder.Services.AddSingleton<TrackerRunState>();
+        builder.Services.AddSingleton<TrackerKnowledgeStore>();
         builder.Services.AddSingleton<TrackerConnectionService>();
 
 #if DEBUG
@@ -45,5 +47,15 @@ public static class MauiProgram
         string[] arguments = Environment.GetCommandLineArgs();
         bool debugRequested = arguments.Any(argument => argument.Equals("--debug", StringComparison.OrdinalIgnoreCase));
         return new TrackerConnectionOptions(TrackerProtocol.Port, version, debugRequested, TimeSpan.FromSeconds(5));
+    }
+
+    /// <summary>
+    /// Creates the tracker-owned persistence location outside the release directory.
+    /// </summary>
+    /// <returns>The tracker knowledge persistence options.</returns>
+    private static TrackerKnowledgeOptions CreateKnowledgeOptions()
+    {
+        string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        return new TrackerKnowledgeOptions(Path.Combine(localData, "IronmonTracker"));
     }
 }

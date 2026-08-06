@@ -118,6 +118,11 @@ public sealed class PlayerPokemonSnapshot
     public IReadOnlyList<PlayerMoveSnapshot> Moves { get; init; } = [];
 
     /// <summary>
+    /// Gets or initializes current moves that legally reveal level-up learnset entries.
+    /// </summary>
+    public IReadOnlyList<ObservedMoveSnapshot> LevelUpMoves { get; init; } = [];
+
+    /// <summary>
     /// Gets or initializes the current healing inventory summary.
     /// </summary>
     public required HealingInventorySnapshot Healing { get; init; }

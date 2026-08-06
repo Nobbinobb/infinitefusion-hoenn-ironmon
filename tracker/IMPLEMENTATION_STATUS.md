@@ -10,8 +10,8 @@ product behavior remains defined by `../docs/design/TRACKER.md`.
 | 1 | Production solution, domain foundation, protocol envelope and framing | Reviewed |
 | 2 | .NET 10 Blazor Hybrid desktop shell | Reviewed |
 | 3 | Persistent TCP connection and Ruby bridge | Reviewed |
-| 4 | Player battle tracking and healing inventory | Implemented; awaiting review |
-| 5 | Enemy tracking, remembered moves, and annotations | Not started |
+| 4 | Player battle tracking and healing inventory | Reviewed |
+| 5 | Enemy tracking, remembered moves, and annotations | Implemented; awaiting review |
 | 6 | Deterministic post-run search and lookup | Not started |
 | 7 | Debug-mode inspector parity | Not started |
 | 8 | Release packaging and end-to-end validation | Not started |
@@ -237,7 +237,7 @@ Part 3 was accepted and committed as `e3c30f4`.
 
 ## Part 4: Player battle tracking and healing inventory
 
-Status: **Implemented; awaiting review**
+Status: **Reviewed**
 
 Implemented on 2026-08-06:
 
@@ -305,4 +305,77 @@ Review should confirm:
 4. the local sprite and compact populated layout render correctly; and
 5. battle/player recovery works after reconnecting the tracker.
 
-Part 5 must not begin until Part 4 is accepted or revised.
+Part 4 was accepted and committed as `0fcf8b0`.
+
+## Part 5: Enemy tracking, remembered moves, and annotations
+
+Status: **Implemented; awaiting review**
+
+Implemented on 2026-08-06:
+
+- Added legal enemy snapshots for both wild activation and trainer send-outs.
+- Added active enemy recovery to `current_state` and support for multiple
+  opposing battler positions while displaying the first position initially.
+- Added automatic Enemy-tab selection for a newly sent-out opponent and return
+  to Player when battle ends without overriding later manual tab selection.
+- Added `enemy_move_used` observations with generated learned level, stable
+  learn order, source, move details, and observed remaining PP.
+- Detects move use through both the battle callback and the proven periodic
+  enemy-state path, deduplicated by enemy, move, and remaining PP.
+- Includes the last legally observed regular move in enemy snapshots so move
+  discovery uses the same transport path as the working enemy card.
+- Added player-assisted level-up move discoveries to complete player snapshots.
+- Kept non-level-up player moves out of remembered enemy moves while retaining
+  directly observed enemy moves if learn-level resolution is unavailable.
+- Displayed the newest four applicable remembered moves and updated observed
+  PP after repeated use.
+- Added functional HP, Attack, Defense, Special Attack, Special Defense, and
+  Speed annotations with forward left-click and reverse right-click cycling.
+- Added tracker-owned atomic persistence under
+  `%LocalAppData%/IronmonTracker/runs/` for discoveries and annotations.
+- Restored discoveries and annotations when a species/form returns or the
+  tracker reconnects, without adding data to the game save.
+- Selects the run identifier carried by every live event, including when the
+  tracker connected at the title screen before an existing save was loaded.
+- Derives newly assigned run identifiers from the saved deterministic Ironmon
+  seed so reloading a legacy save selects the same tracker knowledge file.
+- Populated the legal enemy card with local sprite, name, level, types, BST,
+  hidden-field labels, annotations, and remembered move rows.
+
+### Validation
+
+- The complete solution builds with 0 warnings and 0 errors.
+- The test suite contains **20 passing tests**, including newest-four persisted
+  projection, repeated-use PP replacement, player assistance, unknown-source
+  direct observation, reload, and bidirectional annotation cycling.
+- Canonical scripts were synchronized through `Build-Distribution.ps1` and
+  matched both distribution and local runtime copies.
+- The native tracker and bundled game remained running together with both
+  sides of one established IPv4 loopback connection after the new battle and
+  battler hooks loaded.
+- Only the exact tracker and game processes started for validation were stopped.
+
+### Deliberately not implemented
+
+Part 5 does not contain:
+
+- deterministic post-run search and lookup;
+- completed-run recipe persistence;
+- debug inspection commands or UI;
+- settings and window-state persistence; or
+- self-contained release publication.
+
+These behaviors remain assigned to Parts 6 through 8.
+
+### Part 5 review points
+
+Review should confirm:
+
+1. wild and trainer opponents automatically open a legal enemy card;
+2. used enemy moves and player-assisted level-up moves become visible;
+3. the four newest applicable discoveries return on later encounters;
+4. observed PP updates after repeated enemy move use;
+5. annotations cycle in both directions and survive tracker restarts; and
+6. battle end returns to Player while manual P/E switching remains available.
+
+Part 6 must not begin until Part 5 is accepted or revised.

@@ -14,6 +14,7 @@ public sealed class GameCurrentStatePayload
     /// <param name="sequence">The latest game event sequence.</param>
     /// <param name="battle">The active battle when one exists.</param>
     /// <param name="player">The initialized player Pokemon when one exists.</param>
+    /// <param name="enemies">The legally visible active opposing Pokemon.</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when sequence is negative.</exception>
     public GameCurrentStatePayload(
         bool ironmonActive,
@@ -21,7 +22,8 @@ public sealed class GameCurrentStatePayload
         string? battleId,
         long sequence,
         BattleSnapshot? battle = null,
-        PlayerPokemonSnapshot? player = null)
+        PlayerPokemonSnapshot? player = null,
+        IReadOnlyList<EnemyPokemonSnapshot>? enemies = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(sequence);
         IronmonActive = ironmonActive;
@@ -30,6 +32,7 @@ public sealed class GameCurrentStatePayload
         Sequence = sequence;
         Battle = battle;
         Player = player;
+        Enemies = enemies ?? [];
     }
 
     /// <summary>
@@ -61,4 +64,9 @@ public sealed class GameCurrentStatePayload
     /// Gets the most recently initialized player Pokemon when one exists.
     /// </summary>
     public PlayerPokemonSnapshot? Player { get; }
+
+    /// <summary>
+    /// Gets the legally visible active opposing Pokemon.
+    /// </summary>
+    public IReadOnlyList<EnemyPokemonSnapshot> Enemies { get; }
 }

@@ -1,7 +1,7 @@
 # Ironmon Tracker protocol v1
 
 This document records the implemented connection and player-tracking subset
-through Part 4. Later parts extend the payload catalog without changing the
+through Part 5. Later parts extend the payload catalog without changing the
 common envelope or transport.
 
 ## Transport
@@ -110,7 +110,8 @@ Recovery response before a player Pokemon has been sent out:
 
 During battle, `battle` contains the active battle identifier. Once a player
 Pokemon has actually been sent out, `player` contains the same complete player
-snapshot used by the live events below. Enemy data remains absent until Part 5.
+snapshot used by the live events below. `enemies` contains the currently active
+legal enemy snapshots and remains an empty array outside battle.
 
 ## Battle lifecycle
 
@@ -164,6 +165,7 @@ position alone never initializes the production player view.
       "accuracy": 100
     }
   ],
+  "level_up_moves": [],
   "healing": {
     "item_count": 1,
     "potential_hp": 20,
@@ -195,6 +197,96 @@ rules make them an HP item. Status-only medicine and held items are excluded.
 `potential_hp` is the combined nominal restoration against the active
 Pokemon's current maximum HP. `percentage` is
 `potential_hp / maximum_hp * 100` and may exceed 100.
+
+## Enemy state
+
+`enemy_sent_out` is emitted for trainer send-outs and for wild opponents once
+they become active. `enemy_state_changed` uses the same payload when legally
+visible identity data changes.
+
+```json
+{
+  "enemy_id": "enemy-987654",
+  "position": 1,
+  "species_id": "BELLOSSOM:0",
+  "species_name": "Bellossom",
+  "sprite_path": "Graphics/Battlers/182.png",
+  "level": 25,
+  "types": ["GRASS"],
+  "base_stat_total": 490
+}
+```
+
+The live payload deliberately omits HP, calculated stats, ability, held item,
+nature, and undiscovered moves. The tracker supports multiple positions but
+the first UI displays the lowest active opposing position.
+
+## Move discovery
+
+`enemy_move_used` is emitted after an opposing Pokemon uses an observable move:
+
+```json
+{
+  "enemy_id": "enemy-987654",
+  "species_id": "BELLOSSOM:0",
+  "enemy_level": 25,
+  "move": {
+    "id": "MEGADRAIN",
+    "name": "Mega Drain",
+    "learned_level": 20,
+    "learn_order": 36,
+    "source": "level_up",
+    "origin": "enemy_use",
+    "type": "GRASS",
+    "power": 40,
+    "accuracy": 100,
+    "total_pp": 15,
+    "pp_after_use": 14
+  }
+}
+```
+
+The game detects this through the battle callback and confirms it through the
+periodic enemy-state poll. A signature of enemy, move, and remaining PP avoids
+duplicate events while allowing repeated uses of the same move to update PP.
+The most recently used regular move is also included as optional `last_move`
+data in `enemy_sent_out`, `enemy_state_changed`, and recovered enemy snapshots.
+This lets discovery recover through the same state path as the enemy card.
+
+The game derives `learned_level` and `learn_order` from the active generated
+learnset. Moves without an applicable level-up entry use source `unknown` and
+remain visible when directly observed from an enemy. Player snapshots include
+applicable current entries in `level_up_moves` with origin `player_initial`;
+subsequent snapshots preserve earlier discoveries even after a move is
+forgotten.
+
+The tracker stores all discoveries per run and species/form. For the current
+enemy level it selects level-up entries not above that level, orders by learned
+level and learn order, and displays the newest four. Repeated enemy use updates
+observed remaining PP without deleting the player-assisted discovery origin.
+Direct observations with an unknown learn source remain visible as a safe
+fallback when the game cannot resolve a learnset entry.
+
+Every live event reselects the run identifier from its envelope. This covers
+the common startup order where the tracker connects at the title screen before
+an existing Ironmon save supplies its run identifier.
+
+When a save does not yet contain a tracker run identifier, the game derives one
+from its persisted Ironmon randomization seed as `run-seed-<seed>`. Reloading
+the same save therefore restores the same tracker-owned knowledge, while a new
+randomized run receives a different identifier.
+
+## Tracker-owned Part 5 state
+
+Remembered moves and the six manual stat annotations are written atomically to:
+
+```text
+%LocalAppData%/IronmonTracker/runs/<run-id>.json
+```
+
+Annotations are keyed by run, species/form, and stat. Left-click cycles
+`empty -> plus -> minus -> empty`; right-click cycles in reverse. Neither
+annotations nor remembered discoveries are written into the game save.
 
 ## Run lifecycle
 

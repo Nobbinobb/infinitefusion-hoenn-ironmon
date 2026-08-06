@@ -11,7 +11,7 @@ public static class MoveDiscoveryRules
     public const int MaximumDisplayedMoves = 4;
 
     /// <summary>
-    /// Selects the four newest applicable and legitimately discovered level-up moves.
+    /// Selects the four newest applicable discoveries, including directly observed enemy moves.
     /// </summary>
     /// <param name="discoveries">All remembered discoveries for the run and species.</param>
     /// <param name="pokemonLevel">The level of the Pokemon being displayed.</param>
@@ -38,12 +38,14 @@ public static class MoveDiscoveryRules
     }
 
     /// <summary>
-    /// Determines whether a discovered move belongs to the displayed level-up learnset.
+    /// Determines whether a discovered move belongs to the displayed moveset.
     /// </summary>
     /// <param name="move">The discovered move.</param>
     /// <param name="pokemonLevel">The level of the Pokemon being displayed.</param>
-    /// <returns>True when the move is an applicable level-up move; otherwise false.</returns>
-    private static bool IsApplicable(DiscoveredMove move, int pokemonLevel) => move.LearnSource == MoveLearnSource.LevelUp && move.LearnedLevel <= pokemonLevel;
+    /// <returns>True when the move is an applicable level-up move or was directly observed; otherwise false.</returns>
+    private static bool IsApplicable(DiscoveredMove move, int pokemonLevel) =>
+        move.LearnSource == MoveLearnSource.LevelUp && move.LearnedLevel <= pokemonLevel ||
+        move.LearnSource == MoveLearnSource.Unknown && move.DiscoveryOrigin == MoveDiscoveryOrigin.EnemyUse;
 
     /// <summary>
     /// Selects the newest observed learnset entry for one move identifier.

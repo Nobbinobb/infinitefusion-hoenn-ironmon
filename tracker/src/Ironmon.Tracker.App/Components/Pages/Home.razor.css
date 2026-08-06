@@ -295,6 +295,32 @@ h1 {
     background: transparent;
 }
 
+.enemy-stat-row .annotation-button {
+    display: grid;
+    place-items: center;
+    color: var(--muted-strong);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.enemy-stat-row .annotation-button:hover {
+    border-color: var(--accent-soft);
+}
+
+.enemy-stat-row .annotation-button.plus {
+    border-color: #65d49a;
+    color: #65d49a;
+    background: rgb(101 212 154 / 8%);
+}
+
+.enemy-stat-row .annotation-button.minus {
+    border-color: var(--enemy-soft);
+    color: var(--enemy-soft);
+    background: rgb(240 139 160 / 8%);
+}
+
 .move-list {
     display: grid;
     gap: 0.38rem;
@@ -338,6 +364,10 @@ h1 {
 
 .live-move strong {
     color: var(--text);
+}
+
+.enemy-move strong {
+    color: var(--enemy-soft);
 }
 
 .live-move small {

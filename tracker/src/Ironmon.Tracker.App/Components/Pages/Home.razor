@@ -1,6 +1,7 @@
 @page "/"
 @implements IDisposable
 @inject TrackerConnectionState ConnectionState
+@inject TrackerKnowledgeStore Knowledge
 @inject TrackerRunState RunState
 
 <PageTitle>Ironmon Tracker</PageTitle>
@@ -149,16 +150,38 @@
     else
     {
         <section class="pokemon-card" role="tabpanel" aria-label="Enemy Pokemon">
-            <div class="card-heading">
-                <div class="sprite-placeholder enemy" aria-hidden="true">
-                    <span>?</span>
+            @if (_run.Enemies.Count == 0)
+            {
+                <div class="card-heading">
+                    <div class="sprite-placeholder enemy" aria-hidden="true"><span>?</span></div>
+                    <div class="identity-placeholder">
+                        <p class="card-kicker">OPPOSING POKEMON</p>
+                        <h2>No opponent</h2>
+                        <p>The enemy view will open automatically when battle data arrives.</p>
+                    </div>
                 </div>
-                <div class="identity-placeholder">
-                    <p class="card-kicker">OPPOSING POKEMON</p>
-                    <h2>No opponent</h2>
-                    <p>The enemy view will open automatically when battle data arrives.</p>
+            }
+            else
+            {
+                EnemyPokemonSnapshot enemy = _run.Enemies[0];
+                <div class="card-heading">
+                    <div class="sprite-placeholder enemy live" aria-hidden="true">
+                        @if (_enemySpriteSource is not null)
+                        {
+                            <img src="@_enemySpriteSource" alt="" />
+                        }
+                        else
+                        {
+                            <span>?</span>
+                        }
+                    </div>
+                    <div class="identity-placeholder">
+                        <p class="card-kicker">OPPOSING POKEMON</p>
+                        <h2>@enemy.SpeciesName <small>Lv. @enemy.Level</small></h2>
+                        <p>@string.Join(" / ", enemy.Types)</p>
+                    </div>
                 </div>
-            </div>
+            }
 
             <div class="hp-block placeholder-content">
                 <div><span>HP</span><strong>-- / --</strong></div>
@@ -172,29 +195,51 @@
             </div>
 
             <div class="enemy-stat-grid" aria-label="Enemy annotations waiting for game data">
-                @foreach (string stat in _enemyStats)
+                @foreach ((string Name, EnemyStat Stat) stat in _enemyStats)
                 {
                     <div class="enemy-stat-row">
-                        <span>@stat</span>
-                        <button type="button" disabled aria-label="@stat annotation unavailable">&nbsp;</button>
+                        <span>@stat.Name</span>
+                        @if (_run.Enemies.Count == 0)
+                        {
+                            <button type="button" disabled aria-label="@stat.Name annotation unavailable">&nbsp;</button>
+                        }
+                        else
+                        {
+                            <button class="@GetAnnotationClass(_run.Enemies[0].SpeciesId, stat.Stat)"
+                                    type="button"
+                                    aria-label="@stat.Name annotation: @GetAnnotationText(_run.Enemies[0].SpeciesId, stat.Stat)"
+                                    @onclick="() => CycleAnnotation(stat.Stat, true)"
+                                    @oncontextmenu="() => CycleAnnotation(stat.Stat, false)"
+                                    @oncontextmenu:preventDefault>
+                                @GetAnnotationSymbol(_run.Enemies[0].SpeciesId, stat.Stat)
+                            </button>
+                        }
                     </div>
                 }
             </div>
 
             <div class="summary-row placeholder-content" aria-label="Enemy summary waiting for game data">
-                <span>BST <strong>--</strong></span>
+                <span>BST <strong>@(_run.Enemies.Count == 0 ? "--" : _run.Enemies[0].BaseStatTotal)</strong></span>
                 <span>Nature <strong>Hidden</strong></span>
-                <span>Moves <strong>0 / 4</strong></span>
+                <span>Moves <strong>@GetEnemyMoves().Count / 4</strong></span>
             </div>
 
             <div class="move-list" aria-label="Discovered moves waiting for game data">
                 <p class="section-label">DISCOVERED MOVES</p>
                 @foreach (int slot in _moveSlots)
                 {
-                    <div class="move-placeholder unknown">
-                        <span>Unknown move</span>
-                        <span>--</span>
-                    </div>
+                    ObservedMoveSnapshot? move = GetEnemyMoves().ElementAtOrDefault(slot - 1);
+                    @if (move is not null)
+                    {
+                        <div class="move-placeholder live-move enemy-move">
+                            <div><strong>@move.Name</strong><small>@move.Type</small></div>
+                            <div><span>@FormatObservedPp(move)</span><small>@FormatPower(move.Power) · @FormatAccuracy(move.Accuracy)</small></div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="move-placeholder unknown"><span>Unknown move</span><span>--</span></div>
+                    }
                 }
             </div>
         </section>
@@ -207,7 +252,9 @@
 </main>
 
 @code {
-    private readonly string[] _enemyStats = ["HP", "ATK", "DEF", "SpA", "SpD", "SPE"];
+    private readonly (string Name, EnemyStat Stat)[] _enemyStats =
+        [("HP", EnemyStat.Hp), ("ATK", EnemyStat.Attack), ("DEF", EnemyStat.Defense),
+         ("SpA", EnemyStat.SpecialAttack), ("SpD", EnemyStat.SpecialDefense), ("SPE", EnemyStat.Speed)];
     private readonly int[] _moveSlots = [1, 2, 3, 4];
     private readonly string[] _playerStats = ["ATK", "DEF", "SpA", "SpD", "SPE"];
     private TrackerConnectionSnapshot _connection = new(TrackerConnectionStatus.Stopped, null, null, null);
@@ -215,6 +262,9 @@
     private TrackerView _selectedView = TrackerView.Player;
     private string? _spriteKey;
     private string? _spriteSource;
+    private string? _enemySpriteKey;
+    private string? _enemySpriteSource;
+    private string? _lastEnemyId;
 
     /// <summary>
     /// Subscribes the tracker shell to connection state changes.
@@ -224,7 +274,12 @@
         _connection = ConnectionState.Snapshot;
         _run = RunState.Snapshot;
         RefreshSprite();
+        RefreshEnemySprite();
+        _lastEnemyId = _run.Enemies.FirstOrDefault()?.EnemyId;
+        if (_lastEnemyId is not null)
+            _selectedView = TrackerView.Enemy;
         ConnectionState.Changed += HandleConnectionChanged;
+        Knowledge.Changed += HandleKnowledgeChanged;
         RunState.Changed += HandleRunChanged;
     }
 
@@ -314,10 +369,26 @@
     /// <param name="args">The run-state change event arguments.</param>
     private void HandleRunChanged(object? sender, EventArgs args)
     {
-        _run = RunState.Snapshot;
+        TrackerRunStateSnapshot next = RunState.Snapshot;
+        bool battleEnded = _run.Battle is not null && next.Battle is null;
+        _run = next;
         RefreshSprite();
+        RefreshEnemySprite();
+        string? enemyId = _run.Enemies.FirstOrDefault()?.EnemyId;
+        if (enemyId is not null && enemyId != _lastEnemyId)
+            _selectedView = TrackerView.Enemy;
+        else if (battleEnded)
+            _selectedView = TrackerView.Player;
+        _lastEnemyId = enemyId;
         _ = InvokeAsync(StateHasChanged);
     }
+
+    /// <summary>
+    /// Refreshes the Razor shell after remembered knowledge or annotations change.
+    /// </summary>
+    /// <param name="sender">The knowledge store raising the event.</param>
+    /// <param name="args">The knowledge change event arguments.</param>
+    private void HandleKnowledgeChanged(object? sender, EventArgs args) => _ = InvokeAsync(StateHasChanged);
 
     /// <summary>
     /// Loads the active Pokemon sprite from the connected local game installation.
@@ -331,27 +402,116 @@
             return;
 
         _spriteKey = key;
-        _spriteSource = null;
-        if (gameRoot is null || spritePath is null)
+        _spriteSource = LoadSpriteSource(gameRoot, spritePath);
+    }
+
+    /// <summary>
+    /// Loads the active enemy sprite from the connected local game installation.
+    /// </summary>
+    private void RefreshEnemySprite()
+    {
+        string? spritePath = _run.Enemies.FirstOrDefault()?.SpritePath;
+        string? gameRoot = _connection.Game?.GameRoot;
+        string? key = gameRoot is null || spritePath is null ? null : $"{gameRoot}|{spritePath}";
+        if (key == _enemySpriteKey)
             return;
 
+        _enemySpriteKey = key;
+        _enemySpriteSource = LoadSpriteSource(gameRoot, spritePath);
+    }
+
+    /// <summary>
+    /// Loads one validated local sprite as a WebView data source.
+    /// </summary>
+    /// <param name="gameRoot">The connected game installation directory.</param>
+    /// <param name="spritePath">The game-relative sprite path.</param>
+    /// <returns>The data source, or null when the sprite is unavailable.</returns>
+    private static string? LoadSpriteSource(string? gameRoot, string? spritePath)
+    {
+        if (gameRoot is null || spritePath is null)
+            return null;
         try
         {
             string root = Path.GetFullPath(gameRoot);
             string rootPrefix = root.EndsWith(Path.DirectorySeparatorChar) ? root : $"{root}{Path.DirectorySeparatorChar}";
             string path = Path.GetFullPath(Path.Combine(root, spritePath));
             if (!path.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase) || !File.Exists(path))
-                return;
+                return null;
 
             string extension = Path.GetExtension(path).ToLowerInvariant();
             string mediaType = extension == ".gif" ? "image/gif" : "image/png";
-            _spriteSource = $"data:{mediaType};base64,{Convert.ToBase64String(File.ReadAllBytes(path))}";
+            return $"data:{mediaType};base64,{Convert.ToBase64String(File.ReadAllBytes(path))}";
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
         {
-            _spriteSource = null;
+            return null;
         }
     }
+
+    /// <summary>
+    /// Gets remembered moves applicable to the visible enemy.
+    /// </summary>
+    /// <returns>The visible enemy's remembered moves.</returns>
+    private IReadOnlyList<ObservedMoveSnapshot> GetEnemyMoves()
+    {
+        EnemyPokemonSnapshot? enemy = _run.Enemies.FirstOrDefault();
+        return enemy is null ? [] : Knowledge.GetDisplayedMoves(enemy.SpeciesId, enemy.Level);
+    }
+
+    /// <summary>
+    /// Cycles one visible enemy annotation.
+    /// </summary>
+    /// <param name="stat">The annotated stat.</param>
+    /// <param name="forward">Whether to cycle forward.</param>
+    private void CycleAnnotation(EnemyStat stat, bool forward)
+    {
+        EnemyPokemonSnapshot? enemy = _run.Enemies.FirstOrDefault();
+        if (enemy is not null)
+            Knowledge.CycleAnnotation(enemy.SpeciesId, stat, forward);
+    }
+
+    /// <summary>
+    /// Gets the CSS class for an enemy annotation button.
+    /// </summary>
+    /// <param name="speciesId">The visible species and form identifier.</param>
+    /// <param name="stat">The annotated stat.</param>
+    /// <returns>The annotation button CSS classes.</returns>
+    private string GetAnnotationClass(string speciesId, EnemyStat stat) =>
+        $"annotation-button {Knowledge.GetAnnotation(speciesId, stat).ToString().ToLowerInvariant()}";
+
+    /// <summary>
+    /// Gets the accessible text for an enemy annotation.
+    /// </summary>
+    /// <param name="speciesId">The visible species and form identifier.</param>
+    /// <param name="stat">The annotated stat.</param>
+    /// <returns>The annotation text.</returns>
+    private string GetAnnotationText(string speciesId, EnemyStat stat) => Knowledge.GetAnnotation(speciesId, stat) switch
+    {
+        EnemyStatAnnotation.Plus => "plus",
+        EnemyStatAnnotation.Minus => "minus",
+        _ => "empty"
+    };
+
+    /// <summary>
+    /// Gets the visible symbol for an enemy annotation.
+    /// </summary>
+    /// <param name="speciesId">The visible species and form identifier.</param>
+    /// <param name="stat">The annotated stat.</param>
+    /// <returns>The annotation symbol.</returns>
+    private string GetAnnotationSymbol(string speciesId, EnemyStat stat) => Knowledge.GetAnnotation(speciesId, stat) switch
+    {
+        EnemyStatAnnotation.Plus => "+",
+        EnemyStatAnnotation.Minus => "−",
+        _ => ""
+    };
+
+    /// <summary>
+    /// Formats observed enemy PP without implying unknown starting PP usage.
+    /// </summary>
+    /// <param name="move">The remembered move.</param>
+    /// <returns>The observed PP text.</returns>
+    private static string FormatObservedPp(ObservedMoveSnapshot move) =>
+        move.PpAfterUse is null ? $"-- / {move.TotalPp} PP" : $"{move.PpAfterUse} / {move.TotalPp} PP";
 
     /// <summary>
     /// Gets the calculated stats displayed by the player card.
@@ -437,6 +597,7 @@
     public void Dispose()
     {
         ConnectionState.Changed -= HandleConnectionChanged;
+        Knowledge.Changed -= HandleKnowledgeChanged;
         RunState.Changed -= HandleRunChanged;
     }
 }

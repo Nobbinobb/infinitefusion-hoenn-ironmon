@@ -291,6 +291,10 @@ module Ironmon
     @tracker_player_battler = nil
     @tracker_player_pokemon = nil
     @tracker_player_json = nil
+    @tracker_enemy_battlers = {}
+    @tracker_enemy_json = {}
+    @tracker_enemy_move_signatures = {}
+    @tracker_next_enemy_state_at = 0.0
     tracker_connection.send_run_started
   end
 
@@ -300,6 +304,10 @@ module Ironmon
     @tracker_battle_id = "battle-#{ensure_tracker_run_id}-#{(System.uptime * 1000).to_i}"
     @tracker_player_battler = nil
     @tracker_player_json = nil
+    @tracker_enemy_battlers = {}
+    @tracker_enemy_json = {}
+    @tracker_enemy_move_signatures = {}
+    @tracker_next_enemy_state_at = 0.0
     @tracker_next_state_at = 0.0
     tracker_connection.send_event("battle_started", tracker_battle_snapshot)
   end
@@ -310,6 +318,9 @@ module Ironmon
     @tracker_battle = nil
     @tracker_battle_id = nil
     @tracker_player_battler = nil
+    @tracker_enemy_battlers = {}
+    @tracker_enemy_json = {}
+    @tracker_enemy_move_signatures = {}
   end
 
   def self.tracker_player_sent_out(battler)
@@ -336,6 +347,60 @@ module Ironmon
     echoln "Ironmon tracker player update failed safely: #{e.message}"
   end
 
+  def self.tracker_enemy_sent_out(battler)
+    return if !active? || !@tracker_battle_id || !battler
+    current = @tracker_enemy_battlers[battler.index]
+    return if current && current.pokemon.equal?(battler.pokemon)
+    @tracker_enemy_battlers[battler.index] = battler
+    @tracker_enemy_move_signatures.delete(battler.index)
+    snapshot = tracker_enemy_snapshot(battler)
+    @tracker_enemy_json[battler.index] = JSON.generate(snapshot)
+    tracker_connection.send_event("enemy_sent_out", snapshot)
+  end
+
+  def self.update_tracker_enemies
+    return if !@tracker_battle_id || !@tracker_enemy_battlers
+    now = System.uptime
+    return if @tracker_next_enemy_state_at && now < @tracker_next_enemy_state_at
+    @tracker_next_enemy_state_at = now + TRACKER_STATE_INTERVAL_SECONDS
+    @tracker_enemy_battlers.each do |position, battler|
+      tracker_enemy_move_if_changed(battler)
+      snapshot = tracker_enemy_snapshot(battler)
+      snapshot_json = JSON.generate(snapshot)
+      next if snapshot_json == @tracker_enemy_json[position]
+      @tracker_enemy_json[position] = snapshot_json
+      tracker_connection.send_event("enemy_state_changed", snapshot)
+    end
+  rescue Exception => e
+    echoln "Ironmon tracker enemy update failed safely: #{e.message}"
+  end
+
+  def self.tracker_enemy_move_if_changed(battler)
+    return if !battler || !battler.lastMoveUsed || battler.lastMoveFailed
+    battle_move = battler.moves.find { |move| move.id == battler.lastMoveUsed }
+    current_pp = battle_move ? battle_move.pp : nil
+    signature = [tracker_enemy_id(battler.pokemon), battler.lastMoveUsed, current_pp]
+    return if @tracker_enemy_move_signatures[battler.index] == signature
+    @tracker_enemy_move_signatures[battler.index] = signature
+    tracker_enemy_move_used(battler, battler.lastMoveUsed)
+  end
+
+  def self.tracker_enemy_move_used(battler, move_id)
+    return if !active? || !@tracker_battle_id || !battler || !move_id
+    battle_move = battler.moves.find { |move| move.id == move_id }
+    pp_after_use = battle_move && battle_move.pp >= 0 ? battle_move.pp : nil
+    move = tracker_observed_move(battler.pokemon, move_id, "enemy_use", pp_after_use)
+    payload = {
+      "enemy_id" => tracker_enemy_id(battler.pokemon),
+      "species_id" => tracker_species_id(battler.pokemon),
+      "enemy_level" => battler.level,
+      "move" => move
+    }
+    tracker_connection.send_event("enemy_move_used", payload)
+  rescue Exception => e
+    echoln "Ironmon tracker enemy move failed safely: #{e.message}"
+  end
+
   def self.ensure_tracker_run_id
     return nil if !active? || !$PokemonGlobal
     if !$PokemonGlobal.ironmon_run_id || $PokemonGlobal.ironmon_run_id.empty?
@@ -345,6 +410,8 @@ module Ironmon
   end
 
   def self.new_tracker_run_id
+    seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : nil
+    return "run-seed-#{seed}" if seed
     timestamp = Time.now.utc.strftime("%Y%m%dT%H%M%S")
     uptime = (System.uptime * 1000).to_i
     return "run-#{timestamp}-#{Process.pid}-#{uptime}"
@@ -364,7 +431,8 @@ module Ironmon
       "battle_id" => tracker_battle_id,
       "sequence" => $PokemonGlobal ? ($PokemonGlobal.ironmon_tracker_sequence || 0) : 0,
       "battle" => tracker_battle_snapshot,
-      "player" => @tracker_player_pokemon ? tracker_player_snapshot : nil
+      "player" => @tracker_player_pokemon ? tracker_player_snapshot : nil,
+      "enemies" => tracker_enemy_snapshots
     }
   end
 
@@ -385,7 +453,7 @@ module Ironmon
     held_item = pokemon.item
     return {
       "pokemon_id" => pokemon.personalID.to_s,
-      "species_id" => "#{species.id}:#{pokemon.form}",
+      "species_id" => tracker_species_id(pokemon),
       "nickname" => pokemon.name,
       "species_name" => species.name,
       "sprite_path" => tracker_sprite_path(pokemon),
@@ -405,13 +473,87 @@ module Ironmon
       "base_stat_total" => pokemon.baseStats.values.inject(0) { |sum, value| sum + value },
       "nature" => nature ? nature.name : nil,
       "moves" => pokemon.moves.map { |move| tracker_move_snapshot(move) },
+      "level_up_moves" => tracker_player_level_up_moves(pokemon),
       "healing" => tracker_healing_snapshot(pokemon.totalhp)
     }
   end
 
+  def self.tracker_enemy_snapshots
+    return [] if !@tracker_enemy_battlers
+    return @tracker_enemy_battlers.keys.sort.map { |position| tracker_enemy_snapshot(@tracker_enemy_battlers[position]) }
+  end
+
+  def self.tracker_enemy_snapshot(battler)
+    pokemon = battler.pokemon
+    species = pokemon.species_data
+    return {
+      "enemy_id" => tracker_enemy_id(pokemon),
+      "position" => battler.index,
+      "species_id" => tracker_species_id(pokemon),
+      "species_name" => species.name,
+      "sprite_path" => tracker_sprite_path(pokemon),
+      "level" => battler.level,
+      "types" => pokemon.types.map { |type| type.to_s },
+      "base_stat_total" => pokemon.baseStats.values.inject(0) { |sum, value| sum + value },
+      "last_move" => tracker_enemy_last_move(battler)
+    }
+  end
+
+  def self.tracker_enemy_last_move(battler)
+    move_id = battler.lastMoveUsed
+    move_id = battler.movesUsed.last if !move_id && battler.movesUsed && !battler.movesUsed.empty?
+    return nil if !move_id
+    battle_move = battler.moves.find { |move| move.id == move_id }
+    pp_after_use = battle_move ? battle_move.pp : nil
+    return tracker_observed_move(battler.pokemon, move_id, "enemy_use", pp_after_use)
+  end
+
+  def self.tracker_player_level_up_moves(pokemon)
+    return pokemon.moves.map do |move|
+      tracker_observed_move(pokemon, move.id, "player_initial", nil)
+    end.select { |move| move["source"] == "level_up" }
+  end
+
+  def self.tracker_observed_move(pokemon, move_id, origin, pp_after_use)
+    move_data = GameData::Move.get(move_id)
+    learned_level = 0
+    learn_order = 0
+    found = false
+    pokemon.getMoveList.each_with_index do |entry, index|
+      listed_move = GameData::Move.try_get(entry[1])
+      next if !listed_move || listed_move.id != move_data.id || entry[0] > pokemon.level
+      learned_level = entry[0]
+      learn_order = index
+      found = true
+    end
+    source = found ? "level_up" : "unknown"
+    return {
+      "id" => move_data.id.to_s,
+      "name" => move_data.name,
+      "learned_level" => learned_level,
+      "learn_order" => learn_order,
+      "source" => source,
+      "origin" => origin,
+      "type" => move_data.type.to_s,
+      "power" => move_data.base_damage || 0,
+      "accuracy" => move_data.accuracy || 0,
+      "total_pp" => move_data.total_pp,
+      "pp_after_use" => pp_after_use
+    }
+  end
+
+  def self.tracker_species_id(pokemon)
+    return "#{pokemon.species_data.id}:#{pokemon.form}"
+  end
+
+  def self.tracker_enemy_id(pokemon)
+    return "enemy-#{pokemon.personalID}"
+  end
+
   def self.tracker_player_confused?
     return false if !@tracker_battle_id || !@tracker_player_battler
-    return @tracker_player_battler.effects[PBEffects::Confusion].to_i > 0
+    confusion = @tracker_player_battler.effects[PBEffects::Confusion]
+    return !!(confusion && confusion > 0)
   end
 
   def self.tracker_move_snapshot(move)
@@ -483,6 +625,7 @@ module Graphics
       ironmon_tracker_original_update
       Ironmon.update_tracker_connection
       Ironmon.update_tracker_player
+      Ironmon.update_tracker_enemies
     end
   end
 end
@@ -503,8 +646,34 @@ module IronmonTrackerBattleHooks
       Ironmon.tracker_player_sent_out(@battlers[index])
       break
     end
+    send_outs.each do |entry|
+      index = entry[0]
+      next if index.even?
+      Ironmon.tracker_enemy_sent_out(@battlers[index])
+    end
+    return result
+  end
+
+  def pbOnActiveAll
+    result = super
+    @battlers.each do |battler|
+      next if !battler || battler.index.even?
+      Ironmon.tracker_enemy_sent_out(battler)
+    end
     return result
   end
 end
 
 PokeBattle_Battle.prepend(IronmonTrackerBattleHooks)
+
+module IronmonTrackerBattlerHooks
+  def pbUseMove(choice, special_usage = false)
+    result = super
+    if @index.odd? && !special_usage && !@lastMoveFailed && @lastMoveUsed
+      Ironmon.tracker_enemy_move_if_changed(self)
+    end
+    return result
+  end
+end
+
+PokeBattle_Battler.prepend(IronmonTrackerBattlerHooks)

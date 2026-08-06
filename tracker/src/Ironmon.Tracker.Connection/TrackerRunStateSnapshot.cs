@@ -12,10 +12,12 @@ public sealed class TrackerRunStateSnapshot
     /// </summary>
     /// <param name="battle">The active battle when one exists.</param>
     /// <param name="player">The initialized player Pokemon when one exists.</param>
-    public TrackerRunStateSnapshot(BattleSnapshot? battle, PlayerPokemonSnapshot? player)
+    /// <param name="enemies">The active legally visible opposing Pokemon.</param>
+    public TrackerRunStateSnapshot(BattleSnapshot? battle, PlayerPokemonSnapshot? player, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null)
     {
         Battle = battle;
         Player = player;
+        Enemies = enemies ?? [];
     }
 
     /// <summary>
@@ -27,4 +29,9 @@ public sealed class TrackerRunStateSnapshot
     /// Gets the initialized player Pokemon when one exists.
     /// </summary>
     public PlayerPokemonSnapshot? Player { get; }
+
+    /// <summary>
+    /// Gets the active legally visible opposing Pokemon.
+    /// </summary>
+    public IReadOnlyList<EnemyPokemonSnapshot> Enemies { get; }
 }

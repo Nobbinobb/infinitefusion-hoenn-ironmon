@@ -25,8 +25,9 @@ public sealed class TrackerConnectionServiceTests
     {
         TrackerConnectionState state = new();
         TrackerRunState runState = new();
+        TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
         TrackerConnectionOptions options = new(0, "0.1.0", false, TimeSpan.FromSeconds(2));
-        await using TrackerConnectionService service = new(options, state, runState);
+        await using TrackerConnectionService service = new(options, state, runState, knowledge);
         service.Start();
 
         using TcpClient client = new();
@@ -60,29 +61,88 @@ public sealed class TrackerConnectionServiceTests
         await writer.WriteAsync(runStarted);
         TrackerConnectionSnapshot newRun = await WaitForSnapshotAsync(state, snapshot => snapshot.CurrentState?.RunId == "run-2");
         Assert.Equal(1, newRun.CurrentState?.Sequence);
+        knowledge.SelectRun(null);
 
         BattleSnapshot battle = new() { BattleId = "battle-1" };
         TrackerMessage battleStarted = TrackerMessageFactory.CreateEvent("battle_started", 2, battle, "run-2", "battle-1");
         await writer.WriteAsync(battleStarted);
         await WaitForRunSnapshotAsync(runState, snapshot => snapshot.Battle?.BattleId == "battle-1");
+        Assert.Equal("run-2", knowledge.RunId);
+
+        EnemyPokemonSnapshot enemy = new()
+        {
+            EnemyId = "enemy-1",
+            Position = 1,
+            SpeciesId = "BELLOSSOM:0",
+            SpeciesName = "Bellossom",
+            Level = 5,
+            Types = ["GRASS"],
+            BaseStatTotal = 490,
+            LastMove = new ObservedMoveSnapshot
+            {
+                Id = "STUNSPORE",
+                Name = "Stun Spore",
+                LearnedLevel = 0,
+                LearnOrder = 0,
+                Source = "unknown",
+                Origin = "enemy_use",
+                Type = "GRASS",
+                Power = 0,
+                Accuracy = 75,
+                TotalPp = 30,
+                PpAfterUse = 29
+            }
+        };
+        TrackerMessage enemySentOut = TrackerMessageFactory.CreateEvent("enemy_sent_out", 3, enemy, "run-2", "battle-1");
+        await writer.WriteAsync(enemySentOut);
+        TrackerRunStateSnapshot enemyState = await WaitForRunSnapshotAsync(runState, snapshot => snapshot.Enemies.Count == 1);
+        Assert.Equal("Bellossom", enemyState.Enemies[0].SpeciesName);
+        await WaitForKnowledgeAsync(knowledge, "BELLOSSOM:0", 5);
+        Assert.Equal("STUNSPORE", Assert.Single(knowledge.GetDisplayedMoves("BELLOSSOM:0", 5)).Id);
+
+        EnemyMoveUsedPayload moveUsed = new()
+        {
+            EnemyId = "enemy-1",
+            SpeciesId = "BELLOSSOM:0",
+            EnemyLevel = 5,
+            Move = new ObservedMoveSnapshot
+            {
+                Id = "ABSORB",
+                Name = "Absorb",
+                LearnedLevel = 0,
+                LearnOrder = 0,
+                Source = "unknown",
+                Origin = "enemy_use",
+                Type = "GRASS",
+                Power = 20,
+                Accuracy = 100,
+                TotalPp = 25,
+                PpAfterUse = 24
+            }
+        };
+        TrackerMessage enemyMoveUsed = TrackerMessageFactory.CreateEvent("enemy_move_used", 4, moveUsed, "run-2", "battle-1");
+        await writer.WriteAsync(enemyMoveUsed);
+        await WaitForKnowledgeMoveAsync(knowledge, "BELLOSSOM:0", 5, "ABSORB");
+        Assert.Contains(knowledge.GetDisplayedMoves("BELLOSSOM:0", 5), move => move.Id == "ABSORB");
 
         PlayerPokemonSnapshot player = CreatePlayerSnapshot(24, 24, 2);
-        TrackerMessage sentOut = TrackerMessageFactory.CreateEvent("player_sent_out", 3, player, "run-2", "battle-1");
+        TrackerMessage sentOut = TrackerMessageFactory.CreateEvent("player_sent_out", 5, player, "run-2", "battle-1");
         await writer.WriteAsync(sentOut);
         TrackerRunStateSnapshot playerState = await WaitForRunSnapshotAsync(runState, snapshot => snapshot.Player is not null);
         Assert.Equal("Espeon", playerState.Player?.SpeciesName);
         Assert.Equal(2, playerState.Player?.Healing.ItemCount);
 
         PlayerPokemonSnapshot damaged = CreatePlayerSnapshot(12, 24, 1);
-        TrackerMessage changed = TrackerMessageFactory.CreateEvent("player_state_changed", 4, damaged, "run-2", "battle-1");
+        TrackerMessage changed = TrackerMessageFactory.CreateEvent("player_state_changed", 6, damaged, "run-2", "battle-1");
         await writer.WriteAsync(changed);
         TrackerRunStateSnapshot damagedState = await WaitForRunSnapshotAsync(runState, snapshot => snapshot.Player?.CurrentHp == 12);
         Assert.Equal(50, damagedState.Player?.Healing.Percentage);
 
-        TrackerMessage battleEnded = TrackerMessageFactory.CreateEvent("battle_ended", 5, battle, "run-2", "battle-1");
+        TrackerMessage battleEnded = TrackerMessageFactory.CreateEvent("battle_ended", 7, battle, "run-2", "battle-1");
         await writer.WriteAsync(battleEnded);
         TrackerRunStateSnapshot endedState = await WaitForRunSnapshotAsync(runState, snapshot => snapshot.Battle is null);
         Assert.NotNull(endedState.Player);
+        Assert.Empty(endedState.Enemies);
 
         client.Dispose();
         TrackerConnectionSnapshot waiting = await WaitForSnapshotAsync(state, snapshot => snapshot.Status == TrackerConnectionStatus.Waiting);
@@ -97,8 +157,9 @@ public sealed class TrackerConnectionServiceTests
     {
         TrackerConnectionState state = new();
         TrackerRunState runState = new();
+        TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
         TrackerConnectionOptions options = new(0, "0.1.0", false, TimeSpan.FromSeconds(2));
-        await using TrackerConnectionService service = new(options, state, runState);
+        await using TrackerConnectionService service = new(options, state, runState, knowledge);
         service.Start();
 
         using TcpClient client = new();
@@ -121,8 +182,9 @@ public sealed class TrackerConnectionServiceTests
     {
         TrackerConnectionState state = new();
         TrackerRunState runState = new();
+        TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
         TrackerConnectionOptions options = new(0, "0.1.0", false, TimeSpan.FromMilliseconds(50));
-        await using TrackerConnectionService service = new(options, state, runState);
+        await using TrackerConnectionService service = new(options, state, runState, knowledge);
         service.Start();
 
         using TcpClient client = new();
@@ -180,6 +242,49 @@ public sealed class TrackerConnectionServiceTests
     }
 
     /// <summary>
+    /// Waits for a received enemy move to enter tracker-owned knowledge.
+    /// </summary>
+    /// <param name="knowledge">The knowledge store being observed.</param>
+    /// <param name="speciesId">The observed enemy species and form.</param>
+    /// <param name="level">The visible enemy level.</param>
+    /// <returns>A task representing the wait.</returns>
+    /// <exception cref="TimeoutException">Thrown when no displayed move arrives.</exception>
+    private static async Task WaitForKnowledgeAsync(TrackerKnowledgeStore knowledge, string speciesId, int level)
+    {
+        DateTimeOffset deadline = DateTimeOffset.UtcNow.AddSeconds(3);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            if (knowledge.GetDisplayedMoves(speciesId, level).Count > 0)
+                return;
+            await Task.Delay(10);
+        }
+
+        throw new TimeoutException("The expected enemy move was not remembered.");
+    }
+
+    /// <summary>
+    /// Waits for a specific received enemy move to enter tracker-owned knowledge.
+    /// </summary>
+    /// <param name="knowledge">The knowledge store being observed.</param>
+    /// <param name="speciesId">The observed enemy species and form.</param>
+    /// <param name="level">The visible enemy level.</param>
+    /// <param name="moveId">The expected move identifier.</param>
+    /// <returns>A task representing the wait.</returns>
+    /// <exception cref="TimeoutException">Thrown when the move does not arrive.</exception>
+    private static async Task WaitForKnowledgeMoveAsync(TrackerKnowledgeStore knowledge, string speciesId, int level, string moveId)
+    {
+        DateTimeOffset deadline = DateTimeOffset.UtcNow.AddSeconds(3);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            if (knowledge.GetDisplayedMoves(speciesId, level).Any(move => move.Id == moveId))
+                return;
+            await Task.Delay(10);
+        }
+
+        throw new TimeoutException("The expected specific enemy move was not remembered.");
+    }
+
+    /// <summary>
     /// Creates a complete player snapshot for connection integration tests.
     /// </summary>
     /// <param name="currentHp">The current HP.</param>
@@ -226,5 +331,15 @@ public sealed class TrackerConnectionServiceTests
             Moves = [move],
             Healing = healing
         };
+    }
+
+    /// <summary>
+    /// Creates an isolated tracker knowledge store for a connection test.
+    /// </summary>
+    /// <returns>The isolated tracker knowledge store.</returns>
+    private static TrackerKnowledgeStore CreateKnowledgeStore()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
+        return new TrackerKnowledgeStore(new TrackerKnowledgeOptions(path));
     }
 }
