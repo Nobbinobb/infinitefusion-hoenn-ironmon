@@ -1,0 +1,96 @@
+:root {
+    color-scheme: dark;
+    --background: #100e16;
+    --surface: #18151f;
+    --surface-soft: #211d2a;
+    --surface-raised: #2a2535;
+    --border: #332d3e;
+    --border-strong: #494055;
+    --text: #f5f1fa;
+    --muted: #91889e;
+    --muted-strong: #beb5c9;
+    --accent: #8064dc;
+    --accent-soft: #b7a4ff;
+    --enemy-soft: #f08ba0;
+    --warning: #e2aa4f;
+    font-family: TrackerSans, "Segoe UI", sans-serif;
+    font-synthesis: none;
+}
+
+html,
+body,
+#app {
+    min-height: 100%;
+    margin: 0;
+}
+
+html {
+    background: var(--background);
+}
+
+body {
+    min-width: 20rem;
+    color: var(--text);
+    background:
+        radial-gradient(circle at 50% -10%, rgb(128 100 220 / 13%), transparent 33rem),
+        var(--background);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+button,
+a {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--accent-soft);
+    outline-offset: 2px;
+}
+
+#blazor-error-ui {
+    display: none;
+    position: fixed;
+    right: 0.8rem;
+    bottom: 0.8rem;
+    left: 0.8rem;
+    z-index: 1000;
+    padding: 0.8rem 2.5rem 0.8rem 0.9rem;
+    border: 1px solid #7c3f4d;
+    border-radius: 0.65rem;
+    color: #ffdbe2;
+    background: #3b2028;
+    box-shadow: 0 0.6rem 2rem rgb(0 0 0 / 30%);
+    font-size: 0.78rem;
+}
+
+#blazor-error-ui .reload {
+    margin-left: 0.4rem;
+    color: #fff;
+}
+
+#blazor-error-ui .dismiss {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.75rem;
+    cursor: pointer;
+}
+
+.blazor-error-boundary {
+    margin: 1rem;
+    padding: 1rem;
+    border: 1px solid #7c3f4d;
+    border-radius: 0.75rem;
+    color: #ffdbe2;
+    background: #3b2028;
+}
+
+.blazor-error-boundary::after {
+    content: "The tracker interface could not be displayed.";
+}

@@ -1,0 +1,150 @@
+@page "/"
+
+<PageTitle>Ironmon Tracker</PageTitle>
+
+<main class="tracker-shell" tabindex="0" autofocus @onkeydown="HandleKeyDown">
+    <header class="tracker-header">
+        <div>
+            <p class="eyebrow">IRONMON COMPANION</p>
+            <h1>Tracker</h1>
+        </div>
+        <div class="connection-state" role="status">
+            <span class="connection-dot" aria-hidden="true"></span>
+            <span>Waiting for game</span>
+        </div>
+    </header>
+
+    <nav class="view-tabs" aria-label="Tracker views" role="tablist">
+        <button class="@GetTabClass(TrackerView.Player)"
+                type="button"
+                role="tab"
+                aria-selected="@(_selectedView == TrackerView.Player)"
+                @onclick="() => SelectView(TrackerView.Player)">
+            <span class="tab-key">P</span>
+            Player
+        </button>
+        <button class="@GetTabClass(TrackerView.Enemy)"
+                type="button"
+                role="tab"
+                aria-selected="@(_selectedView == TrackerView.Enemy)"
+                @onclick="() => SelectView(TrackerView.Enemy)">
+            <span class="tab-key">E</span>
+            Enemy
+        </button>
+    </nav>
+
+    @if (_selectedView == TrackerView.Player)
+    {
+        <section class="pokemon-card" role="tabpanel" aria-label="Player Pokemon">
+            <div class="card-heading">
+                <div class="sprite-placeholder" aria-hidden="true">
+                    <span>?</span>
+                </div>
+                <div class="identity-placeholder">
+                    <p class="card-kicker">ACTIVE POKEMON</p>
+                    <h2>Waiting for player</h2>
+                    <p>Send your Pokemon into battle to initialize this view.</p>
+                </div>
+            </div>
+
+            <div class="placeholder-bar"><span></span></div>
+
+            <div class="stat-grid" aria-label="Stats waiting for game data">
+                @foreach (string stat in _stats)
+                {
+                    <div class="stat-row">
+                        <span>@stat</span>
+                        <strong>--</strong>
+                    </div>
+                }
+            </div>
+
+            <div class="move-list" aria-label="Moves waiting for game data">
+                <p class="section-label">MOVES</p>
+                @foreach (int slot in _moveSlots)
+                {
+                    <div class="move-placeholder">
+                        <span>Move @slot</span>
+                        <span>-- / -- PP</span>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+    else
+    {
+        <section class="pokemon-card" role="tabpanel" aria-label="Enemy Pokemon">
+            <div class="card-heading">
+                <div class="sprite-placeholder enemy" aria-hidden="true">
+                    <span>?</span>
+                </div>
+                <div class="identity-placeholder">
+                    <p class="card-kicker">OPPOSING POKEMON</p>
+                    <h2>No opponent</h2>
+                    <p>The enemy view will open automatically when battle data arrives.</p>
+                </div>
+            </div>
+
+            <div class="enemy-stat-grid" aria-label="Enemy annotations waiting for game data">
+                @foreach (string stat in _stats)
+                {
+                    <div class="enemy-stat-row">
+                        <span>@stat</span>
+                        <button type="button" disabled aria-label="@stat annotation unavailable">&nbsp;</button>
+                    </div>
+                }
+            </div>
+
+            <div class="move-list" aria-label="Discovered moves waiting for game data">
+                <p class="section-label">DISCOVERED MOVES</p>
+                @foreach (int slot in _moveSlots)
+                {
+                    <div class="move-placeholder unknown">
+                        <span>Unknown move</span>
+                        <span>--</span>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    <footer class="tracker-footer">
+        <span>Local connection</span>
+        <span><kbd>P</kbd> Player&nbsp;&nbsp;<kbd>E</kbd> Enemy</span>
+    </footer>
+</main>
+
+@code {
+    private readonly string[] _stats = ["HP", "ATK", "DEF", "SpA", "SpD", "SPE"];
+    private readonly int[] _moveSlots = [1, 2, 3, 4];
+    private TrackerView _selectedView = TrackerView.Player;
+
+    /// <summary>
+    /// Selects the requested primary tracker view.
+    /// </summary>
+    /// <param name="view">The view selected by the user.</param>
+    private void SelectView(TrackerView view) => _selectedView = view;
+
+    /// <summary>
+    /// Handles keyboard shortcuts for switching between primary tracker views.
+    /// </summary>
+    /// <param name="args">The browser keyboard event.</param>
+    private void HandleKeyDown(KeyboardEventArgs args)
+    {
+        TrackerView? requestedView = args.Key.ToUpperInvariant() switch
+        {
+            "P" or "1" => TrackerView.Player,
+            "E" or "2" => TrackerView.Enemy,
+            _ => null
+        };
+        if (requestedView is not null)
+            SelectView(requestedView.Value);
+    }
+
+    /// <summary>
+    /// Gets the CSS class for a primary tracker tab.
+    /// </summary>
+    /// <param name="view">The tab's tracker view.</param>
+    /// <returns>The tab CSS classes.</returns>
+    private string GetTabClass(TrackerView view) => view == _selectedView ? "view-tab selected" : "view-tab";
+}

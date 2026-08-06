@@ -34,6 +34,8 @@ historical release notes and validation evidence.
   slots, special mechanics, and migration rules.
 - [Ironmon Inspector](design/IRONMON_INSPECTOR.md): development inspection UI
   and future pages.
+- [Ironmon Tracker](design/TRACKER.md): external Blazor Hybrid tracker,
+  protocol, live and post-run information, packaging, and debug mode.
 
 ## Release notes
 

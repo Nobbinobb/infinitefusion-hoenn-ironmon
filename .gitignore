@@ -1,0 +1,3 @@
+.dotnet-cli/
+tracker/**/bin/
+tracker/**/obj/
