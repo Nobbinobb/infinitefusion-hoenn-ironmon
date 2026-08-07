@@ -15,12 +15,7 @@ public static class TrackerMessageFactory
     /// <param name="runId">The current run identifier.</param>
     /// <param name="battleId">The current battle identifier.</param>
     /// <returns>A validated event message.</returns>
-    public static TrackerMessage CreateEvent<TPayload>(
-        string eventName,
-        long sequence,
-        TPayload payload,
-        string? runId = null,
-        string? battleId = null)
+    public static TrackerMessage CreateEvent<TPayload>(string eventName, long sequence, TPayload payload, string? runId = null, string? battleId = null)
     {
         TrackerMessage message = new()
         {
@@ -33,6 +28,7 @@ public static class TrackerMessageFactory
             SentAt = DateTimeOffset.UtcNow,
             Payload = TrackerJson.SerializePayload(payload)
         };
+
         TrackerMessageValidator.Validate(message);
         return message;
     }
@@ -47,12 +43,7 @@ public static class TrackerMessageFactory
     /// <param name="runId">The current run identifier.</param>
     /// <param name="battleId">The current battle identifier.</param>
     /// <returns>A validated request message.</returns>
-    public static TrackerMessage CreateRequest<TPayload>(
-        string requestId,
-        string command,
-        TPayload payload,
-        string? runId = null,
-        string? battleId = null)
+    public static TrackerMessage CreateRequest<TPayload>(string requestId, string command, TPayload payload, string? runId = null, string? battleId = null)
     {
         TrackerMessage message = new()
         {
@@ -65,6 +56,7 @@ public static class TrackerMessageFactory
             SentAt = DateTimeOffset.UtcNow,
             Payload = TrackerJson.SerializePayload(payload)
         };
+
         TrackerMessageValidator.Validate(message);
         return message;
     }
@@ -78,11 +70,7 @@ public static class TrackerMessageFactory
     /// <param name="runId">The current run identifier.</param>
     /// <param name="battleId">The current battle identifier.</param>
     /// <returns>A validated successful response.</returns>
-    public static TrackerMessage CreateResponse<TPayload>(
-        string requestId,
-        TPayload payload,
-        string? runId = null,
-        string? battleId = null)
+    public static TrackerMessage CreateResponse<TPayload>(string requestId, TPayload payload, string? runId = null, string? battleId = null)
     {
         TrackerMessage message = new()
         {
@@ -95,6 +83,7 @@ public static class TrackerMessageFactory
             Success = true,
             Payload = TrackerJson.SerializePayload(payload)
         };
+
         TrackerMessageValidator.Validate(message);
         return message;
     }
@@ -107,11 +96,7 @@ public static class TrackerMessageFactory
     /// <param name="runId">The current run identifier.</param>
     /// <param name="battleId">The current battle identifier.</param>
     /// <returns>A validated failed response.</returns>
-    public static TrackerMessage CreateErrorResponse(
-        string requestId,
-        TrackerProtocolError error,
-        string? runId = null,
-        string? battleId = null)
+    public static TrackerMessage CreateErrorResponse(string requestId, TrackerProtocolError error, string? runId = null, string? battleId = null)
     {
         ArgumentNullException.ThrowIfNull(error);
         Dictionary<string, object?> emptyPayload = [];
@@ -127,6 +112,7 @@ public static class TrackerMessageFactory
             Error = error,
             Payload = TrackerJson.SerializePayload(emptyPayload)
         };
+
         TrackerMessageValidator.Validate(message);
         return message;
     }

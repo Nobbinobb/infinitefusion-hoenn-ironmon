@@ -19,8 +19,7 @@ public sealed class TrackerConnectionOptions
         ArgumentOutOfRangeException.ThrowIfNegative(port);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(port, ushort.MaxValue);
         ArgumentException.ThrowIfNullOrWhiteSpace(trackerVersion);
-        if (handshakeTimeout <= TimeSpan.Zero)
-            throw new ArgumentOutOfRangeException(nameof(handshakeTimeout));
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(handshakeTimeout, TimeSpan.Zero);
 
         Port = port;
         TrackerVersion = trackerVersion;

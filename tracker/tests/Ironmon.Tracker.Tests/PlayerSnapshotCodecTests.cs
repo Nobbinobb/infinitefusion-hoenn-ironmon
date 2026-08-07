@@ -51,6 +51,25 @@ public sealed class PlayerSnapshotCodecTests
     }
 
     /// <summary>
+    /// Verifies evolution requirements cannot reveal the destination species through the protocol.
+    /// </summary>
+    [Fact]
+    public void EvolutionSnapshotContainsOnlyRequirementData()
+    {
+        EvolutionSnapshot evolution = new()
+        {
+            Kind = EvolutionRequirementKind.Level,
+            Level = 20,
+            Requirement = "Level 20"
+        };
+
+        string json = TrackerJson.SerializePayload(evolution).GetRawText();
+
+        Assert.DoesNotContain("species", json, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"requirement\":\"Level 20\"", json, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Creates the representative complete player payload.
     /// </summary>
     /// <returns>The complete player payload.</returns>
@@ -66,6 +85,7 @@ public sealed class PlayerSnapshotCodecTests
             Power = 90,
             Accuracy = 100
         };
+
         return new PlayerPokemonSnapshot
         {
             PokemonId = "42",

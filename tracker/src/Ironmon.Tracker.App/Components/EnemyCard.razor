@@ -1,0 +1,96 @@
+<section class="pokemon-card" role="tabpanel" aria-label="Enemy Pokemon">
+    @if (Enemies.Count > 1)
+    {
+        <nav class="enemy-selector" aria-label="Opposing Pokemon">
+            @for (int index = 0; index < Enemies.Count; index++)
+            {
+                EnemyPokemonSnapshot candidate = Enemies[index];
+                int enemyNumber = index + 1;
+                <button class="@GetEnemySelectorClass(candidate)" type="button" @onclick="() => SelectEnemy(candidate.EnemyId)">Enemy @enemyNumber</button>
+            }
+        </nav>
+    }
+
+    <div class="card-heading action-heading">
+        <div class="sprite-placeholder enemy @(SelectedEnemy is null ? string.Empty : "live")" aria-hidden="true">
+            @if (_spriteSource is not null)
+            {
+                <img src="@_spriteSource" alt="" />
+            }
+            else
+            {
+                <span>?</span>
+            }
+        </div>
+        <div class="identity-placeholder">
+            <p class="card-kicker">OPPOSING POKEMON</p>
+            <h2 class="identity-name">
+                <span>@GetName()</span>
+                @if (SelectedEnemy is not null)
+                {
+                    <small>Lv. @SelectedEnemy.Level</small>
+                }
+            </h2>
+            @if (SelectedEnemy is null)
+            {
+                <p>The enemy view will open automatically when battle data arrives.</p>
+            }
+            else
+            {
+                <p class="typing-line">
+                    @foreach (string type in SelectedEnemy.Types)
+                    {
+                        <span class="typing-type @MovePresentation.GetTypeColorClass(type)">@type</span>
+                    }
+                </p>
+            }
+        </div>
+        <div class="identity-actions placeholder-content" aria-label="Hidden enemy details">
+            @if (GetAbilities().Count > 1)
+            {
+                <details class="compact-disclosure">
+                    <summary>Ability <strong>@GetAbilities()[0].Name</strong><span>+@(GetAbilities().Count - 1)</span></summary>
+                    <div class="disclosure-menu">
+                        @foreach (AbilitySnapshot ability in GetAbilities())
+                        {
+                            <button type="button" @onclick="() => SelectAbility(ability)">@ability.Name</button>
+                        }
+                    </div>
+                </details>
+            }
+            else if (GetAbilities().Count == 1)
+            {
+                <button class="identity-action-button" type="button" @onclick="() => SelectAbility(GetAbilities()[0])">Ability <strong>@GetAbilities()[0].Name</strong></button>
+            }
+            else
+            {
+                <span>Ability <strong>@GetFirstAbilityName()</strong></span>
+            }
+            <span>Item <strong>@(SelectedEnemy is null ? "--" : "Hidden")</strong></span>
+            <span class="identity-action-spacer" aria-hidden="true"></span>
+        </div>
+    </div>
+
+    <div class="hp-block placeholder-content">
+        <div><span>HP</span><strong>-- / --</strong></div>
+        <div class="hp-bar unknown enemy" aria-label="Enemy HP unknown"><span></span></div>
+    </div>
+
+    <div class="detail-strip placeholder-content" aria-label="Hidden enemy condition">
+        <span>@(SelectedEnemy is null ? "Status --" : "Status hidden")</span>
+    </div>
+
+    <EnemyStatGrid Enemy="@SelectedEnemy" />
+
+    <div class="summary-row placeholder-content" aria-label="Enemy summary">
+        <span>BST <strong>@GetBaseStatTotal()</strong></span>
+        <span>Highest <strong>@FormatHighestLevel()</strong></span>
+    </div>
+
+    <EnemyMoveList Enemy="@SelectedEnemy" PlayerTypes="@PlayerTypes" />
+</section>
+
+@if (_selectedAbility is not null)
+{
+    <AbilityDetailPanel Ability="@_selectedAbility" Closed="CloseAbility" />
+}

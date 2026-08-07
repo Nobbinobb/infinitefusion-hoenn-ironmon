@@ -1,0 +1,41 @@
+<div class="move-list" aria-label="Current Pokemon moves">
+    <div class="section-heading">
+        <p class="section-label">MOVES</p>
+        <span>@FormatLearnsetProgress()</span>
+    </div>
+    @foreach (int slot in _moveSlots)
+    {
+        PlayerMoveSnapshot? move = Player?.Moves.ElementAtOrDefault(slot - 1);
+        @if (move is null)
+        {
+            <div class="move-placeholder empty-move">
+                <span>@(Player is null ? $"Move {slot}" : "Empty move slot")</span>
+                <span>-- / -- PP</span>
+            </div>
+        }
+        else
+        {
+            <MoveRow Name="@move.Name"
+                     Type="@move.Type"
+                     Category="@move.Category"
+                     Effectiveness="@MovePresentation.CalculateEffectiveness(move.Type, move.Category, TargetTypes)"
+                     PpText="@($"{move.CurrentPp} / {move.TotalPp} PP")"
+                     Power="@move.Power"
+                     Accuracy="@move.Accuracy"
+                     Selected="() => SelectMove(move)" />
+        }
+    }
+</div>
+
+@if (_selectedMove is not null)
+{
+    <MoveDetailPanel Name="@_selectedMove.Name"
+                     Type="@_selectedMove.Type"
+                     Category="@_selectedMove.Category"
+                     Description="@_selectedMove.Description"
+                     Power="@_selectedMove.Power"
+                     Accuracy="@_selectedMove.Accuracy"
+                     PpText="@($"{_selectedMove.CurrentPp} / {_selectedMove.TotalPp}")"
+                     Effectiveness="@MovePresentation.CalculateEffectiveness(_selectedMove.Type, _selectedMove.Category, TargetTypes)"
+                     Closed="CloseMove" />
+}

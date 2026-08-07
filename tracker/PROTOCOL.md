@@ -288,6 +288,37 @@ Annotations are keyed by run, species/form, and stat. Left-click cycles
 `empty -> plus -> minus -> empty`; right-click cycles in reverse. Neither
 annotations nor remembered discoveries are written into the game save.
 
+## Adjustment Part A metadata
+
+Player snapshots additionally carry:
+
+- `ability_details` with stable ID, localized name, and description;
+- `nature_adjustments` for the five nature-adjustable stats;
+- `learnset_progress` with `learned_moves`, `maximum_moves`, and nullable
+  `next_move_level`;
+- consistently ordered `evolutions` containing only compact level, item, or
+  other requirement data without the destination species; and
+- move `category` and localized `description` fields.
+
+The learned-move count intersects the Pokémon's recorded learned-move history
+with its unique level-up learnset. The maximum is the complete unique level-up
+learnset. The next level is the earliest learnset entry above the current
+level, or null when the learnset is complete.
+
+An opposing ability activation emits `enemy_ability_revealed`. The same legal
+ability is retained as optional `last_ability` enemy-state data for recovery.
+The tracker remembers multiple abilities per run and species/form, together
+with the highest visible enemy level. Player-owned abilities also contribute
+to this knowledge.
+
+`player_move_menu_opened` is emitted once per player Pokémon send-out when the
+battle first enters that Pokémon's move-selection menu. It contains only the
+stable `pokemon_id`. The UI consumes this as navigation intent; repeated visits
+to the same menu do not emit another event.
+
+Move effectiveness is calculated in the tracker from move and target types.
+It deliberately excludes hidden or conditional ability effects.
+
 ## Run lifecycle
 
 Starting or resetting an Ironmon run assigns a new persisted `run_id`, resets

@@ -1,0 +1,40 @@
+.category-icon {
+    display: inline-grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 1.35rem;
+    height: 1.35rem;
+}
+
+.category-icon svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    fill: currentColor;
+}
+
+.category-icon .icon-stroke {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+}
+
+.category-icon .icon-cutout {
+    fill: var(--surface);
+}
+
+.category-icon.physical {
+    color: #ff8000;
+}
+
+.category-icon.special {
+    color: #5060e1;
+}
+
+.category-icon.status {
+    color: #9fa19f;
+}
+
+.category-icon.unknown {
+    color: var(--muted);
+}

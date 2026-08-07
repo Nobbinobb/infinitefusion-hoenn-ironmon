@@ -37,10 +37,7 @@ public static class TrackerJson
     {
         try
         {
-            TPayload? result = payload.Deserialize<TPayload>(Options);
-            if (result is null)
-                throw new TrackerProtocolException("The tracker payload was null.");
-
+            TPayload? result = payload.Deserialize<TPayload>(Options) ?? throw new TrackerProtocolException("The tracker payload was null.");
             return result;
         }
         catch (JsonException exception)
@@ -61,6 +58,7 @@ public static class TrackerJson
             PropertyNameCaseInsensitive = false,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
+
         options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower));
         return options;
     }

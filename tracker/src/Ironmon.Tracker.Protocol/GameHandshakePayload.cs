@@ -16,14 +16,7 @@ public sealed class GameHandshakePayload
     /// <param name="runId">The current run identifier.</param>
     /// <param name="battleId">The current battle identifier.</param>
     /// <exception cref="ArgumentException">Thrown when a required value is empty.</exception>
-    public GameHandshakePayload(
-        string gameVersion,
-        string ironmonVersion,
-        bool ironmonActive,
-        bool debugAvailable,
-        string gameRoot,
-        string? runId,
-        string? battleId)
+    public GameHandshakePayload(string gameVersion, string ironmonVersion, bool ironmonActive, bool debugAvailable, string gameRoot, string? runId, string? battleId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(gameVersion);
         ArgumentException.ThrowIfNullOrWhiteSpace(ironmonVersion);

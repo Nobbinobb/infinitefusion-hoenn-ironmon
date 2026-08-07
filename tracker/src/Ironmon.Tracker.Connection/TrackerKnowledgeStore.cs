@@ -60,6 +60,7 @@ public sealed class TrackerKnowledgeStore
             _runId = runId;
             _knowledge = Load(runId);
         }
+
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -71,6 +72,49 @@ public sealed class TrackerKnowledgeStore
     {
         ArgumentNullException.ThrowIfNull(player);
         ObserveMoves(player.SpeciesId, player.LevelUpMoves.Where(move => move.Source == "level_up"));
+        if (player.AbilityDetails is not null)
+            ObserveAbility(player.SpeciesId, player.AbilityDetails);
+    }
+
+    /// <summary>
+    /// Records the visible level and any ability included in a legal enemy snapshot.
+    /// </summary>
+    /// <param name="enemy">The complete legal enemy snapshot.</param>
+    public void ObserveEnemy(EnemyPokemonSnapshot enemy)
+    {
+        ArgumentNullException.ThrowIfNull(enemy);
+        bool changed = false;
+        lock (_sync)
+        {
+            if (_runId is null)
+                return;
+
+            int highestLevel = _knowledge.HighestLevels.GetValueOrDefault(enemy.SpeciesId);
+            if (enemy.Level > highestLevel)
+            {
+                _knowledge.HighestLevels[enemy.SpeciesId] = enemy.Level;
+                changed = true;
+            }
+
+            if (enemy.LastAbility is not null)
+                changed |= AddAbility(enemy.SpeciesId, enemy.LastAbility);
+
+            if (changed)
+                Save();
+        }
+
+        if (changed)
+            Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Records an ability made observable by an enemy activation.
+    /// </summary>
+    /// <param name="observation">The enemy ability-reveal observation.</param>
+    public void ObserveEnemyAbility(EnemyAbilityRevealedPayload observation)
+    {
+        ArgumentNullException.ThrowIfNull(observation);
+        ObserveAbility(observation.SpeciesId, observation.Ability);
     }
 
     /// <summary>
@@ -103,6 +147,35 @@ public sealed class TrackerKnowledgeStore
     }
 
     /// <summary>
+    /// Gets all legally discovered abilities for a species and form, ordered by name.
+    /// </summary>
+    /// <param name="speciesId">The stable species and form identifier.</param>
+    /// <returns>The remembered abilities ordered by localized name.</returns>
+    public IReadOnlyList<AbilitySnapshot> GetAbilities(string speciesId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        lock (_sync)
+        {
+            if (!_knowledge.Abilities.TryGetValue(speciesId, out List<AbilitySnapshot>? abilities))
+                return [];
+
+            return [.. abilities.OrderBy(ability => ability.Name, StringComparer.CurrentCulture)];
+        }
+    }
+
+    /// <summary>
+    /// Gets the highest level encountered for a species and form.
+    /// </summary>
+    /// <param name="speciesId">The stable species and form identifier.</param>
+    /// <returns>The highest encountered level, or zero when the species has not been observed.</returns>
+    public int GetHighestLevel(string speciesId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        lock (_sync)
+            return _knowledge.HighestLevels.GetValueOrDefault(speciesId);
+    }
+
+    /// <summary>
     /// Gets one manual enemy-stat annotation.
     /// </summary>
     /// <param name="speciesId">The stable species and form identifier.</param>
@@ -115,6 +188,7 @@ public sealed class TrackerKnowledgeStore
         {
             if (!_knowledge.Annotations.TryGetValue(speciesId, out Dictionary<string, EnemyStatAnnotation>? annotations))
                 return EnemyStatAnnotation.Empty;
+
             return annotations.GetValueOrDefault(stat.ToString(), EnemyStatAnnotation.Empty);
         }
     }
@@ -135,6 +209,7 @@ public sealed class TrackerKnowledgeStore
             annotations[stat.ToString()] = Cycle(current, forward);
             Save();
         }
+
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -150,23 +225,84 @@ public sealed class TrackerKnowledgeStore
         {
             if (_runId is null)
                 return;
+
             List<ObservedMoveSnapshot> moves = GetOrCreateMoves(speciesId);
             foreach (ObservedMoveSnapshot observation in observations)
             {
                 int index = moves.FindIndex(move => MatchesDiscovery(move, observation));
                 if (index >= 0 && Equivalent(moves[index], observation))
                     continue;
+
                 if (index >= 0)
+                {
                     moves[index] = observation;
+                }
                 else
+                {
                     moves.Add(observation);
+                }
+
                 changed = true;
             }
+
             if (changed)
                 Save();
         }
+
         if (changed)
             Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Records one legally known ability and persists a new discovery.
+    /// </summary>
+    /// <param name="speciesId">The stable species and form identifier.</param>
+    /// <param name="ability">The legally known ability.</param>
+    private void ObserveAbility(string speciesId, AbilitySnapshot ability)
+    {
+        bool changed;
+        lock (_sync)
+        {
+            if (_runId is null)
+                return;
+
+            changed = AddAbility(speciesId, ability);
+            if (changed)
+                Save();
+        }
+
+        if (changed)
+            Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Adds or refreshes one ability in mutable knowledge.
+    /// </summary>
+    /// <param name="speciesId">The stable species and form identifier.</param>
+    /// <param name="ability">The ability observation.</param>
+    /// <returns>True when persisted data changed.</returns>
+    private bool AddAbility(string speciesId, AbilitySnapshot ability)
+    {
+        if (!_knowledge.Abilities.TryGetValue(speciesId, out List<AbilitySnapshot>? abilities))
+        {
+            abilities = [];
+            _knowledge.Abilities.Add(speciesId, abilities);
+        }
+
+        int index = abilities.FindIndex(candidate => candidate.Id == ability.Id);
+        if (index >= 0 && JsonSerializer.Serialize(abilities[index], TrackerJson.Options) == JsonSerializer.Serialize(ability, TrackerJson.Options))
+            return false;
+
+        if (index >= 0)
+        {
+            abilities[index] = ability;
+        }
+        else
+        {
+            abilities.Add(ability);
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -181,6 +317,7 @@ public sealed class TrackerKnowledgeStore
             moves = [];
             _knowledge.Moves.Add(speciesId, moves);
         }
+
         return moves;
     }
 
@@ -196,6 +333,7 @@ public sealed class TrackerKnowledgeStore
             annotations = [];
             _knowledge.Annotations.Add(speciesId, annotations);
         }
+
         return annotations;
     }
 
@@ -209,11 +347,13 @@ public sealed class TrackerKnowledgeStore
         LastError = null;
         if (runId is null)
             return new PersistedRunKnowledge();
+
         try
         {
             string path = GetRunPath(runId);
             if (!File.Exists(path))
                 return new PersistedRunKnowledge();
+
             return JsonSerializer.Deserialize<PersistedRunKnowledge>(File.ReadAllText(path), TrackerJson.Options) ?? new PersistedRunKnowledge();
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
@@ -230,6 +370,7 @@ public sealed class TrackerKnowledgeStore
     {
         if (_runId is null)
             return;
+
         try
         {
             string path = GetRunPath(_runId);
@@ -262,8 +403,8 @@ public sealed class TrackerKnowledgeStore
     /// <param name="left">The existing observation.</param>
     /// <param name="right">The new observation.</param>
     /// <returns>True when all persisted fields match.</returns>
-    private static bool Equivalent(ObservedMoveSnapshot left, ObservedMoveSnapshot right) =>
-        JsonSerializer.Serialize(left, TrackerJson.Options) == JsonSerializer.Serialize(right, TrackerJson.Options);
+    private static bool Equivalent(ObservedMoveSnapshot left, ObservedMoveSnapshot right)
+        => JsonSerializer.Serialize(left, TrackerJson.Options) == JsonSerializer.Serialize(right, TrackerJson.Options);
 
     /// <summary>
     /// Determines whether two observations identify the same retained discovery.
@@ -271,8 +412,8 @@ public sealed class TrackerKnowledgeStore
     /// <param name="left">The retained observation.</param>
     /// <param name="right">The incoming observation.</param>
     /// <returns>True when both observations identify the same discovery.</returns>
-    private static bool MatchesDiscovery(ObservedMoveSnapshot left, ObservedMoveSnapshot right) =>
-        left.Id == right.Id && left.LearnedLevel == right.LearnedLevel && left.LearnOrder == right.LearnOrder && left.Origin == right.Origin;
+    private static bool MatchesDiscovery(ObservedMoveSnapshot left, ObservedMoveSnapshot right)
+        => left.Id == right.Id && left.LearnedLevel == right.LearnedLevel && left.LearnOrder == right.LearnOrder && left.Origin == right.Origin;
 
     /// <summary>
     /// Converts a persisted protocol observation into the core discovery rule model.
@@ -286,12 +427,14 @@ public sealed class TrackerKnowledgeStore
             "level_up" => MoveLearnSource.LevelUp,
             _ => MoveLearnSource.Unknown
         };
+
         MoveDiscoveryOrigin origin = observation.Origin switch
         {
             "enemy_use" => MoveDiscoveryOrigin.EnemyUse,
             "player_level_up" => MoveDiscoveryOrigin.PlayerLevelUp,
             _ => MoveDiscoveryOrigin.PlayerInitial
         };
+
         return new DiscoveredMove(observation.Id, observation.LearnedLevel, observation.LearnOrder, source, origin);
     }
 
@@ -301,10 +444,12 @@ public sealed class TrackerKnowledgeStore
     /// <param name="observations">All retained protocol observations.</param>
     /// <param name="discovery">The selected core discovery.</param>
     /// <returns>The preferred display observation.</returns>
-    private static ObservedMoveSnapshot SelectObservation(IEnumerable<ObservedMoveSnapshot> observations, DiscoveredMove discovery) =>
-        observations.Where(move => move.Id == discovery.MoveId && move.LearnedLevel == discovery.LearnedLevel && move.LearnOrder == discovery.LearnOrder)
+    private static ObservedMoveSnapshot SelectObservation(IEnumerable<ObservedMoveSnapshot> observations, DiscoveredMove discovery)
+    {
+        return observations.Where(move => move.Id == discovery.MoveId && move.LearnedLevel == discovery.LearnedLevel && move.LearnOrder == discovery.LearnOrder)
             .OrderByDescending(move => move.PpAfterUse.HasValue)
             .First();
+    }
 
     /// <summary>
     /// Cycles an annotation in the requested direction.

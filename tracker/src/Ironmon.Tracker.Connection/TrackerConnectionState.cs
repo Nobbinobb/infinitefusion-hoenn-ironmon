@@ -41,14 +41,11 @@ public sealed class TrackerConnectionState
     /// <param name="game">The connected game's handshake.</param>
     /// <param name="currentState">The recovered game state.</param>
     /// <param name="lastError">The most recent connection error.</param>
-    internal void Publish(
-        TrackerConnectionStatus status,
-        GameHandshakePayload? game = null,
-        GameCurrentStatePayload? currentState = null,
-        string? lastError = null)
+    internal void Publish(TrackerConnectionStatus status, GameHandshakePayload? game = null, GameCurrentStatePayload? currentState = null, string? lastError = null)
     {
         lock (_sync)
             _snapshot = new TrackerConnectionSnapshot(status, game, currentState, lastError);
+
         Changed?.Invoke(this, EventArgs.Empty);
     }
 }

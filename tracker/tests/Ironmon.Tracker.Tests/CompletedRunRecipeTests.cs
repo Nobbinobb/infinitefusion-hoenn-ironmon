@@ -22,19 +22,7 @@ public sealed class CompletedRunRecipeTests
     public void ConstructorRetainsDeterministicRunInputs()
     {
         using JsonDocument configuration = JsonDocument.Parse("{\"wild_policy\":\"fusion\"}");
-
-        CompletedRunRecipe recipe = new(
-            "run-123",
-            918273645,
-            RunResult.Lost,
-            "6.8.0",
-            "0.4.0",
-            configuration.RootElement,
-            3,
-            2,
-            "species-fingerprint",
-            "ability-fingerprint",
-            "fusion-fingerprint");
+        CompletedRunRecipe recipe = new("run-123", 918273645, RunResult.Lost, "6.8.0", "0.4.0", configuration.RootElement, 3, 2, "species-fingerprint", "ability-fingerprint", "fusion-fingerprint");
 
         Assert.Equal("run-123", recipe.RunId);
         Assert.Equal(918273645, recipe.Seed);
@@ -49,18 +37,6 @@ public sealed class CompletedRunRecipeTests
     public void ConstructorRejectsNonPositiveGeneratorVersion()
     {
         using JsonDocument configuration = JsonDocument.Parse("{}");
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => new CompletedRunRecipe(
-            "run-123",
-            1,
-            RunResult.Lost,
-            "6.8.0",
-            "0.4.0",
-            configuration.RootElement,
-            0,
-            1,
-            "species-fingerprint",
-            "ability-fingerprint",
-            "fusion-fingerprint"));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CompletedRunRecipe("run-123", 1, RunResult.Lost, "6.8.0", "0.4.0", configuration.RootElement, 0, 1, "species-fingerprint", "ability-fingerprint", "fusion-fingerprint"));
     }
 }

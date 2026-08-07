@@ -26,8 +26,8 @@ public sealed class TrackerMessageCodecTests
             ["pokemon_name"] = "Nidoran",
             ["level"] = 5
         };
-        TrackerMessage message = TrackerMessageFactory.CreateEvent("player_sent_out", 27, payload, "run-123", "battle-8");
 
+        TrackerMessage message = TrackerMessageFactory.CreateEvent("player_sent_out", 27, payload, "run-123", "battle-8");
         string json = TrackerMessageCodec.Serialize(message);
         TrackerMessage result = TrackerMessageCodec.Deserialize(json);
 
@@ -55,7 +55,6 @@ public sealed class TrackerMessageCodecTests
         };
 
         TrackerProtocolException exception = Assert.Throws<TrackerProtocolException>(() => TrackerMessageValidator.Validate(message));
-
         Assert.Contains("request_id", exception.Message, StringComparison.Ordinal);
     }
 
@@ -95,7 +94,6 @@ public sealed class TrackerMessageCodecTests
         await writer.WriteAsync(message);
 
         string result = Encoding.UTF8.GetString(stream.ToArray());
-
         Assert.EndsWith("\n", result, StringComparison.Ordinal);
         Assert.False(result.EndsWith("\r\n", StringComparison.Ordinal));
         Assert.Equal(1, result.Count(character => character == '\n'));

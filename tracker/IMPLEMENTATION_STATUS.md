@@ -11,7 +11,7 @@ product behavior remains defined by `../docs/design/TRACKER.md`.
 | 2 | .NET 10 Blazor Hybrid desktop shell | Reviewed |
 | 3 | Persistent TCP connection and Ruby bridge | Reviewed |
 | 4 | Player battle tracking and healing inventory | Reviewed |
-| 5 | Enemy tracking, remembered moves, and annotations | Implemented; awaiting review |
+| 5 | Enemy tracking, remembered moves, and annotations | Reviewed |
 | 6 | Deterministic post-run search and lookup | Not started |
 | 7 | Debug-mode inspector parity | Not started |
 | 8 | Release packaging and end-to-end validation | Not started |
@@ -309,7 +309,7 @@ Part 4 was accepted and committed as `0fcf8b0`.
 
 ## Part 5: Enemy tracking, remembered moves, and annotations
 
-Status: **Implemented; awaiting review**
+Status: **Reviewed and committed**
 
 Implemented on 2026-08-06:
 
@@ -378,4 +378,135 @@ Review should confirm:
 5. annotations cycle in both directions and survive tracker restarts; and
 6. battle end returns to Player while manual P/E switching remains available.
 
-Part 6 must not begin until Part 5 is accepted or revised.
+Part 5 was accepted and committed as `f78cecf`.
+
+## Adjustment Part A: Tracker data expansion
+
+Status: **Reviewed**
+
+Implemented on 2026-08-07:
+
+- Preserved both active opposing positions for the upcoming double-battle
+  selector.
+- Persisted the highest encountered level per run and species/form.
+- Added legal multi-ability discovery from player ownership and opposing
+  ability splash activation, including localized descriptions.
+- Added player learnset progress as learned unique level-up moves, total unique
+  level-up moves, and the next learn level.
+- Added consistently ordered evolution choices with compact level, item, or
+  other requirement metadata while withholding the destination species.
+- Added player nature adjustments for Attack, Defense, Special Attack, Special
+  Defense, and Speed.
+- Added move category and localized description metadata to player and observed
+  enemy moves.
+- Added standard type-only effectiveness calculation covering neutral, half,
+  quarter, double, quadruple, and immune results.
+- Added a once-per-send-out `player_move_menu_opened` signal. The UI keeps its
+  automatic Enemy switch and returns to Player when the move menu first opens.
+
+### Validation
+
+- The tracker application builds with 0 warnings and 0 errors.
+- The test suite contains **29 passing test cases**, including type-chart,
+  highest-level, multiple-ability, persistence, and live move-menu coverage.
+- Canonical scripts were synchronized through `Build-Distribution.ps1`.
+- The bundled game remained running after the new hooks and snapshots loaded;
+  only the exact validation process was stopped.
+
+### Deliberately deferred to Adjustment Parts B and C
+
+- double-battle enemy selection controls;
+- revised stat, move, evolution, and ability presentation;
+- nature and effectiveness indicators;
+- clickable move and ability detail panels.
+
+Adjustment Part B must not begin until Adjustment Part A is accepted or
+revised.
+
+## Adjustment Part B: Tracker card presentation
+
+Status: **Reviewed**
+
+Implemented on 2026-08-07:
+
+- Added an Enemy 1/Enemy 2 selector while retaining one focused enemy card.
+- Applied the selected enemy consistently to its sprite, annotations,
+  remembered moves, abilities, and player-move effectiveness.
+- Displayed the highest encountered level and all legally discovered abilities
+  for the selected enemy. Multiple abilities use a compact expandable list.
+- Added player learnset progress in `x/y (z)` form and compact evolution
+  requirements without exposing destination species.
+- Reordered both stat grids into `SPE/HP`, `ATK/DEF`, and `SpA/SpD` rows.
+- Added maximum HP to the player stat grid and green/red nature arrows to all
+  nature-adjustable player stats.
+- Added Physical, Special, and Status labels plus type-colored move names and
+  borders. The labels were then refined into category icons placed before a
+  larger, vertically centered move name.
+- Applied the exact reference-image type palette and reused it for the typing
+  displayed beneath each Pokemon name; redundant player species text was
+  removed from that line.
+- Added type-only effectiveness indicators: one or two green up arrows, one or
+  two red down arrows, and a red immunity cross, with larger indicators and
+  explicit color specificity.
+- Moved healing beside player condition, learnset progress into the Moves
+  heading, and player Ability, Item, and Evolution into the card's upper-right
+  information group.
+- Mirrored enemy Ability and Item into the same fixed-size upper-right group,
+  removed the redundant enemy move-count chip, widened the type border, and
+  replaced text glyphs with dedicated SVG category icons.
+- Left-aligned upper-right chip contents, strengthened nature and effectiveness
+  contrast, and persisted the last valid tracker window size. First launch now
+  defaults to `500 x 860` rather than the earlier narrow `440 x 680` window.
+- Preserved automatic Enemy selection for newly appearing opponents and the
+  one-time return to Player when the player's move menu first opens.
+- Refactored the tracker UI into focused `PlayerCard`, `EnemyCard`, player and
+  enemy stat-grid, player and enemy move-list, shared move-row, and move-category
+  icon components. `Home` now owns only the application shell, connection
+  display, and primary navigation.
+- Moved all component C# logic into matching `.razor.cs` partial classes and
+  removed inline `@code` blocks from the Razor files. Shared sprite loading and
+  move presentation rules now live in dedicated helpers.
+
+### Validation
+
+- The native tracker application builds with 0 warnings and 0 errors.
+- All **29 test cases** pass after the presentation changes.
+- The component-refactored application builds with 0 warnings and 0 errors,
+  and all **29 test cases** continue to pass.
+- The exact native tracker process remained running during its startup smoke
+  test and was then stopped.
+- The complete card presentation was accepted after UI and code review.
+
+### Deliberately deferred to Adjustment Part C
+
+- clickable full move information; and
+- clickable full ability information.
+
+Adjustment Part C must not begin until Adjustment Part B is accepted or
+revised.
+
+## Adjustment Part C: Move and ability information
+
+Status: **Reviewed**
+
+Implemented on 2026-08-07:
+
+- Made every known player and discovered enemy move row selectable.
+- Added a shared move-information panel showing type, category, PP, power,
+  accuracy, visible type effectiveness, description, and the known learn level
+  for remembered enemy moves.
+- Made the player's legally known ability selectable from its existing header
+  chip and added a shared ability-information panel with its localized
+  description.
+- Made each discovered enemy ability selectable. A single ability opens from
+  its header chip, while multiple abilities remain behind the compact
+  disclosure and can each open their information panel.
+- Kept all new Razor logic in matching partial `.razor.cs` files and reused
+  shared move and ability detail components across both cards.
+
+### Validation
+
+- The native tracker application builds with 0 warnings and 0 errors.
+- All **29 test cases** pass after the detail-panel changes.
+- The move and ability information panels were accepted as the first-version
+  detail experience.

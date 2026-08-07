@@ -1,0 +1,88 @@
+<section class="pokemon-card" role="tabpanel" aria-label="Player Pokemon">
+    <div class="card-heading action-heading">
+        <div class="sprite-placeholder @(Player is null ? string.Empty : "live")" aria-hidden="true">
+            @if (_spriteSource is not null)
+            {
+                <img src="@_spriteSource" alt="" />
+            }
+            else
+            {
+                <span>?</span>
+            }
+        </div>
+        <div class="identity-placeholder">
+            <p class="card-kicker">ACTIVE POKEMON</p>
+            <h2 class="identity-name">
+                <span>@GetName()</span>
+                @if (Player is not null)
+                {
+                    <small>Lv. @Player.Level</small>
+                }
+            </h2>
+            @if (Player is null)
+            {
+                <p>Send your Pokemon into battle to initialize this view.</p>
+            }
+            else
+            {
+                <p class="typing-line">
+                    @foreach (string type in Player.Types)
+                    {
+                        <span class="typing-type @MovePresentation.GetTypeColorClass(type)">@type</span>
+                    }
+                </p>
+            }
+        </div>
+        <div class="identity-actions placeholder-content" aria-label="Pokemon details">
+            @if (Player?.AbilityDetails is not null)
+            {
+                <button class="identity-action-button" type="button" @onclick="() => SelectAbility(Player.AbilityDetails)">Ability <strong>@Player.Ability</strong></button>
+            }
+            else
+            {
+                <span>Ability <strong>@(Player?.Ability ?? "--")</strong></span>
+            }
+            <span>Item <strong>@(Player?.HeldItem ?? (Player is null ? "--" : "None"))</strong></span>
+            @if (Player is not null && Player.Evolutions.Count > 1)
+            {
+                <details class="compact-disclosure">
+                    <summary>Evolution <strong>@Player.Evolutions[0].Requirement</strong><span>+@(Player.Evolutions.Count - 1)</span></summary>
+                    <div class="disclosure-menu">
+                        @foreach (EvolutionSnapshot evolution in Player.Evolutions.Skip(1))
+                        {
+                            <span>@evolution.Requirement</span>
+                        }
+                    </div>
+                </details>
+            }
+            else
+            {
+                <span>Evolution <strong>@GetEvolutionRequirement()</strong></span>
+            }
+        </div>
+    </div>
+
+    <div class="hp-block @(Player is null ? "placeholder-content" : string.Empty)">
+        <div><span>HP</span><strong>@GetHpText()</strong></div>
+        <div class="hp-bar @(Player is null ? "unknown" : string.Empty)" aria-label="@GetHpLabel()"><span style="@GetHpStyle()"></span></div>
+    </div>
+
+    <div class="detail-strip placeholder-content" aria-label="Pokemon condition and healing inventory">
+        <span>@GetConditionText()</span>
+        <span>Heals <strong>@GetHealingText()</strong></span>
+    </div>
+
+    <PlayerStatGrid Player="@Player" />
+
+    <div class="summary-row placeholder-content" aria-label="Pokemon summary">
+        <span>BST <strong>@(Player?.BaseStatTotal.ToString(CultureInfo.InvariantCulture) ?? "--")</strong></span>
+        <span>Nature <strong>@(Player?.Nature ?? "--")</strong></span>
+    </div>
+
+    <PlayerMoveList Player="@Player" TargetTypes="@TargetTypes" />
+</section>
+
+@if (_selectedAbility is not null)
+{
+    <AbilityDetailPanel Ability="@_selectedAbility" Closed="CloseAbility" />
+}

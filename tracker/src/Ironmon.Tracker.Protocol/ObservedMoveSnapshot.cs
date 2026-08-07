@@ -48,6 +48,16 @@ public sealed class ObservedMoveSnapshot
     public required string Type { get; init; }
 
     /// <summary>
+    /// Gets or initializes the move damage category.
+    /// </summary>
+    public MoveCategory Category { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the localized move description.
+    /// </summary>
+    public string Description { get; init; } = string.Empty;
+
+    /// <summary>
     /// Gets or initializes the move's base power.
     /// </summary>
     public int Power { get; init; }

@@ -28,8 +28,7 @@ public sealed class TrackerKnowledgeStoreTests
             TrackerKnowledgeStore store = new(options);
             store.SelectRun("run-knowledge");
             store.ObservePlayer(CreatePlayer([CreateMove("MOVE1", 1, 0), CreateMove("MOVE2", 5, 1)]));
-            ObservedMoveSnapshot[] enemyMoves =
-                [CreateMove("MOVE3", 10, 2), CreateMove("MOVE4", 15, 3), CreateMove("MOVE5", 20, 4)];
+            ObservedMoveSnapshot[] enemyMoves = [CreateMove("MOVE3", 10, 2), CreateMove("MOVE4", 15, 3), CreateMove("MOVE5", 20, 4)];
             foreach (ObservedMoveSnapshot move in enemyMoves)
                 store.ObserveEnemyMove(CreateEnemyUse(move));
 
@@ -64,8 +63,36 @@ public sealed class TrackerKnowledgeStoreTests
             ObservedMoveSnapshot move = CreateMove("UNKNOWN_SOURCE", 0, 0, 9, "unknown");
 
             store.ObserveEnemyMove(CreateEnemyUse(move));
-
             Assert.Equal("UNKNOWN_SOURCE", Assert.Single(store.GetDisplayedMoves("BELLOSSOM:0", 25)).Id);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    /// <summary>
+    /// Verifies highest-level and multiple-ability discovery persistence.
+    /// </summary>
+    [Fact]
+    public void StorePersistsHighestLevelAndMultipleAbilities()
+    {
+        string root = CreateRoot();
+        try
+        {
+            TrackerKnowledgeOptions options = new(root);
+            TrackerKnowledgeStore store = new(options);
+            store.SelectRun("run-enemy-knowledge");
+            store.ObserveEnemy(CreateEnemy(18, CreateAbility("FRISK", "Frisk")));
+            store.ObserveEnemy(CreateEnemy(12, CreateAbility("INFILTRATOR", "Infiltrator")));
+
+            Assert.Equal(18, store.GetHighestLevel("NOIVERN:0"));
+            Assert.Equal(["Frisk", "Infiltrator"], store.GetAbilities("NOIVERN:0").Select(ability => ability.Name));
+
+            TrackerKnowledgeStore restored = new(options);
+            restored.SelectRun("run-enemy-knowledge");
+            Assert.Equal(18, restored.GetHighestLevel("NOIVERN:0"));
+            Assert.Equal(2, restored.GetAbilities("NOIVERN:0").Count);
         }
         finally
         {
@@ -105,7 +132,37 @@ public sealed class TrackerKnowledgeStoreTests
     /// Creates one isolated persistence root.
     /// </summary>
     /// <returns>The isolated directory path.</returns>
-    private static string CreateRoot() => Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
+    private static string CreateRoot()
+        => Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
+
+    /// <summary>
+    /// Creates a representative enemy snapshot.
+    /// </summary>
+    /// <param name="level">The visible enemy level.</param>
+    /// <param name="ability">The most recently revealed ability.</param>
+    /// <returns>The enemy snapshot.</returns>
+    private static EnemyPokemonSnapshot CreateEnemy(int level, AbilitySnapshot ability) => new()
+    {
+        EnemyId = "enemy-1",
+        Position = 1,
+        SpeciesId = "NOIVERN:0",
+        SpeciesName = "Noivern",
+        Level = level,
+        LastAbility = ability
+    };
+
+    /// <summary>
+    /// Creates a representative ability snapshot.
+    /// </summary>
+    /// <param name="id">The ability identifier.</param>
+    /// <param name="name">The localized ability name.</param>
+    /// <returns>The ability snapshot.</returns>
+    private static AbilitySnapshot CreateAbility(string id, string name) => new()
+    {
+        Id = id,
+        Name = name,
+        Description = $"{name} description"
+    };
 
     /// <summary>
     /// Creates a minimal player snapshot containing legal move discoveries.

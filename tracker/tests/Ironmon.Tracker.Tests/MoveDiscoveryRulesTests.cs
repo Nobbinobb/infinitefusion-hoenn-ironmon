@@ -30,7 +30,6 @@ public sealed class MoveDiscoveryRulesTests
         ];
 
         IReadOnlyList<DiscoveredMove> result = MoveDiscoveryRules.SelectDisplayedMoves(discoveries, 25);
-
         Assert.Equal(["MOVE_B", "MOVE_C", "MOVE_D", "MOVE_E"], result.Select(move => move.MoveId));
         Assert.Equal(5, discoveries.Length);
     }
@@ -51,7 +50,6 @@ public sealed class MoveDiscoveryRulesTests
         ];
 
         IReadOnlyList<DiscoveredMove> result = MoveDiscoveryRules.SelectDisplayedMoves(discoveries, 15);
-
         Assert.Equal(["MOVE_A", "MOVE_B", "MOVE_C"], result.Select(move => move.MoveId));
     }
 
@@ -71,7 +69,6 @@ public sealed class MoveDiscoveryRulesTests
         ];
 
         IReadOnlyList<DiscoveredMove> result = MoveDiscoveryRules.SelectDisplayedMoves(discoveries, 12);
-
         Assert.Equal(["MOVE_B", "MOVE_C", "MOVE_D", "MOVE_E"], result.Select(move => move.MoveId));
     }
 
@@ -89,7 +86,6 @@ public sealed class MoveDiscoveryRulesTests
         ];
 
         IReadOnlyList<DiscoveredMove> result = MoveDiscoveryRules.SelectDisplayedMoves(discoveries, 10);
-
         Assert.Equal("LEVEL_MOVE", Assert.Single(result).MoveId);
     }
 
@@ -106,7 +102,6 @@ public sealed class MoveDiscoveryRulesTests
         ];
 
         DiscoveredMove result = Assert.Single(MoveDiscoveryRules.SelectDisplayedMoves(discoveries, 10));
-
         Assert.Equal(10, result.LearnedLevel);
         Assert.Equal(MoveDiscoveryOrigin.EnemyUse, result.DiscoveryOrigin);
     }

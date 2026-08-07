@@ -56,4 +56,9 @@ public sealed class EnemyPokemonSnapshot
     /// Gets or initializes the most recently used regular move when one has become observable.
     /// </summary>
     public ObservedMoveSnapshot? LastMove { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the most recently revealed ability when one exists.
+    /// </summary>
+    public AbilitySnapshot? LastAbility { get; init; }
 }

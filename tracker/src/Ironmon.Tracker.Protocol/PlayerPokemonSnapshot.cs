@@ -73,6 +73,11 @@ public sealed class PlayerPokemonSnapshot
     public required string Ability { get; init; }
 
     /// <summary>
+    /// Gets or initializes the player's legally known ability details.
+    /// </summary>
+    public AbilitySnapshot? AbilityDetails { get; init; }
+
+    /// <summary>
     /// Gets or initializes the localized held-item name when one is held.
     /// </summary>
     public string? HeldItem { get; init; }
@@ -113,6 +118,11 @@ public sealed class PlayerPokemonSnapshot
     public string? Nature { get; init; }
 
     /// <summary>
+    /// Gets or initializes nature adjustments for the calculated stats.
+    /// </summary>
+    public NatureAdjustmentsSnapshot NatureAdjustments { get; init; } = new();
+
+    /// <summary>
     /// Gets or initializes the four current moves in game order.
     /// </summary>
     public IReadOnlyList<PlayerMoveSnapshot> Moves { get; init; } = [];
@@ -121,6 +131,16 @@ public sealed class PlayerPokemonSnapshot
     /// Gets or initializes current moves that legally reveal level-up learnset entries.
     /// </summary>
     public IReadOnlyList<ObservedMoveSnapshot> LevelUpMoves { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes progress through the complete level-up learnset.
+    /// </summary>
+    public LearnsetProgressSnapshot LearnsetProgress { get; init; } = new();
+
+    /// <summary>
+    /// Gets or initializes possible evolution requirements in stable display order.
+    /// </summary>
+    public IReadOnlyList<EvolutionSnapshot> Evolutions { get; init; } = [];
 
     /// <summary>
     /// Gets or initializes the current healing inventory summary.

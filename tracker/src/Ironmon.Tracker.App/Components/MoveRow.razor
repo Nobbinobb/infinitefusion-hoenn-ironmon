@@ -1,0 +1,21 @@
+@using Ironmon.Tracker.Core
+
+<button class="move-placeholder live-move @MovePresentation.GetMoveTypeClass(Type)" type="button" @onclick="Selected">
+    <div>
+        <div class="move-name-line">
+            <MoveCategoryIcon Category="@Category" />
+            <strong>@Name</strong>
+            @if (Effectiveness is not null && Effectiveness != MoveEffectiveness.Neutral)
+            {
+                <span class="@MovePresentation.GetEffectivenessClass(Effectiveness.Value)"
+                      aria-label="@MovePresentation.GetEffectivenessTitle(Effectiveness.Value)">
+                    @MovePresentation.GetEffectivenessSymbol(Effectiveness.Value)
+                </span>
+            }
+        </div>
+    </div>
+    <div>
+        <span>@PpText</span>
+        <small>@MovePresentation.FormatPower(Power) · @MovePresentation.FormatAccuracy(Accuracy)</small>
+    </div>
+</button>

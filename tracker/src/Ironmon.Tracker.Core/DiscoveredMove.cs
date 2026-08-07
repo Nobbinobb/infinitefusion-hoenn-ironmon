@@ -17,12 +17,7 @@ public sealed class DiscoveredMove
     /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when the learned level or learn order is negative.
     /// </exception>
-    public DiscoveredMove(
-        string moveId,
-        int learnedLevel,
-        int learnOrder,
-        MoveLearnSource learnSource,
-        MoveDiscoveryOrigin discoveryOrigin)
+    public DiscoveredMove(string moveId, int learnedLevel, int learnOrder, MoveLearnSource learnSource, MoveDiscoveryOrigin discoveryOrigin)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(moveId);
         ArgumentOutOfRangeException.ThrowIfNegative(learnedLevel);

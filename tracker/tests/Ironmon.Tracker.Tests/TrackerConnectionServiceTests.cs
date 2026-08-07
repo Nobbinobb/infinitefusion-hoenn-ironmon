@@ -78,6 +78,12 @@ public sealed class TrackerConnectionServiceTests
             Level = 5,
             Types = ["GRASS"],
             BaseStatTotal = 490,
+            LastAbility = new AbilitySnapshot
+            {
+                Id = "CHLOROPHYLL",
+                Name = "Chlorophyll",
+                Description = "Boosts Speed in sunshine."
+            },
             LastMove = new ObservedMoveSnapshot
             {
                 Id = "STUNSPORE",
@@ -93,10 +99,13 @@ public sealed class TrackerConnectionServiceTests
                 PpAfterUse = 29
             }
         };
+
         TrackerMessage enemySentOut = TrackerMessageFactory.CreateEvent("enemy_sent_out", 3, enemy, "run-2", "battle-1");
         await writer.WriteAsync(enemySentOut);
         TrackerRunStateSnapshot enemyState = await WaitForRunSnapshotAsync(runState, snapshot => snapshot.Enemies.Count == 1);
         Assert.Equal("Bellossom", enemyState.Enemies[0].SpeciesName);
+        Assert.Equal(5, knowledge.GetHighestLevel("BELLOSSOM:0"));
+        Assert.Equal("CHLOROPHYLL", Assert.Single(knowledge.GetAbilities("BELLOSSOM:0")).Id);
         await WaitForKnowledgeAsync(knowledge, "BELLOSSOM:0", 5);
         Assert.Equal("STUNSPORE", Assert.Single(knowledge.GetDisplayedMoves("BELLOSSOM:0", 5)).Id);
 
@@ -131,6 +140,12 @@ public sealed class TrackerConnectionServiceTests
         TrackerRunStateSnapshot playerState = await WaitForRunSnapshotAsync(runState, snapshot => snapshot.Player is not null);
         Assert.Equal("Espeon", playerState.Player?.SpeciesName);
         Assert.Equal(2, playerState.Player?.Healing.ItemCount);
+
+        PlayerMoveMenuOpenedPayload moveMenu = new() { PokemonId = "1234" };
+        TrackerMessage moveMenuOpened = TrackerMessageFactory.CreateEvent("player_move_menu_opened", 6, moveMenu, "run-2", "battle-1");
+        await writer.WriteAsync(moveMenuOpened);
+        TrackerRunStateSnapshot moveMenuState = await WaitForRunSnapshotAsync(runState, snapshot => snapshot.MoveMenuPokemonId == "1234");
+        Assert.Equal("1234", moveMenuState.MoveMenuPokemonId);
 
         PlayerPokemonSnapshot damaged = CreatePlayerSnapshot(12, 24, 1);
         TrackerMessage changed = TrackerMessageFactory.CreateEvent("player_state_changed", 6, damaged, "run-2", "battle-1");
@@ -202,9 +217,7 @@ public sealed class TrackerConnectionServiceTests
     /// <param name="condition">The condition that completes the wait.</param>
     /// <returns>The first matching connection snapshot.</returns>
     /// <exception cref="TimeoutException">Thrown when no matching snapshot arrives.</exception>
-    private static async Task<TrackerConnectionSnapshot> WaitForSnapshotAsync(
-        TrackerConnectionState state,
-        Func<TrackerConnectionSnapshot, bool> condition)
+    private static async Task<TrackerConnectionSnapshot> WaitForSnapshotAsync(TrackerConnectionState state, Func<TrackerConnectionSnapshot, bool> condition)
     {
         DateTimeOffset deadline = DateTimeOffset.UtcNow.AddSeconds(3);
         while (DateTimeOffset.UtcNow < deadline)
@@ -225,9 +238,7 @@ public sealed class TrackerConnectionServiceTests
     /// <param name="condition">The condition that completes the wait.</param>
     /// <returns>The first matching run-state snapshot.</returns>
     /// <exception cref="TimeoutException">Thrown when no matching snapshot arrives.</exception>
-    private static async Task<TrackerRunStateSnapshot> WaitForRunSnapshotAsync(
-        TrackerRunState state,
-        Func<TrackerRunStateSnapshot, bool> condition)
+    private static async Task<TrackerRunStateSnapshot> WaitForRunSnapshotAsync(TrackerRunState state, Func<TrackerRunStateSnapshot, bool> condition)
     {
         DateTimeOffset deadline = DateTimeOffset.UtcNow.AddSeconds(3);
         while (DateTimeOffset.UtcNow < deadline)
@@ -235,6 +246,7 @@ public sealed class TrackerConnectionServiceTests
             TrackerRunStateSnapshot snapshot = state.Snapshot;
             if (condition(snapshot))
                 return snapshot;
+
             await Task.Delay(10);
         }
 
@@ -256,6 +268,7 @@ public sealed class TrackerConnectionServiceTests
         {
             if (knowledge.GetDisplayedMoves(speciesId, level).Count > 0)
                 return;
+
             await Task.Delay(10);
         }
 
@@ -278,6 +291,7 @@ public sealed class TrackerConnectionServiceTests
         {
             if (knowledge.GetDisplayedMoves(speciesId, level).Any(move => move.Id == moveId))
                 return;
+
             await Task.Delay(10);
         }
 
@@ -303,12 +317,14 @@ public sealed class TrackerConnectionServiceTests
             Power = 90,
             Accuracy = 100
         };
+
         HealingInventorySnapshot healing = new()
         {
             ItemCount = healingItems,
             PotentialHp = 12,
             Percentage = 50
         };
+
         return new PlayerPokemonSnapshot
         {
             PokemonId = "1234",

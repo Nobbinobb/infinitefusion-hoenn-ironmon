@@ -51,13 +51,13 @@ public sealed class TrackerRunState
     internal void StartBattle(BattleSnapshot battle)
     {
         ArgumentNullException.ThrowIfNull(battle);
-        Publish(battle, Snapshot.Player, []);
+        Publish(battle, Snapshot.Player, [], null);
     }
 
     /// <summary>
     /// Ends the active battle while preserving the last initialized player Pokemon.
     /// </summary>
-    internal void EndBattle() => Publish(null, Snapshot.Player, []);
+    internal void EndBattle() => Publish(null, Snapshot.Player, [], null);
 
     /// <summary>
     /// Replaces the complete initialized player Pokemon snapshot.
@@ -66,7 +66,8 @@ public sealed class TrackerRunState
     internal void UpdatePlayer(PlayerPokemonSnapshot player)
     {
         ArgumentNullException.ThrowIfNull(player);
-        Publish(Snapshot.Battle, player, Snapshot.Enemies);
+        string? moveMenuPokemonId = Snapshot.Player?.PokemonId == player.PokemonId ? Snapshot.MoveMenuPokemonId : null;
+        Publish(Snapshot.Battle, player, Snapshot.Enemies, moveMenuPokemonId);
     }
 
     /// <summary>
@@ -77,7 +78,17 @@ public sealed class TrackerRunState
     {
         ArgumentNullException.ThrowIfNull(enemy);
         List<EnemyPokemonSnapshot> enemies = [.. Snapshot.Enemies.Where(candidate => candidate.Position != enemy.Position), enemy];
-        Publish(Snapshot.Battle, Snapshot.Player, enemies.OrderBy(candidate => candidate.Position).ToArray());
+        Publish(Snapshot.Battle, Snapshot.Player, [.. enemies.OrderBy(candidate => candidate.Position)], Snapshot.MoveMenuPokemonId);
+    }
+
+    /// <summary>
+    /// Records the first move-menu opening for the active player Pokémon.
+    /// </summary>
+    /// <param name="payload">The move-menu event payload.</param>
+    internal void OpenPlayerMoveMenu(PlayerMoveMenuOpenedPayload payload)
+    {
+        ArgumentNullException.ThrowIfNull(payload);
+        Publish(Snapshot.Battle, Snapshot.Player, Snapshot.Enemies, payload.PokemonId);
     }
 
     /// <summary>
@@ -86,10 +97,12 @@ public sealed class TrackerRunState
     /// <param name="battle">The active battle.</param>
     /// <param name="player">The initialized player Pokemon.</param>
     /// <param name="enemies">The active opposing Pokemon.</param>
-    private void Publish(BattleSnapshot? battle, PlayerPokemonSnapshot? player, IReadOnlyList<EnemyPokemonSnapshot> enemies)
+    /// <param name="moveMenuPokemonId">The player Pokémon whose move menu most recently opened.</param>
+    private void Publish(BattleSnapshot? battle, PlayerPokemonSnapshot? player, IReadOnlyList<EnemyPokemonSnapshot> enemies, string? moveMenuPokemonId = null)
     {
         lock (_sync)
-            _snapshot = new TrackerRunStateSnapshot(battle, player, enemies);
+            _snapshot = new TrackerRunStateSnapshot(battle, player, enemies, moveMenuPokemonId);
+
         Changed?.Invoke(this, EventArgs.Empty);
     }
 }

@@ -240,11 +240,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// <param name="game">The connected game's handshake.</param>
     /// <param name="cancellationToken">The token that stops the connection.</param>
     /// <returns>A task representing the persistent read loop.</returns>
-    private async Task ReadMessagesAsync(
-        TrackerMessageReader reader,
-        string currentStateRequestId,
-        GameHandshakePayload game,
-        CancellationToken cancellationToken)
+    private async Task ReadMessagesAsync(TrackerMessageReader reader, string currentStateRequestId, GameHandshakePayload game, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -270,6 +266,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
 
             if (message.Type != TrackerMessageType.Response || message.RequestId != currentStateRequestId)
                 continue;
+
             if (message.Success != true)
                 throw new TrackerProtocolException(message.Error?.Message ?? "The current_state request failed.");
 
@@ -293,11 +290,15 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             "battle_started" => () => _runState.StartBattle(TrackerJson.DeserializePayload<BattleSnapshot>(message.Payload)),
             "battle_ended" => _runState.EndBattle,
             "player_sent_out" or "player_state_changed" => () => ApplyPlayerUpdate(message),
+            "player_move_menu_opened" => () => _runState.OpenPlayerMoveMenu(TrackerJson.DeserializePayload<PlayerMoveMenuOpenedPayload>(message.Payload)),
             "enemy_sent_out" or "enemy_state_changed" => () => ApplyEnemyUpdate(message),
             "enemy_move_used" => () =>
                 _knowledge.ObserveEnemyMove(TrackerJson.DeserializePayload<EnemyMoveUsedPayload>(message.Payload)),
+            "enemy_ability_revealed" => () =>
+                _knowledge.ObserveEnemyAbility(TrackerJson.DeserializePayload<EnemyAbilityRevealedPayload>(message.Payload)),
             _ => () => { }
         };
+
         apply();
     }
 
@@ -320,6 +321,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     {
         EnemyPokemonSnapshot enemy = TrackerJson.DeserializePayload<EnemyPokemonSnapshot>(message.Payload);
         _runState.UpdateEnemy(enemy);
+        _knowledge.ObserveEnemy(enemy);
         ObserveEnemyMove(enemy);
     }
 
@@ -331,8 +333,12 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     {
         if (state.Player is not null)
             _knowledge.ObservePlayer(state.Player);
+
         foreach (EnemyPokemonSnapshot enemy in state.Enemies)
+        {
+            _knowledge.ObserveEnemy(enemy);
             ObserveEnemyMove(enemy);
+        }
     }
 
     /// <summary>
@@ -343,6 +349,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     {
         if (enemy.LastMove is null)
             return;
+
         EnemyMoveUsedPayload observation = new()
         {
             EnemyId = enemy.EnemyId,
@@ -350,6 +357,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             EnemyLevel = enemy.Level,
             Move = enemy.LastMove
         };
+
         _knowledge.ObserveEnemyMove(observation);
     }
 }

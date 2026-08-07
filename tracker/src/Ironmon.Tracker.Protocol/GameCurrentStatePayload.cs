@@ -16,14 +16,7 @@ public sealed class GameCurrentStatePayload
     /// <param name="player">The initialized player Pokemon when one exists.</param>
     /// <param name="enemies">The legally visible active opposing Pokemon.</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when sequence is negative.</exception>
-    public GameCurrentStatePayload(
-        bool ironmonActive,
-        string? runId,
-        string? battleId,
-        long sequence,
-        BattleSnapshot? battle = null,
-        PlayerPokemonSnapshot? player = null,
-        IReadOnlyList<EnemyPokemonSnapshot>? enemies = null)
+    public GameCurrentStatePayload(bool ironmonActive, string? runId, string? battleId, long sequence, BattleSnapshot? battle = null, PlayerPokemonSnapshot? player = null, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(sequence);
         IronmonActive = ironmonActive;

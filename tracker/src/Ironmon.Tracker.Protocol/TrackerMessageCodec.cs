@@ -31,10 +31,7 @@ public static class TrackerMessageCodec
 
         try
         {
-            TrackerMessage? message = JsonSerializer.Deserialize<TrackerMessage>(json, TrackerJson.Options);
-            if (message is null)
-                throw new TrackerProtocolException("The tracker message was null.");
-
+            TrackerMessage? message = JsonSerializer.Deserialize<TrackerMessage>(json, TrackerJson.Options) ?? throw new TrackerProtocolException("The tracker message was null.");
             TrackerMessageValidator.Validate(message);
             return message;
         }

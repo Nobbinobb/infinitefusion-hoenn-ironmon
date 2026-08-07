@@ -1,0 +1,36 @@
+<div class="move-list" aria-label="Discovered enemy moves">
+    <p class="section-label">DISCOVERED MOVES</p>
+    @foreach (int slot in _moveSlots)
+    {
+        ObservedMoveSnapshot? move = GetMoves().ElementAtOrDefault(slot - 1);
+        @if (move is null)
+        {
+            <div class="move-placeholder unknown"><span>Unknown move</span><span>--</span></div>
+        }
+        else
+        {
+            <MoveRow Name="@move.Name"
+                     Type="@move.Type"
+                     Category="@move.Category"
+                     Effectiveness="@MovePresentation.CalculateEffectiveness(move.Type, move.Category, PlayerTypes)"
+                     PpText="@FormatObservedPp(move)"
+                     Power="@move.Power"
+                     Accuracy="@move.Accuracy"
+                     Selected="() => SelectMove(move)" />
+        }
+    }
+</div>
+
+@if (_selectedMove is not null)
+{
+    <MoveDetailPanel Name="@_selectedMove.Name"
+                     Type="@_selectedMove.Type"
+                     Category="@_selectedMove.Category"
+                     Description="@_selectedMove.Description"
+                     Power="@_selectedMove.Power"
+                     Accuracy="@_selectedMove.Accuracy"
+                     PpText="@FormatObservedPp(_selectedMove)"
+                     LearnedLevel="@_selectedMove.LearnedLevel"
+                     Effectiveness="@MovePresentation.CalculateEffectiveness(_selectedMove.Type, _selectedMove.Category, PlayerTypes)"
+                     Closed="CloseMove" />
+}
