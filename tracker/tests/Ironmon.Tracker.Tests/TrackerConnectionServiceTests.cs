@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Text.Json;
 using Ironmon.Tracker.Connection;
 using Ironmon.Tracker.Protocol;
 
@@ -26,8 +27,9 @@ public sealed class TrackerConnectionServiceTests
         TrackerConnectionState state = new();
         TrackerRunState runState = new();
         TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
+        CompletedRunArchive completedRuns = CreateCompletedRunArchive();
         TrackerConnectionOptions options = new(0, "0.1.0", false, TimeSpan.FromSeconds(2));
-        await using TrackerConnectionService service = new(options, state, runState, knowledge);
+        await using TrackerConnectionService service = new(options, state, runState, knowledge, completedRuns);
         service.Start();
 
         using TcpClient client = new();
@@ -55,6 +57,75 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal(TrackerConnectionStatus.Connected, connected.Status);
         Assert.Equal("6.8.0", connected.Game?.GameVersion);
         Assert.Equal(7, connected.CurrentState?.Sequence);
+
+        CompletedRunRecipePayload recipe = CreateRecipe("run-1");
+        TrackerMessage runCompleted = TrackerMessageFactory.CreateEvent("run_completed", 1, recipe, "run-1");
+        await writer.WriteAsync(runCompleted);
+        await WaitForRecipeAsync(completedRuns, "run-1");
+        Assert.Equal("run-1", Assert.Single(completedRuns.Recipes).RunId);
+
+        Task<PokemonSearchResponsePayload> searchTask = service.SearchPokemonAsync(recipe, "char");
+        TrackerMessage? searchRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("pokemon_search", searchRequest?.Command);
+        PokemonSearchRequestPayload searchPayload = TrackerJson.DeserializePayload<PokemonSearchRequestPayload>(searchRequest!.Payload);
+        Assert.Equal("char", searchPayload.Query);
+        Assert.Equal(0, searchPayload.Offset);
+        Assert.Equal(20, searchPayload.Limit);
+        Assert.False(searchPayload.NormalOnly);
+        PokemonSearchResponsePayload searchResponse = new()
+        {
+            Matches = [new PokemonSearchMatch { SpeciesId = "CHARMANDER:0", SpeciesName = "Charmander" }],
+            Total = 1
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(searchRequest.RequestId!, searchResponse, "run-1"));
+        PokemonSearchResponsePayload receivedSearch = await searchTask;
+        Assert.Equal("CHARMANDER:0", Assert.Single(receivedSearch.Matches).SpeciesId);
+        Assert.Same(receivedSearch, await service.SearchPokemonAsync(recipe, "char"));
+
+        Task<PokemonLookupSnapshot> lookupTask = service.LookupPokemonAsync(recipe, "CHARMANDER:0");
+        TrackerMessage? lookupRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("pokemon_lookup", lookupRequest?.Command);
+        PokemonLookupRequestPayload lookupPayload = TrackerJson.DeserializePayload<PokemonLookupRequestPayload>(lookupRequest!.Payload);
+        Assert.Equal("CHARMANDER:0", lookupPayload.SpeciesId);
+        Assert.Equal(100, lookupPayload.Level);
+        PokemonLookupSnapshot lookupResponse = new()
+        {
+            SpeciesId = "CHARMANDER:0",
+            SpeciesName = "Charmander",
+            Types = ["FIRE"],
+            BaseStats = new BaseStatsSnapshot { Hp = 39, Attack = 52, Defense = 43, SpecialAttack = 60, SpecialDefense = 50, Speed = 65 },
+            BaseStatTotal = 309,
+            Evolutions =
+            [
+                new PokemonRelationSnapshot
+                {
+                    SpeciesId = "CHARMELEON:0",
+                    SpeciesName = "Charmeleon",
+                    Label = "Level 16"
+                }
+            ]
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(lookupRequest.RequestId!, lookupResponse, "run-1"));
+        PokemonLookupSnapshot receivedLookup = await lookupTask;
+        Assert.Equal(309, receivedLookup.BaseStatTotal);
+        Assert.Same(receivedLookup, await service.LookupPokemonAsync(recipe, "CHARMANDER:0"));
+
+        Task<FusionPreviewResponsePayload> fusionTask = service.PreviewFusionAsync(recipe, "CHARMANDER:0", "ALTARIA:0");
+        TrackerMessage? fusionRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("fusion_preview", fusionRequest?.Command);
+        FusionPreviewRequestPayload fusionPayload = TrackerJson.DeserializePayload<FusionPreviewRequestPayload>(fusionRequest!.Payload);
+        Assert.Equal("CHARMANDER:0", fusionPayload.FirstSpeciesId);
+        Assert.Equal("ALTARIA:0", fusionPayload.SecondSpeciesId);
+        PokemonRelationSnapshot body = new() { SpeciesId = "CHARMANDER:0", SpeciesName = "Charmander", Label = "Body material" };
+        PokemonRelationSnapshot head = new() { SpeciesId = "ALTARIA:0", SpeciesName = "Altaria", Label = "Head material" };
+        PokemonRelationSnapshot result = new() { SpeciesId = "B6H334:0", SpeciesName = "Charia", Label = "Ironmon result" };
+        FusionPreviewResponsePayload fusionResponse = new() { Outcomes = [new FusionOutcomeSnapshot { Body = body, Head = head, Result = result }] };
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(fusionRequest.RequestId!, fusionResponse, "run-1"));
+        FusionPreviewResponsePayload receivedFusion = await fusionTask;
+        Assert.Equal("B6H334:0", Assert.Single(receivedFusion.Outcomes).Result.SpeciesId);
+        Assert.Same(receivedFusion, await service.PreviewFusionAsync(recipe, "CHARMANDER:0", "ALTARIA:0"));
 
         GameCurrentStatePayload startedState = new(true, "run-2", null, 1);
         TrackerMessage runStarted = TrackerMessageFactory.CreateEvent("run_started", 1, startedState, "run-2");
@@ -174,7 +245,7 @@ public sealed class TrackerConnectionServiceTests
         TrackerRunState runState = new();
         TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
         TrackerConnectionOptions options = new(0, "0.1.0", false, TimeSpan.FromSeconds(2));
-        await using TrackerConnectionService service = new(options, state, runState, knowledge);
+        await using TrackerConnectionService service = new(options, state, runState, knowledge, CreateCompletedRunArchive());
         service.Start();
 
         using TcpClient client = new();
@@ -199,7 +270,7 @@ public sealed class TrackerConnectionServiceTests
         TrackerRunState runState = new();
         TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
         TrackerConnectionOptions options = new(0, "0.1.0", false, TimeSpan.FromMilliseconds(50));
-        await using TrackerConnectionService service = new(options, state, runState, knowledge);
+        await using TrackerConnectionService service = new(options, state, runState, knowledge, CreateCompletedRunArchive());
         service.Start();
 
         using TcpClient client = new();
@@ -357,5 +428,57 @@ public sealed class TrackerConnectionServiceTests
     {
         string path = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
         return new TrackerKnowledgeStore(new TrackerKnowledgeOptions(path));
+    }
+
+    /// <summary>
+    /// Creates an isolated completed-run archive for a connection test.
+    /// </summary>
+    /// <returns>The isolated completed-run archive.</returns>
+    private static CompletedRunArchive CreateCompletedRunArchive()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
+        return new CompletedRunArchive(new TrackerKnowledgeOptions(path));
+    }
+
+    /// <summary>
+    /// Creates a valid completed-run recipe for connection tests.
+    /// </summary>
+    /// <param name="runId">The stable test run identifier.</param>
+    /// <returns>The completed-run recipe.</returns>
+    private static CompletedRunRecipePayload CreateRecipe(string runId) => new()
+    {
+        RunId = runId,
+        Seed = 12345,
+        Result = "lost",
+        GameVersion = "6.8.0",
+        IronmonVersion = "0.3.3",
+        Configuration = JsonSerializer.SerializeToElement(new { wild_policy = "mixed" }),
+        SpeciesGeneratorVersion = 1,
+        AbilityGeneratorVersion = 3,
+        PlayerFusionGeneratorVersion = 2,
+        SpeciesPoolFingerprint = "species",
+        AbilityPoolFingerprint = "abilities",
+        FusionPoolFingerprint = "fusions"
+    };
+
+    /// <summary>
+    /// Waits for a completed-run recipe to enter tracker-owned persistence.
+    /// </summary>
+    /// <param name="archive">The completed-run archive being observed.</param>
+    /// <param name="runId">The expected stable run identifier.</param>
+    /// <returns>A task representing the wait.</returns>
+    /// <exception cref="TimeoutException">Thrown when the recipe does not arrive.</exception>
+    private static async Task WaitForRecipeAsync(CompletedRunArchive archive, string runId)
+    {
+        DateTimeOffset deadline = DateTimeOffset.UtcNow.AddSeconds(3);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            if (archive.Recipes.Any(recipe => recipe.RunId == runId))
+                return;
+
+            await Task.Delay(10);
+        }
+
+        throw new TimeoutException("The expected completed-run recipe was not persisted.");
     }
 }

@@ -398,6 +398,7 @@ contains the inputs needed to reproduce the run:
   "configuration": {},
   "species_generator_version": 3,
   "ability_generator_version": 2,
+  "player_fusion_generator_version": 2,
   "species_pool_fingerprint": "...",
   "ability_pool_fingerprint": "...",
   "fusion_pool_fingerprint": "..."
@@ -428,11 +429,35 @@ localization, nicknames, forms, and fusions.
 The search flow is:
 
 1. The tracker sends `pokemon_search` with a text query and run ID.
-2. The game returns matching names and stable identifiers.
+2. The game returns a page of matching names, stable identifiers, and the
+   complete match count.
 3. The user selects a match.
-4. The tracker sends `pokemon_lookup` with the selected ID, run ID, and level
-   where level-dependent output is requested.
+4. The tracker sends `pokemon_lookup` with the selected ID and run ID.
 5. The game reconstructs and returns complete generated information.
+
+Search results use pages of 20. Post-run evolution destinations and direct
+previous evolutions include their sprites and can be selected for another
+lookup. Until the evolution generator planned for Ironmon 0.6.0 exists, these
+are explicitly the current natural evolution graph, not invented seeded
+targets. Fusion results expose their displayed body and head components, their
+seeded Ironmon reverse, and the ordered normal-material pairs that produce
+them. Encounter and pivot inputs do not replace a fusion's displayed
+components.
+
+For a normal Pokemon, the user searches for a second normal material. The game
+calculates only the two seeded Ironmon outcomes for those materials: first as
+body plus second as head, then the reversed orientation. It does not return a
+broad list of compatible custom sprites. All relationship and result cards use
+stable identifiers and share session-only Back and Forward navigation.
+
+Post-run search uses a reusable lightweight index and does not instantiate
+complete fusion species merely to obtain names. Deterministic lookup results,
+fusion mappers, material scans, and resolved sprite paths are cached for the
+current compatible runtime. The tracker also reuses successful responses for
+the current connection and clears that cache when the game disconnects.
+Post-run requests are serialized before being sent because the game handles
+them synchronously; a queued request does not begin its response timeout until
+the preceding request completes.
 
 During an active run, lookup responses contain only legally discovered
 information. After the run ends, complete generated data is available. The
@@ -557,6 +582,7 @@ The initial request set includes at least:
 - `current_state`;
 - `pokemon_search`;
 - `pokemon_lookup`;
+- `fusion_preview`;
 - `debug_inspect_pokemon`; and
 - `debug_run_diagnostics`.
 

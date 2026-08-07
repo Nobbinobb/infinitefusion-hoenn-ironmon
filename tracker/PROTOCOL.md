@@ -326,6 +326,93 @@ its event sequence, and emits `run_started` when connected. Its payload uses
 the same Part 3 current-state shape. If the tracker is absent at that moment,
 the next handshake and `current_state` response recover the active run.
 
+When a run ends, the game persists its result in the save metadata and emits
+`run_completed` with a compact deterministic recipe:
+
+```json
+{
+  "run_id": "run-seed-918273645",
+  "seed": 918273645,
+  "result": "lost",
+  "game_version": "6.8.0",
+  "ironmon_version": "0.3.3",
+  "configuration": {
+    "schema_version": 2,
+    "wild_policy": "mixed",
+    "trainer_policy": "mixed",
+    "unfusion_setting": "random_component"
+  },
+  "species_generator_version": 1,
+  "ability_generator_version": 3,
+  "player_fusion_generator_version": 2,
+  "species_pool_fingerprint": "...",
+  "ability_pool_fingerprint": "...",
+  "fusion_pool_fingerprint": "..."
+}
+```
+
+The same optional `completed_run` value is included in `current_state`, so a
+tracker started after the loss can still archive the recipe. The tracker writes
+recipes atomically under
+`%LocalAppData%/IronmonTracker/runs/<run-id>/recipe.json`. It never persists
+the reconstructed lookup response.
+
+## Deterministic post-run lookup
+
+`pokemon_search` accepts a non-empty text query, zero-based `offset`, a `limit`
+from 1 through 50, an optional `normal_only` restriction, and a completed-run
+recipe. The request envelope and recipe must carry the same run ID. A
+successful response contains the requested page of localized names and stable
+species/form IDs plus the complete match count:
+
+```json
+{
+  "matches": [
+    { "species_id": "CHARMANDER:0", "species_name": "Charmander" }
+  ],
+  "total": 1
+}
+```
+
+`pokemon_lookup` accepts the selected `species_id` and the same recipe. The
+tracker also sends a fixed compatibility level of 100 for game processes that
+loaded the earlier Part 6 protocol; it is not a user-facing filter and does not
+limit the returned learnset. The response includes:
+
+- localized identity and a game-relative sprite path;
+- types, all six base stats, and BST;
+- every generated normal and hidden ability slot;
+- the complete level-up learnset;
+- current evolution requirements, destinations, direct pre-evolutions, and
+  sprites;
+- displayed body and head components for a fusion;
+- the fusion's deterministic Ironmon reverse; and
+- every ordered normal-material pair that maps to that fusion in the run.
+
+Evolution destinations, previous evolutions, displayed components, reverse
+fusions, and fusion materials use stable species identifiers and can be
+selected as the subject of another lookup.
+
+`fusion_preview` accepts two normal species identifiers and the same recipe.
+It returns the two ordered results, first-species body plus second-species head
+and the reversed orientation. Identical materials produce one distinct result.
+The tracker uses normal-only paged search to select the second material; it
+does not enumerate every possible fusion containing the selected species.
+
+Until the planned evolution generator is implemented in Ironmon 0.6.0, the
+evolution relationships describe the game's current natural evolution graph.
+They must not be presented as seeded randomized targets. A fusion's displayed
+body and head are its actual species-owned components; encounter or pivot input
+Pokemon do not replace those components.
+
+Before any post-run command returns generated information, the game verifies that
+the run is complete and that the requested species generator, ability
+generator, player-fusion generator, normal-species pool, ability pool, and
+custom-fusion pool still match. A mismatch returns a structured error such as `generator_unavailable`,
+`incompatible_species_pool`, `incompatible_ability_pool`, or
+`incompatible_fusion_pool`. Complete lookup is also rejected while the loaded
+Ironmon run remains active, even if a client supplies an older recipe.
+
 ## Failure behavior
 
 - A client that does not send `game_connected` within five seconds is closed.

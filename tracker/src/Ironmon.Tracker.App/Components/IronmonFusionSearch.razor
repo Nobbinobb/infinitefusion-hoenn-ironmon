@@ -1,0 +1,64 @@
+<section class="lookup-relations fusion-search" aria-label="Ironmon fusion search">
+    <header>
+        <div>
+            <p class="section-label">IRONMON FUSIONS</p>
+            <span>Select a second normal Pokémon to calculate both orientations.</span>
+        </div>
+    </header>
+
+    <div class="lookup-search">
+        <input type="search" placeholder="Search second material" aria-label="Second fusion material" @bind="_query" @bind:event="oninput" @onkeydown="HandleSearchKeyDown" @onkeydown:stopPropagation="true" />
+        <button type="button" disabled="@_loading" @onclick="SearchAsync">Search</button>
+    </div>
+
+    @if (_error is not null)
+    {
+        <p class="lookup-error" role="alert">@_error</p>
+    }
+    else if (_loading)
+    {
+        <p class="lookup-message">Calculating fusion data…</p>
+    }
+    else if (_searched && _matches.Count == 0)
+    {
+        <p class="lookup-message">No matching normal Pokémon found.</p>
+    }
+
+    @if (_matches.Count > 0)
+    {
+        <div class="lookup-results fusion-search-results" aria-label="Normal Pokemon search results">
+            @foreach (PokemonSearchMatch match in _matches)
+            {
+                <button type="button" disabled="@_loading" @onclick="() => SelectMaterialAsync(match)">
+                    <strong>@match.SpeciesName</strong>
+                    <span>@match.SpeciesId</span>
+                </button>
+            }
+        </div>
+
+        @if (_matchTotal > SearchPageSize)
+        {
+            <nav class="lookup-pager" aria-label="Fusion material search pages">
+                <button type="button" disabled="@(_loading || !HasPreviousPage())" @onclick="PreviousPageAsync">Previous</button>
+                <span>@GetRangeText()</span>
+                <button type="button" disabled="@(_loading || !HasNextPage())" @onclick="NextPageAsync">Next</button>
+            </nav>
+        }
+    }
+
+    @if (_outcomes.Count > 0)
+    {
+        <div class="fusion-outcomes" aria-label="Ironmon fusion results">
+            @foreach (FusionOutcomeSnapshot outcome in _outcomes)
+            {
+                <div class="fusion-outcome">
+                    <PokemonRelationButton Relation="@outcome.Body" GameRoot="@GameRoot" Selected="PokemonSelected" />
+                    <span class="fusion-operator">+</span>
+                    <PokemonRelationButton Relation="@outcome.Head" GameRoot="@GameRoot" Selected="PokemonSelected" />
+                    <span class="fusion-operator">→</span>
+                    <PokemonRelationButton Relation="@outcome.Result" GameRoot="@GameRoot" Selected="PokemonSelected" />
+                </div>
+            }
+        </div>
+    }
+</section>

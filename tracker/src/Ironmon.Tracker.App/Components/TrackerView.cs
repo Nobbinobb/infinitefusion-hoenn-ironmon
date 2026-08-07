@@ -13,5 +13,10 @@ public enum TrackerView
     /// <summary>
     /// Shows the currently selected opposing Pokemon.
     /// </summary>
-    Enemy = 1
+    Enemy = 1,
+
+    /// <summary>
+    /// Searches deterministic generated data for completed runs.
+    /// </summary>
+    Lookup = 2
 }

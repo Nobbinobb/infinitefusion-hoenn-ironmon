@@ -31,22 +31,34 @@
             <span class="tab-key">E</span>
             Enemy
         </button>
+        <button class="@GetTabClass(TrackerView.Lookup)"
+                type="button"
+                role="tab"
+                aria-selected="@(_selectedView == TrackerView.Lookup)"
+                @onclick="() => SelectView(TrackerView.Lookup)">
+            <span class="tab-key">L</span>
+            Lookup
+        </button>
     </nav>
 
     @if (_selectedView == TrackerView.Player)
     {
         <PlayerCard Player="@_run.Player" GameRoot="@_connection.Game?.GameRoot" TargetTypes="@GetSelectedEnemy()?.Types" />
     }
-    else
+    else if (_selectedView == TrackerView.Enemy)
     {
         <EnemyCard Enemies="@_run.Enemies"
                    PlayerTypes="@_run.Player?.Types"
                    GameRoot="@_connection.Game?.GameRoot"
                    @bind-SelectedEnemyId="_selectedEnemyId" />
     }
+    else
+    {
+        <PostRunLookup GameRoot="@_connection.Game?.GameRoot" />
+    }
 
     <footer class="tracker-footer">
         <span>Local connection</span>
-        <span><kbd>P</kbd> Player&nbsp;&nbsp;<kbd>E</kbd> Enemy</span>
+        <span><kbd>P</kbd> Player&nbsp;&nbsp;<kbd>E</kbd> Enemy&nbsp;&nbsp;<kbd>L</kbd> Lookup</span>
     </footer>
 </main>

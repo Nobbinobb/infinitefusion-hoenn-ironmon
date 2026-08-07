@@ -53,8 +53,14 @@ public partial class EnemyCard : IDisposable
     /// <summary>
     /// Gets the selected enemy or first active enemy as a fallback.
     /// </summary>
-    private EnemyPokemonSnapshot? SelectedEnemy =>
-        Enemies.FirstOrDefault(enemy => enemy.EnemyId == SelectedEnemyId) ?? Enemies.FirstOrDefault();
+    private EnemyPokemonSnapshot? SelectedEnemy
+    {
+        get
+        {
+            EnemyPokemonSnapshot? selected = Enemies.FirstOrDefault(enemy => enemy.EnemyId == SelectedEnemyId);
+            return selected ?? (Enemies.Count > 0 ? Enemies[0] : null);
+        }
+    }
 
     /// <summary>
     /// Subscribes the card to remembered-knowledge changes.

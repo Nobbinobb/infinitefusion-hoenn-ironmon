@@ -69,6 +69,7 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_pivot_state
   attr_accessor :ironmon_run_id
   attr_accessor :ironmon_tracker_sequence
+  attr_accessor :ironmon_run_result
 end
 
 class Pokemon

@@ -1,0 +1,16 @@
+<button class="lookup-relation" type="button" @onclick="SelectAsync">
+    <span class="lookup-relation-sprite" aria-hidden="true">
+        @if (_spriteSource is not null)
+        {
+            <img src="@_spriteSource" alt="" />
+        }
+        else
+        {
+            <span>?</span>
+        }
+    </span>
+    <span class="lookup-relation-copy">
+        <strong>@Relation.SpeciesName</strong>
+        <small>@Relation.Label</small>
+    </span>
+</button>

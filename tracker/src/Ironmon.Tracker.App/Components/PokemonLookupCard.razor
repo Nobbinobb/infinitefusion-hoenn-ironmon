@@ -1,0 +1,144 @@
+<article class="lookup-pokemon" aria-label="Generated Pokemon information">
+    <div class="card-heading action-heading">
+        <div class="sprite-placeholder live" aria-hidden="true">
+            @if (_spriteSource is not null)
+            {
+                <img src="@_spriteSource" alt="" />
+            }
+            else
+            {
+                <span>?</span>
+            }
+        </div>
+        <div class="identity-placeholder">
+            <p class="card-kicker">POST-RUN DATA</p>
+            <h2 class="identity-name"><span>@Pokemon.SpeciesName</span></h2>
+            <p class="typing-line">
+                @foreach (string type in Pokemon.Types)
+                {
+                    <span class="typing-type @MovePresentation.GetTypeColorClass(type)">@type</span>
+                }
+            </p>
+        </div>
+        <div class="identity-actions" aria-label="Generated Pokemon details">
+            @if (Pokemon.Evolutions.Count > 1)
+            {
+                <details class="compact-disclosure">
+                    <summary>Evolution <strong>@Pokemon.Evolutions[0].Label</strong><span>+@(Pokemon.Evolutions.Count - 1)</span></summary>
+                    <div class="disclosure-menu">
+                        @foreach (PokemonRelationSnapshot evolution in Pokemon.Evolutions.Skip(1))
+                        {
+                            <span>@evolution.Label</span>
+                        }
+                    </div>
+                </details>
+            }
+            else
+            {
+                <span>Evolution <strong>@GetEvolutionRequirement()</strong></span>
+            }
+        </div>
+    </div>
+
+    <div class="lookup-stat-grid" aria-label="Base stats">
+        @foreach ((string Name, int Value) stat in GetBaseStats())
+        {
+            <div><span>@stat.Name</span><strong>@stat.Value</strong></div>
+        }
+    </div>
+
+    <div class="summary-row">
+        <span>BST <strong>@Pokemon.BaseStatTotal</strong></span>
+    </div>
+
+    <div class="lookup-abilities">
+        <p class="section-label">ABILITIES</p>
+        <div>
+            @foreach (AbilitySnapshot ability in Pokemon.Abilities)
+            {
+                <button type="button" @onclick="() => SelectAbility(ability)">@ability.Name</button>
+            }
+        </div>
+    </div>
+
+    @if (Pokemon.Evolutions.Count > 0)
+    {
+        <section class="lookup-relations" aria-label="Evolution destinations">
+            <header><p class="section-label">CURRENT EVOLUTIONS</p></header>
+            <div class="lookup-relation-grid">
+                @foreach (PokemonRelationSnapshot evolution in Pokemon.Evolutions)
+                {
+                    <PokemonRelationButton Relation="@evolution" GameRoot="@GameRoot" Selected="PokemonSelected" />
+                }
+            </div>
+        </section>
+    }
+
+    @if (Pokemon.PreviousEvolutions.Count > 0)
+    {
+        <section class="lookup-relations" aria-label="Previous evolutions">
+            <header><p class="section-label">PREVIOUS EVOLUTION</p></header>
+            <div class="lookup-relation-grid">
+                @foreach (PokemonRelationSnapshot previousEvolution in Pokemon.PreviousEvolutions)
+                {
+                    <PokemonRelationButton Relation="@previousEvolution" GameRoot="@GameRoot" Selected="PokemonSelected" />
+                }
+            </div>
+        </section>
+    }
+
+    @if (Pokemon.FusionBases.Count > 0)
+    {
+        <section class="lookup-relations" aria-label="Displayed fusion components">
+            <header><p class="section-label">DISPLAYED COMPONENTS</p></header>
+            <div class="lookup-relation-grid">
+                @foreach (PokemonRelationSnapshot fusionBase in Pokemon.FusionBases)
+                {
+                    <PokemonRelationButton Relation="@fusionBase" GameRoot="@GameRoot" Selected="PokemonSelected" />
+                }
+            </div>
+        </section>
+    }
+
+    @if (Pokemon.ReverseFusion is not null)
+    {
+        <section class="lookup-relations" aria-label="Ironmon reverse fusion">
+            <header><p class="section-label">IRONMON REVERSE</p></header>
+            <div class="lookup-relation-grid">
+                <PokemonRelationButton Relation="@Pokemon.ReverseFusion" GameRoot="@GameRoot" Selected="PokemonSelected" />
+            </div>
+        </section>
+    }
+
+    @if (Pokemon.FusionMaterials.Count > 0)
+    {
+        <section class="lookup-relations" aria-label="Ironmon fusion materials">
+            <header><p class="section-label">FUSION MATERIALS</p></header>
+            <div class="lookup-material-list">
+                @foreach (FusionMaterialPairSnapshot materials in Pokemon.FusionMaterials)
+                {
+                    <div class="lookup-material-pair">
+                        <PokemonRelationButton Relation="@materials.Body" GameRoot="@GameRoot" Selected="PokemonSelected" />
+                        <span aria-hidden="true">+</span>
+                        <PokemonRelationButton Relation="@materials.Head" GameRoot="@GameRoot" Selected="PokemonSelected" />
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    @if (Pokemon.FusionBases.Count == 0)
+    {
+        <IronmonFusionSearch Pokemon="@Pokemon"
+                             Recipe="@Recipe"
+                             GameRoot="@GameRoot"
+                             PokemonSelected="PokemonSelected" />
+    }
+
+    <LookupMoveList Pokemon="@Pokemon" />
+</article>
+
+@if (_selectedAbility is not null)
+{
+    <AbilityDetailPanel Ability="@_selectedAbility" Closed="CloseAbility" />
+}

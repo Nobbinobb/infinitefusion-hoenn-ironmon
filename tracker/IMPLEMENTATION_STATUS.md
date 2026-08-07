@@ -12,7 +12,7 @@ product behavior remains defined by `../docs/design/TRACKER.md`.
 | 3 | Persistent TCP connection and Ruby bridge | Reviewed |
 | 4 | Player battle tracking and healing inventory | Reviewed |
 | 5 | Enemy tracking, remembered moves, and annotations | Reviewed |
-| 6 | Deterministic post-run search and lookup | Not started |
+| 6 | Deterministic post-run search and lookup | Implemented; awaiting review |
 | 7 | Debug-mode inspector parity | Not started |
 | 8 | Release packaging and end-to-end validation | Not started |
 
@@ -510,3 +510,87 @@ Implemented on 2026-08-07:
 - All **29 test cases** pass after the detail-panel changes.
 - The move and ability information panels were accepted as the first-version
   detail experience.
+
+## Part 6: Deterministic post-run search and lookup
+
+Status: **Implemented; awaiting review**
+
+Implemented on 2026-08-07:
+
+- Added a game-owned `run_completed` event for battle loss or Hall of Fame
+  completion and included the completed recipe in connection recovery.
+- Added compact recipes containing only the run ID, seed, result, versions,
+  configuration, species, ability, and player-fusion generator versions, and
+  source-pool fingerprints.
+- Persisted recipes atomically under the tracker data directory and explicitly
+  kept reconstructed Pokemon results transient.
+- Added correlated `pokemon_search` and `pokemon_lookup` requests over the
+  existing persistent duplex connection, including timeout, disconnect, and
+  structured game-error propagation.
+- Added game-side validation for completed-run state, request/run identity,
+  supported generator implementations, and normal-species, ability, and
+  custom-fusion pool fingerprints.
+- Added deterministic name search over the normal and custom-fusion categories
+  allowed by the historical run configuration, with complete server-backed
+  result paging in groups of 20.
+- Added complete lookup reconstruction for identity, sprite, typing, all six
+  base stats, BST, randomized ability slots, the complete level-up learnset,
+  navigable current evolution destinations and direct pre-evolutions with
+  sprites, displayed fusion components, deterministic Ironmon reverses, and
+  the normal-material pairs mapped to a fusion.
+- Replaced the broad custom-fusion relationship list with a normal-material
+  search that calculates only the two seeded Ironmon orientations for the
+  selected pair.
+- Added session-only Back and Forward navigation shared by search results,
+  evolutions, displayed components, reverse fusions, materials, and outcomes.
+- Replaced full fusion-object construction during name search with a reusable
+  lightweight search index derived from stable fusion IDs and split names.
+- Added bounded game-side caches for search results and Pokemon lookups plus
+  reusable fusion mappers, material scans, and sprite paths. Added
+  connection-scoped tracker caches so repeated search pages, Pokemon lookups,
+  and fusion previews require no additional game request.
+- Disabled and guarded search, paging, result, and material controls while a
+  request is active so synchronous game work cannot accumulate duplicate
+  requests that later expire.
+- Serialized post-run requests at the connection boundary, so requests from
+  different nested components wait locally and begin their response timeout
+  only after the preceding game request completes.
+- Added a third Lookup view with completed-run selection, name search, result
+  selection, generated-data presentation, and reusable move and ability detail
+  panels.
+- Prevented view hotkeys from firing while the user operates lookup form
+  controls, added damage-category icons to the complete learnset, and removed
+  its redundant type label.
+- Cleared empty-search messaging after a result is selected so it cannot appear
+  above a successfully loaded Pokemon.
+- Bound lookup search text on each input event so a new query cannot reuse the
+  previous query when Search is clicked before the field loses focus.
+- Kept current natural evolution relationships distinct from the seeded
+  evolution generator planned for Ironmon 0.6.0; the tracker does not invent
+  future generated targets.
+- Retained a fixed level-100 request value for compatibility with game
+  processes running the earlier Part 6 script, without restoring the level
+  filter or level-specific move display.
+- Kept complete lookup unavailable while the loaded Ironmon run is active,
+  even if a client supplies a previously completed recipe.
+- Corrected live-view navigation so ordinary state updates no longer override
+  a manually selected Enemy or Lookup view.
+
+### Validation
+
+- The complete .NET solution builds with 0 warnings and 0 errors.
+- The test suite contains **30 passing tests**, including completed-recipe
+  persistence, correlated live search, lookup, and fusion-preview requests,
+  and connection-scoped response-cache reuse.
+- Canonical Ruby scripts were synchronized to both distribution and local game
+  copies.
+- Infinite Fusion's bundled runtime loaded the Part 6 completion hooks and
+  lookup handlers and remained running throughout the startup smoke test; only
+  the exact test process was stopped.
+### Deliberately deferred to Part 7
+
+- debug inspector data and diagnostics requests;
+- debug-mode navigation and presentation; and
+- release-mode enforcement of the debug surface.
+
+Part 7 must not begin until Part 6 is accepted or revised.

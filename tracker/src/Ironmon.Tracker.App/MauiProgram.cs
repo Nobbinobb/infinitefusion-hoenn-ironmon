@@ -22,6 +22,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<TrackerConnectionState>();
         builder.Services.AddSingleton<TrackerRunState>();
         builder.Services.AddSingleton<TrackerKnowledgeStore>();
+        builder.Services.AddSingleton<CompletedRunArchive>();
         builder.Services.AddSingleton<TrackerConnectionService>();
 
 #if DEBUG

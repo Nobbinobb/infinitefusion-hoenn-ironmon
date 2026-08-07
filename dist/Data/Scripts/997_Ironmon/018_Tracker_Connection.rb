@@ -209,17 +209,30 @@ module Ironmon
       raise "Tracker request_id is missing." if !request_id.is_a?(String) || request_id.empty?
       if message["command"] == "current_state"
         queue_message(success_response(request_id, Ironmon.tracker_current_state))
+      elsif message["command"] == "pokemon_search"
+        payload = Ironmon.tracker_pokemon_search(message["payload"], message["run_id"])
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "pokemon_lookup"
+        payload = Ironmon.tracker_pokemon_lookup(message["payload"], message["run_id"])
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "fusion_preview"
+        payload = Ironmon.tracker_fusion_preview(message["payload"], message["run_id"])
+        queue_message(success_response(request_id, payload, message["run_id"]))
       else
         queue_message(error_response(request_id, "unknown_command", "The game does not support this tracker command."))
       end
+    rescue Ironmon::TrackerLookupError => e
+      queue_message(error_response(request_id, e.code, e.message, message["run_id"]))
+    rescue Exception => e
+      queue_message(error_response(request_id, "lookup_failed", e.message, message["run_id"]))
     end
 
-    def success_response(request_id, payload)
+    def success_response(request_id, payload, run_id = nil)
       return {
         "schema_version" => TRACKER_SCHEMA_VERSION,
         "type" => "response",
         "request_id" => request_id,
-        "run_id" => Ironmon.ensure_tracker_run_id,
+        "run_id" => run_id || Ironmon.ensure_tracker_run_id,
         "battle_id" => Ironmon.tracker_battle_id,
         "sent_at" => Ironmon.tracker_timestamp,
         "success" => true,
@@ -227,12 +240,12 @@ module Ironmon
       }
     end
 
-    def error_response(request_id, code, message)
+    def error_response(request_id, code, message, run_id = nil)
       return {
         "schema_version" => TRACKER_SCHEMA_VERSION,
         "type" => "response",
         "request_id" => request_id,
-        "run_id" => Ironmon.ensure_tracker_run_id,
+        "run_id" => run_id || Ironmon.ensure_tracker_run_id,
         "battle_id" => Ironmon.tracker_battle_id,
         "sent_at" => Ironmon.tracker_timestamp,
         "success" => false,
@@ -286,6 +299,7 @@ module Ironmon
     return if !$PokemonGlobal
     $PokemonGlobal.ironmon_run_id = new_tracker_run_id
     $PokemonGlobal.ironmon_tracker_sequence = 0
+    $PokemonGlobal.ironmon_run_result = nil
     @tracker_battle = nil
     @tracker_battle_id = nil
     @tracker_player_battler = nil
@@ -463,7 +477,8 @@ module Ironmon
       "sequence" => $PokemonGlobal ? ($PokemonGlobal.ironmon_tracker_sequence || 0) : 0,
       "battle" => tracker_battle_snapshot,
       "player" => @tracker_player_pokemon ? tracker_player_snapshot : nil,
-      "enemies" => tracker_enemy_snapshots
+      "enemies" => tracker_enemy_snapshots,
+      "completed_run" => tracker_completed_run_recipe
     }
   end
 

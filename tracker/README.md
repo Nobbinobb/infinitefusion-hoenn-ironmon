@@ -7,9 +7,10 @@ connection subset is recorded in `PROTOCOL.md`.
 
 ## Run the desktop shell
 
-The current review build is a Windows-only .NET 10 Blazor Hybrid application.
-It contains the Player and Enemy shell but deliberately does not connect to the
-game until Part 3.
+The current review build is a Windows-only .NET 10 Blazor Hybrid application
+with live Player and Enemy views plus deterministic completed-run lookup,
+fusion exploration, and session Back/Forward navigation. The game connects
+locally on port `38521`; no browser or HTTP server is used.
 
 ```powershell
 & 'C:\Program Files\dotnet\dotnet.exe' run `

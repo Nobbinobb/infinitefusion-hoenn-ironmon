@@ -223,5 +223,6 @@ module Ironmon
     @custom_fusion_species_index = nil
     reset_player_fusion_mapper_cache if
       respond_to?(:reset_player_fusion_mapper_cache)
+    reset_tracker_post_run_cache if respond_to?(:reset_tracker_post_run_cache)
   end
 end

@@ -61,6 +61,7 @@ public partial class Home : IDisposable
         {
             "P" or "1" => TrackerView.Player,
             "E" or "2" => TrackerView.Enemy,
+            "L" or "3" => TrackerView.Lookup,
             _ => null
         };
 
@@ -120,8 +121,11 @@ public partial class Home : IDisposable
     /// Gets the active enemy selected for move-effectiveness calculations.
     /// </summary>
     /// <returns>The selected enemy, or the first active enemy as a fallback.</returns>
-    private EnemyPokemonSnapshot? GetSelectedEnemy() =>
-        _run.Enemies.FirstOrDefault(enemy => enemy.EnemyId == _selectedEnemyId) ?? _run.Enemies.FirstOrDefault();
+    private EnemyPokemonSnapshot? GetSelectedEnemy()
+    {
+        EnemyPokemonSnapshot? selected = _run.Enemies.FirstOrDefault(enemy => enemy.EnemyId == _selectedEnemyId);
+        return selected ?? (_run.Enemies.Count > 0 ? _run.Enemies[0] : null);
+    }
 
     /// <summary>
     /// Refreshes the shell after a background connection change.
@@ -148,11 +152,12 @@ public partial class Home : IDisposable
         if (_selectedEnemyId is null || _run.Enemies.All(enemy => enemy.EnemyId != _selectedEnemyId))
             _selectedEnemyId = _run.Enemies.Count > 0 ? _run.Enemies[0].EnemyId : null;
 
-        _selectedView = enemyAppeared switch
+        bool moveMenuOpened = _run.MoveMenuPokemonId is not null && _run.MoveMenuPokemonId != _lastMoveMenuPokemonId;
+        _selectedView = (enemyAppeared, moveMenuOpened, battleEnded) switch
         {
-            true => TrackerView.Enemy,
-            _ when _run.MoveMenuPokemonId is not null && _run.MoveMenuPokemonId != _lastMoveMenuPokemonId => TrackerView.Player,
-            _ => TrackerView.Player
+            (true, _, _) => TrackerView.Enemy,
+            (_, true, _) or (_, _, true) => TrackerView.Player,
+            _ => _selectedView
         };
 
         _lastMoveMenuPokemonId = _run.MoveMenuPokemonId;

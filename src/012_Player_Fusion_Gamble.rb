@@ -21,6 +21,7 @@ module Ironmon
       @fusion_components = nil
       @fusion_pairs = nil
       @paired_result_ids = nil
+      @material_pairs = {}
     end
 
     def species(body_species, head_species)
@@ -67,6 +68,28 @@ module Ironmon
       )
       paired_id = paired_result_id(species_id)
       return GameData::Species.get(paired_id).id
+    end
+
+    def material_pairs_for(fusion_species)
+      ensure_fusion_pool
+      species_id = validate_result_id(
+        GameData::Species.get(fusion_species).id_number
+      )
+      return @material_pairs[species_id] if @material_pairs[species_id]
+      pairs = []
+      (1..NB_POKEMON).each do |first_id|
+        (first_id..NB_POKEMON).each do |second_id|
+          pair_index = deterministic_value("result", first_id, second_id) %
+                       @fusion_pairs.length
+          result_ids = @fusion_pairs[pair_index]
+          pairs << [first_id, second_id] if result_ids[0] == species_id
+          if first_id != second_id && result_ids[1] == species_id
+            pairs << [second_id, first_id]
+          end
+        end
+      end
+      @material_pairs[species_id] = pairs.freeze
+      return @material_pairs[species_id]
     end
 
     def prepare
