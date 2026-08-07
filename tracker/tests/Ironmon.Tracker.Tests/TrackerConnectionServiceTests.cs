@@ -28,7 +28,7 @@ public sealed class TrackerConnectionServiceTests
         TrackerRunState runState = new();
         TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
         CompletedRunArchive completedRuns = CreateCompletedRunArchive();
-        TrackerConnectionOptions options = new(0, "0.1.0", false, TimeSpan.FromSeconds(2));
+        TrackerConnectionOptions options = new(0, "0.1.0", true, TimeSpan.FromSeconds(2));
         await using TrackerConnectionService service = new(options, state, runState, knowledge, completedRuns);
         service.Start();
 
@@ -38,7 +38,7 @@ public sealed class TrackerConnectionServiceTests
         using TrackerMessageReader reader = new(stream, leaveOpen: true);
         await using TrackerMessageWriter writer = new(stream, leaveOpen: true);
 
-        GameHandshakePayload game = new("6.8.0", "0.3.3", true, false, @"C:\Game", "run-1", null);
+        GameHandshakePayload game = new("6.8.0", "0.3.3", true, true, @"C:\Game", "run-1", null);
         TrackerMessage gameHandshake = TrackerMessageFactory.CreateEvent("game_connected", 0, game, "run-1");
         await writer.WriteAsync(gameHandshake);
 
@@ -57,6 +57,7 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal(TrackerConnectionStatus.Connected, connected.Status);
         Assert.Equal("6.8.0", connected.Game?.GameVersion);
         Assert.Equal(7, connected.CurrentState?.Sequence);
+        Assert.True(service.DebugAuthorized);
 
         CompletedRunRecipePayload recipe = CreateRecipe("run-1");
         TrackerMessage runCompleted = TrackerMessageFactory.CreateEvent("run_completed", 1, recipe, "run-1");
@@ -126,6 +127,46 @@ public sealed class TrackerConnectionServiceTests
         FusionPreviewResponsePayload receivedFusion = await fusionTask;
         Assert.Equal("B6H334:0", Assert.Single(receivedFusion.Outcomes).Result.SpeciesId);
         Assert.Same(receivedFusion, await service.PreviewFusionAsync(recipe, "CHARMANDER:0", "ALTARIA:0"));
+
+        DebugPokemonInspectionRequestPayload inspectPayload = new() { Target = DebugPokemonTarget.Player };
+        Task<DebugPokemonInspectorSnapshot> inspectTask = service.InspectPokemonAsync(inspectPayload);
+        TrackerMessage? inspectRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("debug_inspect_pokemon", inspectRequest?.Command);
+        DebugPokemonInspectionRequestPayload receivedInspectPayload = TrackerJson.DeserializePayload<DebugPokemonInspectionRequestPayload>(inspectRequest!.Payload);
+        Assert.Equal(DebugPokemonTarget.Player, receivedInspectPayload.Target);
+        DebugPokemonInspectorSnapshot inspectResponse = new()
+        {
+            PokemonId = "1234",
+            Nickname = "Charmander",
+            SpeciesId = "CHARMANDER:0",
+            SpeciesName = "Charmander",
+            Level = 5,
+            Gender = "male",
+            ActiveAbilitySlot = "Normal 0",
+            ActiveAbilityId = "BLAZE",
+            ActiveAbilityName = "Blaze",
+            Generator = new DebugAbilityGeneratorSnapshot { PoolFingerprint = "abilities" }
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(inspectRequest.RequestId!, inspectResponse, "run-1"));
+        Assert.Equal("BLAZE", (await inspectTask).ActiveAbilityId);
+
+        Task<DebugRunDiagnosticsSnapshot> diagnosticsTask = service.GetDebugRunDiagnosticsAsync();
+        TrackerMessage? diagnosticsRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("debug_run_diagnostics", diagnosticsRequest?.Command);
+        DebugRunDiagnosticsSnapshot diagnosticsResponse = new()
+        {
+            GameVersion = "6.8.0",
+            IronmonVersion = "0.3.3",
+            WildPolicy = "mixed",
+            TrainerPolicy = "mixed",
+            UnfusionSetting = "random_component",
+            CustomFusionPoolFingerprint = "fusions",
+            AbilityPoolFingerprint = "abilities"
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(diagnosticsRequest!.RequestId!, diagnosticsResponse, "run-1"));
+        Assert.Equal("mixed", (await diagnosticsTask).WildPolicy);
 
         GameCurrentStatePayload startedState = new(true, "run-2", null, 1);
         TrackerMessage runStarted = TrackerMessageFactory.CreateEvent("run_started", 1, startedState, "run-2");
@@ -233,6 +274,23 @@ public sealed class TrackerConnectionServiceTests
         client.Dispose();
         TrackerConnectionSnapshot waiting = await WaitForSnapshotAsync(state, snapshot => snapshot.Status == TrackerConnectionStatus.Waiting);
         Assert.Null(waiting.Game);
+    }
+
+    /// <summary>
+    /// Verifies that tracker launch authorization is required before a debug request is sent.
+    /// </summary>
+    [Fact]
+    public async Task ServiceRejectsUnauthorizedDebugInspection()
+    {
+        TrackerConnectionState state = new();
+        TrackerRunState runState = new();
+        TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
+        CompletedRunArchive completedRuns = CreateCompletedRunArchive();
+        TrackerConnectionOptions options = new(0, "0.1.0", false, TimeSpan.FromSeconds(2));
+        await using TrackerConnectionService service = new(options, state, runState, knowledge, completedRuns);
+        DebugPokemonInspectionRequestPayload request = new() { Target = DebugPokemonTarget.Player };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.InspectPokemonAsync(request));
     }
 
     /// <summary>

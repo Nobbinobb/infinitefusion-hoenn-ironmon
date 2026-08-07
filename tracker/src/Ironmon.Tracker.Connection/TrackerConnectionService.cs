@@ -57,6 +57,11 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     public int BoundPort { get; private set; }
 
     /// <summary>
+    /// Gets whether both the tracker launch mode and connected game authorize debug access.
+    /// </summary>
+    public bool DebugAuthorized => _options.DebugRequested && _state.Snapshot.Game?.DebugAvailable == true;
+
+    /// <summary>
     /// Searches the connected game for Pokemon names compatible with one completed-run recipe.
     /// </summary>
     /// <param name="recipe">The completed-run reconstruction recipe.</param>
@@ -138,6 +143,33 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         FusionPreviewResponsePayload response = await SendRequestAsync<FusionPreviewRequestPayload, FusionPreviewResponsePayload>("fusion_preview", payload, recipe.RunId, cancellationToken);
         _fusionPreviewCache[cacheKey] = response;
         return response;
+    }
+
+    /// <summary>
+    /// Requests the game-owned Ironmon inspector data for one current Pokemon.
+    /// </summary>
+    /// <param name="request">The Pokemon source selection.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The complete authorized inspector snapshot.</returns>
+    public Task<DebugPokemonInspectorSnapshot> InspectPokemonAsync(DebugPokemonInspectionRequestPayload request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        EnsureDebugAuthorized();
+        string runId = GetConnectedRunId();
+        return SendRequestAsync<DebugPokemonInspectionRequestPayload, DebugPokemonInspectorSnapshot>("debug_inspect_pokemon", request, runId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Requests game-owned run and randomizer diagnostics.
+    /// </summary>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The authorized run diagnostics.</returns>
+    public Task<DebugRunDiagnosticsSnapshot> GetDebugRunDiagnosticsAsync(CancellationToken cancellationToken = default)
+    {
+        EnsureDebugAuthorized();
+        string runId = GetConnectedRunId();
+        DebugRunDiagnosticsRequestPayload request = new();
+        return SendRequestAsync<DebugRunDiagnosticsRequestPayload, DebugRunDiagnosticsSnapshot>("debug_run_diagnostics", request, runId, cancellationToken);
     }
 
     /// <summary>
@@ -456,6 +488,24 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             _requestLock.Release();
         }
     }
+
+    /// <summary>
+    /// Rejects debug requests unless both sides of the handshake authorized access.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown when debug access is not authorized.</exception>
+    private void EnsureDebugAuthorized()
+    {
+        if (!DebugAuthorized)
+            throw new InvalidOperationException("Both the tracker launch mode and connected game must authorize debug access.");
+    }
+
+    /// <summary>
+    /// Gets the active run identifier used to correlate a debug request.
+    /// </summary>
+    /// <returns>The connected run identifier.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the connected game has no run identifier.</exception>
+    private string GetConnectedRunId() 
+        => _state.Snapshot.CurrentState?.RunId ?? _state.Snapshot.Game?.RunId ?? throw new InvalidOperationException("The connected game has no active run identifier.");
 
     /// <summary>
     /// Clears the active request writer and fails outstanding requests after disconnection.

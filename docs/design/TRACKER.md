@@ -491,9 +491,10 @@ hidden run information.
 
 ### Pokemon inspection
 
-Debug mode can inspect the current player, current enemy, a party Pokemon, or a
-requested species. Its first-version pages reproduce the currently implemented
-inspector.
+Debug mode can inspect the current player, current enemy, or a party Pokemon.
+Arbitrary-species inspection remains planned, but it must use a species-only
+path because Infinite Fusion's ordinary Pokemon constructor consumes random
+values. Its first-version pages reproduce the currently implemented inspector.
 
 Overview includes:
 

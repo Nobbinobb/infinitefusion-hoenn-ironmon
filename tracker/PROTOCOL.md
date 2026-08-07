@@ -1,8 +1,8 @@
 # Ironmon Tracker protocol v1
 
-This document records the implemented connection and player-tracking subset
-through Part 5. Later parts extend the payload catalog without changing the
-common envelope or transport.
+This document records the implemented protocol through the Part 7 debug
+inspector foundation. Later parts extend the payload catalog without changing
+the common envelope or transport.
 
 ## Transport
 
@@ -412,6 +412,42 @@ custom-fusion pool still match. A mismatch returns a structured error such as `g
 `incompatible_species_pool`, `incompatible_ability_pool`, or
 `incompatible_fusion_pool`. Complete lookup is also rejected while the loaded
 Ironmon run remains active, even if a client supplies an older recipe.
+
+## Authorized debug inspection
+
+Debug requests require both authorization signals established during the
+handshake:
+
+- the tracker must send `debug_requested: true`, which only occurs when it was
+  launched with `--debug`; and
+- the game must send `debug_available: true`, which currently requires its
+  development `$DEBUG` mode.
+
+The tracker refuses to send debug requests unless both signals are present.
+The game independently enforces the same pair before resolving either command.
+Failure returns `debug_forbidden` and no inspector data.
+
+`debug_inspect_pokemon` accepts a target of `player`, `enemy`, or `party`.
+Enemy targets include `enemy_position`; party targets include the zero-based
+`party_index`. The game resolves the actual current Pokemon and returns:
+
+- identity, nickname, level, gender, sprite, item, species, and form;
+- normal/fusion kind and displayed fusion components;
+- active ability index, slot, ID, and name;
+- ability generator schema, pool-rules version, pool size, and fingerprint;
+- original and generated normal and hidden slots;
+- final fusion slots and body/head generated slots;
+- ability eligibility; and
+- final-slot source and restricted-source replacement information.
+
+Arbitrary species inspection is not implemented by this request because the
+game's ordinary Pokemon constructor consumes random values. The debug contract
+will not use that mutating path merely to fabricate an inspection target.
+
+`debug_run_diagnostics` has an empty payload and returns the game and Ironmon
+versions, protocol version, run and battle IDs, seed, configuration policies,
+fusion-pool metadata, ability-generator metadata, and wild/trainer mapping
+counts.
 
 ## Failure behavior
 

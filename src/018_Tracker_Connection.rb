@@ -218,13 +218,39 @@ module Ironmon
       elsif message["command"] == "fusion_preview"
         payload = Ironmon.tracker_fusion_preview(message["payload"], message["run_id"])
         queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "debug_inspect_pokemon"
+        if !debug_authorized?
+          queue_message(error_response(
+            request_id, "debug_forbidden",
+            "Both the game and tracker must authorize debug access.",
+            message["run_id"]
+          ))
+          return
+        end
+        payload = Ironmon.tracker_debug_inspect_pokemon(message["payload"])
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "debug_run_diagnostics"
+        if !debug_authorized?
+          queue_message(error_response(
+            request_id, "debug_forbidden",
+            "Both the game and tracker must authorize debug access.",
+            message["run_id"]
+          ))
+          return
+        end
+        payload = Ironmon.tracker_debug_run_diagnostics
+        queue_message(success_response(request_id, payload, message["run_id"]))
       else
         queue_message(error_response(request_id, "unknown_command", "The game does not support this tracker command."))
       end
-    rescue Ironmon::TrackerLookupError => e
+    rescue Ironmon::TrackerLookupError, Ironmon::TrackerDebugError => e
       queue_message(error_response(request_id, e.code, e.message, message["run_id"]))
     rescue Exception => e
       queue_message(error_response(request_id, "lookup_failed", e.message, message["run_id"]))
+    end
+
+    def debug_authorized?
+      return $DEBUG == true && @debug_requested == true
     end
 
     def success_response(request_id, payload, run_id = nil)

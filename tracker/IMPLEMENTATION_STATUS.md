@@ -12,8 +12,8 @@ product behavior remains defined by `../docs/design/TRACKER.md`.
 | 3 | Persistent TCP connection and Ruby bridge | Reviewed |
 | 4 | Player battle tracking and healing inventory | Reviewed |
 | 5 | Enemy tracking, remembered moves, and annotations | Reviewed |
-| 6 | Deterministic post-run search and lookup | Implemented; awaiting review |
-| 7 | Debug-mode inspector parity | Not started |
+| 6 | Deterministic post-run search and lookup | Reviewed |
+| 7 | Debug-mode inspector parity | Data foundation implemented; awaiting review |
 | 8 | Release packaging and end-to-end validation | Not started |
 
 Implementation stops at each part boundary for review before the next part
@@ -587,10 +587,41 @@ Implemented on 2026-08-07:
 - Infinite Fusion's bundled runtime loaded the Part 6 completion hooks and
   lookup handlers and remained running throughout the startup smoke test; only
   the exact test process was stopped.
-### Deliberately deferred to Part 7
+## Part 7A: Debug inspector data and authorization
 
-- debug inspector data and diagnostics requests;
-- debug-mode navigation and presentation; and
-- release-mode enforcement of the debug surface.
+Status: **Implemented; awaiting review**
 
-Part 7 must not begin until Part 6 is accepted or revised.
+Implemented on 2026-08-07:
+
+- Added a dual debug-access gate requiring both tracker `--debug` launch intent
+  and game-authorized `$DEBUG` mode. Both the tracker service and game bridge
+  enforce the gate independently.
+- Added `debug_inspect_pokemon` for the initialized player Pokemon, an active
+  enemy battler position, or a player party position.
+- Reproduced the current in-game inspector contract: identity, form, displayed
+  fusion components, active ability, generator metadata, original/generated
+  normal and hidden slots, final fusion slots, component slots, eligibility,
+  source slots, and restricted-source replacements.
+- Added `debug_run_diagnostics` for run identity, versions, configuration,
+  fusion and ability pool metadata, and mapping counts.
+- Kept both requests read-only and based on actual current Pokemon objects and
+  existing generator APIs.
+- Deliberately rejected fabricated arbitrary-species Pokemon targets because
+  Infinite Fusion's ordinary Pokemon constructor consumes random values. A
+  future species-only inspector must avoid that constructor.
+
+### Validation
+
+- The complete .NET solution test run contains **31 passing tests**.
+- Tests cover successful authorized inspector and diagnostic requests plus
+  tracker-side rejection without launch authorization.
+
+### Remaining Part 7 work
+
+- Debug-tab navigation and Pokemon inspector presentation;
+- tracker-owned protocol history, raw state, and move-knowledge diagnostics;
+- copy and diagnostic-report export; and
+- final release-mode enforcement and end-to-end validation.
+
+Part 7B must not begin until this data and authorization boundary is accepted
+or revised.
