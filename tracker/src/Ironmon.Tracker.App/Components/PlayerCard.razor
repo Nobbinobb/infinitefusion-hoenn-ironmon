@@ -16,6 +16,7 @@
                 <span>@GetName()</span>
                 @if (Player is not null)
                 {
+                    <GenderIcon Gender="@Player.Gender" />
                     <small>Lv. @Player.Level</small>
                 }
             </h2>
@@ -26,6 +27,10 @@
             else
             {
                 <p class="typing-line">
+                    @if (HasDistinctNickname())
+                    {
+                        <span class="species-name">@Player.SpeciesName</span>
+                    }
                     @foreach (string type in Player.Types)
                     {
                         <span class="typing-type @MovePresentation.GetTypeColorClass(type)">@type</span>

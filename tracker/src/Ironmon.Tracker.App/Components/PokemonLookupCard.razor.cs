@@ -22,7 +22,13 @@ public partial class PokemonLookupCard
     /// Gets or sets the completed-run reconstruction recipe.
     /// </summary>
     [Parameter]
-    public CompletedRunRecipePayload Recipe { get; set; } = null!;
+    public CompletedRunRecipePayload? Recipe { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the card represents an authorized active-run lookup.
+    /// </summary>
+    [Parameter]
+    public bool DebugMode { get; set; }
 
     /// <summary>
     /// Gets or sets the connected game installation directory.

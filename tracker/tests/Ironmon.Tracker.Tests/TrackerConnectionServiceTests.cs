@@ -38,8 +38,8 @@ public sealed class TrackerConnectionServiceTests
         using TrackerMessageReader reader = new(stream, leaveOpen: true);
         await using TrackerMessageWriter writer = new(stream, leaveOpen: true);
 
-        GameHandshakePayload game = new("6.8.0", "0.3.3", true, true, @"C:\Game", "run-1", null);
-        TrackerMessage gameHandshake = TrackerMessageFactory.CreateEvent("game_connected", 0, game, "run-1");
+        GameHandshakePayload game = new("6.8.0", "0.3.3", true, true, @"C:\Game", null, null);
+        TrackerMessage gameHandshake = TrackerMessageFactory.CreateEvent("game_connected", 0, game);
         await writer.WriteAsync(gameHandshake);
 
         TrackerMessage? trackerHandshake = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
@@ -48,6 +48,25 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal("tracker_connected", trackerHandshake?.Event);
         Assert.Equal("current_state", currentStateRequest?.Command);
         string requestId = Assert.IsType<string>(currentStateRequest?.RequestId);
+
+        await WaitForSnapshotAsync(state, snapshot => snapshot.Game is not null);
+        Task<DebugRunDiagnosticsSnapshot> reconnectDiagnosticsTask = service.GetDebugRunDiagnosticsAsync();
+        TrackerMessage? reconnectDiagnosticsRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("debug_run_diagnostics", reconnectDiagnosticsRequest?.Command);
+        Assert.Null(reconnectDiagnosticsRequest?.RunId);
+        DebugRunDiagnosticsSnapshot reconnectDiagnostics = new()
+        {
+            GameVersion = "6.8.0",
+            IronmonVersion = "0.3.3",
+            WildPolicy = "mixed",
+            TrainerPolicy = "mixed",
+            UnfusionSetting = "random_component",
+            CustomFusionPoolFingerprint = "fusions",
+            AbilityPoolFingerprint = "abilities"
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(reconnectDiagnosticsRequest!.RequestId!, reconnectDiagnostics));
+        Assert.Equal("mixed", (await reconnectDiagnosticsTask).WildPolicy);
 
         GameCurrentStatePayload currentState = new(true, "run-1", null, 7);
         TrackerMessage response = TrackerMessageFactory.CreateResponse(requestId, currentState, "run-1");
@@ -167,6 +186,26 @@ public sealed class TrackerConnectionServiceTests
 
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(diagnosticsRequest!.RequestId!, diagnosticsResponse, "run-1"));
         Assert.Equal("mixed", (await diagnosticsTask).WildPolicy);
+
+        Task<PokemonSearchResponsePayload> debugSearchTask = service.SearchDebugPokemonAsync("char");
+        TrackerMessage? debugSearchRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("debug_pokemon_search", debugSearchRequest?.Command);
+        DebugPokemonSearchRequestPayload debugSearchPayload = TrackerJson.DeserializePayload<DebugPokemonSearchRequestPayload>(debugSearchRequest!.Payload);
+        Assert.Equal("char", debugSearchPayload.Query);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugSearchRequest.RequestId!, searchResponse, "run-1"));
+        Assert.Equal("CHARMANDER:0", Assert.Single((await debugSearchTask).Matches).SpeciesId);
+
+        Task<PokemonLookupSnapshot> debugLookupTask = service.LookupDebugPokemonAsync("CHARMANDER:0");
+        TrackerMessage? debugLookupRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("debug_pokemon_lookup", debugLookupRequest?.Command);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugLookupRequest!.RequestId!, lookupResponse, "run-1"));
+        Assert.Equal(309, (await debugLookupTask).BaseStatTotal);
+
+        Task<FusionPreviewResponsePayload> debugFusionTask = service.PreviewDebugFusionAsync("CHARMANDER:0", "ALTARIA:0");
+        TrackerMessage? debugFusionRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("debug_fusion_preview", debugFusionRequest?.Command);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugFusionRequest!.RequestId!, fusionResponse, "run-1"));
+        Assert.Equal("B6H334:0", Assert.Single((await debugFusionTask).Outcomes).Result.SpeciesId);
 
         GameCurrentStatePayload startedState = new(true, "run-2", null, 1);
         TrackerMessage runStarted = TrackerMessageFactory.CreateEvent("run_started", 1, startedState, "run-2");
@@ -460,6 +499,7 @@ public sealed class TrackerConnectionServiceTests
             SpeciesId = "ESPEON:0",
             Nickname = "Espeon",
             SpeciesName = "Espeon",
+            Gender = "female",
             Level = 5,
             CurrentHp = currentHp,
             MaximumHp = maximumHp,

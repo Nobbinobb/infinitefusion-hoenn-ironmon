@@ -1,0 +1,35 @@
+<article class="debug-diagnostics" aria-label="Run diagnostics">
+    <section class="debug-data-section">
+        <p class="section-label">RUNTIME</p>
+        <dl class="debug-data-grid">
+            <div><dt>Game</dt><dd>@Diagnostics.GameVersion</dd></div>
+            <div><dt>Ironmon</dt><dd>@Diagnostics.IronmonVersion</dd></div>
+            <div><dt>Protocol</dt><dd>@Diagnostics.ProtocolVersion</dd></div>
+            <div><dt>Seed</dt><dd>@(Diagnostics.RunSeed?.ToString() ?? "None")</dd></div>
+            <div class="wide"><dt>Run ID</dt><dd>@(Diagnostics.RunId ?? "None")</dd></div>
+            <div class="wide"><dt>Battle ID</dt><dd>@(Diagnostics.BattleId ?? "None")</dd></div>
+        </dl>
+    </section>
+
+    <section class="debug-data-section">
+        <p class="section-label">CONFIGURATION</p>
+        <dl class="debug-data-grid">
+            <div><dt>Wild</dt><dd>@Diagnostics.WildPolicy</dd></div>
+            <div><dt>Trainer</dt><dd>@Diagnostics.TrainerPolicy</dd></div>
+            <div class="wide"><dt>Unfusion</dt><dd>@Diagnostics.UnfusionSetting</dd></div>
+        </dl>
+    </section>
+
+    <section class="debug-data-section">
+        <p class="section-label">GENERATORS AND POOLS</p>
+        <dl class="debug-data-grid">
+            <div><dt>Custom fusions</dt><dd>@Diagnostics.CustomFusionPoolSize</dd></div>
+            <div><dt>Ability schema</dt><dd>@Diagnostics.AbilityGeneratorVersion</dd></div>
+            <div><dt>Ability pool</dt><dd>@Diagnostics.AbilityPoolSize</dd></div>
+            <div><dt>Wild mappings</dt><dd>@Diagnostics.WildMappingCount</dd></div>
+            <div><dt>Trainer mappings</dt><dd>@Diagnostics.TrainerMappingCount</dd></div>
+            <div class="wide"><dt>Fusion fingerprint</dt><dd>@Diagnostics.CustomFusionPoolFingerprint</dd></div>
+            <div class="wide"><dt>Ability fingerprint</dt><dd>@Diagnostics.AbilityPoolFingerprint</dd></div>
+        </dl>
+    </section>
+</article>

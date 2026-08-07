@@ -33,6 +33,11 @@ public sealed class PlayerPokemonSnapshot
     public required string SpeciesName { get; init; }
 
     /// <summary>
+    /// Gets or initializes the stable gender identifier.
+    /// </summary>
+    public required string Gender { get; init; }
+
+    /// <summary>
     /// Gets or initializes the sprite path relative to the game root when available.
     /// </summary>
     public string? SpritePath { get; init; }

@@ -37,7 +37,13 @@ public partial class IronmonFusionSearch
     /// Gets or sets the completed-run reconstruction recipe.
     /// </summary>
     [Parameter]
-    public CompletedRunRecipePayload Recipe { get; set; } = null!;
+    public CompletedRunRecipePayload? Recipe { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether requests use the authorized active-run debug channel.
+    /// </summary>
+    [Parameter]
+    public bool DebugMode { get; set; }
 
     /// <summary>
     /// Gets or sets the connected game installation directory.
@@ -108,7 +114,7 @@ public partial class IronmonFusionSearch
         _outcomes = [];
         try
         {
-            PokemonSearchResponsePayload response = await Connection.SearchPokemonAsync(Recipe, _query.Trim(), offset, SearchPageSize, true);
+            PokemonSearchResponsePayload response = await SearchPokemonAsync(offset);
             _matches = response.Matches;
             _searchOffset = offset;
             _matchTotal = Math.Max(response.Total, offset + response.Matches.Count);
@@ -139,7 +145,7 @@ public partial class IronmonFusionSearch
         _error = null;
         try
         {
-            FusionPreviewResponsePayload response = await Connection.PreviewFusionAsync(Recipe, Pokemon.SpeciesId, match.SpeciesId);
+            FusionPreviewResponsePayload response = await PreviewFusionAsync(match.SpeciesId);
             _outcomes = response.Outcomes;
         }
         catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
@@ -190,5 +196,33 @@ public partial class IronmonFusionSearch
         int first = _matches.Count == 0 ? 0 : _searchOffset + 1;
         int last = _searchOffset + _matches.Count;
         return $"{first}–{last} of {_matchTotal}";
+    }
+
+    /// <summary>
+    /// Searches normal fusion materials through the selected lookup channel.
+    /// </summary>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <returns>The matching normal Pokemon.</returns>
+    private Task<PokemonSearchResponsePayload> SearchPokemonAsync(int offset)
+    {
+        if (DebugMode)
+            return Connection.SearchDebugPokemonAsync(_query.Trim(), offset, SearchPageSize, true);
+
+        CompletedRunRecipePayload recipe = Recipe ?? throw new InvalidOperationException("A completed-run recipe is required.");
+        return Connection.SearchPokemonAsync(recipe, _query.Trim(), offset, SearchPageSize, true);
+    }
+
+    /// <summary>
+    /// Calculates fusion outcomes through the selected lookup channel.
+    /// </summary>
+    /// <param name="secondSpeciesId">The selected second material.</param>
+    /// <returns>The generated fusion outcomes.</returns>
+    private Task<FusionPreviewResponsePayload> PreviewFusionAsync(string secondSpeciesId)
+    {
+        if (DebugMode)
+            return Connection.PreviewDebugFusionAsync(Pokemon.SpeciesId, secondSpeciesId);
+
+        CompletedRunRecipePayload recipe = Recipe ?? throw new InvalidOperationException("A completed-run recipe is required.");
+        return Connection.PreviewFusionAsync(recipe, Pokemon.SpeciesId, secondSpeciesId);
     }
 }

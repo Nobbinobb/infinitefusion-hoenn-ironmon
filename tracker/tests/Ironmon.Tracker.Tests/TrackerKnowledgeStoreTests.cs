@@ -175,6 +175,7 @@ public sealed class TrackerKnowledgeStoreTests
         SpeciesId = "BELLOSSOM:0",
         Nickname = "Bellossom",
         SpeciesName = "Bellossom",
+        Gender = "female",
         Level = 25,
         Status = "NONE",
         Ability = "Chlorophyll",

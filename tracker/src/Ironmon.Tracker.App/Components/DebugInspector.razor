@@ -1,0 +1,74 @@
+<section class="pokemon-card debug-view" role="tabpanel" aria-label="Authorized debug inspector">
+    <header class="debug-heading">
+        <div>
+            <p class="card-kicker">DEVELOPMENT MODE</p>
+            <h2>Ironmon Inspector</h2>
+        </div>
+        <span class="debug-authorized">Authorized</span>
+    </header>
+
+    <nav class="debug-pages" aria-label="Debug inspector pages">
+        <button type="button" class="@GetPageClass(DebugInspectorPage.Overview)" @onclick="() => SelectPageAsync(DebugInspectorPage.Overview)">Overview</button>
+        <button type="button" class="@GetPageClass(DebugInspectorPage.Abilities)" @onclick="() => SelectPageAsync(DebugInspectorPage.Abilities)">Abilities</button>
+        <button type="button" class="@GetPageClass(DebugInspectorPage.Lookup)" @onclick="() => SelectPageAsync(DebugInspectorPage.Lookup)">Lookup</button>
+        <button type="button" class="@GetPageClass(DebugInspectorPage.Diagnostics)" @onclick="() => SelectPageAsync(DebugInspectorPage.Diagnostics)">Run Diagnostics</button>
+    </nav>
+
+    @if (_selectedPage is DebugInspectorPage.Overview or DebugInspectorPage.Abilities)
+    {
+        <div class="debug-target-controls">
+            <label>
+                Inspect
+                <select value="@_selectedTarget" disabled="@_loading" @onchange="SelectTarget" @onkeydown:stopPropagation="true">
+                    @if (Player is not null)
+                    {
+                        <option value="player">Player · @Player.Nickname</option>
+                    }
+                    @foreach (EnemyPokemonSnapshot enemy in Enemies)
+                    {
+                        <option value="enemy:@enemy.Position">Enemy @((enemy.Position / 2) + 1) · @enemy.SpeciesName</option>
+                    }
+                </select>
+            </label>
+        </div>
+    }
+
+    @if (_selectedPage == DebugInspectorPage.Lookup)
+    {
+        <DebugActiveRunLookup GameRoot="@GameRoot" />
+    }
+    else if (_error is not null)
+    {
+        <p class="lookup-error" role="alert">@_error</p>
+    }
+    else if (_loading)
+    {
+        <p class="lookup-message">Reading game-owned debug data…</p>
+    }
+    else if (_selectedPage == DebugInspectorPage.Diagnostics)
+    {
+        @if (_diagnostics is not null)
+        {
+            <DebugRunDiagnostics Diagnostics="@_diagnostics" />
+        }
+        else
+        {
+            <p class="lookup-message">Run diagnostics are not loaded.</p>
+        }
+    }
+    else if (_pokemon is null)
+    {
+        <div class="lookup-empty">
+            <strong>No Pokemon inspected</strong>
+            <p>Select an available player or enemy.</p>
+        </div>
+    }
+    else if (_selectedPage == DebugInspectorPage.Overview)
+    {
+        <DebugPokemonOverview Pokemon="@_pokemon" GameRoot="@GameRoot" />
+    }
+    else
+    {
+        <DebugAbilitySlots Pokemon="@_pokemon" />
+    }
+</section>

@@ -155,7 +155,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(request);
         EnsureDebugAuthorized();
-        string runId = GetConnectedRunId();
+        string? runId = GetConnectedRunId();
         return SendRequestAsync<DebugPokemonInspectionRequestPayload, DebugPokemonInspectorSnapshot>("debug_inspect_pokemon", request, runId, cancellationToken);
     }
 
@@ -167,9 +167,59 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     public Task<DebugRunDiagnosticsSnapshot> GetDebugRunDiagnosticsAsync(CancellationToken cancellationToken = default)
     {
         EnsureDebugAuthorized();
-        string runId = GetConnectedRunId();
+        string? runId = GetConnectedRunId();
         DebugRunDiagnosticsRequestPayload request = new();
         return SendRequestAsync<DebugRunDiagnosticsRequestPayload, DebugRunDiagnosticsSnapshot>("debug_run_diagnostics", request, runId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Searches generated Pokemon in the active run through the authorized debug channel.
+    /// </summary>
+    /// <param name="query">The name fragment entered by the user.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="limit">The maximum number of matches to return.</param>
+    /// <param name="normalOnly">Whether to restrict matches to normal species.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The matching active-run Pokemon identifiers.</returns>
+    public Task<PokemonSearchResponsePayload> SearchDebugPokemonAsync(string query, int offset = 0, int limit = 20, bool normalOnly = false, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(query);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, 50);
+        EnsureDebugAuthorized();
+        DebugPokemonSearchRequestPayload request = new() { Query = query.Trim(), Offset = offset, Limit = limit, NormalOnly = normalOnly };
+        return SendRequestAsync<DebugPokemonSearchRequestPayload, PokemonSearchResponsePayload>("debug_pokemon_search", request, GetConnectedRunId(), cancellationToken);
+    }
+
+    /// <summary>
+    /// Requests generated information for one Pokemon in the active debug run.
+    /// </summary>
+    /// <param name="speciesId">The selected stable species and form identifier.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The active-run generated Pokemon information.</returns>
+    public Task<PokemonLookupSnapshot> LookupDebugPokemonAsync(string speciesId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        EnsureDebugAuthorized();
+        DebugPokemonLookupRequestPayload request = new() { SpeciesId = speciesId };
+        return SendRequestAsync<DebugPokemonLookupRequestPayload, PokemonLookupSnapshot>("debug_pokemon_lookup", request, GetConnectedRunId(), cancellationToken);
+    }
+
+    /// <summary>
+    /// Requests both generated fusion orientations for the active debug run.
+    /// </summary>
+    /// <param name="firstSpeciesId">The first normal fusion material.</param>
+    /// <param name="secondSpeciesId">The second normal fusion material.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The active-run fusion outcomes.</returns>
+    public Task<FusionPreviewResponsePayload> PreviewDebugFusionAsync(string firstSpeciesId, string secondSpeciesId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(firstSpeciesId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(secondSpeciesId);
+        EnsureDebugAuthorized();
+        DebugFusionPreviewRequestPayload request = new() { FirstSpeciesId = firstSpeciesId, SecondSpeciesId = secondSpeciesId };
+        return SendRequestAsync<DebugFusionPreviewRequestPayload, FusionPreviewResponsePayload>("debug_fusion_preview", request, GetConnectedRunId(), cancellationToken);
     }
 
     /// <summary>
@@ -440,12 +490,12 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// <typeparam name="TResponse">The successful response payload type.</typeparam>
     /// <param name="command">The game command.</param>
     /// <param name="payload">The request payload.</param>
-    /// <param name="runId">The completed run identifier.</param>
+    /// <param name="runId">The run identifier when the request is scoped to a run.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The deserialized successful response.</returns>
     /// <exception cref="InvalidOperationException">Thrown when no game is connected.</exception>
     /// <exception cref="TrackerProtocolException">Thrown when the game rejects the request.</exception>
-    private async Task<TResponse> SendRequestAsync<TRequest, TResponse>(string command, TRequest payload, string runId, CancellationToken cancellationToken)
+    private async Task<TResponse> SendRequestAsync<TRequest, TResponse>(string command, TRequest payload, string? runId, CancellationToken cancellationToken)
     {
         await _requestLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -500,12 +550,11 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     }
 
     /// <summary>
-    /// Gets the active run identifier used to correlate a debug request.
+    /// Gets the active run identifier when reconnect recovery has provided one.
     /// </summary>
-    /// <returns>The connected run identifier.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when the connected game has no run identifier.</exception>
-    private string GetConnectedRunId() 
-        => _state.Snapshot.CurrentState?.RunId ?? _state.Snapshot.Game?.RunId ?? throw new InvalidOperationException("The connected game has no active run identifier.");
+    /// <returns>The connected run identifier when available.</returns>
+    private string? GetConnectedRunId()
+        => _state.Snapshot.CurrentState?.RunId ?? _state.Snapshot.Game?.RunId;
 
     /// <summary>
     /// Clears the active request writer and fails outstanding requests after disconnection.

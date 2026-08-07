@@ -13,7 +13,7 @@ product behavior remains defined by `../docs/design/TRACKER.md`.
 | 4 | Player battle tracking and healing inventory | Reviewed |
 | 5 | Enemy tracking, remembered moves, and annotations | Reviewed |
 | 6 | Deterministic post-run search and lookup | Reviewed |
-| 7 | Debug-mode inspector parity | Data foundation implemented; awaiting review |
+| 7 | Debug-mode inspector parity | Inspector UI implemented; awaiting review |
 | 8 | Release packaging and end-to-end validation | Not started |
 
 Implementation stops at each part boundary for review before the next part
@@ -513,7 +513,7 @@ Implemented on 2026-08-07:
 
 ## Part 6: Deterministic post-run search and lookup
 
-Status: **Implemented; awaiting review**
+Status: **Reviewed**
 
 Implemented on 2026-08-07:
 
@@ -623,5 +623,62 @@ Implemented on 2026-08-07:
 - copy and diagnostic-report export; and
 - final release-mode enforcement and end-to-end validation.
 
-Part 7B must not begin until this data and authorization boundary is accepted
-or revised.
+## Part 7B: Debug inspector navigation and presentation
+
+Status: **Implemented; awaiting review**
+
+Implemented on 2026-08-08:
+
+- Added a Debug primary tab only when the tracker was launched with `--debug`
+  and the connected game authorizes debug access.
+- Added Player and active Enemy target choices. Changing the target immediately
+  refreshes the inspector; future party choices can be populated dynamically
+  if Ironmon supports story-controlled team battles.
+- Added separate Overview, Abilities, and Run Diagnostics pages.
+- Reproduced inspector identity, sprite, item, form, displayed fusion
+  components, active ability, and generator metadata on Overview.
+- Grouped current, normal generated, final fusion, body generated, and head
+  generated ability slots with original abilities, eligibility, fusion source,
+  and restricted-source replacement details.
+- Presented game-owned configuration, generator, pool, mapping, run, and battle
+  diagnostics without adding C# reconstruction logic.
+- Added the `D`/`4` authorized-view shortcut and automatically returns to the
+  Player view if debug authorization is lost.
+- Added symbol-only gender presentation to the player card and debug inspector.
+  A distinct nickname remains the primary heading while its species is shown
+  once as secondary metadata; identical nickname/species names are not repeated.
+- Allowed battle losses now respect Infinite Fusion's `canLose` battle rule, so
+  the protected opening encounter does not incorrectly complete a run.
+- Resynchronized the tracked player with the live party object outside battle,
+  allowing nickname and other overworld changes to update without waiting for
+  another send-out.
+- Made development tracker builds request debug authorization automatically so
+  restarting the tracker preserves the Debug tab. Release builds continue to
+  require an explicit `--debug` launch flag.
+- Removed the unnecessary active-run requirement from authorized debug
+  requests, allowing the inspector to work during reconnect recovery before a
+  run identifier is available.
+- Added an authorized active-run Lookup page with paged search, full generated
+  Pokemon details, relation navigation, Back/Forward history, and fusion
+  exploration. It reuses the post-run presentation while bypassing completion
+  only through separately gated debug commands.
+- Replaced lookup sprite resolution through temporary Pokemon construction with
+  direct species sprite resolution, keeping active-run debug lookup from
+  consuming gameplay randomness.
+
+### Validation
+
+- The complete .NET solution contains **31 passing tests**.
+- The native .NET 10 Blazor Hybrid application builds with 0 warnings and 0
+  errors.
+- The authorization tests from Part 7A continue to cover the source data used
+  by all three inspector pages.
+
+### Remaining Part 7 work
+
+- tracker-owned connection and protocol history;
+- raw event, request, response, current-state, and move-knowledge inspection;
+- copy actions and diagnostic-report export; and
+- final end-to-end debug-mode validation.
+
+Part 7C must not begin until this inspector UI is accepted or revised.

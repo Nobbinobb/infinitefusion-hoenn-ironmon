@@ -30,6 +30,12 @@ public partial class Home : IDisposable
     private TrackerRunState RunState { get; set; } = null!;
 
     /// <summary>
+    /// Gets or initializes the active tracker connection service.
+    /// </summary>
+    [Inject]
+    private TrackerConnectionService TrackerConnection { get; set; } = null!;
+
+    /// <summary>
     /// Subscribes the tracker shell to connection and run-state changes.
     /// </summary>
     protected override void OnInitialized()
@@ -49,7 +55,13 @@ public partial class Home : IDisposable
     /// Selects the requested primary tracker view.
     /// </summary>
     /// <param name="view">The view selected by the user.</param>
-    private void SelectView(TrackerView view) => _selectedView = view;
+    private void SelectView(TrackerView view)
+    {
+        if (view == TrackerView.Debug && !TrackerConnection.DebugAuthorized)
+            return;
+
+        _selectedView = view;
+    }
 
     /// <summary>
     /// Handles keyboard shortcuts for switching between primary tracker views.
@@ -62,6 +74,7 @@ public partial class Home : IDisposable
             "P" or "1" => TrackerView.Player,
             "E" or "2" => TrackerView.Enemy,
             "L" or "3" => TrackerView.Lookup,
+            "D" or "4" when TrackerConnection.DebugAuthorized => TrackerView.Debug,
             _ => null
         };
 
@@ -75,6 +88,13 @@ public partial class Home : IDisposable
     /// <param name="view">The tab's tracker view.</param>
     /// <returns>The tab CSS classes.</returns>
     private string GetTabClass(TrackerView view) => view == _selectedView ? "view-tab selected" : "view-tab";
+
+    /// <summary>
+    /// Gets the tab-container class for the authorized number of views.
+    /// </summary>
+    /// <returns>The tab-container CSS classes.</returns>
+    private string GetViewTabsClass()
+        => TrackerConnection.DebugAuthorized ? "view-tabs debug-enabled" : "view-tabs";
 
     /// <summary>
     /// Gets the concise connection state shown in the tracker header.
@@ -135,6 +155,9 @@ public partial class Home : IDisposable
     private void HandleConnectionChanged(object? sender, EventArgs args)
     {
         _connection = ConnectionState.Snapshot;
+        if (_selectedView == TrackerView.Debug && !TrackerConnection.DebugAuthorized)
+            _selectedView = TrackerView.Player;
+
         _ = InvokeAsync(StateHasChanged);
     }
 

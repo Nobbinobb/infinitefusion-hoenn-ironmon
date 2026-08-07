@@ -47,6 +47,9 @@ public static class MauiProgram
         string version = typeof(MauiProgram).Assembly.GetName().Version?.ToString() ?? "0.1.0";
         string[] arguments = Environment.GetCommandLineArgs();
         bool debugRequested = arguments.Any(argument => argument.Equals("--debug", StringComparison.OrdinalIgnoreCase));
+#if DEBUG
+        debugRequested = true;
+#endif
         return new TrackerConnectionOptions(TrackerProtocol.Port, version, debugRequested, TimeSpan.FromSeconds(5));
     }
 

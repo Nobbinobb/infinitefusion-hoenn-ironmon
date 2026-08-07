@@ -449,6 +449,13 @@ versions, protocol version, run and battle IDs, seed, configuration policies,
 fusion-pool metadata, ability-generator metadata, and wild/trainer mapping
 counts.
 
+The authorized active-run lookup uses `debug_pokemon_search`,
+`debug_pokemon_lookup`, and `debug_fusion_preview`. Their result contracts match
+the completed-run lookup equivalents, but their request payloads omit the
+completion recipe and the game resolves them from the currently loaded run.
+All three commands independently require the same dual debug authorization and
+are unavailable through the normal post-run API while a run remains active.
+
 ## Failure behavior
 
 - A client that does not send `game_connected` within five seconds is closed.

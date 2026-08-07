@@ -18,5 +18,10 @@ public enum TrackerView
     /// <summary>
     /// Searches deterministic generated data for completed runs.
     /// </summary>
-    Lookup = 2
+    Lookup = 2,
+
+    /// <summary>
+    /// Shows the authorized development inspector and diagnostics.
+    /// </summary>
+    Debug = 3
 }

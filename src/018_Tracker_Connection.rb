@@ -240,6 +240,39 @@ module Ironmon
         end
         payload = Ironmon.tracker_debug_run_diagnostics
         queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "debug_pokemon_search"
+        if !debug_authorized?
+          queue_message(error_response(
+            request_id, "debug_forbidden",
+            "Both the game and tracker must authorize debug access.",
+            message["run_id"]
+          ))
+          return
+        end
+        payload = Ironmon.tracker_debug_pokemon_search(message["payload"])
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "debug_pokemon_lookup"
+        if !debug_authorized?
+          queue_message(error_response(
+            request_id, "debug_forbidden",
+            "Both the game and tracker must authorize debug access.",
+            message["run_id"]
+          ))
+          return
+        end
+        payload = Ironmon.tracker_debug_pokemon_lookup(message["payload"])
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "debug_fusion_preview"
+        if !debug_authorized?
+          queue_message(error_response(
+            request_id, "debug_forbidden",
+            "Both the game and tracker must authorize debug access.",
+            message["run_id"]
+          ))
+          return
+        end
+        payload = Ironmon.tracker_debug_fusion_preview(message["payload"])
+        queue_message(success_response(request_id, payload, message["run_id"]))
       else
         queue_message(error_response(request_id, "unknown_command", "The game does not support this tracker command."))
       end
@@ -390,6 +423,7 @@ module Ironmon
   def self.update_tracker_player
     return if !@tracker_player_pokemon
     return if @tracker_battle_id && !@tracker_player_battler
+    synchronize_tracker_player_from_party if !@tracker_battle_id
     now = System.uptime
     return if @tracker_next_state_at && now < @tracker_next_state_at
     @tracker_next_state_at = now + TRACKER_STATE_INTERVAL_SECONDS
@@ -400,6 +434,13 @@ module Ironmon
     tracker_connection.send_event("player_state_changed", snapshot)
   rescue Exception => e
     echoln "Ironmon tracker player update failed safely: #{e.message}"
+  end
+
+  def self.synchronize_tracker_player_from_party
+    return if !$Trainer || !$Trainer.party
+    pokemon_id = @tracker_player_pokemon.personalID
+    party_pokemon = $Trainer.party.find { |pokemon| pokemon.personalID == pokemon_id }
+    @tracker_player_pokemon = party_pokemon if party_pokemon
   end
 
   def self.tracker_enemy_sent_out(battler)
@@ -528,6 +569,7 @@ module Ironmon
       "species_id" => tracker_species_id(pokemon),
       "nickname" => pokemon.name,
       "species_name" => species.name,
+      "gender" => tracker_gender(pokemon),
       "sprite_path" => tracker_sprite_path(pokemon),
       "level" => pokemon.level,
       "current_hp" => pokemon.hp,
@@ -552,6 +594,12 @@ module Ironmon
       "evolutions" => tracker_evolutions(pokemon),
       "healing" => tracker_healing_snapshot(pokemon.totalhp)
     }
+  end
+
+  def self.tracker_gender(pokemon)
+    return "male" if pokemon.male?
+    return "female" if pokemon.female?
+    return "genderless"
   end
 
   def self.tracker_enemy_snapshots

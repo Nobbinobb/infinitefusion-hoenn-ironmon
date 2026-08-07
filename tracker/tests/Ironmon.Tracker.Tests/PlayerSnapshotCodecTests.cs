@@ -29,6 +29,7 @@ public sealed class PlayerSnapshotCodecTests
         Assert.Contains("\"total_pp\":10", json, StringComparison.Ordinal);
         Assert.Equal("Psychic", Assert.Single(restored.Moves).Name);
         Assert.Equal(125, restored.Healing.Percentage);
+        Assert.Equal("female", restored.Gender);
         Assert.True(restored.Confused);
     }
 
@@ -92,6 +93,7 @@ public sealed class PlayerSnapshotCodecTests
             SpeciesId = "ESPEON:0",
             Nickname = "Espeon",
             SpeciesName = "Espeon",
+            Gender = "female",
             SpritePath = "Graphics/Battlers/196.png",
             Level = 5,
             CurrentHp = 18,

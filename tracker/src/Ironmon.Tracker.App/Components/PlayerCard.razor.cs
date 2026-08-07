@@ -52,6 +52,13 @@ public partial class PlayerCard
         => Player?.Nickname ?? "Waiting for player";
 
     /// <summary>
+    /// Gets whether the species name adds information beyond the visible nickname.
+    /// </summary>
+    /// <returns>Whether to show the species as secondary identity metadata.</returns>
+    private bool HasDistinctNickname()
+        => Player is not null && !string.Equals(Player.Nickname, Player.SpeciesName, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
     /// Gets the first visible evolution requirement.
     /// </summary>
     /// <returns>The evolution requirement or placeholder.</returns>

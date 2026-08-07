@@ -17,6 +17,16 @@ locally on port `38521`; no browser or HTTP server is used.
   --project 'src\Ironmon.Tracker.App\Ironmon.Tracker.App.csproj'
 ```
 
+Debug builds request the development-only Debug tab automatically and still
+require a game runtime that reports debug access. Release builds additionally
+require the explicit tracker launch flag:
+
+```powershell
+& 'C:\Program Files\dotnet\dotnet.exe' run `
+  --project 'src\Ironmon.Tracker.App\Ironmon.Tracker.App.csproj' `
+  -- --debug
+```
+
 ## Validate the implementation
 
 ```powershell

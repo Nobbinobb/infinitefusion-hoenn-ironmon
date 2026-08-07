@@ -11,7 +11,7 @@
             }
         </div>
         <div class="identity-placeholder">
-            <p class="card-kicker">POST-RUN DATA</p>
+            <p class="card-kicker">@(DebugMode ? "ACTIVE DEBUG RUN" : "POST-RUN DATA")</p>
             <h2 class="identity-name"><span>@Pokemon.SpeciesName</span></h2>
             <p class="typing-line">
                 @foreach (string type in Pokemon.Types)
@@ -131,6 +131,7 @@
     {
         <IronmonFusionSearch Pokemon="@Pokemon"
                              Recipe="@Recipe"
+                             DebugMode="@DebugMode"
                              GameRoot="@GameRoot"
                              PokemonSelected="PokemonSelected" />
     }

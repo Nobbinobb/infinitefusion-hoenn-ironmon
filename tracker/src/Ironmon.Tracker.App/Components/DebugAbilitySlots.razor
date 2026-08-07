@@ -1,0 +1,48 @@
+<article class="debug-abilities" aria-label="Inspected ability slots">
+    @foreach (DebugAbilitySlotGroup group in GetVisibleGroups())
+    {
+        <section class="debug-ability-group">
+            <header>
+                <p class="section-label">@GetGroupName(group)</p>
+                <span>@GetSlots(group).Count slot@(GetSlots(group).Count == 1 ? string.Empty : "s")</span>
+            </header>
+            <div class="debug-ability-list">
+                @foreach (DebugAbilitySlotSnapshot slot in GetSlots(group))
+                {
+                    <article class="debug-ability-slot @(slot.Active ? "active" : string.Empty)">
+                        <div class="debug-slot-heading">
+                            <strong>@GetSlotName(slot)</strong>
+                            @if (slot.Active)
+                            {
+                                <span>ACTIVE</span>
+                            }
+                        </div>
+                        <div class="debug-slot-ability">
+                            <strong>@slot.AbilityName</strong>
+                            <code>@slot.AbilityId</code>
+                        </div>
+                        <dl>
+                            <div><dt>Eligibility</dt><dd>@GetEligibilityName(slot.Eligibility)</dd></div>
+                            @if (slot.OriginalAbilityId is not null)
+                            {
+                                <div><dt>Original</dt><dd>@slot.OriginalAbilityName · @slot.OriginalAbilityId</dd></div>
+                            }
+                            @if (slot.Source is not null)
+                            {
+                                <div><dt>Source</dt><dd>@slot.Source</dd></div>
+                            }
+                            @if (slot.SourceAbilityId is not null)
+                            {
+                                <div><dt>From</dt><dd>@slot.SourceAbilityName · @slot.SourceAbilityId</dd></div>
+                            }
+                        </dl>
+                        @if (slot.RestrictedSourceReplaced)
+                        {
+                            <p class="debug-replacement">Restricted source replaced for this fusion.</p>
+                        }
+                    </article>
+                }
+            </div>
+        </section>
+    }
+</article>

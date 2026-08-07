@@ -28,7 +28,7 @@ module Ironmon
       "species_name" => species.name,
       "sprite_path" => tracker_sprite_path(pokemon),
       "level" => pokemon.level,
-      "gender" => tracker_debug_gender(pokemon),
+      "gender" => tracker_gender(pokemon),
       "held_item_id" => item ? item.id.to_s : nil,
       "held_item_name" => item ? item.name : nil,
       "fusion" => fusion,
@@ -68,6 +68,38 @@ module Ironmon
       "ability_pool_fingerprint" => ability_pool_fingerprint,
       "wild_mapping_count" => wild_mappings.is_a?(Hash) ? wild_mappings.length : 0,
       "trainer_mapping_count" => trainer_mappings.is_a?(Hash) ? trainer_mappings.length : 0
+    }
+  end
+
+  def self.tracker_debug_pokemon_search(payload)
+    tracker_validate_debug_context
+    return tracker_pokemon_search_for_recipe(payload || {}, tracker_debug_active_recipe)
+  end
+
+  def self.tracker_debug_pokemon_lookup(payload)
+    tracker_validate_debug_context
+    return tracker_pokemon_lookup_for_recipe(payload || {}, tracker_debug_active_recipe)
+  end
+
+  def self.tracker_debug_fusion_preview(payload)
+    tracker_validate_debug_context
+    return tracker_fusion_preview_for_recipe(payload || {}, tracker_debug_active_recipe)
+  end
+
+  def self.tracker_debug_active_recipe
+    return {
+      "run_id" => ensure_tracker_run_id,
+      "seed" => $PokemonGlobal.ironmon_seed || 0,
+      "result" => "active_debug",
+      "game_version" => tracker_game_version,
+      "ironmon_version" => VERSION,
+      "configuration" => configuration_snapshot,
+      "species_generator_version" => $PokemonGlobal.ironmon_species_generator_version,
+      "ability_generator_version" => $PokemonGlobal.ironmon_ability_generator_version,
+      "player_fusion_generator_version" => PlayerFusionMapper::SCHEMA_VERSION,
+      "species_pool_fingerprint" => tracker_species_pool_fingerprint,
+      "ability_pool_fingerprint" => $PokemonGlobal.ironmon_ability_pool_fingerprint,
+      "fusion_pool_fingerprint" => $PokemonGlobal.ironmon_custom_fusion_pool_fingerprint
     }
   end
 
@@ -111,12 +143,6 @@ module Ironmon
       )
     end
     return pokemon
-  end
-
-  def self.tracker_debug_gender(pokemon)
-    return "male" if pokemon.male?
-    return "female" if pokemon.female?
-    return "genderless"
   end
 
   def self.tracker_debug_species(species)

@@ -46,6 +46,11 @@ module Ironmon
 
   def self.tracker_pokemon_search(payload, envelope_run_id)
     payload ||= {}
+    recipe = tracker_validate_completed_recipe(payload["recipe"], envelope_run_id)
+    return tracker_pokemon_search_for_recipe(payload, recipe)
+  end
+
+  def self.tracker_pokemon_search_for_recipe(payload, recipe)
     query = payload["query"].to_s.strip
     raise TrackerLookupError.new("invalid_query", "Enter a Pokemon name to search.") if query.empty?
     offset = payload["offset"].to_i
@@ -55,7 +60,6 @@ module Ironmon
     if limit < 1 || limit > TRACKER_SEARCH_LIMIT
       raise TrackerLookupError.new("invalid_page", "Search page size must be between 1 and 50.")
     end
-    recipe = tracker_validate_completed_recipe(payload["recipe"], envelope_run_id)
     normalized_query = query.downcase
     normal_only = payload["normal_only"] == true
     matches = tracker_search_matches(recipe, normalized_query, normal_only)
@@ -68,6 +72,10 @@ module Ironmon
   def self.tracker_pokemon_lookup(payload, envelope_run_id)
     payload ||= {}
     recipe = tracker_validate_completed_recipe(payload["recipe"], envelope_run_id)
+    return tracker_pokemon_lookup_for_recipe(payload, recipe)
+  end
+
+  def self.tracker_pokemon_lookup_for_recipe(payload, recipe)
     species_id = payload["species_id"].to_s
     species_key = species_id.split(":", 2)[0]
     species = GameData::Species.try_get(species_key.to_sym)
@@ -103,6 +111,10 @@ module Ironmon
   def self.tracker_fusion_preview(payload, envelope_run_id)
     payload ||= {}
     recipe = tracker_validate_completed_recipe(payload["recipe"], envelope_run_id)
+    return tracker_fusion_preview_for_recipe(payload, recipe)
+  end
+
+  def self.tracker_fusion_preview_for_recipe(payload, recipe)
     first = tracker_lookup_normal_species(payload["first_species_id"])
     second = tracker_lookup_normal_species(payload["second_species_id"])
     mapper = tracker_post_run_fusion_mapper(recipe)
@@ -408,8 +420,10 @@ module Ironmon
   def self.tracker_lookup_sprite_path(species)
     cached = tracker_sprite_paths[species.id]
     return cached if tracker_sprite_paths.key?(species.id)
-    pokemon = Pokemon.new(species.id, 100)
-    tracker_sprite_paths[species.id] = tracker_sprite_path(pokemon)
+    loader = BattleSpriteLoader.new
+    pif_sprite = loader.get_pif_sprite_from_species(species.id)
+    path = loader.check_for_local_sprite(pif_sprite)
+    tracker_sprite_paths[species.id] = path ? path.tr("\\", "/") : nil
     return tracker_sprite_paths[species.id]
   rescue Exception
     tracker_sprite_paths[species.id] = nil if species
@@ -452,7 +466,8 @@ end
 
 Events.onEndBattle += proc do |_sender, event|
   decision = event[0]
-  Ironmon.complete_tracker_run(:lost) if [2, 5].include?(decision)
+  can_lose = event[1]
+  Ironmon.complete_tracker_run(:lost) if [2, 5].include?(decision) && !can_lose
 end
 
 alias ironmon_tracker_original_hall_of_fame_entry pbHallOfFameEntry

@@ -79,6 +79,10 @@ h1 {
     background: var(--surface-soft);
 }
 
+.view-tabs.debug-enabled {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .view-tab {
     display: flex;
     align-items: center;
@@ -289,8 +293,30 @@ h1 {
 
 .typing-line {
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
     gap: 0.3rem;
+}
+
+.species-name {
+    padding-right: 0.15rem;
+    color: var(--muted-strong);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.gender-icon {
+    font-size: 1rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.gender-icon.male {
+    color: #62a8ff;
+}
+
+.gender-icon.female {
+    color: #ff72ac;
 }
 
 .typing-type {
@@ -1214,6 +1240,242 @@ button.move-placeholder:hover {
     flex: 0 0 auto;
 }
 
+.debug-view {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.debug-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.debug-heading h2 {
+    margin: 0.18rem 0 0;
+    font-size: 1.15rem;
+}
+
+.debug-authorized {
+    padding: 0.35rem 0.62rem;
+    border: 1px solid rgb(101 212 154 / 35%);
+    border-radius: 999px;
+    color: #78dfaa;
+    background: rgb(101 212 154 / 9%);
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.debug-pages {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.3rem;
+    padding: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: 0.62rem;
+    background: var(--surface-soft);
+}
+
+.debug-pages button {
+    min-height: 2rem;
+    border: 0;
+    border-radius: 0.42rem;
+    color: var(--muted);
+    background: transparent;
+    font: inherit;
+    font-size: 0.68rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.debug-pages button.selected {
+    color: var(--text);
+    background: var(--surface-raised);
+    box-shadow: 0 0.12rem 0.4rem rgb(0 0 0 / 20%);
+}
+
+.debug-target-controls {
+    display: block;
+}
+
+.debug-target-controls label {
+    display: grid;
+    gap: 0.28rem;
+    color: var(--muted);
+    font-size: 0.68rem;
+}
+
+.debug-target-controls select {
+    min-width: 0;
+    height: 2.25rem;
+    padding: 0 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 0.48rem;
+    color: var(--text);
+    background: var(--surface-soft);
+    font: inherit;
+    font-size: 0.76rem;
+}
+
+.debug-target-controls select:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.debug-overview,
+.debug-abilities,
+.debug-diagnostics,
+.debug-active-lookup {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.debug-species-name {
+    margin: 0.2rem 0 0;
+    color: var(--muted);
+    font-size: 0.72rem;
+    text-transform: capitalize;
+}
+
+.debug-data-section {
+    display: grid;
+    gap: 0.42rem;
+}
+
+.debug-data-section > p {
+    margin: 0;
+}
+
+.debug-data-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.42rem;
+    margin: 0;
+}
+
+.debug-data-grid > div {
+    display: grid;
+    gap: 0.18rem;
+    min-width: 0;
+    padding: 0.52rem 0.62rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--surface-soft);
+}
+
+.debug-data-grid > div.wide {
+    grid-column: 1 / -1;
+}
+
+.debug-data-grid dt,
+.debug-ability-slot dt {
+    color: var(--muted);
+    font-size: 0.62rem;
+}
+
+.debug-data-grid dd,
+.debug-ability-slot dd {
+    overflow-wrap: anywhere;
+    margin: 0;
+    color: var(--muted-strong);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.debug-ability-group {
+    display: grid;
+    gap: 0.42rem;
+}
+
+.debug-ability-group > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.debug-ability-group > header p {
+    margin: 0;
+}
+
+.debug-ability-group > header span {
+    color: var(--muted);
+    font-size: 0.64rem;
+}
+
+.debug-ability-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.42rem;
+}
+
+.debug-ability-slot {
+    display: grid;
+    align-content: start;
+    gap: 0.42rem;
+    min-width: 0;
+    padding: 0.62rem;
+    border: 1px solid var(--border);
+    border-radius: 0.58rem;
+    background: var(--surface-soft);
+}
+
+.debug-ability-slot.active {
+    border-color: rgb(183 164 255 / 45%);
+    background: rgb(183 164 255 / 7%);
+}
+
+.debug-slot-heading,
+.debug-slot-ability {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.debug-slot-heading strong {
+    color: var(--muted);
+    font-size: 0.66rem;
+}
+
+.debug-slot-heading span {
+    color: var(--accent-soft);
+    font-size: 0.58rem;
+    font-weight: 800;
+}
+
+.debug-slot-ability strong {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 0.78rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.debug-slot-ability code {
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 0.6rem;
+}
+
+.debug-ability-slot dl {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0;
+}
+
+.debug-ability-slot dl > div {
+    display: grid;
+    gap: 0.12rem;
+}
+
+.debug-replacement {
+    margin: 0;
+    color: var(--enemy-soft);
+    font-size: 0.64rem;
+    line-height: 1.35;
+}
+
 .tracker-footer {
     display: flex;
     align-items: center;
@@ -1242,6 +1504,15 @@ kbd {
         display: none;
     }
 
+    .view-tab {
+        gap: 0.25rem;
+        font-size: 0.72rem;
+    }
+
+    .view-tabs.debug-enabled .tab-key {
+        display: none;
+    }
+
     .card-heading {
         grid-template-columns: 4.2rem 1fr;
     }
@@ -1267,5 +1538,9 @@ kbd {
     .sprite-placeholder {
         width: 4.2rem;
         height: 4.2rem;
+    }
+
+    .debug-ability-list {
+        grid-template-columns: minmax(0, 1fr);
     }
 }
