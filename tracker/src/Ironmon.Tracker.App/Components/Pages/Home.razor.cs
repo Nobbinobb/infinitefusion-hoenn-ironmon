@@ -176,12 +176,15 @@ public partial class Home : IDisposable
             _selectedEnemyId = _run.Enemies.Count > 0 ? _run.Enemies[0].EnemyId : null;
 
         bool moveMenuOpened = _run.MoveMenuPokemonId is not null && _run.MoveMenuPokemonId != _lastMoveMenuPokemonId;
-        _selectedView = (enemyAppeared, moveMenuOpened, battleEnded) switch
+        if (_selectedView != TrackerView.Debug)
         {
-            (true, _, _) => TrackerView.Enemy,
-            (_, true, _) or (_, _, true) => TrackerView.Player,
-            _ => _selectedView
-        };
+            _selectedView = (enemyAppeared, moveMenuOpened, battleEnded) switch
+            {
+                (true, _, _) => TrackerView.Enemy,
+                (_, true, _) or (_, _, true) => TrackerView.Player,
+                _ => _selectedView
+            };
+        }
 
         _lastMoveMenuPokemonId = _run.MoveMenuPokemonId;
         _ = InvokeAsync(StateHasChanged);

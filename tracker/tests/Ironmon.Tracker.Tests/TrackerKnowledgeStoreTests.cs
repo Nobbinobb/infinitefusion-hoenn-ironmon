@@ -38,6 +38,9 @@ public sealed class TrackerKnowledgeStoreTests
             IReadOnlyList<ObservedMoveSnapshot> displayed = store.GetDisplayedMoves("BELLOSSOM:0", 25);
             Assert.Equal(["MOVE2", "MOVE3", "MOVE4", "MOVE5"], displayed.Select(move => move.Id));
             Assert.Equal(7, displayed[^1].PpAfterUse);
+            TrackerKnowledgeSnapshot snapshot = store.GetDiagnosticSnapshot();
+            Assert.Equal("run-knowledge", snapshot.RunId);
+            Assert.Equal(6, snapshot.Moves["BELLOSSOM:0"].Count);
 
             TrackerKnowledgeStore restored = new(options);
             restored.SelectRun("run-knowledge");

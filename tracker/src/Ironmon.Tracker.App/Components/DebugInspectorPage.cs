@@ -23,5 +23,10 @@ public enum DebugInspectorPage
     /// <summary>
     /// Searches complete generated data for the active run.
     /// </summary>
-    Lookup = 3
+    Lookup = 3,
+
+    /// <summary>
+    /// Shows tracker-owned state and protocol diagnostics.
+    /// </summary>
+    Protocol = 4
 }

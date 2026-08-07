@@ -25,11 +25,12 @@ public sealed class TrackerConnectionServiceTests
     public async Task ServiceCompletesHandshakeAndRecoversCurrentState()
     {
         TrackerConnectionState state = new();
+        TrackerDiagnosticsStore diagnostics = new();
         TrackerRunState runState = new();
         TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
         CompletedRunArchive completedRuns = CreateCompletedRunArchive();
         TrackerConnectionOptions options = new(0, "0.1.0", true, TimeSpan.FromSeconds(2));
-        await using TrackerConnectionService service = new(options, state, runState, knowledge, completedRuns);
+        await using TrackerConnectionService service = new(options, diagnostics, state, runState, knowledge, completedRuns);
         service.Start();
 
         using TcpClient client = new();
@@ -77,6 +78,8 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal("6.8.0", connected.Game?.GameVersion);
         Assert.Equal(7, connected.CurrentState?.Sequence);
         Assert.True(service.DebugAuthorized);
+        Assert.Contains(diagnostics.Entries, entry => entry.Direction == TrackerDiagnosticDirection.Incoming && entry.Name == "game_connected");
+        Assert.Contains(diagnostics.Entries, entry => entry.Direction == TrackerDiagnosticDirection.Outgoing && entry.Name == "current_state");
 
         CompletedRunRecipePayload recipe = CreateRecipe("run-1");
         TrackerMessage runCompleted = TrackerMessageFactory.CreateEvent("run_completed", 1, recipe, "run-1");
@@ -326,7 +329,7 @@ public sealed class TrackerConnectionServiceTests
         TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
         CompletedRunArchive completedRuns = CreateCompletedRunArchive();
         TrackerConnectionOptions options = new(0, "0.1.0", false, TimeSpan.FromSeconds(2));
-        await using TrackerConnectionService service = new(options, state, runState, knowledge, completedRuns);
+        await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, runState, knowledge, completedRuns);
         DebugPokemonInspectionRequestPayload request = new() { Target = DebugPokemonTarget.Player };
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.InspectPokemonAsync(request));
@@ -342,7 +345,7 @@ public sealed class TrackerConnectionServiceTests
         TrackerRunState runState = new();
         TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
         TrackerConnectionOptions options = new(0, "0.1.0", false, TimeSpan.FromSeconds(2));
-        await using TrackerConnectionService service = new(options, state, runState, knowledge, CreateCompletedRunArchive());
+        await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, runState, knowledge, CreateCompletedRunArchive());
         service.Start();
 
         using TcpClient client = new();
@@ -367,7 +370,7 @@ public sealed class TrackerConnectionServiceTests
         TrackerRunState runState = new();
         TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
         TrackerConnectionOptions options = new(0, "0.1.0", false, TimeSpan.FromMilliseconds(50));
-        await using TrackerConnectionService service = new(options, state, runState, knowledge, CreateCompletedRunArchive());
+        await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, runState, knowledge, CreateCompletedRunArchive());
         service.Start();
 
         using TcpClient client = new();

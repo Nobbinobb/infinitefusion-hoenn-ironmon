@@ -27,6 +27,10 @@ require the explicit tracker launch flag:
   -- --debug
 ```
 
+The Debug tab includes tracker-owned raw protocol and state diagnostics.
+Complete diagnostic reports can be copied or exported to
+`%LocalAppData%\IronmonTracker\diagnostics\`.
+
 ## Validate the implementation
 
 ```powershell

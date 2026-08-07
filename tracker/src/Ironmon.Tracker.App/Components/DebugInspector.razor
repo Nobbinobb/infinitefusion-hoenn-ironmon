@@ -12,6 +12,7 @@
         <button type="button" class="@GetPageClass(DebugInspectorPage.Abilities)" @onclick="() => SelectPageAsync(DebugInspectorPage.Abilities)">Abilities</button>
         <button type="button" class="@GetPageClass(DebugInspectorPage.Lookup)" @onclick="() => SelectPageAsync(DebugInspectorPage.Lookup)">Lookup</button>
         <button type="button" class="@GetPageClass(DebugInspectorPage.Diagnostics)" @onclick="() => SelectPageAsync(DebugInspectorPage.Diagnostics)">Run Diagnostics</button>
+        <button type="button" class="@GetPageClass(DebugInspectorPage.Protocol)" @onclick="() => SelectPageAsync(DebugInspectorPage.Protocol)">Protocol</button>
     </nav>
 
     @if (_selectedPage is DebugInspectorPage.Overview or DebugInspectorPage.Abilities)
@@ -36,6 +37,10 @@
     @if (_selectedPage == DebugInspectorPage.Lookup)
     {
         <DebugActiveRunLookup GameRoot="@GameRoot" />
+    }
+    else if (_selectedPage == DebugInspectorPage.Protocol)
+    {
+        <DebugProtocolDiagnostics />
     }
     else if (_error is not null)
     {

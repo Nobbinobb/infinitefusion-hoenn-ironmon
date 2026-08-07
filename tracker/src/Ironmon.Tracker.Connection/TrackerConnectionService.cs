@@ -12,6 +12,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
 {
     private readonly object _lifecycleSync = new();
     private readonly CompletedRunArchive _completedRuns;
+    private readonly TrackerDiagnosticsStore _diagnostics;
     private readonly TrackerKnowledgeStore _knowledge;
     private readonly TrackerConnectionOptions _options;
     private readonly TrackerRunState _runState;
@@ -32,19 +33,22 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// Initializes the tracker connection service.
     /// </summary>
     /// <param name="options">The listener and handshake options.</param>
+    /// <param name="diagnostics">The bounded connection and protocol diagnostic store.</param>
     /// <param name="state">The shared connection state.</param>
     /// <param name="runState">The shared live run state.</param>
     /// <param name="knowledge">The tracker-owned discovery and annotation store.</param>
     /// <param name="completedRuns">The tracker-owned completed-run recipe archive.</param>
     /// <exception cref="ArgumentNullException">Thrown when an argument is null.</exception>
-    public TrackerConnectionService(TrackerConnectionOptions options, TrackerConnectionState state, TrackerRunState runState, TrackerKnowledgeStore knowledge, CompletedRunArchive completedRuns)
+    public TrackerConnectionService(TrackerConnectionOptions options, TrackerDiagnosticsStore diagnostics, TrackerConnectionState state, TrackerRunState runState, TrackerKnowledgeStore knowledge, CompletedRunArchive completedRuns)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(diagnostics);
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(runState);
         ArgumentNullException.ThrowIfNull(knowledge);
         ArgumentNullException.ThrowIfNull(completedRuns);
         _options = options;
+        _diagnostics = diagnostics;
         _state = state;
         _runState = runState;
         _knowledge = knowledge;
@@ -241,6 +245,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 _listener.Start();
                 BoundPort = ((IPEndPoint)_listener.LocalEndpoint).Port;
                 _state.Publish(TrackerConnectionStatus.Waiting);
+                _diagnostics.RecordLifecycle("Listening", $"127.0.0.1:{BoundPort}");
                 _runTask = RunAsync(_listener, _cancellation.Token);
             }
             catch (SocketException exception)
@@ -250,6 +255,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 _listener = null;
                 BoundPort = 0;
                 _state.Publish(TrackerConnectionStatus.Error, lastError: exception.Message);
+                _diagnostics.RecordError(exception);
             }
         }
     }
@@ -280,6 +286,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         await runTask.ConfigureAwait(false);
         cancellation?.Dispose();
         _state.Publish(TrackerConnectionStatus.Stopped);
+        _diagnostics.RecordLifecycle("Stopped", "Tracker listener stopped.");
     }
 
     /// <summary>
@@ -329,7 +336,10 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             {
                 await HandleClientAsync(client, cancellationToken).ConfigureAwait(false);
                 if (!cancellationToken.IsCancellationRequested)
+                {
                     _state.Publish(TrackerConnectionStatus.Waiting);
+                    _diagnostics.RecordLifecycle("Disconnected", "Game connection closed.");
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -338,6 +348,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             catch (Exception exception) when (exception is IOException or SocketException or TrackerProtocolException)
             {
                 _state.Publish(TrackerConnectionStatus.Error, lastError: exception.Message);
+                _diagnostics.RecordError(exception);
             }
             finally
             {
@@ -356,25 +367,30 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     {
         client.NoDelay = true;
         _state.Publish(TrackerConnectionStatus.Handshaking);
+        _diagnostics.RecordLifecycle("Handshaking", client.Client.RemoteEndPoint?.ToString() ?? "Loopback game client");
         NetworkStream stream = client.GetStream();
         using TrackerMessageReader reader = new(stream, leaveOpen: true);
         await using TrackerMessageWriter writer = new(stream, leaveOpen: true);
 
         TrackerMessage handshakeMessage = await ReadHandshakeAsync(reader, cancellationToken).ConfigureAwait(false);
+        _diagnostics.RecordIncoming(handshakeMessage);
         GameHandshakePayload game = ValidateGameHandshake(handshakeMessage);
         _knowledge.SelectRun(game.RunId);
         TrackerHandshakePayload tracker = new(_options.TrackerVersion, _options.DebugRequested);
         TrackerMessage trackerHandshake = TrackerMessageFactory.CreateEvent("tracker_connected", 0, tracker, game.RunId, game.BattleId);
         await writer.WriteAsync(trackerHandshake, cancellationToken).ConfigureAwait(false);
+        _diagnostics.RecordOutgoing(trackerHandshake);
 
         string requestId = Guid.NewGuid().ToString("N");
         Dictionary<string, object?> emptyPayload = [];
         TrackerMessage request = TrackerMessageFactory.CreateRequest(requestId, "current_state", emptyPayload, game.RunId, game.BattleId);
         await writer.WriteAsync(request, cancellationToken).ConfigureAwait(false);
+        _diagnostics.RecordOutgoing(request);
         lock (_lifecycleSync)
             _activeWriter = writer;
 
         _state.Publish(TrackerConnectionStatus.Connected, game);
+        _diagnostics.RecordLifecycle("Connected", $"Infinite Fusion {game.GameVersion} · Ironmon {game.IronmonVersion}");
 
         try
         {
@@ -438,6 +454,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             if (message is null)
                 return;
 
+            _diagnostics.RecordIncoming(message);
             if (message.Type == TrackerMessageType.Event && message.Event == "run_started")
             {
                 GameCurrentStatePayload startedState = TrackerJson.DeserializePayload<GameCurrentStatePayload>(message.Payload);
@@ -516,6 +533,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 try
                 {
                     await writer.WriteAsync(request, cancellationToken).ConfigureAwait(false);
+                    _diagnostics.RecordOutgoing(request);
                 }
                 finally
                 {

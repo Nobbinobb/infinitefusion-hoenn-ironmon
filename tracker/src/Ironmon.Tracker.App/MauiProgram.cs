@@ -19,6 +19,7 @@ public static class MauiProgram
         builder.Services.AddMauiBlazorWebView();
         builder.Services.AddSingleton(CreateConnectionOptions());
         builder.Services.AddSingleton(CreateKnowledgeOptions());
+        builder.Services.AddSingleton<TrackerDiagnosticsStore>();
         builder.Services.AddSingleton<TrackerConnectionState>();
         builder.Services.AddSingleton<TrackerRunState>();
         builder.Services.AddSingleton<TrackerKnowledgeStore>();

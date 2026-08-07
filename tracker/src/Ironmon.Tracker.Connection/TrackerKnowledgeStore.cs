@@ -176,6 +176,22 @@ public sealed class TrackerKnowledgeStore
     }
 
     /// <summary>
+    /// Gets an immutable deep copy of tracker-owned knowledge for diagnostics.
+    /// </summary>
+    /// <returns>The current diagnostic knowledge snapshot.</returns>
+    public TrackerKnowledgeSnapshot GetDiagnosticSnapshot()
+    {
+        lock (_sync)
+        {
+            Dictionary<string, IReadOnlyList<ObservedMoveSnapshot>> moves = _knowledge.Moves.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<ObservedMoveSnapshot>)[.. pair.Value]);
+            Dictionary<string, IReadOnlyList<AbilitySnapshot>> abilities = _knowledge.Abilities.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<AbilitySnapshot>)[.. pair.Value]);
+            Dictionary<string, int> highestLevels = new(_knowledge.HighestLevels);
+            Dictionary<string, IReadOnlyDictionary<string, EnemyStatAnnotation>> annotations = _knowledge.Annotations.ToDictionary(pair => pair.Key, pair => (IReadOnlyDictionary<string, EnemyStatAnnotation>)new Dictionary<string, EnemyStatAnnotation>(pair.Value));
+            return new TrackerKnowledgeSnapshot(_runId, moves, abilities, highestLevels, annotations, LastError);
+        }
+    }
+
+    /// <summary>
     /// Gets one manual enemy-stat annotation.
     /// </summary>
     /// <param name="speciesId">The stable species and form identifier.</param>

@@ -13,7 +13,7 @@ product behavior remains defined by `../docs/design/TRACKER.md`.
 | 4 | Player battle tracking and healing inventory | Reviewed |
 | 5 | Enemy tracking, remembered moves, and annotations | Reviewed |
 | 6 | Deterministic post-run search and lookup | Reviewed |
-| 7 | Debug-mode inspector parity | Inspector UI implemented; awaiting review |
+| 7 | Debug-mode inspector parity | Reviewed |
 | 8 | Release packaging and end-to-end validation | Not started |
 
 Implementation stops at each part boundary for review before the next part
@@ -589,7 +589,7 @@ Implemented on 2026-08-07:
   the exact test process was stopped.
 ## Part 7A: Debug inspector data and authorization
 
-Status: **Implemented; awaiting review**
+Status: **Reviewed**
 
 Implemented on 2026-08-07:
 
@@ -625,7 +625,7 @@ Implemented on 2026-08-07:
 
 ## Part 7B: Debug inspector navigation and presentation
 
-Status: **Implemented; awaiting review**
+Status: **Reviewed**
 
 Implemented on 2026-08-08:
 
@@ -672,7 +672,7 @@ Implemented on 2026-08-08:
 - The native .NET 10 Blazor Hybrid application builds with 0 warnings and 0
   errors.
 - The authorization tests from Part 7A continue to cover the source data used
-  by all three inspector pages.
+  by all four inspector pages.
 
 ### Remaining Part 7 work
 
@@ -681,4 +681,33 @@ Implemented on 2026-08-08:
 - copy actions and diagnostic-report export; and
 - final end-to-end debug-mode validation.
 
-Part 7C must not begin until this inspector UI is accepted or revised.
+## Part 7C: Tracker protocol diagnostics and report export
+
+Status: **Reviewed**
+
+Implemented on 2026-08-08:
+
+- Added a bounded tracker-owned history containing the newest 200 connection
+  lifecycle transitions and raw incoming/outgoing protocol messages.
+- Retained the latest protocol or connection error independently of the bounded
+  history.
+- Added immutable diagnostic snapshots for current connection state, live run
+  state, and persisted moves, abilities, highest levels, and annotations.
+- Added a Protocol page with live formatted JSON, individual copy actions,
+  history clearing, and complete report copy/export.
+- Exported reports are written beneath
+  `%LocalAppData%/IronmonTracker/diagnostics/` with timestamped filenames.
+- Prevented automatic battle navigation from switching away while the Debug
+  primary view is selected; manual navigation remains available.
+
+### Validation
+
+- The complete .NET solution contains **33 passing tests**.
+- Tests cover bounded protocol history, raw JSON retention, last-error state,
+  clearing, connection-service message capture, and immutable knowledge export.
+- The native .NET 10 Blazor Hybrid application builds with 0 warnings and 0
+  errors.
+- The Release configuration also builds with 0 warnings and 0 errors; automatic
+  debug requests remain limited to builds compiled with the `DEBUG` symbol.
+
+Part 7 is ready for final UI review before Part 8 release packaging.
