@@ -1,6 +1,3 @@
-using Ironmon.Tracker.App.Components;
-using Ironmon.Tracker.Connection;
-using Ironmon.Tracker.Protocol;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
@@ -87,7 +84,8 @@ public partial class Home : IDisposable
     /// </summary>
     /// <param name="view">The tab's tracker view.</param>
     /// <returns>The tab CSS classes.</returns>
-    private string GetTabClass(TrackerView view) => view == _selectedView ? "view-tab selected" : "view-tab";
+    private string GetTabClass(TrackerView view)
+        => view == _selectedView ? "view-tab selected" : "view-tab";
 
     /// <summary>
     /// Gets the tab-container class for the authorized number of views.

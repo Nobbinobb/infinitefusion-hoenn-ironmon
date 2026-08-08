@@ -1,6 +1,3 @@
-using Ironmon.Tracker.Connection;
-using Ironmon.Tracker.Protocol;
-
 namespace Ironmon.Tracker.App;
 
 /// <summary>
@@ -25,6 +22,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<TrackerKnowledgeStore>();
         builder.Services.AddSingleton<CompletedRunArchive>();
         builder.Services.AddSingleton<TrackerConnectionService>();
+        builder.Services.AddSingleton(static services => services.GetRequiredService<TrackerConnectionService>().Requests);
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();

@@ -183,8 +183,9 @@ species-owned generated slot again rather than retaining a stale ability.
 
 ## Inspection and diagnostics
 
-The in-game inspector is a development and validation tool. It is unavailable
-in ordinary release play so it cannot reveal an undiscovered fusion gamble.
+The external tracker's authorized Debug view is a development and validation
+tool. It is unavailable in ordinary release play so it cannot reveal an
+undiscovered fusion gamble.
 
 For a selected normal species, it displays:
 
@@ -224,5 +225,5 @@ without logging or precomputing every species and fusion mapping.
 - Directly encountered and pivot-generated copies of the same fusion expose the
   same component-derived slots.
 - Temporary battle ability effects do not mutate generated assignments.
-- The debug inspector agrees with runtime resolution for normal Pokemon and
+- The tracker Debug view agrees with runtime resolution for normal Pokemon and
   fusions without exposing data in ordinary release play.

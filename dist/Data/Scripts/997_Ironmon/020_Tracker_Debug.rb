@@ -3,6 +3,20 @@
 #===============================================================================
 
 module Ironmon
+  def self.tracker_debug_ability_name(ability)
+    return _INTL("None") if !ability
+    data = GameData::Ability.try_get(ability)
+    return ability.to_s if !data
+    return data.name
+  end
+
+  def self.tracker_debug_ability_id(ability)
+    return "-" if !ability
+    data = GameData::Ability.try_get(ability)
+    return ability.to_s if !data
+    return data.id.to_s
+  end
+
   class TrackerDebugError < StandardError
     attr_reader :code
 
@@ -38,8 +52,8 @@ module Ironmon
       "head" => head,
       "active_ability_index" => pokemon.ability_index.to_i,
       "active_ability_slot" => tracker_debug_active_slot(pokemon),
-      "active_ability_id" => inspector_ability_id(ability),
-      "active_ability_name" => inspector_ability_name(ability),
+      "active_ability_id" => tracker_debug_ability_id(ability),
+      "active_ability_name" => tracker_debug_ability_name(ability),
       "generator" => tracker_debug_generator_snapshot,
       "ability_slots" => tracker_debug_ability_slots(pokemon)
     }
@@ -244,15 +258,15 @@ module Ironmon
       "group" => group.to_s,
       "kind" => kind.to_s,
       "index" => index,
-      "ability_id" => inspector_ability_id(ability),
-      "ability_name" => inspector_ability_name(ability),
-      "original_ability_id" => original ? inspector_ability_id(original) : nil,
-      "original_ability_name" => original ? inspector_ability_name(original) : nil,
+      "ability_id" => tracker_debug_ability_id(ability),
+      "ability_name" => tracker_debug_ability_name(ability),
+      "original_ability_id" => original ? tracker_debug_ability_id(original) : nil,
+      "original_ability_name" => original ? tracker_debug_ability_name(original) : nil,
       "eligibility" => tracker_debug_ability_eligibility(ability),
       "active" => active,
       "source" => source,
-      "source_ability_id" => source_ability ? inspector_ability_id(source_ability) : nil,
-      "source_ability_name" => source_ability ? inspector_ability_name(source_ability) : nil,
+      "source_ability_id" => source_ability ? tracker_debug_ability_id(source_ability) : nil,
+      "source_ability_name" => source_ability ? tracker_debug_ability_name(source_ability) : nil,
       "restricted_source_replaced" => !!(source_ability && source_ability != ability)
     }
   end

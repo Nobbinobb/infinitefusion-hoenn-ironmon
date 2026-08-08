@@ -1,0 +1,35 @@
+<section class="pokemon-card lookup-view" role="tabpanel" aria-label="Post-run Pokemon lookup">
+    <header class="lookup-heading">
+        <div>
+            <p class="card-kicker">COMPLETED RUNS</p>
+            <h2>Generated Pokémon lookup</h2>
+        </div>
+    </header>
+
+    @if (_recipes.Count == 0)
+    {
+        <div class="lookup-empty">
+            <strong>No completed run yet</strong>
+            <p>A lost or completed Ironmon run will add its reconstruction recipe here.</p>
+        </div>
+    }
+    else
+    {
+        <div class="lookup-controls">
+            <label>
+                Run
+                <select value="@_selectedRunId" @onchange="SelectRun" @onkeydown:stopPropagation="true">
+                    @foreach (CompletedRunRecipePayload recipe in _recipes)
+                    {
+                        <option value="@recipe.RunId">@FormatRun(recipe)</option>
+                    }
+                </select>
+            </label>
+        </div>
+
+        @if (GetSelectedRecipe() is CompletedRunRecipePayload selectedRecipe)
+        {
+            <PokemonLookupExplorer @key="selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
+        }
+    }
+</section>

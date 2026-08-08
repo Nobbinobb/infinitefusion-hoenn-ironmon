@@ -8,8 +8,8 @@ historical release notes and validation evidence.
 - [Roadmap](ROADMAP.md): milestone scope, status, and planned release sequence.
 - [Installation](guides/INSTALLATION.md): install, update, and remove Ironmon.
 - [Configuration](guides/CONFIGURATION.md): run settings and reset behavior.
-- [Development mode](guides/DEVELOPMENT.md): local debug mode and inspector
-  access.
+- [Development mode](guides/DEVELOPMENT.md): local debug mode and tracker debug
+  authorization.
 
 ## Design and architecture
 
@@ -32,8 +32,8 @@ historical release notes and validation evidence.
   Milestone 3 ownership, determinism, and fusion rules.
 - [Ability randomization](design/ABILITY_RANDOMIZATION.md): Step 3.1 pools,
   slots, special mechanics, and migration rules.
-- [Ironmon Inspector](design/IRONMON_INSPECTOR.md): development inspection UI
-  and future pages.
+- [Ironmon Inspector](design/IRONMON_INSPECTOR.md): retired in-game inspection
+  UI retained as historical design context.
 - [Ironmon Tracker](design/TRACKER.md): external Blazor Hybrid tracker,
   protocol, live and post-run information, packaging, and debug mode.
 

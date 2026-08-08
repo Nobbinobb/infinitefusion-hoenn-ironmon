@@ -5,6 +5,18 @@ and `tests/`. See `IMPLEMENTATION_STATUS.md` for the completed boundary and
 `../docs/design/TRACKER.md` for the agreed design. The exact implemented
 connection subset is recorded in `PROTOCOL.md`.
 
+## Project organization
+
+- `src/Ironmon.Tracker.App/Components/` groups the Blazor UI by `Common`,
+  `Player`, `Enemy`, `Lookup`, `Debug`, and `Navigation` features.
+- `src/Ironmon.Tracker.Connection/` separates transport, run state, persisted
+  knowledge, diagnostics, and completed-run storage.
+- `src/Ironmon.Tracker.Core/` contains move rules and completed-run domain
+  types.
+- `src/Ironmon.Tracker.Protocol/` groups transport envelopes, connection
+  payloads, live snapshots, lookup payloads, Pokémon data, and debug payloads.
+- `tests/Ironmon.Tracker.Tests/` mirrors the production project areas.
+
 ## Run the desktop shell
 
 The current review build is a Windows-only .NET 10 Blazor Hybrid application

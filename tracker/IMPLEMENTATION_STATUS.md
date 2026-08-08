@@ -711,3 +711,40 @@ Implemented on 2026-08-08:
   debug requests remain limited to builds compiled with the `DEBUG` symbol.
 
 Part 7 is ready for final UI review before Part 8 release packaging.
+
+## Post-Part 7 structural refactor
+
+Status: **Awaiting review**
+
+Implemented on 2026-08-08:
+
+- Reorganized the application components into Common, Player, Enemy, Lookup,
+  Debug, Navigation, Layout, and Pages feature folders. Feature components now
+  use namespaces matching their folders.
+- Reorganized the Connection project into transport, run-state, knowledge,
+  diagnostics, and completed-run storage areas.
+- Reorganized Core into move and run domain areas, and Protocol into transport,
+  connection, live-state, Pokémon, lookup, and debug contract areas.
+- Reorganized tests to mirror the Connection, Core, and Protocol production
+  areas.
+- Aligned namespaces with every new production and test folder, and adopted
+  `System.Threading.Lock` for private lock-only synchronization gates.
+- Extracted the duplicated active-run and completed-run search, paging, lookup,
+  error, and Back/Forward navigation behavior into the shared
+  `PokemonLookupExplorer` component. The post-run component now owns only run
+  selection, while the debug component owns only active-run presentation.
+- Extracted game-request ownership from `TrackerConnectionService` into
+  `TrackerRequestClient` and `TrackerRequestSession`. The client owns request
+  validation, debug authorization, and lookup caches. The session owns the
+  active writer, serialization locks, pending completions, response
+  correlation, timeout, and disconnect failure behavior. UI request consumers
+  now depend directly on the client, while the connection service retains
+  listener, handshake, live-event, recovery, and response-routing
+  orchestration.
+- Preserved the existing protocol contracts and runtime behavior. Part 8
+  release packaging has not started.
+
+### Validation
+
+- All **33 tests** pass.
+- Debug and Release builds complete with 0 warnings and 0 errors.

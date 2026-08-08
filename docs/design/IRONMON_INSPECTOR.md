@@ -1,5 +1,8 @@
 # Ironmon Inspector
 
+> **Retired:** The external tracker Debug view replaced this in-game UI after
+> reaching feature parity. This document remains as historical design context.
+
 This document defines the agreed development-only inspection interface for
 Milestone 3 Pokemon data randomization.
 

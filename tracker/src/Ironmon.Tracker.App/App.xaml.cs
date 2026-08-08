@@ -1,6 +1,3 @@
-using Ironmon.Tracker.Connection;
-using Microsoft.Maui.Storage;
-
 namespace Ironmon.Tracker.App;
 
 /// <summary>

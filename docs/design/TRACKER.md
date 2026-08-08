@@ -477,8 +477,8 @@ does not reject the remainder of an event.
 
 ## Debug mode
 
-The first tracker version includes a development-only Debug tab that provides
-parity with the existing Ironmon Inspector and exposes protocol diagnostics.
+The first tracker version includes a development-only Debug tab that replaces
+the retired in-game Ironmon Inspector and exposes protocol diagnostics.
 
 Debug access requires both:
 
@@ -492,9 +492,9 @@ hidden run information.
 ### Pokemon inspection
 
 Debug mode can inspect the current player, current enemy, or a party Pokemon.
-Arbitrary-species inspection remains planned, but it must use a species-only
-path because Infinite Fusion's ordinary Pokemon constructor consumes random
-values. Its first-version pages reproduce the currently implemented inspector.
+Arbitrary-species inspection uses a species-only path because Infinite
+Fusion's ordinary Pokemon constructor consumes random values. The tracker owns
+the presentation of these debug values.
 
 Overview includes:
 
@@ -518,8 +518,8 @@ Abilities includes:
 - restricted-source replacement details.
 
 Stats, Learnset, and Evolutions pages are added when their corresponding
-Ironmon randomizers and in-game inspector contracts are implemented. The
-tracker does not invent placeholder generated values.
+Ironmon randomizers and tracker contracts are implemented. The tracker does not
+invent placeholder generated values.
 
 The game resolves all debug values on demand through the same runtime paths
 used by gameplay. Requests are read-only, consume no random values, perform no
@@ -543,8 +543,7 @@ The Debug tab also shows:
 - persisted move-discovery state.
 
 Values and raw JSON can be copied, and a diagnostic report can be exported.
-The existing in-game inspector remains available initially as an independent
-fallback and validation reference.
+The tracker Debug view is the supported Ironmon inspection interface.
 
 ## Information and safety boundaries
 
@@ -623,5 +622,4 @@ The following are outside the first version unless separately designed:
 - remote-network access;
 - automatic game or tracker startup;
 - support for non-Windows platforms;
-- full completed-run action replay; and
-- replacing the in-game inspector before tracker parity is validated.
+- full completed-run action replay.
