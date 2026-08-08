@@ -1197,27 +1197,240 @@ button.move-placeholder:hover {
     border-top: 1px solid var(--border);
 }
 
-.lookup-stat-grid {
+.base-stat-visualization {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.42rem;
+    gap: 0;
 }
 
-.lookup-stat-grid > div {
-    display: flex;
+.base-stat-view-switch {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
+    margin-bottom: 0.42rem;
+    padding: 0.2rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--surface-soft);
+}
+
+.base-stat-view-switch button {
+    min-height: 1.85rem;
+    padding: 0.25rem;
+    border: 0;
+    border-radius: 0.36rem;
+    color: var(--muted);
+    background: transparent;
+    font: inherit;
+    font-size: 0.62rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.base-stat-view-switch button.selected {
+    color: var(--text);
+    background: var(--surface-raised);
+    box-shadow: 0 0.12rem 0.4rem rgb(0 0 0 / 20%);
+}
+
+.base-stat-comparison {
+    display: grid;
+    grid-template-columns: minmax(4.2rem, 1fr) repeat(3, minmax(3.7rem, 0.72fr));
     align-items: center;
-    justify-content: space-between;
     min-height: 2.1rem;
     padding: 0 0.7rem;
-    border: 1px solid var(--border);
-    border-radius: 0.55rem;
+    border-bottom: 1px solid var(--border);
     color: var(--muted);
-    background: var(--surface-soft);
     font-size: 0.72rem;
     font-weight: 700;
 }
 
-.lookup-stat-grid strong {
+.base-stat-comparison > span:not(:first-child) {
+    text-align: center;
+}
+
+.base-stat-comparison > span:nth-child(3) {
+    color: #81b8fa;
+    font-weight: 800;
+}
+
+.base-stat-legacy-note {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin-bottom: 0.42rem;
+    padding: 0.52rem 0.65rem;
+    border: 1px solid rgb(222 174 78 / 32%);
+    border-radius: 0.5rem;
+    color: #e4bd70;
+    background: rgb(222 174 78 / 8%);
+    font-size: 0.6rem;
+}
+
+.base-stat-legacy-note span {
+    color: var(--muted);
+    text-align: right;
+}
+
+.base-stat-comparison strong {
+    color: var(--muted-strong);
+    font-size: 0.82rem;
+}
+
+.base-stat-comparison small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.58rem;
+    font-weight: 600;
+}
+
+.base-stat-heading {
+    min-height: 1.55rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem 0.5rem 0 0;
+    background: var(--surface-raised);
+    font-size: 0.58rem;
+    text-transform: uppercase;
+}
+
+.base-stat-table {
+    display: grid;
+    border-right: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    background: var(--surface-soft);
+}
+
+.debug-base-stats .debug-data-section:first-child {
+    gap: 0;
+}
+
+.debug-base-stats .debug-data-section:first-child > .section-label {
+    margin-bottom: 0.42rem;
+}
+
+.base-stat-total {
+    border: 1px solid var(--border);
+    border-radius: 0 0 0.5rem 0.5rem;
+    background: var(--surface-raised);
+}
+
+.base-stat-visualization .positive {
+    color: #78dfaa;
+}
+
+.base-stat-visualization .negative {
+    color: #ff8c91;
+}
+
+.base-stat-visualization .unchanged {
+    color: var(--muted);
+}
+
+.base-stat-bars {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem 0.5rem 0 0;
+    background: var(--surface-soft);
+}
+
+.base-stat-bar-row {
+    display: grid;
+    grid-template-columns: 3.4rem minmax(0, 1fr) 3.8rem;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 1.8rem;
+    color: var(--muted-strong);
+    font-size: 0.68rem;
+}
+
+.base-stat-bar-row small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.54rem;
+}
+
+.base-stat-track {
+    position: relative;
+    height: 0.72rem;
+    overflow: visible;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-raised);
+}
+
+.base-stat-fill {
+    position: absolute;
+    inset: -1px auto -1px -1px;
+    min-width: 0.2rem;
+    border-radius: 999px;
+    background: #5599ed;
+}
+
+.base-stat-fill.delta-base {
+    border-radius: 999px 0 0 999px;
+}
+
+.base-stat-delta {
+    position: absolute;
+    top: -1px;
+    bottom: -1px;
+    border-radius: 0 999px 999px 0;
+}
+
+.base-stat-delta.positive {
+    background: #52c98d;
+}
+
+.base-stat-delta.negative {
+    background: #ed777d;
+}
+
+.base-stat-legend .generated {
+    color: #81b8fa;
+}
+
+.base-stat-bar-value {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 0.3rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.base-stat-bar-value small {
+    font-size: 0.56rem;
+}
+
+.base-stat-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    padding: 0.48rem 0.65rem;
+    border-right: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    background: var(--surface-soft);
+    font-size: 0.56rem;
+    font-weight: 700;
+}
+
+.base-stat-bar-total {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    min-height: 2.1rem;
+    padding: 0 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 0 0 0.5rem 0.5rem;
+    color: var(--muted);
+    background: var(--surface-raised);
+    font-size: 0.66rem;
+}
+
+.base-stat-bar-total strong {
     color: var(--muted-strong);
     font-size: 0.82rem;
 }
@@ -1337,7 +1550,13 @@ button.move-placeholder:hover {
     background: var(--surface-soft);
 }
 
-.debug-pages button {
+.debug-base-stats {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.debug-pages button,
+.debug-subpages button {
     min-height: 2rem;
     border: 0;
     border-radius: 0.42rem;
@@ -1349,10 +1568,26 @@ button.move-placeholder:hover {
     cursor: pointer;
 }
 
-.debug-pages button.selected {
+.debug-pages button.selected,
+.debug-subpages button.selected {
     color: var(--text);
     background: var(--surface-raised);
     box-shadow: 0 0.12rem 0.4rem rgb(0 0 0 / 20%);
+}
+
+.debug-subpages {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding: 0.2rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.debug-subpages button {
+    min-height: 1.8rem;
+    border: 0;
+    border-radius: 0.38rem 0.38rem 0 0;
+    background: transparent;
 }
 
 .debug-target-controls {

@@ -35,6 +35,12 @@ module Ironmon
     item = pokemon.item
     body = fusion ? tracker_debug_species(species.body_pokemon) : nil
     head = fusion ? tracker_debug_species(species.head_pokemon) : nil
+    original_stats = original_base_stats_for_pokemon(pokemon)
+    generated_stats = if base_stat_randomization_active?
+                        generated_base_stats_for_pokemon(pokemon)
+                      else
+                        original_stats
+                      end
     return {
       "pokemon_id" => pokemon.personalID.to_s,
       "nickname" => pokemon.name,
@@ -55,7 +61,12 @@ module Ironmon
       "active_ability_id" => tracker_debug_ability_id(ability),
       "active_ability_name" => tracker_debug_ability_name(ability),
       "generator" => tracker_debug_generator_snapshot,
-      "ability_slots" => tracker_debug_ability_slots(pokemon)
+      "ability_slots" => tracker_debug_ability_slots(pokemon),
+      "original_base_stats" => tracker_base_stat_snapshot(original_stats),
+      "original_base_stat_total" => tracker_base_stat_total(original_stats),
+      "generated_base_stats" => tracker_base_stat_snapshot(generated_stats),
+      "generated_base_stat_total" => tracker_base_stat_total(generated_stats),
+      "base_stat_generator" => tracker_debug_base_stat_generator_snapshot
     }
   end
 
@@ -81,6 +92,8 @@ module Ironmon
       "ability_generator_version" => AbilityGenerator::SCHEMA_VERSION,
       "ability_pool_size" => allowed_ability_pool.length,
       "ability_pool_fingerprint" => ability_pool_fingerprint,
+      "base_stat_generator_version" => $PokemonGlobal.ironmon_base_stat_generator_version,
+      "base_stat_source_fingerprint" => $PokemonGlobal.ironmon_base_stat_source_fingerprint,
       "wild_mapping_count" => wild_mappings.is_a?(Hash) ? wild_mappings.length : 0,
       "trainer_mapping_count" => trainer_mappings.is_a?(Hash) ? trainer_mappings.length : 0
     }
@@ -112,6 +125,8 @@ module Ironmon
       "data_mode" => tracker_data_mode,
       "species_generator_version" => $PokemonGlobal.ironmon_species_generator_version,
       "ability_generator_version" => $PokemonGlobal.ironmon_ability_generator_version,
+      "base_stat_generator_version" => $PokemonGlobal.ironmon_base_stat_generator_version,
+      "base_stat_source_fingerprint" => $PokemonGlobal.ironmon_base_stat_source_fingerprint,
       "player_fusion_generator_version" => PlayerFusionMapper::SCHEMA_VERSION,
       "species_pool_fingerprint" => tracker_species_pool_fingerprint,
       "ability_pool_fingerprint" => $PokemonGlobal.ironmon_ability_pool_fingerprint,
@@ -175,6 +190,18 @@ module Ironmon
       "pool_rules_version" => AbilityGenerator::POOL_RULES_VERSION,
       "pool_size" => allowed_ability_pool.length,
       "pool_fingerprint" => ability_pool_fingerprint
+    }
+  end
+
+  def self.tracker_debug_base_stat_generator_snapshot
+    return {
+      "enabled" => base_stat_randomization_active?,
+      "run_seed" => $PokemonGlobal.ironmon_seed,
+      "schema_version" => $PokemonGlobal.ironmon_base_stat_generator_version,
+      "rules_version" => BaseStatGenerator::RULES_VERSION,
+      "minimum_stat" => BaseStatGenerator::MINIMUM_STAT,
+      "maximum_stat" => BaseStatGenerator::MAXIMUM_STAT,
+      "source_fingerprint" => $PokemonGlobal.ironmon_base_stat_source_fingerprint
     }
   end
 

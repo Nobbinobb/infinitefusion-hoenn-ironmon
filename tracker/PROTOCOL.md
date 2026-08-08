@@ -41,7 +41,7 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.0",
-    "ironmon_version": "0.3.3",
+    "ironmon_version": "0.4.0",
     "ironmon_active": false,
     "debug_available": true,
     "game_root": "C:/Games/InfiniteFusion2",
@@ -335,7 +335,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.3.3",
+  "ironmon_version": "0.4.0",
   "configuration": {
     "schema_version": 2,
     "wild_policy": "mixed",
@@ -345,9 +345,11 @@ When a run ends, the game persists its result in the save metadata and emits
   "data_mode": "classic",
   "species_generator_version": 2,
   "ability_generator_version": 3,
+  "base_stat_generator_version": 1,
   "player_fusion_generator_version": 2,
   "species_pool_fingerprint": "...",
   "ability_pool_fingerprint": "...",
+  "base_stat_source_fingerprint": "...",
   "fusion_pool_fingerprint": "..."
 }
 ```
@@ -381,7 +383,8 @@ loaded the earlier Part 6 protocol; it is not a user-facing filter and does not
 limit the returned learnset. The response includes:
 
 - localized identity and a game-relative sprite path;
-- types, all six base stats, and BST;
+- types, all six original and generated base stats, their differences, both
+  BST values, and whether that run enabled base-stat randomization;
 - every generated normal and hidden ability slot;
 - the complete level-up learnset;
 - current evolution requirements, destinations, direct pre-evolutions, and
@@ -418,13 +421,15 @@ They must not be presented as seeded randomized targets. A fusion's displayed
 body and head are its actual species-owned components; encounter or pivot input
 Pokemon do not replace those components.
 
-Before any post-run command returns generated information, the game verifies that
-the run is complete and that the requested species generator, ability
-generator, player-fusion generator, normal-species pool, ability pool, and
-custom-fusion pool still match. A mismatch returns a structured error such as `generator_unavailable`,
-`incompatible_species_pool`, `incompatible_ability_pool`, or
-`incompatible_fusion_pool`. Complete lookup is also rejected while the loaded
-Ironmon run remains active, even if a client supplies an older recipe.
+Before any post-run command returns generated information, the game verifies
+that the run is complete and that the requested species, ability, base-stat,
+and player-fusion generators plus the normal-species, ability, base-stat
+source, and custom-fusion pools still match. A mismatch returns a structured
+error such as `generator_unavailable`, `incompatible_species_pool`,
+`incompatible_ability_pool`, `incompatible_base_stats`, or
+`incompatible_fusion_pool`. A completed lost or won run remains available for
+lookup while another Ironmon run is active. A recipe that itself declares an
+active or missing result remains rejected.
 
 ## Authorized debug inspection
 
@@ -451,7 +456,11 @@ Enemy targets include `enemy_position`; party targets include the zero-based
 - original and generated normal and hidden slots;
 - final fusion slots and body/head generated slots;
 - ability eligibility; and
-- final-slot source and restricted-source replacement information.
+- final-slot source and restricted-source replacement information;
+- original and generated final base stats, per-stat differences, and both BST
+  values; and
+- base-stat generator metadata, with body/head dominance labels for standard
+  fusions but without duplicated component stat tables.
 
 Arbitrary species inspection is not implemented by this request because the
 game's ordinary Pokemon constructor consumes random values. The debug contract
@@ -459,8 +468,8 @@ will not use that mutating path merely to fabricate an inspection target.
 
 `debug_run_diagnostics` has an empty payload and returns the game and Ironmon
 versions, protocol version, run and battle IDs, seed, configuration policies,
-fusion-pool metadata, ability-generator metadata, and wild/trainer mapping
-counts.
+fusion-pool metadata, ability-generator metadata, base-stat generator metadata,
+and wild/trainer mapping counts.
 
 The authorized active-run lookup uses `debug_pokemon_search`,
 `debug_pokemon_lookup`, and `debug_fusion_preview`. Their result contracts match

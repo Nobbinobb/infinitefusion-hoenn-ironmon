@@ -32,6 +32,8 @@ historical release notes and validation evidence.
   Milestone 3 ownership, determinism, and fusion rules.
 - [Ability randomization](design/ABILITY_RANDOMIZATION.md): Step 3.1 pools,
   slots, special mechanics, and migration rules.
+- [Base-stat randomization](design/BASE_STAT_RANDOMIZATION.md): Step 3.2 totals,
+  distribution limits, form handling, fusion formulas, and migration rules.
 - [Ironmon Inspector](design/IRONMON_INSPECTOR.md): retired in-game inspection
   UI retained as historical design context.
 - [Ironmon Tracker](design/TRACKER.md): external Blazor Hybrid tracker,
@@ -39,6 +41,7 @@ historical release notes and validation evidence.
 
 ## Release notes
 
+- [0.4.0](releases/RELEASE_NOTES_0.4.0.md)
 - [0.3.3](releases/RELEASE_NOTES_0.3.3.md)
 - [0.3.2](releases/RELEASE_NOTES_0.3.2.md)
 - [0.3.1](releases/RELEASE_NOTES_0.3.1.md)

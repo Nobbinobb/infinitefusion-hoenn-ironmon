@@ -26,11 +26,13 @@
             <div><dt>Custom fusions</dt><dd>@Diagnostics.CustomFusionPoolSize</dd></div>
             <div><dt>Species schema</dt><dd>@Diagnostics.SpeciesGeneratorVersion</dd></div>
             <div><dt>Ability schema</dt><dd>@Diagnostics.AbilityGeneratorVersion</dd></div>
+            <div><dt>Base-stat schema</dt><dd>@(Diagnostics.BaseStatGeneratorVersion?.ToString() ?? "Legacy")</dd></div>
             <div><dt>Ability pool</dt><dd>@Diagnostics.AbilityPoolSize</dd></div>
             <div><dt>Wild mappings</dt><dd>@Diagnostics.WildMappingCount</dd></div>
             <div><dt>Trainer mappings</dt><dd>@Diagnostics.TrainerMappingCount</dd></div>
             <div class="wide"><dt>Fusion fingerprint</dt><dd>@Diagnostics.CustomFusionPoolFingerprint</dd></div>
             <div class="wide"><dt>Ability fingerprint</dt><dd>@Diagnostics.AbilityPoolFingerprint</dd></div>
+            <div class="wide"><dt>Base-stat fingerprint</dt><dd>@(Diagnostics.BaseStatSourceFingerprint ?? "None")</dd></div>
         </dl>
     </section>
 </article>

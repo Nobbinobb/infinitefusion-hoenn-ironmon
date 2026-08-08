@@ -108,6 +108,31 @@ public sealed class DebugPokemonInspectorSnapshot
     public DebugAbilityGeneratorSnapshot Generator { get; init; } = new() { PoolFingerprint = string.Empty };
 
     /// <summary>
+    /// Gets or initializes all six final original base stats.
+    /// </summary>
+    public BaseStatsSnapshot OriginalBaseStats { get; init; } = new();
+
+    /// <summary>
+    /// Gets or initializes the final original base-stat total.
+    /// </summary>
+    public int OriginalBaseStatTotal { get; init; }
+
+    /// <summary>
+    /// Gets or initializes all six final generated base stats.
+    /// </summary>
+    public BaseStatsSnapshot GeneratedBaseStats { get; init; } = new();
+
+    /// <summary>
+    /// Gets or initializes the final generated base-stat total.
+    /// </summary>
+    public int GeneratedBaseStatTotal { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the active base-stat generator metadata.
+    /// </summary>
+    public DebugBaseStatGeneratorSnapshot BaseStatGenerator { get; init; } = new();
+
+    /// <summary>
     /// Gets or initializes every ability row exposed by the in-game inspector.
     /// </summary>
     public IReadOnlyList<DebugAbilitySlotSnapshot> AbilitySlots { get; init; } = [];

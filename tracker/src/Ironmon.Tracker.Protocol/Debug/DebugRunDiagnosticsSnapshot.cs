@@ -88,6 +88,16 @@ public sealed class DebugRunDiagnosticsSnapshot
     public required string AbilityPoolFingerprint { get; init; }
 
     /// <summary>
+    /// Gets or initializes the base-stat generator schema version when enabled.
+    /// </summary>
+    public int? BaseStatGeneratorVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the base-stat source fingerprint when enabled.
+    /// </summary>
+    public string? BaseStatSourceFingerprint { get; init; }
+
+    /// <summary>
     /// Gets or initializes the persisted wild mapping count.
     /// </summary>
     public int WildMappingCount { get; init; }

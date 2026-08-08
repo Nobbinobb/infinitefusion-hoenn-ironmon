@@ -8,15 +8,19 @@
     </header>
 
     <nav class="debug-pages" aria-label="Debug inspector pages">
-        <button type="button" class="@GetPageClass(DebugInspectorPage.Overview)" @onclick="() => SelectPageAsync(DebugInspectorPage.Overview)">Overview</button>
-        <button type="button" class="@GetPageClass(DebugInspectorPage.Abilities)" @onclick="() => SelectPageAsync(DebugInspectorPage.Abilities)">Abilities</button>
+        <button type="button" class="@GetInspectorPageClass()" @onclick="SelectInspectorAsync">Pokemon</button>
         <button type="button" class="@GetPageClass(DebugInspectorPage.Lookup)" @onclick="() => SelectPageAsync(DebugInspectorPage.Lookup)">Lookup</button>
         <button type="button" class="@GetPageClass(DebugInspectorPage.Diagnostics)" @onclick="() => SelectPageAsync(DebugInspectorPage.Diagnostics)">Run Diagnostics</button>
         <button type="button" class="@GetPageClass(DebugInspectorPage.Protocol)" @onclick="() => SelectPageAsync(DebugInspectorPage.Protocol)">Protocol</button>
     </nav>
 
-    @if (_selectedPage is DebugInspectorPage.Overview or DebugInspectorPage.Abilities)
+    @if (_selectedPage is DebugInspectorPage.Overview or DebugInspectorPage.Abilities or DebugInspectorPage.Stats)
     {
+        <nav class="debug-subpages" aria-label="Pokemon inspector pages">
+            <button type="button" class="@GetPageClass(DebugInspectorPage.Overview)" @onclick="() => SelectPageAsync(DebugInspectorPage.Overview)">Overview</button>
+            <button type="button" class="@GetPageClass(DebugInspectorPage.Abilities)" @onclick="() => SelectPageAsync(DebugInspectorPage.Abilities)">Abilities</button>
+            <button type="button" class="@GetPageClass(DebugInspectorPage.Stats)" @onclick="() => SelectPageAsync(DebugInspectorPage.Stats)">Stats</button>
+        </nav>
         <div class="debug-target-controls">
             <label>
                 Inspect
@@ -71,6 +75,10 @@
     else if (_selectedPage == DebugInspectorPage.Overview)
     {
         <DebugPokemonOverview Pokemon="@_pokemon" GameRoot="@GameRoot" />
+    }
+    else if (_selectedPage == DebugInspectorPage.Stats)
+    {
+        <DebugBaseStats Pokemon="@_pokemon" />
     }
     else
     {

@@ -565,6 +565,8 @@ module Ironmon
   def self.generation_error_message
     return @ability_randomization_error_message if
       @ability_randomization_error_message
+    return @base_stat_randomization_error_message if
+      @base_stat_randomization_error_message
     return species_generation_error_message
   end
 

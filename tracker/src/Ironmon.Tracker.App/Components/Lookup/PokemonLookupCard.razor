@@ -40,16 +40,12 @@
         </div>
     </div>
 
-    <div class="lookup-stat-grid" aria-label="Base stats">
-        @foreach ((string Name, int Value) stat in GetBaseStats())
-        {
-            <div><span>@stat.Name</span><strong>@stat.Value</strong></div>
-        }
-    </div>
-
-    <div class="summary-row">
-        <span>BST <strong>@Pokemon.BaseStatTotal</strong></span>
-    </div>
+    <BaseStatVisualization Original="@Pokemon.OriginalBaseStats"
+                           Generated="@Pokemon.BaseStats"
+                           OriginalTotal="@Pokemon.OriginalBaseStatTotal"
+                           GeneratedTotal="@Pokemon.BaseStatTotal"
+                           Randomized="@Pokemon.BaseStatsRandomized"
+                           Fusion="@(Pokemon.FusionBases.Count > 0)" />
 
     <div class="lookup-abilities">
         <p class="section-label">ABILITIES</p>

@@ -1,6 +1,6 @@
-# Installing Ironmon 0.3.3
+# Installing Ironmon 0.4.0
 
-Ironmon `0.3.3` targets Pokemon Infinite Fusion 2 version 6.8.0.
+Ironmon `0.4.0` targets Pokemon Infinite Fusion 2 version 6.8.0.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
 
@@ -8,7 +8,7 @@ official game's Git repository.
 
 1. Fully close Pokemon Infinite Fusion 2.
 2. Keep a backup of saves you care about.
-3. Extract `Ironmon-v0.3.3-tracker.zip` into the game's root directory—the
+3. Extract `Ironmon-v0.4.0-base-stats.zip` into the game's root directory—the
    directory containing `InfiniteFusion2.exe`.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
    directory. The package installs Ruby files under
@@ -18,10 +18,11 @@ official game's Git repository.
    terminal command is required. Starting the game first also works.
 6. Start the game and select Ironmon when beginning a supported Hoenn run.
 
-Existing non-Ironmon saves retain their normal behavior. Ironmon 0.3.1 and
-0.3.2 runs migrate automatically to the schema-3 fusion-slot rules without
-rerolling genuine component assignments. Development saves using the older
-schema-1 ability generator must start a fresh run with F7.
+Existing non-Ironmon saves retain their normal behavior. Ironmon runs created
+before 0.4.0 retain their original base stats because they do not declare the
+new generator metadata. Start a new run or use F7 to enable base-stat
+randomization. Existing supported ability metadata continues to reproduce its
+assignments.
 
 ## Build the package from this repository
 
@@ -35,7 +36,7 @@ Windows x64 tracker, then creates the release ZIP and SHA-256 checksum in
 Ironmon writes `Ironmon.log` beside the game's save files. Each new run, loaded
 run, and F7 reset records the Ironmon version, context, seed, both fusion
 policies, custom-sprite pool size and fingerprint, and mapping counts. Each
-entry also includes the ability-generator version and allowed-pool fingerprint.
+entry also includes ability and base-stat generator versions and fingerprints.
 A log write failure never prevents the game from running.
 
 ## Remove Ironmon

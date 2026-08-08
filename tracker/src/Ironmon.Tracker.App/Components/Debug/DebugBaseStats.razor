@@ -1,0 +1,23 @@
+<article class="debug-base-stats" aria-label="Base-stat inspection">
+    <section class="debug-data-section">
+        <p class="section-label">FINAL BASE STATS</p>
+        <BaseStatVisualization Original="@Pokemon.OriginalBaseStats"
+                               Generated="@Pokemon.GeneratedBaseStats"
+                               OriginalTotal="@Pokemon.OriginalBaseStatTotal"
+                               GeneratedTotal="@Pokemon.GeneratedBaseStatTotal"
+                               Randomized="@Pokemon.BaseStatGenerator.Enabled"
+                               Fusion="@Pokemon.Fusion" />
+    </section>
+
+    <section class="debug-data-section">
+        <p class="section-label">GENERATOR</p>
+        <dl class="debug-data-grid">
+            <div><dt>Status</dt><dd>@(Pokemon.BaseStatGenerator.Enabled ? "Enabled" : "Legacy stats")</dd></div>
+            <div><dt>Seed</dt><dd>@(Pokemon.BaseStatGenerator.RunSeed?.ToString() ?? "None")</dd></div>
+            <div><dt>Schema</dt><dd>@(Pokemon.BaseStatGenerator.SchemaVersion?.ToString() ?? "None")</dd></div>
+            <div><dt>Rules</dt><dd>@Pokemon.BaseStatGenerator.RulesVersion</dd></div>
+            <div><dt>Normal range</dt><dd>@Pokemon.BaseStatGenerator.MinimumStat–@Pokemon.BaseStatGenerator.MaximumStat</dd></div>
+            <div class="wide"><dt>Source fingerprint</dt><dd>@(Pokemon.BaseStatGenerator.SourceFingerprint ?? "None")</dd></div>
+        </dl>
+    </section>
+</article>

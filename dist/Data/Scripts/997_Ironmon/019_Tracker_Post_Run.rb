@@ -38,6 +38,8 @@ module Ironmon
       "data_mode" => tracker_data_mode,
       "species_generator_version" => $PokemonGlobal.ironmon_species_generator_version,
       "ability_generator_version" => $PokemonGlobal.ironmon_ability_generator_version,
+      "base_stat_generator_version" => $PokemonGlobal.ironmon_base_stat_generator_version,
+      "base_stat_source_fingerprint" => $PokemonGlobal.ironmon_base_stat_source_fingerprint,
       "player_fusion_generator_version" => PlayerFusionMapper::SCHEMA_VERSION,
       "species_pool_fingerprint" => tracker_species_pool_fingerprint,
       "ability_pool_fingerprint" => $PokemonGlobal.ironmon_ability_pool_fingerprint,
@@ -90,13 +92,18 @@ module Ironmon
 
     learnset = tracker_lookup_learnset(species)
     fusion_mapper = tracker_post_run_fusion_mapper(recipe)
+    original_stats = original_base_stats_for(species)
+    generated_stats = tracker_lookup_generated_base_stats(species, recipe)
     result = {
       "species_id" => "#{species.id}:0",
       "species_name" => species.name,
       "sprite_path" => tracker_lookup_sprite_path(species),
       "types" => species.types.map { |type| type.to_s },
-      "base_stats" => tracker_lookup_base_stats(species),
-      "base_stat_total" => species.base_stats.values.inject(0) { |sum, value| sum + value },
+      "original_base_stats" => tracker_base_stat_snapshot(original_stats),
+      "original_base_stat_total" => tracker_base_stat_total(original_stats),
+      "base_stats" => tracker_base_stat_snapshot(generated_stats),
+      "base_stat_total" => tracker_base_stat_total(generated_stats),
+      "base_stats_randomized" => !!recipe["base_stat_generator_version"],
       "abilities" => tracker_lookup_abilities(species, recipe),
       "learnset" => learnset,
       "evolutions" => tracker_lookup_evolutions(species),
@@ -136,12 +143,6 @@ module Ironmon
   end
 
   def self.tracker_validate_completed_recipe(recipe, envelope_run_id)
-    if active? && $PokemonGlobal && !$PokemonGlobal.ironmon_run_result
-      raise TrackerLookupError.new(
-        "run_active",
-        "Complete generated lookup is unavailable during an active run."
-      )
-    end
     if !recipe.is_a?(Hash) || recipe["run_id"].to_s.empty?
       raise TrackerLookupError.new("invalid_recipe", "The completed-run recipe is missing.")
     end
@@ -160,6 +161,16 @@ module Ironmon
     end
     if recipe["ability_generator_version"] != AbilityGenerator::SCHEMA_VERSION
       raise TrackerLookupError.new("generator_unavailable", "The required ability generator is unavailable.")
+    end
+    base_stat_version = recipe["base_stat_generator_version"]
+    base_stat_fingerprint = recipe["base_stat_source_fingerprint"]
+    if base_stat_version || base_stat_fingerprint
+      if base_stat_version != BaseStatGenerator::SCHEMA_VERSION
+        raise TrackerLookupError.new("generator_unavailable", "The required base-stat generator is unavailable.")
+      end
+      if base_stat_fingerprint != base_stat_source_fingerprint
+        raise TrackerLookupError.new("incompatible_base_stats", "The base-stat source data no longer matches this run.")
+      end
     end
     if recipe["player_fusion_generator_version"] != PlayerFusionMapper::SCHEMA_VERSION
       raise TrackerLookupError.new("generator_unavailable", "The required player-fusion generator is unavailable.")
@@ -278,8 +289,7 @@ module Ironmon
       normal_species_pool.include?(species.head_pokemon.id)
   end
 
-  def self.tracker_lookup_base_stats(species)
-    stats = species.base_stats
+  def self.tracker_base_stat_snapshot(stats)
     return {
       "hp" => stats[:HP],
       "attack" => stats[:ATTACK],
@@ -288,6 +298,21 @@ module Ironmon
       "special_defense" => stats[:SPECIAL_DEFENSE],
       "speed" => stats[:SPEED]
     }
+  end
+
+  def self.tracker_base_stat_total(stats)
+    return BaseStatGenerator::STAT_ORDER.inject(0) do |sum, stat|
+      sum + stats[stat].to_i
+    end
+  end
+
+  def self.tracker_lookup_generated_base_stats(species, recipe)
+    return original_base_stats_for(species) if
+      !recipe["base_stat_generator_version"]
+    generator = base_stat_generator_for(
+      recipe["seed"], recipe["base_stat_source_fingerprint"]
+    )
+    return generated_base_stats_for(species, generator)
   end
 
   def self.tracker_lookup_abilities(species, recipe)
@@ -766,8 +791,7 @@ end
 
 Events.onEndBattle += proc do |_sender, event|
   decision = event[0]
-  can_lose = event[1]
-  Ironmon.complete_tracker_run(:lost) if [2, 5].include?(decision) && !can_lose
+  Ironmon.complete_tracker_run(:lost) if [2, 5].include?(decision)
 end
 
 alias ironmon_tracker_original_hall_of_fame_entry pbHallOfFameEntry

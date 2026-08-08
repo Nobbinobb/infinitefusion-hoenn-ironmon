@@ -33,6 +33,16 @@ public sealed class PokemonLookupSnapshot
     public IReadOnlyList<string> Types { get; init; } = [];
 
     /// <summary>
+    /// Gets or initializes all six original base stats.
+    /// </summary>
+    public BaseStatsSnapshot OriginalBaseStats { get; init; } = new();
+
+    /// <summary>
+    /// Gets or initializes the original base-stat total.
+    /// </summary>
+    public int OriginalBaseStatTotal { get; init; }
+
+    /// <summary>
     /// Gets or initializes all six generated base stats.
     /// </summary>
     public BaseStatsSnapshot BaseStats { get; init; } = new();
@@ -41,6 +51,11 @@ public sealed class PokemonLookupSnapshot
     /// Gets or initializes the generated base-stat total.
     /// </summary>
     public int BaseStatTotal { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether this run used generated base stats.
+    /// </summary>
+    public bool BaseStatsRandomized { get; init; }
 
     /// <summary>
     /// Gets or initializes every generated ability slot.

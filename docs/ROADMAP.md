@@ -447,15 +447,24 @@ Acceptance criteria:
 
 ### Step 3.2: Base-stat randomization
 
-Status: **Planned**
+Status: **Complete**
 
-- Define whether base-stat totals are preserved and how values are distributed.
-- Establish safe minimum and maximum values.
-- Handle unusual species such as Shedinja explicitly.
+Design: **Complete** in `design/BASE_STAT_RANDOMIZATION.md`
+
+Implementation: **Complete**
+
+- Preserve every eligible normal species or mechanical form's original BST and
+  redistribute it through deterministic integer weights.
+- Generate normal stats within the inclusive range 5-255.
+- Give Shedinja generated HP normally and leave actual 1-HP behavior to Wonder
+  Guard.
 - Generate seeded, run-consistent base stats.
 - Calculate fusion stats from the generated stats of their displayed
   components using the game's fusion-stat formula.
-- Extend the inspection tool to display original and generated stats.
+- Do not rescale or clamp fusion results; native separate flooring may produce
+  a fusion stat of 4 and may change the final fusion BST.
+- Extend tracker Debug and post-run lookup to display original and generated
+  final stats without duplicating fusion component stat tables.
 - Package release `0.4.0` as `Ironmon-v0.4.0-base-stats.zip`.
 
 Acceptance criteria:

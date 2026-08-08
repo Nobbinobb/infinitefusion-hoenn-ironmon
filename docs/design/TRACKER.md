@@ -505,7 +505,9 @@ hidden run information.
 Debug mode can inspect the current player, current enemy, or a party Pokemon.
 Arbitrary-species inspection uses a species-only path because Infinite
 Fusion's ordinary Pokemon constructor consumes random values. The tracker owns
-the presentation of these debug values.
+the presentation of these debug values. Pokemon inspection is one top-level
+Debug page with Overview, Abilities, and Stats as subtabs. Lookup, Run
+Diagnostics, and Protocol remain separate top-level Debug pages.
 
 Overview includes:
 
@@ -528,13 +530,30 @@ Abilities includes:
 - fusion component and source slot; and
 - restricted-source replacement details.
 
-Stats, Learnset, and Evolutions pages are added when their corresponding
-Ironmon randomizers and tracker contracts are implemented. The tracker does not
-invent placeholder generated values.
+The Stats subtab is added with Step 3.2. It displays original and generated final
+stats, differences, totals, and base-stat generator metadata. A fusion labels
+the dominant component for each stat but does not duplicate either component's
+stat table; the existing component navigation opens those Pokemon separately.
+The presentation can switch between a comparison table, generated-only bars,
+and bars whose changed segment is colored green or red for positive or negative
+deltas. Generated values are the visual focus in the table.
+Learnset and Evolutions pages are added when their corresponding randomizers and
+tracker contracts are implemented. The tracker does not invent placeholder
+generated values.
 
 The game resolves all debug values on demand through the same runtime paths
 used by gameplay. Requests are read-only, consume no random values, perform no
 rerolls, and do not mutate the selected Pokemon or run.
+
+Completed-run lookup is based on the selected archived recipe rather than the
+currently loaded save. A lost or won run therefore remains inspectable from the
+main menu and while another run is active. Recipes that are themselves active
+or incomplete remain unavailable.
+
+Every battle loss or draw completes an Ironmon run, including encounters the
+base game marks as safe to lose without a blackout, such as the early rival
+battle. The base game's continuation behavior does not weaken Ironmon's run
+result.
 
 ### Run and protocol diagnostics
 

@@ -16,17 +16,22 @@ public enum DebugInspectorPage
     Abilities = 1,
 
     /// <summary>
+    /// Shows final original and generated base stats.
+    /// </summary>
+    Stats = 2,
+
+    /// <summary>
     /// Shows game-owned run and randomizer diagnostics.
     /// </summary>
-    Diagnostics = 2,
+    Diagnostics = 3,
 
     /// <summary>
     /// Searches complete generated data for the active run.
     /// </summary>
-    Lookup = 3,
+    Lookup = 4,
 
     /// <summary>
     /// Shows tracker-owned state and protocol diagnostics.
     /// </summary>
-    Protocol = 4
+    Protocol = 5
 }

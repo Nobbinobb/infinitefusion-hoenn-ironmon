@@ -55,17 +55,6 @@ public partial class PokemonLookupCard
     }
 
     /// <summary>
-    /// Gets all base stats in tracker display order.
-    /// </summary>
-    /// <returns>The labeled base stats.</returns>
-    private IReadOnlyList<(string Name, int Value)> GetBaseStats()
-    {
-        return [("SPE", Pokemon.BaseStats.Speed), ("HP", Pokemon.BaseStats.Hp),
-         ("ATK", Pokemon.BaseStats.Attack), ("DEF", Pokemon.BaseStats.Defense),
-         ("SPA", Pokemon.BaseStats.SpecialAttack), ("SPD", Pokemon.BaseStats.SpecialDefense)];
-    }
-
-    /// <summary>
     /// Gets the first evolution requirement or the absence label.
     /// </summary>
     /// <returns>The evolution requirement.</returns>

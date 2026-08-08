@@ -1,0 +1,63 @@
+<section class="base-stat-visualization" aria-label="Base stats">
+    @if (!Randomized)
+    {
+        <div class="base-stat-legacy-note"><strong>Original stats</strong><span>This run predates base-stat randomization.</span></div>
+    }
+    <div class="base-stat-view-switch" role="group" aria-label="Base-stat display mode">
+        <button type="button" class="@GetModeClass(BaseStatDisplayMode.Table)" @onclick="() => SelectMode(BaseStatDisplayMode.Table)">Table</button>
+        <button type="button" class="@GetModeClass(BaseStatDisplayMode.GeneratedBars)" @onclick="() => SelectMode(BaseStatDisplayMode.GeneratedBars)">Generated Bars</button>
+        <button type="button" class="@GetModeClass(BaseStatDisplayMode.DeltaBars)" @onclick="() => SelectMode(BaseStatDisplayMode.DeltaBars)">Delta Bars</button>
+    </div>
+
+    @if (_mode == BaseStatDisplayMode.Table)
+    {
+        <div class="base-stat-comparison base-stat-heading" aria-hidden="true">
+            <span>Stat</span><span>Original</span><span>Generated</span><span>Delta</span>
+        </div>
+        <div class="base-stat-table">
+            @foreach ((string Name, int Original, int Generated, string? Dominance) stat in GetBaseStats())
+            {
+                <div class="base-stat-comparison">
+                    <span><strong>@stat.Name</strong>@if (stat.Dominance is not null) { <small>@stat.Dominance</small> }</span>
+                    <span>@stat.Original</span>
+                    <span>@stat.Generated</span>
+                    <span class="@GetDeltaClass(stat.Original, stat.Generated)">@FormatDelta(stat.Original, stat.Generated)</span>
+                </div>
+            }
+        </div>
+        <div class="base-stat-comparison base-stat-total">
+            <span><strong>BST</strong></span>
+            <span>@OriginalTotal</span>
+            <span>@GeneratedTotal</span>
+            <span class="@GetDeltaClass(OriginalTotal, GeneratedTotal)">@FormatDelta(OriginalTotal, GeneratedTotal)</span>
+        </div>
+    }
+    else
+    {
+        <div class="base-stat-bars">
+            @foreach ((string Name, int Original, int Generated, string? Dominance) stat in GetBaseStats())
+            {
+                <div class="base-stat-bar-row">
+                    <span><strong>@stat.Name</strong>@if (stat.Dominance is not null) { <small>@stat.Dominance</small> }</span>
+                    <div class="base-stat-track">
+                        @if (_mode == BaseStatDisplayMode.DeltaBars && stat.Original != stat.Generated)
+                        {
+                            <span class="base-stat-fill delta-base" style="width: @GetSharedBarWidth(stat.Original, stat.Generated)%"></span>
+                            <span class="base-stat-delta @GetDeltaClass(stat.Original, stat.Generated)" style="left: @GetSharedBarWidth(stat.Original, stat.Generated)%; width: @GetDeltaBarWidth(stat.Original, stat.Generated)%"></span>
+                        }
+                        else
+                        {
+                            <span class="base-stat-fill generated" style="width: @GetBarWidth(stat.Generated)%"></span>
+                        }
+                    </div>
+                    <span class="base-stat-bar-value">@stat.Generated@if (_mode == BaseStatDisplayMode.DeltaBars) { <small class="@GetDeltaClass(stat.Original, stat.Generated)">@FormatDelta(stat.Original, stat.Generated)</small> }</span>
+                </div>
+            }
+        </div>
+        @if (_mode == BaseStatDisplayMode.DeltaBars)
+        {
+            <div class="base-stat-legend"><span class="generated">Generated</span><span class="positive">Increase</span><span class="negative">Decrease</span></div>
+        }
+        <div class="base-stat-bar-total">Generated BST <strong>@GeneratedTotal</strong>@if (_mode == BaseStatDisplayMode.DeltaBars) { <span class="@GetDeltaClass(OriginalTotal, GeneratedTotal)">@FormatDelta(OriginalTotal, GeneratedTotal)</span> }</div>
+    }
+</section>

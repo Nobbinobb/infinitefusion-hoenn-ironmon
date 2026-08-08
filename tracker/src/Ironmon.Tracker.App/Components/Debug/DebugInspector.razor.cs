@@ -8,6 +8,7 @@ namespace Ironmon.Tracker.App.Components.Debug;
 public partial class DebugInspector
 {
     private DebugInspectorPage _selectedPage = DebugInspectorPage.Overview;
+    private DebugInspectorPage _selectedInspectorPage = DebugInspectorPage.Overview;
     private DebugPokemonInspectorSnapshot? _pokemon;
     private DebugRunDiagnosticsSnapshot? _diagnostics;
     private string _selectedTarget = "player";
@@ -72,9 +73,13 @@ public partial class DebugInspector
             return;
 
         if (_loading)
+        {
             _refreshPending = true;
+        }
         else
+        {
             await InspectSelectedAsync(preserveContent: true);
+        }
     }
 
     /// <summary>
@@ -151,10 +156,27 @@ public partial class DebugInspector
             return;
 
         _selectedPage = page;
+        if (IsInspectorPage(page))
+            _selectedInspectorPage = page;
         _error = null;
         if (page == DebugInspectorPage.Diagnostics)
             await LoadDiagnosticsAsync();
     }
+
+    /// <summary>
+    /// Returns to the last selected Pokemon inspector subpage.
+    /// </summary>
+    /// <returns>A task representing the page selection.</returns>
+    private Task SelectInspectorAsync()
+        => SelectPageAsync(_selectedInspectorPage);
+
+    /// <summary>
+    /// Determines whether a page belongs to the Pokemon inspector section.
+    /// </summary>
+    /// <param name="page">The page to classify.</param>
+    /// <returns><see langword="true"/> for an inspector subpage.</returns>
+    private static bool IsInspectorPage(DebugInspectorPage page)
+        => page is DebugInspectorPage.Overview or DebugInspectorPage.Abilities or DebugInspectorPage.Stats;
 
     /// <summary>
     /// Requests inspector data for the selected current Pokemon source.
@@ -238,4 +260,11 @@ public partial class DebugInspector
     /// <returns>The page button CSS classes.</returns>
     private string GetPageClass(DebugInspectorPage page)
         => page == _selectedPage ? "selected" : string.Empty;
+
+    /// <summary>
+    /// Gets the selected class for the top-level Pokemon inspector button.
+    /// </summary>
+    /// <returns>The top-level button CSS classes.</returns>
+    private string GetInspectorPageClass()
+        => IsInspectorPage(_selectedPage) ? "selected" : string.Empty;
 }

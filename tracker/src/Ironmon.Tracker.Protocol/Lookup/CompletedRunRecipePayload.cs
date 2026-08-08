@@ -60,6 +60,11 @@ public sealed class CompletedRunRecipePayload
     public int AbilityGeneratorVersion { get; init; }
 
     /// <summary>
+    /// Gets or initializes the base-stat generator schema version when the run uses generated stats.
+    /// </summary>
+    public int? BaseStatGeneratorVersion { get; init; }
+
+    /// <summary>
     /// Gets or initializes the player-fusion generator schema version.
     /// </summary>
     public int PlayerFusionGeneratorVersion { get; init; } = 2;
@@ -73,6 +78,11 @@ public sealed class CompletedRunRecipePayload
     /// Gets or initializes the ability-pool fingerprint.
     /// </summary>
     public required string AbilityPoolFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the source-stat fingerprint when the run uses generated stats.
+    /// </summary>
+    public string? BaseStatSourceFingerprint { get; init; }
 
     /// <summary>
     /// Gets or initializes the custom-fusion pool fingerprint.

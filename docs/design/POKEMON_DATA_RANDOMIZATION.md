@@ -104,9 +104,11 @@ components. Milestone 3 retains that relationship after randomization:
 - Generate X's and Y's level-up learnsets, then apply the Milestone 3 fusion
   merge rules to obtain C's learnset.
 
-The base-stat total policy, per-stat limits, Shedinja handling, learnset size,
-duplicate behavior, type preference, and early damaging-move guarantees remain
-feature-specific decisions for Steps 3.2 and 3.3.
+The base-stat policy is defined in `BASE_STAT_RANDOMIZATION.md`: normal species
+preserve their BST with values from 5 through 255, Wonder Guard owns actual
+one-HP behavior, and standard fusions retain the native formula without
+post-processing. Learnset size, duplicate behavior, type preference, and early
+damaging-move guarantees remain feature-specific decisions for Step 3.3.
 
 ## Fusion evolution model
 

@@ -52,6 +52,16 @@ module Ironmon
                           else
                             nil
                           end
+    base_stat_version = if $PokemonGlobal
+                          $PokemonGlobal.ironmon_base_stat_generator_version
+                        else
+                          nil
+                        end
+    base_stat_fingerprint = if $PokemonGlobal
+                              $PokemonGlobal.ironmon_base_stat_source_fingerprint
+                            else
+                              nil
+                            end
     return "[Ironmon #{VERSION}] context=#{context} seed=#{seed} " +
       "wild_policy=#{configuration_value.wild_policy} " +
       "trainer_policy=#{configuration_value.trainer_policy} " +
@@ -61,6 +71,8 @@ module Ironmon
       "ability_generator=#{ability_version} " +
       "ability_pool_size=#{ability_pool_size} " +
       "ability_pool_fingerprint=#{ability_fingerprint} " +
+      "base_stat_generator=#{base_stat_version} " +
+      "base_stat_source_fingerprint=#{base_stat_fingerprint} " +
       "wild_mappings=#{wild_count} trainer_mappings=#{trainer_count}"
   end
 
