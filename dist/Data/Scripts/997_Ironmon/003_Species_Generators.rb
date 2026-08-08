@@ -6,7 +6,8 @@ module Ironmon
   class SpeciesGenerationError < StandardError; end
 
   class SpeciesGenerator
-    SCHEMA_VERSION = 1
+    SCHEMA_VERSION = 2
+    LEGACY_SCHEMA_VERSION = 1
     FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
     FNV_PRIME = 1_099_511_628_211
     FNV_MASK = 0xFFFFFFFFFFFFFFFF
@@ -22,13 +23,13 @@ module Ironmon
       @mapping = mapping || {}
     end
 
-    def map(species)
+    def map(species, context)
       species_data = GameData::Species.try_get(species)
       return species if !species_data
       source_id = species_data.id_number
       return species if source_id <= 0
       return species if source_id >= Settings::ZAPMOLCUNO_NB
-      mapped_id = map_id(source_id)
+      mapped_id = map_id(source_id, context)
       mapped_species = GameData::Species.try_get(mapped_id)
       return mapped_species ? mapped_species.id : species
     rescue Exception => e
@@ -36,21 +37,22 @@ module Ironmon
       return species
     end
 
-    def map_id(source_id)
-      stored = @mapping[source_id]
+    def map_id(source_id, context)
+      key = mapping_key(source_id, context)
+      stored = @mapping[key]
       if stored
         return stored if allowed_species_id?(stored)
-        @mapping.delete(source_id)
+        @mapping.delete(key)
       end
-      pool = select_pool(source_id)
+      pool = select_pool(source_id, context)
       if !pool || pool.empty?
         raise SpeciesGenerationError,
               "the #{@namespace} #{@policy} species pool is empty"
       end
-      selected = pool[deterministic_value(source_id, "species") % pool.length]
+      selected = pool[deterministic_value(source_id, context, "species") % pool.length]
       selected_data = GameData::Species.get(selected)
-      @mapping[source_id] = selected_data.id_number
-      return @mapping[source_id]
+      @mapping[key] = selected_data.id_number
+      return @mapping[key]
     end
 
     private
@@ -85,21 +87,28 @@ module Ironmon
       return index
     end
 
-    def select_pool(source_id)
+    def select_pool(source_id, context)
       case @policy
       when Configuration::POLICY_NORMAL_ONLY
         return @normal_pool
       when Configuration::POLICY_CUSTOM_FUSIONS_ONLY
         return @fusion_pool
       else
-        category = deterministic_value(source_id, "category") % 2
+        category = deterministic_value(source_id, context, "category") % 2
         return category == 0 ? @normal_pool : @fusion_pool
       end
     end
 
-    def deterministic_value(source_id, purpose)
+    def mapping_key(source_id, context)
+      normalized = context.is_a?(Array) ? context : [context]
+      return [SCHEMA_VERSION, @namespace, *normalized, source_id]
+    end
+
+    def deterministic_value(source_id, context, purpose)
       value = FNV_OFFSET_BASIS
-      input = [SCHEMA_VERSION, @seed, @namespace, source_id, purpose].join("|")
+      normalized = context.is_a?(Array) ? context : [context]
+      input = [SCHEMA_VERSION, @seed, @namespace, *normalized, source_id,
+               purpose].join("|")
       input.each_byte do |byte|
         value ^= byte
         value = (value * FNV_PRIME) & FNV_MASK
@@ -162,22 +171,52 @@ module Ironmon
     return generator
   end
 
-  def self.wild_species_for(species)
+  def self.wild_species_for(species, context = nil)
     return species if !active?
-    return legacy_species_for(species) if !current_species_mappings?
-    return species_generator(:wild).map(species)
+    return legacy_species_for(species, :wild) if legacy_species_mappings?
+    context ||= wild_script_context(:unspecified)
+    return species_generator(:wild).map(species, context)
+  end
+
+  def self.wild_script_context(purpose, subslot = 0)
+    interpreter = if $game_system && $game_system.respond_to?(:map_interpreter)
+                    $game_system.map_interpreter
+                  end
+    if interpreter && interpreter.running?
+      return [
+        :script,
+        interpreter.instance_variable_get(:@map_id),
+        interpreter.instance_variable_get(:@event_id),
+        interpreter.instance_variable_get(:@index),
+        purpose,
+        subslot
+      ]
+    end
+    location = caller(1, 1)[0] rescue "unknown"
+    map_id = $game_map ? $game_map.map_id : 0
+    encounter_type = $PokemonTemp ? $PokemonTemp.encounterType : nil
+    return [:call_site, map_id, encounter_type, location, purpose, subslot]
   end
 
   # Pokemon objects created by overworld encounters can reach battle through
   # pbWildBattleSpecific rather than the ordinary species/level entry point.
   # Mark mapped objects so visible overworld Pokemon are not mapped a second
   # time when the player touches them.
-  def self.prepare_wild_pokemon(pokemon)
+  def self.prepare_wild_pokemon(pokemon, context = nil)
     return pokemon if !active? || !pokemon
     return pokemon if pokemon.instance_variable_get(
       :@ironmon_wild_policy_mapped
     )
-    mapped_species = wild_species_for(pokemon.species)
+    mapped_species = pokemon.species
+    mapped_fusion = false
+    species_data = GameData::Species.try_get(pokemon.species)
+    if !legacy_species_mappings? &&
+       configuration.wild_policy == Configuration::POLICY_NORMAL_ONLY &&
+       species_data && species_data.id_number > NB_POKEMON &&
+       species_data.id_number < Settings::ZAPMOLCUNO_NB
+      mapped_species, mapped_fusion = prepare_wild_table_result(pokemon.species)
+    end
+    mapped_species = wild_species_for(pokemon.species, context) if !mapped_fusion
     if pokemon.species != mapped_species
       pokemon.species = mapped_species
       pokemon.pif_sprite = nil if pokemon.respond_to?(:pif_sprite=)
@@ -188,10 +227,11 @@ module Ironmon
     return pokemon
   end
 
-  def self.trainer_species_for(species)
+  def self.trainer_species_for(species, context = nil)
     return species if !active?
-    return legacy_species_for(species) if !current_species_mappings?
-    return species_generator(:trainer).map(species)
+    return legacy_species_for(species, :trainer) if legacy_species_mappings?
+    context ||= [:unspecified]
+    return species_generator(:trainer).map(species, context)
   end
 
   def self.custom_fusion_species?(species)
@@ -204,6 +244,42 @@ module Ironmon
       end
     end
     return @custom_fusion_species_index[species_data.id] == true
+  end
+
+  def self.wild_species_allowed?(species)
+    species_data = GameData::Species.try_get(species)
+    return false if !species_data
+    policy = configuration.wild_policy
+    if policy == Configuration::POLICY_NORMAL_ONLY
+      return species_data.id_number <= NB_POKEMON
+    end
+    if policy == Configuration::POLICY_CUSTOM_FUSIONS_ONLY
+      return custom_fusion_species?(species_data.id)
+    end
+    return species_data.id_number <= NB_POKEMON ||
+      custom_fusion_species?(species_data.id)
+  end
+
+  def self.prepare_wild_table_result(species)
+    return [species, false] if !active? || legacy_species_mappings?
+    return [species, true] if wild_species_allowed?(species)
+    return [species, false] if
+      configuration.wild_policy != Configuration::POLICY_NORMAL_ONLY
+    species_data = GameData::Species.try_get(species)
+    return [species, false] if !species_data ||
+      species_data.id_number <= NB_POKEMON ||
+      species_data.id_number >= Settings::ZAPMOLCUNO_NB
+    return [species, false] if
+      !species_data.respond_to?(:get_body_species_symbol) ||
+      !species_data.respond_to?(:get_head_species_symbol)
+    mapped = player_fusion_species(
+      species_data.get_body_species_symbol,
+      species_data.get_head_species_symbol
+    )
+    return [mapped, true]
+  rescue PlayerFusionMappingError => e
+    echoln "Ironmon could not map a fused wild encounter: #{e.message}"
+    return [species, false]
   end
 
   def self.trainer_species_allowed?(species)
@@ -226,9 +302,16 @@ module Ironmon
   # is repaired before the battle begins.
   def self.ensure_trainer_party_policy(trainer)
     return trainer if !active? || !trainer || !trainer.party
-    trainer.party.each do |pokemon|
+    trainer.party.each_with_index do |pokemon, slot|
       next if trainer_species_allowed?(pokemon.species)
-      mapped_species = trainer_species_for(pokemon.species)
+      context = pokemon.instance_variable_get(:@ironmon_trainer_slot_context)
+      if !context
+        trainer_type = trainer.respond_to?(:trainer_type) ?
+          trainer.trainer_type : :unknown
+        trainer_name = trainer.respond_to?(:name) ? trainer.name : ""
+        context = [:boundary, trainer_type, trainer_name, slot]
+      end
+      mapped_species = trainer_species_for(pokemon.species, context)
       next if pokemon.species == mapped_species
       pokemon.species = mapped_species
       pokemon.pif_sprite = nil if pokemon.respond_to?(:pif_sprite=)
@@ -242,12 +325,13 @@ module Ironmon
   # story-owned team which may catch, fuse, unfuse, reverse, or evolve between
   # battles. Map clones at the battle boundary so those story operations remain
   # intact while every species actually battled obeys the trainer policy.
-  def self.trainer_battle_party(party)
+  def self.trainer_battle_party(party, party_context = [:dynamic])
     return party if !active?
-    return party.map do |entry|
+    return party.each_with_index.map do |entry, slot|
+      context = [*party_context, slot]
       if entry.is_a?(Pokemon)
         mapped = entry.clone
-        mapped_species = trainer_species_for(entry.species)
+        mapped_species = trainer_species_for(entry.species, context)
         if mapped.species != mapped_species
           mapped.species = mapped_species
           mapped.pif_sprite = nil if mapped.respond_to?(:pif_sprite=)
@@ -256,7 +340,7 @@ module Ironmon
         end
         mapped
       elsif entry.is_a?(Symbol) || entry.is_a?(Integer)
-        trainer_species_for(entry)
+        trainer_species_for(entry, context)
       else
         entry
       end
@@ -362,20 +446,31 @@ module Ironmon
 
   def self.current_species_mappings?
     return false if !$PokemonGlobal
-    return false if $PokemonGlobal.ironmon_species_generator_version !=
-      SpeciesGenerator::SCHEMA_VERSION
+    versions = [SpeciesGenerator::LEGACY_SCHEMA_VERSION,
+                SpeciesGenerator::SCHEMA_VERSION]
+    return false if !versions.include?(
+      $PokemonGlobal.ironmon_species_generator_version
+    )
     return false if !$PokemonGlobal.ironmon_wild_species_map.is_a?(Hash)
     return false if !$PokemonGlobal.ironmon_trainer_species_map.is_a?(Hash)
     return true
   end
 
-  def self.legacy_species_for(species)
-    return species if !$PokemonGlobal || !$PokemonGlobal.psuedoBSTHash
+  def self.legacy_species_mappings?
+    return $PokemonGlobal &&
+      $PokemonGlobal.ironmon_species_generator_version ==
+        SpeciesGenerator::LEGACY_SCHEMA_VERSION
+  end
+
+  def self.legacy_species_for(species, kind = :wild)
+    return species if !$PokemonGlobal
     species_data = GameData::Species.try_get(species)
     return species if !species_data
     source_id = species_data.id_number
-    return species if source_id > NB_POKEMON
-    mapped_id = $PokemonGlobal.psuedoBSTHash[source_id]
+    mapping = kind == :wild ? $PokemonGlobal.ironmon_wild_species_map :
+      $PokemonGlobal.ironmon_trainer_species_map
+    return species if !mapping.is_a?(Hash)
+    mapped_id = mapping[source_id]
     mapped = GameData::Species.try_get(mapped_id)
     return mapped ? mapped.id : species
   end
@@ -391,17 +486,18 @@ module Ironmon
     @wild_species_generator = nil
     @trainer_species_generator = nil
 
-    wild_generator = species_generator(:wild)
-    (1..NB_POKEMON).each { |species_id| wild_generator.map_id(species_id) }
-    $PokemonGlobal.psuedoBSTHash = wild_generator.mapping
+    prepare_wild_encounter_slot_mappings
+    $PokemonGlobal.psuedoBSTHash = {}
+    (1..NB_POKEMON).each do |species_id|
+      $PokemonGlobal.psuedoBSTHash[species_id] = species_id
+    end
 
     trainer_generator = species_generator(:trainer)
-    (1..NB_POKEMON).each { |species_id| trainer_generator.map_id(species_id) }
     trainer_parties = {}
     getTrainersDataMode.list_all.each do |_trainer_id, trainer|
-      trainer_parties[trainer.id] = trainer.pokemon.map do |pokemon|
+      trainer_parties[trainer.id] = trainer.pokemon.each_with_index.map do |pokemon, slot|
         species = GameData::Species.get(pokemon[:species])
-        trainer_generator.map_id(species.id_number)
+        trainer_generator.map_id(species.id_number, [:pbs, trainer.id, slot])
       end
     end
     $PokemonGlobal.randomTrainersHash = trainer_parties
@@ -429,11 +525,37 @@ module Ironmon
 
   def self.refresh_invalid_species_mappings
     return false if !$PokemonGlobal
-    [:wild, :trainer].each do |kind|
-      generator = species_generator(kind)
-      (1..NB_POKEMON).each { |species_id| generator.map_id(species_id) }
-    end
+    return true if legacy_species_mappings?
+    prepare_wild_encounter_slot_mappings
+    refresh_trainer_slot_mappings
     return true
+  end
+
+  def self.prepare_wild_encounter_slot_mappings
+    modes = [GameData::Encounter]
+    modes << GameData::EncounterModern if defined?(GameData::EncounterModern)
+    modes.each do |mode|
+      mode.each do |data|
+        data.types.each do |encounter_type, entries|
+          entries.each_with_index do |entry, slot|
+            species = GameData::Species.get(entry[1])
+            context = [:table, mode.name, data.map, data.version,
+                       encounter_type, slot]
+            species_generator(:wild).map_id(species.id_number, context)
+          end
+        end
+      end
+    end
+  end
+
+  def self.refresh_trainer_slot_mappings
+    generator = species_generator(:trainer)
+    getTrainersDataMode.list_all.each do |_trainer_id, trainer|
+      trainer.pokemon.each_with_index do |pokemon, slot|
+        species = GameData::Species.get(pokemon[:species])
+        generator.map_id(species.id_number, [:pbs, trainer.id, slot])
+      end
+    end
   end
 
   def self.species_generation_error_message

@@ -68,6 +68,11 @@ public sealed class DebugRunDiagnosticsSnapshot
     public required string CustomFusionPoolFingerprint { get; init; }
 
     /// <summary>
+    /// Gets or initializes the species generator schema version.
+    /// </summary>
+    public int SpeciesGeneratorVersion { get; init; }
+
+    /// <summary>
     /// Gets or initializes the ability generator schema version.
     /// </summary>
     public int AbilityGeneratorVersion { get; init; }

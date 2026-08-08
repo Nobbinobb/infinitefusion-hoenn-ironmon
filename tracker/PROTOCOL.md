@@ -342,7 +342,8 @@ When a run ends, the game persists its result in the save metadata and emits
     "trainer_policy": "mixed",
     "unfusion_setting": "random_component"
   },
-  "species_generator_version": 1,
+  "data_mode": "classic",
+  "species_generator_version": 2,
   "ability_generator_version": 3,
   "player_fusion_generator_version": 2,
   "species_pool_fingerprint": "...",
@@ -385,6 +386,9 @@ limit the returned learnset. The response includes:
 - the complete level-up learnset;
 - current evolution requirements, destinations, direct pre-evolutions, and
   sprites;
+- authored wild route, encounter-table, and slot occurrences with source
+  species and slot percentage when available;
+- authored trainer and party-slot occurrences with source species;
 - displayed body and head components for a fusion;
 - the fusion's deterministic Ironmon reverse; and
 - every ordered normal-material pair that maps to that fusion in the run.
@@ -392,6 +396,15 @@ limit the returned learnset. The response includes:
 Evolution destinations, previous evolutions, displayed components, reverse
 fusions, and fusion materials use stable species identifiers and can be
 selected as the subject of another lookup.
+
+Normal Only wild fusion outcomes list both ordered encounter slots and both
+source species. Their displayed percentage is conditional on the separate
+wild-fusion event triggering because that trigger rate is not part of the
+completed-run recipe.
+
+Schema-version-1 runs reconstruct occurrences from their loaded saved source
+maps. Because those legacy maps are not derivable from the compact recipe,
+their occurrences are available only while that run's save is loaded.
 
 `fusion_preview` accepts two normal species identifiers and the same recipe.
 It returns the two ordered results, first-species body plus second-species head

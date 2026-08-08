@@ -117,6 +117,37 @@ public sealed class TrackerConnectionServiceTests
             Types = ["FIRE"],
             BaseStats = new BaseStatsSnapshot { Hp = 39, Attack = 52, Defense = 43, SpecialAttack = 60, SpecialDefense = 50, Speed = 65 },
             BaseStatTotal = 309,
+            WildOccurrences =
+            [
+                new WildPokemonOccurrenceSnapshot
+                {
+                    MapId = 4,
+                    RouteName = "Route 1",
+                    Mode = "Classic",
+                    EncounterType = "Land",
+                    Slot = 2,
+                    MinimumLevel = 4,
+                    MaximumLevel = 6,
+                    SourceSpeciesId = "RATTATA:0",
+                    SourceSpeciesName = "Rattata",
+                    ChancePercent = 20m
+                }
+            ],
+            TrainerOccurrences =
+            [
+                new TrainerPokemonOccurrenceSnapshot
+                {
+                    TrainerId = "YOUNGSTER_BEN_0",
+                    TrainerName = "Ben",
+                    TrainerType = "Youngster",
+                    Slot = 1,
+                    Level = 7,
+                    MapId = 4,
+                    RouteName = "Route 1",
+                    SourceSpeciesId = "PIDGEY:0",
+                    SourceSpeciesName = "Pidgey"
+                }
+            ],
             Evolutions =
             [
                 new PokemonRelationSnapshot
@@ -131,6 +162,14 @@ public sealed class TrackerConnectionServiceTests
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(lookupRequest.RequestId!, lookupResponse, "run-1"));
         PokemonLookupSnapshot receivedLookup = await lookupTask;
         Assert.Equal(309, receivedLookup.BaseStatTotal);
+        WildPokemonOccurrenceSnapshot receivedWild = Assert.Single(receivedLookup.WildOccurrences);
+        Assert.Equal("Route 1", receivedWild.RouteName);
+        Assert.Equal(4, receivedWild.MinimumLevel);
+        Assert.Equal(6, receivedWild.MaximumLevel);
+        TrainerPokemonOccurrenceSnapshot receivedTrainer = Assert.Single(receivedLookup.TrainerOccurrences);
+        Assert.Equal("Ben", receivedTrainer.TrainerName);
+        Assert.Equal(7, receivedTrainer.Level);
+        Assert.Equal("Route 1", receivedTrainer.RouteName);
         Assert.Same(receivedLookup, await service.Requests.LookupPokemonAsync(recipe, "CHARMANDER:0"));
 
         Task<FusionPreviewResponsePayload> fusionTask = service.Requests.PreviewFusionAsync(recipe, "CHARMANDER:0", "ALTARIA:0");

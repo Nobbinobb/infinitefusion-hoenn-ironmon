@@ -45,6 +45,11 @@ public sealed class CompletedRunRecipePayload
     public JsonElement Configuration { get; init; }
 
     /// <summary>
+    /// Gets or initializes the classic, remix, or expert data mode.
+    /// </summary>
+    public string DataMode { get; init; } = "classic";
+
+    /// <summary>
     /// Gets or initializes the species generator schema version.
     /// </summary>
     public int SpeciesGeneratorVersion { get; init; }

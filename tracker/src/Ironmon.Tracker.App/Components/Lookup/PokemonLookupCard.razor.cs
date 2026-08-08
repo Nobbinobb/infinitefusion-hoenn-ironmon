@@ -73,6 +73,32 @@ public partial class PokemonLookupCard
         => Pokemon.Evolutions.Count == 0 ? "None" : Pokemon.Evolutions[0].Label;
 
     /// <summary>
+    /// Formats an authored encounter-table chance.
+    /// </summary>
+    /// <param name="chance">The percentage chance.</param>
+    /// <param name="conditional">Whether the chance assumes a fusion event already triggered.</param>
+    /// <returns>The compact percentage label.</returns>
+    private static string FormatChance(decimal chance, bool conditional)
+        => conditional ? $"{chance:0.##}% when fused" : $"{chance:0.##}%";
+
+    /// <summary>
+    /// Formats the authored slot or ordered slot pair for a wild occurrence.
+    /// </summary>
+    /// <param name="occurrence">The represented wild occurrence.</param>
+    /// <returns>The compact slot label.</returns>
+    private static string FormatWildSlots(WildPokemonOccurrenceSnapshot occurrence)
+        => occurrence.SecondarySlot is null ? $"Slot {occurrence.Slot}" : $"Slots {occurrence.Slot} + {occurrence.SecondarySlot}";
+
+    /// <summary>
+    /// Formats one authored wild-encounter level or level range.
+    /// </summary>
+    /// <param name="minimumLevel">The minimum encounter level.</param>
+    /// <param name="maximumLevel">The maximum encounter level.</param>
+    /// <returns>The compact level label.</returns>
+    private static string FormatLevelRange(int minimumLevel, int maximumLevel)
+        => minimumLevel == maximumLevel ? $"Lv. {minimumLevel}" : $"Lv. {minimumLevel}–{maximumLevel}";
+
+    /// <summary>
     /// Opens full information for one generated ability.
     /// </summary>
     /// <param name="ability">The selected ability.</param>

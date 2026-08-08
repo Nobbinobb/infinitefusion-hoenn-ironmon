@@ -79,7 +79,10 @@ module Ironmon
     return species if GameData::Species.try_get(species)
 
     source = gym_leader_source_species(trainer, slot)
-    species = trainer_species_for(source)
+    species = trainer_species_for(
+      source, [:gym_addition, trainer.trainer_type,
+               trainer.respond_to?(:name) ? trainer.name : "", slot]
+    )
     stored_team[slot] = species
     return species
   end

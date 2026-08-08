@@ -46,7 +46,7 @@
     {
         <p class="lookup-error" role="alert">@_error</p>
     }
-    else if (_loading)
+    else if (_loading && !_backgroundRefresh)
     {
         <p class="lookup-message">Reading game-owned debug data…</p>
     }

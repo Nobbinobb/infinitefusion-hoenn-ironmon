@@ -13,7 +13,11 @@ public partial class DebugInspector
     private string _selectedTarget = "player";
     private string? _error;
     private bool _loading;
+    private bool _backgroundRefresh;
     private bool _targetInitialized;
+    private bool _refreshPending;
+    private PlayerPokemonSnapshot? _observedPlayer;
+    private IReadOnlyList<EnemyPokemonSnapshot> _observedEnemies = [];
 
     /// <summary>
     /// Gets or initializes the active game request client.
@@ -42,18 +46,73 @@ public partial class DebugInspector
     /// <summary>
     /// Selects the initial available inspection target without overriding user selection.
     /// </summary>
-    protected override void OnParametersSet()
+    /// <returns>A task representing any inspection refresh required by new parameters.</returns>
+    protected override async Task OnParametersSetAsync()
     {
-        if (_targetInitialized)
+        if (!_targetInitialized)
+        {
+            _selectedTarget = Player is not null
+                ? "player"
+                : Enemies.Count > 0
+                    ? $"enemy:{Enemies[0].Position}"
+                    : "player";
+
+            _targetInitialized = true;
+            _observedPlayer = Player;
+            _observedEnemies = Enemies;
             return;
+        }
+
+        bool targetChanged = EnsureSelectedTargetAvailable();
+        bool selectedChanged = targetChanged || SelectedSnapshotChanged();
+        _observedPlayer = Player;
+        _observedEnemies = Enemies;
+
+        if (!selectedChanged)
+            return;
+
+        if (_loading)
+            _refreshPending = true;
+        else
+            await InspectSelectedAsync(preserveContent: true);
+    }
+
+    /// <summary>
+    /// Moves inspection to an available live target when the selected battler disappears.
+    /// </summary>
+    /// <returns><see langword="true"/> when a replacement target was selected.</returns>
+    private bool EnsureSelectedTargetAvailable()
+    {
+        string[] parts = _selectedTarget.Split(':', 2);
+        bool enemyAvailable = parts[0] == "enemy" && parts.Length == 2 && int.TryParse(parts[1], out int position)
+            && Enemies.Any(enemy => enemy.Position == position);
+        if (parts[0] != "enemy" || enemyAvailable)
+            return false;
 
         _selectedTarget = Player is not null
             ? "player"
             : Enemies.Count > 0
                 ? $"enemy:{Enemies[0].Position}"
                 : "player";
+        return true;
+    }
 
-        _targetInitialized = true;
+    /// <summary>
+    /// Determines whether the currently inspected live snapshot was replaced.
+    /// </summary>
+    /// <returns><see langword="true"/> when the selected live source changed.</returns>
+    private bool SelectedSnapshotChanged()
+    {
+        string[] parts = _selectedTarget.Split(':', 2);
+        if (parts[0] == "player")
+            return !ReferenceEquals(Player, _observedPlayer);
+
+        if (parts[0] != "enemy" || parts.Length != 2 || !int.TryParse(parts[1], out int position))
+            return false;
+
+        EnemyPokemonSnapshot? current = Enemies.FirstOrDefault(enemy => enemy.Position == position);
+        EnemyPokemonSnapshot? observed = _observedEnemies.FirstOrDefault(enemy => enemy.Position == position);
+        return !ReferenceEquals(current, observed);
     }
 
     /// <summary>
@@ -100,13 +159,15 @@ public partial class DebugInspector
     /// <summary>
     /// Requests inspector data for the selected current Pokemon source.
     /// </summary>
+    /// <param name="preserveContent">Whether an automatic refresh keeps the current card visible.</param>
     /// <returns>A task representing the request.</returns>
-    private async Task InspectSelectedAsync()
+    private async Task InspectSelectedAsync(bool preserveContent = false)
     {
         if (_loading)
             return;
 
         _loading = true;
+        _backgroundRefresh = preserveContent && _pokemon is not null;
         _error = null;
         try
         {
@@ -115,12 +176,20 @@ public partial class DebugInspector
         }
         catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
         {
-            _pokemon = null;
+            if (!preserveContent)
+                _pokemon = null;
             _error = exception.Message;
         }
         finally
         {
             _loading = false;
+            _backgroundRefresh = false;
+        }
+
+        if (_refreshPending)
+        {
+            _refreshPending = false;
+            await InspectSelectedAsync(preserveContent: true);
         }
     }
 

@@ -176,7 +176,8 @@ Acceptance criteria:
 
 - Each policy produces only allowed species.
 - Wild and trainer policies operate independently.
-- The same source species maps consistently within the same category and run.
+- Each authored wild or trainer slot maps consistently within one run, while
+  separate slots containing the same source species randomize independently.
 - The scripted opening battle follows the wild policy.
 - Wally, the Hoenn rival, and rematch trainers cannot bypass the trainer policy
   through story-created party changes.

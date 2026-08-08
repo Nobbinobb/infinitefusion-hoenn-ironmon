@@ -911,6 +911,66 @@ button.move-placeholder:hover {
     gap: 0.45rem;
 }
 
+.lookup-occurrences {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.lookup-occurrences > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.lookup-occurrences > header p {
+    margin: 0;
+}
+
+.lookup-occurrences > header span {
+    color: var(--muted);
+    font-size: 0.66rem;
+}
+
+.lookup-occurrence-list {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.lookup-occurrence {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 0.55rem;
+    background: var(--surface-soft);
+}
+
+.lookup-occurrence > div {
+    display: grid;
+    gap: 0.12rem;
+}
+
+.lookup-occurrence strong {
+    font-size: 0.72rem;
+}
+
+.lookup-occurrence small,
+.lookup-occurrence > span {
+    color: var(--muted);
+    font-size: 0.62rem;
+}
+
+.lookup-occurrence button {
+    border: 0;
+    color: var(--accent-soft);
+    background: transparent;
+    font: inherit;
+    font-size: 0.66rem;
+    cursor: pointer;
+}
+
 .lookup-relations > header {
     display: flex;
     align-items: center;

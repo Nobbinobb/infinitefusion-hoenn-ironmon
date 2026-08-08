@@ -2,6 +2,60 @@
 # Ironmon hooks for encounters that bypass the standard randomizer
 #===============================================================================
 
+class PokemonEncounters
+  alias ironmon_original_setup setup
+  def setup(map_id)
+    result = ironmon_original_setup(map_id)
+    return result if !Ironmon.active? || Ironmon.legacy_species_mappings?
+    mode = getEncounterMode()
+    data = mode.get(map_id, $PokemonGlobal.encounter_version)
+    data = GameData::Encounter.get(
+      map_id, $PokemonGlobal.encounter_version
+    ) if !data
+    return result if !data
+    @encounter_tables.each do |encounter_type, entries|
+      entries.each_with_index do |entry, slot|
+        context = [:table, mode.name, data.map, data.version,
+                   encounter_type, slot]
+        entry[1] = Ironmon.wild_species_for(entry[1], context)
+      end
+    end
+    return result
+  end
+end
+
+# The base game can fuse two selected encounter rows after selection. Once a
+# slot policy can itself yield a fusion, feeding those results back into that
+# path would attempt to create a fusion of fusions. Normal-only rows remain safe
+# inputs; other policies already decide whether each authored slot is a fusion.
+alias ironmon_original_is_fused_encounter isFusedEncounter
+def isFusedEncounter
+  if Ironmon.active? &&
+     Ironmon.configuration.wild_policy !=
+       Ironmon::Configuration::POLICY_NORMAL_ONLY
+    return false
+  end
+  return ironmon_original_is_fused_encounter
+end
+
+alias ironmon_original_generate_wild_encounter generateWildEncounter
+def generateWildEncounter(encounter_type)
+  if !Ironmon.active? || Ironmon.legacy_species_mappings? ||
+     Ironmon.configuration.wild_policy !=
+       Ironmon::Configuration::POLICY_NORMAL_ONLY
+    return ironmon_original_generate_wild_encounter(encounter_type)
+  end
+  encounter = getRegularEncounter(encounter_type)
+  return if !encounter
+  if isFusedEncounter
+    fused_with = getRegularEncounter(encounter_type)
+    encounter[0] = getFusionSpeciesSymbol(encounter[0], fused_with[0])
+  end
+  encounter[0] = getSpecies(encounter[0]) if encounter[0].is_a?(Integer)
+  $game_switches[SWITCH_FORCE_FUSE_NEXT_POKEMON] = false
+  return encounter
+end
+
 alias ironmon_original_hoenn_select_starter hoennSelectStarter
 def hoennSelectStarter
   Ironmon.capture_checkpoint
@@ -25,7 +79,13 @@ class OverworldPokemonEvent
   alias ironmon_original_setup_pokemon setup_pokemon
   def setup_pokemon(species, level, terrain = :Land, behavior_roaming = nil, behavior_noticed = nil)
     if !instance_variable_get(:@ironmon_randomized_species) && Ironmon.active?
-      species = Ironmon.wild_species_for(species)
+      table_result = false
+      if is_a?(DynamicOverworldPokemonEvent) &&
+         $PokemonTemp && $PokemonTemp.encounterType
+        species, table_result = Ironmon.prepare_wild_table_result(species)
+      end
+      context = [:overworld, @map_id, @id]
+      species = Ironmon.wild_species_for(species, context) if !table_result
       instance_variable_set(:@ironmon_randomized_species, true)
     end
     result = ironmon_original_setup_pokemon(
@@ -63,12 +123,18 @@ module GameData
          species == Settings::RIVAL_STARTER_PLACEHOLDER_SPECIES
         return resolved_species
       end
-      return Ironmon.trainer_species_for(resolved_species)
+      return Ironmon.trainer_species_for(
+        resolved_species, [:pbs_placeholder, self.id, species]
+      )
     end
 
     alias ironmon_original_replace_species_to_randomized replace_species_to_randomized
     def replace_species_to_randomized(species, trainer_id, pokemon_index)
-      return Ironmon.trainer_species_for(species) if Ironmon.active?
+      if Ironmon.active?
+        return Ironmon.trainer_species_for(
+          species, [:pbs, trainer_id, pokemon_index]
+        )
+      end
       return ironmon_original_replace_species_to_randomized(
         species, trainer_id, pokemon_index
       )
@@ -83,7 +149,12 @@ end
 alias ironmon_original_pb_wild_battle pbWildBattle
 def pbWildBattle(species, level, outcomeVar = 1, canRun = true, canLose = false)
   if Ironmon.active?
-    species = Ironmon.wild_species_for(species)
+    table_result = false
+    if $PokemonTemp && $PokemonTemp.encounterType
+      species, table_result = Ironmon.prepare_wild_table_result(species)
+    end
+    context = Ironmon.wild_script_context(:single, 0)
+    species = Ironmon.wild_species_for(species, context) if !table_result
     random_static = $game_switches[SWITCH_RANDOM_STATIC_ENCOUNTERS]
     begin
       $game_switches[SWITCH_RANDOM_STATIC_ENCOUNTERS] = false
@@ -99,7 +170,11 @@ end
 alias ironmon_original_pb_wild_battle_specific pbWildBattleSpecific
 def pbWildBattleSpecific(pokemon, outcomeVar = 1, canRun = true,
                          canLose = false)
-  Ironmon.prepare_wild_pokemon(pokemon) if Ironmon.active?
+  if Ironmon.active?
+    Ironmon.prepare_wild_pokemon(
+      pokemon, Ironmon.wild_script_context(:specific, 0)
+    )
+  end
   return ironmon_original_pb_wild_battle_specific(
     pokemon, outcomeVar, canRun, canLose
   )
@@ -109,8 +184,12 @@ alias ironmon_original_pb_1v2_wild_battle_specific pb1v2WildBattleSpecific
 def pb1v2WildBattleSpecific(pokemon1, pokemon2, outcomeVar = 1,
                             canRun = true, canLose = false)
   if Ironmon.active?
-    Ironmon.prepare_wild_pokemon(pokemon1)
-    Ironmon.prepare_wild_pokemon(pokemon2)
+    Ironmon.prepare_wild_pokemon(
+      pokemon1, Ironmon.wild_script_context(:specific, 0)
+    )
+    Ironmon.prepare_wild_pokemon(
+      pokemon2, Ironmon.wild_script_context(:specific, 1)
+    )
   end
   return ironmon_original_pb_1v2_wild_battle_specific(
     pokemon1, pokemon2, outcomeVar, canRun, canLose
@@ -121,9 +200,15 @@ alias ironmon_original_pb_1v3_wild_battle_specific pb1v3WildBattleSpecific
 def pb1v3WildBattleSpecific(pokemon1, pokemon2, pokemon3, outcomeVar = 1,
                             canRun = true, canLose = false)
   if Ironmon.active?
-    Ironmon.prepare_wild_pokemon(pokemon1)
-    Ironmon.prepare_wild_pokemon(pokemon2)
-    Ironmon.prepare_wild_pokemon(pokemon3)
+    Ironmon.prepare_wild_pokemon(
+      pokemon1, Ironmon.wild_script_context(:specific, 0)
+    )
+    Ironmon.prepare_wild_pokemon(
+      pokemon2, Ironmon.wild_script_context(:specific, 1)
+    )
+    Ironmon.prepare_wild_pokemon(
+      pokemon3, Ironmon.wild_script_context(:specific, 2)
+    )
   end
   return ironmon_original_pb_1v3_wild_battle_specific(
     pokemon1, pokemon2, pokemon3, outcomeVar, canRun, canLose
@@ -133,7 +218,9 @@ end
 alias ironmon_original_get_randomized_to getRandomizedTo
 def getRandomizedTo(species)
   if Ironmon.active?
-    mapped = Ironmon.wild_species_for(species)
+    mapped = Ironmon.wild_species_for(
+      species, Ironmon.wild_script_context(:randomized_lookup)
+    )
     mapped_data = GameData::Species.try_get(mapped)
     return mapped_data ? mapped_data.id_number : species
   end
@@ -144,7 +231,9 @@ alias ironmon_original_try_randomize_gift_pokemon tryRandomizeGiftPokemon
 def tryRandomizeGiftPokemon(pokemon, dontRandomize = false)
   if Ironmon.active? && !dontRandomize &&
      !$game_switches[SWITCH_DONT_RANDOMIZE]
-    pokemon.species = Ironmon.wild_species_for(pokemon.species)
+    pokemon.species = Ironmon.wild_species_for(
+      pokemon.species, Ironmon.wild_script_context(:gift)
+    )
     return
   end
   return ironmon_original_try_randomize_gift_pokemon(pokemon, dontRandomize)
@@ -154,7 +243,7 @@ alias ironmon_original_obtain_randomized_starter obtainRandomizedStarter
 def obtainRandomizedStarter(starter_index)
   if Ironmon.active?
     source = [1, 4, 7][starter_index] || 7
-    mapped = Ironmon.wild_species_for(source)
+    mapped = Ironmon.wild_species_for(source, [:starter, starter_index])
     return GameData::Species.get(mapped).id_number
   end
   return ironmon_original_obtain_randomized_starter(starter_index)
@@ -168,7 +257,8 @@ def setRivalStarter(starter_index1, starter_index2)
     head = sources[starter_index2] || sources[1]
     source = getFusionSpecies(body, head).id
     starter = GameData::Species.get(
-      Ironmon.trainer_species_for(source)
+      Ironmon.trainer_species_for(source, [:rival_starter, starter_index1,
+                                           starter_index2])
     ).id_number
     pbSet(VAR_RIVAL_STARTER, starter)
     $game_switches[SWITCH_DEFINED_RIVAL_STARTER] = true
@@ -199,7 +289,9 @@ def customTrainerBattle(trainerName, trainerType, party_array,
                         default_level = 50, endSpeech = "",
                         sprite_override = nil, custom_appearance = nil,
                         items = [], canLose = false)
-  party_array = Ironmon.trainer_battle_party(party_array)
+  party_array = Ironmon.trainer_battle_party(
+    party_array, [:custom, trainerType, trainerName]
+  )
   return ironmon_original_custom_trainer_battle(
     trainerName, trainerType, party_array, default_level, endSpeech,
     sprite_override, custom_appearance, items, canLose
@@ -213,7 +305,8 @@ def rematchable_trainer_battle(rematchable_trainers = [], default_level = 50,
     rematchable_trainers = rematchable_trainers.map do |trainer|
       mapped_trainer = trainer.clone
       mapped_trainer.currentTeam = Ironmon.trainer_battle_party(
-        trainer.currentTeam
+        trainer.currentTeam, [:rematch, trainer.trainerType,
+                              trainer.trainerName]
       )
       mapped_trainer
     end
@@ -302,8 +395,18 @@ alias ironmon_original_pb_double_wild_battle pbDoubleWildBattle
 def pbDoubleWildBattle(species1, level1, species2, level2,
                        outcomeVar = 1, canRun = true, canLose = false)
   if Ironmon.active?
-    species1 = Ironmon.wild_species_for(species1)
-    species2 = Ironmon.wild_species_for(species2)
+    table_result = $PokemonTemp && $PokemonTemp.encounterType
+    if table_result
+      species1, = Ironmon.prepare_wild_table_result(species1)
+      species2, = Ironmon.prepare_wild_table_result(species2)
+    else
+      species1 = Ironmon.wild_species_for(
+        species1, Ironmon.wild_script_context(:double, 0)
+      )
+      species2 = Ironmon.wild_species_for(
+        species2, Ironmon.wild_script_context(:double, 1)
+      )
+    end
   end
   return ironmon_original_pb_double_wild_battle(
     species1, level1, species2, level2, outcomeVar, canRun, canLose
@@ -314,9 +417,22 @@ alias ironmon_original_pb_triple_wild_battle pbTripleWildBattle
 def pbTripleWildBattle(species1, level1, species2, level2, species3, level3,
                        outcomeVar = 1, canRun = true, canLose = false)
   if Ironmon.active?
-    species1 = Ironmon.wild_species_for(species1)
-    species2 = Ironmon.wild_species_for(species2)
-    species3 = Ironmon.wild_species_for(species3)
+    table_result = $PokemonTemp && $PokemonTemp.encounterType
+    if table_result
+      species1, = Ironmon.prepare_wild_table_result(species1)
+      species2, = Ironmon.prepare_wild_table_result(species2)
+      species3, = Ironmon.prepare_wild_table_result(species3)
+    else
+      species1 = Ironmon.wild_species_for(
+        species1, Ironmon.wild_script_context(:triple, 0)
+      )
+      species2 = Ironmon.wild_species_for(
+        species2, Ironmon.wild_script_context(:triple, 1)
+      )
+      species3 = Ironmon.wild_species_for(
+        species3, Ironmon.wild_script_context(:triple, 2)
+      )
+    end
   end
   return ironmon_original_pb_triple_wild_battle(
     species1, level1, species2, level2, species3, level3,
@@ -328,8 +444,12 @@ alias ironmon_original_pb_1v2_wild_battle pb1v2WildBattle
 def pb1v2WildBattle(species1, level1, species2, level2,
                     outcomeVar = 1, canRun = true, canLose = false)
   if Ironmon.active?
-    species1 = Ironmon.wild_species_for(species1)
-    species2 = Ironmon.wild_species_for(species2)
+    species1 = Ironmon.wild_species_for(
+      species1, Ironmon.wild_script_context(:one_v_two, 0)
+    )
+    species2 = Ironmon.wild_species_for(
+      species2, Ironmon.wild_script_context(:one_v_two, 1)
+    )
   end
   return ironmon_original_pb_1v2_wild_battle(
     species1, level1, species2, level2, outcomeVar, canRun, canLose
@@ -340,9 +460,15 @@ alias ironmon_original_pb_1v3_wild_battle pb1v3WildBattle
 def pb1v3WildBattle(species1, level1, species2, level2, species3, level3,
                     outcomeVar = 1, canRun = true, canLose = false)
   if Ironmon.active?
-    species1 = Ironmon.wild_species_for(species1)
-    species2 = Ironmon.wild_species_for(species2)
-    species3 = Ironmon.wild_species_for(species3)
+    species1 = Ironmon.wild_species_for(
+      species1, Ironmon.wild_script_context(:one_v_three, 0)
+    )
+    species2 = Ironmon.wild_species_for(
+      species2, Ironmon.wild_script_context(:one_v_three, 1)
+    )
+    species3 = Ironmon.wild_species_for(
+      species3, Ironmon.wild_script_context(:one_v_three, 2)
+    )
   end
   return ironmon_original_pb_1v3_wild_battle(
     species1, level1, species2, level2, species3, level3,

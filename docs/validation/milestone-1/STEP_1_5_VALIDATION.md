@@ -43,6 +43,17 @@ game data. The temporary test hook was removed afterward.
 
 Step 1.5 is complete. All automated and in-game acceptance checks passed.
 
+## Schema version 2 follow-up
+
+- [ ] Two encounter-table slots containing the same source species receive
+  independent results, while each slot remains stable across revisits and
+  save/load.
+- [ ] Two trainers containing the same source species receive independent
+  results, and duplicate source species in separate party slots do as well.
+- [ ] Static, gift, starter, custom-trainer, and rematch slots remain stable.
+- [ ] Schema-version-1 saves retain their old mappings until F7 creates a
+  schema-version-2 run.
+
 Partial acceptance used Custom Fusions Only for wild Pokemon and Normal Only
 for trainers. The rival was normal, all starters and ordinary wild encounters
 were custom-sprite fusions, and the two policies visibly differed. Dynamically

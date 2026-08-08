@@ -444,6 +444,17 @@ seeded Ironmon reverse, and the ordered normal-material pairs that produce
 them. Encounter and pivot inputs do not replace a fusion's displayed
 components.
 
+Lookup also reconstructs every authored wild and trainer slot which maps to
+the selected species. Wild rows show data mode, route, encounter type, slot,
+source species, and the authored table percentage. Trainer rows show trainer
+identity, party slot, and source species. Normal Only fusion encounters show
+their ordered pair of route slots and the pair probability conditional on the
+fusion event triggering.
+
+Legacy schema-version-1 runs use the wild and trainer source maps stored in the
+currently loaded save. Their occurrence lists cannot be reconstructed later
+from an archived compact recipe because the legacy maps were not slot-derived.
+
 For a normal Pokemon, the user searches for a second normal material. The game
 calculates only the two seeded Ironmon outcomes for those materials: first as
 body plus second as head, then the reversed orientation. It does not return a

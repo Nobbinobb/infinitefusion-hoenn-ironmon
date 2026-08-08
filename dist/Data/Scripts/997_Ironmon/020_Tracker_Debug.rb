@@ -77,6 +77,8 @@ module Ironmon
       "unfusion_setting" => configuration_value.unfusion_setting.to_s,
       "custom_fusion_pool_size" => fusion_info[:size],
       "custom_fusion_pool_fingerprint" => fusion_info[:fingerprint],
+      "species_generator_version" =>
+        $PokemonGlobal.ironmon_species_generator_version,
       "ability_generator_version" => AbilityGenerator::SCHEMA_VERSION,
       "ability_pool_size" => allowed_ability_pool.length,
       "ability_pool_fingerprint" => ability_pool_fingerprint,
@@ -108,6 +110,7 @@ module Ironmon
       "game_version" => tracker_game_version,
       "ironmon_version" => VERSION,
       "configuration" => configuration_snapshot,
+      "data_mode" => tracker_data_mode,
       "species_generator_version" => $PokemonGlobal.ironmon_species_generator_version,
       "ability_generator_version" => $PokemonGlobal.ironmon_ability_generator_version,
       "player_fusion_generator_version" => PlayerFusionMapper::SCHEMA_VERSION,

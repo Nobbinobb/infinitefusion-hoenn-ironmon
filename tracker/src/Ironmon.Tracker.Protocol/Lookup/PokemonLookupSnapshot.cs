@@ -63,6 +63,16 @@ public sealed class PokemonLookupSnapshot
     public IReadOnlyList<PokemonRelationSnapshot> PreviousEvolutions { get; init; } = [];
 
     /// <summary>
+    /// Gets or initializes authored wild slots which generate this species.
+    /// </summary>
+    public IReadOnlyList<WildPokemonOccurrenceSnapshot> WildOccurrences { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes authored trainer slots which generate this species.
+    /// </summary>
+    public IReadOnlyList<TrainerPokemonOccurrenceSnapshot> TrainerOccurrences { get; init; } = [];
+
+    /// <summary>
     /// Gets or initializes the body and head species when this Pokemon is a fusion.
     /// </summary>
     public IReadOnlyList<PokemonRelationSnapshot> FusionBases { get; init; } = [];

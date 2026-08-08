@@ -26,6 +26,44 @@ module Ironmon
     :ENERGYROOT => 200
   }
 
+  def self.tracker_json_generate(value)
+    case value
+    when Hash
+      entries = value.map do |key, child|
+        "#{tracker_json_string(key)}:#{tracker_json_generate(child)}"
+      end
+      return "{#{entries.join(",")}}"
+    when Array
+      return "[#{value.map { |child| tracker_json_generate(child) }.join(",")}]"
+    when String, Symbol
+      return tracker_json_string(value)
+    when TrueClass, FalseClass
+      return value.to_s
+    when NilClass
+      return "null"
+    when Numeric
+      return value.to_s
+    end
+    raise "Unsupported tracker JSON value #{value.class}."
+  end
+
+  def self.tracker_json_string(value)
+    escaped = value.to_s.each_codepoint.map do |codepoint|
+      case codepoint
+      when 0x08 then "\\b"
+      when 0x09 then "\\t"
+      when 0x0A then "\\n"
+      when 0x0C then "\\f"
+      when 0x0D then "\\r"
+      when 0x22 then '\\"'
+      when 0x5C then "\\\\"
+      else
+        codepoint < 0x20 ? sprintf("\\u%04x", codepoint) : codepoint.chr(Encoding::UTF_8)
+      end
+    end.join
+    return "\"#{escaped}\""
+  end
+
   class TrackerConnection
     def initialize
       @socket = nil
@@ -134,7 +172,7 @@ module Ironmon
     end
 
     def queue_message(message)
-      @output_buffer << JSON.generate(message) << "\n"
+      @output_buffer << Ironmon.tracker_json_generate(message) << "\n"
     end
 
     def flush_output
@@ -408,7 +446,7 @@ module Ironmon
     @tracker_player_pokemon = battler.pokemon
     @tracker_move_menu_pokemon_id = nil
     snapshot = tracker_player_snapshot
-    @tracker_player_json = JSON.generate(snapshot)
+    @tracker_player_json = tracker_json_generate(snapshot)
     tracker_connection.send_event("player_sent_out", snapshot)
   end
 
@@ -421,14 +459,14 @@ module Ironmon
   end
 
   def self.update_tracker_player
+    synchronize_tracker_player_from_party if !@tracker_battle_id
     return if !@tracker_player_pokemon
     return if @tracker_battle_id && !@tracker_player_battler
-    synchronize_tracker_player_from_party if !@tracker_battle_id
     now = System.uptime
     return if @tracker_next_state_at && now < @tracker_next_state_at
     @tracker_next_state_at = now + TRACKER_STATE_INTERVAL_SECONDS
     snapshot = tracker_player_snapshot
-    snapshot_json = JSON.generate(snapshot)
+    snapshot_json = tracker_json_generate(snapshot)
     return if snapshot_json == @tracker_player_json
     @tracker_player_json = snapshot_json
     tracker_connection.send_event("player_state_changed", snapshot)
@@ -438,9 +476,17 @@ module Ironmon
 
   def self.synchronize_tracker_player_from_party
     return if !$Trainer || !$Trainer.party
-    pokemon_id = @tracker_player_pokemon.personalID
-    party_pokemon = $Trainer.party.find { |pokemon| pokemon.personalID == pokemon_id }
-    @tracker_player_pokemon = party_pokemon if party_pokemon
+    party_pokemon = nil
+    if @tracker_player_pokemon
+      pokemon_id = @tracker_player_pokemon.personalID
+      party_pokemon = $Trainer.party.find do |pokemon|
+        pokemon.personalID == pokemon_id
+      end
+    end
+    party_pokemon ||= $Trainer.party.find do |pokemon|
+      !pokemon.respond_to?(:egg?) || !pokemon.egg?
+    end
+    @tracker_player_pokemon = party_pokemon
   end
 
   def self.tracker_enemy_sent_out(battler)
@@ -451,7 +497,7 @@ module Ironmon
     @tracker_enemy_move_signatures.delete(battler.index)
     @tracker_enemy_abilities.delete(battler.index)
     snapshot = tracker_enemy_snapshot(battler)
-    @tracker_enemy_json[battler.index] = JSON.generate(snapshot)
+    @tracker_enemy_json[battler.index] = tracker_json_generate(snapshot)
     tracker_connection.send_event("enemy_sent_out", snapshot)
   end
 
@@ -463,7 +509,7 @@ module Ironmon
     @tracker_enemy_battlers.each do |position, battler|
       tracker_enemy_move_if_changed(battler)
       snapshot = tracker_enemy_snapshot(battler)
-      snapshot_json = JSON.generate(snapshot)
+      snapshot_json = tracker_json_generate(snapshot)
       next if snapshot_json == @tracker_enemy_json[position]
       @tracker_enemy_json[position] = snapshot_json
       tracker_connection.send_event("enemy_state_changed", snapshot)
