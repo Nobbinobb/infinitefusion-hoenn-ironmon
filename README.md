@@ -18,6 +18,8 @@ and a fast reset to starter selection.
   local game installation.
 - `tools/Build-Milestone3.ps1` creates the cumulative ability-release ZIP and
   SHA-256 checksum in `release/`.
+- `tools/Build-TrackerRelease.ps1` publishes the self-contained Windows tracker
+  and creates the combined copy-ready ZIP and SHA-256 checksum in `release/`.
 
 Milestone 3 Step 3.1 is implemented at version `0.3.3`. See
 `docs/design/ABILITY_RANDOMIZATION.md` for its rules, `docs/ROADMAP.md` for

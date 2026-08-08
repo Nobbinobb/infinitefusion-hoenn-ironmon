@@ -2,3 +2,6 @@
 tracker/.vs/
 tracker/**/bin/
 tracker/**/obj/
+dist/Ironmon Tracker/
+release/Ironmon-v*-tracker.zip
+release/Ironmon-v*-tracker.sha256.txt

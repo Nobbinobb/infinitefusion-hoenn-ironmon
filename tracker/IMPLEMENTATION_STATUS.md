@@ -748,3 +748,41 @@ Implemented on 2026-08-08:
 
 - All **33 tests** pass.
 - Debug and Release builds complete with 0 warnings and 0 errors.
+
+## Part 8: Self-contained release packaging
+
+Status: **Awaiting review**
+
+Implemented on 2026-08-08:
+
+- Assigned the release assembly and executable name `Ironmon Tracker` and the
+  first tracker version `0.1.0`.
+- Added a reproducible Windows x64, unpackaged, self-contained publish script.
+- Limited published MAUI and WinUI localization resources to English because
+  the tracker does not currently provide a localized interface.
+- Excluded generated assembly XML documentation and PDB files from the runtime
+  package while retaining the required dependency and runtime configuration
+  files.
+- Added a deterministic combined Ironmon release archive with a SHA-256
+  checksum. Its copy-ready layout contains `Data/Scripts/997_Ironmon` and
+  `Ironmon Tracker/Ironmon Tracker.exe` with supporting runtime files.
+- Excluded the 182 MB generated publish directory and generated tracker release
+  archives from Git while retaining their reproducible build scripts.
+- Added startup detection for the Evergreen WebView2 Runtime. A missing runtime
+  now shows a native recovery page linking to Microsoft's download page instead
+  of attempting to initialize a blank embedded browser.
+- Updated installation and developer documentation for the double-click release
+  workflow.
+
+### Validation
+
+- All **33 tests** pass in Release configuration.
+- The self-contained tracker publish contains **420 files** and is **178.40 MB**.
+  Its only framework culture directory is `en-us`.
+- The combined release archive is **68.59 MB** and contains **447 entries**,
+  including **25 Ruby scripts**, the tracker executable, and no XML
+  documentation or PDB files.
+- The generated archive matches its published SHA-256 checksum:
+  `ff7bbad6735097a6524f6f69fcd3ea73c9495f5f3ba5ae235f26c2c3ae121534`.
+- The published tracker executable passed a startup smoke test and its exact
+  test process was stopped afterward.

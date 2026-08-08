@@ -55,3 +55,10 @@ Complete diagnostic reports can be copied or exported to
 Building the shell requires the Windows-only `maui-windows` workload during
 development. End users will receive a self-contained executable in the release
 packaging part and will not need the SDK or workload.
+
+## Publish the release tracker
+
+Run `tools/Publish-Tracker.ps1` from the repository root to create the
+self-contained `win-x64` application under `dist/Ironmon Tracker`. Run
+`tools/Build-TrackerRelease.ps1` to rebuild the Ruby distribution, publish the
+tracker, and create the combined deterministic release ZIP and checksum.

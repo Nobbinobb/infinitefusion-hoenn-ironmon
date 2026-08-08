@@ -32,7 +32,8 @@ public partial class App : Application
     {
         double width = GetWindowDimension(_windowWidthPreferenceKey, _defaultWindowWidth, 360);
         double height = GetWindowDimension(_windowHeightPreferenceKey, _defaultWindowHeight, 520);
-        Window window = new(new MainPage())
+        Page page = WebView2Runtime.IsAvailable() ? new MainPage() : new WebView2MissingPage();
+        Window window = new(page)
         {
             Title = "Ironmon Tracker",
             Width = width,

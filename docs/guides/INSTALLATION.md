@@ -8,12 +8,15 @@ official game's Git repository.
 
 1. Fully close Pokemon Infinite Fusion 2.
 2. Keep a backup of saves you care about.
-3. Extract `Ironmon-v0.3.3-abilities.zip` into the game's root directory—the
+3. Extract `Ironmon-v0.3.3-tracker.zip` into the game's root directory—the
    directory containing `InfiniteFusion2.exe`.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
-   directory. The package installs only Ruby files under
-   `Data/Scripts/997_Ironmon`.
-5. Start the game and select Ironmon when beginning a supported Hoenn run.
+   directory. The package installs Ruby files under
+   `Data/Scripts/997_Ironmon` and the self-contained tracker under
+   `Ironmon Tracker`.
+5. Double-click `Ironmon Tracker/Ironmon Tracker.exe`. No .NET installation or
+   terminal command is required. Starting the game first also works.
+6. Start the game and select Ironmon when beginning a supported Hoenn run.
 
 Existing non-Ironmon saves retain their normal behavior. Ironmon 0.3.1 and
 0.3.2 runs migrate automatically to the schema-3 fusion-slot rules without
@@ -22,9 +25,10 @@ schema-1 ability generator must start a fresh run with F7.
 
 ## Build the package from this repository
 
-Run `tools/Build-Milestone3.ps1` from PowerShell. It synchronizes `src` into
-`dist` and the adjacent local game installation, then creates the release ZIP
-and SHA-256 checksum in `release`.
+Run `tools/Build-TrackerRelease.ps1` from PowerShell. It synchronizes `src` into
+`dist` and the adjacent local game installation, publishes the self-contained
+Windows x64 tracker, then creates the release ZIP and SHA-256 checksum in
+`release`.
 
 ## Diagnostic log
 
@@ -36,5 +40,6 @@ A log write failure never prevents the game from running.
 
 ## Remove Ironmon
 
-Fully close the game, then remove `Data/Scripts/997_Ironmon`. This does not
-remove or modify save files.
+Fully close the game and tracker, then remove `Data/Scripts/997_Ironmon` and
+`Ironmon Tracker`. This does not remove or modify save files or tracker data in
+the user's local application-data directory.
