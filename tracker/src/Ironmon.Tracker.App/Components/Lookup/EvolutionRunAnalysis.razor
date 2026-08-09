@@ -1,0 +1,58 @@
+<details class="run-analysis evolution-run-analysis">
+    <summary>
+        <span>@Text["Lookup.EvolutionAnalysis.Title"]</span>
+        <small>@Text["Lookup.Analysis.CompletedRunOnly"]</small>
+    </summary>
+
+    @if (Metrics is null)
+    {
+        <div class="lookup-empty run-analysis-empty">
+            <strong>@Text["Lookup.EvolutionAnalysis.Unavailable"]</strong>
+            <p>@Text["Lookup.EvolutionAnalysis.UnavailableDescription"]</p>
+        </div>
+    }
+    else
+    {
+        <div class="analysis-summary-grid">
+            <article><strong>@Metrics.Events.Count</strong><span>@Text["Lookup.EvolutionAnalysis.Offers"]</span></article>
+            <article><strong>@CountOutcome(EvolutionMetricIdentifiers.CompletedOutcome)</strong><span>@Text["Lookup.EvolutionAnalysis.Completed"]</span></article>
+            <article><strong>@CountOutcome(EvolutionMetricIdentifiers.CancelledOutcome)</strong><span>@Text["Lookup.EvolutionAnalysis.Cancelled"]</span></article>
+            <article><strong>@Metrics.Events.Count(metric => metric.SourceKind == "fusion")</strong><span>@Text["Lookup.EvolutionAnalysis.Fusion"]</span></article>
+            <article><strong>@Metrics.Events.Count(metric => metric.DuplicateTargetSpeciesId is not null)</strong><span>@Text["Lookup.EvolutionAnalysis.Duplicates"]</span></article>
+        </div>
+
+        <section class="analysis-section">
+            <h3>@Text["Lookup.EvolutionAnalysis.Observed"]</h3>
+            @if (Metrics.Events.Count == 0)
+            {
+                <p class="analysis-none">@Text["Lookup.EvolutionAnalysis.NoneRecorded"]</p>
+            }
+            else
+            {
+                <div class="analysis-table-wrap">
+                    <table class="analysis-table evolution-analysis-table">
+                        <thead>
+                            <tr>
+                                <th>@Text["Lookup.EvolutionAnalysis.Evolution"]</th>
+                                <th>@Text["Lookup.EvolutionAnalysis.Trigger"]</th>
+                                <th>@Text["Lookup.EvolutionAnalysis.Bst"]</th>
+                                <th>@Text["Lookup.EvolutionAnalysis.Outcome"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (EvolutionMetricPayload metric in Metrics.Events)
+                            {
+                                <tr>
+                                    <td><strong>@metric.SourceSpeciesName &rarr; @metric.TargetSpeciesName</strong><small>@FormatContext(metric)</small></td>
+                                    <td>@FormatTrigger(metric)</td>
+                                    <td>@metric.SourceBst &rarr; @metric.TargetBst</td>
+                                    <td><span class="analysis-tag">@FormatOutcome(metric.Outcome)</span>@if (metric.DuplicateTargetSpeciesName is not null) { <small>@Text["Lookup.EvolutionAnalysis.DuplicateTarget", metric.DuplicateTargetSpeciesName]</small> }</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    }
+</details>

@@ -31,6 +31,7 @@
         {
             <PokemonLookupExplorer @key="selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
             <MoveAccessRunAnalysis @key="@($"metrics-{selectedRecipe.RunId}")" Metrics="@selectedRecipe.MoveAccessMetrics" />
+            <EvolutionRunAnalysis @key="@($"evolution-metrics-{selectedRecipe.RunId}")" Metrics="@selectedRecipe.EvolutionMetrics" />
         }
     }
 </section>

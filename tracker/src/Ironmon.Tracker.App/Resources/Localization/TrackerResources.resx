@@ -393,6 +393,12 @@
   <data name="Debug.Inspector.Moves" xml:space="preserve">
     <value>Moves</value>
   </data>
+  <data name="Debug.Inspector.Evolutions" xml:space="preserve">
+    <value>Evolutions</value>
+  </data>
+  <data name="Debug.Inspector.NoGeneratedEvolutionTargets" xml:space="preserve">
+    <value>This Pokemon has no generated evolution targets.</value>
+  </data>
   <data name="Debug.Inspector.NoPokemonInspected" xml:space="preserve">
     <value>No Pokemon inspected</value>
   </data>
@@ -714,6 +720,12 @@
   <data name="Lookup.Card.CurrentEvolutionsHeading" xml:space="preserve">
     <value>CURRENT EVOLUTIONS</value>
   </data>
+  <data name="Lookup.Card.BodyEvolutionTargets" xml:space="preserve">
+    <value>Body evolution targets</value>
+  </data>
+  <data name="Lookup.Card.BodyEvolutionsHeading" xml:space="preserve">
+    <value>BODY EVOLUTIONS</value>
+  </data>
   <data name="Lookup.Card.DisplayedComponentsHeading" xml:space="preserve">
     <value>DISPLAYED COMPONENTS</value>
   </data>
@@ -726,6 +738,99 @@
   <data name="Lookup.Card.EvolutionDestinations" xml:space="preserve">
     <value>Evolution destinations</value>
   </data>
+  <data name="Lookup.Card.EvolutionTargets" xml:space="preserve">
+    <value>Evolution targets</value>
+  </data>
+  <data name="Lookup.Card.EvolutionCandidates" xml:space="preserve">
+    <value>Evolution candidates</value>
+  </data>
+  <data name="Lookup.Candidates.Filter" xml:space="preserve">
+    <value>Filter candidates by name</value>
+  </data>
+  <data name="Lookup.Candidates.FilterButton" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="Lookup.Candidates.Loading" xml:space="preserve">
+    <value>Reading valid evolution candidates...</value>
+  </data>
+  <data name="Lookup.Candidates.NoMatches" xml:space="preserve">
+    <value>No valid candidates match this filter.</value>
+  </data>
+  <data name="Lookup.Candidates.Pages" xml:space="preserve">
+    <value>Evolution candidate pages</value>
+  </data>
+  <data name="Lookup.Candidates.Total" xml:space="preserve">
+    <value>{0} valid targets</value>
+  </data>
+  <data name="Lookup.Graph.EvolutionGraph" xml:space="preserve">
+    <value>Generated evolution graph</value>
+  </data>
+  <data name="Lookup.Graph.EvolutionGraphHeading" xml:space="preserve">
+    <value>EVOLUTION GRAPH</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Bst" xml:space="preserve">
+    <value>BST</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Completed" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Context" xml:space="preserve">
+    <value>Level {0} · {1}</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Duplicates" xml:space="preserve">
+    <value>Duplicates</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.DuplicateTarget" xml:space="preserve">
+    <value>Duplicate: {0}</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Evolution" xml:space="preserve">
+    <value>Evolution</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Forced" xml:space="preserve">
+    <value>Forced</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Fusion" xml:space="preserve">
+    <value>Fusion</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.FusionContext" xml:space="preserve">
+    <value>Level {0} · Fusion {1}</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.MethodParameter" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.NoneRecorded" xml:space="preserve">
+    <value>No generated evolutions were offered during this run.</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Observed" xml:space="preserve">
+    <value>Observed evolutions</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Offered" xml:space="preserve">
+    <value>Offered</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Offers" xml:space="preserve">
+    <value>Offers</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Outcome" xml:space="preserve">
+    <value>Outcome</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Title" xml:space="preserve">
+    <value>EVOLUTION ANALYSIS</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Trigger" xml:space="preserve">
+    <value>Trigger</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.Unavailable" xml:space="preserve">
+    <value>Evolution metrics unavailable</value>
+  </data>
+  <data name="Lookup.EvolutionAnalysis.UnavailableDescription" xml:space="preserve">
+    <value>This run predates generated-evolution metrics.</value>
+  </data>
+  <data name="Lookup.Card.EvolutionTargetsHeading" xml:space="preserve">
+    <value>EVOLUTION TARGETS</value>
+  </data>
   <data name="Lookup.Card.FusionMaterialsHeading" xml:space="preserve">
     <value>FUSION MATERIALS</value>
   </data>
@@ -734,6 +839,12 @@
   </data>
   <data name="Lookup.Card.GeneratedPokemonInformation" xml:space="preserve">
     <value>Generated Pokemon information</value>
+  </data>
+  <data name="Lookup.Card.HeadEvolutionTargets" xml:space="preserve">
+    <value>Head evolution targets</value>
+  </data>
+  <data name="Lookup.Card.HeadEvolutionsHeading" xml:space="preserve">
+    <value>HEAD EVOLUTIONS</value>
   </data>
   <data name="Lookup.Card.IronmonFusionMaterials" xml:space="preserve">
     <value>Ironmon fusion materials</value>

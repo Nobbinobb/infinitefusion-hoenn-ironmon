@@ -18,7 +18,7 @@
             @foreach ((string Name, int Original, int Generated, string? Dominance) stat in GetBaseStats())
             {
                 <div class="base-stat-comparison">
-                    <span><strong>@stat.Name</strong>@if (stat.Dominance is not null) { <small>@stat.Dominance</small> }</span>
+                    <span>@if (stat.Dominance is not null) { <small title="@stat.Dominance">@stat.Dominance[0]</small> }<strong>@stat.Name</strong></span>
                     <span>@stat.Original</span>
                     <span>@stat.Generated</span>
                     <span class="@GetDeltaClass(stat.Original, stat.Generated)">@FormatDelta(stat.Original, stat.Generated)</span>

@@ -83,6 +83,26 @@ public sealed class PokemonLookupSnapshot
     public IReadOnlyList<PokemonRelationSnapshot> PreviousEvolutions { get; init; } = [];
 
     /// <summary>
+    /// Gets or initializes generated normal Pokemon which evolve directly into this Pokemon.
+    /// </summary>
+    public IReadOnlyList<EvolutionTargetSnapshot> EvolutionPredecessors { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes generated destinations for a normal Pokemon.
+    /// </summary>
+    public IReadOnlyList<EvolutionTargetSnapshot> EvolutionTargets { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes generated destinations activated by the fusion head.
+    /// </summary>
+    public IReadOnlyList<EvolutionTargetSnapshot> HeadEvolutionTargets { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes generated destinations activated by the fusion body.
+    /// </summary>
+    public IReadOnlyList<EvolutionTargetSnapshot> BodyEvolutionTargets { get; init; } = [];
+
+    /// <summary>
     /// Gets or initializes authored wild slots which generate this species.
     /// </summary>
     public IReadOnlyList<WildPokemonOccurrenceSnapshot> WildOccurrences { get; init; } = [];

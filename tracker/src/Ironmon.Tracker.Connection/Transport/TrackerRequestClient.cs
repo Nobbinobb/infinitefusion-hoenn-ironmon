@@ -10,6 +10,7 @@ public sealed class TrackerRequestClient
     private readonly ConcurrentDictionary<string, FusionPreviewResponsePayload> _fusionPreviewCache = new();
     private readonly ConcurrentDictionary<string, PokemonLookupSnapshot> _pokemonLookupCache = new();
     private readonly ConcurrentDictionary<string, PokemonSearchResponsePayload> _pokemonSearchCache = new();
+    private readonly ConcurrentDictionary<string, EvolutionCandidateSearchResponsePayload> _evolutionCandidateCache = new();
     private readonly TrackerConnectionOptions _options;
     private readonly TrackerRequestSession _session;
     private readonly TrackerConnectionState _state;
@@ -81,6 +82,32 @@ public sealed class TrackerRequestClient
         PokemonLookupRequestPayload payload = new() { SpeciesId = speciesId, Level = TrackerProtocol.CompatibilityLookupLevel, Recipe = recipe };
         PokemonLookupSnapshot response = await _session.SendAsync<PokemonLookupRequestPayload, PokemonLookupSnapshot>(TrackerCommands.PokemonLookup, payload, recipe.RunId, cancellationToken);
         _pokemonLookupCache[cacheKey] = response;
+        return response;
+    }
+
+    /// <summary>
+    /// Requests one filtered page of valid evolution candidates for a completed run.
+    /// </summary>
+    /// <param name="recipe">The completed-run reconstruction recipe.</param>
+    /// <param name="speciesId">The source species identifier.</param>
+    /// <param name="side">The normal or component-specific candidate list.</param>
+    /// <param name="query">The optional candidate name filter.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested candidate page.</returns>
+    public async Task<EvolutionCandidateSearchResponsePayload> SearchEvolutionCandidatesAsync(CompletedRunRecipePayload recipe, string speciesId, EvolutionCandidateSide side, string query, int offset = 0, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        string normalizedQuery = query.Trim();
+        string cacheKey = $"{recipe.RunId}|{speciesId.ToUpperInvariant()}|{side}|{offset}|{normalizedQuery.ToUpperInvariant()}";
+        if (_evolutionCandidateCache.TryGetValue(cacheKey, out EvolutionCandidateSearchResponsePayload? cached))
+            return cached;
+
+        EvolutionCandidateSearchRequestPayload request = new() { SpeciesId = speciesId, Side = side, Query = normalizedQuery, Offset = offset, Recipe = recipe };
+        EvolutionCandidateSearchResponsePayload response = await _session.SendAsync<EvolutionCandidateSearchRequestPayload, EvolutionCandidateSearchResponsePayload>(TrackerCommands.EvolutionCandidateSearch, request, recipe.RunId, cancellationToken);
+        _evolutionCandidateCache[cacheKey] = response;
         return response;
     }
 
@@ -167,6 +194,24 @@ public sealed class TrackerRequestClient
     }
 
     /// <summary>
+    /// Requests one filtered page of valid evolution candidates from the active debug run.
+    /// </summary>
+    /// <param name="speciesId">The source species identifier.</param>
+    /// <param name="side">The normal or component-specific candidate list.</param>
+    /// <param name="query">The optional candidate name filter.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested candidate page.</returns>
+    public Task<EvolutionCandidateSearchResponsePayload> SearchDebugEvolutionCandidatesAsync(string speciesId, EvolutionCandidateSide side, string query, int offset = 0, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        EnsureDebugAuthorized();
+        DebugEvolutionCandidateSearchRequestPayload request = new() { SpeciesId = speciesId, Side = side, Query = query.Trim(), Offset = offset };
+        return _session.SendAsync<DebugEvolutionCandidateSearchRequestPayload, EvolutionCandidateSearchResponsePayload>(TrackerCommands.DebugEvolutionCandidateSearch, request, GetConnectedRunId(), cancellationToken);
+    }
+
+    /// <summary>
     /// Requests both generated fusion orientations for the active debug run.
     /// </summary>
     /// <param name="firstSpeciesId">The first normal fusion material.</param>
@@ -191,6 +236,7 @@ public sealed class TrackerRequestClient
         _fusionPreviewCache.Clear();
         _pokemonLookupCache.Clear();
         _pokemonSearchCache.Clear();
+        _evolutionCandidateCache.Clear();
     }
 
     /// <summary>

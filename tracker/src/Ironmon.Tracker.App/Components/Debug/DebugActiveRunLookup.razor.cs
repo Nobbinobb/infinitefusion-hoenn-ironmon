@@ -12,4 +12,10 @@ public partial class DebugActiveRunLookup
     /// </summary>
     [Parameter]
     public string? GameRoot { get; set; }
+
+    /// <summary>
+    /// Gets or sets the species opened when navigation originates in the Pokemon inspector.
+    /// </summary>
+    [Parameter]
+    public string? InitialSpeciesId { get; set; }
 }

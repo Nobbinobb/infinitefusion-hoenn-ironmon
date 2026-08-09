@@ -40,6 +40,19 @@ module Ironmon
       "ability_generator_version" => $PokemonGlobal.ironmon_ability_generator_version,
       "base_stat_generator_version" => $PokemonGlobal.ironmon_base_stat_generator_version,
       "base_stat_source_fingerprint" => $PokemonGlobal.ironmon_base_stat_source_fingerprint,
+      "evolution_generator_version" => $PokemonGlobal.ironmon_evolution_generator_version,
+      "evolution_rules_version" => $PokemonGlobal.ironmon_evolution_rules_version,
+      "evolution_source_fingerprint" => $PokemonGlobal.ironmon_evolution_source_fingerprint,
+      "evolution_taxonomy_fingerprint" => $PokemonGlobal.ironmon_evolution_taxonomy_fingerprint,
+      "evolution_method_fingerprint" => $PokemonGlobal.ironmon_evolution_method_fingerprint,
+      "evolution_target_fingerprint" => $PokemonGlobal.ironmon_evolution_target_fingerprint,
+      "evolution_base_stat_generator_version" => $PokemonGlobal.ironmon_evolution_base_stat_generator_version,
+      "evolution_base_stat_source_fingerprint" => $PokemonGlobal.ironmon_evolution_base_stat_source_fingerprint,
+      "fusion_evolution_generator_version" => $PokemonGlobal.ironmon_evolution_fusion_generator_version,
+      "fusion_evolution_rules_version" => $PokemonGlobal.ironmon_evolution_fusion_rules_version,
+      "fusion_evolution_target_pool_version" => $PokemonGlobal.ironmon_evolution_fusion_target_pool_version,
+      "fusion_evolution_target_pool_size" => $PokemonGlobal.ironmon_evolution_fusion_target_pool_size,
+      "fusion_evolution_target_pool_fingerprint" => $PokemonGlobal.ironmon_evolution_fusion_target_pool_fingerprint,
       "move_access_generator_version" => $PokemonGlobal.ironmon_move_access_generator_version,
       "move_pool_fingerprint" => $PokemonGlobal.ironmon_move_pool_fingerprint,
       "move_contextual_restriction_fingerprint" => $PokemonGlobal.ironmon_move_contextual_restriction_fingerprint,
@@ -57,7 +70,8 @@ module Ironmon
       "species_pool_fingerprint" => tracker_species_pool_fingerprint,
       "ability_pool_fingerprint" => $PokemonGlobal.ironmon_ability_pool_fingerprint,
       "fusion_pool_fingerprint" => $PokemonGlobal.ironmon_custom_fusion_pool_fingerprint,
-      "move_access_metrics" => move_access_metrics_snapshot
+      "move_access_metrics" => move_access_metrics_snapshot,
+      "evolution_metrics" => evolution_metrics_snapshot
     }
   end
 
@@ -92,6 +106,56 @@ module Ironmon
     return tracker_pokemon_lookup_for_recipe(payload, recipe)
   end
 
+  def self.tracker_evolution_candidate_search(payload, envelope_run_id)
+    payload ||= {}
+    recipe = tracker_validate_completed_recipe(payload["recipe"], envelope_run_id)
+    return tracker_evolution_candidate_search_for_recipe(payload, recipe)
+  end
+
+  def self.tracker_evolution_candidate_search_for_recipe(payload, recipe)
+    species_id = payload["species_id"].to_s
+    species_key = species_id.split(":", 2)[0]
+    species = GameData::Species.try_get(species_key.to_sym)
+    if !species || !tracker_lookup_species_available?(species)
+      raise TrackerLookupError.new(
+        "pokemon_not_found", "The selected Pokemon is not available in this run."
+      )
+    end
+    side = payload["side"].to_s.downcase.to_sym
+    if ![:normal, :head, :body].include?(side)
+      raise TrackerLookupError.new(
+        "invalid_evolution_side", "Select a normal, Head, or Body target list."
+      )
+    end
+    offset = payload["offset"].to_i
+    limit = payload["limit"].to_i
+    limit = 50 if limit == 0
+    if offset < 0 || limit < 1 || limit > TRACKER_SEARCH_LIMIT
+      raise TrackerLookupError.new(
+        "invalid_page", "Candidate pages must contain between 1 and 50 targets."
+      )
+    end
+    query = payload["query"].to_s.strip.downcase
+    targets = tracker_evolution_candidates_for(species, recipe, side)
+    matches = targets.map do |target|
+      name = tracker_search_species_name(target[:target_id])
+      next if !name
+      searchable = "#{name} #{target[:target]}".downcase
+      next if !query.empty? && !searchable.include?(query)
+      [target, name]
+    end.compact
+    matches.sort_by! do |entry|
+      [entry[1].downcase, entry[0][:target]]
+    end
+    page = matches.slice(offset, limit) || []
+    return {
+      "matches" => page.map do |entry|
+        tracker_evolution_candidate_snapshot(entry[0], entry[1])
+      end,
+      "total" => matches.length
+    }
+  end
+
   def self.tracker_pokemon_lookup_for_recipe(payload, recipe)
     species_id = payload["species_id"].to_s
     species_key = species_id.split(":", 2)[0]
@@ -108,6 +172,9 @@ module Ironmon
     fusion_mapper = tracker_post_run_fusion_mapper(recipe)
     original_stats = original_base_stats_for(species)
     generated_stats = tracker_lookup_generated_base_stats(species, recipe)
+    evolution_targets = tracker_lookup_evolution_targets(species, recipe)
+    evolution_predecessors = tracker_lookup_evolution_predecessors(species, recipe)
+    generated_evolutions = tracker_evolution_recipe?(recipe)
     result = {
       "species_id" => "#{species.id}:0",
       "species_name" => species.name,
@@ -121,8 +188,12 @@ module Ironmon
       "abilities" => tracker_lookup_abilities(species, recipe),
       "learnset" => move_access["learnset"],
       "move_access" => move_access,
-      "evolutions" => tracker_lookup_evolutions(species),
-      "previous_evolutions" => tracker_lookup_previous_evolutions(species),
+      "evolutions" => generated_evolutions ? [] : tracker_lookup_evolutions(species),
+      "previous_evolutions" => generated_evolutions ? [] : tracker_lookup_previous_evolutions(species),
+      "evolution_predecessors" => evolution_predecessors,
+      "evolution_targets" => evolution_targets[:normal],
+      "head_evolution_targets" => evolution_targets[:head],
+      "body_evolution_targets" => evolution_targets[:body],
       "wild_occurrences" => tracker_lookup_wild_occurrences(species, recipe),
       "trainer_occurrences" => tracker_lookup_trainer_occurrences(species, recipe),
       "fusion_bases" => tracker_lookup_fusion_bases(species),
@@ -187,6 +258,7 @@ module Ironmon
         raise TrackerLookupError.new("incompatible_base_stats", "The base-stat source data no longer matches this run.")
       end
     end
+    tracker_validate_evolution_recipe(recipe)
     move_version = recipe["move_access_generator_version"]
     move_metadata = [
       recipe["move_pool_fingerprint"],
@@ -258,19 +330,8 @@ module Ironmon
     return sprintf("%016x", value)
   end
 
-  def self.tracker_lookup_species_pool(recipe)
-    configuration_value = Configuration.from(recipe["configuration"])
-    policies = [configuration_value.wild_policy, configuration_value.trainer_policy]
-    pool = []
-    includes_normal = policies.any? do |policy|
-      policy != Configuration::POLICY_CUSTOM_FUSIONS_ONLY
-    end
-    includes_fusions = policies.any? do |policy|
-      policy != Configuration::POLICY_NORMAL_ONLY
-    end
-    pool.concat(normal_species_pool) if includes_normal
-    pool.concat(custom_fusion_pool) if includes_fusions
-    return pool.uniq
+  def self.tracker_lookup_species_pool(_recipe)
+    return (normal_species_pool + custom_fusion_pool).uniq
   end
 
   def self.tracker_search_matches(recipe, normalized_query, normal_only)
@@ -309,15 +370,7 @@ module Ironmon
 
   def self.tracker_search_index_key(recipe, normal_only)
     return "normal" if normal_only
-    configuration_value = Configuration.from(recipe["configuration"])
-    policies = [configuration_value.wild_policy, configuration_value.trainer_policy]
-    includes_normal = policies.any? do |policy|
-      policy != Configuration::POLICY_CUSTOM_FUSIONS_ONLY
-    end
-    includes_fusions = policies.any? do |policy|
-      policy != Configuration::POLICY_NORMAL_ONLY
-    end
-    return "#{includes_normal}|#{includes_fusions}"
+    return "all"
   end
 
   def self.tracker_search_species_name(species_id)
@@ -567,6 +620,222 @@ module Ironmon
       "tutor_id" => tutor_id,
       "tutor_name" => tutor_name
     }
+  end
+
+  def self.tracker_evolution_recipe?(recipe)
+    return recipe["evolution_generator_version"] ==
+      NormalEvolutionGenerator::SCHEMA_VERSION
+  end
+
+  def self.tracker_validate_evolution_recipe(recipe)
+    metadata = [
+      recipe["evolution_generator_version"],
+      recipe["evolution_rules_version"],
+      recipe["evolution_source_fingerprint"],
+      recipe["evolution_taxonomy_fingerprint"],
+      recipe["evolution_method_fingerprint"],
+      recipe["evolution_target_fingerprint"],
+      recipe["evolution_base_stat_generator_version"],
+      recipe["evolution_base_stat_source_fingerprint"],
+      recipe["fusion_evolution_generator_version"],
+      recipe["fusion_evolution_rules_version"],
+      recipe["fusion_evolution_target_pool_version"],
+      recipe["fusion_evolution_target_pool_size"],
+      recipe["fusion_evolution_target_pool_fingerprint"]
+    ]
+    return true if metadata.compact.empty?
+    if legacy_evolution_metadata_version(*metadata)
+      tracker_upgrade_evolution_recipe(recipe)
+      return true
+    end
+    catalog = evolution_catalog
+    fusion_pool = custom_fusion_pool_info
+    expected = [
+      NormalEvolutionGenerator::SCHEMA_VERSION,
+      NormalEvolutionGenerator::RULES_VERSION,
+      catalog.source_fingerprint,
+      catalog.taxonomy_fingerprint,
+      catalog.method_fingerprint,
+      catalog.normal_target_fingerprint,
+      BaseStatGenerator::SCHEMA_VERSION,
+      base_stat_source_fingerprint,
+      FusionEvolutionGenerator::SCHEMA_VERSION,
+      FusionEvolutionGenerator::RULES_VERSION,
+      fusion_pool[:schema_version],
+      fusion_pool[:size],
+      fusion_pool[:fingerprint]
+    ]
+    if metadata != expected
+      raise TrackerLookupError.new(
+        "incompatible_evolutions",
+        "The evolution source data no longer matches this run."
+      )
+    end
+    return true
+  end
+
+  def self.tracker_upgrade_evolution_recipe(recipe)
+    catalog = evolution_catalog
+    fusion_pool = custom_fusion_pool_info
+    recipe["evolution_generator_version"] =
+      NormalEvolutionGenerator::SCHEMA_VERSION
+    recipe["evolution_rules_version"] = NormalEvolutionGenerator::RULES_VERSION
+    recipe["evolution_source_fingerprint"] = catalog.source_fingerprint
+    recipe["evolution_taxonomy_fingerprint"] = catalog.taxonomy_fingerprint
+    recipe["evolution_method_fingerprint"] = catalog.method_fingerprint
+    recipe["evolution_target_fingerprint"] = catalog.normal_target_fingerprint
+    recipe["evolution_base_stat_generator_version"] =
+      BaseStatGenerator::SCHEMA_VERSION
+    recipe["evolution_base_stat_source_fingerprint"] =
+      base_stat_source_fingerprint
+    recipe["fusion_evolution_generator_version"] =
+      FusionEvolutionGenerator::SCHEMA_VERSION
+    recipe["fusion_evolution_rules_version"] =
+      FusionEvolutionGenerator::RULES_VERSION
+    recipe["fusion_evolution_target_pool_version"] = fusion_pool[:schema_version]
+    recipe["fusion_evolution_target_pool_size"] = fusion_pool[:size]
+    recipe["fusion_evolution_target_pool_fingerprint"] =
+      fusion_pool[:fingerprint]
+  end
+
+  def self.tracker_lookup_evolution_targets(species, recipe)
+    empty = { :normal => [], :head => [], :body => [] }
+    return empty if !tracker_evolution_recipe?(recipe)
+    branches = if normal_evolution_runtime_species?(species)
+                 tracker_normal_evolution_generator(recipe).branches_for(species)
+               elsif fusion_evolution_runtime_species?(species)
+                 tracker_fusion_evolution_generator(recipe).branches_for(species)
+               else
+                 []
+               end
+    result = { :normal => [], :head => [], :body => [] }
+    seen = { :normal => {}, :head => {}, :body => {} }
+    branches.each do |branch|
+      group = branch[:component_side] || :normal
+      next if seen[group][branch[:target]]
+      seen[group][branch[:target]] = true
+      result[group] << tracker_evolution_target_snapshot(branch)
+    end
+    return result
+  end
+
+  def self.tracker_lookup_evolution_predecessors(species, recipe)
+    return [] if !normal_evolution_runtime_species?(species)
+    return [] if !tracker_evolution_recipe?(recipe)
+    generator = tracker_normal_evolution_generator(recipe)
+    predecessors = []
+    generator.graph.each_value do |branches|
+      branches.each do |branch|
+        next if branch[:target] != species.id.to_s
+        predecessors << tracker_evolution_predecessor_snapshot(branch)
+      end
+    end
+    return predecessors.sort_by { |entry| entry["species_id"] }
+  end
+
+  def self.tracker_evolution_predecessor_snapshot(branch)
+    source = GameData::Species.get(branch[:source].to_sym)
+    return {
+      "species_id" => "#{source.id}:0",
+      "species_name" => source.name,
+      "sprite_path" => tracker_lookup_sprite_path(source),
+      "base_stat_total" => branch[:source_bst],
+      "effective_methods" => branch[:effective_methods].map do |method|
+        tracker_evolution_snapshot(
+          method[:method], method[:parameter]
+        )["requirement"]
+      end
+    }
+  end
+
+  def self.tracker_evolution_target_snapshot(branch)
+    target = GameData::Species.get(branch[:target_id])
+    return {
+      "species_id" => "#{target.id}:0",
+      "species_name" => target.name,
+      "sprite_path" => tracker_lookup_sprite_path(target),
+      "base_stat_total" => branch[:target_bst],
+      "effective_methods" => branch[:effective_methods].map do |method|
+        tracker_evolution_snapshot(
+          method[:method], method[:parameter]
+        )["requirement"]
+      end
+    }
+  end
+
+  def self.tracker_evolution_candidates_for(species, recipe, side)
+    if normal_evolution_runtime_species?(species)
+      return [] if side != :normal
+      return tracker_normal_evolution_generator(recipe).candidate_targets_for(
+        species
+      )
+    end
+    return [] if !fusion_evolution_runtime_species?(species) || side == :normal
+    return tracker_fusion_evolution_generator(recipe).candidate_targets_for(
+      species
+    )[side]
+  end
+
+  def self.tracker_evolution_candidate_snapshot(target, name)
+    species = GameData::Species.get(target[:target_id])
+    return {
+      "species_id" => "#{species.id}:0",
+      "species_name" => name,
+      "sprite_path" => tracker_lookup_sprite_path(species),
+      "base_stat_total" => target[:target_bst]
+    }
+  end
+
+  def self.tracker_normal_evolution_generator(recipe)
+    @tracker_evolution_generators ||= {}
+    key = [
+      recipe["seed"], recipe["evolution_source_fingerprint"],
+      recipe["evolution_taxonomy_fingerprint"],
+      recipe["evolution_method_fingerprint"],
+      recipe["evolution_target_fingerprint"],
+      recipe["evolution_base_stat_generator_version"],
+      recipe["evolution_base_stat_source_fingerprint"]
+    ]
+    cached = @tracker_evolution_generators[key]
+    return cached if cached
+    generator = evolution_generator_for(
+      recipe["seed"], recipe["evolution_source_fingerprint"],
+      recipe["evolution_taxonomy_fingerprint"],
+      recipe["evolution_method_fingerprint"],
+      recipe["evolution_target_fingerprint"],
+      recipe["evolution_base_stat_generator_version"],
+      recipe["evolution_base_stat_source_fingerprint"]
+    )
+    tracker_store_bounded(@tracker_evolution_generators, key, generator, 16)
+    return generator
+  end
+
+  def self.tracker_fusion_evolution_generator(recipe)
+    @tracker_fusion_evolution_generators ||= {}
+    key = [
+      recipe["seed"], recipe["evolution_source_fingerprint"],
+      recipe["evolution_taxonomy_fingerprint"],
+      recipe["evolution_method_fingerprint"],
+      recipe["fusion_evolution_generator_version"],
+      recipe["fusion_evolution_rules_version"],
+      recipe["fusion_evolution_target_pool_version"],
+      recipe["fusion_evolution_target_pool_size"],
+      recipe["fusion_evolution_target_pool_fingerprint"],
+      recipe["evolution_base_stat_source_fingerprint"]
+    ]
+    cached = @tracker_fusion_evolution_generators[key]
+    return cached if cached
+    generator = FusionEvolutionGenerator.new(
+      recipe["seed"], evolution_catalog, custom_fusion_pool,
+      custom_fusion_pool_info,
+      base_stat_generator_for(
+        recipe["seed"], recipe["evolution_base_stat_source_fingerprint"]
+      )
+    )
+    tracker_store_bounded(
+      @tracker_fusion_evolution_generators, key, generator, 16
+    )
+    return generator
   end
 
   def self.tracker_lookup_evolutions(species)
@@ -1002,6 +1271,8 @@ module Ironmon
     @tracker_lookup_cache = nil
     @tracker_fusion_mappers = nil
     @tracker_sprite_paths = nil
+    @tracker_evolution_generators = nil
+    @tracker_fusion_evolution_generators = nil
     @tracker_trainer_location_index = nil
   end
 end

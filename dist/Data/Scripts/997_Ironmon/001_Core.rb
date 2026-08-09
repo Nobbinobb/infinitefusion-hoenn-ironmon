@@ -3,7 +3,7 @@
 #===============================================================================
 
 module Ironmon
-  VERSION = "0.5.0"
+  VERSION = "0.6.0"
   SUPPORTED_GAME_VERSIONS = ["6.8.0"].freeze
   RESET_KEY = Input::F7
   FULL_RANDOM_BST_RANGE = 999
@@ -65,6 +65,19 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_ability_pool_fingerprint
   attr_accessor :ironmon_base_stat_generator_version
   attr_accessor :ironmon_base_stat_source_fingerprint
+  attr_accessor :ironmon_evolution_generator_version
+  attr_accessor :ironmon_evolution_rules_version
+  attr_accessor :ironmon_evolution_source_fingerprint
+  attr_accessor :ironmon_evolution_taxonomy_fingerprint
+  attr_accessor :ironmon_evolution_method_fingerprint
+  attr_accessor :ironmon_evolution_target_fingerprint
+  attr_accessor :ironmon_evolution_base_stat_generator_version
+  attr_accessor :ironmon_evolution_base_stat_source_fingerprint
+  attr_accessor :ironmon_evolution_fusion_generator_version
+  attr_accessor :ironmon_evolution_fusion_rules_version
+  attr_accessor :ironmon_evolution_fusion_target_pool_version
+  attr_accessor :ironmon_evolution_fusion_target_pool_size
+  attr_accessor :ironmon_evolution_fusion_target_pool_fingerprint
   attr_accessor :ironmon_move_access_generator_version
   attr_accessor :ironmon_move_pool_size
   attr_accessor :ironmon_move_pool_fingerprint
@@ -92,6 +105,7 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_tracker_sequence
   attr_accessor :ironmon_run_result
   attr_accessor :ironmon_move_access_metrics
+  attr_accessor :ironmon_evolution_metrics
 end
 
 class Pokemon

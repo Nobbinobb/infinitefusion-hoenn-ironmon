@@ -523,24 +523,45 @@ Acceptance criteria:
 
 ### Step 3.4: Evolution randomization
 
-Status: **Planned**
+Status: **Complete**
 
-- Define strength, stage, and family constraints for evolution targets.
-- Prevent loops, invalid targets, and broken evolution chains.
-- Handle level, item, trade, friendship, and special methods.
-- Generate seeded, run-consistent evolution mappings.
-- Map each eligible fusion component branch to a deterministic, stronger,
-  custom-sprite fusion target rather than naturally evolving one component.
-- Extend the inspection tool to display generated evolution chains.
+Design: **Complete** in `design/EVOLUTION_RANDOMIZATION.md`
+
+Implementation: **Complete — all seven review-gated parts implemented**
+
+- Preserve the native branch skeleton while replacing each conceptual
+  destination with a seeded, run-consistent target.
+- Select normal targets from unrelated base-species families using documented
+  stage weights, a 90%-115% original-destination BST range, and a strict
+  source-strength increase.
+- Preserve reachable native methods, convert the documented location, party,
+  move, Beauty, and trade methods, and resolve overlapping branches from the
+  run seed and personal ID.
+- Generate the complete normal graph at run start and standard-fusion mappings
+  on demand without storing generated targets in the save.
+- Map every eligible fusion component-side branch to a deterministic, stronger,
+  custom-sprite complete-fusion target rather than naturally evolving one
+  component.
+- Extend tracker Debug and completed-run lookup with clickable target lists and
+  one-step evolution graphs.
+- Implement and validate seven parts sequentially, pausing for review and
+  acceptance after every part.
 - Package release `0.6.0` as `Ironmon-v0.6.0-evolutions.zip`.
 
 Acceptance criteria:
 
 - Every generated evolution is reachable and valid.
-- Evolution mappings contain no accidental loops.
+- Normal evolution mappings contain no loops or backward-stage edges.
 - The same source species evolves consistently throughout one run.
 - Save/load preserves mappings and F7 generates new mappings.
-- Fusions evolve according to the documented inheritance behavior.
+- Original targets, target families, methods, and strength constraints follow
+  the documented normal-species rules.
+- Standard fusions evolve as complete displayed identities into strictly
+  stronger custom-sprite targets; triple and special fusions remain native.
+- Generated targets remain hidden during ordinary live play and agree across
+  runtime, authorized Debug, and completed-run lookup.
+- Legacy runs retain native evolutions and incompatible generator metadata
+  fails explicitly.
 
 ### Step 3.5: Fusion data integration
 

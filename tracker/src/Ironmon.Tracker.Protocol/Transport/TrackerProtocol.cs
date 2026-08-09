@@ -46,6 +46,11 @@ public static class TrackerProtocol
     public const int MaximumSearchPageSize = 50;
 
     /// <summary>
+    /// Gets the number of generated evolution candidates returned per page.
+    /// </summary>
+    public const int EvolutionCandidatePageSize = 50;
+
+    /// <summary>
     /// Gets the fixed lookup level retained for compatibility with earlier game scripts.
     /// </summary>
     public const int CompatibilityLookupLevel = 100;

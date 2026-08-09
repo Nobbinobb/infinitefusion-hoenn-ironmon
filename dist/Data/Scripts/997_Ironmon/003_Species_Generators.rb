@@ -556,6 +556,8 @@ module Ironmon
       @ability_randomization_error_message
     return @base_stat_randomization_error_message if
       @base_stat_randomization_error_message
+    return @evolution_randomization_error_message if
+      @evolution_randomization_error_message
     return @move_access_randomization_error_message if
       @move_access_randomization_error_message
     return species_generation_error_message

@@ -30,6 +30,7 @@ module Ironmon
     tracker_validate_debug_context
     pokemon = tracker_debug_resolve_pokemon(payload || {})
     species = pokemon.species_data
+    recipe = tracker_debug_active_recipe
     fusion = fusion_ability_species?(species)
     ability = pokemon.ability_id
     item = pokemon.item
@@ -41,6 +42,8 @@ module Ironmon
                       else
                         original_stats
                       end
+    evolution_targets = tracker_lookup_evolution_targets(species, recipe)
+    evolution_predecessors = tracker_lookup_evolution_predecessors(species, recipe)
     return {
       "pokemon_id" => pokemon.personalID.to_s,
       "nickname" => pokemon.name,
@@ -67,8 +70,12 @@ module Ironmon
       "generated_base_stats" => tracker_base_stat_snapshot(generated_stats),
       "generated_base_stat_total" => tracker_base_stat_total(generated_stats),
       "base_stat_generator" => tracker_debug_base_stat_generator_snapshot,
+      "evolution_predecessors" => evolution_predecessors,
+      "evolution_targets" => evolution_targets[:normal],
+      "head_evolution_targets" => evolution_targets[:head],
+      "body_evolution_targets" => evolution_targets[:body],
       "move_access" => tracker_lookup_move_access(
-        species, tracker_debug_active_recipe, pokemon
+        species, recipe, pokemon
       )
     }
   end
@@ -97,6 +104,19 @@ module Ironmon
       "ability_pool_fingerprint" => ability_pool_fingerprint,
       "base_stat_generator_version" => $PokemonGlobal.ironmon_base_stat_generator_version,
       "base_stat_source_fingerprint" => $PokemonGlobal.ironmon_base_stat_source_fingerprint,
+      "evolution_generator_version" => $PokemonGlobal.ironmon_evolution_generator_version,
+      "evolution_rules_version" => $PokemonGlobal.ironmon_evolution_rules_version,
+      "evolution_source_fingerprint" => $PokemonGlobal.ironmon_evolution_source_fingerprint,
+      "evolution_taxonomy_fingerprint" => $PokemonGlobal.ironmon_evolution_taxonomy_fingerprint,
+      "evolution_method_fingerprint" => $PokemonGlobal.ironmon_evolution_method_fingerprint,
+      "evolution_target_fingerprint" => $PokemonGlobal.ironmon_evolution_target_fingerprint,
+      "evolution_base_stat_generator_version" => $PokemonGlobal.ironmon_evolution_base_stat_generator_version,
+      "evolution_base_stat_source_fingerprint" => $PokemonGlobal.ironmon_evolution_base_stat_source_fingerprint,
+      "fusion_evolution_generator_version" => $PokemonGlobal.ironmon_evolution_fusion_generator_version,
+      "fusion_evolution_rules_version" => $PokemonGlobal.ironmon_evolution_fusion_rules_version,
+      "fusion_evolution_target_pool_version" => $PokemonGlobal.ironmon_evolution_fusion_target_pool_version,
+      "fusion_evolution_target_pool_size" => $PokemonGlobal.ironmon_evolution_fusion_target_pool_size,
+      "fusion_evolution_target_pool_fingerprint" => $PokemonGlobal.ironmon_evolution_fusion_target_pool_fingerprint,
       "move_access_generator_version" => $PokemonGlobal.ironmon_move_access_generator_version,
       "move_pool_fingerprint" => $PokemonGlobal.ironmon_move_pool_fingerprint,
       "move_contextual_restriction_fingerprint" => $PokemonGlobal.ironmon_move_contextual_restriction_fingerprint,
@@ -125,6 +145,13 @@ module Ironmon
     return tracker_pokemon_lookup_for_recipe(payload || {}, tracker_debug_active_recipe)
   end
 
+  def self.tracker_debug_evolution_candidate_search(payload)
+    tracker_validate_debug_context
+    return tracker_evolution_candidate_search_for_recipe(
+      payload || {}, tracker_debug_active_recipe
+    )
+  end
+
   def self.tracker_debug_fusion_preview(payload)
     tracker_validate_debug_context
     return tracker_fusion_preview_for_recipe(payload || {}, tracker_debug_active_recipe)
@@ -143,6 +170,19 @@ module Ironmon
       "ability_generator_version" => $PokemonGlobal.ironmon_ability_generator_version,
       "base_stat_generator_version" => $PokemonGlobal.ironmon_base_stat_generator_version,
       "base_stat_source_fingerprint" => $PokemonGlobal.ironmon_base_stat_source_fingerprint,
+      "evolution_generator_version" => $PokemonGlobal.ironmon_evolution_generator_version,
+      "evolution_rules_version" => $PokemonGlobal.ironmon_evolution_rules_version,
+      "evolution_source_fingerprint" => $PokemonGlobal.ironmon_evolution_source_fingerprint,
+      "evolution_taxonomy_fingerprint" => $PokemonGlobal.ironmon_evolution_taxonomy_fingerprint,
+      "evolution_method_fingerprint" => $PokemonGlobal.ironmon_evolution_method_fingerprint,
+      "evolution_target_fingerprint" => $PokemonGlobal.ironmon_evolution_target_fingerprint,
+      "evolution_base_stat_generator_version" => $PokemonGlobal.ironmon_evolution_base_stat_generator_version,
+      "evolution_base_stat_source_fingerprint" => $PokemonGlobal.ironmon_evolution_base_stat_source_fingerprint,
+      "fusion_evolution_generator_version" => $PokemonGlobal.ironmon_evolution_fusion_generator_version,
+      "fusion_evolution_rules_version" => $PokemonGlobal.ironmon_evolution_fusion_rules_version,
+      "fusion_evolution_target_pool_version" => $PokemonGlobal.ironmon_evolution_fusion_target_pool_version,
+      "fusion_evolution_target_pool_size" => $PokemonGlobal.ironmon_evolution_fusion_target_pool_size,
+      "fusion_evolution_target_pool_fingerprint" => $PokemonGlobal.ironmon_evolution_fusion_target_pool_fingerprint,
       "move_access_generator_version" => $PokemonGlobal.ironmon_move_access_generator_version,
       "move_pool_fingerprint" => $PokemonGlobal.ironmon_move_pool_fingerprint,
       "move_contextual_restriction_fingerprint" => $PokemonGlobal.ironmon_move_contextual_restriction_fingerprint,

@@ -1,0 +1,39 @@
+namespace Ironmon.Tracker.Protocol.Debug;
+
+/// <summary>
+/// Requests one filtered page of valid evolution candidates from an authorized active run.
+/// </summary>
+public sealed class DebugEvolutionCandidateSearchRequestPayload
+{
+    /// <summary>
+    /// Initializes an empty active-run candidate request for protocol serialization.
+    /// </summary>
+    public DebugEvolutionCandidateSearchRequestPayload()
+    {
+    }
+
+    /// <summary>
+    /// Gets or initializes the source species identifier.
+    /// </summary>
+    public required string SpeciesId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the normal or fusion-component list being requested.
+    /// </summary>
+    public EvolutionCandidateSide Side { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the optional candidate name filter.
+    /// </summary>
+    public string Query { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Gets or initializes the zero-based result offset.
+    /// </summary>
+    public int Offset { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the maximum number of candidates to return.
+    /// </summary>
+    public int Limit { get; init; } = TrackerProtocol.EvolutionCandidatePageSize;
+}

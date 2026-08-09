@@ -14,13 +14,14 @@
         <button type="button" class="@GetPageClass(DebugInspectorPage.Protocol)" @onclick="() => SelectPageAsync(DebugInspectorPage.Protocol)">@Text["Debug.Inspector.Protocol"]</button>
     </nav>
 
-    @if (_selectedPage is DebugInspectorPage.Overview or DebugInspectorPage.Abilities or DebugInspectorPage.Stats or DebugInspectorPage.Moves)
+    @if (_selectedPage is DebugInspectorPage.Overview or DebugInspectorPage.Abilities or DebugInspectorPage.Stats or DebugInspectorPage.Moves or DebugInspectorPage.Evolutions)
     {
         <nav class="debug-subpages" aria-label="@Text["Debug.Inspector.PokemonInspectorPages"]">
             <button type="button" class="@GetPageClass(DebugInspectorPage.Overview)" @onclick="() => SelectPageAsync(DebugInspectorPage.Overview)">@Text["Debug.Inspector.Overview"]</button>
             <button type="button" class="@GetPageClass(DebugInspectorPage.Abilities)" @onclick="() => SelectPageAsync(DebugInspectorPage.Abilities)">@Text["Debug.Inspector.Abilities"]</button>
             <button type="button" class="@GetPageClass(DebugInspectorPage.Stats)" @onclick="() => SelectPageAsync(DebugInspectorPage.Stats)">@Text["Debug.Inspector.Stats"]</button>
             <button type="button" class="@GetPageClass(DebugInspectorPage.Moves)" @onclick="() => SelectPageAsync(DebugInspectorPage.Moves)">@Text["Debug.Inspector.Moves"]</button>
+            <button type="button" class="@GetPageClass(DebugInspectorPage.Evolutions)" @onclick="() => SelectPageAsync(DebugInspectorPage.Evolutions)">@Text["Debug.Inspector.Evolutions"]</button>
         </nav>
         <div class="debug-target-controls">
             <label>
@@ -41,7 +42,7 @@
 
     @if (_selectedPage == DebugInspectorPage.Lookup)
     {
-        <DebugActiveRunLookup GameRoot="@GameRoot" />
+        <DebugActiveRunLookup GameRoot="@GameRoot" InitialSpeciesId="@_requestedLookupSpeciesId" />
     }
     else if (_selectedPage == DebugInspectorPage.Protocol)
     {
@@ -84,6 +85,10 @@
     else if (_selectedPage == DebugInspectorPage.Moves)
     {
         <MoveAccessTabs Access="@_pokemon.MoveAccess" />
+    }
+    else if (_selectedPage == DebugInspectorPage.Evolutions)
+    {
+        <DebugEvolutionTargets Pokemon="@_pokemon" GameRoot="@GameRoot" Selected="OpenLookupAsync" />
     }
     else
     {

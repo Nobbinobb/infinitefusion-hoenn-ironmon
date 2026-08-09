@@ -12,6 +12,7 @@ public partial class DebugInspector
     private DebugPokemonInspectorSnapshot? _pokemon;
     private DebugRunDiagnosticsSnapshot? _diagnostics;
     private string _selectedTarget = DebugTargetIds.Player;
+    private string? _requestedLookupSpeciesId;
     private string? _error;
     private bool _loading;
     private bool _backgroundRefresh;
@@ -178,7 +179,18 @@ public partial class DebugInspector
     /// <param name="page">The page to classify.</param>
     /// <returns><see langword="true"/> for an inspector subpage.</returns>
     private static bool IsInspectorPage(DebugInspectorPage page)
-        => page is DebugInspectorPage.Overview or DebugInspectorPage.Abilities or DebugInspectorPage.Stats or DebugInspectorPage.Moves;
+        => page is DebugInspectorPage.Overview or DebugInspectorPage.Abilities or DebugInspectorPage.Stats or DebugInspectorPage.Moves or DebugInspectorPage.Evolutions;
+
+    /// <summary>
+    /// Opens an evolution destination in the authorized active-run lookup.
+    /// </summary>
+    /// <param name="speciesId">The selected stable Pokemon identifier.</param>
+    /// <returns>A task representing the page selection.</returns>
+    private Task OpenLookupAsync(string speciesId)
+    {
+        _requestedLookupSpeciesId = speciesId;
+        return SelectPageAsync(DebugInspectorPage.Lookup);
+    }
 
     /// <summary>
     /// Requests inspector data for the selected current Pokemon source.

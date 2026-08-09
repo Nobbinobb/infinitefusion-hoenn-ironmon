@@ -258,6 +258,11 @@ module Ironmon
       elsif message["command"] == "pokemon_lookup"
         payload = Ironmon.tracker_pokemon_lookup(message["payload"], message["run_id"])
         queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "evolution_candidate_search"
+        payload = Ironmon.tracker_evolution_candidate_search(
+          message["payload"], message["run_id"]
+        )
+        queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "fusion_preview"
         payload = Ironmon.tracker_fusion_preview(message["payload"], message["run_id"])
         queue_message(success_response(request_id, payload, message["run_id"]))
@@ -304,6 +309,19 @@ module Ironmon
           return
         end
         payload = Ironmon.tracker_debug_pokemon_lookup(message["payload"])
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "debug_evolution_candidate_search"
+        if !debug_authorized?
+          queue_message(error_response(
+            request_id, "debug_forbidden",
+            "Both the game and tracker must authorize debug access.",
+            message["run_id"]
+          ))
+          return
+        end
+        payload = Ironmon.tracker_debug_evolution_candidate_search(
+          message["payload"]
+        )
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "debug_fusion_preview"
         if !debug_authorized?
@@ -404,6 +422,7 @@ module Ironmon
     $PokemonGlobal.ironmon_tracker_sequence = 0
     $PokemonGlobal.ironmon_run_result = nil
     reset_move_access_metrics if respond_to?(:reset_move_access_metrics)
+    reset_evolution_metrics if respond_to?(:reset_evolution_metrics)
     @tracker_battle = nil
     @tracker_battle_id = nil
     @tracker_player_battler = nil

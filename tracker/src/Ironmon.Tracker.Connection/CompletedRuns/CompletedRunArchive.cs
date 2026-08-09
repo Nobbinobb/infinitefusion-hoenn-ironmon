@@ -132,6 +132,43 @@ public sealed class CompletedRunArchive
         ArgumentOutOfRangeException.ThrowIfLessThan(recipe.SpeciesGeneratorVersion, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(recipe.AbilityGeneratorVersion, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(recipe.PlayerFusionGeneratorVersion, 1);
+        object?[] evolutionMetadata =
+        [
+            recipe.EvolutionRulesVersion,
+            recipe.EvolutionSourceFingerprint,
+            recipe.EvolutionTaxonomyFingerprint,
+            recipe.EvolutionMethodFingerprint,
+            recipe.EvolutionTargetFingerprint,
+            recipe.EvolutionBaseStatGeneratorVersion,
+            recipe.EvolutionBaseStatSourceFingerprint,
+            recipe.FusionEvolutionGeneratorVersion,
+            recipe.FusionEvolutionRulesVersion,
+            recipe.FusionEvolutionTargetPoolVersion,
+            recipe.FusionEvolutionTargetPoolSize,
+            recipe.FusionEvolutionTargetPoolFingerprint
+        ];
+        if (recipe.EvolutionGeneratorVersion is null)
+        {
+            if (evolutionMetadata.Any(value => value is not null))
+                throw new ArgumentException("Evolution metadata requires a generator version.", nameof(recipe));
+        }
+        else
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(recipe.EvolutionGeneratorVersion.Value, 1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(recipe.EvolutionRulesVersion ?? 0, 1);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.EvolutionSourceFingerprint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.EvolutionTaxonomyFingerprint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.EvolutionMethodFingerprint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.EvolutionTargetFingerprint);
+            ArgumentOutOfRangeException.ThrowIfLessThan(recipe.EvolutionBaseStatGeneratorVersion ?? 0, 1);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.EvolutionBaseStatSourceFingerprint);
+            ArgumentOutOfRangeException.ThrowIfLessThan(recipe.FusionEvolutionGeneratorVersion ?? 0, 1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(recipe.FusionEvolutionRulesVersion ?? 0, 1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(recipe.FusionEvolutionTargetPoolVersion ?? 0, 1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(recipe.FusionEvolutionTargetPoolSize ?? 0, 1);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.FusionEvolutionTargetPoolFingerprint);
+        }
+
         if (recipe.MoveAccessGeneratorVersion is null)
         {
             string?[] moveMetadata =
@@ -152,25 +189,32 @@ public sealed class CompletedRunArchive
 
             if (moveMetadata.Any(value => !string.IsNullOrWhiteSpace(value)))
                 throw new ArgumentException("Move-access metadata requires a generator version.", nameof(recipe));
-
-            return;
+        }
+        else
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(recipe.MoveAccessGeneratorVersion.Value, 1);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.MovePoolFingerprint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.MoveContextualRestrictionFingerprint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.MoveSourceFingerprint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.EggMoveSourceFingerprint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TmRosterFingerprint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TmSourceFingerprint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TrRosterFingerprint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TrSourceFingerprint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TutorCatalogFingerprint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TutorSourceFingerprint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.FusionTutorCatalogFingerprint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(recipe.FusionTutorSourceFingerprint);
+            if (recipe.MoveAccessMetrics is not null)
+                ArgumentOutOfRangeException.ThrowIfNotEqual(recipe.MoveAccessMetrics.SchemaVersion, MoveAccessMetricIdentifiers.SchemaVersion);
         }
 
-        ArgumentOutOfRangeException.ThrowIfLessThan(recipe.MoveAccessGeneratorVersion.Value, 1);
-        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.MovePoolFingerprint);
-        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.MoveContextualRestrictionFingerprint);
-        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.MoveSourceFingerprint);
-        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.EggMoveSourceFingerprint);
-        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TmRosterFingerprint);
-        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TmSourceFingerprint);
-        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TrRosterFingerprint);
-        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TrSourceFingerprint);
-        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TutorCatalogFingerprint);
-        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TutorSourceFingerprint);
-        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.FusionTutorCatalogFingerprint);
-        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.FusionTutorSourceFingerprint);
-        if (recipe.MoveAccessMetrics is not null)
-            ArgumentOutOfRangeException.ThrowIfNotEqual(recipe.MoveAccessMetrics.SchemaVersion, MoveAccessMetricIdentifiers.SchemaVersion);
+        if (recipe.EvolutionMetrics is not null)
+        {
+            ArgumentOutOfRangeException.ThrowIfNotEqual(recipe.EvolutionMetrics.SchemaVersion, EvolutionMetricIdentifiers.SchemaVersion);
+            if (recipe.EvolutionGeneratorVersion is null)
+                throw new ArgumentException("Evolution metrics require evolution generator metadata.", nameof(recipe));
+        }
     }
 
     /// <summary>

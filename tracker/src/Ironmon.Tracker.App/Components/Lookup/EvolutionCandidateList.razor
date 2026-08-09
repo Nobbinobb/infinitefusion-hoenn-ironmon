@@ -1,0 +1,42 @@
+<section class="evolution-targets" aria-label="@AriaLabel">
+    <header class="evolution-candidate-heading">
+        <p class="section-label">@Heading</p>
+        @if (!_loading)
+        {
+            <span>@Text["Lookup.Candidates.Total", _total]</span>
+        }
+    </header>
+    @if (ShowFilter)
+    {
+        <div class="lookup-search evolution-candidate-search">
+            <input type="search" placeholder="@Text["Lookup.Candidates.Filter"]" aria-label="@Text["Lookup.Candidates.Filter"]" @bind="_query" @bind:event="oninput" @onkeydown="HandleKeyDown" @onkeydown:stopPropagation="true" />
+            <button type="button" disabled="@_loading" @onclick="ApplyFilterAsync">@Text["Lookup.Candidates.FilterButton"]</button>
+        </div>
+    }
+    @if (_error is not null)
+    {
+        <p class="lookup-error" role="alert">@_error</p>
+    }
+    else if (_loading)
+    {
+        <p class="lookup-message">@Text["Lookup.Candidates.Loading"]</p>
+    }
+    else if (_matches.Count == 0)
+    {
+        <p class="lookup-message">@Text["Lookup.Candidates.NoMatches"]</p>
+    }
+    else
+    {
+        <div class="evolution-target-grid">
+            @foreach (EvolutionCandidateSnapshot candidate in _matches)
+            {
+                <EvolutionCandidateButton Candidate="@candidate" GameRoot="@GameRoot" Selected="@Selected" />
+            }
+        </div>
+        <nav class="lookup-pager" aria-label="@Text["Lookup.Candidates.Pages"]">
+            <button type="button" disabled="@(_loading || _offset == 0)" @onclick="PreviousPageAsync">@Text["Lookup.Search.Previous"]</button>
+            <span>@GetRangeText()</span>
+            <button type="button" disabled="@(_loading || _offset + _matches.Count >= _total)" @onclick="NextPageAsync">@Text["Lookup.Search.Next"]</button>
+        </nav>
+    }
+</section>

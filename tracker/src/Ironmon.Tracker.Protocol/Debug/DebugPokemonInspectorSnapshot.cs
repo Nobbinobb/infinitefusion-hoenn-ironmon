@@ -133,6 +133,26 @@ public sealed class DebugPokemonInspectorSnapshot
     public DebugBaseStatGeneratorSnapshot BaseStatGenerator { get; init; } = new();
 
     /// <summary>
+    /// Gets or initializes generated normal Pokemon which evolve directly into the inspected Pokemon.
+    /// </summary>
+    public IReadOnlyList<EvolutionTargetSnapshot> EvolutionPredecessors { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes generated destinations for an inspected normal Pokemon.
+    /// </summary>
+    public IReadOnlyList<EvolutionTargetSnapshot> EvolutionTargets { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes generated destinations activated by the inspected fusion's head.
+    /// </summary>
+    public IReadOnlyList<EvolutionTargetSnapshot> HeadEvolutionTargets { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes generated destinations activated by the inspected fusion's body.
+    /// </summary>
+    public IReadOnlyList<EvolutionTargetSnapshot> BodyEvolutionTargets { get; init; } = [];
+
+    /// <summary>
     /// Gets or initializes every ability row exposed by the in-game inspector.
     /// </summary>
     public IReadOnlyList<DebugAbilitySlotSnapshot> AbilitySlots { get; init; } = [];

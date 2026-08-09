@@ -19,6 +19,7 @@ public partial class PokemonLookupExplorer
     private int _matchTotal;
     private bool _loading;
     private bool _searched;
+    private string? _observedRequestedSpeciesId;
 
     /// <summary>
     /// Gets or initializes the active game request client.
@@ -43,6 +44,25 @@ public partial class PokemonLookupExplorer
     /// </summary>
     [Parameter]
     public string? GameRoot { get; set; }
+
+    /// <summary>
+    /// Gets or sets a species requested by a containing navigation surface.
+    /// </summary>
+    [Parameter]
+    public string? RequestedSpeciesId { get; set; }
+
+    /// <summary>
+    /// Opens a newly requested species without adding an artificial history entry.
+    /// </summary>
+    /// <returns>A task representing the requested lookup.</returns>
+    protected override async Task OnParametersSetAsync()
+    {
+        if (string.IsNullOrWhiteSpace(RequestedSpeciesId) || RequestedSpeciesId == _observedRequestedSpeciesId)
+            return;
+
+        _observedRequestedSpeciesId = RequestedSpeciesId;
+        await LoadPokemonAsync(RequestedSpeciesId);
+    }
 
     /// <summary>
     /// Gets the message shown while generated data is loading.

@@ -394,7 +394,7 @@ contains the inputs needed to reproduce the run:
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.5.0",
+  "ironmon_version": "0.6.0",
   "configuration": {},
   "species_generator_version": 3,
   "ability_generator_version": 2,
@@ -442,14 +442,14 @@ The search flow is:
 4. The tracker sends `pokemon_lookup` with the selected ID and run ID.
 5. The game reconstructs and returns complete generated information.
 
-Search results use pages of 20. Post-run evolution destinations and direct
-previous evolutions include their sprites and can be selected for another
-lookup. Until the evolution generator planned for Ironmon 0.6.0 exists, these
-are explicitly the current natural evolution graph, not invented seeded
-targets. Fusion results expose their displayed body and head components, their
-seeded Ironmon reverse, and the ordered normal-material pairs that produce
-them. Encounter and pivot inputs do not replace a fusion's displayed
-components.
+Search results use pages of 20. Before Step 3.4 is enabled, post-run evolution
+destinations and direct previous evolutions are explicitly the current natural
+graph. Step 3.4 replaces them with the generated operational graph for runs
+that declare compatible evolution metadata. Target rows include icons, names,
+and generated BSTs and can be selected for another lookup. Fusion results
+expose their displayed body and head components, their seeded Ironmon reverse,
+and the ordered normal-material pairs that produce them. Encounter and pivot
+inputs do not replace a fusion's displayed components.
 
 Lookup also reconstructs every authored wild and trainer slot which maps to
 the selected species. Wild rows show data mode, route, encounter type, slot,
@@ -553,9 +553,26 @@ compatibility and an actual generated tutor offering, with tutor location or
 slot. Fusion rows identify body, head, both, or specialized Fusion Tutor as the
 source. Unsupported abstract tutor entries may contribute to a summary count
 but are not listed as learnable moves. Complete move-access subtabs remain
-unavailable during ordinary live play. Evolutions is added with its
-corresponding randomizer. The tracker does not invent placeholder generated
-values.
+unavailable during ordinary live play.
+
+Step 3.4 adds Evolutions to authorized Debug and completed-run lookup. A normal
+Pokemon receives one clickable valid-candidate list; a fusion receives
+separate Head and Body candidate lists when applicable. Candidate lists use
+50-row server-side pages. Normal lists hide the name filter when their full
+candidate set contains fewer than 50 Pokemon; fusion Head and Body lists always
+show it. Fusion candidates occupy one area with Head and Body tabs instead of
+two stacked lists. Candidate lists show every preferred
+90%-115% candidate, or only the closest fallback candidates when the preferred
+set is empty. Every candidate shares at least one type with the normal source,
+or with the evolving Head/Body component for a fusion. Rows show only target
+icon, name, and generated BST. The actual
+selected destinations are not identified by these lists. A clickable graph
+shows one step in each direction for a normal Pokemon.
+A fusion graph omits incoming predecessors and shows the selected fusion with
+its immediate Head/Body targets. Nodes show icon, name, and generated BST. One
+edge per conceptual target lists every effective method and the component side
+where applicable. Complete generated evolutions remain unavailable during
+ordinary live play. The tracker does not invent placeholder generated values.
 
 The game resolves all debug values on demand through the same runtime paths
 used by gameplay. Requests are read-only, consume no random values, perform no

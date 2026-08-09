@@ -972,6 +972,7 @@ Built on 2026-08-09:
   overview, and release notes to Ironmon `0.5.0`.
 - Published the self-contained Windows x64 tracker and combined it with 28
   canonical Ruby scripts in `Ironmon-v0.5.0-move-access.zip`.
+
 - Rebuilt the release independently and obtained the same SHA-256 checksum.
 
 ### Validation
@@ -986,3 +987,30 @@ Built on 2026-08-09:
   the test were stopped.
 - SHA-256:
   `fa1ae7967ffee287959dbc9fd1849c25cc4650df76d3620bfa3200fa2676f644`.
+
+## Ironmon 0.6.0 evolution release
+
+Status: **Complete**
+
+Built on 2026-08-09:
+
+- Added deterministic normal and complete-fusion evolution target generation,
+  runtime integration, save compatibility, and story-path consumers.
+- Added authorized candidate lists and clickable one-step graphs to Debug and
+  completed-run lookup while keeping targets hidden during active play.
+- Added versioned encountered-evolution metrics and completed-run analysis.
+- Published the cumulative game scripts and self-contained tracker in
+  `Ironmon-v0.6.0-evolutions.zip`.
+- Rebuilt the release independently and obtained the same SHA-256 checksum.
+
+### Validation
+
+- All **40 tracker tests** pass.
+- The tracker application builds with 0 warnings and 0 errors.
+- The archive contains **457 entries** and all **33 canonical Ruby scripts**,
+  with no PDB files or generated XML documentation.
+- The packaged tracker and synchronized Infinite Fusion runtime passed a
+  concurrent hidden startup smoke test. Only the exact processes started by
+  the test were stopped.
+- SHA-256:
+  `8506ebc50d522056e100fc78549fd06778377f53093437e98b26798f6609107d`.

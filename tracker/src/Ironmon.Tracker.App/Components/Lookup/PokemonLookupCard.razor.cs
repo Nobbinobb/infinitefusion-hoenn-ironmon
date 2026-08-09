@@ -62,6 +62,40 @@ public partial class PokemonLookupCard
         => Pokemon.Evolutions.Count == 0 ? Text["Lookup.Card.None"] : Pokemon.Evolutions[0].Label;
 
     /// <summary>
+    /// Gets whether the lookup contains generated evolution destinations.
+    /// </summary>
+    /// <returns>Whether any generated target list is populated.</returns>
+    private bool HasGeneratedEvolutionTargets()
+        => GetGeneratedEvolutionBranchCount() > 0;
+
+    /// <summary>
+    /// Gets the number of generated conceptual branches represented by selected-target data.
+    /// </summary>
+    /// <returns>The generated branch count.</returns>
+    private int GetGeneratedEvolutionBranchCount()
+        => Pokemon.EvolutionTargets.Count + Pokemon.HeadEvolutionTargets.Count + Pokemon.BodyEvolutionTargets.Count;
+
+    /// <summary>
+    /// Gets whether the lookup contains any generated graph edge.
+    /// </summary>
+    /// <returns>Whether the evolution graph should be displayed.</returns>
+    private bool HasGeneratedEvolutionGraph()
+        => Pokemon.EvolutionPredecessors.Count + GetGeneratedEvolutionBranchCount() > 0;
+
+    /// <summary>
+    /// Creates the selected Pokemon's graph node.
+    /// </summary>
+    /// <returns>The current generated graph node.</returns>
+    private EvolutionTargetSnapshot GetCurrentEvolutionNode()
+        => new()
+        {
+            SpeciesId = Pokemon.SpeciesId,
+            SpeciesName = Pokemon.SpeciesName,
+            SpritePath = Pokemon.SpritePath,
+            BaseStatTotal = Pokemon.BaseStatTotal
+        };
+
+    /// <summary>
     /// Formats an authored encounter-table chance.
     /// </summary>
     /// <param name="chance">The percentage chance.</param>

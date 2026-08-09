@@ -21,7 +21,11 @@
             </p>
         </div>
         <div class="identity-actions" aria-label="@Text["Lookup.Card.GeneratedPokemonDetails"]">
-            @if (Pokemon.Evolutions.Count > 1)
+            @if (HasGeneratedEvolutionTargets())
+            {
+                <span>@Text["Lookup.Card.EvolutionCandidates"]</span>
+            }
+            else if (Pokemon.Evolutions.Count > 1)
             {
                 <details class="compact-disclosure">
                     <summary>@Text["Lookup.Card.Evolution"] <strong>@Pokemon.Evolutions[0].Label</strong><span>+@(Pokemon.Evolutions.Count - 1)</span></summary>
@@ -56,6 +60,29 @@
             }
         </div>
     </div>
+
+    @if (HasGeneratedEvolutionTargets())
+    {
+        <EvolutionCandidateLists SpeciesId="@Pokemon.SpeciesId"
+                                 HasNormal="@(Pokemon.EvolutionTargets.Count > 0)"
+                                 HasHead="@(Pokemon.HeadEvolutionTargets.Count > 0)"
+                                 HasBody="@(Pokemon.BodyEvolutionTargets.Count > 0)"
+                                 Recipe="@Recipe"
+                                 DebugMode="@DebugMode"
+                                 GameRoot="@GameRoot"
+                                 Selected="PokemonSelected" />
+    }
+
+    @if (HasGeneratedEvolutionGraph())
+    {
+        <EvolutionGraph Current="@GetCurrentEvolutionNode()"
+                        Predecessors="@Pokemon.EvolutionPredecessors"
+                        Targets="@Pokemon.EvolutionTargets"
+                        HeadTargets="@Pokemon.HeadEvolutionTargets"
+                        BodyTargets="@Pokemon.BodyEvolutionTargets"
+                        GameRoot="@GameRoot"
+                        Selected="@PokemonSelected" />
+    }
 
     @if (Pokemon.Evolutions.Count > 0)
     {

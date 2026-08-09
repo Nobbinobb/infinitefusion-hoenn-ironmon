@@ -1,0 +1,16 @@
+<button class="evolution-target" type="button" @onclick="SelectAsync">
+    <span class="evolution-target-sprite" aria-hidden="true">
+        @if (_spriteSource is not null)
+        {
+            <img src="@_spriteSource" alt="" />
+        }
+        else
+        {
+            <span>?</span>
+        }
+    </span>
+    <span class="evolution-target-copy">
+        <strong>@Candidate.SpeciesName</strong>
+        <small>BST @Candidate.BaseStatTotal</small>
+    </span>
+</button>

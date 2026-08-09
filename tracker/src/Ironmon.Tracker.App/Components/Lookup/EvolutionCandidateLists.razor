@@ -1,0 +1,26 @@
+<div class="evolution-candidate-lists">
+    @if (HasNormal)
+    {
+        <EvolutionCandidateList SpeciesId="@SpeciesId" Side="EvolutionCandidateSide.Normal" Heading="@Text["Lookup.Card.EvolutionTargetsHeading"].Value" AriaLabel="@Text["Lookup.Card.EvolutionTargets"].Value" Recipe="@Recipe" DebugMode="@DebugMode" GameRoot="@GameRoot" Selected="@Selected" />
+    }
+    @if (HasHead || HasBody)
+    {
+        <section class="fusion-evolution-candidates" aria-label="@Text["Lookup.Card.EvolutionCandidates"]">
+            @if (HasHead && HasBody)
+            {
+                <nav class="evolution-candidate-side-tabs" aria-label="@Text["Lookup.Card.EvolutionCandidates"]" role="tablist">
+                    <button type="button" role="tab" aria-selected="@(_selectedFusionSide == EvolutionCandidateSide.Head)" class="@GetSideTabClass(EvolutionCandidateSide.Head)" @onclick="() => SelectFusionSide(EvolutionCandidateSide.Head)">@Text["Common.BaseStats.Head"]</button>
+                    <button type="button" role="tab" aria-selected="@(_selectedFusionSide == EvolutionCandidateSide.Body)" class="@GetSideTabClass(EvolutionCandidateSide.Body)" @onclick="() => SelectFusionSide(EvolutionCandidateSide.Body)">@Text["Common.BaseStats.Body"]</button>
+                </nav>
+            }
+            @if (_selectedFusionSide == EvolutionCandidateSide.Head && HasHead)
+            {
+                <EvolutionCandidateList SpeciesId="@SpeciesId" Side="EvolutionCandidateSide.Head" AlwaysShowFilter="true" Heading="@Text["Lookup.Card.HeadEvolutionsHeading"].Value" AriaLabel="@Text["Lookup.Card.HeadEvolutionTargets"].Value" Recipe="@Recipe" DebugMode="@DebugMode" GameRoot="@GameRoot" Selected="@Selected" />
+            }
+            else if (HasBody)
+            {
+                <EvolutionCandidateList SpeciesId="@SpeciesId" Side="EvolutionCandidateSide.Body" AlwaysShowFilter="true" Heading="@Text["Lookup.Card.BodyEvolutionsHeading"].Value" AriaLabel="@Text["Lookup.Card.BodyEvolutionTargets"].Value" Recipe="@Recipe" DebugMode="@DebugMode" GameRoot="@GameRoot" Selected="@Selected" />
+            }
+        </section>
+    }
+</div>

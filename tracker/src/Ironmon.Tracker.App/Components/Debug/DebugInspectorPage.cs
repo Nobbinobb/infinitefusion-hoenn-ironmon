@@ -26,6 +26,11 @@ public enum DebugInspectorPage
     Moves = 6,
 
     /// <summary>
+    /// Shows generated evolution destinations for the inspected Pokemon.
+    /// </summary>
+    Evolutions = 7,
+
+    /// <summary>
     /// Shows game-owned run and randomizer diagnostics.
     /// </summary>
     Diagnostics = 3,

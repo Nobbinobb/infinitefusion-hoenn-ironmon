@@ -21,6 +21,11 @@ public static class TrackerCommands
     public const string PokemonLookup = "pokemon_lookup";
 
     /// <summary>
+    /// Gets the completed-run evolution-candidate search command.
+    /// </summary>
+    public const string EvolutionCandidateSearch = "evolution_candidate_search";
+
+    /// <summary>
     /// Gets the completed-run fusion preview command.
     /// </summary>
     public const string FusionPreview = "fusion_preview";
@@ -44,6 +49,11 @@ public static class TrackerCommands
     /// Gets the authorized active-run Pokemon lookup command.
     /// </summary>
     public const string DebugPokemonLookup = "debug_pokemon_lookup";
+
+    /// <summary>
+    /// Gets the authorized active-run evolution-candidate search command.
+    /// </summary>
+    public const string DebugEvolutionCandidateSearch = "debug_evolution_candidate_search";
 
     /// <summary>
     /// Gets the authorized active-run fusion preview command.

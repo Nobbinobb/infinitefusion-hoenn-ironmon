@@ -44,7 +44,11 @@ class << PokemonEvolutionScene
     ) if !Ironmon.active?
 
     duplicate = pokemon.clone
+    experience = Ironmon.generated_evolution_experience_state(duplicate) if
+      Ironmon.evolution_randomization_active?
     duplicate.species = new_species
+    Ironmon.restore_generated_evolution_experience(duplicate, experience) if
+      experience
     duplicate.name = nil
     duplicate.markings = 0
     duplicate.poke_ball = :POKEBALL

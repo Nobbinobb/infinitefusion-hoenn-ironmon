@@ -62,6 +62,27 @@ module Ironmon
                             else
                               nil
                             end
+    evolution_version = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_evolution_generator_version : nil
+    evolution_rules = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_evolution_rules_version : nil
+    evolution_source_fingerprint = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_evolution_source_fingerprint : nil
+    evolution_target_fingerprint = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_evolution_target_fingerprint : nil
+    fusion_evolution_version = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_evolution_fusion_generator_version : nil
+    fusion_evolution_rules = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_evolution_fusion_rules_version : nil
+    fusion_evolution_pool_fingerprint = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_evolution_fusion_target_pool_fingerprint : nil
+    evolution_event_count = if $PokemonGlobal &&
+                               $PokemonGlobal.ironmon_evolution_metrics.is_a?(Hash)
+                              events = $PokemonGlobal.ironmon_evolution_metrics["events"]
+                              events.is_a?(Array) ? events.length : 0
+                            else
+                              0
+                            end
     move_access_version = if $PokemonGlobal
                             $PokemonGlobal.ironmon_move_access_generator_version
                           else
@@ -124,6 +145,14 @@ module Ironmon
       "ability_pool_fingerprint=#{ability_fingerprint} " +
       "base_stat_generator=#{base_stat_version} " +
       "base_stat_source_fingerprint=#{base_stat_fingerprint} " +
+      "evolution_generator=#{evolution_version} " +
+      "evolution_rules=#{evolution_rules} " +
+      "evolution_source_fingerprint=#{evolution_source_fingerprint} " +
+      "evolution_target_fingerprint=#{evolution_target_fingerprint} " +
+      "fusion_evolution_generator=#{fusion_evolution_version} " +
+      "fusion_evolution_rules=#{fusion_evolution_rules} " +
+      "fusion_evolution_pool_fingerprint=#{fusion_evolution_pool_fingerprint} " +
+      "evolution_events=#{evolution_event_count} " +
       "move_access_generator=#{move_access_version} " +
       "move_pool_size=#{move_pool_size} " +
       "move_pool_fingerprint=#{move_pool_fingerprint} " +

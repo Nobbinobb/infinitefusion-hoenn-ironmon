@@ -1,0 +1,55 @@
+<section class="evolution-graph" aria-label="@Text["Lookup.Graph.EvolutionGraph"]">
+    <header>
+        <p class="section-label">@Text["Lookup.Graph.EvolutionGraphHeading"]</p>
+    </header>
+
+    @if (Predecessors.Count > 0)
+    {
+        <div class="evolution-graph-branches incoming">
+            @foreach (EvolutionTargetSnapshot predecessor in Predecessors)
+            {
+                <div class="evolution-graph-branch">
+                    <EvolutionTargetButton Target="@predecessor" GameRoot="@GameRoot" Selected="@Selected" />
+                    <div class="evolution-graph-edge">
+                        @foreach (string method in predecessor.EffectiveMethods)
+                        {
+                            <span>@method</span>
+                        }
+                        <strong aria-hidden="true">&darr;</strong>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="evolution-graph-current">
+        <EvolutionTargetButton Target="@Current" GameRoot="@GameRoot" Selected="@Selected" />
+    </div>
+
+    @if (HasOutgoingTargets())
+    {
+        <div class="evolution-graph-branches outgoing">
+            @foreach (EvolutionTargetSnapshot target in Targets)
+            {
+                <div class="evolution-graph-branch">
+                    <EvolutionGraphEdge Methods="@target.EffectiveMethods" />
+                    <EvolutionTargetButton Target="@target" GameRoot="@GameRoot" Selected="@Selected" />
+                </div>
+            }
+            @foreach (EvolutionTargetSnapshot target in HeadTargets)
+            {
+                <div class="evolution-graph-branch">
+                    <EvolutionGraphEdge Side="@Text["Common.BaseStats.Head"]" Methods="@target.EffectiveMethods" />
+                    <EvolutionTargetButton Target="@target" GameRoot="@GameRoot" Selected="@Selected" />
+                </div>
+            }
+            @foreach (EvolutionTargetSnapshot target in BodyTargets)
+            {
+                <div class="evolution-graph-branch">
+                    <EvolutionGraphEdge Side="@Text["Common.BaseStats.Body"]" Methods="@target.EffectiveMethods" />
+                    <EvolutionTargetButton Target="@target" GameRoot="@GameRoot" Selected="@Selected" />
+                </div>
+            }
+        </div>
+    }
+</section>

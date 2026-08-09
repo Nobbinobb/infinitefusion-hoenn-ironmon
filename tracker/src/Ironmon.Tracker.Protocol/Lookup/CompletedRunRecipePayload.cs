@@ -85,6 +85,71 @@ public sealed class CompletedRunRecipePayload
     public string? BaseStatSourceFingerprint { get; init; }
 
     /// <summary>
+    /// Gets or initializes the normal evolution generator schema when enabled.
+    /// </summary>
+    public int? EvolutionGeneratorVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the normal evolution rules version when enabled.
+    /// </summary>
+    public int? EvolutionRulesVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the evolution source-catalog fingerprint.
+    /// </summary>
+    public string? EvolutionSourceFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the native evolution taxonomy fingerprint.
+    /// </summary>
+    public string? EvolutionTaxonomyFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the effective evolution-method fingerprint.
+    /// </summary>
+    public string? EvolutionMethodFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the normal evolution target-pool fingerprint.
+    /// </summary>
+    public string? EvolutionTargetFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the base-stat generator schema used by evolution.
+    /// </summary>
+    public int? EvolutionBaseStatGeneratorVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the base-stat source fingerprint used by evolution.
+    /// </summary>
+    public string? EvolutionBaseStatSourceFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the complete-fusion evolution generator schema.
+    /// </summary>
+    public int? FusionEvolutionGeneratorVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the complete-fusion evolution rules version.
+    /// </summary>
+    public int? FusionEvolutionRulesVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the custom fusion target-pool schema.
+    /// </summary>
+    public int? FusionEvolutionTargetPoolVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the custom fusion target-pool size.
+    /// </summary>
+    public int? FusionEvolutionTargetPoolSize { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the custom fusion target-pool fingerprint.
+    /// </summary>
+    public string? FusionEvolutionTargetPoolFingerprint { get; init; }
+
+    /// <summary>
     /// Gets or initializes the move-access generator schema when the run uses generated access.
     /// </summary>
     public int? MoveAccessGeneratorVersion { get; init; }
@@ -153,6 +218,11 @@ public sealed class CompletedRunRecipePayload
     /// Gets or initializes the locally observed move-access iteration data.
     /// </summary>
     public MoveAccessMetricsPayload? MoveAccessMetrics { get; init; }
+
+    /// <summary>
+    /// Gets or initializes locally observed generated-evolution outcomes.
+    /// </summary>
+    public EvolutionMetricsPayload? EvolutionMetrics { get; init; }
 
     /// <summary>
     /// Gets or initializes the custom-fusion pool fingerprint.

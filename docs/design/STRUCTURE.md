@@ -51,6 +51,15 @@ file in `Data/Scripts` as Ruby.
     gifts and trades without exposing the current party Pokemon.
 22. `017_HM_Tools.rb`: HM reward interception and transactional migration to
     permanent field-tool key items.
+23. `018_Tracker_Connection.rb`: local tracker transport and ordinary live
+    snapshots.
+24. `019_Tracker_Post_Run.rb`: completed-run recipes and authorized deterministic
+    lookup reconstruction.
+25. `020_Tracker_Debug.rb`: development-only inspector and diagnostic commands.
+26. `021_Tracker_Move_Access_Metrics.rb`: encountered move-access events for
+    completed-run analysis.
+27. `022_Tracker_Evolution_Metrics.rb`: offered, completed, cancelled, and
+    duplicate evolution events for completed-run analysis.
 
-Version `0.5.0` supports Infinite Fusion game version `6.8.0`. An unsupported
+Version `0.6.0` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.

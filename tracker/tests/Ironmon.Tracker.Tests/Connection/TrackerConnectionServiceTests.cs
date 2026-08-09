@@ -156,6 +156,27 @@ public sealed class TrackerConnectionServiceTests
                     SpeciesName = "Charmeleon",
                     Label = "Level 16"
                 }
+            ],
+            EvolutionTargets =
+            [
+                new EvolutionTargetSnapshot
+                {
+                    SpeciesId = "PYUKUMUKU:0",
+                    SpeciesName = "Pyukumuku",
+                    SpritePath = "Graphics/Battlers/pyukumuku.png",
+                    BaseStatTotal = 410,
+                    EffectiveMethods = ["Level 25", "Moon Stone"]
+                }
+            ],
+            EvolutionPredecessors =
+            [
+                new EvolutionTargetSnapshot
+                {
+                    SpeciesId = "CYNDAQUIL:0",
+                    SpeciesName = "Cyndaquil",
+                    BaseStatTotal = 309,
+                    EffectiveMethods = ["Level 16"]
+                }
             ]
         };
 
@@ -170,7 +191,33 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal("Ben", receivedTrainer.TrainerName);
         Assert.Equal(7, receivedTrainer.Level);
         Assert.Equal("Route 1", receivedTrainer.RouteName);
+        EvolutionTargetSnapshot receivedTarget = Assert.Single(receivedLookup.EvolutionTargets);
+        Assert.Equal("PYUKUMUKU:0", receivedTarget.SpeciesId);
+        Assert.Equal(410, receivedTarget.BaseStatTotal);
+        Assert.Equal(["Level 25", "Moon Stone"], receivedTarget.EffectiveMethods);
+        EvolutionTargetSnapshot receivedPredecessor = Assert.Single(receivedLookup.EvolutionPredecessors);
+        Assert.Equal("CYNDAQUIL:0", receivedPredecessor.SpeciesId);
+        Assert.Equal(["Level 16"], receivedPredecessor.EffectiveMethods);
         Assert.Same(receivedLookup, await service.Requests.LookupPokemonAsync(recipe, "CHARMANDER:0"));
+
+        Task<EvolutionCandidateSearchResponsePayload> candidateTask = service.Requests.SearchEvolutionCandidatesAsync(recipe, "CHARMANDER:0", EvolutionCandidateSide.Normal, "saur");
+        TrackerMessage? candidateRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("evolution_candidate_search", candidateRequest?.Command);
+        EvolutionCandidateSearchRequestPayload candidatePayload = TrackerJson.DeserializePayload<EvolutionCandidateSearchRequestPayload>(candidateRequest!.Payload);
+        Assert.Equal("CHARMANDER:0", candidatePayload.SpeciesId);
+        Assert.Equal(EvolutionCandidateSide.Normal, candidatePayload.Side);
+        Assert.Equal("saur", candidatePayload.Query);
+        Assert.Equal(50, candidatePayload.Limit);
+        EvolutionCandidateSearchResponsePayload candidateResponse = new()
+        {
+            Matches = [new EvolutionCandidateSnapshot { SpeciesId = "BULBASAUR:0", SpeciesName = "Bulbasaur", BaseStatTotal = 318 }],
+            Total = 1
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(candidateRequest.RequestId!, candidateResponse, "run-1"));
+        EvolutionCandidateSearchResponsePayload receivedCandidates = await candidateTask;
+        Assert.Equal("BULBASAUR:0", Assert.Single(receivedCandidates.Matches).SpeciesId);
+        Assert.Same(receivedCandidates, await service.Requests.SearchEvolutionCandidatesAsync(recipe, "CHARMANDER:0", EvolutionCandidateSide.Normal, "saur"));
 
         Task<FusionPreviewResponsePayload> fusionTask = service.Requests.PreviewFusionAsync(recipe, "CHARMANDER:0", "ALTARIA:0");
         TrackerMessage? fusionRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
@@ -240,6 +287,14 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal("debug_pokemon_lookup", debugLookupRequest?.Command);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugLookupRequest!.RequestId!, lookupResponse, "run-1"));
         Assert.Equal(309, (await debugLookupTask).BaseStatTotal);
+
+        Task<EvolutionCandidateSearchResponsePayload> debugCandidateTask = service.Requests.SearchDebugEvolutionCandidatesAsync("CHARMANDER:0", EvolutionCandidateSide.Normal, string.Empty);
+        TrackerMessage? debugCandidateRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("debug_evolution_candidate_search", debugCandidateRequest?.Command);
+        DebugEvolutionCandidateSearchRequestPayload debugCandidatePayload = TrackerJson.DeserializePayload<DebugEvolutionCandidateSearchRequestPayload>(debugCandidateRequest!.Payload);
+        Assert.Equal(EvolutionCandidateSide.Normal, debugCandidatePayload.Side);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugCandidateRequest.RequestId!, candidateResponse, "run-1"));
+        Assert.Equal("BULBASAUR:0", Assert.Single((await debugCandidateTask).Matches).SpeciesId);
 
         Task<FusionPreviewResponsePayload> debugFusionTask = service.Requests.PreviewDebugFusionAsync("CHARMANDER:0", "ALTARIA:0");
         TrackerMessage? debugFusionRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
