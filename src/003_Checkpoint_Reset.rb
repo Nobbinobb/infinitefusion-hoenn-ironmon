@@ -120,6 +120,17 @@ module Ironmon
     end
   end
 
+  def self.with_checkpoint_reset_load
+    @checkpoint_reset_loading = true
+    return yield
+  ensure
+    @checkpoint_reset_loading = false
+  end
+
+  def self.checkpoint_reset_loading?
+    return @checkpoint_reset_loading == true
+  end
+
   def self.show_pending_reset_notice
     return false if !@reset_notice
     notice = @reset_notice
@@ -191,7 +202,7 @@ class IronmonCheckpointLoadScene
 
   def main
     SaveData.mark_values_as_unloaded
-    Game.load(@save_data)
+    Ironmon.with_checkpoint_reset_load { Game.load(@save_data) }
     Ironmon.configuration = @configuration_snapshot
   end
 end

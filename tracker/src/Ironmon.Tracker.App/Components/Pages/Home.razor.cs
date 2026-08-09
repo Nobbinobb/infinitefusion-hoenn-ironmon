@@ -68,10 +68,10 @@ public partial class Home : IDisposable
     {
         TrackerView? requestedView = args.Key.ToUpperInvariant() switch
         {
-            "P" or "1" => TrackerView.Player,
-            "E" or "2" => TrackerView.Enemy,
-            "L" or "3" => TrackerView.Lookup,
-            "D" or "4" when TrackerConnection.DebugAuthorized => TrackerView.Debug,
+            TrackerKeyboardKeys.PlayerLetter or TrackerKeyboardKeys.PlayerNumber => TrackerView.Player,
+            TrackerKeyboardKeys.EnemyLetter or TrackerKeyboardKeys.EnemyNumber => TrackerView.Enemy,
+            TrackerKeyboardKeys.LookupLetter or TrackerKeyboardKeys.LookupNumber => TrackerView.Lookup,
+            TrackerKeyboardKeys.DebugLetter or TrackerKeyboardKeys.DebugNumber when TrackerConnection.DebugAuthorized => TrackerView.Debug,
             _ => null
         };
 
@@ -85,14 +85,14 @@ public partial class Home : IDisposable
     /// <param name="view">The tab's tracker view.</param>
     /// <returns>The tab CSS classes.</returns>
     private string GetTabClass(TrackerView view)
-        => view == _selectedView ? "view-tab selected" : "view-tab";
+        => view == _selectedView ? TrackerUiConstants.SelectedViewTabCssClass : TrackerUiConstants.ViewTabCssClass;
 
     /// <summary>
     /// Gets the tab-container class for the authorized number of views.
     /// </summary>
     /// <returns>The tab-container CSS classes.</returns>
     private string GetViewTabsClass()
-        => TrackerConnection.DebugAuthorized ? "view-tabs debug-enabled" : "view-tabs";
+        => TrackerConnection.DebugAuthorized ? TrackerUiConstants.DebugViewTabsCssClass : TrackerUiConstants.ViewTabsCssClass;
 
     /// <summary>
     /// Gets the concise connection state shown in the tracker header.
@@ -100,12 +100,12 @@ public partial class Home : IDisposable
     /// <returns>The connection state label.</returns>
     private string GetConnectionText() => _connection.Status switch
     {
-        TrackerConnectionStatus.Waiting => "Waiting for game",
-        TrackerConnectionStatus.Handshaking => "Connecting",
-        TrackerConnectionStatus.Connected => "Game connected",
-        TrackerConnectionStatus.Error => "Connection error",
-        TrackerConnectionStatus.Stopped => "Tracker stopped",
-        _ => "Unknown state"
+        TrackerConnectionStatus.Waiting => Text["App.Shell.WaitingForGame"],
+        TrackerConnectionStatus.Handshaking => Text["App.Shell.Connecting"],
+        TrackerConnectionStatus.Connected => Text["App.Shell.GameConnected"],
+        TrackerConnectionStatus.Error => Text["App.Shell.ConnectionError"],
+        TrackerConnectionStatus.Stopped => Text["App.Shell.TrackerStopped"],
+        _ => Text["App.Shell.UnknownState"]
     };
 
     /// <summary>
@@ -118,9 +118,9 @@ public partial class Home : IDisposable
             return _connection.LastError;
 
         if (_connection.Game is not null)
-            return $"Infinite Fusion {_connection.Game.GameVersion} · Ironmon {_connection.Game.IronmonVersion}";
+            return Text["App.Shell.ConnectedGameVersions", _connection.Game.GameVersion, _connection.Game.IronmonVersion];
 
-        return "Listening on 127.0.0.1:38521";
+        return Text["App.Shell.ListeningOn", TrackerProtocol.LoopbackHost, TrackerProtocol.Port];
     }
 
     /// <summary>
@@ -129,10 +129,10 @@ public partial class Home : IDisposable
     /// <returns>The connection indicator CSS classes.</returns>
     private string GetConnectionDotClass() => _connection.Status switch
     {
-        TrackerConnectionStatus.Connected => "connection-dot connected",
-        TrackerConnectionStatus.Error => "connection-dot error",
-        TrackerConnectionStatus.Handshaking => "connection-dot handshaking",
-        _ => "connection-dot"
+        TrackerConnectionStatus.Connected => TrackerUiConstants.ConnectedDotCssClass,
+        TrackerConnectionStatus.Error => TrackerUiConstants.ErrorDotCssClass,
+        TrackerConnectionStatus.Handshaking => TrackerUiConstants.HandshakingDotCssClass,
+        _ => TrackerUiConstants.ConnectionDotCssClass
     };
 
     /// <summary>

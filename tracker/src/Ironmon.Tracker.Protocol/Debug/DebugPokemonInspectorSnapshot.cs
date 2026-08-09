@@ -136,4 +136,9 @@ public sealed class DebugPokemonInspectorSnapshot
     /// Gets or initializes every ability row exposed by the in-game inspector.
     /// </summary>
     public IReadOnlyList<DebugAbilitySlotSnapshot> AbilitySlots { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes every generated move-access channel.
+    /// </summary>
+    public MoveAccessSnapshot MoveAccess { get; init; } = new();
 }

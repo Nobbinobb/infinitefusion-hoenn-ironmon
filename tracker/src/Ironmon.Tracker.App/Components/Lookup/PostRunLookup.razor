@@ -1,23 +1,23 @@
-<section class="pokemon-card lookup-view" role="tabpanel" aria-label="Post-run Pokemon lookup">
+<section class="pokemon-card lookup-view" role="tabpanel" aria-label="@Text["Lookup.Runs.PostRunPokemonLookup"]">
     <header class="lookup-heading">
         <div>
-            <p class="card-kicker">COMPLETED RUNS</p>
-            <h2>Generated Pokémon lookup</h2>
+            <p class="card-kicker">@Text["Lookup.Runs.CompletedRunsHeading"]</p>
+            <h2>@Text["Lookup.Runs.GeneratedPokemonLookup"]</h2>
         </div>
     </header>
 
     @if (_recipes.Count == 0)
     {
         <div class="lookup-empty">
-            <strong>No completed run yet</strong>
-            <p>A lost or completed Ironmon run will add its reconstruction recipe here.</p>
+            <strong>@Text["Lookup.Runs.NoCompletedRun"]</strong>
+            <p>@Text["Lookup.Runs.NoCompletedRunDescription"]</p>
         </div>
     }
     else
     {
         <div class="lookup-controls">
             <label>
-                Run
+                @Text["Lookup.Runs.Run"]
                 <select value="@_selectedRunId" @onchange="SelectRun" @onkeydown:stopPropagation="true">
                     @foreach (CompletedRunRecipePayload recipe in _recipes)
                     {
@@ -30,6 +30,7 @@
         @if (GetSelectedRecipe() is CompletedRunRecipePayload selectedRecipe)
         {
             <PokemonLookupExplorer @key="selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
+            <MoveAccessRunAnalysis @key="@($"metrics-{selectedRecipe.RunId}")" Metrics="@selectedRecipe.MoveAccessMetrics" />
         }
     }
 </section>

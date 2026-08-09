@@ -1,7 +1,7 @@
 <div class="lookup-explorer">
     <div class="lookup-search">
-        <input type="search" placeholder="Search Pokémon name" aria-label="Pokemon name" @bind="_query" @bind:event="oninput" @onkeydown="HandleSearchKeyDown" @onkeydown:stopPropagation="true" />
-        <button type="button" disabled="@_loading" @onclick="SearchAsync">Search</button>
+        <input type="search" placeholder="@Text["Lookup.Search.SearchPokemonName"]" aria-label="@Text["Lookup.Search.PokemonName"]" @bind="_query" @bind:event="oninput" @onkeydown="HandleSearchKeyDown" @onkeydown:stopPropagation="true" />
+        <button type="button" disabled="@_loading" @onclick="SearchAsync">@Text["Lookup.Search.Search"]</button>
     </div>
 
     @if (_error is not null)
@@ -14,12 +14,12 @@
     }
     else if (_searched && _matches.Count == 0 && _lookup is null)
     {
-        <p class="lookup-message">No matching Pokémon found.</p>
+        <p class="lookup-message">@Text["Lookup.Search.NoMatchingPokemon"]</p>
     }
 
     @if (_matches.Count > 0)
     {
-        <div class="lookup-results" aria-label="Pokemon search results">
+        <div class="lookup-results" aria-label="@Text["Lookup.Search.PokemonSearchResults"]">
             @foreach (PokemonSearchMatch match in _matches)
             {
                 <button type="button" disabled="@_loading" @onclick="() => NavigateToPokemonAsync(match.SpeciesId)">
@@ -29,21 +29,21 @@
             }
         </div>
 
-        @if (_matchTotal > SearchPageSize)
+        @if (_matchTotal > TrackerProtocol.DefaultSearchPageSize)
         {
-            <nav class="lookup-pager" aria-label="Pokemon search result pages">
-                <button type="button" disabled="@(_loading || !HasPreviousSearchPage())" @onclick="PreviousSearchPageAsync">Previous</button>
+            <nav class="lookup-pager" aria-label="@Text["Lookup.Search.PokemonSearchResultPages"]">
+                <button type="button" disabled="@(_loading || !HasPreviousSearchPage())" @onclick="PreviousSearchPageAsync">@Text["Lookup.Search.Previous"]</button>
                 <span>@GetSearchRangeText()</span>
-                <button type="button" disabled="@(_loading || !HasNextSearchPage())" @onclick="NextSearchPageAsync">Next</button>
+                <button type="button" disabled="@(_loading || !HasNextSearchPage())" @onclick="NextSearchPageAsync">@Text["Lookup.Search.Next"]</button>
             </nav>
         }
     }
 
     @if (_lookup is not null)
     {
-        <nav class="lookup-history" aria-label="Pokemon lookup history">
-            <button type="button" disabled="@(_backHistory.Count == 0 || _loading)" @onclick="GoBackAsync">&#8592; Back</button>
-            <button type="button" disabled="@(_forwardHistory.Count == 0 || _loading)" @onclick="GoForwardAsync">Forward &#8594;</button>
+        <nav class="lookup-history" aria-label="@Text["Lookup.Search.PokemonLookupHistory"]">
+            <button type="button" disabled="@(_backHistory.Count == 0 || _loading)" @onclick="GoBackAsync">&#8592; @Text["Lookup.Search.Back"]</button>
+            <button type="button" disabled="@(_forwardHistory.Count == 0 || _loading)" @onclick="GoForwardAsync">@Text["Lookup.Search.Forward"] &#8594;</button>
         </nav>
         <PokemonLookupCard Pokemon="@_lookup" Recipe="@Recipe" DebugMode="@DebugMode" GameRoot="@GameRoot" PokemonSelected="NavigateToPokemonAsync" />
     }

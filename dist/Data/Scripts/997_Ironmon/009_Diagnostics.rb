@@ -62,6 +62,57 @@ module Ironmon
                             else
                               nil
                             end
+    move_access_version = if $PokemonGlobal
+                            $PokemonGlobal.ironmon_move_access_generator_version
+                          else
+                            nil
+                          end
+    move_pool_size = if $PokemonGlobal
+                       $PokemonGlobal.ironmon_move_pool_size
+                     else
+                       nil
+                     end
+    move_pool_fingerprint = if $PokemonGlobal
+                              $PokemonGlobal.ironmon_move_pool_fingerprint
+                            else
+                              nil
+                            end
+    move_source_fingerprint = if $PokemonGlobal
+                                $PokemonGlobal.ironmon_move_source_fingerprint
+                              else
+                                nil
+                              end
+    egg_move_source_fingerprint = if $PokemonGlobal
+                                    $PokemonGlobal.ironmon_egg_move_source_fingerprint
+                                  else
+                                    nil
+                                  end
+    tm_roster_size = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_tm_roster_size : nil
+    tm_roster_fingerprint = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_tm_roster_fingerprint : nil
+    tm_source_fingerprint = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_tm_source_fingerprint : nil
+    tr_roster_size = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_tr_roster_size : nil
+    tr_roster_fingerprint = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_tr_roster_fingerprint : nil
+    tr_source_fingerprint = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_tr_source_fingerprint : nil
+    tutor_catalog_size = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_tutor_catalog_size : nil
+    tutor_catalog_fingerprint = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_tutor_catalog_fingerprint : nil
+    tutor_source_fingerprint = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_tutor_source_fingerprint : nil
+    fusion_tutor_regular_size = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_fusion_tutor_regular_catalog_size : nil
+    fusion_tutor_legendary_size = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_fusion_tutor_legendary_catalog_size : nil
+    fusion_tutor_catalog_fingerprint = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_fusion_tutor_catalog_fingerprint : nil
+    fusion_tutor_source_fingerprint = $PokemonGlobal ?
+      $PokemonGlobal.ironmon_fusion_tutor_source_fingerprint : nil
     return "[Ironmon #{VERSION}] context=#{context} seed=#{seed} " +
       "wild_policy=#{configuration_value.wild_policy} " +
       "trainer_policy=#{configuration_value.trainer_policy} " +
@@ -73,6 +124,24 @@ module Ironmon
       "ability_pool_fingerprint=#{ability_fingerprint} " +
       "base_stat_generator=#{base_stat_version} " +
       "base_stat_source_fingerprint=#{base_stat_fingerprint} " +
+      "move_access_generator=#{move_access_version} " +
+      "move_pool_size=#{move_pool_size} " +
+      "move_pool_fingerprint=#{move_pool_fingerprint} " +
+      "move_source_fingerprint=#{move_source_fingerprint} " +
+      "egg_move_source_fingerprint=#{egg_move_source_fingerprint} " +
+      "tm_roster_size=#{tm_roster_size} " +
+      "tm_roster_fingerprint=#{tm_roster_fingerprint} " +
+      "tm_source_fingerprint=#{tm_source_fingerprint} " +
+      "tr_roster_size=#{tr_roster_size} " +
+      "tr_roster_fingerprint=#{tr_roster_fingerprint} " +
+      "tr_source_fingerprint=#{tr_source_fingerprint} " +
+      "tutor_catalog_size=#{tutor_catalog_size} " +
+      "tutor_catalog_fingerprint=#{tutor_catalog_fingerprint} " +
+      "tutor_source_fingerprint=#{tutor_source_fingerprint} " +
+      "fusion_tutor_regular_size=#{fusion_tutor_regular_size} " +
+      "fusion_tutor_legendary_size=#{fusion_tutor_legendary_size} " +
+      "fusion_tutor_catalog_fingerprint=#{fusion_tutor_catalog_fingerprint} " +
+      "fusion_tutor_source_fingerprint=#{fusion_tutor_source_fingerprint} " +
       "wild_mappings=#{wild_count} trainer_mappings=#{trainer_count}"
   end
 
@@ -98,6 +167,7 @@ module Game
     alias ironmon_diagnostics_original_load load
     def load(save_data)
       result = ironmon_diagnostics_original_load(save_data)
+      return result if Ironmon.checkpoint_reset_loading?
       Ironmon.log_run_diagnostics(:load) if Ironmon.active?
       return result
     end

@@ -1,12 +1,12 @@
 @page "/"
 
-<PageTitle>Ironmon Tracker</PageTitle>
+<PageTitle>@Text["App.Shell.AppTitle"]</PageTitle>
 
 <main class="tracker-shell" tabindex="0" @onkeydown="HandleKeyDown">
     <header class="tracker-header">
         <div>
-            <p class="eyebrow">IRONMON COMPANION</p>
-            <h1>Tracker</h1>
+            <p class="eyebrow">@Text["App.Shell.HomeEyebrow"]</p>
+            <h1>@Text["App.Shell.HomeHeading"]</h1>
         </div>
         <div class="connection-state" role="status" title="@GetConnectionDetail()">
             <span class="@GetConnectionDotClass()" aria-hidden="true"></span>
@@ -14,14 +14,14 @@
         </div>
     </header>
 
-    <nav class="@GetViewTabsClass()" aria-label="Tracker views" role="tablist">
+    <nav class="@GetViewTabsClass()" aria-label="@Text["App.Shell.TrackerViewsLabel"]" role="tablist">
         <button class="@GetTabClass(TrackerView.Player)"
                 type="button"
                 role="tab"
                 aria-selected="@(_selectedView == TrackerView.Player)"
                 @onclick="() => SelectView(TrackerView.Player)">
             <span class="tab-key">P</span>
-            Player
+            @Text["App.Shell.Player"]
         </button>
         <button class="@GetTabClass(TrackerView.Enemy)"
                 type="button"
@@ -29,7 +29,7 @@
                 aria-selected="@(_selectedView == TrackerView.Enemy)"
                 @onclick="() => SelectView(TrackerView.Enemy)">
             <span class="tab-key">E</span>
-            Enemy
+            @Text["App.Shell.Enemy"]
         </button>
         <button class="@GetTabClass(TrackerView.Lookup)"
                 type="button"
@@ -37,7 +37,7 @@
                 aria-selected="@(_selectedView == TrackerView.Lookup)"
                 @onclick="() => SelectView(TrackerView.Lookup)">
             <span class="tab-key">L</span>
-            Lookup
+            @Text["App.Shell.Lookup"]
         </button>
         @if (TrackerConnection.DebugAuthorized)
         {
@@ -47,7 +47,7 @@
                     aria-selected="@(_selectedView == TrackerView.Debug)"
                     @onclick="() => SelectView(TrackerView.Debug)">
                 <span class="tab-key">D</span>
-                Debug
+                @Text["App.Shell.Debug"]
             </button>
         }
     </nav>
@@ -73,12 +73,12 @@
     }
 
     <footer class="tracker-footer">
-        <span>Local connection</span>
+        <span>@Text["App.Shell.LocalConnection"]</span>
         <span>
-            <kbd>P</kbd> Player&nbsp;&nbsp;<kbd>E</kbd> Enemy&nbsp;&nbsp;<kbd>L</kbd> Lookup
+            <kbd>P</kbd> @Text["App.Shell.Player"]&nbsp;&nbsp;<kbd>E</kbd> @Text["App.Shell.Enemy"]&nbsp;&nbsp;<kbd>L</kbd> @Text["App.Shell.Lookup"]
             @if (TrackerConnection.DebugAuthorized)
             {
-                <text>&nbsp;&nbsp;<kbd>D</kbd> Debug</text>
+                <text>&nbsp;&nbsp;<kbd>D</kbd> @Text["App.Shell.Debug"]</text>
             }
         </span>
     </footer>

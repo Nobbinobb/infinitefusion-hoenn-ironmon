@@ -5,31 +5,33 @@ namespace Ironmon.Tracker.App;
 /// </summary>
 internal sealed class WebView2MissingPage : ContentPage
 {
-    private static readonly Uri _downloadPage = new("https://developer.microsoft.com/microsoft-edge/webview2/#download-section");
+    private static readonly Uri _downloadPage = new(TrackerApplicationConstants.WebView2DownloadUrl);
 
     /// <summary>
     /// Initializes the WebView2 recovery page.
     /// </summary>
-    internal WebView2MissingPage()
+    /// <param name="text">The localized tracker text.</param>
+    internal WebView2MissingPage(IStringLocalizer<TrackerResources> text)
     {
-        Title = "Ironmon Tracker";
+        ArgumentNullException.ThrowIfNull(text);
+        Title = text["App.WebView.AppTitle"];
         BackgroundColor = Color.FromArgb("#16131F");
         Label heading = new()
         {
-            Text = "WebView2 is required",
+            Text = text["App.WebView.WebView2RequiredHeading"],
             FontSize = 24,
             FontAttributes = FontAttributes.Bold,
             TextColor = Colors.White
         };
         Label description = new()
         {
-            Text = "Install the Microsoft Edge WebView2 Runtime, then restart the tracker.",
+            Text = text["App.WebView.WebView2RequiredDescription"],
             FontSize = 15,
             TextColor = Color.FromArgb("#C6BED8")
         };
         Button installButton = new()
         {
-            Text = "Open Microsoft download page",
+            Text = text["App.WebView.WebView2DownloadButton"],
             BackgroundColor = Color.FromArgb("#7257D9"),
             TextColor = Colors.White
         };

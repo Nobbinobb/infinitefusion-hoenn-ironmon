@@ -1,17 +1,17 @@
-<div class="enemy-stat-grid" aria-label="Enemy stat annotations">
+<div class="enemy-stat-grid" aria-label="@Text["Enemy.Stats.EnemyStatAnnotations"]">
     @foreach ((string Name, EnemyStat Stat) stat in _stats)
     {
         <div class="enemy-stat-row">
             <span>@stat.Name</span>
             @if (Enemy is null)
             {
-                <button type="button" disabled aria-label="@stat.Name annotation unavailable">&nbsp;</button>
+                <button type="button" disabled aria-label="@Text["Enemy.Stats.StatAnnotationUnavailable", stat.Name]">&nbsp;</button>
             }
             else
             {
                 <button class="@GetAnnotationClass(stat.Stat)"
                         type="button"
-                        aria-label="@stat.Name annotation: @GetAnnotationText(stat.Stat)"
+                        aria-label="@Text["Enemy.Stats.StatAnnotation", stat.Name, GetAnnotationText(stat.Stat)]"
                         @onclick="() => CycleAnnotation(stat.Stat, true)"
                         @oncontextmenu="() => CycleAnnotation(stat.Stat, false)"
                         @oncontextmenu:preventDefault>

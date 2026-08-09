@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Web.Virtualization
 @using Microsoft.JSInterop
+@using Microsoft.Extensions.Localization
 @using Ironmon.Tracker.App
 @using Ironmon.Tracker.App.Components
 @using Ironmon.Tracker.App.Components.Common
@@ -28,3 +29,4 @@
 @using Ironmon.Tracker.Protocol.Lookup
 @using Ironmon.Tracker.Protocol.Pokemon
 @using Ironmon.Tracker.Protocol.Transport
+@inject IStringLocalizer<TrackerResources> Text

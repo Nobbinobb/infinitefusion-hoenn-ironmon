@@ -234,6 +234,8 @@ def tryRandomizeGiftPokemon(pokemon, dontRandomize = false)
     pokemon.species = Ironmon.wild_species_for(
       pokemon.species, Ironmon.wild_script_context(:gift)
     )
+    pokemon.reset_moves if Ironmon.move_access_randomization_active? &&
+      !pokemon.shadowPokemon?
     return
   end
   return ironmon_original_try_randomize_gift_pokemon(pokemon, dontRandomize)

@@ -390,7 +390,7 @@ public sealed class TrackerKnowledgeStore
         {
             string path = GetRunPath(_runId);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            string temporaryPath = $"{path}.tmp";
+            string temporaryPath = $"{path}{TrackerStorageNames.TemporaryExtension}";
             File.WriteAllText(temporaryPath, JsonSerializer.Serialize(_knowledge, TrackerJson.Options));
             File.Move(temporaryPath, path, true);
             LastError = null;
@@ -409,7 +409,7 @@ public sealed class TrackerKnowledgeStore
     private string GetRunPath(string runId)
     {
         string fileName = string.Concat(runId.Select(character => char.IsLetterOrDigit(character) || character is '-' or '_' ? character : '_'));
-        return Path.Combine(_options.RootDirectory, "runs", $"{fileName}.json");
+        return Path.Combine(_options.RootDirectory, TrackerStorageNames.RunsDirectory, $"{fileName}{TrackerStorageNames.JsonExtension}");
     }
 
     /// <summary>

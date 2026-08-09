@@ -1,0 +1,146 @@
+<details class="run-analysis">
+    <summary>
+        <span>@Text["Lookup.Analysis.Title"]</span>
+        <small>@Text["Lookup.Analysis.CompletedRunOnly"]</small>
+    </summary>
+
+    @if (Metrics is null)
+    {
+        <div class="lookup-empty run-analysis-empty">
+            <strong>@Text["Lookup.Analysis.Unavailable"]</strong>
+            <p>@Text["Lookup.Analysis.UnavailableDescription"]</p>
+        </div>
+    }
+    else
+    {
+        <div class="analysis-summary-grid">
+            <article><strong>@Metrics.Encounters.Sum(metric => metric.EncounterCount)</strong><span>@Text["Lookup.Analysis.Encounters"]</span></article>
+            <article><strong>@Metrics.MachineAcquisitions.Count</strong><span>@Text["Lookup.Analysis.MachinesObtained"]</span></article>
+            <article><strong>@Metrics.TutorVisits.Count</strong><span>@Text["Lookup.Analysis.TutorVisits"]</span></article>
+            <article><strong>@Metrics.MoveAcquisitions.Count</strong><span>@Text["Lookup.Analysis.MoveAcquisitions"]</span></article>
+            <article><strong>@Metrics.MoveUses.Sum(metric => metric.Count)</strong><span>@Text["Lookup.Analysis.MoveUses"]</span></article>
+        </div>
+
+        <section class="analysis-section">
+            <h3>@Text["Lookup.Analysis.EncounteredAccess"]</h3>
+            @if (Metrics.Encounters.Count == 0)
+            {
+                <p class="analysis-none">@Text["Lookup.Analysis.NoEncounterData"]</p>
+            }
+            @foreach (MoveAccessEncounterMetricPayload encounter in Metrics.Encounters)
+            {
+                <article class="analysis-encounter-card">
+                    <header>
+                        <div>
+                            <strong>@encounter.SpeciesName</strong>
+                            <span>@Text["Lookup.Analysis.EncounterContext", encounter.Level, FormatSide(encounter.Side), encounter.EncounterCount]</span>
+                        </div>
+                        @if (encounter.IsFusion)
+                        {
+                            <span class="analysis-tag">@Text["Lookup.Analysis.Fusion"]</span>
+                        }
+                    </header>
+
+                    <div class="analysis-facts">
+                        <span>@Text["Lookup.Analysis.UniqueMoves", encounter.UniqueMoveCount]</span>
+                        <span>@Text["Lookup.Analysis.CrossChannelOverlap", encounter.CrossChannelOverlapCount]</span>
+                        <span>@FormatEarliestDamage(encounter.EarliestDamagingMoveLevel)</span>
+                        <span class="@(encounter.LevelOneGuaranteeSatisfied ? "analysis-pass" : "analysis-fail")">
+                            @Text["Lookup.Analysis.LevelOneGuarantee", encounter.LevelOneMoveCount, encounter.LevelOneDamagingMoveCount]
+                        </span>
+                        <span>@Text["Lookup.Analysis.TutorMismatch", encounter.OrdinaryTutorAbstractCount, encounter.OrdinaryTutorSupportedCount]</span>
+                    </div>
+
+                    <div class="analysis-table-wrap">
+                        <table class="analysis-table">
+                            <thead>
+                                <tr>
+                                    <th>@Text["Lookup.Analysis.Channel"]</th>
+                                    <th>@Text["Lookup.Analysis.Entries"]</th>
+                                    <th>@Text["Lookup.Analysis.Unique"]</th>
+                                    <th>@Text["Lookup.Analysis.ComponentEntries"]</th>
+                                    <th>@Text["Lookup.Analysis.DuplicatesRemoved"]</th>
+                                    <th>@Text["Lookup.Analysis.FusionGrowth"]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (MoveAccessChannelMetricPayload channel in encounter.Channels)
+                                {
+                                    <tr>
+                                        <td>@FormatChannel(channel.Channel)</td>
+                                        <td>@channel.GeneratedEntryCount</td>
+                                        <td>@channel.UniqueMoveCount</td>
+                                        <td>@FormatOptionalNumber(channel.ComponentEntryCount)</td>
+                                        <td>@FormatOptionalNumber(channel.DuplicateRemovals)</td>
+                                        <td>@FormatSignedNumber(channel.GrowthOverLargerComponent)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p class="analysis-initial-moves">
+                        <strong>@Text["Lookup.Analysis.InitialFour"]</strong>
+                        @FormatInitialMoves(encounter.InitialMoves)
+                    </p>
+                </article>
+            }
+        </section>
+
+        <section class="analysis-section">
+            <h3>@Text["Lookup.Analysis.Interactions"]</h3>
+            <div class="analysis-columns">
+                <article>
+                    <h4>@Text["Lookup.Analysis.MachinesObtained"]</h4>
+                    @if (Metrics.MachineAcquisitions.Count == 0)
+                    {
+                        <p class="analysis-none">@Text["Lookup.Analysis.NoneRecorded"]</p>
+                    }
+                    @foreach (MachineAcquisitionMetricPayload machine in Metrics.MachineAcquisitions)
+                    {
+                        <p><strong>@machine.ItemName — @machine.MoveName</strong><span>@Text["Lookup.Analysis.MachineCompatibility", machine.CompatibleParty.Count, machine.PartyCount, FormatSource(machine.Source)]</span></p>
+                    }
+                </article>
+                <article>
+                    <h4>@Text["Lookup.Analysis.TutorVisits"]</h4>
+                    @if (Metrics.TutorVisits.Count == 0)
+                    {
+                        <p class="analysis-none">@Text["Lookup.Analysis.NoneRecorded"]</p>
+                    }
+                    @foreach (TutorVisitMetricPayload tutor in Metrics.TutorVisits)
+                    {
+                        <p><strong>@tutor.MoveName</strong><span>@Text["Lookup.Analysis.TutorCompatibility", tutor.CompatibleParty.Count, FormatTaughtPokemon(tutor.TaughtSpeciesName)]</span></p>
+                    }
+                </article>
+            </div>
+        </section>
+
+        <section class="analysis-section">
+            <h3>@Text["Lookup.Analysis.AcquisitionsAndUses"]</h3>
+            <div class="analysis-columns">
+                <article>
+                    <h4>@Text["Lookup.Analysis.MoveAcquisitions"]</h4>
+                    @if (Metrics.MoveAcquisitions.Count == 0)
+                    {
+                        <p class="analysis-none">@Text["Lookup.Analysis.NoneRecorded"]</p>
+                    }
+                    @foreach (MoveAcquisitionMetricPayload acquisition in Metrics.MoveAcquisitions)
+                    {
+                        <p><strong>@acquisition.SpeciesName — @acquisition.MoveName</strong><span>@Text["Lookup.Analysis.AcquisitionContext", acquisition.Level, FormatSource(acquisition.Source)]</span></p>
+                    }
+                </article>
+                <article>
+                    <h4>@Text["Lookup.Analysis.MoveUses"]</h4>
+                    @if (Metrics.MoveUses.Count == 0)
+                    {
+                        <p class="analysis-none">@Text["Lookup.Analysis.NoneRecorded"]</p>
+                    }
+                    @foreach (MoveUseMetricPayload use in Metrics.MoveUses.OrderByDescending(metric => metric.Count))
+                    {
+                        <p><strong>@use.SpeciesName — @use.MoveName</strong><span>@Text["Lookup.Analysis.UseContext", use.Count, FormatSide(use.Side), use.Copied ? Text["Lookup.Analysis.Copied"] : Text["Lookup.Analysis.Direct"]]</span></p>
+                    }
+                </article>
+            </div>
+        </section>
+    }
+</details>

@@ -45,20 +45,20 @@ public sealed class TrackerRequestClient
     /// <param name="normalOnly">Whether to restrict matches to normal species.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The matching stable Pokémon identifiers.</returns>
-    public async Task<PokemonSearchResponsePayload> SearchPokemonAsync(CompletedRunRecipePayload recipe, string query, int offset = 0, int limit = 20, bool normalOnly = false, CancellationToken cancellationToken = default)
+    public async Task<PokemonSearchResponsePayload> SearchPokemonAsync(CompletedRunRecipePayload recipe, string query, int offset = 0, int limit = TrackerProtocol.DefaultSearchPageSize, bool normalOnly = false, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(recipe);
         ArgumentException.ThrowIfNullOrWhiteSpace(query);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
-        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, 50);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, TrackerProtocol.MinimumSearchPageSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, TrackerProtocol.MaximumSearchPageSize);
         string normalizedQuery = query.Trim();
         string cacheKey = $"{recipe.RunId}|{normalOnly}|{offset}|{limit}|{normalizedQuery.ToUpperInvariant()}";
         if (_pokemonSearchCache.TryGetValue(cacheKey, out PokemonSearchResponsePayload? cached))
             return cached;
 
         PokemonSearchRequestPayload payload = new() { Query = normalizedQuery, Offset = offset, Limit = limit, NormalOnly = normalOnly, Recipe = recipe };
-        PokemonSearchResponsePayload response = await _session.SendAsync<PokemonSearchRequestPayload, PokemonSearchResponsePayload>("pokemon_search", payload, recipe.RunId, cancellationToken);
+        PokemonSearchResponsePayload response = await _session.SendAsync<PokemonSearchRequestPayload, PokemonSearchResponsePayload>(TrackerCommands.PokemonSearch, payload, recipe.RunId, cancellationToken);
         _pokemonSearchCache[cacheKey] = response;
         return response;
     }
@@ -78,8 +78,8 @@ public sealed class TrackerRequestClient
         if (_pokemonLookupCache.TryGetValue(cacheKey, out PokemonLookupSnapshot? cached))
             return cached;
 
-        PokemonLookupRequestPayload payload = new() { SpeciesId = speciesId, Level = 100, Recipe = recipe };
-        PokemonLookupSnapshot response = await _session.SendAsync<PokemonLookupRequestPayload, PokemonLookupSnapshot>("pokemon_lookup", payload, recipe.RunId, cancellationToken);
+        PokemonLookupRequestPayload payload = new() { SpeciesId = speciesId, Level = TrackerProtocol.CompatibilityLookupLevel, Recipe = recipe };
+        PokemonLookupSnapshot response = await _session.SendAsync<PokemonLookupRequestPayload, PokemonLookupSnapshot>(TrackerCommands.PokemonLookup, payload, recipe.RunId, cancellationToken);
         _pokemonLookupCache[cacheKey] = response;
         return response;
     }
@@ -102,7 +102,7 @@ public sealed class TrackerRequestClient
             return cached;
 
         FusionPreviewRequestPayload payload = new() { FirstSpeciesId = firstSpeciesId, SecondSpeciesId = secondSpeciesId, Recipe = recipe };
-        FusionPreviewResponsePayload response = await _session.SendAsync<FusionPreviewRequestPayload, FusionPreviewResponsePayload>("fusion_preview", payload, recipe.RunId, cancellationToken);
+        FusionPreviewResponsePayload response = await _session.SendAsync<FusionPreviewRequestPayload, FusionPreviewResponsePayload>(TrackerCommands.FusionPreview, payload, recipe.RunId, cancellationToken);
         _fusionPreviewCache[cacheKey] = response;
         return response;
     }
@@ -117,7 +117,7 @@ public sealed class TrackerRequestClient
     {
         ArgumentNullException.ThrowIfNull(request);
         EnsureDebugAuthorized();
-        return _session.SendAsync<DebugPokemonInspectionRequestPayload, DebugPokemonInspectorSnapshot>("debug_inspect_pokemon", request, GetConnectedRunId(), cancellationToken);
+        return _session.SendAsync<DebugPokemonInspectionRequestPayload, DebugPokemonInspectorSnapshot>(TrackerCommands.DebugInspectPokemon, request, GetConnectedRunId(), cancellationToken);
     }
 
     /// <summary>
@@ -129,7 +129,7 @@ public sealed class TrackerRequestClient
     {
         EnsureDebugAuthorized();
         DebugRunDiagnosticsRequestPayload request = new();
-        return _session.SendAsync<DebugRunDiagnosticsRequestPayload, DebugRunDiagnosticsSnapshot>("debug_run_diagnostics", request, GetConnectedRunId(), cancellationToken);
+        return _session.SendAsync<DebugRunDiagnosticsRequestPayload, DebugRunDiagnosticsSnapshot>(TrackerCommands.DebugRunDiagnostics, request, GetConnectedRunId(), cancellationToken);
     }
 
     /// <summary>
@@ -141,15 +141,15 @@ public sealed class TrackerRequestClient
     /// <param name="normalOnly">Whether to restrict matches to normal species.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The matching active-run Pokémon identifiers.</returns>
-    public Task<PokemonSearchResponsePayload> SearchDebugPokemonAsync(string query, int offset = 0, int limit = 20, bool normalOnly = false, CancellationToken cancellationToken = default)
+    public Task<PokemonSearchResponsePayload> SearchDebugPokemonAsync(string query, int offset = 0, int limit = TrackerProtocol.DefaultSearchPageSize, bool normalOnly = false, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(query);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
-        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, 50);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, TrackerProtocol.MinimumSearchPageSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, TrackerProtocol.MaximumSearchPageSize);
         EnsureDebugAuthorized();
         DebugPokemonSearchRequestPayload request = new() { Query = query.Trim(), Offset = offset, Limit = limit, NormalOnly = normalOnly };
-        return _session.SendAsync<DebugPokemonSearchRequestPayload, PokemonSearchResponsePayload>("debug_pokemon_search", request, GetConnectedRunId(), cancellationToken);
+        return _session.SendAsync<DebugPokemonSearchRequestPayload, PokemonSearchResponsePayload>(TrackerCommands.DebugPokemonSearch, request, GetConnectedRunId(), cancellationToken);
     }
 
     /// <summary>
@@ -163,7 +163,7 @@ public sealed class TrackerRequestClient
         ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
         EnsureDebugAuthorized();
         DebugPokemonLookupRequestPayload request = new() { SpeciesId = speciesId };
-        return _session.SendAsync<DebugPokemonLookupRequestPayload, PokemonLookupSnapshot>("debug_pokemon_lookup", request, GetConnectedRunId(), cancellationToken);
+        return _session.SendAsync<DebugPokemonLookupRequestPayload, PokemonLookupSnapshot>(TrackerCommands.DebugPokemonLookup, request, GetConnectedRunId(), cancellationToken);
     }
 
     /// <summary>
@@ -179,7 +179,7 @@ public sealed class TrackerRequestClient
         ArgumentException.ThrowIfNullOrWhiteSpace(secondSpeciesId);
         EnsureDebugAuthorized();
         DebugFusionPreviewRequestPayload request = new() { FirstSpeciesId = firstSpeciesId, SecondSpeciesId = secondSpeciesId };
-        return _session.SendAsync<DebugFusionPreviewRequestPayload, FusionPreviewResponsePayload>("debug_fusion_preview", request, GetConnectedRunId(), cancellationToken);
+        return _session.SendAsync<DebugFusionPreviewRequestPayload, FusionPreviewResponsePayload>(TrackerCommands.DebugFusionPreview, request, GetConnectedRunId(), cancellationToken);
     }
 
     /// <summary>

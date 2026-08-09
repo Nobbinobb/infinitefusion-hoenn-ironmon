@@ -8,7 +8,6 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class PokemonLookupExplorer
 {
-    private const int SearchPageSize = 20;
     private readonly List<string> _backHistory = [];
     private readonly List<string> _forwardHistory = [];
     private IReadOnlyList<PokemonSearchMatch> _matches = [];
@@ -48,7 +47,7 @@ public partial class PokemonLookupExplorer
     /// <summary>
     /// Gets the message shown while generated data is loading.
     /// </summary>
-    private string LoadingMessage => DebugMode ? "Reading active generated data…" : "Reconstructing generated data…";
+    private string LoadingMessage => DebugMode ? Text["Lookup.Search.ReadingActiveGeneratedData"] : Text["Lookup.Search.ReconstructingGeneratedData"];
 
     /// <summary>
     /// Starts a search when Enter is pressed in the query field.
@@ -57,7 +56,7 @@ public partial class PokemonLookupExplorer
     /// <returns>A task representing the search.</returns>
     private async Task HandleSearchKeyDown(KeyboardEventArgs args)
     {
-        if (args.Key == "Enter")
+        if (args.Key == TrackerKeyboardKeys.Enter)
             await SearchAsync();
     }
 
@@ -81,7 +80,7 @@ public partial class PokemonLookupExplorer
         string query = _query.Trim();
         if (query.Length == 0)
         {
-            _error = "Enter a Pokémon name to search.";
+            _error = Text["Lookup.Search.EnterPokemonName"];
             return;
         }
 
@@ -127,8 +126,8 @@ public partial class PokemonLookupExplorer
     private Task<PokemonSearchResponsePayload> SearchPokemonAsync(string query, int offset)
     {
         return DebugMode
-            ? Connection.SearchDebugPokemonAsync(query, offset, SearchPageSize)
-            : Connection.SearchPokemonAsync(Recipe!, query, offset, SearchPageSize);
+            ? Connection.SearchDebugPokemonAsync(query, offset, TrackerProtocol.DefaultSearchPageSize)
+            : Connection.SearchPokemonAsync(Recipe!, query, offset, TrackerProtocol.DefaultSearchPageSize);
     }
 
     /// <summary>
@@ -247,14 +246,14 @@ public partial class PokemonLookupExplorer
     /// </summary>
     /// <returns>A task representing the search.</returns>
     private Task PreviousSearchPageAsync()
-        => SearchPageAsync(Math.Max(0, _searchOffset - SearchPageSize));
+        => SearchPageAsync(Math.Max(0, _searchOffset - TrackerProtocol.DefaultSearchPageSize));
 
     /// <summary>
     /// Loads the next search page.
     /// </summary>
     /// <returns>A task representing the search.</returns>
     private Task NextSearchPageAsync()
-        => SearchPageAsync(_searchOffset + SearchPageSize);
+        => SearchPageAsync(_searchOffset + TrackerProtocol.DefaultSearchPageSize);
 
     /// <summary>
     /// Formats the inclusive visible result range.
@@ -264,7 +263,7 @@ public partial class PokemonLookupExplorer
     {
         int first = _matches.Count == 0 ? 0 : _searchOffset + 1;
         int last = _searchOffset + _matches.Count;
-        return $"{first}–{last} of {_matchTotal}";
+        return Text["Lookup.Search.ResultRange", first, last, _matchTotal];
     }
 
     /// <summary>

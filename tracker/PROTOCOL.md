@@ -1,7 +1,7 @@
 # Ironmon Tracker protocol v1
 
-This document records the implemented protocol through the Part 7 debug
-inspector foundation. Later parts extend the payload catalog without changing
+This document records the implemented protocol through the Step 3.3 move-access
+inspection additions. Later parts extend the payload catalog without changing
 the common envelope or transport.
 
 ## Transport
@@ -41,7 +41,7 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.0",
-    "ironmon_version": "0.4.0",
+    "ironmon_version": "0.5.0",
     "ironmon_active": false,
     "debug_available": true,
     "game_root": "C:/Games/InfiniteFusion2",
@@ -335,7 +335,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.4.0",
+  "ironmon_version": "0.5.0",
   "configuration": {
     "schema_version": 2,
     "wild_policy": "mixed",
@@ -346,10 +346,31 @@ When a run ends, the game persists its result in the save metadata and emits
   "species_generator_version": 2,
   "ability_generator_version": 3,
   "base_stat_generator_version": 1,
+  "move_access_generator_version": 6,
   "player_fusion_generator_version": 2,
   "species_pool_fingerprint": "...",
   "ability_pool_fingerprint": "...",
   "base_stat_source_fingerprint": "...",
+  "move_pool_fingerprint": "...",
+  "move_contextual_restriction_fingerprint": "...",
+  "move_source_fingerprint": "...",
+  "egg_move_source_fingerprint": "...",
+  "tm_roster_fingerprint": "...",
+  "tm_source_fingerprint": "...",
+  "tr_roster_fingerprint": "...",
+  "tr_source_fingerprint": "...",
+  "tutor_catalog_fingerprint": "...",
+  "tutor_source_fingerprint": "...",
+  "fusion_tutor_catalog_fingerprint": "...",
+  "fusion_tutor_source_fingerprint": "...",
+  "move_access_metrics": {
+    "schema_version": 1,
+    "encounters": [],
+    "machine_acquisitions": [],
+    "tutor_visits": [],
+    "move_acquisitions": [],
+    "move_uses": []
+  },
   "fusion_pool_fingerprint": "..."
 }
 ```
@@ -359,6 +380,14 @@ tracker started after the loss can still archive the recipe. The tracker writes
 recipes atomically under
 `%LocalAppData%/IronmonTracker/runs/<run-id>/recipe.json`. It never persists
 the reconstructed lookup response.
+
+New Step 3.3 runs include `move_access_metrics`. The game records only species,
+levels, party compatibility, acquisitions, and move uses that were actually
+encountered or observed. It reconstructs channel totals, overlap, the effective
+initial four, tutor mismatch, and fusion-union growth when the run ends. The
+tracker archives that completed snapshot with the recipe and does not expose it
+through active-run views. Recipes created before metric schema 1 omit the field
+and remain valid.
 
 ## Deterministic post-run lookup
 
@@ -386,7 +415,9 @@ limit the returned learnset. The response includes:
 - types, all six original and generated base stats, their differences, both
   BST values, and whether that run enabled base-stat randomization;
 - every generated normal and hidden ability slot;
-- the complete level-up learnset;
+- generated move access grouped into `learnset`, `egg_moves`, `machine_moves`,
+  and `tutor_moves`, including acquisition source labels and localized move
+  details;
 - current evolution requirements, destinations, direct pre-evolutions, and
   sprites;
 - authored wild route, encounter-table, and slot occurrences with source
@@ -399,6 +430,13 @@ limit the returned learnset. The response includes:
 Evolution destinations, previous evolutions, displayed components, reverse
 fusions, and fusion materials use stable species identifiers and can be
 selected as the subject of another lookup.
+
+The machine list identifies the TM or TR item that teaches each compatible
+move. The tutor list includes only moves supported by a currently available
+ordinary tutor or by the Fusion Tutor's regular or legendary catalog. It also
+reports the supported ordinary-tutor count beside the Pokemon's full abstract
+tutor compatibility count. The legacy top-level `learnset` field mirrors the
+new grouped level-up list for older tracker clients.
 
 Normal Only wild fusion outcomes list both ordered encounter slots and both
 source species. Their displayed percentage is conditional on the separate
@@ -423,11 +461,13 @@ Pokemon do not replace those components.
 
 Before any post-run command returns generated information, the game verifies
 that the run is complete and that the requested species, ability, base-stat,
-and player-fusion generators plus the normal-species, ability, base-stat
-source, and custom-fusion pools still match. A mismatch returns a structured
+move-access, and player-fusion generators plus their recorded source pools and
+catalogs still match. Recipes created before Step 3.3 have no move metadata and
+retain native move-access lookup. A mismatch returns a structured
 error such as `generator_unavailable`, `incompatible_species_pool`,
 `incompatible_ability_pool`, `incompatible_base_stats`, or
-`incompatible_fusion_pool`. A completed lost or won run remains available for
+`incompatible_move_access`, or `incompatible_fusion_pool`. A completed lost or
+won run remains available for
 lookup while another Ironmon run is active. A recipe that itself declares an
 active or missing result remains rejected.
 
@@ -460,7 +500,9 @@ Enemy targets include `enemy_position`; party targets include the zero-based
 - original and generated final base stats, per-stat differences, and both BST
   values; and
 - base-stat generator metadata, with body/head dominance labels for standard
-  fusions but without duplicated component stat tables.
+  fusions but without duplicated component stat tables; and
+- the same Learnset, Egg, TM, and supported Tutor move-access groups used by
+  completed-run and active Debug Lookup.
 
 Arbitrary species inspection is not implemented by this request because the
 game's ordinary Pokemon constructor consumes random values. The debug contract
@@ -469,7 +511,7 @@ will not use that mutating path merely to fabricate an inspection target.
 `debug_run_diagnostics` has an empty payload and returns the game and Ironmon
 versions, protocol version, run and battle IDs, seed, configuration policies,
 fusion-pool metadata, ability-generator metadata, base-stat generator metadata,
-and wild/trainer mapping counts.
+move-access source metadata, and wild/trainer mapping counts.
 
 The authorized active-run lookup uses `debug_pokemon_search`,
 `debug_pokemon_lookup`, and `debug_fusion_preview`. Their result contracts match

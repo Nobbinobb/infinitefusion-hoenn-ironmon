@@ -9,6 +9,7 @@ module Ironmon
   TRACKER_PORT = 38_521
   TRACKER_SCHEMA_VERSION = 1
   TRACKER_RECONNECT_SECONDS = 2.0
+  TRACKER_UPTIME_UNITS_PER_SECOND = 1_000_000.0
   TRACKER_MAXIMUM_MESSAGE_BYTES = 1_048_576
   TRACKER_STATE_INTERVAL_SECONDS = 0.1
   TRACKER_FIXED_HEALING = {
@@ -25,6 +26,10 @@ module Ironmon
     :HYPERPOTION => 200,
     :ENERGYROOT => 200
   }
+
+  def self.tracker_uptime_seconds
+    return System.uptime.to_f / TRACKER_UPTIME_UNITS_PER_SECOND
+  end
 
   def self.tracker_json_generate(value)
     case value
@@ -81,7 +86,7 @@ module Ironmon
 
     def update
       if @state == :disconnected
-        begin_connect if System.uptime >= @next_attempt_at
+        begin_connect if Ironmon.tracker_uptime_seconds >= @next_attempt_at
       elsif @state == :connecting
         finish_connect
       elsif @state == :connected
@@ -366,14 +371,15 @@ module Ironmon
       @state = :disconnected
       @input_buffer = ""
       @output_buffer = ""
-      @next_attempt_at = System.uptime + TRACKER_RECONNECT_SECONDS
+      @next_attempt_at = Ironmon.tracker_uptime_seconds +
+        TRACKER_RECONNECT_SECONDS
       log_error(error) if error
       echoln "Ironmon tracker disconnected." if was_connected && !error
     end
 
     def log_error(error)
       message = "#{error.class}: #{error.message}"
-      now = System.uptime
+      now = Ironmon.tracker_uptime_seconds
       return if message == @last_error && now - @last_error_at < 30.0
       @last_error = message
       @last_error_at = now
@@ -397,6 +403,7 @@ module Ironmon
     $PokemonGlobal.ironmon_run_id = new_tracker_run_id
     $PokemonGlobal.ironmon_tracker_sequence = 0
     $PokemonGlobal.ironmon_run_result = nil
+    reset_move_access_metrics if respond_to?(:reset_move_access_metrics)
     @tracker_battle = nil
     @tracker_battle_id = nil
     @tracker_player_battler = nil
@@ -414,7 +421,8 @@ module Ironmon
   def self.start_tracker_battle(battle)
     return if !active?
     @tracker_battle = battle
-    @tracker_battle_id = "battle-#{ensure_tracker_run_id}-#{(System.uptime * 1000).to_i}"
+    uptime = (tracker_uptime_seconds * 1000).to_i
+    @tracker_battle_id = "battle-#{ensure_tracker_run_id}-#{uptime}"
     @tracker_player_battler = nil
     @tracker_player_json = nil
     @tracker_move_menu_pokemon_id = nil
@@ -444,6 +452,8 @@ module Ironmon
     return if !active? || !@tracker_battle_id || !battler
     @tracker_player_battler = battler
     @tracker_player_pokemon = battler.pokemon
+    record_move_access_encounter(battler.pokemon, battler.level, "player") if
+      respond_to?(:record_move_access_encounter)
     @tracker_move_menu_pokemon_id = nil
     snapshot = tracker_player_snapshot
     @tracker_player_json = tracker_json_generate(snapshot)
@@ -462,7 +472,7 @@ module Ironmon
     synchronize_tracker_player_from_party if !@tracker_battle_id
     return if !@tracker_player_pokemon
     return if @tracker_battle_id && !@tracker_player_battler
-    now = System.uptime
+    now = tracker_uptime_seconds
     return if @tracker_next_state_at && now < @tracker_next_state_at
     @tracker_next_state_at = now + TRACKER_STATE_INTERVAL_SECONDS
     snapshot = tracker_player_snapshot
@@ -494,6 +504,8 @@ module Ironmon
     current = @tracker_enemy_battlers[battler.index]
     return if current && current.pokemon.equal?(battler.pokemon)
     @tracker_enemy_battlers[battler.index] = battler
+    record_move_access_encounter(battler.pokemon, battler.level, "enemy") if
+      respond_to?(:record_move_access_encounter)
     @tracker_enemy_move_signatures.delete(battler.index)
     @tracker_enemy_abilities.delete(battler.index)
     snapshot = tracker_enemy_snapshot(battler)
@@ -503,7 +515,7 @@ module Ironmon
 
   def self.update_tracker_enemies
     return if !@tracker_battle_id || !@tracker_enemy_battlers
-    now = System.uptime
+    now = tracker_uptime_seconds
     return if @tracker_next_enemy_state_at && now < @tracker_next_enemy_state_at
     @tracker_next_enemy_state_at = now + TRACKER_STATE_INTERVAL_SECONDS
     @tracker_enemy_battlers.each do |position, battler|
@@ -571,7 +583,7 @@ module Ironmon
     seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : nil
     return "run-seed-#{seed}" if seed
     timestamp = Time.now.utc.strftime("%Y%m%dT%H%M%S")
-    uptime = (System.uptime * 1000).to_i
+    uptime = (tracker_uptime_seconds * 1000).to_i
     return "run-#{timestamp}-#{Process.pid}-#{uptime}"
   end
 
@@ -926,8 +938,14 @@ PokeBattle_Battle.prepend(IronmonTrackerBattleHooks)
 module IronmonTrackerBattlerHooks
   def pbUseMove(choice, special_usage = false)
     result = super
-    if @index.odd? && !special_usage && !@lastMoveFailed && @lastMoveUsed
-      Ironmon.tracker_enemy_move_if_changed(self)
+    if !@lastMoveFailed && @lastMoveUsed
+      if @index.odd? && !special_usage
+        Ironmon.tracker_enemy_move_if_changed(self)
+      end
+      Ironmon.record_move_access_use(
+        @pokemon, @lastMoveUsed, @index.even? ? "player" : "enemy",
+        special_usage
+      ) if Ironmon.respond_to?(:record_move_access_use)
     end
     return result
   end

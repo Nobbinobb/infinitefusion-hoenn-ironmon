@@ -31,5 +31,5 @@ public partial class AbilityDetailPanel
     /// </summary>
     /// <returns>The localized description or fallback.</returns>
     private string GetDescription()
-        => string.IsNullOrWhiteSpace(Ability.Description) ? "No description is available." : Ability.Description;
+        => string.IsNullOrWhiteSpace(Ability.Description) ? Text["Common.Ability.NoDescriptionAvailable"] : Ability.Description;
 }

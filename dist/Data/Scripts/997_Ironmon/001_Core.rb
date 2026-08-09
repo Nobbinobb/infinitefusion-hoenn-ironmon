@@ -3,7 +3,7 @@
 #===============================================================================
 
 module Ironmon
-  VERSION = "0.4.0"
+  VERSION = "0.5.0"
   SUPPORTED_GAME_VERSIONS = ["6.8.0"].freeze
   RESET_KEY = Input::F7
   FULL_RANDOM_BST_RANGE = 999
@@ -65,6 +65,25 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_ability_pool_fingerprint
   attr_accessor :ironmon_base_stat_generator_version
   attr_accessor :ironmon_base_stat_source_fingerprint
+  attr_accessor :ironmon_move_access_generator_version
+  attr_accessor :ironmon_move_pool_size
+  attr_accessor :ironmon_move_pool_fingerprint
+  attr_accessor :ironmon_move_contextual_restriction_fingerprint
+  attr_accessor :ironmon_move_source_fingerprint
+  attr_accessor :ironmon_egg_move_source_fingerprint
+  attr_accessor :ironmon_tm_roster_size
+  attr_accessor :ironmon_tm_roster_fingerprint
+  attr_accessor :ironmon_tm_source_fingerprint
+  attr_accessor :ironmon_tr_roster_size
+  attr_accessor :ironmon_tr_roster_fingerprint
+  attr_accessor :ironmon_tr_source_fingerprint
+  attr_accessor :ironmon_tutor_catalog_size
+  attr_accessor :ironmon_tutor_catalog_fingerprint
+  attr_accessor :ironmon_tutor_source_fingerprint
+  attr_accessor :ironmon_fusion_tutor_regular_catalog_size
+  attr_accessor :ironmon_fusion_tutor_legendary_catalog_size
+  attr_accessor :ironmon_fusion_tutor_catalog_fingerprint
+  attr_accessor :ironmon_fusion_tutor_source_fingerprint
   attr_accessor :ironmon_wild_species_map
   attr_accessor :ironmon_trainer_species_map
   attr_accessor :ironmon_gym_leader_teams
@@ -72,6 +91,7 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_run_id
   attr_accessor :ironmon_tracker_sequence
   attr_accessor :ironmon_run_result
+  attr_accessor :ironmon_move_access_metrics
 end
 
 class Pokemon

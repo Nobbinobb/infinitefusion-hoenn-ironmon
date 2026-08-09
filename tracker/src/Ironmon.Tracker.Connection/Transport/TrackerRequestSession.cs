@@ -9,8 +9,8 @@ internal sealed class TrackerRequestSession : IDisposable
 {
     private readonly Lock _sync = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<TrackerMessage>> _pendingRequests = new();
-    private readonly SemaphoreSlim _requestLock = new(1, 1);
-    private readonly SemaphoreSlim _writerLock = new(1, 1);
+    private readonly SemaphoreSlim _requestLock = new(TrackerConnectionConstants.SingleOperationCapacity, TrackerConnectionConstants.SingleOperationCapacity);
+    private readonly SemaphoreSlim _writerLock = new(TrackerConnectionConstants.SingleOperationCapacity, TrackerConnectionConstants.SingleOperationCapacity);
     private readonly TrackerDiagnosticsStore _diagnostics;
     private TrackerMessageWriter? _writer;
     private bool _disposed;
@@ -76,7 +76,7 @@ internal sealed class TrackerRequestSession : IDisposable
             lock (_sync)
                 writer = _writer ?? throw new InvalidOperationException("The game is not connected.");
 
-            string requestId = Guid.NewGuid().ToString("N");
+            string requestId = Guid.NewGuid().ToString(TrackerProtocol.RequestIdFormat);
             TaskCompletionSource<TrackerMessage> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
             if (!_pendingRequests.TryAdd(requestId, completion))
                 throw new InvalidOperationException("The tracker could not reserve a request identifier.");
@@ -85,7 +85,7 @@ internal sealed class TrackerRequestSession : IDisposable
             {
                 TrackerMessage request = TrackerMessageFactory.CreateRequest(requestId, command, payload, runId);
                 await WriteAsync(writer, request, cancellationToken).ConfigureAwait(false);
-                TrackerMessage response = await completion.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
+                TrackerMessage response = await completion.Task.WaitAsync(TimeSpan.FromSeconds(TrackerProtocol.RequestTimeoutSeconds), cancellationToken).ConfigureAwait(false);
                 if (response.Success != true)
                     throw new TrackerProtocolException(response.Error?.Message ?? "The game rejected the tracker request.");
 

@@ -58,8 +58,8 @@ public partial class BaseStatVisualization
     /// <returns>The original, generated, and optional dominance values.</returns>
     private IReadOnlyList<(string Name, int Original, int Generated, string? Dominance)> GetBaseStats()
     {
-        string? head = Fusion ? "Head" : null;
-        string? body = Fusion ? "Body" : null;
+        string? head = Fusion ? Text["Common.BaseStats.Head"].Value : null;
+        string? body = Fusion ? Text["Common.BaseStats.Body"].Value : null;
         return
         [
             ("HP", Original.Hp, Generated.Hp, head),
@@ -90,7 +90,12 @@ public partial class BaseStatVisualization
     /// <param name="generated">The generated value.</param>
     /// <returns>The positive, negative, or unchanged class.</returns>
     private static string GetDeltaClass(int original, int generated)
-        => generated.CompareTo(original) switch { > 0 => "positive", < 0 => "negative", _ => "unchanged" };
+        => generated.CompareTo(original) switch
+        {
+            > 0 => TrackerUiConstants.PositiveCssClass,
+            < 0 => TrackerUiConstants.NegativeCssClass,
+            _ => TrackerUiConstants.UnchangedCssClass
+        };
 
     /// <summary>
     /// Converts a base-stat value to a bounded percentage of the normal 255 maximum.
@@ -98,7 +103,7 @@ public partial class BaseStatVisualization
     /// <param name="value">The base-stat value.</param>
     /// <returns>The percentage bar width.</returns>
     private static string GetBarWidth(int value)
-        => Math.Clamp(value / 255m * 100m, 0m, 100m).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+        => Math.Clamp(value / (decimal)TrackerUiConstants.MaximumBaseStat * TrackerUiConstants.FullPercentage, decimal.Zero, TrackerUiConstants.FullPercentage).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 
     /// <summary>
     /// Gets the shared original/generated portion of a delta bar.
@@ -124,5 +129,5 @@ public partial class BaseStatVisualization
     /// <param name="mode">The represented display mode.</param>
     /// <returns>The button CSS classes.</returns>
     private string GetModeClass(BaseStatDisplayMode mode)
-        => mode == _mode ? "selected" : string.Empty;
+        => mode == _mode ? TrackerUiConstants.SelectedCssClass : string.Empty;
 }

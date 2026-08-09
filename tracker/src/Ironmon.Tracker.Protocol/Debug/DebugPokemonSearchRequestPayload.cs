@@ -25,7 +25,7 @@ public sealed class DebugPokemonSearchRequestPayload
     /// <summary>
     /// Gets or initializes the maximum number of matches to return.
     /// </summary>
-    public int Limit { get; init; } = 20;
+    public int Limit { get; init; } = TrackerProtocol.DefaultSearchPageSize;
 
     /// <summary>
     /// Gets or initializes whether the search is restricted to normal species.

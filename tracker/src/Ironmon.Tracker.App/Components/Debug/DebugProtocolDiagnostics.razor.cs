@@ -69,28 +69,28 @@ public partial class DebugProtocolDiagnostics : IDisposable
     /// </summary>
     /// <returns>A task representing the clipboard operation.</returns>
     private Task CopyReportAsync()
-        => CopyAsync(BuildReport(), "Diagnostic report copied.");
+        => CopyAsync(BuildReport(), Text["Debug.Protocol.DiagnosticReportCopied"]);
 
     /// <summary>
     /// Copies the current connection state to the system clipboard.
     /// </summary>
     /// <returns>A task representing the clipboard operation.</returns>
     private Task CopyConnectionAsync()
-        => CopyAsync(_connectionJson, "Connection state copied.");
+        => CopyAsync(_connectionJson, Text["Debug.Protocol.ConnectionStateCopied"]);
 
     /// <summary>
     /// Copies the current tracker run state to the system clipboard.
     /// </summary>
     /// <returns>A task representing the clipboard operation.</returns>
     private Task CopyRunStateAsync()
-        => CopyAsync(_runStateJson, "Tracker state copied.");
+        => CopyAsync(_runStateJson, Text["Debug.Protocol.TrackerStateCopied"]);
 
     /// <summary>
     /// Copies persisted tracker knowledge to the system clipboard.
     /// </summary>
     /// <returns>A task representing the clipboard operation.</returns>
     private Task CopyKnowledgeAsync()
-        => CopyAsync(_knowledgeJson, "Knowledge copied.");
+        => CopyAsync(_knowledgeJson, Text["Debug.Protocol.KnowledgeCopied"]);
 
     /// <summary>
     /// Copies one raw history entry to the system clipboard.
@@ -98,7 +98,7 @@ public partial class DebugProtocolDiagnostics : IDisposable
     /// <param name="entry">The selected diagnostic entry.</param>
     /// <returns>A task representing the clipboard operation.</returns>
     private Task CopyEntryAsync(TrackerDiagnosticEntry entry)
-        => CopyAsync(entry.RawValue, "Entry copied.");
+        => CopyAsync(entry.RawValue, Text["Debug.Protocol.EntryCopied"]);
 
     /// <summary>
     /// Exports the complete diagnostic report to tracker-owned local storage.
@@ -109,16 +109,17 @@ public partial class DebugProtocolDiagnostics : IDisposable
         try
         {
             string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            string directory = Path.Combine(localData, "IronmonTracker", "diagnostics");
+            string directory = Path.Combine(localData, TrackerStorageNames.RootDirectory, TrackerStorageNames.DiagnosticsDirectory);
             Directory.CreateDirectory(directory);
-            string fileName = $"ironmon-diagnostic-{DateTimeOffset.Now:yyyyMMdd-HHmmss}.json";
+            string timestamp = DateTimeOffset.Now.ToString(TrackerStorageNames.DiagnosticTimestampFormat, System.Globalization.CultureInfo.InvariantCulture);
+            string fileName = $"{TrackerStorageNames.DiagnosticFilePrefix}{timestamp}{TrackerStorageNames.JsonExtension}";
             string path = Path.Combine(directory, fileName);
             await File.WriteAllTextAsync(path, BuildReport());
-            _status = $"Exported to {path}";
+            _status = Text["Debug.Protocol.ExportedTo", path];
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            _status = $"Export failed: {exception.Message}";
+            _status = Text["Debug.Protocol.ExportFailed", exception.Message];
         }
     }
 
@@ -137,7 +138,7 @@ public partial class DebugProtocolDiagnostics : IDisposable
         }
         catch (Exception exception)
         {
-            _status = $"Copy failed: {exception.Message}";
+            _status = Text["Debug.Protocol.CopyFailed", exception.Message];
         }
     }
 
@@ -147,7 +148,7 @@ public partial class DebugProtocolDiagnostics : IDisposable
     private void ClearHistory()
     {
         Diagnostics.Clear();
-        _status = "Diagnostic history cleared.";
+        _status = Text["Debug.Protocol.DiagnosticHistoryCleared"];
     }
 
     /// <summary>

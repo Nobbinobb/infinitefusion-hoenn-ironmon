@@ -175,6 +175,7 @@ module Game
     alias ironmon_difficulty_original_load load
     def load(save_data)
       result = ironmon_difficulty_original_load(save_data)
+      return result if Ironmon.checkpoint_reset_loading?
       Ironmon.enforce_difficulty_settings if Ironmon.active?
       return result
     end

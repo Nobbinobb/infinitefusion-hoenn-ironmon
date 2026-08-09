@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Ironmon.Tracker.App.Components.Common;
 
 /// <summary>
@@ -42,22 +40,6 @@ internal static class MovePresentation
     }
 
     /// <summary>
-    /// Formats move power for status moves.
-    /// </summary>
-    /// <param name="power">The base move power.</param>
-    /// <returns>The display power.</returns>
-    public static string FormatPower(int power)
-        => power == 0 ? "— Pow" : $"{power} Pow";
-
-    /// <summary>
-    /// Formats move accuracy for always-hit moves.
-    /// </summary>
-    /// <param name="accuracy">The move accuracy.</param>
-    /// <returns>The display accuracy.</returns>
-    public static string FormatAccuracy(int accuracy)
-        => accuracy == 0 ? "— Acc" : $"{accuracy.ToString(CultureInfo.InvariantCulture)}% Acc";
-
-    /// <summary>
     /// Gets the compact effectiveness symbol.
     /// </summary>
     /// <param name="effectiveness">The calculated effectiveness.</param>
@@ -85,18 +67,4 @@ internal static class MovePresentation
         _ => "effectiveness"
     };
 
-    /// <summary>
-    /// Gets accessible detail for an effectiveness symbol.
-    /// </summary>
-    /// <param name="effectiveness">The calculated effectiveness.</param>
-    /// <returns>The effectiveness description.</returns>
-    public static string GetEffectivenessTitle(MoveEffectiveness effectiveness) => effectiveness switch
-    {
-        MoveEffectiveness.Double => "Super effective (2×)",
-        MoveEffectiveness.Quadruple => "Super effective (4×)",
-        MoveEffectiveness.Half => "Not very effective (0.5×)",
-        MoveEffectiveness.Quarter => "Not very effective (0.25×)",
-        MoveEffectiveness.Immune => "No effect",
-        _ => "Normally effective"
-    };
 }

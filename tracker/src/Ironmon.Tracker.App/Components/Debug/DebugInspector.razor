@@ -1,25 +1,26 @@
-<section class="pokemon-card debug-view" role="tabpanel" aria-label="Authorized debug inspector">
+<section class="pokemon-card debug-view" role="tabpanel" aria-label="@Text["Debug.Inspector.AuthorizedDebugInspector"]">
     <header class="debug-heading">
         <div>
-            <p class="card-kicker">DEVELOPMENT MODE</p>
-            <h2>Ironmon Inspector</h2>
+            <p class="card-kicker">@Text["Debug.Inspector.DevelopmentModeHeading"]</p>
+            <h2>@Text["Debug.Inspector.IronmonInspector"]</h2>
         </div>
-        <span class="debug-authorized">Authorized</span>
+        <span class="debug-authorized">@Text["Debug.Inspector.Authorized"]</span>
     </header>
 
-    <nav class="debug-pages" aria-label="Debug inspector pages">
-        <button type="button" class="@GetInspectorPageClass()" @onclick="SelectInspectorAsync">Pokemon</button>
-        <button type="button" class="@GetPageClass(DebugInspectorPage.Lookup)" @onclick="() => SelectPageAsync(DebugInspectorPage.Lookup)">Lookup</button>
-        <button type="button" class="@GetPageClass(DebugInspectorPage.Diagnostics)" @onclick="() => SelectPageAsync(DebugInspectorPage.Diagnostics)">Run Diagnostics</button>
-        <button type="button" class="@GetPageClass(DebugInspectorPage.Protocol)" @onclick="() => SelectPageAsync(DebugInspectorPage.Protocol)">Protocol</button>
+    <nav class="debug-pages" aria-label="@Text["Debug.Inspector.DebugInspectorPages"]">
+        <button type="button" class="@GetInspectorPageClass()" @onclick="SelectInspectorAsync">@Text["Debug.Inspector.Pokemon"]</button>
+        <button type="button" class="@GetPageClass(DebugInspectorPage.Lookup)" @onclick="() => SelectPageAsync(DebugInspectorPage.Lookup)">@Text["Debug.Inspector.Lookup"]</button>
+        <button type="button" class="@GetPageClass(DebugInspectorPage.Diagnostics)" @onclick="() => SelectPageAsync(DebugInspectorPage.Diagnostics)">@Text["Debug.Inspector.RunDiagnostics"]</button>
+        <button type="button" class="@GetPageClass(DebugInspectorPage.Protocol)" @onclick="() => SelectPageAsync(DebugInspectorPage.Protocol)">@Text["Debug.Inspector.Protocol"]</button>
     </nav>
 
-    @if (_selectedPage is DebugInspectorPage.Overview or DebugInspectorPage.Abilities or DebugInspectorPage.Stats)
+    @if (_selectedPage is DebugInspectorPage.Overview or DebugInspectorPage.Abilities or DebugInspectorPage.Stats or DebugInspectorPage.Moves)
     {
-        <nav class="debug-subpages" aria-label="Pokemon inspector pages">
-            <button type="button" class="@GetPageClass(DebugInspectorPage.Overview)" @onclick="() => SelectPageAsync(DebugInspectorPage.Overview)">Overview</button>
-            <button type="button" class="@GetPageClass(DebugInspectorPage.Abilities)" @onclick="() => SelectPageAsync(DebugInspectorPage.Abilities)">Abilities</button>
-            <button type="button" class="@GetPageClass(DebugInspectorPage.Stats)" @onclick="() => SelectPageAsync(DebugInspectorPage.Stats)">Stats</button>
+        <nav class="debug-subpages" aria-label="@Text["Debug.Inspector.PokemonInspectorPages"]">
+            <button type="button" class="@GetPageClass(DebugInspectorPage.Overview)" @onclick="() => SelectPageAsync(DebugInspectorPage.Overview)">@Text["Debug.Inspector.Overview"]</button>
+            <button type="button" class="@GetPageClass(DebugInspectorPage.Abilities)" @onclick="() => SelectPageAsync(DebugInspectorPage.Abilities)">@Text["Debug.Inspector.Abilities"]</button>
+            <button type="button" class="@GetPageClass(DebugInspectorPage.Stats)" @onclick="() => SelectPageAsync(DebugInspectorPage.Stats)">@Text["Debug.Inspector.Stats"]</button>
+            <button type="button" class="@GetPageClass(DebugInspectorPage.Moves)" @onclick="() => SelectPageAsync(DebugInspectorPage.Moves)">@Text["Debug.Inspector.Moves"]</button>
         </nav>
         <div class="debug-target-controls">
             <label>
@@ -27,11 +28,11 @@
                 <select value="@_selectedTarget" disabled="@_loading" @onchange="SelectTarget" @onkeydown:stopPropagation="true">
                     @if (Player is not null)
                     {
-                        <option value="player">Player · @Player.Nickname</option>
+                    <option value="@DebugTargetIds.Player">@Text["Debug.Inspector.Player"] · @Player.Nickname</option>
                     }
                     @foreach (EnemyPokemonSnapshot enemy in Enemies)
                     {
-                        <option value="enemy:@enemy.Position">Enemy @((enemy.Position / 2) + 1) · @enemy.SpeciesName</option>
+                    <option value="@($"{DebugTargetIds.Enemy}{DebugTargetIds.Separator}{enemy.Position}")">@Text["Debug.Inspector.EnemyNumber", (enemy.Position / DebugTargetIds.EnemyPositionStride) + DebugTargetIds.DisplayPositionOffset] · @enemy.SpeciesName</option>
                     }
                 </select>
             </label>
@@ -52,7 +53,7 @@
     }
     else if (_loading && !_backgroundRefresh)
     {
-        <p class="lookup-message">Reading game-owned debug data…</p>
+            <p class="lookup-message">@Text["Debug.Inspector.ReadingDebugData"]</p>
     }
     else if (_selectedPage == DebugInspectorPage.Diagnostics)
     {
@@ -62,14 +63,14 @@
         }
         else
         {
-            <p class="lookup-message">Run diagnostics are not loaded.</p>
+            <p class="lookup-message">@Text["Debug.Inspector.RunDiagnosticsNotLoaded"]</p>
         }
     }
     else if (_pokemon is null)
     {
         <div class="lookup-empty">
-            <strong>No Pokemon inspected</strong>
-            <p>Select an available player or enemy.</p>
+                <strong>@Text["Debug.Inspector.NoPokemonInspected"]</strong>
+                <p>@Text["Debug.Inspector.SelectAvailablePokemon"]</p>
         </div>
     }
     else if (_selectedPage == DebugInspectorPage.Overview)
@@ -79,6 +80,10 @@
     else if (_selectedPage == DebugInspectorPage.Stats)
     {
         <DebugBaseStats Pokemon="@_pokemon" />
+    }
+    else if (_selectedPage == DebugInspectorPage.Moves)
+    {
+        <MoveAccessTabs Access="@_pokemon.MoveAccess" />
     }
     else
     {

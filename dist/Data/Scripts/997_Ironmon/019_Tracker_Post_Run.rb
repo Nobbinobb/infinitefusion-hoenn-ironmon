@@ -40,10 +40,24 @@ module Ironmon
       "ability_generator_version" => $PokemonGlobal.ironmon_ability_generator_version,
       "base_stat_generator_version" => $PokemonGlobal.ironmon_base_stat_generator_version,
       "base_stat_source_fingerprint" => $PokemonGlobal.ironmon_base_stat_source_fingerprint,
+      "move_access_generator_version" => $PokemonGlobal.ironmon_move_access_generator_version,
+      "move_pool_fingerprint" => $PokemonGlobal.ironmon_move_pool_fingerprint,
+      "move_contextual_restriction_fingerprint" => $PokemonGlobal.ironmon_move_contextual_restriction_fingerprint,
+      "move_source_fingerprint" => $PokemonGlobal.ironmon_move_source_fingerprint,
+      "egg_move_source_fingerprint" => $PokemonGlobal.ironmon_egg_move_source_fingerprint,
+      "tm_roster_fingerprint" => $PokemonGlobal.ironmon_tm_roster_fingerprint,
+      "tm_source_fingerprint" => $PokemonGlobal.ironmon_tm_source_fingerprint,
+      "tr_roster_fingerprint" => $PokemonGlobal.ironmon_tr_roster_fingerprint,
+      "tr_source_fingerprint" => $PokemonGlobal.ironmon_tr_source_fingerprint,
+      "tutor_catalog_fingerprint" => $PokemonGlobal.ironmon_tutor_catalog_fingerprint,
+      "tutor_source_fingerprint" => $PokemonGlobal.ironmon_tutor_source_fingerprint,
+      "fusion_tutor_catalog_fingerprint" => $PokemonGlobal.ironmon_fusion_tutor_catalog_fingerprint,
+      "fusion_tutor_source_fingerprint" => $PokemonGlobal.ironmon_fusion_tutor_source_fingerprint,
       "player_fusion_generator_version" => PlayerFusionMapper::SCHEMA_VERSION,
       "species_pool_fingerprint" => tracker_species_pool_fingerprint,
       "ability_pool_fingerprint" => $PokemonGlobal.ironmon_ability_pool_fingerprint,
-      "fusion_pool_fingerprint" => $PokemonGlobal.ironmon_custom_fusion_pool_fingerprint
+      "fusion_pool_fingerprint" => $PokemonGlobal.ironmon_custom_fusion_pool_fingerprint,
+      "move_access_metrics" => move_access_metrics_snapshot
     }
   end
 
@@ -90,7 +104,7 @@ module Ironmon
     cached = tracker_lookup_cache[cache_key]
     return cached if cached
 
-    learnset = tracker_lookup_learnset(species)
+    move_access = tracker_lookup_move_access(species, recipe)
     fusion_mapper = tracker_post_run_fusion_mapper(recipe)
     original_stats = original_base_stats_for(species)
     generated_stats = tracker_lookup_generated_base_stats(species, recipe)
@@ -105,7 +119,8 @@ module Ironmon
       "base_stat_total" => tracker_base_stat_total(generated_stats),
       "base_stats_randomized" => !!recipe["base_stat_generator_version"],
       "abilities" => tracker_lookup_abilities(species, recipe),
-      "learnset" => learnset,
+      "learnset" => move_access["learnset"],
+      "move_access" => move_access,
       "evolutions" => tracker_lookup_evolutions(species),
       "previous_evolutions" => tracker_lookup_previous_evolutions(species),
       "wild_occurrences" => tracker_lookup_wild_occurrences(species, recipe),
@@ -170,6 +185,49 @@ module Ironmon
       end
       if base_stat_fingerprint != base_stat_source_fingerprint
         raise TrackerLookupError.new("incompatible_base_stats", "The base-stat source data no longer matches this run.")
+      end
+    end
+    move_version = recipe["move_access_generator_version"]
+    move_metadata = [
+      recipe["move_pool_fingerprint"],
+      recipe["move_contextual_restriction_fingerprint"],
+      recipe["move_source_fingerprint"],
+      recipe["egg_move_source_fingerprint"],
+      recipe["tm_roster_fingerprint"],
+      recipe["tm_source_fingerprint"],
+      recipe["tr_roster_fingerprint"],
+      recipe["tr_source_fingerprint"],
+      recipe["tutor_catalog_fingerprint"],
+      recipe["tutor_source_fingerprint"],
+      recipe["fusion_tutor_catalog_fingerprint"],
+      recipe["fusion_tutor_source_fingerprint"]
+    ]
+    if move_version || move_metadata.compact.any?
+      if move_version != MoveAccessGenerator::SCHEMA_VERSION
+        raise TrackerLookupError.new(
+          "generator_unavailable",
+          "The required move-access generator is unavailable."
+        )
+      end
+      expected_move_metadata = [
+        level_up_move_pool_fingerprint,
+        level_up_move_contextual_fingerprint,
+        move_access_source_fingerprint,
+        egg_move_access_source_fingerprint,
+        machine_roster_fingerprint(:tm),
+        machine_move_access_source_fingerprint(:tm),
+        machine_roster_fingerprint(:tr),
+        machine_move_access_source_fingerprint(:tr),
+        ordinary_tutor_catalog_fingerprint,
+        ordinary_tutor_source_fingerprint,
+        specialized_tutor_catalog_fingerprint,
+        specialized_tutor_source_fingerprint
+      ]
+      if move_metadata != expected_move_metadata
+        raise TrackerLookupError.new(
+          "incompatible_move_access",
+          "The move-access source data no longer matches this run."
+        )
       end
     end
     if recipe["player_fusion_generator_version"] != PlayerFusionMapper::SCHEMA_VERSION
@@ -330,26 +388,185 @@ module Ironmon
     end
   end
 
-  def self.tracker_lookup_learnset(species)
-    return species.moves.each_with_index.map do |entry, index|
-      move = GameData::Move.try_get(entry[1])
-      next if !move
-      {
-        "id" => move.id.to_s,
-        "name" => move.name,
-        "learned_level" => entry[0],
-        "learn_order" => index,
-        "source" => "level_up",
-        "origin" => "post_run",
-        "type" => move.type.to_s,
-        "category" => tracker_move_category(move),
-        "description" => move.description,
-        "power" => move.base_damage || 0,
-        "accuracy" => move.accuracy || 0,
-        "total_pp" => move.total_pp,
-        "pp_after_use" => nil
-      }
+  def self.tracker_lookup_move_access(species, recipe, pokemon = nil)
+    randomized = recipe["move_access_generator_version"] ==
+      MoveAccessGenerator::SCHEMA_VERSION
+    generator = randomized ? tracker_move_access_generator(recipe) : nil
+    level_entries = randomized ?
+      generated_level_up_moves_for(species, generator) :
+      original_level_up_moves_for(species)
+    egg_moves = randomized ? generated_egg_moves_for(species, generator) :
+      original_egg_moves_for(species)
+    tm_moves = randomized ? generated_machine_moves_for(species, :tm, generator) :
+      original_machine_moves_for(species, :tm)
+    tr_moves = randomized ? generated_machine_moves_for(species, :tr, generator) :
+      original_machine_moves_for(species, :tr)
+    abstract_tutor = randomized ?
+      generated_ordinary_tutor_moves_for(species, generator) :
+      original_ordinary_tutor_moves_for(species)
+
+    component_moves = tracker_move_access_component_moves(species, generator,
+                                                          randomized)
+    learnset = level_entries.each_with_index.map do |entry, index|
+      tracker_move_access_entry(
+        entry[1], "level_up", index,
+        tracker_move_access_source_label(
+          species, entry[1], component_moves[:level_body],
+          component_moves[:level_head]
+        ), entry[0]
+      )
     end.compact
+    egg = egg_moves.each_with_index.map do |move, index|
+      tracker_move_access_entry(
+        move, "egg", index,
+        tracker_move_access_source_label(
+          species, move, component_moves[:egg_body],
+          component_moves[:egg_head]
+        )
+      )
+    end.compact
+    machines = tracker_move_access_machine_entries(
+      species, :tm, tm_moves, component_moves[:tm_body],
+      component_moves[:tm_head]
+    )
+    machines.concat(tracker_move_access_machine_entries(
+      species, :tr, tr_moves, component_moves[:tr_body],
+      component_moves[:tr_head], machines.length
+    ))
+
+    tutors = []
+    ORDINARY_TUTOR_SLOTS.each do |slot|
+      move = randomized ? generator.ordinary_tutor_offering_for(slot[:id]) :
+        slot[:original_move]
+      next if !abstract_tutor.include?(move)
+      tutors << tracker_move_access_entry(
+        move, "ordinary_tutor", tutors.length,
+        tracker_move_access_source_label(
+          species, move, component_moves[:tutor_body],
+          component_moves[:tutor_head]
+        ), nil, nil, slot[:id], slot[:location]
+      )
+    end
+
+    if fusion_move_access_species?(species)
+      pokemon ||= Pokemon.new(species.id, 1)
+      [:regular, :legendary].each do |channel|
+        moves = if randomized
+                  generated_specialized_tutor_moves_for(
+                    pokemon, channel, generator
+                  )
+                else
+                  original_specialized_tutor_moves_for(pokemon, channel)
+                end
+        moves.each do |move|
+          tutor_name = channel == :legendary ?
+            "Fusion Move Tutor (Legendary)" : "Fusion Move Tutor (Regular)"
+          tutors << tracker_move_access_entry(
+            move, "fusion_tutor_#{channel}", tutors.length,
+            "Displayed fusion", nil, nil,
+            "fusion_tutor:#{channel}", tutor_name
+          )
+        end
+      end
+    end
+
+    ordinary_supported = tutors.count do |entry|
+      entry && entry["source"] == "ordinary_tutor"
+    end
+    return {
+      "learnset" => learnset,
+      "egg_moves" => egg,
+      "machine_moves" => machines,
+      "tutor_moves" => tutors.compact,
+      "ordinary_tutor_abstract_count" => abstract_tutor.length,
+      "ordinary_tutor_supported_count" => ordinary_supported
+    }
+  end
+
+  def self.tracker_move_access_generator(recipe)
+    @tracker_move_access_generators ||= {}
+    key = [recipe["seed"], recipe["move_source_fingerprint"]]
+    cached = @tracker_move_access_generators[key]
+    return cached if cached
+    @tracker_move_access_generators[key] = MoveAccessGenerator.new(
+      recipe["seed"], allowed_level_up_move_pool,
+      level_up_move_pool_fingerprint, move_access_source_fingerprint
+    )
+    return @tracker_move_access_generators[key]
+  end
+
+  def self.tracker_move_access_component_moves(species, generator, randomized)
+    return {} if !fusion_move_access_species?(species)
+    body = species.body_pokemon
+    head = species.head_pokemon
+    return {
+      :level_body => randomized ? generator.moves_for(body).map { |entry| entry[1] } :
+        original_level_up_moves_for(body).map { |entry| entry[1] },
+      :level_head => randomized ? generator.moves_for(head).map { |entry| entry[1] } :
+        original_level_up_moves_for(head).map { |entry| entry[1] },
+      :egg_body => randomized ? generator.egg_moves_for(body) : original_egg_moves_for(body),
+      :egg_head => randomized ? generator.egg_moves_for(head) : original_egg_moves_for(head),
+      :tm_body => randomized ? generator.tm_moves_for(body) : original_machine_moves_for(body, :tm),
+      :tm_head => randomized ? generator.tm_moves_for(head) : original_machine_moves_for(head, :tm),
+      :tr_body => randomized ? generator.tr_moves_for(body) : original_machine_moves_for(body, :tr),
+      :tr_head => randomized ? generator.tr_moves_for(head) : original_machine_moves_for(head, :tr),
+      :tutor_body => randomized ? generator.tutor_moves_for(body) : original_ordinary_tutor_moves_for(body),
+      :tutor_head => randomized ? generator.tutor_moves_for(head) : original_ordinary_tutor_moves_for(head)
+    }
+  end
+
+  def self.tracker_move_access_source_label(species, move, body_moves,
+                                            head_moves)
+    return "Species" if !fusion_move_access_species?(species)
+    body = body_moves && body_moves.include?(move)
+    head = head_moves && head_moves.include?(move)
+    return "Body + Head" if body && head
+    return "Body" if body
+    return "Head" if head
+    return "Fusion"
+  end
+
+  def self.tracker_move_access_machine_entries(species, channel, moves,
+                                               body_moves, head_moves,
+                                               offset = 0)
+    entries = []
+    machine_item_roster(channel).each do |item|
+      next if !moves.include?(item.move)
+      entries << tracker_move_access_entry(
+        item.move, channel.to_s, offset + entries.length,
+        tracker_move_access_source_label(
+          species, item.move, body_moves, head_moves
+        ), nil, item
+      )
+    end
+    return entries.compact
+  end
+
+  def self.tracker_move_access_entry(move_id, source, order, source_label,
+                                     learned_level = nil, item = nil,
+                                     tutor_id = nil, tutor_name = nil)
+    move = GameData::Move.try_get(move_id)
+    return nil if !move
+    return {
+      "id" => move.id.to_s,
+      "name" => move.name,
+      "learned_level" => learned_level,
+      "learn_order" => order,
+      "source" => source,
+      "source_label" => source_label,
+      "origin" => "generated_lookup",
+      "type" => move.type.to_s,
+      "category" => tracker_move_category(move),
+      "description" => move.description,
+      "power" => move.base_damage || 0,
+      "accuracy" => move.accuracy || 0,
+      "total_pp" => move.total_pp,
+      "pp_after_use" => nil,
+      "item_id" => item ? item.id.to_s : nil,
+      "item_name" => item ? item.name : nil,
+      "tutor_id" => tutor_id,
+      "tutor_name" => tutor_name
+    }
   end
 
   def self.tracker_lookup_evolutions(species)

@@ -29,6 +29,7 @@ module Ironmon
     return if !$PokemonGlobal || !$game_switches || !$game_variables
     @ability_randomization_error_message = nil
     @base_stat_randomization_error_message = nil
+    @move_access_randomization_error_message = nil
     return false if !prepare_custom_fusion_pool
 
     $PokemonGlobal.ironmon_mode = true
@@ -42,6 +43,7 @@ module Ironmon
     record_custom_fusion_pool_metadata
     return false if !prepare_ability_randomization
     return false if !prepare_base_stat_randomization
+    return false if !prepare_move_access_randomization
     return false if !prepare_species_mappings
 
     $game_switches[SWITCH_RANDOMIZED_AT_LEAST_ONCE] = true

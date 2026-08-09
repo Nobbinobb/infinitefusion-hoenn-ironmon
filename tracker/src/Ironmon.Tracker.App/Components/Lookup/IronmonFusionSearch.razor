@@ -1,14 +1,14 @@
-<section class="lookup-relations fusion-search" aria-label="Ironmon fusion search">
+<section class="lookup-relations fusion-search" aria-label="@Text["Lookup.Fusion.IronmonFusionSearch"]">
     <header>
         <div>
-            <p class="section-label">IRONMON FUSIONS</p>
-            <span>Select a second normal Pokémon to calculate both orientations.</span>
+            <p class="section-label">@Text["Lookup.Fusion.IronmonFusionsHeading"]</p>
+            <span>@Text["Lookup.Fusion.FusionSearchDescription"]</span>
         </div>
     </header>
 
     <div class="lookup-search">
-        <input type="search" placeholder="Search second material" aria-label="Second fusion material" @bind="_query" @bind:event="oninput" @onkeydown="HandleSearchKeyDown" @onkeydown:stopPropagation="true" />
-        <button type="button" disabled="@_loading" @onclick="SearchAsync">Search</button>
+        <input type="search" placeholder="@Text["Lookup.Fusion.SearchSecondMaterial"]" aria-label="@Text["Lookup.Fusion.SecondFusionMaterial"]" @bind="_query" @bind:event="oninput" @onkeydown="HandleSearchKeyDown" @onkeydown:stopPropagation="true" />
+        <button type="button" disabled="@_loading" @onclick="SearchAsync">@Text["Lookup.Fusion.Search"]</button>
     </div>
 
     @if (_error is not null)
@@ -17,16 +17,16 @@
     }
     else if (_loading)
     {
-        <p class="lookup-message">Calculating fusion data…</p>
+        <p class="lookup-message">@Text["Lookup.Fusion.CalculatingFusionData"]</p>
     }
     else if (_searched && _matches.Count == 0)
     {
-        <p class="lookup-message">No matching normal Pokémon found.</p>
+        <p class="lookup-message">@Text["Lookup.Fusion.NoMatchingNormalPokemon"]</p>
     }
 
     @if (_matches.Count > 0)
     {
-        <div class="lookup-results fusion-search-results" aria-label="Normal Pokemon search results">
+        <div class="lookup-results fusion-search-results" aria-label="@Text["Lookup.Fusion.NormalPokemonSearchResults"]">
             @foreach (PokemonSearchMatch match in _matches)
             {
                 <button type="button" disabled="@_loading" @onclick="() => SelectMaterialAsync(match)">
@@ -36,19 +36,19 @@
             }
         </div>
 
-        @if (_matchTotal > SearchPageSize)
+        @if (_matchTotal > TrackerProtocol.DefaultSearchPageSize)
         {
-            <nav class="lookup-pager" aria-label="Fusion material search pages">
-                <button type="button" disabled="@(_loading || !HasPreviousPage())" @onclick="PreviousPageAsync">Previous</button>
+            <nav class="lookup-pager" aria-label="@Text["Lookup.Fusion.FusionMaterialSearchPages"]">
+                <button type="button" disabled="@(_loading || !HasPreviousPage())" @onclick="PreviousPageAsync">@Text["Lookup.Fusion.Previous"]</button>
                 <span>@GetRangeText()</span>
-                <button type="button" disabled="@(_loading || !HasNextPage())" @onclick="NextPageAsync">Next</button>
+                <button type="button" disabled="@(_loading || !HasNextPage())" @onclick="NextPageAsync">@Text["Lookup.Fusion.Next"]</button>
             </nav>
         }
     }
 
     @if (_outcomes.Count > 0)
     {
-        <div class="fusion-outcomes" aria-label="Ironmon fusion results">
+        <div class="fusion-outcomes" aria-label="@Text["Lookup.Fusion.IronmonFusionResults"]">
             @foreach (FusionOutcomeSnapshot outcome in _outcomes)
             {
                 <div class="fusion-outcome">

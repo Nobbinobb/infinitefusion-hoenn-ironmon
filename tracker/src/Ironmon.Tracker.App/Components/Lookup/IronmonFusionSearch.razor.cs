@@ -8,7 +8,6 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class IronmonFusionSearch
 {
-    private const int SearchPageSize = 20;
     private IReadOnlyList<PokemonSearchMatch> _matches = [];
     private IReadOnlyList<FusionOutcomeSnapshot> _outcomes = [];
     private string _query = string.Empty;
@@ -79,7 +78,7 @@ public partial class IronmonFusionSearch
     /// <param name="args">The keyboard event.</param>
     private async Task HandleSearchKeyDown(KeyboardEventArgs args)
     {
-        if (args.Key == "Enter")
+        if (args.Key == TrackerKeyboardKeys.Enter)
             await SearchAsync();
     }
 
@@ -102,7 +101,7 @@ public partial class IronmonFusionSearch
 
         if (string.IsNullOrWhiteSpace(_query))
         {
-            _error = "Enter a Pokémon name to search.";
+            _error = Text["Lookup.Fusion.EnterPokemonName"];
             return;
         }
 
@@ -176,14 +175,14 @@ public partial class IronmonFusionSearch
     /// </summary>
     /// <returns>A task representing the search.</returns>
     private Task PreviousPageAsync()
-        => SearchPageAsync(Math.Max(0, _searchOffset - SearchPageSize));
+        => SearchPageAsync(Math.Max(0, _searchOffset - TrackerProtocol.DefaultSearchPageSize));
 
     /// <summary>
     /// Loads the next material page.
     /// </summary>
     /// <returns>A task representing the search.</returns>
     private Task NextPageAsync()
-        => SearchPageAsync(_searchOffset + SearchPageSize);
+        => SearchPageAsync(_searchOffset + TrackerProtocol.DefaultSearchPageSize);
 
     /// <summary>
     /// Formats the visible inclusive material-search range.
@@ -193,7 +192,7 @@ public partial class IronmonFusionSearch
     {
         int first = _matches.Count == 0 ? 0 : _searchOffset + 1;
         int last = _searchOffset + _matches.Count;
-        return $"{first}–{last} of {_matchTotal}";
+        return Text["Lookup.Fusion.ResultRange", first, last, _matchTotal];
     }
 
     /// <summary>
@@ -204,10 +203,10 @@ public partial class IronmonFusionSearch
     private Task<PokemonSearchResponsePayload> SearchPokemonAsync(int offset)
     {
         if (DebugMode)
-            return Connection.SearchDebugPokemonAsync(_query.Trim(), offset, SearchPageSize, true);
+            return Connection.SearchDebugPokemonAsync(_query.Trim(), offset, TrackerProtocol.DefaultSearchPageSize, true);
 
-        CompletedRunRecipePayload recipe = Recipe ?? throw new InvalidOperationException("A completed-run recipe is required.");
-        return Connection.SearchPokemonAsync(recipe, _query.Trim(), offset, SearchPageSize, true);
+        CompletedRunRecipePayload recipe = Recipe ?? throw new InvalidOperationException(Text["Lookup.Fusion.CompletedRunRecipeRequired"]);
+        return Connection.SearchPokemonAsync(recipe, _query.Trim(), offset, TrackerProtocol.DefaultSearchPageSize, true);
     }
 
     /// <summary>
@@ -220,7 +219,7 @@ public partial class IronmonFusionSearch
         if (DebugMode)
             return Connection.PreviewDebugFusionAsync(Pokemon.SpeciesId, secondSpeciesId);
 
-        CompletedRunRecipePayload recipe = Recipe ?? throw new InvalidOperationException("A completed-run recipe is required.");
+        CompletedRunRecipePayload recipe = Recipe ?? throw new InvalidOperationException(Text["Lookup.Fusion.CompletedRunRecipeRequired"]);
         return Connection.PreviewFusionAsync(recipe, Pokemon.SpeciesId, secondSpeciesId);
     }
 }

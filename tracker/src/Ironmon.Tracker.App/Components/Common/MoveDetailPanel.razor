@@ -6,11 +6,11 @@
             <div class="detail-title">
                 <MoveCategoryIcon Category="@Category" />
                 <div>
-                    <p class="card-kicker">MOVE INFORMATION</p>
+                    <p class="card-kicker">@Text["Common.Move.MoveInformation"]</p>
                     <h2 id="move-detail-title" class="@MovePresentation.GetTypeColorClass(Type)">@Name</h2>
                 </div>
             </div>
-            <button class="detail-close" type="button" aria-label="Close move information" @onclick="Close">×</button>
+            <button class="detail-close" type="button" aria-label="@Text["Common.Move.CloseMoveInformation"]" @onclick="Close">×</button>
         </header>
 
         <div class="detail-tags">
@@ -20,18 +20,18 @@
             {
                 <span class="@GetDetailEffectivenessClass(Effectiveness.Value)">
                     <strong aria-hidden="true">@MovePresentation.GetEffectivenessSymbol(Effectiveness.Value)</strong>
-                    @MovePresentation.GetEffectivenessTitle(Effectiveness.Value)
+                    @GetEffectivenessTitle(Effectiveness.Value)
                 </span>
             }
         </div>
 
         <dl class="detail-values">
             <div><dt>PP</dt><dd>@PpText</dd></div>
-            <div><dt>Power</dt><dd>@GetPowerText()</dd></div>
-            <div><dt>Accuracy</dt><dd>@GetAccuracyText()</dd></div>
+            <div><dt>@Text["Common.Move.Power"]</dt><dd>@GetPowerText()</dd></div>
+            <div><dt>@Text["Common.Move.Accuracy"]</dt><dd>@GetAccuracyText()</dd></div>
             @if (LearnedLevel is not null)
             {
-                <div><dt>Learned</dt><dd>Lv. @LearnedLevel</dd></div>
+                <div><dt>@Text["Common.Move.Learned"]</dt><dd>@Text["Common.Move.LevelValue", LearnedLevel]</dd></div>
             }
         </dl>
 

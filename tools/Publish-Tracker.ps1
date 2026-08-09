@@ -10,6 +10,20 @@ if (!$resolvedOutput.StartsWith($resolvedDistribution + [System.IO.Path]::Direct
   throw "Tracker publish output must remain inside the distribution directory."
 }
 
+[xml]$projectDocument = Get-Content -LiteralPath $project
+$supportedCultureProperty = @($projectDocument.Project.PropertyGroup.SatelliteResourceLanguages) |
+  Where-Object { ![string]::IsNullOrWhiteSpace($_) } |
+  Select-Object -First 1
+if ($null -eq $supportedCultureProperty) {
+  throw "The tracker project must define SatelliteResourceLanguages."
+}
+$supportedCultures = @($supportedCultureProperty -split ";") |
+  ForEach-Object { $_.Trim().ToLowerInvariant() } |
+  Where-Object { $_.Length -gt 0 }
+if ($supportedCultures.Count -eq 0) {
+  throw "The tracker project must support at least one satellite-resource culture."
+}
+
 if (Test-Path -LiteralPath $resolvedOutput) {
   Remove-Item -LiteralPath $resolvedOutput -Recurse -Force
 }
@@ -31,19 +45,24 @@ if ($LASTEXITCODE -ne 0) {
   throw "Tracker publication failed with exit code $LASTEXITCODE."
 }
 
-$winUiResourceFiles = @(
-  "Microsoft.ui.xaml.dll.mui",
-  "Microsoft.UI.Xaml.Phone.dll.mui"
-)
-$winUiCultureDirectories = Get-ChildItem -LiteralPath $resolvedOutput -Directory |
+$unsupportedCultureDirectories = Get-ChildItem -LiteralPath $resolvedOutput -Directory |
   Where-Object {
-    $cultureDirectory = $_
-    $cultureDirectory.Name -ne "en-us" -and
-    ($winUiResourceFiles | Where-Object {
-      Test-Path -LiteralPath (Join-Path $cultureDirectory.FullName $_)
-    })
+    try {
+      [System.Globalization.CultureInfo]::GetCultureInfo($_.Name) | Out-Null
+      $supportedCultures -notcontains $_.Name.ToLowerInvariant()
+    }
+    catch [System.Globalization.CultureNotFoundException] {
+      $false
+    }
   }
-$winUiCultureDirectories | Remove-Item -Recurse -Force
+foreach ($cultureDirectory in $unsupportedCultureDirectories) {
+  $resolvedCultureDirectory = [System.IO.Path]::GetFullPath($cultureDirectory.FullName)
+  if (!$resolvedCultureDirectory.StartsWith($resolvedOutput + [System.IO.Path]::DirectorySeparatorChar)) {
+    throw "Culture directory must remain inside the tracker publish output."
+  }
+
+  Remove-Item -LiteralPath $resolvedCultureDirectory -Recurse -Force
+}
 
 Get-ChildItem -LiteralPath $resolvedOutput -Filter "*.pdb" -File |
   Remove-Item -Force

@@ -394,13 +394,20 @@ contains the inputs needed to reproduce the run:
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.4.0",
+  "ironmon_version": "0.5.0",
   "configuration": {},
   "species_generator_version": 3,
   "ability_generator_version": 2,
+  "base_stat_generator_version": 1,
+  "move_access_generator_version": 1,
   "player_fusion_generator_version": 2,
   "species_pool_fingerprint": "...",
   "ability_pool_fingerprint": "...",
+  "base_stat_source_fingerprint": "...",
+  "move_allowed_pool_fingerprint": "...",
+  "move_contextual_restriction_fingerprint": "...",
+  "move_source_fingerprint": "...",
+  "tutor_slot_catalog_fingerprint": "...",
   "fusion_pool_fingerprint": "..."
 }
 ```
@@ -410,15 +417,15 @@ long as Ironmon retains the requested generator implementation and compatible
 source data. Generator algorithms are schema-versioned, and older deterministic
 implementations should remain callable after a current algorithm changes.
 
-Fingerprints detect incompatible species, ability, or custom-fusion pools. The
-game must report an explicit incompatibility instead of silently producing a
-different result.
+Fingerprints detect incompatible species, ability, base-stat, move-access,
+tutor, or custom-fusion source data and pools. The game must report an explicit
+incompatibility instead of silently producing a different result.
 
-Generated facts such as mappings, ability slots, base stats, learnsets, and
-deterministic teams can be recalculated. Historical actions such as damage,
-consumed items, exact final PP, player move choices, encounter order, and manual
-tracker annotations are not reconstructable from a seed and are not presented
-as generated lookup data.
+Generated facts such as mappings, ability slots, base stats, move-access
+channels, tutor offerings, and deterministic teams can be recalculated.
+Historical actions such as damage, consumed items, exact final PP, player move
+choices, encounter order, and manual tracker annotations are not reconstructable
+from a seed and are not presented as generated lookup data.
 
 ## Post-run search and lookup
 
@@ -506,7 +513,8 @@ Debug mode can inspect the current player, current enemy, or a party Pokemon.
 Arbitrary-species inspection uses a species-only path because Infinite
 Fusion's ordinary Pokemon constructor consumes random values. The tracker owns
 the presentation of these debug values. Pokemon inspection is one top-level
-Debug page with Overview, Abilities, and Stats as subtabs. Lookup, Run
+Debug page with Overview, Abilities, Stats, Learnset, Egg, TM, and Tutor as
+subtabs once their corresponding generators are implemented. Lookup, Run
 Diagnostics, and Protocol remain separate top-level Debug pages.
 
 Overview includes:
@@ -537,9 +545,17 @@ stat table; the existing component navigation opens those Pokemon separately.
 The presentation can switch between a comparison table, generated-only bars,
 and bars whose changed segment is colored green or red for positive or negative
 deltas. Generated values are the visual focus in the table.
-Learnset and Evolutions pages are added when their corresponding randomizers and
-tracker contracts are implemented. The tracker does not invent placeholder
-generated values.
+Step 3.3 adds Learnset, Egg, TM, and Tutor subtabs. Learnset displays generated
+level-up and level-0 entries chronologically. Egg displays the complete
+generated Egg list. TM displays generated machine compatibility with the item
+and taught move. Tutor displays only moves supported by both generated
+compatibility and an actual generated tutor offering, with tutor location or
+slot. Fusion rows identify body, head, both, or specialized Fusion Tutor as the
+source. Unsupported abstract tutor entries may contribute to a summary count
+but are not listed as learnable moves. Complete move-access subtabs remain
+unavailable during ordinary live play. Evolutions is added with its
+corresponding randomizer. The tracker does not invent placeholder generated
+values.
 
 The game resolves all debug values on demand through the same runtime paths
 used by gameplay. Requests are read-only, consume no random values, perform no

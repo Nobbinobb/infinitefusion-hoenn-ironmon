@@ -1,13 +1,13 @@
-<section class="lookup-learnset" aria-label="Complete level-up learnset">
+<section class="lookup-learnset" aria-label="@Text["Lookup.Moves.CompleteLevelUpLearnset"]">
     <header>
-        <p class="section-label">LEVEL-UP LEARNSET</p>
+        <p class="section-label">@Text["Lookup.Moves.LevelUpLearnsetHeading"]</p>
         <span>@Pokemon.Learnset.Count moves</span>
     </header>
     <div class="move-list">
         @foreach (ObservedMoveSnapshot move in Pokemon.Learnset)
         {
             <button class="lookup-learnset-row @MovePresentation.GetTypeColorClass(move.Type)" type="button" @onclick="() => SelectMove(move)">
-                <span>Lv. @move.LearnedLevel</span>
+                <span>@Text["Lookup.Moves.LevelValue", move.LearnedLevel]</span>
                 <span class="lookup-move-name"><MoveCategoryIcon Category="@move.Category" /><strong>@move.Name</strong></span>
             </button>
         }

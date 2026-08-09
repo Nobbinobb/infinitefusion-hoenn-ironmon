@@ -485,22 +485,11 @@ module Ironmon
     $PokemonGlobal.ironmon_trainer_species_map = {}
     @wild_species_generator = nil
     @trainer_species_generator = nil
-
-    prepare_wild_encounter_slot_mappings
     $PokemonGlobal.psuedoBSTHash = {}
     (1..NB_POKEMON).each do |species_id|
       $PokemonGlobal.psuedoBSTHash[species_id] = species_id
     end
-
-    trainer_generator = species_generator(:trainer)
-    trainer_parties = {}
-    getTrainersDataMode.list_all.each do |_trainer_id, trainer|
-      trainer_parties[trainer.id] = trainer.pokemon.each_with_index.map do |pokemon, slot|
-        species = GameData::Species.get(pokemon[:species])
-        trainer_generator.map_id(species.id_number, [:pbs, trainer.id, slot])
-      end
-    end
-    $PokemonGlobal.randomTrainersHash = trainer_parties
+    $PokemonGlobal.randomTrainersHash = {}
     return true
   end
 
@@ -567,6 +556,8 @@ module Ironmon
       @ability_randomization_error_message
     return @base_stat_randomization_error_message if
       @base_stat_randomization_error_message
+    return @move_access_randomization_error_message if
+      @move_access_randomization_error_message
     return species_generation_error_message
   end
 
@@ -590,6 +581,7 @@ module Game
     def load(save_data)
       Ironmon.reset_species_generator_cache
       result = ironmon_original_load(save_data)
+      return result if Ironmon.checkpoint_reset_loading?
       if Ironmon.active? && !Ironmon.current_species_mappings?
         if !Ironmon.prepare_species_mappings
           raise Ironmon::SpeciesGenerationError,

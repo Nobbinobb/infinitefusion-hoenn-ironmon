@@ -25,8 +25,8 @@ internal static class LocalSpriteLoader
                 return null;
 
             string extension = Path.GetExtension(path).ToLowerInvariant();
-            string mediaType = extension == ".gif" ? "image/gif" : "image/png";
-            return $"data:{mediaType};base64,{Convert.ToBase64String(File.ReadAllBytes(path))}";
+            string mediaType = extension == LocalSpriteConstants.GifExtension ? LocalSpriteConstants.GifMediaType : LocalSpriteConstants.PngMediaType;
+            return $"data:{mediaType};{LocalSpriteConstants.Base64Marker},{Convert.ToBase64String(File.ReadAllBytes(path))}";
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
         {

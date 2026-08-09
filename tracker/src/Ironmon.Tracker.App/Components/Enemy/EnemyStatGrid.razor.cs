@@ -49,9 +49,9 @@ public partial class EnemyStatGrid
     /// <returns>The annotation text.</returns>
     private string GetAnnotationText(EnemyStat stat) => GetAnnotation(stat) switch
     {
-        EnemyStatAnnotation.Plus => "plus",
-        EnemyStatAnnotation.Minus => "minus",
-        _ => "empty"
+        EnemyStatAnnotation.Plus => Text["Enemy.Stats.Plus"],
+        EnemyStatAnnotation.Minus => Text["Enemy.Stats.Minus"],
+        _ => Text["Enemy.Stats.Empty"]
     };
 
     /// <summary>

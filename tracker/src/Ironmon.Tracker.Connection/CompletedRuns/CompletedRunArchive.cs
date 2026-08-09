@@ -59,7 +59,7 @@ public sealed class CompletedRunArchive
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                string temporaryPath = $"{path}.tmp";
+                string temporaryPath = $"{path}{TrackerStorageNames.TemporaryExtension}";
                 File.WriteAllText(temporaryPath, JsonSerializer.Serialize(recipe, TrackerJson.Options));
                 File.Move(temporaryPath, path, true);
                 _recipes.RemoveAll(candidate => candidate.RunId == recipe.RunId);
@@ -82,14 +82,14 @@ public sealed class CompletedRunArchive
     /// <returns>The loaded recipes with newest files first.</returns>
     private List<CompletedRunRecipePayload> Load()
     {
-        string root = Path.Combine(_options.RootDirectory, "runs");
+        string root = Path.Combine(_options.RootDirectory, TrackerStorageNames.RunsDirectory);
         if (!Directory.Exists(root))
             return [];
 
         List<CompletedRunRecipePayload> recipes = [];
         try
         {
-            IEnumerable<string> paths = Directory.EnumerateFiles(root, "recipe.json", SearchOption.AllDirectories).OrderByDescending(File.GetLastWriteTimeUtc);
+            IEnumerable<string> paths = Directory.EnumerateFiles(root, TrackerStorageNames.RecipeFile, SearchOption.AllDirectories).OrderByDescending(File.GetLastWriteTimeUtc);
             foreach (string path in paths)
             {
                 try
@@ -132,6 +132,45 @@ public sealed class CompletedRunArchive
         ArgumentOutOfRangeException.ThrowIfLessThan(recipe.SpeciesGeneratorVersion, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(recipe.AbilityGeneratorVersion, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(recipe.PlayerFusionGeneratorVersion, 1);
+        if (recipe.MoveAccessGeneratorVersion is null)
+        {
+            string?[] moveMetadata =
+            [
+                recipe.MovePoolFingerprint,
+                recipe.MoveContextualRestrictionFingerprint,
+                recipe.MoveSourceFingerprint,
+                recipe.EggMoveSourceFingerprint,
+                recipe.TmRosterFingerprint,
+                recipe.TmSourceFingerprint,
+                recipe.TrRosterFingerprint,
+                recipe.TrSourceFingerprint,
+                recipe.TutorCatalogFingerprint,
+                recipe.TutorSourceFingerprint,
+                recipe.FusionTutorCatalogFingerprint,
+                recipe.FusionTutorSourceFingerprint
+            ];
+
+            if (moveMetadata.Any(value => !string.IsNullOrWhiteSpace(value)))
+                throw new ArgumentException("Move-access metadata requires a generator version.", nameof(recipe));
+
+            return;
+        }
+
+        ArgumentOutOfRangeException.ThrowIfLessThan(recipe.MoveAccessGeneratorVersion.Value, 1);
+        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.MovePoolFingerprint);
+        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.MoveContextualRestrictionFingerprint);
+        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.MoveSourceFingerprint);
+        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.EggMoveSourceFingerprint);
+        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TmRosterFingerprint);
+        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TmSourceFingerprint);
+        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TrRosterFingerprint);
+        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TrSourceFingerprint);
+        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TutorCatalogFingerprint);
+        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.TutorSourceFingerprint);
+        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.FusionTutorCatalogFingerprint);
+        ArgumentException.ThrowIfNullOrWhiteSpace(recipe.FusionTutorSourceFingerprint);
+        if (recipe.MoveAccessMetrics is not null)
+            ArgumentOutOfRangeException.ThrowIfNotEqual(recipe.MoveAccessMetrics.SchemaVersion, MoveAccessMetricIdentifiers.SchemaVersion);
     }
 
     /// <summary>
@@ -142,6 +181,6 @@ public sealed class CompletedRunArchive
     private string GetRecipePath(string runId)
     {
         string directory = string.Concat(runId.Select(character => char.IsLetterOrDigit(character) || character is '-' or '_' ? character : '_'));
-        return Path.Combine(_options.RootDirectory, "runs", directory, "recipe.json");
+        return Path.Combine(_options.RootDirectory, TrackerStorageNames.RunsDirectory, directory, TrackerStorageNames.RecipeFile);
     }
 }

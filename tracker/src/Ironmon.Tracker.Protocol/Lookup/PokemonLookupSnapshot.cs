@@ -68,6 +68,11 @@ public sealed class PokemonLookupSnapshot
     public IReadOnlyList<ObservedMoveSnapshot> Learnset { get; init; } = [];
 
     /// <summary>
+    /// Gets or initializes every generated move-access channel.
+    /// </summary>
+    public MoveAccessSnapshot MoveAccess { get; init; } = new();
+
+    /// <summary>
     /// Gets or initializes possible evolution requirements without destination species.
     /// </summary>
     public IReadOnlyList<PokemonRelationSnapshot> Evolutions { get; init; } = [];

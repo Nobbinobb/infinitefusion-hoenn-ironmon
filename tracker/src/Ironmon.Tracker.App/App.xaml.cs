@@ -5,20 +5,20 @@ namespace Ironmon.Tracker.App;
 /// </summary>
 public partial class App : Application
 {
-    private const double _defaultWindowHeight = 860;
-    private const double _defaultWindowWidth = 500;
-    private const string _windowHeightPreferenceKey = "tracker_window_height";
-    private const string _windowWidthPreferenceKey = "tracker_window_width";
     private readonly TrackerConnectionService _connectionService;
+    private readonly IStringLocalizer<TrackerResources> _text;
 
     /// <summary>
     /// Initializes the tracker application.
     /// </summary>
     /// <param name="connectionService">The local game connection service.</param>
-    public App(TrackerConnectionService connectionService)
+    /// <param name="text">The localized tracker text.</param>
+    public App(TrackerConnectionService connectionService, IStringLocalizer<TrackerResources> text)
     {
         ArgumentNullException.ThrowIfNull(connectionService);
+        ArgumentNullException.ThrowIfNull(text);
         _connectionService = connectionService;
+        _text = text;
         InitializeComponent();
         _connectionService.Start();
     }
@@ -30,16 +30,16 @@ public partial class App : Application
     /// <returns>The configured tracker window.</returns>
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        double width = GetWindowDimension(_windowWidthPreferenceKey, _defaultWindowWidth, 360);
-        double height = GetWindowDimension(_windowHeightPreferenceKey, _defaultWindowHeight, 520);
-        Page page = WebView2Runtime.IsAvailable() ? new MainPage() : new WebView2MissingPage();
+        double width = GetWindowDimension(TrackerApplicationConstants.WindowWidthPreferenceKey, TrackerApplicationConstants.DefaultWindowWidth, TrackerApplicationConstants.MinimumWindowWidth);
+        double height = GetWindowDimension(TrackerApplicationConstants.WindowHeightPreferenceKey, TrackerApplicationConstants.DefaultWindowHeight, TrackerApplicationConstants.MinimumWindowHeight);
+        Page page = WebView2Runtime.IsAvailable() ? new MainPage() : new WebView2MissingPage(_text);
         Window window = new(page)
         {
-            Title = "Ironmon Tracker",
+            Title = _text["App.Native.AppTitle"],
             Width = width,
             Height = height,
-            MinimumWidth = 360,
-            MinimumHeight = 520
+            MinimumWidth = TrackerApplicationConstants.MinimumWindowWidth,
+            MinimumHeight = TrackerApplicationConstants.MinimumWindowHeight
         };
         window.Destroying += HandleWindowDestroying;
         return window;
@@ -78,9 +78,9 @@ public partial class App : Application
     private static void SaveWindowSize(Window window)
     {
         if (double.IsFinite(window.Width) && window.Width >= window.MinimumWidth)
-            Preferences.Default.Set(_windowWidthPreferenceKey, window.Width);
+            Preferences.Default.Set(TrackerApplicationConstants.WindowWidthPreferenceKey, window.Width);
 
         if (double.IsFinite(window.Height) && window.Height >= window.MinimumHeight)
-            Preferences.Default.Set(_windowHeightPreferenceKey, window.Height);
+            Preferences.Default.Set(TrackerApplicationConstants.WindowHeightPreferenceKey, window.Height);
     }
 }

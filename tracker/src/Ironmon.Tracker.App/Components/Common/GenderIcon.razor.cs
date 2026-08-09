@@ -24,8 +24,8 @@ public partial class GenderIcon
     {
         (_symbol, _cssClass, _label) = Gender?.ToUpperInvariant() switch
         {
-            "MALE" => ("♂", "male", "Male"),
-            "FEMALE" => ("♀", "female", "Female"),
+            PokemonValueIds.Male => (PokemonValueIds.MaleSymbol, PokemonValueIds.MaleCssClass, Text["Common.Gender.Male"].Value),
+            PokemonValueIds.Female => (PokemonValueIds.FemaleSymbol, PokemonValueIds.FemaleCssClass, Text["Common.Gender.Female"].Value),
             _ => (null, null, null)
         };
     }

@@ -1,9 +1,9 @@
-<article class="debug-protocol" aria-label="Tracker protocol diagnostics">
+<article class="debug-protocol" aria-label="@Text["Debug.Protocol.TrackerProtocolDiagnostics"]">
     <div class="debug-protocol-actions">
-        <button type="button" @onclick="Refresh">Refresh</button>
-        <button type="button" @onclick="CopyReportAsync">Copy report</button>
-        <button type="button" @onclick="ExportReportAsync">Export report</button>
-        <button type="button" @onclick="ClearHistory">Clear history</button>
+        <button type="button" @onclick="Refresh">@Text["Debug.Protocol.Refresh"]</button>
+        <button type="button" @onclick="CopyReportAsync">@Text["Debug.Protocol.CopyReport"]</button>
+        <button type="button" @onclick="ExportReportAsync">@Text["Debug.Protocol.ExportReport"]</button>
+        <button type="button" @onclick="ClearHistory">@Text["Debug.Protocol.ClearHistory"]</button>
     </div>
 
     @if (_status is not null)
@@ -18,36 +18,36 @@
 
     <section class="debug-raw-section">
         <header class="debug-raw-heading">
-            <p class="section-label">CURRENT CONNECTION STATE</p>
-            <button type="button" @onclick="CopyConnectionAsync">Copy</button>
+            <p class="section-label">@Text["Debug.Protocol.CurrentConnectionStateHeading"]</p>
+            <button type="button" @onclick="CopyConnectionAsync">@Text["Debug.Protocol.Copy"]</button>
         </header>
         <pre class="debug-raw-value">@_connectionJson</pre>
     </section>
 
     <section class="debug-raw-section">
         <header class="debug-raw-heading">
-            <p class="section-label">CURRENT TRACKER STATE</p>
-            <button type="button" @onclick="CopyRunStateAsync">Copy</button>
+            <p class="section-label">@Text["Debug.Protocol.CurrentTrackerStateHeading"]</p>
+            <button type="button" @onclick="CopyRunStateAsync">@Text["Debug.Protocol.Copy"]</button>
         </header>
         <pre class="debug-raw-value">@_runStateJson</pre>
     </section>
 
     <section class="debug-raw-section">
         <header class="debug-raw-heading">
-            <p class="section-label">PERSISTED KNOWLEDGE</p>
-            <button type="button" @onclick="CopyKnowledgeAsync">Copy</button>
+            <p class="section-label">@Text["Debug.Protocol.PersistedKnowledgeHeading"]</p>
+            <button type="button" @onclick="CopyKnowledgeAsync">@Text["Debug.Protocol.Copy"]</button>
         </header>
         <pre class="debug-raw-value">@_knowledgeJson</pre>
     </section>
 
-    <section class="debug-history" aria-label="Connection and protocol history">
+    <section class="debug-history" aria-label="@Text["Debug.Protocol.ConnectionAndProtocolHistory"]">
         <header class="debug-raw-heading">
-            <p class="section-label">CONNECTION AND PROTOCOL HISTORY</p>
+            <p class="section-label">@Text["Debug.Protocol.ConnectionAndProtocolHistoryHeading"]</p>
             <span class="debug-entry-meta">@_entries.Count retained</span>
         </header>
         @if (_entries.Count == 0)
         {
-            <p class="lookup-message">No diagnostic entries recorded.</p>
+            <p class="lookup-message">@Text["Debug.Protocol.NoDiagnosticEntries"]</p>
         }
         @foreach (TrackerDiagnosticEntry entry in _entries.Reverse())
         {
@@ -57,7 +57,7 @@
                         <p><strong>@entry.Name</strong></p>
                         <span class="debug-entry-meta">@entry.Direction · @entry.Timestamp.ToLocalTime().ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture)</span>
                     </div>
-                    <button type="button" @onclick="() => CopyEntryAsync(entry)">Copy</button>
+                        <button type="button" @onclick="() => CopyEntryAsync(entry)">@Text["Debug.Protocol.Copy"]</button>
                 </header>
                 <pre class="debug-raw-value">@entry.RawValue</pre>
             </article>

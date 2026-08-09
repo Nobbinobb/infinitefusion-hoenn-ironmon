@@ -694,6 +694,7 @@ module Game
     def load(save_data)
       Ironmon.suspend_ability_randomization
       result = ironmon_ability_original_load(save_data)
+      return result if Ironmon.checkpoint_reset_loading?
       Ironmon.ensure_ability_randomization if Ironmon.active?
       return result
     end

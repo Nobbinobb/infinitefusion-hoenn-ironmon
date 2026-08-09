@@ -48,7 +48,7 @@ public partial class PlayerCard
     /// </summary>
     /// <returns>The card heading.</returns>
     private string GetName()
-        => Player?.Nickname ?? "Waiting for player";
+        => Player?.Nickname ?? Text["Player.Card.WaitingForPlayer"];
 
     /// <summary>
     /// Gets whether the species name adds information beyond the visible nickname.
@@ -66,7 +66,7 @@ public partial class PlayerCard
         if (Player is null)
             return "--";
 
-        return Player.Evolutions.Count > 0 ? Player.Evolutions[0].Requirement : "None";
+        return Player.Evolutions.Count > 0 ? Player.Evolutions[0].Requirement : Text["Player.Card.None"];
     }
 
     /// <summary>
@@ -81,7 +81,7 @@ public partial class PlayerCard
     /// </summary>
     /// <returns>The HP label.</returns>
     private string GetHpLabel()
-        => Player is null ? "HP unknown" : $"HP {Player.CurrentHp} of {Player.MaximumHp}";
+        => Player is null ? Text["Player.Card.HpUnknown"] : Text["Player.Card.HpCurrentOfMaximum", Player.CurrentHp, Player.MaximumHp];
 
     /// <summary>
     /// Gets a culture-independent CSS width for current HP.
@@ -92,7 +92,7 @@ public partial class PlayerCard
         if (Player is null)
             return null;
 
-        double percentage = Player.MaximumHp <= 0 ? 0 : Math.Clamp(Player.CurrentHp * 100.0 / Player.MaximumHp, 0, 100);
+        double percentage = Player.MaximumHp <= 0 ? 0 : Math.Clamp(Player.CurrentHp * TrackerUiConstants.FullPercentage / (double)Player.MaximumHp, 0, TrackerUiConstants.FullPercentage);
         return string.Create(CultureInfo.InvariantCulture, $"width: {percentage:0.##}%");
     }
 
@@ -103,13 +103,13 @@ public partial class PlayerCard
     private string GetConditionText()
     {
         if (Player is null)
-            return "Status --";
+            return Text["Player.Card.StatusUnknown"];
 
         string status = FormatStatus(Player.Status);
         if (!Player.Confused)
             return status;
 
-        return status == "Healthy" ? "Confused" : $"{status} · Confused";
+        return status == Text["Player.Card.Healthy"] ? Text["Player.Card.Confused"] : Text["Player.Card.StatusWithConfusion", status];
     }
 
     /// <summary>
@@ -117,14 +117,14 @@ public partial class PlayerCard
     /// </summary>
     /// <param name="status">The game status identifier.</param>
     /// <returns>The display status.</returns>
-    private static string FormatStatus(string status) => status.ToUpperInvariant() switch
+    private string FormatStatus(string status) => status.ToUpperInvariant() switch
     {
-        "NONE" => "Healthy",
-        "POISON" => "Poisoned",
-        "BURN" => "Burned",
-        "PARALYSIS" => "Paralyzed",
-        "SLEEP" => "Asleep",
-        "FROZEN" => "Frozen",
+        "NONE" => Text["Player.Card.Healthy"],
+        "POISON" => Text["Player.Card.Poisoned"],
+        "BURN" => Text["Player.Card.Burned"],
+        "PARALYSIS" => Text["Player.Card.Paralyzed"],
+        "SLEEP" => Text["Player.Card.Asleep"],
+        "FROZEN" => Text["Player.Card.Frozen"],
         _ => status
     };
 

@@ -25,7 +25,7 @@ public sealed class TrackerMessageWriter : IAsyncDisposable
         UTF8Encoding encoding = new(false, true);
         _writer = new StreamWriter(stream, encoding, leaveOpen: leaveOpen)
         {
-            NewLine = "\n"
+            NewLine = TrackerProtocol.MessageDelimiter
         };
     }
 

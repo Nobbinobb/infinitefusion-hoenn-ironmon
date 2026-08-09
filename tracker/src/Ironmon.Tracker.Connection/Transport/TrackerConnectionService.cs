@@ -83,7 +83,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 _listener.Start();
                 BoundPort = ((IPEndPoint)_listener.LocalEndpoint).Port;
                 _state.Publish(TrackerConnectionStatus.Waiting);
-                _diagnostics.RecordLifecycle("Listening", $"127.0.0.1:{BoundPort}");
+                _diagnostics.RecordLifecycle(TrackerDiagnosticConstants.Listening, $"{IPAddress.Loopback}:{BoundPort}");
                 _runTask = RunAsync(_listener, _cancellation.Token);
             }
             catch (SocketException exception)
@@ -124,7 +124,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         await runTask.ConfigureAwait(false);
         cancellation?.Dispose();
         _state.Publish(TrackerConnectionStatus.Stopped);
-        _diagnostics.RecordLifecycle("Stopped", "Tracker listener stopped.");
+        _diagnostics.RecordLifecycle(TrackerDiagnosticConstants.Stopped, "Tracker listener stopped.");
     }
 
     /// <summary>
@@ -175,7 +175,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 if (!cancellationToken.IsCancellationRequested)
                 {
                     _state.Publish(TrackerConnectionStatus.Waiting);
-                    _diagnostics.RecordLifecycle("Disconnected", "Game connection closed.");
+                    _diagnostics.RecordLifecycle(TrackerDiagnosticConstants.Disconnected, "Game connection closed.");
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -204,7 +204,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     {
         client.NoDelay = true;
         _state.Publish(TrackerConnectionStatus.Handshaking);
-        _diagnostics.RecordLifecycle("Handshaking", client.Client.RemoteEndPoint?.ToString() ?? "Loopback game client");
+        _diagnostics.RecordLifecycle(TrackerDiagnosticConstants.Handshaking, client.Client.RemoteEndPoint?.ToString() ?? "Loopback game client");
         NetworkStream stream = client.GetStream();
         using TrackerMessageReader reader = new(stream, leaveOpen: true);
         await using TrackerMessageWriter writer = new(stream, leaveOpen: true);
@@ -214,19 +214,19 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         GameHandshakePayload game = ValidateGameHandshake(handshakeMessage);
         _knowledge.SelectRun(game.RunId);
         TrackerHandshakePayload tracker = new(_options.TrackerVersion, _options.DebugRequested);
-        TrackerMessage trackerHandshake = TrackerMessageFactory.CreateEvent("tracker_connected", 0, tracker, game.RunId, game.BattleId);
+        TrackerMessage trackerHandshake = TrackerMessageFactory.CreateEvent(TrackerEvents.TrackerConnected, TrackerProtocol.InitialEventSequence, tracker, game.RunId, game.BattleId);
         await writer.WriteAsync(trackerHandshake, cancellationToken).ConfigureAwait(false);
         _diagnostics.RecordOutgoing(trackerHandshake);
 
-        string requestId = Guid.NewGuid().ToString("N");
+        string requestId = Guid.NewGuid().ToString(TrackerProtocol.RequestIdFormat);
         Dictionary<string, object?> emptyPayload = [];
-        TrackerMessage request = TrackerMessageFactory.CreateRequest(requestId, "current_state", emptyPayload, game.RunId, game.BattleId);
+        TrackerMessage request = TrackerMessageFactory.CreateRequest(requestId, TrackerCommands.CurrentState, emptyPayload, game.RunId, game.BattleId);
         await writer.WriteAsync(request, cancellationToken).ConfigureAwait(false);
         _diagnostics.RecordOutgoing(request);
         _requests.Connect(writer);
 
         _state.Publish(TrackerConnectionStatus.Connected, game);
-        _diagnostics.RecordLifecycle("Connected", $"Infinite Fusion {game.GameVersion} · Ironmon {game.IronmonVersion}");
+        _diagnostics.RecordLifecycle(TrackerDiagnosticConstants.Connected, $"Infinite Fusion {game.GameVersion} · Ironmon {game.IronmonVersion}");
 
         try
         {
@@ -268,7 +268,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// <exception cref="TrackerProtocolException">Thrown when the message is not a game handshake.</exception>
     private static GameHandshakePayload ValidateGameHandshake(TrackerMessage message)
     {
-        if (message.Type != TrackerMessageType.Event || message.Event != "game_connected")
+        if (message.Type != TrackerMessageType.Event || message.Event != TrackerEvents.GameConnected)
             throw new TrackerProtocolException("The first game message must be game_connected.");
 
         return TrackerJson.DeserializePayload<GameHandshakePayload>(message.Payload);
@@ -291,7 +291,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 return;
 
             _diagnostics.RecordIncoming(message);
-            if (message.Type == TrackerMessageType.Event && message.Event == "run_started")
+            if (message.Type == TrackerMessageType.Event && message.Event == TrackerEvents.RunStarted)
             {
                 GameCurrentStatePayload startedState = TrackerJson.DeserializePayload<GameCurrentStatePayload>(message.Payload);
                 _knowledge.SelectRun(startedState.RunId);
@@ -302,7 +302,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 continue;
             }
 
-            if (message.Type == TrackerMessageType.Event && message.Event == "run_completed")
+            if (message.Type == TrackerMessageType.Event && message.Event == TrackerEvents.RunCompleted)
             {
                 _completedRuns.Store(TrackerJson.DeserializePayload<CompletedRunRecipePayload>(message.Payload));
                 continue;
@@ -352,14 +352,14 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         _knowledge.SelectRun(message.RunId);
         Action apply = message.Event switch
         {
-            "battle_started" => () => _runState.StartBattle(TrackerJson.DeserializePayload<BattleSnapshot>(message.Payload)),
-            "battle_ended" => _runState.EndBattle,
-            "player_sent_out" or "player_state_changed" => () => ApplyPlayerUpdate(message),
-            "player_move_menu_opened" => () => _runState.OpenPlayerMoveMenu(TrackerJson.DeserializePayload<PlayerMoveMenuOpenedPayload>(message.Payload)),
-            "enemy_sent_out" or "enemy_state_changed" => () => ApplyEnemyUpdate(message),
-            "enemy_move_used" => () =>
+            TrackerEvents.BattleStarted => () => _runState.StartBattle(TrackerJson.DeserializePayload<BattleSnapshot>(message.Payload)),
+            TrackerEvents.BattleEnded => _runState.EndBattle,
+            TrackerEvents.PlayerSentOut or TrackerEvents.PlayerStateChanged => () => ApplyPlayerUpdate(message),
+            TrackerEvents.PlayerMoveMenuOpened => () => _runState.OpenPlayerMoveMenu(TrackerJson.DeserializePayload<PlayerMoveMenuOpenedPayload>(message.Payload)),
+            TrackerEvents.EnemySentOut or TrackerEvents.EnemyStateChanged => () => ApplyEnemyUpdate(message),
+            TrackerEvents.EnemyMoveUsed => () =>
                 _knowledge.ObserveEnemyMove(TrackerJson.DeserializePayload<EnemyMoveUsedPayload>(message.Payload)),
-            "enemy_ability_revealed" => () =>
+            TrackerEvents.EnemyAbilityRevealed => () =>
                 _knowledge.ObserveEnemyAbility(TrackerJson.DeserializePayload<EnemyAbilityRevealedPayload>(message.Payload)),
             _ => () => { }
         };

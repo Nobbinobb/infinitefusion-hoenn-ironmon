@@ -398,13 +398,13 @@ Planned release sequence:
 
 1. Ability randomization: `0.3.0`.
 2. Base-stat randomization: `0.4.0`.
-3. Level-up move randomization: `0.5.0`.
+3. Move-access randomization: `0.5.0`.
 4. Evolution randomization: `0.6.0`.
 5. Fusion data integration: `0.7.0`.
 6. Milestone-wide integration and regression: `0.8.0`.
 
 Release builds are cumulative. For example, `0.5.0` contains ability,
-base-stat, and level-up move randomization.
+base-stat, and move-access randomization.
 
 ### Step 3.1: Ability randomization
 
@@ -475,26 +475,51 @@ Acceptance criteria:
 - Special species remain mechanically valid.
 - Fusions follow the documented inheritance behavior.
 
-### Step 3.3: Level-up move randomization
+### Step 3.3: Move-access randomization
 
-Status: **Planned**
+Status: **Complete**
 
-- Define type preference, duplicate handling, and excluded moves.
-- Guarantee usable early-game attacking options.
-- Cover level-1, level-up, and evolution-learned moves where applicable.
-- Generate seeded, run-consistent learnsets.
-- Combine fusion learnsets from the generated learnsets of their displayed
-  components.
-- Extend the inspection tool to display generated learnsets.
-- Package release `0.5.0` as `Ironmon-v0.5.0-level-up-moves.zip`.
+Design: **Complete** in `design/MOVE_ACCESS_RANDOMIZATION.md`
+
+Implementation: **Complete**
+
+- Use one mechanically safe global pool without type preference, power
+  progression, or a damaging-move guarantee.
+- Preserve every eligible species or mechanical form's complete original
+  level schedule and its distinct Egg, TM, and tutor channel capacities.
+- Randomize level-up and level-0 evolution entries, Egg lists, TM
+  compatibility, ordinary tutor offerings and compatibility, and specialized
+  Fusion Move Tutor access.
+- Keep the existing mapped found and scripted TM-item shuffle, including Gym
+  Leader rewards, while HM items remain replaced by permanent field tools.
+- Generate seeded, run-consistent move access on demand without persisting
+  per-species mappings.
+- Combine standard fusion access from the generated channels of the displayed
+  components using the documented chronological, duplicate, union, and source
+  rules.
+- Preserve current moves as instance-owned data while routing ordinary
+  creation-time move initialization through generated level-up schedules.
+- Extend tracker Debug and completed-run lookup with Learnset, Egg, TM, and
+  supported Tutor tabs.
+- Record local post-run metrics for overlap, tutor mismatch, initial moves,
+  acquisitions, and fusion access growth to guide later iteration.
+- Package release `0.5.0` as `Ironmon-v0.5.0-move-access.zip`.
 
 Acceptance criteria:
 
-- Generated learnsets contain only valid, permitted moves.
-- Early Pokemon cannot be left without a usable damaging move.
-- The same species has a consistent learnset throughout one run.
-- Save/load preserves learnsets and F7 generates new learnsets.
-- Fusions follow the documented inheritance behavior.
+- Every generated entry contains a valid universally or contextually permitted
+  move.
+- Original level schedules and per-channel capacities are preserved without
+  within-channel duplicates.
+- The same species exposes consistent move access throughout one run.
+- Save/load preserves access and F7 generates new access.
+- TM, Egg, ordinary tutor, specialized tutor, initialization, and relearning
+  paths consume the documented generated channels.
+- Standard fusions follow the documented full-union and duplicate behavior.
+- Complete access remains hidden during ordinary live play and agrees across
+  runtime, authorized Debug, and completed-run lookup.
+- Legacy runs retain native access and incompatible generator metadata fails
+  explicitly.
 
 ### Step 3.4: Evolution randomization
 
@@ -523,7 +548,7 @@ Status: **Planned**
 
 - Audit the implemented component rules for randomized abilities.
 - Audit the implemented component rules for randomized base stats.
-- Audit the implemented component rules for randomized learnsets.
+- Audit the implemented component rules for randomized move access.
 - Audit deterministic complete-fusion evolution targets for every supported
   evolution branch.
 - Cover directly encountered and pivot-generated fusions without losing run
@@ -553,7 +578,7 @@ Status: **Planned**
 Acceptance criteria:
 
 - All randomizers are deterministic within a run and change on F7.
-- No generated ability, stat set, learnset, or evolution is invalid.
+- No generated ability, stat set, move-access channel, or evolution is invalid.
 - Normal and fused Pokemon follow the documented rules.
 - The complete regression checklist passes on a clean installation.
 - Every feature release can be built reproducibly.

@@ -1,0 +1,1057 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="App.Native.AppTitle" xml:space="preserve">
+    <value>Ironmon Tracker</value>
+  </data>
+  <data name="App.NotFound.NotFoundDescription" xml:space="preserve">
+    <value>Return to the tracker window and select Player or Enemy.</value>
+  </data>
+  <data name="App.NotFound.NotFoundHeading" xml:space="preserve">
+    <value>View not found</value>
+  </data>
+  <data name="App.NotFound.NotFoundPageTitle" xml:space="preserve">
+    <value>Not found · Ironmon Tracker</value>
+  </data>
+  <data name="App.Shell.AppTitle" xml:space="preserve">
+    <value>Ironmon Tracker</value>
+  </data>
+  <data name="App.Shell.ConnectedGameVersions" xml:space="preserve">
+    <value>Infinite Fusion {0} · Ironmon {1}</value>
+  </data>
+  <data name="App.Shell.Connecting" xml:space="preserve">
+    <value>Connecting</value>
+  </data>
+  <data name="App.Shell.ConnectionError" xml:space="preserve">
+    <value>Connection error</value>
+  </data>
+  <data name="App.Shell.Debug" xml:space="preserve">
+    <value>Debug</value>
+  </data>
+  <data name="App.Shell.Enemy" xml:space="preserve">
+    <value>Enemy</value>
+  </data>
+  <data name="App.Shell.GameConnected" xml:space="preserve">
+    <value>Game connected</value>
+  </data>
+  <data name="App.Shell.HomeEyebrow" xml:space="preserve">
+    <value>IRONMON COMPANION</value>
+  </data>
+  <data name="App.Shell.HomeHeading" xml:space="preserve">
+    <value>Tracker</value>
+  </data>
+  <data name="App.Shell.ListeningOn" xml:space="preserve">
+    <value>Listening on {0}:{1}</value>
+  </data>
+  <data name="App.Shell.LocalConnection" xml:space="preserve">
+    <value>Local connection</value>
+  </data>
+  <data name="App.Shell.Lookup" xml:space="preserve">
+    <value>Lookup</value>
+  </data>
+  <data name="App.Shell.Player" xml:space="preserve">
+    <value>Player</value>
+  </data>
+  <data name="App.Shell.TrackerStopped" xml:space="preserve">
+    <value>Tracker stopped</value>
+  </data>
+  <data name="App.Shell.TrackerViewsLabel" xml:space="preserve">
+    <value>Tracker views</value>
+  </data>
+  <data name="App.Shell.UnknownState" xml:space="preserve">
+    <value>Unknown state</value>
+  </data>
+  <data name="App.Shell.WaitingForGame" xml:space="preserve">
+    <value>Waiting for game</value>
+  </data>
+  <data name="App.WebView.AppTitle" xml:space="preserve">
+    <value>Ironmon Tracker</value>
+  </data>
+  <data name="App.WebView.WebView2DownloadButton" xml:space="preserve">
+    <value>Open Microsoft download page</value>
+  </data>
+  <data name="App.WebView.WebView2RequiredDescription" xml:space="preserve">
+    <value>Install the Microsoft Edge WebView2 Runtime, then restart the tracker.</value>
+  </data>
+  <data name="App.WebView.WebView2RequiredHeading" xml:space="preserve">
+    <value>WebView2 is required</value>
+  </data>
+  <data name="Common.Ability.AbilityInformation" xml:space="preserve">
+    <value>ABILITY INFORMATION</value>
+  </data>
+  <data name="Common.Ability.CloseAbilityInformation" xml:space="preserve">
+    <value>Close ability information</value>
+  </data>
+  <data name="Common.Ability.NoDescriptionAvailable" xml:space="preserve">
+    <value>No description is available.</value>
+  </data>
+  <data name="Common.BaseStats.BaseStatDisplayMode" xml:space="preserve">
+    <value>Base-stat display mode</value>
+  </data>
+  <data name="Common.BaseStats.BaseStats" xml:space="preserve">
+    <value>Base stats</value>
+  </data>
+  <data name="Common.BaseStats.Body" xml:space="preserve">
+    <value>Body</value>
+  </data>
+  <data name="Common.BaseStats.Decrease" xml:space="preserve">
+    <value>Decrease</value>
+  </data>
+  <data name="Common.BaseStats.Delta" xml:space="preserve">
+    <value>Delta</value>
+  </data>
+  <data name="Common.BaseStats.DeltaBars" xml:space="preserve">
+    <value>Delta Bars</value>
+  </data>
+  <data name="Common.BaseStats.Generated" xml:space="preserve">
+    <value>Generated</value>
+  </data>
+  <data name="Common.BaseStats.GeneratedBars" xml:space="preserve">
+    <value>Generated Bars</value>
+  </data>
+  <data name="Common.BaseStats.GeneratedBst" xml:space="preserve">
+    <value>Generated BST</value>
+  </data>
+  <data name="Common.BaseStats.Head" xml:space="preserve">
+    <value>Head</value>
+  </data>
+  <data name="Common.BaseStats.Increase" xml:space="preserve">
+    <value>Increase</value>
+  </data>
+  <data name="Common.BaseStats.LegacyBaseStatsDescription" xml:space="preserve">
+    <value>This run predates base-stat randomization.</value>
+  </data>
+  <data name="Common.BaseStats.Original" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="Common.BaseStats.OriginalStats" xml:space="preserve">
+    <value>Original stats</value>
+  </data>
+  <data name="Common.BaseStats.Stat" xml:space="preserve">
+    <value>Stat</value>
+  </data>
+  <data name="Common.BaseStats.Table" xml:space="preserve">
+    <value>Table</value>
+  </data>
+  <data name="Common.Gender.Female" xml:space="preserve">
+    <value>Female</value>
+  </data>
+  <data name="Common.Gender.Male" xml:space="preserve">
+    <value>Male</value>
+  </data>
+  <data name="Common.Move.Accuracy" xml:space="preserve">
+    <value>Accuracy</value>
+  </data>
+  <data name="Common.Move.AccuracyCompact" xml:space="preserve">
+    <value>{0}% Acc</value>
+  </data>
+  <data name="Common.Move.Always" xml:space="preserve">
+    <value>Always</value>
+  </data>
+  <data name="Common.Move.AlwaysAccuracyCompact" xml:space="preserve">
+    <value>— Acc</value>
+  </data>
+  <data name="Common.Move.CloseMoveInformation" xml:space="preserve">
+    <value>Close move information</value>
+  </data>
+  <data name="Common.Move.Learned" xml:space="preserve">
+    <value>Learned</value>
+  </data>
+  <data name="Common.Move.LevelValue" xml:space="preserve">
+    <value>Lv. {0}</value>
+  </data>
+  <data name="Common.Move.MoveInformation" xml:space="preserve">
+    <value>MOVE INFORMATION</value>
+  </data>
+  <data name="Common.Move.NoDescriptionAvailable" xml:space="preserve">
+    <value>No description is available.</value>
+  </data>
+  <data name="Common.Move.NoEffect" xml:space="preserve">
+    <value>No effect</value>
+  </data>
+  <data name="Common.Move.NoPowerCompact" xml:space="preserve">
+    <value>— Pow</value>
+  </data>
+  <data name="Common.Move.NormallyEffective" xml:space="preserve">
+    <value>Normally effective</value>
+  </data>
+  <data name="Common.Move.NotVeryEffectiveHalf" xml:space="preserve">
+    <value>Not very effective (0.5×)</value>
+  </data>
+  <data name="Common.Move.NotVeryEffectiveQuarter" xml:space="preserve">
+    <value>Not very effective (0.25×)</value>
+  </data>
+  <data name="Common.Move.Physical" xml:space="preserve">
+    <value>Physical</value>
+  </data>
+  <data name="Common.Move.Power" xml:space="preserve">
+    <value>Power</value>
+  </data>
+  <data name="Common.Move.PowerCompact" xml:space="preserve">
+    <value>{0} Pow</value>
+  </data>
+  <data name="Common.Move.Special" xml:space="preserve">
+    <value>Special</value>
+  </data>
+  <data name="Common.Move.Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Common.Move.SuperEffectiveDouble" xml:space="preserve">
+    <value>Super effective (2×)</value>
+  </data>
+  <data name="Common.Move.SuperEffectiveQuadruple" xml:space="preserve">
+    <value>Super effective (4×)</value>
+  </data>
+  <data name="Common.Move.Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="Common.Move.UnknownCategory" xml:space="preserve">
+    <value>Unknown category</value>
+  </data>
+  <data name="Common.MoveAccess.Egg" xml:space="preserve">
+    <value>Egg</value>
+  </data>
+  <data name="Common.MoveAccess.EggMove" xml:space="preserve">
+    <value>Egg move</value>
+  </data>
+  <data name="Common.MoveAccess.EggMovesHeading" xml:space="preserve">
+    <value>EGG MOVES</value>
+  </data>
+  <data name="Common.MoveAccess.Evolution" xml:space="preserve">
+    <value>Evolution</value>
+  </data>
+  <data name="Common.MoveAccess.GeneratedMoveAccess" xml:space="preserve">
+    <value>Generated move access</value>
+  </data>
+  <data name="Common.MoveAccess.Learnset" xml:space="preserve">
+    <value>Learnset</value>
+  </data>
+  <data name="Common.MoveAccess.LevelUpLearnsetHeading" xml:space="preserve">
+    <value>LEVEL-UP LEARNSET</value>
+  </data>
+  <data name="Common.MoveAccess.LevelValue" xml:space="preserve">
+    <value>Lv. {0}</value>
+  </data>
+  <data name="Common.MoveAccess.MoveAccessChannels" xml:space="preserve">
+    <value>Move-access channels</value>
+  </data>
+  <data name="Common.MoveAccess.MoveCount" xml:space="preserve">
+    <value>{0} moves</value>
+  </data>
+  <data name="Common.MoveAccess.NoSupportedMoves" xml:space="preserve">
+    <value>No supported moves in this channel.</value>
+  </data>
+  <data name="Common.MoveAccess.SupportedTutorMovesHeading" xml:space="preserve">
+    <value>SUPPORTED TUTOR MOVES</value>
+  </data>
+  <data name="Common.MoveAccess.TmTrCompatibilityHeading" xml:space="preserve">
+    <value>TM AND TR COMPATIBILITY</value>
+  </data>
+  <data name="Common.MoveAccess.Tutor" xml:space="preserve">
+    <value>Tutor</value>
+  </data>
+  <data name="Common.MoveAccess.TutorSupportedSummary" xml:space="preserve">
+    <value>{0} of {1} abstract ordinary tutor moves are currently offered</value>
+  </data>
+  <data name="Debug.Abilities.AbilitiesHeading" xml:space="preserve">
+    <value>ABILITIES</value>
+  </data>
+  <data name="Debug.Abilities.AbilitySlotName" xml:space="preserve">
+    <value>{0} {1}</value>
+  </data>
+  <data name="Debug.Abilities.ActiveHeading" xml:space="preserve">
+    <value>ACTIVE</value>
+  </data>
+  <data name="Debug.Abilities.BodyGeneratedHeading" xml:space="preserve">
+    <value>BODY GENERATED</value>
+  </data>
+  <data name="Debug.Abilities.ComponentCompatible" xml:space="preserve">
+    <value>Component-compatible</value>
+  </data>
+  <data name="Debug.Abilities.CurrentHeading" xml:space="preserve">
+    <value>CURRENT</value>
+  </data>
+  <data name="Debug.Abilities.Eligibility" xml:space="preserve">
+    <value>Eligibility</value>
+  </data>
+  <data name="Debug.Abilities.ExactSpecies" xml:space="preserve">
+    <value>Exact species</value>
+  </data>
+  <data name="Debug.Abilities.FinalFusionSlotsHeading" xml:space="preserve">
+    <value>FINAL FUSION SLOTS</value>
+  </data>
+  <data name="Debug.Abilities.From" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="Debug.Abilities.GeneratedSlotsHeading" xml:space="preserve">
+    <value>GENERATED SLOTS</value>
+  </data>
+  <data name="Debug.Abilities.HeadGeneratedHeading" xml:space="preserve">
+    <value>HEAD GENERATED</value>
+  </data>
+  <data name="Debug.Abilities.Hidden" xml:space="preserve">
+    <value>Hidden</value>
+  </data>
+  <data name="Debug.Abilities.InspectedAbilitySlots" xml:space="preserve">
+    <value>Inspected ability slots</value>
+  </data>
+  <data name="Debug.Abilities.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Debug.Abilities.Normal" xml:space="preserve">
+    <value>Normal</value>
+  </data>
+  <data name="Debug.Abilities.Original" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="Debug.Abilities.RestrictedAbilityReplaced" xml:space="preserve">
+    <value>Restricted source replaced for this fusion.</value>
+  </data>
+  <data name="Debug.Abilities.SlotCount" xml:space="preserve">
+    <value>{0} slot(s)</value>
+  </data>
+  <data name="Debug.Abilities.Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Debug.Abilities.Universal" xml:space="preserve">
+    <value>Universal</value>
+  </data>
+  <data name="Debug.BaseStats.BaseStatInspection" xml:space="preserve">
+    <value>Base-stat inspection</value>
+  </data>
+  <data name="Debug.BaseStats.Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="Debug.BaseStats.FinalBaseStatsHeading" xml:space="preserve">
+    <value>FINAL BASE STATS</value>
+  </data>
+  <data name="Debug.BaseStats.GeneratorHeading" xml:space="preserve">
+    <value>GENERATOR</value>
+  </data>
+  <data name="Debug.BaseStats.LegacyStats" xml:space="preserve">
+    <value>Legacy stats</value>
+  </data>
+  <data name="Debug.BaseStats.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Debug.BaseStats.NormalRange" xml:space="preserve">
+    <value>Normal range</value>
+  </data>
+  <data name="Debug.BaseStats.Rules" xml:space="preserve">
+    <value>Rules</value>
+  </data>
+  <data name="Debug.BaseStats.Schema" xml:space="preserve">
+    <value>Schema</value>
+  </data>
+  <data name="Debug.BaseStats.Seed" xml:space="preserve">
+    <value>Seed</value>
+  </data>
+  <data name="Debug.BaseStats.SourceFingerprint" xml:space="preserve">
+    <value>Source fingerprint</value>
+  </data>
+  <data name="Debug.BaseStats.Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Debug.Inspector.Abilities" xml:space="preserve">
+    <value>Abilities</value>
+  </data>
+  <data name="Debug.Inspector.Authorized" xml:space="preserve">
+    <value>Authorized</value>
+  </data>
+  <data name="Debug.Inspector.AuthorizedDebugInspector" xml:space="preserve">
+    <value>Authorized debug inspector</value>
+  </data>
+  <data name="Debug.Inspector.DebugInspectorPages" xml:space="preserve">
+    <value>Debug inspector pages</value>
+  </data>
+  <data name="Debug.Inspector.DevelopmentModeHeading" xml:space="preserve">
+    <value>DEVELOPMENT MODE</value>
+  </data>
+  <data name="Debug.Inspector.EnemyNumber" xml:space="preserve">
+    <value>Enemy {0}</value>
+  </data>
+  <data name="Debug.Inspector.InspectionTargetUnavailable" xml:space="preserve">
+    <value>The selected inspection target is unavailable.</value>
+  </data>
+  <data name="Debug.Inspector.IronmonInspector" xml:space="preserve">
+    <value>Ironmon Inspector</value>
+  </data>
+  <data name="Debug.Inspector.Lookup" xml:space="preserve">
+    <value>Lookup</value>
+  </data>
+  <data name="Debug.Inspector.Moves" xml:space="preserve">
+    <value>Moves</value>
+  </data>
+  <data name="Debug.Inspector.NoPokemonInspected" xml:space="preserve">
+    <value>No Pokemon inspected</value>
+  </data>
+  <data name="Debug.Inspector.Overview" xml:space="preserve">
+    <value>Overview</value>
+  </data>
+  <data name="Debug.Inspector.Player" xml:space="preserve">
+    <value>Player</value>
+  </data>
+  <data name="Debug.Inspector.Pokemon" xml:space="preserve">
+    <value>Pokemon</value>
+  </data>
+  <data name="Debug.Inspector.PokemonInspectorPages" xml:space="preserve">
+    <value>Pokemon inspector pages</value>
+  </data>
+  <data name="Debug.Inspector.Protocol" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+  <data name="Debug.Inspector.ReadingDebugData" xml:space="preserve">
+    <value>Reading game-owned debug data…</value>
+  </data>
+  <data name="Debug.Inspector.RunDiagnostics" xml:space="preserve">
+    <value>Run Diagnostics</value>
+  </data>
+  <data name="Debug.Inspector.RunDiagnosticsNotLoaded" xml:space="preserve">
+    <value>Run diagnostics are not loaded.</value>
+  </data>
+  <data name="Debug.Inspector.SelectAvailablePokemon" xml:space="preserve">
+    <value>Select an available player or enemy.</value>
+  </data>
+  <data name="Debug.Inspector.Stats" xml:space="preserve">
+    <value>Stats</value>
+  </data>
+  <data name="Debug.Lookup.ActiveRunGeneratedPokemonLookup" xml:space="preserve">
+    <value>Active-run generated Pokemon lookup</value>
+  </data>
+  <data name="Debug.Overview.Ability" xml:space="preserve">
+    <value>Ability</value>
+  </data>
+  <data name="Debug.Overview.AbilityGeneratorHeading" xml:space="preserve">
+    <value>ABILITY GENERATOR</value>
+  </data>
+  <data name="Debug.Overview.AbilitySlot" xml:space="preserve">
+    <value>Ability slot</value>
+  </data>
+  <data name="Debug.Overview.Body" xml:space="preserve">
+    <value>Body</value>
+  </data>
+  <data name="Debug.Overview.DisplayedComponentsHeading" xml:space="preserve">
+    <value>DISPLAYED COMPONENTS</value>
+  </data>
+  <data name="Debug.Overview.Fingerprint" xml:space="preserve">
+    <value>Fingerprint</value>
+  </data>
+  <data name="Debug.Overview.Form" xml:space="preserve">
+    <value>Form</value>
+  </data>
+  <data name="Debug.Overview.Head" xml:space="preserve">
+    <value>Head</value>
+  </data>
+  <data name="Debug.Overview.IdentityHeading" xml:space="preserve">
+    <value>IDENTITY</value>
+  </data>
+  <data name="Debug.Overview.InspectedPokemonOverview" xml:space="preserve">
+    <value>Inspected Pokemon overview</value>
+  </data>
+  <data name="Debug.Overview.Item" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="Debug.Overview.LevelValue" xml:space="preserve">
+    <value>Lv. {0}</value>
+  </data>
+  <data name="Debug.Overview.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Debug.Overview.PokemonId" xml:space="preserve">
+    <value>Pokemon ID</value>
+  </data>
+  <data name="Debug.Overview.PoolRules" xml:space="preserve">
+    <value>Pool rules</value>
+  </data>
+  <data name="Debug.Overview.PoolSize" xml:space="preserve">
+    <value>Pool size</value>
+  </data>
+  <data name="Debug.Overview.RunSeed" xml:space="preserve">
+    <value>Run seed</value>
+  </data>
+  <data name="Debug.Overview.Schema" xml:space="preserve">
+    <value>Schema</value>
+  </data>
+  <data name="Debug.Overview.SpeciesId" xml:space="preserve">
+    <value>Species ID</value>
+  </data>
+  <data name="Debug.Protocol.ClearHistory" xml:space="preserve">
+    <value>Clear history</value>
+  </data>
+  <data name="Debug.Protocol.ConnectionAndProtocolHistory" xml:space="preserve">
+    <value>Connection and protocol history</value>
+  </data>
+  <data name="Debug.Protocol.ConnectionAndProtocolHistoryHeading" xml:space="preserve">
+    <value>CONNECTION AND PROTOCOL HISTORY</value>
+  </data>
+  <data name="Debug.Protocol.ConnectionStateCopied" xml:space="preserve">
+    <value>Connection state copied.</value>
+  </data>
+  <data name="Debug.Protocol.Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Debug.Protocol.CopyFailed" xml:space="preserve">
+    <value>Copy failed: {0}</value>
+  </data>
+  <data name="Debug.Protocol.CopyReport" xml:space="preserve">
+    <value>Copy report</value>
+  </data>
+  <data name="Debug.Protocol.CurrentConnectionStateHeading" xml:space="preserve">
+    <value>CURRENT CONNECTION STATE</value>
+  </data>
+  <data name="Debug.Protocol.CurrentTrackerStateHeading" xml:space="preserve">
+    <value>CURRENT TRACKER STATE</value>
+  </data>
+  <data name="Debug.Protocol.DiagnosticHistoryCleared" xml:space="preserve">
+    <value>Diagnostic history cleared.</value>
+  </data>
+  <data name="Debug.Protocol.DiagnosticReportCopied" xml:space="preserve">
+    <value>Diagnostic report copied.</value>
+  </data>
+  <data name="Debug.Protocol.EntryCopied" xml:space="preserve">
+    <value>Entry copied.</value>
+  </data>
+  <data name="Debug.Protocol.ExportedTo" xml:space="preserve">
+    <value>Exported to {0}</value>
+  </data>
+  <data name="Debug.Protocol.ExportFailed" xml:space="preserve">
+    <value>Export failed: {0}</value>
+  </data>
+  <data name="Debug.Protocol.ExportReport" xml:space="preserve">
+    <value>Export report</value>
+  </data>
+  <data name="Debug.Protocol.KnowledgeCopied" xml:space="preserve">
+    <value>Knowledge copied.</value>
+  </data>
+  <data name="Debug.Protocol.NoDiagnosticEntries" xml:space="preserve">
+    <value>No diagnostic entries recorded.</value>
+  </data>
+  <data name="Debug.Protocol.PersistedKnowledgeHeading" xml:space="preserve">
+    <value>PERSISTED KNOWLEDGE</value>
+  </data>
+  <data name="Debug.Protocol.Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Debug.Protocol.TrackerProtocolDiagnostics" xml:space="preserve">
+    <value>Tracker protocol diagnostics</value>
+  </data>
+  <data name="Debug.Protocol.TrackerStateCopied" xml:space="preserve">
+    <value>Tracker state copied.</value>
+  </data>
+  <data name="Debug.Run.AbilityFingerprint" xml:space="preserve">
+    <value>Ability fingerprint</value>
+  </data>
+  <data name="Debug.Run.AbilityPool" xml:space="preserve">
+    <value>Ability pool</value>
+  </data>
+  <data name="Debug.Run.AbilitySchema" xml:space="preserve">
+    <value>Ability schema</value>
+  </data>
+  <data name="Debug.Run.BaseStatFingerprint" xml:space="preserve">
+    <value>Base-stat fingerprint</value>
+  </data>
+  <data name="Debug.Run.BaseStatSchema" xml:space="preserve">
+    <value>Base-stat schema</value>
+  </data>
+  <data name="Debug.Run.BattleId" xml:space="preserve">
+    <value>Battle ID</value>
+  </data>
+  <data name="Debug.Run.ConfigurationHeading" xml:space="preserve">
+    <value>CONFIGURATION</value>
+  </data>
+  <data name="Debug.Run.CustomFusions" xml:space="preserve">
+    <value>Custom fusions</value>
+  </data>
+  <data name="Debug.Run.FusionFingerprint" xml:space="preserve">
+    <value>Fusion fingerprint</value>
+  </data>
+  <data name="Debug.Run.Game" xml:space="preserve">
+    <value>Game</value>
+  </data>
+  <data name="Debug.Run.GeneratorsAndPoolsHeading" xml:space="preserve">
+    <value>GENERATORS AND POOLS</value>
+  </data>
+  <data name="Debug.Run.Legacy" xml:space="preserve">
+    <value>Legacy</value>
+  </data>
+  <data name="Debug.Run.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Debug.Run.Protocol" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+  <data name="Debug.Run.RunDiagnostics" xml:space="preserve">
+    <value>Run Diagnostics</value>
+  </data>
+  <data name="Debug.Run.RunId" xml:space="preserve">
+    <value>Run ID</value>
+  </data>
+  <data name="Debug.Run.RuntimeHeading" xml:space="preserve">
+    <value>RUNTIME</value>
+  </data>
+  <data name="Debug.Run.Seed" xml:space="preserve">
+    <value>Seed</value>
+  </data>
+  <data name="Debug.Run.SpeciesSchema" xml:space="preserve">
+    <value>Species schema</value>
+  </data>
+  <data name="Debug.Run.Trainer" xml:space="preserve">
+    <value>Trainer</value>
+  </data>
+  <data name="Debug.Run.TrainerMappings" xml:space="preserve">
+    <value>Trainer mappings</value>
+  </data>
+  <data name="Debug.Run.Unfusion" xml:space="preserve">
+    <value>Unfusion</value>
+  </data>
+  <data name="Debug.Run.Wild" xml:space="preserve">
+    <value>Wild</value>
+  </data>
+  <data name="Debug.Run.WildMappings" xml:space="preserve">
+    <value>Wild mappings</value>
+  </data>
+  <data name="Enemy.Card.Ability" xml:space="preserve">
+    <value>Ability</value>
+  </data>
+  <data name="Enemy.Card.EnemyHpUnknown" xml:space="preserve">
+    <value>Enemy HP unknown</value>
+  </data>
+  <data name="Enemy.Card.EnemyNumber" xml:space="preserve">
+    <value>Enemy {0}</value>
+  </data>
+  <data name="Enemy.Card.EnemyPokemon" xml:space="preserve">
+    <value>Enemy Pokemon</value>
+  </data>
+  <data name="Enemy.Card.EnemySummary" xml:space="preserve">
+    <value>Enemy summary</value>
+  </data>
+  <data name="Enemy.Card.EnemyWaitingDescription" xml:space="preserve">
+    <value>The enemy view will open automatically when battle data arrives.</value>
+  </data>
+  <data name="Enemy.Card.Hidden" xml:space="preserve">
+    <value>Hidden</value>
+  </data>
+  <data name="Enemy.Card.HiddenEnemyCondition" xml:space="preserve">
+    <value>Hidden enemy condition</value>
+  </data>
+  <data name="Enemy.Card.HiddenEnemyDetails" xml:space="preserve">
+    <value>Hidden enemy details</value>
+  </data>
+  <data name="Enemy.Card.Highest" xml:space="preserve">
+    <value>Highest</value>
+  </data>
+  <data name="Enemy.Card.Item" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="Enemy.Card.LevelValue" xml:space="preserve">
+    <value>Lv. {0}</value>
+  </data>
+  <data name="Enemy.Card.NoOpponent" xml:space="preserve">
+    <value>No opponent</value>
+  </data>
+  <data name="Enemy.Card.OpposingPokemon" xml:space="preserve">
+    <value>Opposing Pokemon</value>
+  </data>
+  <data name="Enemy.Card.OpposingPokemonHeading" xml:space="preserve">
+    <value>OPPOSING POKEMON</value>
+  </data>
+  <data name="Enemy.Card.StatusHidden" xml:space="preserve">
+    <value>Status hidden</value>
+  </data>
+  <data name="Enemy.Card.StatusUnknown" xml:space="preserve">
+    <value>Status --</value>
+  </data>
+  <data name="Enemy.Card.Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="Enemy.Moves.DiscoveredEnemyMoves" xml:space="preserve">
+    <value>Discovered enemy moves</value>
+  </data>
+  <data name="Enemy.Moves.DiscoveredMovesHeading" xml:space="preserve">
+    <value>DISCOVERED MOVES</value>
+  </data>
+  <data name="Enemy.Moves.UnknownMove" xml:space="preserve">
+    <value>Unknown move</value>
+  </data>
+  <data name="Enemy.Stats.Empty" xml:space="preserve">
+    <value>empty</value>
+  </data>
+  <data name="Enemy.Stats.EnemyStatAnnotations" xml:space="preserve">
+    <value>Enemy stat annotations</value>
+  </data>
+  <data name="Enemy.Stats.Minus" xml:space="preserve">
+    <value>minus</value>
+  </data>
+  <data name="Enemy.Stats.Plus" xml:space="preserve">
+    <value>plus</value>
+  </data>
+  <data name="Enemy.Stats.StatAnnotation" xml:space="preserve">
+    <value>{0} annotation: {1}</value>
+  </data>
+  <data name="Enemy.Stats.StatAnnotationUnavailable" xml:space="preserve">
+    <value>{0} annotation unavailable</value>
+  </data>
+  <data name="Lookup.Card.AbilitiesHeading" xml:space="preserve">
+    <value>ABILITIES</value>
+  </data>
+  <data name="Lookup.Card.ChanceWhenFused" xml:space="preserve">
+    <value>{0:0.##}% when fused</value>
+  </data>
+  <data name="Lookup.Card.CombinedSlots" xml:space="preserve">
+    <value>Slots {0} + {1}</value>
+  </data>
+  <data name="Lookup.Card.CurrentEvolutionsHeading" xml:space="preserve">
+    <value>CURRENT EVOLUTIONS</value>
+  </data>
+  <data name="Lookup.Card.DisplayedComponentsHeading" xml:space="preserve">
+    <value>DISPLAYED COMPONENTS</value>
+  </data>
+  <data name="Lookup.Card.DisplayedFusionComponents" xml:space="preserve">
+    <value>Displayed fusion components</value>
+  </data>
+  <data name="Lookup.Card.Evolution" xml:space="preserve">
+    <value>Evolution</value>
+  </data>
+  <data name="Lookup.Card.EvolutionDestinations" xml:space="preserve">
+    <value>Evolution destinations</value>
+  </data>
+  <data name="Lookup.Card.FusionMaterialsHeading" xml:space="preserve">
+    <value>FUSION MATERIALS</value>
+  </data>
+  <data name="Lookup.Card.GeneratedPokemonDetails" xml:space="preserve">
+    <value>Generated Pokemon details</value>
+  </data>
+  <data name="Lookup.Card.GeneratedPokemonInformation" xml:space="preserve">
+    <value>Generated Pokemon information</value>
+  </data>
+  <data name="Lookup.Card.IronmonFusionMaterials" xml:space="preserve">
+    <value>Ironmon fusion materials</value>
+  </data>
+  <data name="Lookup.Card.IronmonReverseFusion" xml:space="preserve">
+    <value>Ironmon reverse fusion</value>
+  </data>
+  <data name="Lookup.Card.IronmonReverseHeading" xml:space="preserve">
+    <value>IRONMON REVERSE</value>
+  </data>
+  <data name="Lookup.Card.LevelRange" xml:space="preserve">
+    <value>Lv. {0}–{1}</value>
+  </data>
+  <data name="Lookup.Card.LevelValue" xml:space="preserve">
+    <value>Lv. {0}</value>
+  </data>
+  <data name="Lookup.Card.LocationUnavailable" xml:space="preserve">
+    <value>Location unavailable</value>
+  </data>
+  <data name="Lookup.Card.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Lookup.Card.PreviousEvolutionHeading" xml:space="preserve">
+    <value>PREVIOUS EVOLUTION</value>
+  </data>
+  <data name="Lookup.Card.PreviousEvolutions" xml:space="preserve">
+    <value>Previous evolutions</value>
+  </data>
+  <data name="Lookup.Card.SlotCount" xml:space="preserve">
+    <value>{0} slot(s)</value>
+  </data>
+  <data name="Lookup.Card.SlotNumber" xml:space="preserve">
+    <value>Slot {0}</value>
+  </data>
+  <data name="Lookup.Card.TrainerOccurrenceSummary" xml:space="preserve">
+    <value>Party slot {0} · Lv. {1} · {2}</value>
+  </data>
+  <data name="Lookup.Card.TrainerPartyLocations" xml:space="preserve">
+    <value>Trainer party locations</value>
+  </data>
+  <data name="Lookup.Card.TrainersHeading" xml:space="preserve">
+    <value>TRAINERS</value>
+  </data>
+  <data name="Lookup.Card.WildEncounterLocations" xml:space="preserve">
+    <value>Wild encounter locations</value>
+  </data>
+  <data name="Lookup.Card.WildLocationsHeading" xml:space="preserve">
+    <value>WILD LOCATIONS</value>
+  </data>
+  <data name="Lookup.Fusion.CalculatingFusionData" xml:space="preserve">
+    <value>Calculating fusion data…</value>
+  </data>
+  <data name="Lookup.Fusion.CompletedRunRecipeRequired" xml:space="preserve">
+    <value>A completed-run recipe is required.</value>
+  </data>
+  <data name="Lookup.Fusion.EnterPokemonName" xml:space="preserve">
+    <value>Enter a Pokémon name to search.</value>
+  </data>
+  <data name="Lookup.Fusion.FusionMaterialSearchPages" xml:space="preserve">
+    <value>Fusion material search pages</value>
+  </data>
+  <data name="Lookup.Fusion.FusionSearchDescription" xml:space="preserve">
+    <value>Select a second normal Pokémon to calculate both orientations.</value>
+  </data>
+  <data name="Lookup.Fusion.IronmonFusionResults" xml:space="preserve">
+    <value>Ironmon fusion results</value>
+  </data>
+  <data name="Lookup.Fusion.IronmonFusionSearch" xml:space="preserve">
+    <value>Ironmon fusion search</value>
+  </data>
+  <data name="Lookup.Fusion.IronmonFusionsHeading" xml:space="preserve">
+    <value>IRONMON FUSIONS</value>
+  </data>
+  <data name="Lookup.Fusion.Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Lookup.Fusion.NoMatchingNormalPokemon" xml:space="preserve">
+    <value>No matching normal Pokémon found.</value>
+  </data>
+  <data name="Lookup.Fusion.NormalPokemonSearchResults" xml:space="preserve">
+    <value>Normal Pokemon search results</value>
+  </data>
+  <data name="Lookup.Fusion.Previous" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="Lookup.Fusion.ResultRange" xml:space="preserve">
+    <value>{0}–{1} of {2}</value>
+  </data>
+  <data name="Lookup.Fusion.Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Lookup.Fusion.SearchSecondMaterial" xml:space="preserve">
+    <value>Search second material</value>
+  </data>
+  <data name="Lookup.Fusion.SecondFusionMaterial" xml:space="preserve">
+    <value>Second fusion material</value>
+  </data>
+  <data name="Lookup.Moves.CompleteLevelUpLearnset" xml:space="preserve">
+    <value>Complete level-up learnset</value>
+  </data>
+  <data name="Lookup.Moves.LevelUpLearnsetHeading" xml:space="preserve">
+    <value>LEVEL-UP LEARNSET</value>
+  </data>
+  <data name="Lookup.Moves.LevelValue" xml:space="preserve">
+    <value>Lv. {0}</value>
+  </data>
+  <data name="Lookup.Runs.CompletedRunOption" xml:space="preserve">
+    <value>{0} · Seed {1}</value>
+  </data>
+  <data name="Lookup.Runs.CompletedRunsHeading" xml:space="preserve">
+    <value>COMPLETED RUNS</value>
+  </data>
+  <data name="Lookup.Runs.GeneratedPokemonLookup" xml:space="preserve">
+    <value>Generated Pokémon lookup</value>
+  </data>
+  <data name="Lookup.Runs.NoCompletedRun" xml:space="preserve">
+    <value>No completed run yet</value>
+  </data>
+  <data name="Lookup.Runs.NoCompletedRunDescription" xml:space="preserve">
+    <value>A lost or completed Ironmon run will add its reconstruction recipe here.</value>
+  </data>
+  <data name="Lookup.Runs.PostRunPokemonLookup" xml:space="preserve">
+    <value>Post-run Pokemon lookup</value>
+  </data>
+  <data name="Lookup.Search.Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="Lookup.Search.EnterPokemonName" xml:space="preserve">
+    <value>Enter a Pokémon name to search.</value>
+  </data>
+  <data name="Lookup.Search.Forward" xml:space="preserve">
+    <value>Forward</value>
+  </data>
+  <data name="Lookup.Search.Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Lookup.Search.NoMatchingPokemon" xml:space="preserve">
+    <value>No matching Pokémon found.</value>
+  </data>
+  <data name="Lookup.Search.PokemonLookupHistory" xml:space="preserve">
+    <value>Pokemon lookup history</value>
+  </data>
+  <data name="Lookup.Search.PokemonName" xml:space="preserve">
+    <value>Pokemon name</value>
+  </data>
+  <data name="Lookup.Search.PokemonSearchResultPages" xml:space="preserve">
+    <value>Pokemon search result pages</value>
+  </data>
+  <data name="Lookup.Search.PokemonSearchResults" xml:space="preserve">
+    <value>Pokemon search results</value>
+  </data>
+  <data name="Lookup.Search.Previous" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="Lookup.Search.ReadingActiveGeneratedData" xml:space="preserve">
+    <value>Reading active generated data…</value>
+  </data>
+  <data name="Lookup.Search.ReconstructingGeneratedData" xml:space="preserve">
+    <value>Reconstructing generated data…</value>
+  </data>
+  <data name="Lookup.Search.ResultRange" xml:space="preserve">
+    <value>{0}–{1} of {2}</value>
+  </data>
+  <data name="Lookup.Search.Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Lookup.Search.SearchPokemonName" xml:space="preserve">
+    <value>Search Pokémon name</value>
+  </data>
+  <data name="Player.Card.Ability" xml:space="preserve">
+    <value>Ability</value>
+  </data>
+  <data name="Player.Card.ActivePokemon" xml:space="preserve">
+    <value>ACTIVE POKEMON</value>
+  </data>
+  <data name="Player.Card.Asleep" xml:space="preserve">
+    <value>Asleep</value>
+  </data>
+  <data name="Player.Card.Burned" xml:space="preserve">
+    <value>Burned</value>
+  </data>
+  <data name="Player.Card.Confused" xml:space="preserve">
+    <value>Confused</value>
+  </data>
+  <data name="Player.Card.Evolution" xml:space="preserve">
+    <value>Evolution</value>
+  </data>
+  <data name="Player.Card.Frozen" xml:space="preserve">
+    <value>Frozen</value>
+  </data>
+  <data name="Player.Card.Heals" xml:space="preserve">
+    <value>Heals</value>
+  </data>
+  <data name="Player.Card.Healthy" xml:space="preserve">
+    <value>Healthy</value>
+  </data>
+  <data name="Player.Card.HpCurrentOfMaximum" xml:space="preserve">
+    <value>HP {0} of {1}</value>
+  </data>
+  <data name="Player.Card.HpUnknown" xml:space="preserve">
+    <value>HP unknown</value>
+  </data>
+  <data name="Player.Card.Item" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="Player.Card.LevelValue" xml:space="preserve">
+    <value>Lv. {0}</value>
+  </data>
+  <data name="Player.Card.Nature" xml:space="preserve">
+    <value>Nature</value>
+  </data>
+  <data name="Player.Card.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Player.Card.Paralyzed" xml:space="preserve">
+    <value>Paralyzed</value>
+  </data>
+  <data name="Player.Card.PlayerPokemon" xml:space="preserve">
+    <value>Player Pokemon</value>
+  </data>
+  <data name="Player.Card.PlayerWaitingDescription" xml:space="preserve">
+    <value>Send your Pokemon into battle to initialize this view.</value>
+  </data>
+  <data name="Player.Card.Poisoned" xml:space="preserve">
+    <value>Poisoned</value>
+  </data>
+  <data name="Player.Card.PokemonConditionAndHealing" xml:space="preserve">
+    <value>Pokemon condition and healing inventory</value>
+  </data>
+  <data name="Player.Card.PokemonDetails" xml:space="preserve">
+    <value>Pokemon details</value>
+  </data>
+  <data name="Player.Card.PokemonSummary" xml:space="preserve">
+    <value>Pokemon summary</value>
+  </data>
+  <data name="Player.Card.StatusUnknown" xml:space="preserve">
+    <value>Status --</value>
+  </data>
+  <data name="Player.Card.StatusWithConfusion" xml:space="preserve">
+    <value>{0} · Confused</value>
+  </data>
+  <data name="Player.Card.WaitingForPlayer" xml:space="preserve">
+    <value>Waiting for player</value>
+  </data>
+  <data name="Player.Moves.CurrentPokemonMoves" xml:space="preserve">
+    <value>Current Pokemon moves</value>
+  </data>
+  <data name="Player.Moves.EmptyMoveSlot" xml:space="preserve">
+    <value>Empty move slot</value>
+  </data>
+  <data name="Player.Moves.MovesHeading" xml:space="preserve">
+    <value>MOVES</value>
+  </data>
+  <data name="Player.Moves.MoveSlot" xml:space="preserve">
+    <value>Move {0}</value>
+  </data>
+  <data name="Player.Stats.CalculatedPokemonStats" xml:space="preserve">
+    <value>Calculated Pokemon stats</value>
+  </data>
+  <data name="Lookup.Runs.Run" xml:space="preserve">
+    <value>Run</value>
+  </data>
+  <data name="Lookup.Analysis.Title" xml:space="preserve">
+    <value>Move-access run analysis</value>
+  </data>
+  <data name="Lookup.Analysis.CompletedRunOnly" xml:space="preserve">
+    <value>Available only after the run ends</value>
+  </data>
+  <data name="Lookup.Analysis.Unavailable" xml:space="preserve">
+    <value>No move-access metrics are available</value>
+  </data>
+  <data name="Lookup.Analysis.UnavailableDescription" xml:space="preserve">
+    <value>This run predates local move-access metric recording.</value>
+  </data>
+  <data name="Lookup.Analysis.Encounters" xml:space="preserve"><value>Encounters</value></data>
+  <data name="Lookup.Analysis.MachinesObtained" xml:space="preserve"><value>Machines obtained</value></data>
+  <data name="Lookup.Analysis.TutorVisits" xml:space="preserve"><value>Tutor visits</value></data>
+  <data name="Lookup.Analysis.MoveAcquisitions" xml:space="preserve"><value>Move acquisitions</value></data>
+  <data name="Lookup.Analysis.MoveUses" xml:space="preserve"><value>Moves used</value></data>
+  <data name="Lookup.Analysis.EncounteredAccess" xml:space="preserve"><value>Encountered move access</value></data>
+  <data name="Lookup.Analysis.NoEncounterData" xml:space="preserve"><value>No encountered Pokemon were recorded.</value></data>
+  <data name="Lookup.Analysis.EncounterContext" xml:space="preserve"><value>Lv. {0} · {1} · encountered {2} time(s)</value></data>
+  <data name="Lookup.Analysis.Fusion" xml:space="preserve"><value>Fusion</value></data>
+  <data name="Lookup.Analysis.UniqueMoves" xml:space="preserve"><value>{0} unique moves</value></data>
+  <data name="Lookup.Analysis.CrossChannelOverlap" xml:space="preserve"><value>{0} cross-channel overlaps</value></data>
+  <data name="Lookup.Analysis.EarliestDamage" xml:space="preserve"><value>Earliest damaging move: Lv. {0}</value></data>
+  <data name="Lookup.Analysis.NoDamagingMove" xml:space="preserve"><value>No damaging learnset move</value></data>
+  <data name="Lookup.Analysis.LevelOneGuarantee" xml:space="preserve"><value>Lv. 1: {0} entries, {1} damaging in starting four</value></data>
+  <data name="Lookup.Analysis.TutorMismatch" xml:space="preserve"><value>Tutor: {0} abstract / {1} supported</value></data>
+  <data name="Lookup.Analysis.Channel" xml:space="preserve"><value>Channel</value></data>
+  <data name="Lookup.Analysis.Entries" xml:space="preserve"><value>Entries</value></data>
+  <data name="Lookup.Analysis.Unique" xml:space="preserve"><value>Unique</value></data>
+  <data name="Lookup.Analysis.ComponentEntries" xml:space="preserve"><value>Component entries</value></data>
+  <data name="Lookup.Analysis.DuplicatesRemoved" xml:space="preserve"><value>Duplicates removed</value></data>
+  <data name="Lookup.Analysis.FusionGrowth" xml:space="preserve"><value>Growth vs. larger component</value></data>
+  <data name="Lookup.Analysis.InitialFour" xml:space="preserve"><value>Initial four: </value></data>
+  <data name="Lookup.Analysis.Interactions" xml:space="preserve"><value>Machines and tutors</value></data>
+  <data name="Lookup.Analysis.NoneRecorded" xml:space="preserve"><value>None recorded</value></data>
+  <data name="Lookup.Analysis.MachineCompatibility" xml:space="preserve"><value>{0} of {1} party members compatible · {2}</value></data>
+  <data name="Lookup.Analysis.TutorCompatibility" xml:space="preserve"><value>{0} compatible party member(s) · {1}</value></data>
+  <data name="Lookup.Analysis.AcquisitionsAndUses" xml:space="preserve"><value>Acquisitions and actual use</value></data>
+  <data name="Lookup.Analysis.AcquisitionContext" xml:space="preserve"><value>Lv. {0} · {1}</value></data>
+  <data name="Lookup.Analysis.UseContext" xml:space="preserve"><value>{0} use(s) · {1} · {2}</value></data>
+  <data name="Lookup.Analysis.Copied" xml:space="preserve"><value>copied effect</value></data>
+  <data name="Lookup.Analysis.Direct" xml:space="preserve"><value>direct</value></data>
+  <data name="Lookup.Analysis.Player" xml:space="preserve"><value>player</value></data>
+  <data name="Lookup.Analysis.Enemy" xml:space="preserve"><value>enemy</value></data>
+  <data name="Lookup.Analysis.Learnset" xml:space="preserve"><value>Learnset</value></data>
+  <data name="Lookup.Analysis.Egg" xml:space="preserve"><value>Egg</value></data>
+  <data name="Lookup.Analysis.Machine" xml:space="preserve"><value>TM / TR</value></data>
+  <data name="Lookup.Analysis.Tutor" xml:space="preserve"><value>Tutor</value></data>
+  <data name="Lookup.Analysis.NothingTaught" xml:space="preserve"><value>nothing taught</value></data>
+  <data name="Lookup.Analysis.TaughtPokemon" xml:space="preserve"><value>taught to {0}</value></data>
+  <data name="Lookup.Analysis.Source.found" xml:space="preserve"><value>found</value></data>
+  <data name="Lookup.Analysis.Source.script" xml:space="preserve"><value>scripted reward</value></data>
+  <data name="Lookup.Analysis.Source.tm" xml:space="preserve"><value>TM / TR</value></data>
+  <data name="Lookup.Analysis.Source.tutor" xml:space="preserve"><value>tutor</value></data>
+  <data name="Lookup.Analysis.Source.egg" xml:space="preserve"><value>Egg move</value></data>
+  <data name="Lookup.Analysis.Source.level_up" xml:space="preserve"><value>level-up</value></data>
+  <data name="Lookup.Analysis.Source.copy_effect" xml:space="preserve"><value>copy effect</value></data>
+</root>

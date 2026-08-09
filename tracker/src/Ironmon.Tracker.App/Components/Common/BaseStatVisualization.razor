@@ -1,18 +1,18 @@
-<section class="base-stat-visualization" aria-label="Base stats">
+<section class="base-stat-visualization" aria-label="@Text["Common.BaseStats.BaseStats"]">
     @if (!Randomized)
     {
-        <div class="base-stat-legacy-note"><strong>Original stats</strong><span>This run predates base-stat randomization.</span></div>
+        <div class="base-stat-legacy-note"><strong>@Text["Common.BaseStats.OriginalStats"]</strong><span>@Text["Common.BaseStats.LegacyBaseStatsDescription"]</span></div>
     }
-    <div class="base-stat-view-switch" role="group" aria-label="Base-stat display mode">
-        <button type="button" class="@GetModeClass(BaseStatDisplayMode.Table)" @onclick="() => SelectMode(BaseStatDisplayMode.Table)">Table</button>
-        <button type="button" class="@GetModeClass(BaseStatDisplayMode.GeneratedBars)" @onclick="() => SelectMode(BaseStatDisplayMode.GeneratedBars)">Generated Bars</button>
-        <button type="button" class="@GetModeClass(BaseStatDisplayMode.DeltaBars)" @onclick="() => SelectMode(BaseStatDisplayMode.DeltaBars)">Delta Bars</button>
+    <div class="base-stat-view-switch" role="group" aria-label="@Text["Common.BaseStats.BaseStatDisplayMode"]">
+        <button type="button" class="@GetModeClass(BaseStatDisplayMode.Table)" @onclick="() => SelectMode(BaseStatDisplayMode.Table)">@Text["Common.BaseStats.Table"]</button>
+        <button type="button" class="@GetModeClass(BaseStatDisplayMode.GeneratedBars)" @onclick="() => SelectMode(BaseStatDisplayMode.GeneratedBars)">@Text["Common.BaseStats.GeneratedBars"]</button>
+        <button type="button" class="@GetModeClass(BaseStatDisplayMode.DeltaBars)" @onclick="() => SelectMode(BaseStatDisplayMode.DeltaBars)">@Text["Common.BaseStats.DeltaBars"]</button>
     </div>
 
     @if (_mode == BaseStatDisplayMode.Table)
     {
         <div class="base-stat-comparison base-stat-heading" aria-hidden="true">
-            <span>Stat</span><span>Original</span><span>Generated</span><span>Delta</span>
+            <span>@Text["Common.BaseStats.Stat"]</span><span>@Text["Common.BaseStats.Original"]</span><span>@Text["Common.BaseStats.Generated"]</span><span>@Text["Common.BaseStats.Delta"]</span>
         </div>
         <div class="base-stat-table">
             @foreach ((string Name, int Original, int Generated, string? Dominance) stat in GetBaseStats())
@@ -56,8 +56,8 @@
         </div>
         @if (_mode == BaseStatDisplayMode.DeltaBars)
         {
-            <div class="base-stat-legend"><span class="generated">Generated</span><span class="positive">Increase</span><span class="negative">Decrease</span></div>
+            <div class="base-stat-legend"><span class="generated">@Text["Common.BaseStats.Generated"]</span><span class="positive">@Text["Common.BaseStats.Increase"]</span><span class="negative">@Text["Common.BaseStats.Decrease"]</span></div>
         }
-        <div class="base-stat-bar-total">Generated BST <strong>@GeneratedTotal</strong>@if (_mode == BaseStatDisplayMode.DeltaBars) { <span class="@GetDeltaClass(OriginalTotal, GeneratedTotal)">@FormatDelta(OriginalTotal, GeneratedTotal)</span> }</div>
+        <div class="base-stat-bar-total">@Text["Common.BaseStats.GeneratedBst"] <strong>@GeneratedTotal</strong>@if (_mode == BaseStatDisplayMode.DeltaBars) { <span class="@GetDeltaClass(OriginalTotal, GeneratedTotal)">@FormatDelta(OriginalTotal, GeneratedTotal)</span> }</div>
     }
 </section>

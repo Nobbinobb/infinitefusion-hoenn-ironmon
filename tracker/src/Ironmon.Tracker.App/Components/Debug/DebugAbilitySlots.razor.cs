@@ -44,14 +44,14 @@ public partial class DebugAbilitySlots
     /// </summary>
     /// <param name="group">The ability group.</param>
     /// <returns>The group heading.</returns>
-    private static string GetGroupName(DebugAbilitySlotGroup group) => group switch
+    private string GetGroupName(DebugAbilitySlotGroup group) => group switch
     {
-        DebugAbilitySlotGroup.Current => "CURRENT",
-        DebugAbilitySlotGroup.Generated => "GENERATED SLOTS",
-        DebugAbilitySlotGroup.FinalFusion => "FINAL FUSION SLOTS",
-        DebugAbilitySlotGroup.BodyGenerated => "BODY GENERATED",
-        DebugAbilitySlotGroup.HeadGenerated => "HEAD GENERATED",
-        _ => "ABILITIES"
+        DebugAbilitySlotGroup.Current => Text["Debug.Abilities.CurrentHeading"],
+        DebugAbilitySlotGroup.Generated => Text["Debug.Abilities.GeneratedSlotsHeading"],
+        DebugAbilitySlotGroup.FinalFusion => Text["Debug.Abilities.FinalFusionSlotsHeading"],
+        DebugAbilitySlotGroup.BodyGenerated => Text["Debug.Abilities.BodyGeneratedHeading"],
+        DebugAbilitySlotGroup.HeadGenerated => Text["Debug.Abilities.HeadGeneratedHeading"],
+        _ => Text["Debug.Abilities.AbilitiesHeading"]
     };
 
     /// <summary>
@@ -59,19 +59,19 @@ public partial class DebugAbilitySlots
     /// </summary>
     /// <param name="slot">The ability slot.</param>
     /// <returns>The slot label.</returns>
-    private static string GetSlotName(DebugAbilitySlotSnapshot slot)
-        => $"{(slot.Kind == DebugAbilitySlotKind.Hidden ? "Hidden" : "Normal")} {slot.Index}";
+    private string GetSlotName(DebugAbilitySlotSnapshot slot)
+        => Text["Debug.Abilities.AbilitySlotName", slot.Kind == DebugAbilitySlotKind.Hidden ? Text["Debug.Abilities.Hidden"] : Text["Debug.Abilities.Normal"], slot.Index];
 
     /// <summary>
     /// Gets the visible eligibility label.
     /// </summary>
     /// <param name="eligibility">The ability eligibility.</param>
     /// <returns>The eligibility label.</returns>
-    private static string GetEligibilityName(DebugAbilityEligibility eligibility) => eligibility switch
+    private string GetEligibilityName(DebugAbilityEligibility eligibility) => eligibility switch
     {
-        DebugAbilityEligibility.ExactSpecies => "Exact species",
-        DebugAbilityEligibility.ComponentCompatible => "Component-compatible",
-        DebugAbilityEligibility.Universal => "Universal",
-        _ => "None"
+        DebugAbilityEligibility.ExactSpecies => Text["Debug.Abilities.ExactSpecies"],
+        DebugAbilityEligibility.ComponentCompatible => Text["Debug.Abilities.ComponentCompatible"],
+        DebugAbilityEligibility.Universal => Text["Debug.Abilities.Universal"],
+        _ => Text["Debug.Abilities.None"]
     };
 }

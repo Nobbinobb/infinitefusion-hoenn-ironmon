@@ -81,10 +81,10 @@ public partial class MoveDetailPanel
     /// <returns>The move-category name.</returns>
     private string GetCategoryName() => Category switch
     {
-        MoveCategory.Physical => "Physical",
-        MoveCategory.Special => "Special",
-        MoveCategory.Status => "Status",
-        _ => "Unknown"
+        MoveCategory.Physical => Text["Common.Move.Physical"],
+        MoveCategory.Special => Text["Common.Move.Special"],
+        MoveCategory.Status => Text["Common.Move.Status"],
+        _ => Text["Common.Move.Unknown"]
     };
 
     /// <summary>
@@ -99,7 +99,7 @@ public partial class MoveDetailPanel
     /// </summary>
     /// <returns>The accuracy percentage or Always.</returns>
     private string GetAccuracyText()
-        => Accuracy == 0 ? "Always" : $"{Accuracy.ToString(CultureInfo.InvariantCulture)}%";
+        => Accuracy == 0 ? Text["Common.Move.Always"] : $"{Accuracy.ToString(CultureInfo.InvariantCulture)}%";
 
     /// <summary>
     /// Gets detail-panel CSS classes for visible move effectiveness.
@@ -119,5 +119,20 @@ public partial class MoveDetailPanel
     /// </summary>
     /// <returns>The localized description or fallback.</returns>
     private string GetDescription()
-        => string.IsNullOrWhiteSpace(Description) ? "No description is available." : Description;
+        => string.IsNullOrWhiteSpace(Description) ? Text["Common.Move.NoDescriptionAvailable"] : Description;
+
+    /// <summary>
+    /// Gets localized detail for visible move effectiveness.
+    /// </summary>
+    /// <param name="effectiveness">The calculated effectiveness.</param>
+    /// <returns>The effectiveness description.</returns>
+    private string GetEffectivenessTitle(MoveEffectiveness effectiveness) => effectiveness switch
+    {
+        MoveEffectiveness.Double => Text["Common.Move.SuperEffectiveDouble"],
+        MoveEffectiveness.Quadruple => Text["Common.Move.SuperEffectiveQuadruple"],
+        MoveEffectiveness.Half => Text["Common.Move.NotVeryEffectiveHalf"],
+        MoveEffectiveness.Quarter => Text["Common.Move.NotVeryEffectiveQuarter"],
+        MoveEffectiveness.Immune => Text["Common.Move.NoEffect"],
+        _ => Text["Common.Move.NormallyEffective"]
+    };
 }

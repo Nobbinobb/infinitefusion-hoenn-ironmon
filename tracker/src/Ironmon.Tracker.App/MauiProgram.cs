@@ -13,6 +13,7 @@ public static class MauiProgram
     {
         MauiAppBuilder builder = MauiApp.CreateBuilder();
         builder.UseMauiApp<App>().ConfigureFonts(ConfigureFonts);
+        builder.Services.AddLocalization(options => options.ResourcesPath = TrackerLocalizationConstants.ResourcesPath);
         builder.Services.AddMauiBlazorWebView();
         builder.Services.AddSingleton(CreateConnectionOptions());
         builder.Services.AddSingleton(CreateKnowledgeOptions());
@@ -28,14 +29,27 @@ public static class MauiProgram
         builder.Services.AddBlazorWebViewDeveloperTools();
 #endif
 
-        return builder.Build();
+        MauiApp application = builder.Build();
+        EnsureLocalizationAvailable(application.Services);
+        return application;
+    }
+
+    /// <summary>
+    /// Verifies that the compiled shared resource can be discovered by the configured localizer.
+    /// </summary>
+    /// <param name="services">The configured application services.</param>
+    private static void EnsureLocalizationAvailable(IServiceProvider services)
+    {
+        IStringLocalizer<TrackerResources> text = services.GetRequiredService<IStringLocalizer<TrackerResources>>();
+        if (text[TrackerLocalizationConstants.StartupProbeKey].ResourceNotFound)
+            throw new InvalidOperationException(TrackerLocalizationConstants.MissingResourceMessage);
     }
 
     /// <summary>
     /// Registers fonts used by the tracker interface.
     /// </summary>
     /// <param name="fonts">The MAUI font collection.</param>
-    private static void ConfigureFonts(IFontCollection fonts) => fonts.AddFont("OpenSans-Regular.ttf", "TrackerSans");
+    private static void ConfigureFonts(IFontCollection fonts) => fonts.AddFont(TrackerApplicationConstants.FontFile, TrackerApplicationConstants.FontAlias);
 
     /// <summary>
     /// Creates the production loopback listener and tracker handshake options.
@@ -43,13 +57,13 @@ public static class MauiProgram
     /// <returns>The production tracker connection options.</returns>
     private static TrackerConnectionOptions CreateConnectionOptions()
     {
-        string version = typeof(MauiProgram).Assembly.GetName().Version?.ToString() ?? "0.1.0";
+        string version = typeof(MauiProgram).Assembly.GetName().Version?.ToString() ?? TrackerApplicationConstants.DefaultVersion;
         string[] arguments = Environment.GetCommandLineArgs();
-        bool debugRequested = arguments.Any(argument => argument.Equals("--debug", StringComparison.OrdinalIgnoreCase));
+        bool debugRequested = arguments.Any(argument => argument.Equals(TrackerApplicationConstants.DebugArgument, StringComparison.OrdinalIgnoreCase));
 #if DEBUG
         debugRequested = true;
 #endif
-        return new TrackerConnectionOptions(TrackerProtocol.Port, version, debugRequested, TimeSpan.FromSeconds(5));
+        return new TrackerConnectionOptions(TrackerProtocol.Port, version, debugRequested, TimeSpan.FromSeconds(TrackerProtocol.HandshakeTimeoutSeconds));
     }
 
     /// <summary>
@@ -59,6 +73,6 @@ public static class MauiProgram
     private static TrackerKnowledgeOptions CreateKnowledgeOptions()
     {
         string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        return new TrackerKnowledgeOptions(Path.Combine(localData, "IronmonTracker"));
+        return new TrackerKnowledgeOptions(Path.Combine(localData, TrackerStorageNames.RootDirectory));
     }
 }

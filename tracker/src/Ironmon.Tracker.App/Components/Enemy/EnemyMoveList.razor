@@ -1,11 +1,11 @@
-<div class="move-list" aria-label="Discovered enemy moves">
-    <p class="section-label">DISCOVERED MOVES</p>
+<div class="move-list" aria-label="@Text["Enemy.Moves.DiscoveredEnemyMoves"]">
+    <p class="section-label">@Text["Enemy.Moves.DiscoveredMovesHeading"]</p>
     @foreach (int slot in _moveSlots)
     {
         ObservedMoveSnapshot? move = GetMoves().ElementAtOrDefault(slot - 1);
         @if (move is null)
         {
-            <div class="move-placeholder unknown"><span>Unknown move</span><span>--</span></div>
+            <div class="move-placeholder unknown"><span>@Text["Enemy.Moves.UnknownMove"]</span><span>--</span></div>
         }
         else
         {

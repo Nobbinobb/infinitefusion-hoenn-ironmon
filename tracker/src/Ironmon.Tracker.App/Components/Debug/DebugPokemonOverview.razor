@@ -1,4 +1,4 @@
-<article class="debug-overview" aria-label="Inspected Pokemon overview">
+<article class="debug-overview" aria-label="@Text["Debug.Overview.InspectedPokemonOverview"]">
     <div class="card-heading action-heading">
         <div class="sprite-placeholder live" aria-hidden="true">
             @if (_spriteSource is not null)
@@ -12,47 +12,47 @@
         </div>
         <div class="identity-placeholder">
             <p class="card-kicker">@(Pokemon.Fusion ? "FUSION" : "NORMAL POKEMON")</p>
-            <h2 class="identity-name"><span>@Pokemon.Nickname</span><GenderIcon Gender="@Pokemon.Gender" /><small>Lv. @Pokemon.Level</small></h2>
+                <h2 class="identity-name"><span>@Pokemon.Nickname</span><GenderIcon Gender="@Pokemon.Gender" /><small>@Text["Debug.Overview.LevelValue", Pokemon.Level]</small></h2>
             @if (HasDistinctNickname())
             {
                 <p class="debug-species-name">@Pokemon.SpeciesName</p>
             }
         </div>
         <div class="identity-actions">
-            <span>Item <strong>@(Pokemon.HeldItemName ?? "None")</strong></span>
-            <span>Form <strong>@GetFormText()</strong></span>
+            <span>@Text["Debug.Overview.Item"] <strong>@(Pokemon.HeldItemName ?? Text["Debug.Overview.None"])</strong></span>
+            <span>@Text["Debug.Overview.Form"] <strong>@GetFormText()</strong></span>
         </div>
     </div>
 
     <section class="debug-data-section">
-        <p class="section-label">IDENTITY</p>
+        <p class="section-label">@Text["Debug.Overview.IdentityHeading"]</p>
         <dl class="debug-data-grid">
-            <div><dt>Pokemon ID</dt><dd>@Pokemon.PokemonId</dd></div>
-            <div><dt>Species ID</dt><dd>@Pokemon.SpeciesId</dd></div>
-            <div><dt>Ability slot</dt><dd>@Pokemon.ActiveAbilitySlot (@Pokemon.ActiveAbilityIndex)</dd></div>
-            <div><dt>Ability</dt><dd>@Pokemon.ActiveAbilityName · @Pokemon.ActiveAbilityId</dd></div>
+            <div><dt>@Text["Debug.Overview.PokemonId"]</dt><dd>@Pokemon.PokemonId</dd></div>
+            <div><dt>@Text["Debug.Overview.SpeciesId"]</dt><dd>@Pokemon.SpeciesId</dd></div>
+            <div><dt>@Text["Debug.Overview.AbilitySlot"]</dt><dd>@Pokemon.ActiveAbilitySlot (@Pokemon.ActiveAbilityIndex)</dd></div>
+            <div><dt>@Text["Debug.Overview.Ability"]</dt><dd>@Pokemon.ActiveAbilityName · @Pokemon.ActiveAbilityId</dd></div>
         </dl>
     </section>
 
     @if (Pokemon.Body is not null && Pokemon.Head is not null)
     {
         <section class="debug-data-section">
-            <p class="section-label">DISPLAYED COMPONENTS</p>
+            <p class="section-label">@Text["Debug.Overview.DisplayedComponentsHeading"]</p>
             <dl class="debug-data-grid">
-                <div><dt>Body</dt><dd>@Pokemon.Body.SpeciesName · @Pokemon.Body.SpeciesId</dd></div>
-                <div><dt>Head</dt><dd>@Pokemon.Head.SpeciesName · @Pokemon.Head.SpeciesId</dd></div>
+                <div><dt>@Text["Debug.Overview.Body"]</dt><dd>@Pokemon.Body.SpeciesName · @Pokemon.Body.SpeciesId</dd></div>
+                <div><dt>@Text["Debug.Overview.Head"]</dt><dd>@Pokemon.Head.SpeciesName · @Pokemon.Head.SpeciesId</dd></div>
             </dl>
         </section>
     }
 
     <section class="debug-data-section">
-        <p class="section-label">ABILITY GENERATOR</p>
+        <p class="section-label">@Text["Debug.Overview.AbilityGeneratorHeading"]</p>
         <dl class="debug-data-grid">
-            <div><dt>Run seed</dt><dd>@(Pokemon.Generator.RunSeed?.ToString() ?? "None")</dd></div>
-            <div><dt>Schema</dt><dd>@Pokemon.Generator.SchemaVersion</dd></div>
-            <div><dt>Pool rules</dt><dd>@Pokemon.Generator.PoolRulesVersion</dd></div>
-            <div><dt>Pool size</dt><dd>@Pokemon.Generator.PoolSize</dd></div>
-            <div class="wide"><dt>Fingerprint</dt><dd>@Pokemon.Generator.PoolFingerprint</dd></div>
+            <div><dt>@Text["Debug.Overview.RunSeed"]</dt><dd>@(Pokemon.Generator.RunSeed?.ToString() ?? Text["Debug.Overview.None"])</dd></div>
+            <div><dt>@Text["Debug.Overview.Schema"]</dt><dd>@Pokemon.Generator.SchemaVersion</dd></div>
+            <div><dt>@Text["Debug.Overview.PoolRules"]</dt><dd>@Pokemon.Generator.PoolRulesVersion</dd></div>
+            <div><dt>@Text["Debug.Overview.PoolSize"]</dt><dd>@Pokemon.Generator.PoolSize</dd></div>
+            <div class="wide"><dt>@Text["Debug.Overview.Fingerprint"]</dt><dd>@Pokemon.Generator.PoolFingerprint</dd></div>
         </dl>
     </section>
 </article>

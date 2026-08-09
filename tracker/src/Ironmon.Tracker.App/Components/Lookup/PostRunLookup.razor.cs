@@ -50,8 +50,8 @@ public partial class PostRunLookup : IDisposable
     /// </summary>
     /// <param name="recipe">The completed-run recipe.</param>
     /// <returns>The concise run label.</returns>
-    private static string FormatRun(CompletedRunRecipePayload recipe)
-        => $"{recipe.Result} · Seed {recipe.Seed}";
+    private string FormatRun(CompletedRunRecipePayload recipe)
+        => Text["Lookup.Runs.CompletedRunOption", recipe.Result, recipe.Seed];
 
     /// <summary>
     /// Reloads recipes while retaining a still-valid selection.

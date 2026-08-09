@@ -271,10 +271,13 @@ module Ironmon
   end
 
   def self.validate_base_stat_sources
+    fingerprint = base_stat_source_fingerprint
+    return true if @validated_base_stat_source_fingerprint == fingerprint
     validator = BaseStatGenerator.new(0, base_stat_source_fingerprint)
     base_stat_source_entries.each do |identity, stats|
       validator.validate_source(identity, stats)
     end
+    @validated_base_stat_source_fingerprint = fingerprint
     return true
   end
 
@@ -405,6 +408,7 @@ module Game
     def load(save_data)
       Ironmon.suspend_base_stat_randomization
       result = ironmon_base_stat_original_load(save_data)
+      return result if Ironmon.checkpoint_reset_loading?
       Ironmon.ensure_base_stat_randomization if Ironmon.active?
       return result
     end

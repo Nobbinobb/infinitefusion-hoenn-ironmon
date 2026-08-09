@@ -59,7 +59,7 @@ public partial class PokemonLookupCard
     /// </summary>
     /// <returns>The evolution requirement.</returns>
     private string GetEvolutionRequirement()
-        => Pokemon.Evolutions.Count == 0 ? "None" : Pokemon.Evolutions[0].Label;
+        => Pokemon.Evolutions.Count == 0 ? Text["Lookup.Card.None"] : Pokemon.Evolutions[0].Label;
 
     /// <summary>
     /// Formats an authored encounter-table chance.
@@ -67,16 +67,16 @@ public partial class PokemonLookupCard
     /// <param name="chance">The percentage chance.</param>
     /// <param name="conditional">Whether the chance assumes a fusion event already triggered.</param>
     /// <returns>The compact percentage label.</returns>
-    private static string FormatChance(decimal chance, bool conditional)
-        => conditional ? $"{chance:0.##}% when fused" : $"{chance:0.##}%";
+    private string FormatChance(decimal chance, bool conditional)
+        => conditional ? Text["Lookup.Card.ChanceWhenFused", chance] : $"{chance:0.##}%";
 
     /// <summary>
     /// Formats the authored slot or ordered slot pair for a wild occurrence.
     /// </summary>
     /// <param name="occurrence">The represented wild occurrence.</param>
     /// <returns>The compact slot label.</returns>
-    private static string FormatWildSlots(WildPokemonOccurrenceSnapshot occurrence)
-        => occurrence.SecondarySlot is null ? $"Slot {occurrence.Slot}" : $"Slots {occurrence.Slot} + {occurrence.SecondarySlot}";
+    private string FormatWildSlots(WildPokemonOccurrenceSnapshot occurrence)
+        => occurrence.SecondarySlot is null ? Text["Lookup.Card.SlotNumber", occurrence.Slot] : Text["Lookup.Card.CombinedSlots", occurrence.Slot, occurrence.SecondarySlot];
 
     /// <summary>
     /// Formats one authored wild-encounter level or level range.
@@ -84,8 +84,8 @@ public partial class PokemonLookupCard
     /// <param name="minimumLevel">The minimum encounter level.</param>
     /// <param name="maximumLevel">The maximum encounter level.</param>
     /// <returns>The compact level label.</returns>
-    private static string FormatLevelRange(int minimumLevel, int maximumLevel)
-        => minimumLevel == maximumLevel ? $"Lv. {minimumLevel}" : $"Lv. {minimumLevel}–{maximumLevel}";
+    private string FormatLevelRange(int minimumLevel, int maximumLevel)
+        => minimumLevel == maximumLevel ? Text["Lookup.Card.LevelValue", minimumLevel] : Text["Lookup.Card.LevelRange", minimumLevel, maximumLevel];
 
     /// <summary>
     /// Opens full information for one generated ability.

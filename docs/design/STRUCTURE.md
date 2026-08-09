@@ -52,5 +52,5 @@ file in `Data/Scripts` as Ruby.
 22. `017_HM_Tools.rb`: HM reward interception and transactional migration to
     permanent field-tool key items.
 
-Version `0.4.0` supports Infinite Fusion game version `6.8.0`. An unsupported
+Version `0.5.0` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.

@@ -66,7 +66,10 @@ module Ironmon
       "original_base_stat_total" => tracker_base_stat_total(original_stats),
       "generated_base_stats" => tracker_base_stat_snapshot(generated_stats),
       "generated_base_stat_total" => tracker_base_stat_total(generated_stats),
-      "base_stat_generator" => tracker_debug_base_stat_generator_snapshot
+      "base_stat_generator" => tracker_debug_base_stat_generator_snapshot,
+      "move_access" => tracker_lookup_move_access(
+        species, tracker_debug_active_recipe, pokemon
+      )
     }
   end
 
@@ -94,6 +97,19 @@ module Ironmon
       "ability_pool_fingerprint" => ability_pool_fingerprint,
       "base_stat_generator_version" => $PokemonGlobal.ironmon_base_stat_generator_version,
       "base_stat_source_fingerprint" => $PokemonGlobal.ironmon_base_stat_source_fingerprint,
+      "move_access_generator_version" => $PokemonGlobal.ironmon_move_access_generator_version,
+      "move_pool_fingerprint" => $PokemonGlobal.ironmon_move_pool_fingerprint,
+      "move_contextual_restriction_fingerprint" => $PokemonGlobal.ironmon_move_contextual_restriction_fingerprint,
+      "move_source_fingerprint" => $PokemonGlobal.ironmon_move_source_fingerprint,
+      "egg_move_source_fingerprint" => $PokemonGlobal.ironmon_egg_move_source_fingerprint,
+      "tm_roster_fingerprint" => $PokemonGlobal.ironmon_tm_roster_fingerprint,
+      "tm_source_fingerprint" => $PokemonGlobal.ironmon_tm_source_fingerprint,
+      "tr_roster_fingerprint" => $PokemonGlobal.ironmon_tr_roster_fingerprint,
+      "tr_source_fingerprint" => $PokemonGlobal.ironmon_tr_source_fingerprint,
+      "tutor_catalog_fingerprint" => $PokemonGlobal.ironmon_tutor_catalog_fingerprint,
+      "tutor_source_fingerprint" => $PokemonGlobal.ironmon_tutor_source_fingerprint,
+      "fusion_tutor_catalog_fingerprint" => $PokemonGlobal.ironmon_fusion_tutor_catalog_fingerprint,
+      "fusion_tutor_source_fingerprint" => $PokemonGlobal.ironmon_fusion_tutor_source_fingerprint,
       "wild_mapping_count" => wild_mappings.is_a?(Hash) ? wild_mappings.length : 0,
       "trainer_mapping_count" => trainer_mappings.is_a?(Hash) ? trainer_mappings.length : 0
     }
@@ -127,6 +143,19 @@ module Ironmon
       "ability_generator_version" => $PokemonGlobal.ironmon_ability_generator_version,
       "base_stat_generator_version" => $PokemonGlobal.ironmon_base_stat_generator_version,
       "base_stat_source_fingerprint" => $PokemonGlobal.ironmon_base_stat_source_fingerprint,
+      "move_access_generator_version" => $PokemonGlobal.ironmon_move_access_generator_version,
+      "move_pool_fingerprint" => $PokemonGlobal.ironmon_move_pool_fingerprint,
+      "move_contextual_restriction_fingerprint" => $PokemonGlobal.ironmon_move_contextual_restriction_fingerprint,
+      "move_source_fingerprint" => $PokemonGlobal.ironmon_move_source_fingerprint,
+      "egg_move_source_fingerprint" => $PokemonGlobal.ironmon_egg_move_source_fingerprint,
+      "tm_roster_fingerprint" => $PokemonGlobal.ironmon_tm_roster_fingerprint,
+      "tm_source_fingerprint" => $PokemonGlobal.ironmon_tm_source_fingerprint,
+      "tr_roster_fingerprint" => $PokemonGlobal.ironmon_tr_roster_fingerprint,
+      "tr_source_fingerprint" => $PokemonGlobal.ironmon_tr_source_fingerprint,
+      "tutor_catalog_fingerprint" => $PokemonGlobal.ironmon_tutor_catalog_fingerprint,
+      "tutor_source_fingerprint" => $PokemonGlobal.ironmon_tutor_source_fingerprint,
+      "fusion_tutor_catalog_fingerprint" => $PokemonGlobal.ironmon_fusion_tutor_catalog_fingerprint,
+      "fusion_tutor_source_fingerprint" => $PokemonGlobal.ironmon_fusion_tutor_source_fingerprint,
       "player_fusion_generator_version" => PlayerFusionMapper::SCHEMA_VERSION,
       "species_pool_fingerprint" => tracker_species_pool_fingerprint,
       "ability_pool_fingerprint" => $PokemonGlobal.ironmon_ability_pool_fingerprint,

@@ -20,7 +20,7 @@ public sealed class PokemonLookupRequestPayload
     /// <summary>
     /// Gets or initializes the fixed compatibility level understood by earlier Part 6 game scripts.
     /// </summary>
-    public int Level { get; init; } = 100;
+    public int Level { get; init; } = TrackerProtocol.CompatibilityLookupLevel;
 
     /// <summary>
     /// Gets or initializes the completed-run reconstruction recipe.

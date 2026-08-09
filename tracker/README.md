@@ -17,6 +17,10 @@ connection subset is recorded in `PROTOCOL.md`.
   payloads, live snapshots, lookup payloads, Pokémon data, and debug payloads.
 - `tests/Ironmon.Tracker.Tests/` mirrors the production project areas.
 
+User-visible tracker text uses standard .NET resources. See
+[`LOCALIZATION.md`](LOCALIZATION.md) for the translation workflow and resource
+boundaries.
+
 ## Run the desktop shell
 
 The current review build is a Windows-only .NET 10 Blazor Hybrid application

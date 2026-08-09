@@ -11,7 +11,7 @@ public partial class DebugInspector
     private DebugInspectorPage _selectedInspectorPage = DebugInspectorPage.Overview;
     private DebugPokemonInspectorSnapshot? _pokemon;
     private DebugRunDiagnosticsSnapshot? _diagnostics;
-    private string _selectedTarget = "player";
+    private string _selectedTarget = DebugTargetIds.Player;
     private string? _error;
     private bool _loading;
     private bool _backgroundRefresh;
@@ -53,10 +53,10 @@ public partial class DebugInspector
         if (!_targetInitialized)
         {
             _selectedTarget = Player is not null
-                ? "player"
+                ? DebugTargetIds.Player
                 : Enemies.Count > 0
-                    ? $"enemy:{Enemies[0].Position}"
-                    : "player";
+                    ? $"{DebugTargetIds.Enemy}{DebugTargetIds.Separator}{Enemies[0].Position}"
+                    : DebugTargetIds.Player;
 
             _targetInitialized = true;
             _observedPlayer = Player;
@@ -88,17 +88,18 @@ public partial class DebugInspector
     /// <returns><see langword="true"/> when a replacement target was selected.</returns>
     private bool EnsureSelectedTargetAvailable()
     {
-        string[] parts = _selectedTarget.Split(':', 2);
-        bool enemyAvailable = parts[0] == "enemy" && parts.Length == 2 && int.TryParse(parts[1], out int position)
+        string[] parts = _selectedTarget.Split(DebugTargetIds.Separator, DebugTargetIds.EnemySegmentCount);
+        bool enemyAvailable = parts[0] == DebugTargetIds.Enemy && parts.Length == DebugTargetIds.EnemySegmentCount && int.TryParse(parts[1], out int position)
             && Enemies.Any(enemy => enemy.Position == position);
-        if (parts[0] != "enemy" || enemyAvailable)
+        if (parts[0] != DebugTargetIds.Enemy || enemyAvailable)
             return false;
 
         _selectedTarget = Player is not null
-            ? "player"
+            ? DebugTargetIds.Player
             : Enemies.Count > 0
-                ? $"enemy:{Enemies[0].Position}"
-                : "player";
+                ? $"{DebugTargetIds.Enemy}{DebugTargetIds.Separator}{Enemies[0].Position}"
+                : DebugTargetIds.Player;
+
         return true;
     }
 
@@ -108,11 +109,11 @@ public partial class DebugInspector
     /// <returns><see langword="true"/> when the selected live source changed.</returns>
     private bool SelectedSnapshotChanged()
     {
-        string[] parts = _selectedTarget.Split(':', 2);
-        if (parts[0] == "player")
+        string[] parts = _selectedTarget.Split(DebugTargetIds.Separator, DebugTargetIds.EnemySegmentCount);
+        if (parts[0] == DebugTargetIds.Player)
             return !ReferenceEquals(Player, _observedPlayer);
 
-        if (parts[0] != "enemy" || parts.Length != 2 || !int.TryParse(parts[1], out int position))
+        if (parts[0] != DebugTargetIds.Enemy || parts.Length != DebugTargetIds.EnemySegmentCount || !int.TryParse(parts[1], out int position))
             return false;
 
         EnemyPokemonSnapshot? current = Enemies.FirstOrDefault(enemy => enemy.Position == position);
@@ -141,7 +142,7 @@ public partial class DebugInspector
     /// <returns>A task representing the inspection request.</returns>
     private async Task SelectTarget(ChangeEventArgs args)
     {
-        _selectedTarget = args.Value?.ToString() ?? "player";
+        _selectedTarget = args.Value?.ToString() ?? DebugTargetIds.Player;
         await InspectSelectedAsync();
     }
 
@@ -158,6 +159,7 @@ public partial class DebugInspector
         _selectedPage = page;
         if (IsInspectorPage(page))
             _selectedInspectorPage = page;
+
         _error = null;
         if (page == DebugInspectorPage.Diagnostics)
             await LoadDiagnosticsAsync();
@@ -176,7 +178,7 @@ public partial class DebugInspector
     /// <param name="page">The page to classify.</param>
     /// <returns><see langword="true"/> for an inspector subpage.</returns>
     private static bool IsInspectorPage(DebugInspectorPage page)
-        => page is DebugInspectorPage.Overview or DebugInspectorPage.Abilities or DebugInspectorPage.Stats;
+        => page is DebugInspectorPage.Overview or DebugInspectorPage.Abilities or DebugInspectorPage.Stats or DebugInspectorPage.Moves;
 
     /// <summary>
     /// Requests inspector data for the selected current Pokemon source.
@@ -244,12 +246,12 @@ public partial class DebugInspector
     /// <returns>The current inspection request.</returns>
     private DebugPokemonInspectionRequestPayload CreateInspectionRequest()
     {
-        string[] parts = _selectedTarget.Split(':', 2);
+        string[] parts = _selectedTarget.Split(DebugTargetIds.Separator, DebugTargetIds.EnemySegmentCount);
         return parts[0] switch
         {
-            "player" => new DebugPokemonInspectionRequestPayload { Target = DebugPokemonTarget.Player },
-            "enemy" => new DebugPokemonInspectionRequestPayload { Target = DebugPokemonTarget.Enemy, EnemyPosition = int.Parse(parts[1]) },
-            _ => throw new InvalidOperationException("The selected inspection target is unavailable.")
+            DebugTargetIds.Player => new DebugPokemonInspectionRequestPayload { Target = DebugPokemonTarget.Player },
+            DebugTargetIds.Enemy => new DebugPokemonInspectionRequestPayload { Target = DebugPokemonTarget.Enemy, EnemyPosition = int.Parse(parts[1]) },
+            _ => throw new InvalidOperationException(Text["Debug.Inspector.InspectionTargetUnavailable"])
         };
     }
 
@@ -259,12 +261,12 @@ public partial class DebugInspector
     /// <param name="page">The represented page.</param>
     /// <returns>The page button CSS classes.</returns>
     private string GetPageClass(DebugInspectorPage page)
-        => page == _selectedPage ? "selected" : string.Empty;
+        => page == _selectedPage ? TrackerUiConstants.SelectedCssClass : string.Empty;
 
     /// <summary>
     /// Gets the selected class for the top-level Pokemon inspector button.
     /// </summary>
     /// <returns>The top-level button CSS classes.</returns>
     private string GetInspectorPageClass()
-        => IsInspectorPage(_selectedPage) ? "selected" : string.Empty;
+        => IsInspectorPage(_selectedPage) ? TrackerUiConstants.SelectedCssClass : string.Empty;
 }

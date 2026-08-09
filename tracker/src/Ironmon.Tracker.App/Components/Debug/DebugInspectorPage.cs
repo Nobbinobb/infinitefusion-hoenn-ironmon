@@ -21,6 +21,11 @@ public enum DebugInspectorPage
     Stats = 2,
 
     /// <summary>
+    /// Shows generated Learnset, Egg, TM, and Tutor access.
+    /// </summary>
+    Moves = 6,
+
+    /// <summary>
     /// Shows game-owned run and randomizer diagnostics.
     /// </summary>
     Diagnostics = 3,

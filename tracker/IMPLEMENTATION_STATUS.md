@@ -710,11 +710,11 @@ Implemented on 2026-08-08:
 - The Release configuration also builds with 0 warnings and 0 errors; automatic
   debug requests remain limited to builds compiled with the `DEBUG` symbol.
 
-Part 7 is ready for final UI review before Part 8 release packaging.
+Part 7 was accepted before Part 8 release packaging.
 
 ## Post-Part 7 structural refactor
 
-Status: **Awaiting review**
+Status: **Complete**
 
 Implemented on 2026-08-08:
 
@@ -741,8 +741,7 @@ Implemented on 2026-08-08:
   now depend directly on the client, while the connection service retains
   listener, handshake, live-event, recovery, and response-routing
   orchestration.
-- Preserved the existing protocol contracts and runtime behavior. Part 8
-  release packaging has not started.
+- Preserved the existing protocol contracts and runtime behavior.
 
 ### Validation
 
@@ -751,7 +750,7 @@ Implemented on 2026-08-08:
 
 ## Part 8: Self-contained release packaging
 
-Status: **Awaiting review**
+Status: **Complete**
 
 Implemented on 2026-08-08:
 
@@ -786,3 +785,204 @@ Implemented on 2026-08-08:
   `ff7bbad6735097a6524f6f69fcd3ea73c9495f5f3ba5ae235f26c2c3ae121534`.
 - The published tracker executable passed a startup smoke test and its exact
   test process was stopped afterward.
+
+## Step 3.3 Part 6: Tracker move-access inspection
+
+Status: **Complete**
+
+Implemented on 2026-08-09:
+
+- Added shared Learnset, Egg, TM, and Tutor tabs to completed-run Lookup,
+  authorized active Debug Lookup, Player Debug, and Enemy Debug.
+- Included acquisition details for generated level-up, evolution, Egg, TM/TR,
+  ordinary-tutor, and specialized Fusion Tutor moves.
+- Limited the Tutor tab to moves backed by an available tutor while retaining
+  the abstract ordinary-tutor compatibility count for comparison.
+- Added complete Step 3.3 move generator and source fingerprints to completed
+  run recipes and active debug recipes.
+- Preserved old completed-run recipes by falling back to native move access
+  when no Step 3.3 move metadata is present, while rejecting partial or
+  incompatible new metadata.
+- Kept the legacy lookup learnset field synchronized for older tracker clients.
+
+### Validation
+
+- Protocol serialization covers all four move-access channels and acquisition
+  metadata.
+- Completed-run archive tests cover full metadata persistence and reject
+  fingerprints without a move-access generator version.
+- The tracker app builds with 0 warnings and 0 errors.
+- Infinite Fusion's bundled runtime verifies normal and fusion snapshots,
+  lookup/debug agreement, supported tutor filtering, recipe compatibility,
+  and seed-dependent results.
+
+## Tracker semantic constants refactor
+
+Status: **Complete**
+
+Implemented on 2026-08-09:
+
+- Centralized protocol command names, event names, framing values, search
+  limits, compatibility level, schema defaults, request identifier format, and
+  timeout values.
+- Centralized tracker storage paths, filenames, extensions, diagnostic export
+  naming, diagnostic history limits, and lifecycle entry names.
+- Centralized application window settings, preference keys, command-line
+  switches, font identity, WebView2 download location, and sprite media types.
+- Centralized move-access tab IDs, debug target IDs and position rules,
+  keyboard shortcuts, gender IDs, move-data sentinels, base-stat scaling, and
+  behavior-selected CSS classes.
+- Retained enums for typed state and kept user-visible copy, CSS layout values,
+  type-chart data, test fixtures, and natural zero-based boundaries local to
+  their presentation or algorithm.
+
+### Validation
+
+- All **35 tracker tests** pass.
+- The Windows tracker application builds with 0 warnings and 0 errors.
+- A source audit finds no remaining inline protocol command/event names,
+  request timeout values, tracker storage names, or move/debug tab identifiers.
+
+## Tracker localization infrastructure
+
+Status: **Complete**
+
+Implemented on 2026-08-09:
+
+- Added one shared .NET localization resource set for native MAUI views and
+  Blazor components, with English (`en-US`) as the neutral fallback.
+- Registered resource lookup once during tracker startup and made the shared
+  localizer available to every Razor component.
+- Migrated user-visible text across the native window, WebView2 recovery view,
+  shared dialogs, Player, Enemy, Lookup, Debug, page titles, navigation,
+  accessibility labels, generated status messages, and formatted summaries.
+- Retained an explicit supported-culture build filter so unsupported framework
+  and tracker satellite assemblies are excluded; the list currently contains
+  only English (`en-US`).
+- Made release packaging read that project allowlist and remove every other
+  culture directory instead of maintaining a separate hard-coded language.
+- Organized localization keys as `Area.Component.Meaning` and kept identical
+  English text separate when it appears in different translation contexts.
+- Declared the localization root namespace explicitly because the executable
+  assembly name (`Ironmon Tracker`) differs from the resource namespace
+  (`Ironmon.Tracker.App`).
+- Added a startup resource probe so a future discovery regression fails clearly
+  instead of silently rendering localization keys.
+- Documented the culture naming, fallback, translation, and resource-boundary
+  rules in `tracker/LOCALIZATION.md`.
+
+### Validation
+
+- A localization audit matches all **327 source keys** to exactly **327 English
+  resource entries**, with no missing or unused entries.
+- The self-contained publication contains only the supported `en-us` culture
+  directory.
+- The published executable passed a hidden startup smoke test and its exact
+  test process was stopped afterward.
+- The Debug executable passed the localization startup probe in a hidden smoke
+  test and its exact test process was stopped afterward.
+- All **35 tracker tests** pass.
+- The Windows tracker application builds in Debug configuration with 0
+  warnings and 0 errors; the Release publication also completes successfully.
+
+## Step 3.3 Part 7: Post-run move-access iteration data
+
+Status: **Complete**
+
+Implemented on 2026-08-09:
+
+- Added save-backed, schema-versioned observations for encountered player and
+  enemy Pokemon, obtained TMs/TRs, tutor interactions, move acquisitions, and
+  moves actually used.
+- Kept active collection lightweight: encounters retain identity, level, side,
+  and count, while complete generated access is reconstructed
+  only when the run ends.
+- Added completed-run summaries for channel entry counts, unique moves,
+  cross-channel overlap, earliest damaging-move level, and the theoretical
+  initial four at each encountered level.
+- Recorded the special level-1 rule against the effective last four entries
+  available by level 1, including the total level-1 entry count and damaging
+  count in that starting four.
+- Added abstract-versus-supported ordinary tutor counts and per-channel fusion
+  duplicate removal and growth over the larger component.
+- Recorded party compatibility when a found or scripted machine is obtained,
+  party compatibility and teaching outcomes at tutor visits, acquisitions by
+  level-up, Egg, TM/TR, tutor, copy effect, or script, and aggregated move use.
+- Added a collapsed completed-run analysis panel beneath Pokemon Lookup. Older
+  completed recipes show a clear unavailable state and remain valid.
+- Localized every new analysis label with the hierarchical tracker key scheme.
+
+### Validation
+
+- All **36 tracker tests** pass, including metric archive round-tripping and
+  explicit rejection of an unsupported metrics schema.
+- The Windows tracker application builds in Release configuration with 0
+  warnings and 0 errors.
+- The current English resource contains **378 unique entries**; all **366
+  literal source keys** resolve, and the remaining dynamic metric-source keys
+  are present.
+- Infinite Fusion's bundled runtime loads all canonical scripts successfully in
+  a hidden startup smoke test, and the exact test process is stopped afterward.
+
+## F7 reset and tracker performance pass
+
+Status: **Complete**
+
+Implemented on 2026-08-09:
+
+- Added a reset-specific checkpoint-load boundary. F7 now restores native save
+  state but skips rebuilding the checkpoint's old species, ability, base-stat,
+  move-access, difficulty, and diagnostic state immediately before the new run
+  replaces it.
+- Changed current-schema wild and trainer species mappings to their designed
+  on-demand behavior. New runs no longer enumerate every authored encounter and
+  trainer slot during reset; each stable context is generated and retained when
+  first used.
+- Kept completed-run occurrence lookup unchanged because it already
+  reconstructs all theoretical wild and trainer slots directly from the recipe.
+- Cached successful base-stat source validation across resets because the
+  installed source catalog does not change with the run seed.
+- Corrected the tracker clock conversion for Infinite Fusion 6.8.0. Its
+  `System.uptime` uses microseconds, so reconnect/error throttles and the 100 ms
+  player/enemy snapshot interval previously behaved as effectively unthrottled.
+
+### Validation
+
+- A bundled-runtime benchmark against `IronmonCheckpoint_File_H.rxdata`
+  measured the previous equivalent work at about **2.268 seconds**: 1.611
+  seconds for a full post-load rebuild, 0.317 seconds for new generation, and
+  0.340 seconds for eager mappings.
+- The optimized bundled-runtime path measured **1.509 seconds** for checkpoint
+  restoration plus generation: 1.117 seconds to restore and 0.392 seconds to
+  generate. This is roughly **0.76 seconds / 33% less work** before scene and
+  save overhead.
+- Runtime assertions verified that wild and trainer maps begin empty, identical
+  contexts remain deterministic, and first use retains exactly one entry.
+- A 100 ms runtime sleep advanced `System.uptime` by about 100,027 units,
+  confirming the required 1,000,000-units-per-second conversion.
+
+## Ironmon 0.5.0 move-access release
+
+Status: **Complete**
+
+Built on 2026-08-09:
+
+- Marked Milestone 3 Step 3.3 design and implementation complete.
+- Updated the game version, installation guide, protocol examples, project
+  overview, and release notes to Ironmon `0.5.0`.
+- Published the self-contained Windows x64 tracker and combined it with 28
+  canonical Ruby scripts in `Ironmon-v0.5.0-move-access.zip`.
+- Rebuilt the release independently and obtained the same SHA-256 checksum.
+
+### Validation
+
+- All **36 tracker tests** pass.
+- The tracker application builds in Release with 0 warnings and 0 errors.
+- The archive contains **452 entries**, one tracker executable, no PDB files,
+  no generated XML documentation, and only the supported `en-us` culture
+  directory.
+- The published tracker and synchronized Infinite Fusion runtime passed a
+  concurrent hidden startup smoke test. Only the exact processes started by
+  the test were stopped.
+- SHA-256:
+  `fa1ae7967ffee287959dbc9fd1849c25cc4650df76d3620bfa3200fa2676f644`.

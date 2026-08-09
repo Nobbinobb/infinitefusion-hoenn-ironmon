@@ -8,7 +8,7 @@
             @if (Effectiveness is not null && Effectiveness != MoveEffectiveness.Neutral)
             {
                 <span class="@MovePresentation.GetEffectivenessClass(Effectiveness.Value)"
-                      aria-label="@MovePresentation.GetEffectivenessTitle(Effectiveness.Value)">
+                      aria-label="@GetEffectivenessTitle(Effectiveness.Value)">
                     @MovePresentation.GetEffectivenessSymbol(Effectiveness.Value)
                 </span>
             }
@@ -16,6 +16,6 @@
     </div>
     <div>
         <span>@PpText</span>
-        <small>@MovePresentation.FormatPower(Power) · @MovePresentation.FormatAccuracy(Accuracy)</small>
+        <small>@FormatPower() · @FormatAccuracy()</small>
     </div>
 </button>

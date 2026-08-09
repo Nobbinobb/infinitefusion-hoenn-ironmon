@@ -1,0 +1,50 @@
+<section class="move-access" aria-label="@Text["Common.MoveAccess.GeneratedMoveAccess"]">
+    <nav class="move-access-tabs" aria-label="@Text["Common.MoveAccess.MoveAccessChannels"]">
+        <button type="button" class="@GetTabClass(MoveAccessTabIds.Learnset)" @onclick="() => SelectTab(MoveAccessTabIds.Learnset)">@Text["Common.MoveAccess.Learnset"]</button>
+        <button type="button" class="@GetTabClass(MoveAccessTabIds.Egg)" @onclick="() => SelectTab(MoveAccessTabIds.Egg)">@Text["Common.MoveAccess.Egg"]</button>
+        <button type="button" class="@GetTabClass(MoveAccessTabIds.Machine)" @onclick="() => SelectTab(MoveAccessTabIds.Machine)">TM</button>
+        <button type="button" class="@GetTabClass(MoveAccessTabIds.Tutor)" @onclick="() => SelectTab(MoveAccessTabIds.Tutor)">@Text["Common.MoveAccess.Tutor"]</button>
+    </nav>
+
+    <header class="move-access-heading">
+        <div>
+            <p class="section-label">@GetHeading()</p>
+            @if (_selectedTab == MoveAccessTabIds.Tutor)
+            {
+                <small>@Text["Common.MoveAccess.TutorSupportedSummary", Access.OrdinaryTutorSupportedCount, Access.OrdinaryTutorAbstractCount]</small>
+            }
+        </div>
+        <span>@Text["Common.MoveAccess.MoveCount", GetRows().Count]</span>
+    </header>
+
+    @if (GetRows().Count == 0)
+    {
+        <p class="move-access-empty">@Text["Common.MoveAccess.NoSupportedMoves"]</p>
+    }
+    else
+    {
+        <div class="move-list">
+            @foreach (MoveAccessEntrySnapshot move in GetRows())
+            {
+                <button class="move-access-row @MovePresentation.GetTypeColorClass(move.Type)" type="button" @onclick="() => SelectMove(move)">
+                    <strong class="move-access-acquisition">@GetPrimaryLabel(move)</strong>
+                    <span class="lookup-move-name"><MoveCategoryIcon Category="@move.Category" /><strong>@move.Name</strong></span>
+                    <small class="move-access-origin">@move.SourceLabel</small>
+                </button>
+            }
+        </div>
+    }
+</section>
+
+@if (_selectedMove is not null)
+{
+    <MoveDetailPanel Name="@_selectedMove.Name"
+                     Type="@_selectedMove.Type"
+                     Category="@_selectedMove.Category"
+                     Description="@_selectedMove.Description"
+                     Power="@_selectedMove.Power"
+                     Accuracy="@_selectedMove.Accuracy"
+                     PpText="@($"{_selectedMove.TotalPp} PP")"
+                     LearnedLevel="@_selectedMove.LearnedLevel"
+                     Closed="CloseMove" />
+}

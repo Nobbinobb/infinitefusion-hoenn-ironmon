@@ -16,13 +16,13 @@ and a fast reset to starter selection.
 - `dist/` contains the copy-ready game directory layout.
 - `tools/Build-Distribution.ps1` synchronizes the source into `dist/` and the
   local game installation.
-- `tools/Build-Milestone3.ps1` creates the cumulative ability-release ZIP and
-  SHA-256 checksum in `release/`.
+- `tools/Build-Milestone3.ps1` retains the historical cumulative ability-release
+  build.
 - `tools/Build-TrackerRelease.ps1` publishes the self-contained Windows tracker
   and creates the combined copy-ready ZIP and SHA-256 checksum in `release/`.
 
-Milestone 3 Step 3.1 is implemented at version `0.3.3`. See
-`docs/design/ABILITY_RANDOMIZATION.md` for its rules, `docs/ROADMAP.md` for
+Milestone 3 Step 3.3 is implemented at version `0.5.0`. See
+`docs/design/MOVE_ACCESS_RANDOMIZATION.md` for its rules, `docs/ROADMAP.md` for
 cumulative scope, and `docs/guides/INSTALLATION.md` for installation steps.
 
 This repository is maintained independently from the official Pokemon Infinite

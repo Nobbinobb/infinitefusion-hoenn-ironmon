@@ -5,7 +5,6 @@ namespace Ironmon.Tracker.Connection.Diagnostics;
 /// </summary>
 public sealed class TrackerDiagnosticsStore
 {
-    private const int EntryLimit = 200;
     private readonly List<TrackerDiagnosticEntry> _entries = [];
     private readonly Lock _sync = new();
     private string? _lastProtocolError;
@@ -89,7 +88,7 @@ public sealed class TrackerDiagnosticsStore
         lock (_sync)
             _lastProtocolError = detail;
 
-        Add(TrackerDiagnosticDirection.Lifecycle, "Error", detail);
+        Add(TrackerDiagnosticDirection.Lifecycle, TrackerDiagnosticConstants.Error, detail);
     }
 
     /// <summary>
@@ -117,7 +116,7 @@ public sealed class TrackerDiagnosticsStore
         TrackerDiagnosticEntry entry = new(DateTimeOffset.UtcNow, direction, name, rawValue);
         lock (_sync)
         {
-            if (_entries.Count >= EntryLimit)
+            if (_entries.Count >= TrackerDiagnosticConstants.EntryLimit)
                 _entries.RemoveAt(0);
 
             _entries.Add(entry);
@@ -133,9 +132,9 @@ public sealed class TrackerDiagnosticsStore
     /// <returns>The event, command, or response name.</returns>
     private static string GetMessageName(TrackerMessage message) => message.Type switch
     {
-        TrackerMessageType.Event => message.Event ?? "event",
-        TrackerMessageType.Request => message.Command ?? "request",
-        TrackerMessageType.Response => message.Success == true ? "response" : "error_response",
-        _ => "message"
+        TrackerMessageType.Event => message.Event ?? TrackerDiagnosticConstants.EventFallback,
+        TrackerMessageType.Request => message.Command ?? TrackerDiagnosticConstants.RequestFallback,
+        TrackerMessageType.Response => message.Success == true ? TrackerDiagnosticConstants.Response : TrackerDiagnosticConstants.ErrorResponse,
+        _ => TrackerDiagnosticConstants.MessageFallback
     };
 }

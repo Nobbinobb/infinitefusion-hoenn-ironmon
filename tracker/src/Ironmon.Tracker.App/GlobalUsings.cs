@@ -1,5 +1,6 @@
 global using Ironmon.Tracker.App.Components.Common;
 global using Ironmon.Tracker.App.Components.Navigation;
+global using Ironmon.Tracker.Connection;
 global using Ironmon.Tracker.Connection.CompletedRuns;
 global using Ironmon.Tracker.Connection.Diagnostics;
 global using Ironmon.Tracker.Connection.Knowledge;
@@ -11,3 +12,4 @@ global using Ironmon.Tracker.Protocol.Live;
 global using Ironmon.Tracker.Protocol.Lookup;
 global using Ironmon.Tracker.Protocol.Pokemon;
 global using Ironmon.Tracker.Protocol.Transport;
+global using Microsoft.Extensions.Localization;

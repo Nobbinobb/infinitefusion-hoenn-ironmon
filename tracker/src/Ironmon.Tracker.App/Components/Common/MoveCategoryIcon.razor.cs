@@ -31,9 +31,9 @@ public partial class MoveCategoryIcon
     /// <returns>The localized-neutral category label.</returns>
     private string GetLabel() => Category switch
     {
-        MoveCategory.Physical => "Physical",
-        MoveCategory.Special => "Special",
-        MoveCategory.Status => "Status",
-        _ => "Unknown category"
+        MoveCategory.Physical => Text["Common.Move.Physical"],
+        MoveCategory.Special => Text["Common.Move.Special"],
+        MoveCategory.Status => Text["Common.Move.Status"],
+        _ => Text["Common.Move.UnknownCategory"]
     };
 }

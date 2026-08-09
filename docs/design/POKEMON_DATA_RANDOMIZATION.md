@@ -10,10 +10,10 @@ Pokemon data is generated as a pure, run-specific result. A generated value is
 derived from the run seed, generator schema version, data-type namespace,
 species identity, and the relevant slot or entry identity.
 
-Ability, base-stat, and learnset results are generated on demand. Implementations
-may cache results in memory for the current session, but generated mappings are
-not stored in the save. Save metadata stores only the information required to
-reproduce and validate the result:
+Ability, base-stat, and move-access results are generated on demand.
+Implementations may cache results in memory for the current session, but
+generated mappings are not stored in the save. Save metadata stores only the
+information required to reproduce and validate the result:
 
 - Run seed.
 - Generator schema version for each randomized data type.
@@ -59,8 +59,8 @@ C = body X + head Y
 ```
 
 A and B contribute instance-owned data through the normal fusion procedure,
-but their species-owned randomized ability, base-stat, and learnset data do not
-transfer to C.
+but their species-owned randomized ability, base-stat, and move-access data do
+not transfer to C.
 
 The following rules apply to C:
 
@@ -71,6 +71,8 @@ The following rules apply to C:
   generated base stats of X and Y.
 - The level-up learnset is combined from the generated learnsets of X and Y,
   subject to the duplicate, ordering, and safety rules finalized in Step 3.3.
+- Egg, TM, and ordinary tutor access use the Step 3.3 component-union rules;
+  specialized Fusion Tutor access belongs to the complete displayed fusion.
 - C's later evolution results belong to C and are deterministic for the run.
 
 This component model applies regardless of whether C was encountered directly
@@ -94,21 +96,25 @@ ability pool are defined in `ABILITY_RANDOMIZATION.md`. No ability from
 sacrificed A or B is retained merely because it participated in the fusion
 gamble.
 
-## Fusion base stats and learnsets
+## Fusion base stats and move access
 
-The game currently derives a fusion's base stats and learnset from its displayed
-components. Milestone 3 retains that relationship after randomization:
+The game currently derives a fusion's base stats and ordinary move access from
+its displayed components. Milestone 3 retains that relationship after
+randomization:
 
 - Generate X's and Y's base stats, then apply the normal fusion-stat formula to
   obtain C's stats.
 - Generate X's and Y's level-up learnsets, then apply the Milestone 3 fusion
   merge rules to obtain C's learnset.
+- Generate X's and Y's Egg, TM, and ordinary tutor channels, then apply the
+  Milestone 3 deduplicated component-union rules.
 
 The base-stat policy is defined in `BASE_STAT_RANDOMIZATION.md`: normal species
 preserve their BST with values from 5 through 255, Wonder Guard owns actual
 one-HP behavior, and standard fusions retain the native formula without
-post-processing. Learnset size, duplicate behavior, type preference, and early
-damaging-move guarantees remain feature-specific decisions for Step 3.3.
+post-processing. The complete channel capacities, global pool, duplicate and
+ordering rules, no-preference and no-guarantee policy, and tutor behavior are
+defined in `MOVE_ACCESS_RANDOMIZATION.md`.
 
 ## Fusion evolution model
 
@@ -153,7 +159,7 @@ can implement its data type consistently:
 
 1. Step 3.1 implements generated component ability inheritance.
 2. Step 3.2 implements generated component base-stat inheritance.
-3. Step 3.3 implements generated component learnset inheritance.
+3. Step 3.3 implements generated component move-access inheritance.
 4. Step 3.4 implements deterministic complete-fusion evolution targets.
 5. Step 3.5 audits the combined rules and closes fusion-specific integration
    gaps rather than redefining data ownership.

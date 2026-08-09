@@ -98,7 +98,7 @@ public partial class EnemyCard : IDisposable
     /// </summary>
     /// <returns>The card heading.</returns>
     private string GetName()
-        => SelectedEnemy?.SpeciesName ?? "No opponent";
+        => SelectedEnemy?.SpeciesName ?? Text["Enemy.Card.NoOpponent"];
 
     /// <summary>
     /// Gets remembered abilities for the selected enemy.
@@ -117,7 +117,7 @@ public partial class EnemyCard : IDisposable
             return "--";
 
         var abilities = GetAbilities();
-        return abilities.Count > 0 ? abilities[0].Name : "Unknown";
+        return abilities.Count > 0 ? abilities[0].Name : Text["Enemy.Card.Unknown"];
     }
 
     /// <summary>
@@ -137,7 +137,7 @@ public partial class EnemyCard : IDisposable
             return "--";
 
         int highestLevel = Math.Max(SelectedEnemy.Level, Knowledge.GetHighestLevel(SelectedEnemy.SpeciesId));
-        return $"Lv. {highestLevel}";
+        return Text["Enemy.Card.LevelValue", highestLevel];
     }
 
     /// <summary>
