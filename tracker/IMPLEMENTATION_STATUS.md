@@ -1014,3 +1014,81 @@ Built on 2026-08-09:
   the test were stopped.
 - SHA-256:
   `8506ebc50d522056e100fc78549fd06778377f53093437e98b26798f6609107d`.
+
+## Pokemon information entry-point alignment
+
+Status: **Complete**
+
+- Added one shared Overview, Abilities, Stats, Moves, and Evolutions tab set to
+  Debug Pokemon, Debug Lookup, and completed-run Lookup.
+- Combined its live `DebugPokemonInspectorSnapshot` with the same active-run
+  `PokemonLookupSnapshot` used by Debug Lookup inside that shared card.
+- The shared Abilities tab reconstructs original, generated, component, and
+  final-fusion slot diagnostics in all three entry points, including
+  eligibility, source component and slot, source ability, and restricted
+  replacements, alongside clickable generated-ability detail panels.
+- Debug Pokemon uses the same tab and merges in the current live slot and its
+  active state.
+- Moved ability-generator metadata from Overview to Abilities and added the
+  same deterministic generator diagnostics to the Stats, Moves, and Evolutions
+  tabs in all three entry points.
+- Removed the iconless duplicate displayed-component block from the live
+  Overview and corrected the malformed player/enemy selector separator.
+- Distributed authored relationships and occurrences, fusion information,
+  generated stats and move access, and evolution data across the same pages in
+  every entry point.
+- Debug Pokemon and Debug Lookup reconstruct against the active authorized run;
+  completed-run Lookup reconstructs against its selected archived recipe.
+- Split lookup and live-inspector payloads by Overview, Abilities, Stats,
+  Moves, and Evolutions. Only the selected page is generated and transferred;
+  opened lookup pages are cached independently for the represented Pokemon.
+- Release build completed with zero warnings and errors, and all 40 tracker
+  tests passed.
+- Reused the active run's prepared species and player-fusion generators for
+  debug lookup, avoided dynamic fusion construction during occurrence scans,
+  cached each encounter table's fusion target set, and replaced the per-target
+  material-pair scan with one compact reverse index. In the bundled runtime, a
+  repeated normal-only wild-fusion occurrence lookup fell from roughly 283 ms
+  to 3 ms. Material lookup fell from roughly 800 ms for every new fusion to a
+  one-time 307 ms index build and 0.3 ms thereafter. A complete second fusion
+  lookup measured about 98 ms; reconstructed ability slots remained below 1 ms.
+
+## Hoenn starter battle experience handoff
+
+Status: **Complete**
+
+- Confirmed that the Route 101 event stores the starter object returned by the
+  selection scene, while Ironmon's automatic starter acquisition places a
+  cloned result in the party.
+- After the rescue battle, refreshes `VAR_HOENN_STARTER` from the matching
+  post-battle party Pokemon before the map event removes that temporary party
+  entry.
+- The lab therefore gives back the battle-updated Pokemon and preserves earned
+  experience, level, and other battle mutations.
+- The bundled game runtime passed the focused handoff test and the clean
+  ten-second startup smoke test.
+
+## Ironmon sprite-download enforcement
+
+Status: **Complete**
+
+- Locked automatic sprite downloading off while Ironmon is active and removed
+  Download data from its Gameplay Options menu.
+- Normalized old Ironmon saves and F7 checkpoint loads to the disabled value;
+  direct assignments cannot enable it again during the run.
+- Added a configuration warning that the spritepack must be installed before
+  starting Ironmon.
+- The bundled runtime passed legacy-value, direct-assignment, and menu-lock
+  checks.
+
+## Ironmon 0.6.1 patch release
+
+Status: **Complete**
+
+- Updated the runtime, installation guide, protocol examples, documentation
+  index, and release tooling to 0.6.1.
+- Created `Ironmon-v0.6.1-evolutions.zip` with 457 entries and the SHA-256
+  checksum
+  `463c4bd24e6c9aababe68e2265fa7cff5fe2d3e684ceb4ecb455178bc0f1bd4f`.
+- Two consecutive release builds were byte-for-byte reproducible.
+- All 40 tracker tests and the combined game/tracker startup smoke test passed.

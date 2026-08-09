@@ -28,23 +28,22 @@ module Ironmon
 
   def self.tracker_debug_inspect_pokemon(payload)
     tracker_validate_debug_context
-    pokemon = tracker_debug_resolve_pokemon(payload || {})
+    payload ||= {}
+    section = payload["section"].to_s
+    section = "overview" if section.empty?
+    valid_sections = ["overview", "abilities", "stats", "moves", "evolutions"]
+    if !valid_sections.include?(section)
+      raise TrackerDebugError.new("invalid_section", "The requested Pokemon inspector section is invalid.")
+    end
+    pokemon = tracker_debug_resolve_pokemon(payload)
     species = pokemon.species_data
-    recipe = tracker_debug_active_recipe
     fusion = fusion_ability_species?(species)
     ability = pokemon.ability_id
     item = pokemon.item
     body = fusion ? tracker_debug_species(species.body_pokemon) : nil
     head = fusion ? tracker_debug_species(species.head_pokemon) : nil
-    original_stats = original_base_stats_for_pokemon(pokemon)
-    generated_stats = if base_stat_randomization_active?
-                        generated_base_stats_for_pokemon(pokemon)
-                      else
-                        original_stats
-                      end
-    evolution_targets = tracker_lookup_evolution_targets(species, recipe)
-    evolution_predecessors = tracker_lookup_evolution_predecessors(species, recipe)
-    return {
+    result = {
+      "section" => section,
       "pokemon_id" => pokemon.personalID.to_s,
       "nickname" => pokemon.name,
       "species_id" => tracker_species_id(pokemon),
@@ -62,22 +61,29 @@ module Ironmon
       "active_ability_index" => pokemon.ability_index.to_i,
       "active_ability_slot" => tracker_debug_active_slot(pokemon),
       "active_ability_id" => tracker_debug_ability_id(ability),
-      "active_ability_name" => tracker_debug_ability_name(ability),
-      "generator" => tracker_debug_generator_snapshot,
-      "ability_slots" => tracker_debug_ability_slots(pokemon),
+      "active_ability_name" => tracker_debug_ability_name(ability)
+    }
+
+    case section
+    when "abilities"
+      result["generator"] = tracker_debug_generator_snapshot
+      result["ability_slots"] = tracker_debug_ability_slots(pokemon)
+    when "stats"
+      original_stats = original_base_stats_for_pokemon(pokemon)
+      generated_stats = if base_stat_randomization_active?
+                          generated_base_stats_for_pokemon(pokemon)
+                        else
+                          original_stats
+                        end
+      result.merge!({
       "original_base_stats" => tracker_base_stat_snapshot(original_stats),
       "original_base_stat_total" => tracker_base_stat_total(original_stats),
       "generated_base_stats" => tracker_base_stat_snapshot(generated_stats),
       "generated_base_stat_total" => tracker_base_stat_total(generated_stats),
-      "base_stat_generator" => tracker_debug_base_stat_generator_snapshot,
-      "evolution_predecessors" => evolution_predecessors,
-      "evolution_targets" => evolution_targets[:normal],
-      "head_evolution_targets" => evolution_targets[:head],
-      "body_evolution_targets" => evolution_targets[:body],
-      "move_access" => tracker_lookup_move_access(
-        species, recipe, pokemon
-      )
-    }
+      "base_stat_generator" => tracker_debug_base_stat_generator_snapshot
+      })
+    end
+    return result
   end
 
   def self.tracker_debug_run_diagnostics

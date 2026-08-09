@@ -17,6 +17,12 @@
             {
                 <p class="debug-species-name">@Pokemon.SpeciesName</p>
             }
+            <p class="typing-line">
+                @foreach (string type in Types)
+                {
+                    <span class="typing-type @MovePresentation.GetTypeColorClass(type)">@type</span>
+                }
+            </p>
         </div>
         <div class="identity-actions">
             <span>@Text["Debug.Overview.Item"] <strong>@(Pokemon.HeldItemName ?? Text["Debug.Overview.None"])</strong></span>
@@ -34,25 +40,4 @@
         </dl>
     </section>
 
-    @if (Pokemon.Body is not null && Pokemon.Head is not null)
-    {
-        <section class="debug-data-section">
-            <p class="section-label">@Text["Debug.Overview.DisplayedComponentsHeading"]</p>
-            <dl class="debug-data-grid">
-                <div><dt>@Text["Debug.Overview.Body"]</dt><dd>@Pokemon.Body.SpeciesName · @Pokemon.Body.SpeciesId</dd></div>
-                <div><dt>@Text["Debug.Overview.Head"]</dt><dd>@Pokemon.Head.SpeciesName · @Pokemon.Head.SpeciesId</dd></div>
-            </dl>
-        </section>
-    }
-
-    <section class="debug-data-section">
-        <p class="section-label">@Text["Debug.Overview.AbilityGeneratorHeading"]</p>
-        <dl class="debug-data-grid">
-            <div><dt>@Text["Debug.Overview.RunSeed"]</dt><dd>@(Pokemon.Generator.RunSeed?.ToString() ?? Text["Debug.Overview.None"])</dd></div>
-            <div><dt>@Text["Debug.Overview.Schema"]</dt><dd>@Pokemon.Generator.SchemaVersion</dd></div>
-            <div><dt>@Text["Debug.Overview.PoolRules"]</dt><dd>@Pokemon.Generator.PoolRulesVersion</dd></div>
-            <div><dt>@Text["Debug.Overview.PoolSize"]</dt><dd>@Pokemon.Generator.PoolSize</dd></div>
-            <div class="wide"><dt>@Text["Debug.Overview.Fingerprint"]</dt><dd>@Pokemon.Generator.PoolFingerprint</dd></div>
-        </dl>
-    </section>
 </article>

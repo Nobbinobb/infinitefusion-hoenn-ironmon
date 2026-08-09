@@ -158,8 +158,11 @@ def pbWildBattle(species, level, outcomeVar = 1, canRun = true, canLose = false)
     random_static = $game_switches[SWITCH_RANDOM_STATIC_ENCOUNTERS]
     begin
       $game_switches[SWITCH_RANDOM_STATIC_ENCOUNTERS] = false
-      return ironmon_original_pb_wild_battle(species, level, outcomeVar, canRun,
-                                             canLose)
+      result = ironmon_original_pb_wild_battle(
+        species, level, outcomeVar, canRun, canLose
+      )
+      Ironmon.synchronize_hoenn_starter_after_battle
+      return result
     ensure
       $game_switches[SWITCH_RANDOM_STATIC_ENCOUNTERS] = random_static
     end

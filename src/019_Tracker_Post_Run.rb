@@ -158,48 +158,68 @@ module Ironmon
 
   def self.tracker_pokemon_lookup_for_recipe(payload, recipe)
     species_id = payload["species_id"].to_s
+    section = payload["section"].to_s
+    section = "overview" if section.empty?
+    valid_sections = ["overview", "abilities", "stats", "moves", "evolutions"]
+    if !valid_sections.include?(section)
+      raise TrackerLookupError.new("invalid_section", "The requested Pokemon information section is invalid.")
+    end
     species_key = species_id.split(":", 2)[0]
     species = GameData::Species.try_get(species_key.to_sym)
     if !species || !tracker_lookup_species_available?(species)
       raise TrackerLookupError.new("pokemon_not_found", "The selected Pokemon is not available in this run.")
     end
 
-    cache_key = "#{recipe["run_id"]}|#{species.id}"
+    cache_key = "#{recipe["run_id"]}|#{species.id}|#{section}"
     cached = tracker_lookup_cache[cache_key]
     return cached if cached
 
-    move_access = tracker_lookup_move_access(species, recipe)
-    fusion_mapper = tracker_post_run_fusion_mapper(recipe)
-    original_stats = original_base_stats_for(species)
-    generated_stats = tracker_lookup_generated_base_stats(species, recipe)
-    evolution_targets = tracker_lookup_evolution_targets(species, recipe)
-    evolution_predecessors = tracker_lookup_evolution_predecessors(species, recipe)
-    generated_evolutions = tracker_evolution_recipe?(recipe)
     result = {
       "species_id" => "#{species.id}:0",
       "species_name" => species.name,
       "sprite_path" => tracker_lookup_sprite_path(species),
-      "types" => species.types.map { |type| type.to_s },
-      "original_base_stats" => tracker_base_stat_snapshot(original_stats),
-      "original_base_stat_total" => tracker_base_stat_total(original_stats),
-      "base_stats" => tracker_base_stat_snapshot(generated_stats),
-      "base_stat_total" => tracker_base_stat_total(generated_stats),
-      "base_stats_randomized" => !!recipe["base_stat_generator_version"],
-      "abilities" => tracker_lookup_abilities(species, recipe),
-      "learnset" => move_access["learnset"],
-      "move_access" => move_access,
-      "evolutions" => generated_evolutions ? [] : tracker_lookup_evolutions(species),
-      "previous_evolutions" => generated_evolutions ? [] : tracker_lookup_previous_evolutions(species),
-      "evolution_predecessors" => evolution_predecessors,
-      "evolution_targets" => evolution_targets[:normal],
-      "head_evolution_targets" => evolution_targets[:head],
-      "body_evolution_targets" => evolution_targets[:body],
-      "wild_occurrences" => tracker_lookup_wild_occurrences(species, recipe),
-      "trainer_occurrences" => tracker_lookup_trainer_occurrences(species, recipe),
-      "fusion_bases" => tracker_lookup_fusion_bases(species),
-      "reverse_fusion" => tracker_lookup_reverse_fusion(species, fusion_mapper),
-      "fusion_materials" => tracker_lookup_fusion_materials(species, fusion_mapper)
+      "types" => species.types.map { |type| type.to_s }
     }
+
+    case section
+    when "overview"
+      fusion_mapper = tracker_post_run_fusion_mapper(recipe)
+      result["wild_occurrences"] = tracker_lookup_wild_occurrences(species, recipe)
+      result["trainer_occurrences"] = tracker_lookup_trainer_occurrences(species, recipe)
+      result["fusion_bases"] = tracker_lookup_fusion_bases(species)
+      result["reverse_fusion"] = tracker_lookup_reverse_fusion(species, fusion_mapper)
+      result["fusion_materials"] = tracker_lookup_fusion_materials(species, fusion_mapper)
+    when "abilities"
+      result["abilities"] = tracker_lookup_abilities(species, recipe)
+      result["ability_slots"] = tracker_lookup_ability_slots(species, recipe)
+      result["ability_generator"] = tracker_lookup_ability_generator(recipe)
+    when "stats"
+      original_stats = original_base_stats_for(species)
+      generated_stats = tracker_lookup_generated_base_stats(species, recipe)
+      result["original_base_stats"] = tracker_base_stat_snapshot(original_stats)
+      result["original_base_stat_total"] = tracker_base_stat_total(original_stats)
+      result["base_stats"] = tracker_base_stat_snapshot(generated_stats)
+      result["base_stat_total"] = tracker_base_stat_total(generated_stats)
+      result["base_stats_randomized"] = !!recipe["base_stat_generator_version"]
+      result["base_stat_generator"] = tracker_lookup_base_stat_generator(recipe)
+    when "moves"
+      move_access = tracker_lookup_move_access(species, recipe)
+      result["learnset"] = move_access["learnset"]
+      result["move_access"] = move_access
+      result["move_generator"] = tracker_lookup_move_generator(recipe)
+    when "evolutions"
+      evolution_targets = tracker_lookup_evolution_targets(species, recipe)
+      generated_evolutions = tracker_evolution_recipe?(recipe)
+      generated_stats = tracker_lookup_generated_base_stats(species, recipe)
+      result["base_stat_total"] = tracker_base_stat_total(generated_stats)
+      result["evolutions"] = generated_evolutions ? [] : tracker_lookup_evolutions(species)
+      result["previous_evolutions"] = generated_evolutions ? [] : tracker_lookup_previous_evolutions(species)
+      result["evolution_predecessors"] = tracker_lookup_evolution_predecessors(species, recipe)
+      result["evolution_targets"] = evolution_targets[:normal]
+      result["head_evolution_targets"] = evolution_targets[:head]
+      result["body_evolution_targets"] = evolution_targets[:body]
+      result["evolution_generator"] = tracker_lookup_evolution_generator(recipe)
+    end
     tracker_store_bounded(tracker_lookup_cache, cache_key, result, 256)
     return result
   end
@@ -439,6 +459,193 @@ module Ironmon
     return ability_ids.map do |ability_id|
       tracker_ability_snapshot(GameData::Ability.get(ability_id))
     end
+  end
+
+  def self.tracker_lookup_ability_slots(species, recipe)
+    generator = AbilityGenerator.new(
+      recipe["seed"], allowed_ability_pool, ability_pool_fingerprint
+    )
+    result = []
+    if normal_ability_species?(species)
+      tracker_lookup_append_ability_slots(
+        result, :generated, species, generator.slots_for(species)
+      )
+      return result
+    end
+
+    final_slots = generator.fusion_slots_for(species)
+    tracker_lookup_append_fusion_ability_slots(
+      result, species, final_slots, generator
+    )
+    tracker_lookup_append_ability_slots(
+      result, :body_generated, species.body_pokemon,
+      generator.slots_for(species.body_pokemon)
+    )
+    tracker_lookup_append_ability_slots(
+      result, :head_generated, species.head_pokemon,
+      generator.slots_for(species.head_pokemon)
+    )
+    return result
+  end
+
+  def self.tracker_lookup_append_ability_slots(result, group, species, slots)
+    originals = {
+      :normal => original_normal_abilities(species),
+      :hidden => original_hidden_abilities(species)
+    }
+    [:normal, :hidden].each do |kind|
+      slots[kind].each_with_index do |ability, index|
+        next if !ability
+        result << tracker_lookup_ability_slot(
+          group, kind, index, ability, originals[kind][index]
+        )
+      end
+    end
+  end
+
+  def self.tracker_lookup_append_fusion_ability_slots(result, species, slots,
+                                                        generator)
+    originals = {
+      :normal => original_normal_abilities(species),
+      :hidden => original_hidden_abilities(species)
+    }
+    [:normal, :hidden].each do |kind|
+      slots[kind].each_with_index do |ability, index|
+        next if !ability
+        source = tracker_lookup_fusion_ability_source(
+          species, kind, index, generator
+        )
+        result << tracker_lookup_ability_slot(
+          :final_fusion, kind, index, ability, originals[kind][index],
+          source[0], source[1]
+        )
+      end
+    end
+  end
+
+  def self.tracker_lookup_fusion_ability_source(species, kind, index,
+                                                 generator)
+    component = index.even? ? species.body_pokemon : species.head_pokemon
+    component_name = index.even? ? "Body" : "Head"
+    slots = generator.slots_for(component)
+    if kind == :normal
+      return ["#{component_name} normal 0", slots[:normal][0]]
+    end
+    if index < 2
+      return ["#{component_name} normal 1", slots[:normal][1]]
+    end
+    return ["#{component_name} hidden 0", slots[:hidden][0]]
+  end
+
+  def self.tracker_lookup_ability_slot(group, kind, index, ability, original,
+                                        source = nil, source_ability = nil)
+    ability_data = GameData::Ability.get(ability)
+    original_data = original ? GameData::Ability.get(original) : nil
+    source_data = source_ability ? GameData::Ability.get(source_ability) : nil
+    return {
+      "group" => group.to_s,
+      "kind" => kind.to_s,
+      "index" => index,
+      "ability_id" => ability_data.id.to_s,
+      "ability_name" => ability_data.name,
+      "original_ability_id" => original_data ? original_data.id.to_s : nil,
+      "original_ability_name" => original_data ? original_data.name : nil,
+      "eligibility" => tracker_lookup_ability_eligibility(ability),
+      "active" => false,
+      "source" => source,
+      "source_ability_id" => source_data ? source_data.id.to_s : nil,
+      "source_ability_name" => source_data ? source_data.name : nil,
+      "restricted_source_replaced" => !!(
+        source_ability && source_ability != ability
+      )
+    }
+  end
+
+  def self.tracker_lookup_ability_eligibility(ability)
+    if AbilityGenerator::EXACT_SPECIES_ABILITY_RULES.key?(ability)
+      return "exact_species"
+    end
+    if AbilityGenerator::COMPONENT_ABILITY_RULES.key?(ability)
+      return "component_compatible"
+    end
+    return "universal"
+  end
+
+  def self.tracker_lookup_ability_generator(recipe)
+    return tracker_lookup_generator_diagnostics(true, [
+      ["run_seed", recipe["seed"]],
+      ["schema", recipe["ability_generator_version"]],
+      ["pool_rules", AbilityGenerator::POOL_RULES_VERSION],
+      ["pool_size", allowed_ability_pool.length],
+      ["pool_fingerprint", recipe["ability_pool_fingerprint"]]
+    ])
+  end
+
+  def self.tracker_lookup_base_stat_generator(recipe)
+    enabled = !!recipe["base_stat_generator_version"]
+    return tracker_lookup_generator_diagnostics(enabled, [
+      ["status", enabled ? "Enabled" : "Legacy stats"],
+      ["run_seed", recipe["seed"]],
+      ["schema", recipe["base_stat_generator_version"]],
+      ["rules", BaseStatGenerator::RULES_VERSION],
+      ["normal_range", "#{BaseStatGenerator::MINIMUM_STAT}-#{BaseStatGenerator::MAXIMUM_STAT}"],
+      ["source_fingerprint", recipe["base_stat_source_fingerprint"]]
+    ])
+  end
+
+  def self.tracker_lookup_move_generator(recipe)
+    enabled = recipe["move_access_generator_version"] ==
+      MoveAccessGenerator::SCHEMA_VERSION
+    return tracker_lookup_generator_diagnostics(enabled, [
+      ["status", enabled ? "Enabled" : "Legacy access"],
+      ["run_seed", recipe["seed"]],
+      ["schema", recipe["move_access_generator_version"]],
+      ["pool_rules", MoveAccessGenerator::POOL_RULES_VERSION],
+      ["move_pool_fingerprint", recipe["move_pool_fingerprint"]],
+      ["restriction_fingerprint", recipe["move_contextual_restriction_fingerprint"]],
+      ["level_up_source", recipe["move_source_fingerprint"]],
+      ["egg_source", recipe["egg_move_source_fingerprint"]],
+      ["tm_roster", recipe["tm_roster_fingerprint"]],
+      ["tm_source", recipe["tm_source_fingerprint"]],
+      ["tr_roster", recipe["tr_roster_fingerprint"]],
+      ["tr_source", recipe["tr_source_fingerprint"]],
+      ["tutor_catalog", recipe["tutor_catalog_fingerprint"]],
+      ["tutor_source", recipe["tutor_source_fingerprint"]],
+      ["fusion_tutor_catalog", recipe["fusion_tutor_catalog_fingerprint"]],
+      ["fusion_tutor_source", recipe["fusion_tutor_source_fingerprint"]]
+    ])
+  end
+
+  def self.tracker_lookup_evolution_generator(recipe)
+    enabled = !!(
+      recipe["evolution_generator_version"] ||
+      recipe["fusion_evolution_generator_version"]
+    )
+    return tracker_lookup_generator_diagnostics(enabled, [
+      ["status", enabled ? "Enabled" : "Native evolutions"],
+      ["run_seed", recipe["seed"]],
+      ["normal_schema", recipe["evolution_generator_version"]],
+      ["normal_rules", recipe["evolution_rules_version"]],
+      ["fusion_schema", recipe["fusion_evolution_generator_version"]],
+      ["fusion_rules", recipe["fusion_evolution_rules_version"]],
+      ["source_fingerprint", recipe["evolution_source_fingerprint"]],
+      ["taxonomy_fingerprint", recipe["evolution_taxonomy_fingerprint"]],
+      ["method_fingerprint", recipe["evolution_method_fingerprint"]],
+      ["target_fingerprint", recipe["evolution_target_fingerprint"]],
+      ["fusion_pool_version", recipe["fusion_evolution_target_pool_version"]],
+      ["fusion_pool_size", recipe["fusion_evolution_target_pool_size"]],
+      ["fusion_pool_fingerprint", recipe["fusion_evolution_target_pool_fingerprint"]],
+      ["base_stat_schema", recipe["evolution_base_stat_generator_version"]],
+      ["base_stat_source", recipe["evolution_base_stat_source_fingerprint"]]
+    ])
+  end
+
+  def self.tracker_lookup_generator_diagnostics(enabled, values)
+    entries = values.map do |key, value|
+      next if value.nil? || value.to_s.empty?
+      { "key" => key, "value" => value.to_s }
+    end.compact
+    return { "enabled" => enabled, "entries" => entries }
   end
 
   def self.tracker_lookup_move_access(species, recipe, pokemon = nil)
@@ -890,10 +1097,14 @@ module Ironmon
     return [] if recipe["species_generator_version"] !=
       SpeciesGenerator::SCHEMA_VERSION
     configuration_value = Configuration.from(recipe["configuration"])
-    generator = SpeciesGenerator.new(
-      recipe["seed"], :wild, configuration_value.wild_policy,
-      normal_species_pool, custom_fusion_pool, {}
-    )
+    generator = if tracker_loaded_recipe?(recipe)
+                  species_generator(:wild)
+                else
+                  SpeciesGenerator.new(
+                    recipe["seed"], :wild, configuration_value.wild_policy,
+                    normal_species_pool, custom_fusion_pool, {}
+                  )
+                end
     modes = if recipe["data_mode"] == "remix" &&
                defined?(GameData::EncounterModern)
               [GameData::EncounterModern]
@@ -909,8 +1120,7 @@ module Ironmon
             context = [:table, mode.name, data.map, data.version,
                        encounter_type, slot]
             mapped = generator.map(entry[1], context)
-            mapped_data = GameData::Species.try_get(mapped)
-            next if !mapped_data || mapped_data.id != target.id
+            next if mapped != target.id
             source = GameData::Species.get(entry[1])
             chance = total > 0 ? (entry[0].to_f * 100.0 / total).round(2) : nil
             occurrences << {
@@ -989,17 +1199,14 @@ module Ironmon
   )
     return if target.id_number <= NB_POKEMON || total <= 0
     mapper = tracker_post_run_fusion_mapper(recipe)
-    entries.each_with_index do |body_entry, body_slot|
-      body_context = [:table, mode.name, data.map, data.version,
-                      encounter_type, body_slot]
-      body = generator.map(body_entry[1], body_context)
-      entries.each_with_index do |head_entry, head_slot|
-        head_context = [:table, mode.name, data.map, data.version,
-                        encounter_type, head_slot]
-        head = generator.map(head_entry[1], head_context)
-        result = mapper.species(body, head)
-        result_data = GameData::Species.try_get(result)
-        next if !result_data || result_data.id != target.id
+    table = tracker_lookup_wild_fusion_table(
+      recipe, generator, mapper, mode, data, encounter_type, entries
+    )
+    return if !table[:target_ids][target.id_number]
+    mapped_entries = table[:mapped_entries]
+    mapped_entries.each do |body_entry, body, body_slot|
+      mapped_entries.each do |head_entry, head, head_slot|
+        next if mapper.species_number(body, head) != target.id_number
         body_source = GameData::Species.get(body_entry[1])
         head_source = GameData::Species.get(head_entry[1])
         chance = body_entry[0].to_f * head_entry[0].to_f * 100.0 /
@@ -1027,6 +1234,32 @@ module Ironmon
     echoln "Ironmon tracker skipped wild fusion occurrences: #{e.message}"
   end
 
+  def self.tracker_lookup_wild_fusion_table(
+    recipe, generator, mapper, mode, data, encounter_type, entries
+  )
+    key = [recipe["run_id"], mode.name, data.map, data.version,
+           encounter_type]
+    cached = tracker_wild_fusion_tables[key]
+    return cached if cached
+    mapped_entries = entries.each_with_index.map do |entry, slot|
+      context = [:table, mode.name, data.map, data.version,
+                 encounter_type, slot]
+      [entry, generator.map(entry[1], context), slot]
+    end
+    target_ids = {}
+    mapped_entries.each do |_body_entry, body, _body_slot|
+      mapped_entries.each do |_head_entry, head, _head_slot|
+        target_ids[mapper.species_number(body, head)] = true
+      end
+    end
+    table = {
+      :mapped_entries => mapped_entries.freeze,
+      :target_ids => target_ids.freeze
+    }.freeze
+    tracker_wild_fusion_tables[key] = table
+    return table
+  end
+
   def self.tracker_lookup_trainer_occurrences(target, recipe)
     if recipe["species_generator_version"] ==
        SpeciesGenerator::LEGACY_SCHEMA_VERSION
@@ -1035,17 +1268,21 @@ module Ironmon
     return [] if recipe["species_generator_version"] !=
       SpeciesGenerator::SCHEMA_VERSION
     configuration_value = Configuration.from(recipe["configuration"])
-    generator = SpeciesGenerator.new(
-      recipe["seed"], :trainer, configuration_value.trainer_policy,
-      normal_species_pool, custom_fusion_pool, {}
-    )
+    generator = if tracker_loaded_recipe?(recipe)
+                  species_generator(:trainer)
+                else
+                  SpeciesGenerator.new(
+                    recipe["seed"], :trainer,
+                    configuration_value.trainer_policy,
+                    normal_species_pool, custom_fusion_pool, {}
+                  )
+                end
     occurrences = []
     tracker_trainer_data_mode(recipe).list_all.each do |_trainer_id, trainer|
       trainer.pokemon.each_with_index do |pokemon, slot|
         source = GameData::Species.get(pokemon[:species])
         mapped = generator.map(source.id, [:pbs, trainer.id, slot])
-        mapped_data = GameData::Species.try_get(mapped)
-        next if !mapped_data || mapped_data.id != target.id
+        next if mapped != target.id
         trainer_type = GameData::TrainerType.try_get(trainer.trainer_type)
         occurrence = {
           "trainer_id" => tracker_lookup_trainer_id(trainer),
@@ -1201,6 +1438,7 @@ module Ironmon
   end
 
   def self.tracker_post_run_fusion_mapper(recipe)
+    return player_fusion_mapper if tracker_loaded_recipe?(recipe)
     run_id = recipe["run_id"]
     tracker_fusion_mappers[run_id] ||= PlayerFusionMapper.new(
       recipe["seed"], custom_fusion_pool, {}, {}
@@ -1251,6 +1489,10 @@ module Ironmon
     @tracker_lookup_cache ||= {}
   end
 
+  def self.tracker_wild_fusion_tables
+    @tracker_wild_fusion_tables ||= {}
+  end
+
   def self.tracker_fusion_mappers
     @tracker_fusion_mappers ||= {}
   end
@@ -1269,6 +1511,7 @@ module Ironmon
     @tracker_search_indexes = nil
     @tracker_search_result_cache = nil
     @tracker_lookup_cache = nil
+    @tracker_wild_fusion_tables = nil
     @tracker_fusion_mappers = nil
     @tracker_sprite_paths = nil
     @tracker_evolution_generators = nil

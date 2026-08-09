@@ -1,3 +1,5 @@
+using Ironmon.Tracker.Protocol.Lookup;
+
 namespace Ironmon.Tracker.Protocol.Debug;
 
 /// <summary>
@@ -16,4 +18,9 @@ public sealed class DebugPokemonLookupRequestPayload
     /// Gets or initializes the selected stable species and form identifier.
     /// </summary>
     public required string SpeciesId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the independently requested information section.
+    /// </summary>
+    public PokemonLookupSection Section { get; init; } = PokemonLookupSection.Overview;
 }

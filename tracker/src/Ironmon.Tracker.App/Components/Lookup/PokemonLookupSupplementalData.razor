@@ -1,0 +1,100 @@
+@if (Pokemon.WildOccurrences.Count > 0)
+{
+    <section class="lookup-occurrences" aria-label="@Text["Lookup.Card.WildEncounterLocations"]">
+        <header><p class="section-label">@Text["Lookup.Card.WildLocationsHeading"]</p><span>@Text["Lookup.Card.SlotCount", Pokemon.WildOccurrences.Count]</span></header>
+        <div class="lookup-occurrence-list">
+            @foreach (WildPokemonOccurrenceSnapshot occurrence in Pokemon.WildOccurrences)
+            {
+                <div class="lookup-occurrence">
+                    <div>
+                        <strong>@occurrence.RouteName</strong>
+                        <small>@occurrence.Mode · @occurrence.EncounterType · @FormatWildSlots(occurrence) · @FormatLevelRange(occurrence.MinimumLevel, occurrence.MaximumLevel)</small>
+                    </div>
+                    <button type="button" @onclick="() => PokemonSelected.InvokeAsync(occurrence.SourceSpeciesId)">
+                        Source: @occurrence.SourceSpeciesName
+                    </button>
+                    @if (occurrence.SecondarySourceSpeciesId is not null)
+                    {
+                        <button type="button" @onclick="() => PokemonSelected.InvokeAsync(occurrence.SecondarySourceSpeciesId)">
+                            + @occurrence.SecondarySourceSpeciesName
+                        </button>
+                    }
+                    @if (occurrence.ChancePercent is not null)
+                    {
+                        <span>@FormatChance(occurrence.ChancePercent.Value, occurrence.ChanceIsConditional)</span>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+}
+
+@if (Pokemon.TrainerOccurrences.Count > 0)
+{
+    <section class="lookup-occurrences" aria-label="@Text["Lookup.Card.TrainerPartyLocations"]">
+        <header><p class="section-label">@Text["Lookup.Card.TrainersHeading"]</p><span>@Text["Lookup.Card.SlotCount", Pokemon.TrainerOccurrences.Count]</span></header>
+        <div class="lookup-occurrence-list">
+            @foreach (TrainerPokemonOccurrenceSnapshot occurrence in Pokemon.TrainerOccurrences)
+            {
+                <div class="lookup-occurrence">
+                    <div>
+                        <strong>@occurrence.TrainerType @occurrence.TrainerName</strong>
+                        <small>@Text["Lookup.Card.TrainerOccurrenceSummary", occurrence.Slot, occurrence.Level, occurrence.RouteName ?? Text["Lookup.Card.LocationUnavailable"]]</small>
+                    </div>
+                    <button type="button" @onclick="() => PokemonSelected.InvokeAsync(occurrence.SourceSpeciesId)">
+                        Source: @occurrence.SourceSpeciesName
+                    </button>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+@if (Pokemon.FusionBases.Count > 0)
+{
+    <section class="lookup-relations" aria-label="@Text["Lookup.Card.DisplayedFusionComponents"]">
+        <header><p class="section-label">@Text["Lookup.Card.DisplayedComponentsHeading"]</p></header>
+        <div class="lookup-relation-grid">
+            @foreach (PokemonRelationSnapshot fusionBase in Pokemon.FusionBases)
+            {
+                <PokemonRelationButton Relation="@fusionBase" GameRoot="@GameRoot" Selected="PokemonSelected" />
+            }
+        </div>
+    </section>
+}
+
+@if (Pokemon.ReverseFusion is not null)
+{
+    <section class="lookup-relations" aria-label="@Text["Lookup.Card.IronmonReverseFusion"]">
+        <header><p class="section-label">@Text["Lookup.Card.IronmonReverseHeading"]</p></header>
+        <div class="lookup-relation-grid">
+            <PokemonRelationButton Relation="@Pokemon.ReverseFusion" GameRoot="@GameRoot" Selected="PokemonSelected" />
+        </div>
+    </section>
+}
+
+@if (Pokemon.FusionMaterials.Count > 0)
+{
+    <section class="lookup-relations" aria-label="@Text["Lookup.Card.IronmonFusionMaterials"]">
+        <header><p class="section-label">@Text["Lookup.Card.FusionMaterialsHeading"]</p></header>
+        <div class="lookup-material-list">
+            @foreach (FusionMaterialPairSnapshot materials in Pokemon.FusionMaterials)
+            {
+                <div class="lookup-material-pair">
+                    <PokemonRelationButton Relation="@materials.Body" GameRoot="@GameRoot" Selected="PokemonSelected" />
+                    <span aria-hidden="true">+</span>
+                    <PokemonRelationButton Relation="@materials.Head" GameRoot="@GameRoot" Selected="PokemonSelected" />
+                </div>
+            }
+        </div>
+    </section>
+}
+
+@if (Pokemon.FusionBases.Count == 0)
+{
+    <IronmonFusionSearch Pokemon="@Pokemon"
+                         Recipe="@Recipe"
+                         DebugMode="@DebugMode"
+                         GameRoot="@GameRoot"
+                         PokemonSelected="PokemonSelected" />
+}

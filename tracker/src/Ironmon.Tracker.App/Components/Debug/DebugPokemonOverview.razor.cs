@@ -17,6 +17,12 @@ public partial class DebugPokemonOverview
     public DebugPokemonInspectorSnapshot Pokemon { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the generated typing from the shared lookup snapshot.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<string> Types { get; set; } = [];
+
+    /// <summary>
     /// Gets or sets the connected game installation directory.
     /// </summary>
     [Parameter]

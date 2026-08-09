@@ -45,6 +45,7 @@ historical release notes and validation evidence.
 
 ## Release notes
 
+- [0.6.1](releases/RELEASE_NOTES_0.6.1.md)
 - [0.6.0](releases/RELEASE_NOTES_0.6.0.md)
 - [0.5.0](releases/RELEASE_NOTES_0.5.0.md)
 - [0.4.0](releases/RELEASE_NOTES_0.4.0.md)

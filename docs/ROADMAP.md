@@ -63,6 +63,9 @@ acceptance criteria are defined in `design/PIVOT_SYSTEM.md`.
   from Ironmon's absolute level-100 limit below.
 - The Optional Challenge `No reviving` setting is locked on.
 - The Optional Challenge `No heals (overworld)` setting is locked on.
+- Automatic missing-sprite downloads are locked off and the `Download data`
+  control is unavailable. Ironmon players install the spritepack before a run
+  so sprite resolution never pauses gameplay for network access.
 - Wild Pokemon levels are 160% of their original levels.
 - Trainer Pokemon levels are 160% of their original levels.
 - The internal Hard Mode level multiplier must not stack with the Ironmon

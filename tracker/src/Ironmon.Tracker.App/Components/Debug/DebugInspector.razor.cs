@@ -1,15 +1,17 @@
 using Microsoft.AspNetCore.Components;
+using Ironmon.Tracker.App.Components.Lookup;
 
 namespace Ironmon.Tracker.App.Components.Debug;
 
 /// <summary>
-/// Coordinates authorized Pokemon inspection and run diagnostics.
+/// Coordinates combined current-Pokemon inspection, generated lookup, and run diagnostics.
 /// </summary>
 public partial class DebugInspector
 {
-    private DebugInspectorPage _selectedPage = DebugInspectorPage.Overview;
-    private DebugInspectorPage _selectedInspectorPage = DebugInspectorPage.Overview;
+    private DebugInspectorPage _selectedPage = DebugInspectorPage.Pokemon;
+    private PokemonInformationPage _selectedPokemonPage = PokemonInformationPage.Overview;
     private DebugPokemonInspectorSnapshot? _pokemon;
+    private PokemonLookupSnapshot? _lookup;
     private DebugRunDiagnosticsSnapshot? _diagnostics;
     private string _selectedTarget = DebugTargetIds.Player;
     private string? _requestedLookupSpeciesId;
@@ -58,7 +60,6 @@ public partial class DebugInspector
                 : Enemies.Count > 0
                     ? $"{DebugTargetIds.Enemy}{DebugTargetIds.Separator}{Enemies[0].Position}"
                     : DebugTargetIds.Player;
-
             _targetInitialized = true;
             _observedPlayer = Player;
             _observedEnemies = Enemies;
@@ -69,7 +70,6 @@ public partial class DebugInspector
         bool selectedChanged = targetChanged || SelectedSnapshotChanged();
         _observedPlayer = Player;
         _observedEnemies = Enemies;
-
         if (!selectedChanged)
             return;
 
@@ -84,15 +84,28 @@ public partial class DebugInspector
     }
 
     /// <summary>
-    /// Moves inspection to an available live target when the selected battler disappears.
+    /// Moves inspection to an available live target when the selected target disappears.
     /// </summary>
     /// <returns><see langword="true"/> when a replacement target was selected.</returns>
     private bool EnsureSelectedTargetAvailable()
     {
         string[] parts = _selectedTarget.Split(DebugTargetIds.Separator, DebugTargetIds.EnemySegmentCount);
+        if (parts[0] == DebugTargetIds.Player)
+        {
+            if (Player is not null)
+                return false;
+
+            _selectedTarget = Enemies.Count > 0
+                ? $"{DebugTargetIds.Enemy}{DebugTargetIds.Separator}{Enemies[0].Position}"
+                : DebugTargetIds.Player;
+
+            return true;
+        }
+
         bool enemyAvailable = parts[0] == DebugTargetIds.Enemy && parts.Length == DebugTargetIds.EnemySegmentCount && int.TryParse(parts[1], out int position)
             && Enemies.Any(enemy => enemy.Position == position);
-        if (parts[0] != DebugTargetIds.Enemy || enemyAvailable)
+
+        if (enemyAvailable)
             return false;
 
         _selectedTarget = Player is not null
@@ -100,7 +113,6 @@ public partial class DebugInspector
             : Enemies.Count > 0
                 ? $"{DebugTargetIds.Enemy}{DebugTargetIds.Separator}{Enemies[0].Position}"
                 : DebugTargetIds.Player;
-
         return true;
     }
 
@@ -123,7 +135,7 @@ public partial class DebugInspector
     }
 
     /// <summary>
-    /// Loads the initial inspector snapshot after the component first renders.
+    /// Loads the initial combined inspector snapshot after the component first renders.
     /// </summary>
     /// <param name="firstRender">Whether this is the first completed render.</param>
     /// <returns>A task representing the initial request.</returns>
@@ -140,7 +152,7 @@ public partial class DebugInspector
     /// Stores and immediately inspects the newly selected debug target.
     /// </summary>
     /// <param name="args">The select element change.</param>
-    /// <returns>A task representing the inspection request.</returns>
+    /// <returns>A task representing the inspection and lookup requests.</returns>
     private async Task SelectTarget(ChangeEventArgs args)
     {
         _selectedTarget = args.Value?.ToString() ?? DebugTargetIds.Player;
@@ -158,31 +170,13 @@ public partial class DebugInspector
             return;
 
         _selectedPage = page;
-        if (IsInspectorPage(page))
-            _selectedInspectorPage = page;
-
         _error = null;
         if (page == DebugInspectorPage.Diagnostics)
             await LoadDiagnosticsAsync();
     }
 
     /// <summary>
-    /// Returns to the last selected Pokemon inspector subpage.
-    /// </summary>
-    /// <returns>A task representing the page selection.</returns>
-    private Task SelectInspectorAsync()
-        => SelectPageAsync(_selectedInspectorPage);
-
-    /// <summary>
-    /// Determines whether a page belongs to the Pokemon inspector section.
-    /// </summary>
-    /// <param name="page">The page to classify.</param>
-    /// <returns><see langword="true"/> for an inspector subpage.</returns>
-    private static bool IsInspectorPage(DebugInspectorPage page)
-        => page is DebugInspectorPage.Overview or DebugInspectorPage.Abilities or DebugInspectorPage.Stats or DebugInspectorPage.Moves or DebugInspectorPage.Evolutions;
-
-    /// <summary>
-    /// Opens an evolution destination in the authorized active-run lookup.
+    /// Opens a related Pokemon in the authorized active-run lookup.
     /// </summary>
     /// <param name="speciesId">The selected stable Pokemon identifier.</param>
     /// <returns>A task representing the page selection.</returns>
@@ -193,27 +187,34 @@ public partial class DebugInspector
     }
 
     /// <summary>
-    /// Requests inspector data for the selected current Pokemon source.
+    /// Requests both instance-specific and complete generated data for the selected current Pokemon.
     /// </summary>
-    /// <param name="preserveContent">Whether an automatic refresh keeps the current card visible.</param>
-    /// <returns>A task representing the request.</returns>
-    private async Task InspectSelectedAsync(bool preserveContent = false)
+    /// <param name="preserveContent">Whether an automatic refresh keeps the current content visible.</param>
+    /// <param name="refreshLookup">Whether the shared overview lookup must also be refreshed.</param>
+    /// <returns>A task representing both requests.</returns>
+    private async Task InspectSelectedAsync(bool preserveContent = false, bool refreshLookup = true)
     {
         if (_loading)
             return;
 
         _loading = true;
-        _backgroundRefresh = preserveContent && _pokemon is not null;
+        _backgroundRefresh = preserveContent && _pokemon is not null && _lookup is not null;
         _error = null;
         try
         {
-            DebugPokemonInspectionRequestPayload request = CreateInspectionRequest();
-            _pokemon = await Connection.InspectPokemonAsync(request);
+            DebugPokemonInspectorSnapshot pokemon = await Connection.InspectPokemonAsync(CreateInspectionRequest());
+            _pokemon = pokemon;
+            if (refreshLookup)
+                _lookup = await Connection.LookupDebugPokemonAsync(pokemon.SpeciesId);
         }
         catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
         {
             if (!preserveContent)
+            {
                 _pokemon = null;
+                _lookup = null;
+            }
+
             _error = exception.Message;
         }
         finally
@@ -227,6 +228,23 @@ public partial class DebugInspector
             _refreshPending = false;
             await InspectSelectedAsync(preserveContent: true);
         }
+    }
+
+    /// <summary>
+    /// Refreshes live instance diagnostics for the newly selected shared information page.
+    /// </summary>
+    /// <param name="page">The selected shared information page.</param>
+    /// <returns>A task representing the refresh.</returns>
+    private async Task SelectPokemonInformationPageAsync(PokemonInformationPage page)
+    {
+        _selectedPokemonPage = page;
+        if (_loading)
+        {
+            _refreshPending = true;
+            return;
+        }
+
+        await InspectSelectedAsync(preserveContent: true, refreshLookup: false);
     }
 
     /// <summary>
@@ -261,8 +279,8 @@ public partial class DebugInspector
         string[] parts = _selectedTarget.Split(DebugTargetIds.Separator, DebugTargetIds.EnemySegmentCount);
         return parts[0] switch
         {
-            DebugTargetIds.Player => new DebugPokemonInspectionRequestPayload { Target = DebugPokemonTarget.Player },
-            DebugTargetIds.Enemy => new DebugPokemonInspectionRequestPayload { Target = DebugPokemonTarget.Enemy, EnemyPosition = int.Parse(parts[1]) },
+            DebugTargetIds.Player => new DebugPokemonInspectionRequestPayload { Target = DebugPokemonTarget.Player, Section = (PokemonLookupSection)(int)_selectedPokemonPage },
+            DebugTargetIds.Enemy => new DebugPokemonInspectionRequestPayload { Target = DebugPokemonTarget.Enemy, EnemyPosition = int.Parse(parts[1]), Section = (PokemonLookupSection)(int)_selectedPokemonPage },
             _ => throw new InvalidOperationException(Text["Debug.Inspector.InspectionTargetUnavailable"])
         };
     }
@@ -275,10 +293,4 @@ public partial class DebugInspector
     private string GetPageClass(DebugInspectorPage page)
         => page == _selectedPage ? TrackerUiConstants.SelectedCssClass : string.Empty;
 
-    /// <summary>
-    /// Gets the selected class for the top-level Pokemon inspector button.
-    /// </summary>
-    /// <returns>The top-level button CSS classes.</returns>
-    private string GetInspectorPageClass()
-        => IsInspectorPage(_selectedPage) ? TrackerUiConstants.SelectedCssClass : string.Empty;
 }

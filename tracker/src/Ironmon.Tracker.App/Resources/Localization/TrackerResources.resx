@@ -744,6 +744,9 @@
   <data name="Lookup.Card.EvolutionCandidates" xml:space="preserve">
     <value>Evolution candidates</value>
   </data>
+  <data name="Lookup.Card.LoadingSection" xml:space="preserve">
+    <value>Loading this information...</value>
+  </data>
   <data name="Lookup.Candidates.Filter" xml:space="preserve">
     <value>Filter candidates by name</value>
   </data>
@@ -1165,4 +1168,6 @@
   <data name="Lookup.Analysis.Source.egg" xml:space="preserve"><value>Egg move</value></data>
   <data name="Lookup.Analysis.Source.level_up" xml:space="preserve"><value>level-up</value></data>
   <data name="Lookup.Analysis.Source.copy_effect" xml:space="preserve"><value>copy effect</value></data>
+  <data name="Lookup.Generator.MoveHeading" xml:space="preserve"><value>MOVE GENERATOR</value></data>
+  <data name="Lookup.Generator.EvolutionHeading" xml:space="preserve"><value>EVOLUTION GENERATOR</value></data>
 </root>

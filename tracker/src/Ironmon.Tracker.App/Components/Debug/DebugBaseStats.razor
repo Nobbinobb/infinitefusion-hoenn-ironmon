@@ -8,16 +8,4 @@
                                Randomized="@Pokemon.BaseStatGenerator.Enabled"
                                Fusion="@Pokemon.Fusion" />
     </section>
-
-    <section class="debug-data-section">
-        <p class="section-label">@Text["Debug.BaseStats.GeneratorHeading"]</p>
-        <dl class="debug-data-grid">
-            <div><dt>@Text["Debug.BaseStats.Status"]</dt><dd>@(Pokemon.BaseStatGenerator.Enabled ? Text["Debug.BaseStats.Enabled"] : Text["Debug.BaseStats.LegacyStats"])</dd></div>
-            <div><dt>@Text["Debug.BaseStats.Seed"]</dt><dd>@(Pokemon.BaseStatGenerator.RunSeed?.ToString() ?? Text["Debug.BaseStats.None"])</dd></div>
-            <div><dt>@Text["Debug.BaseStats.Schema"]</dt><dd>@(Pokemon.BaseStatGenerator.SchemaVersion?.ToString() ?? Text["Debug.BaseStats.None"])</dd></div>
-            <div><dt>@Text["Debug.BaseStats.Rules"]</dt><dd>@Pokemon.BaseStatGenerator.RulesVersion</dd></div>
-            <div><dt>@Text["Debug.BaseStats.NormalRange"]</dt><dd>@Pokemon.BaseStatGenerator.MinimumStat–@Pokemon.BaseStatGenerator.MaximumStat</dd></div>
-            <div class="wide"><dt>@Text["Debug.BaseStats.SourceFingerprint"]</dt><dd>@(Pokemon.BaseStatGenerator.SourceFingerprint ?? Text["Debug.BaseStats.None"])</dd></div>
-        </dl>
-    </section>
 </article>

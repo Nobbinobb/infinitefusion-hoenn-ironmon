@@ -1,3 +1,5 @@
+using Ironmon.Tracker.Protocol.Lookup;
+
 namespace Ironmon.Tracker.Protocol.Debug;
 
 /// <summary>
@@ -16,6 +18,11 @@ public sealed class DebugPokemonInspectionRequestPayload
     /// Gets or initializes the Pokemon source to inspect.
     /// </summary>
     public DebugPokemonTarget Target { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the independently requested inspector section.
+    /// </summary>
+    public PokemonLookupSection Section { get; init; } = PokemonLookupSection.Overview;
 
     /// <summary>
     /// Gets or initializes the enemy battler position when inspecting an enemy.

@@ -11,6 +11,8 @@ module Ironmon
     FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
     FNV_PRIME = 1_099_511_628_211
     FNV_MASK = 0xFFFFFFFFFFFFFFFF
+    MATERIAL_ID_BITS = 10
+    MATERIAL_ID_MASK = (1 << MATERIAL_ID_BITS) - 1
 
     def initialize(seed, fusion_pool, mappings, discoveries)
       @seed = seed.to_i
@@ -21,16 +23,24 @@ module Ironmon
       @fusion_components = nil
       @fusion_pairs = nil
       @paired_result_ids = nil
+      @result_hash_prefix = nil
+      @material_pair_codes = nil
       @material_pairs = {}
     end
 
     def species(body_species, head_species)
+      return GameData::Species.get(
+        species_number(body_species, head_species)
+      ).id
+    end
+
+    def species_number(body_species, head_species)
       body_id, head_id = normal_input_ids(body_species, head_species)
       pair = [body_id, head_id].sort
       result_ids = mapped_result_ids(pair)
       oriented_id = body_id <= head_id ? result_ids[0] : result_ids[1]
       validate_result_id(oriented_id)
-      return GameData::Species.get(oriented_id).id
+      return oriented_id
     end
 
     def known_species(body_species, head_species)
@@ -76,19 +86,12 @@ module Ironmon
         GameData::Species.get(fusion_species).id_number
       )
       return @material_pairs[species_id] if @material_pairs[species_id]
-      pairs = []
-      (1..NB_POKEMON).each do |first_id|
-        (first_id..NB_POKEMON).each do |second_id|
-          pair_index = deterministic_value("result", first_id, second_id) %
-                       @fusion_pairs.length
-          result_ids = @fusion_pairs[pair_index]
-          pairs << [first_id, second_id] if result_ids[0] == species_id
-          if first_id != second_id && result_ids[1] == species_id
-            pairs << [second_id, first_id]
-          end
-        end
-      end
-      @material_pairs[species_id] = pairs.freeze
+      ensure_material_pair_codes
+      codes = @material_pair_codes[species_id] || []
+      pairs = codes.map do |code|
+        [code >> MATERIAL_ID_BITS, code & MATERIAL_ID_MASK]
+      end.freeze
+      @material_pairs[species_id] = pairs
       return @material_pairs[species_id]
     end
 
@@ -98,6 +101,28 @@ module Ironmon
     end
 
     private
+
+    def ensure_material_pair_codes
+      return if @material_pair_codes
+      codes = Hash.new { |hash, key| hash[key] = [] }
+      (1..NB_POKEMON).each do |first_id|
+        (first_id..NB_POKEMON).each do |second_id|
+          pair_index = deterministic_result_value(first_id, second_id) %
+                       @fusion_pairs.length
+          result_ids = @fusion_pairs[pair_index]
+          codes[result_ids[0]] << pack_material_pair(first_id, second_id)
+          if first_id != second_id
+            codes[result_ids[1]] << pack_material_pair(second_id, first_id)
+          end
+        end
+      end
+      codes.each_value(&:freeze)
+      @material_pair_codes = codes.freeze
+    end
+
+    def pack_material_pair(body_id, head_id)
+      return (body_id << MATERIAL_ID_BITS) | head_id
+    end
 
     def normal_input_ids(body_species, head_species)
       body = GameData::Species.try_get(body_species)
@@ -126,7 +151,7 @@ module Ironmon
           @discoveries.delete(key)
         end
       end
-      pair_index = deterministic_value("result", pair[0], pair[1]) %
+      pair_index = deterministic_result_value(pair[0], pair[1]) %
                    @fusion_pairs.length
       first_id, second_id = @fusion_pairs[pair_index]
       @mappings[key] = [validate_result_id(first_id),
@@ -141,6 +166,27 @@ module Ironmon
     def deterministic_value(*parts)
       value = FNV_OFFSET_BASIS
       input = [SCHEMA_VERSION, @seed, NAMESPACE, *parts].join("|")
+      input.each_byte do |byte|
+        value ^= byte
+        value = (value * FNV_PRIME) & FNV_MASK
+      end
+      return value
+    end
+
+    def deterministic_result_value(first_id, second_id)
+      if !@result_hash_prefix
+        prefix = [SCHEMA_VERSION, @seed, NAMESPACE, "result", ""].join("|")
+        @result_hash_prefix = update_deterministic_hash(
+          FNV_OFFSET_BASIS, prefix
+        )
+      end
+      value = update_deterministic_hash(@result_hash_prefix, first_id.to_s)
+      value ^= "|".ord
+      value = (value * FNV_PRIME) & FNV_MASK
+      return update_deterministic_hash(value, second_id.to_s)
+    end
+
+    def update_deterministic_hash(value, input)
       input.each_byte do |byte|
         value ^= byte
         value = (value * FNV_PRIME) & FNV_MASK

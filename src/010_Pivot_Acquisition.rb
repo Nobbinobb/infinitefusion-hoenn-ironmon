@@ -49,6 +49,19 @@ module Ironmon
     return false
   end
 
+  def self.synchronize_hoenn_starter_after_battle
+    return if !$Trainer || !$Trainer.party
+    starter = pbGet(VAR_HOENN_STARTER)
+    return if !starter_pokemon?(starter)
+    current = $Trainer.party.find do |pokemon|
+      pokemon && pokemon.personalID == starter.personalID
+    end
+    return if !current
+    pbSet(VAR_HOENN_STARTER, current)
+  rescue StandardError
+    return
+  end
+
   def self.current_acquisition_source
     return @acquisition_source || :wild_catch
   end

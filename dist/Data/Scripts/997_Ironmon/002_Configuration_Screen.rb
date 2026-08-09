@@ -90,7 +90,7 @@ module Ironmon
 
     def confirmed_configuration
       summary = _INTL(
-        "Begin Ironmon with these settings?\nWild Pokemon: {1}\nTrainer Pokemon: {2}\nCaught-fusion unfusion: {3}",
+        "Begin Ironmon with these settings?\nWild Pokemon: {1}\nTrainer Pokemon: {2}\nCaught-fusion unfusion: {3}\n\nAutomatic sprite downloads are disabled in Ironmon. Install the spritepack before starting.",
         policy_label(@wild_policy),
         policy_label(@trainer_policy),
         unfusion_label(@unfusion_setting)

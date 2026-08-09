@@ -7,15 +7,32 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class PokemonLookupCard
 {
+    private readonly Dictionary<PokemonInformationPage, PokemonLookupSnapshot> _sections = [];
+    private PokemonInformationPage _selectedPage = PokemonInformationPage.Overview;
+    private PokemonInformationPage? _loadingPage;
+    private string? _observedSpeciesId;
+    private string? _sectionError;
     private string? _spriteKey;
     private string? _spriteSource;
     private AbilitySnapshot? _selectedAbility;
+
+    /// <summary>
+    /// Gets or sets the request client used to load a selected information section.
+    /// </summary>
+    [Inject]
+    private TrackerRequestClient Connection { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the reconstructed Pokemon information.
     /// </summary>
     [Parameter]
     public PokemonLookupSnapshot Pokemon { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets optional live instance diagnostics to merge into the shared pages.
+    /// </summary>
+    [Parameter]
+    public DebugPokemonInspectorSnapshot? Inspector { get; set; }
 
     /// <summary>
     /// Gets or sets the completed-run reconstruction recipe.
@@ -42,24 +59,43 @@ public partial class PokemonLookupCard
     public EventCallback<string> PokemonSelected { get; set; }
 
     /// <summary>
+    /// Gets or sets the callback invoked when an information page is selected.
+    /// </summary>
+    [Parameter]
+    public EventCallback<PokemonInformationPage> InformationPageSelected { get; set; }
+
+    /// <summary>
     /// Refreshes the local sprite when the lookup result changes.
     /// </summary>
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
-        string? key = GameRoot is null || Pokemon.SpritePath is null ? null : $"{GameRoot}|{Pokemon.SpritePath}";
-        if (key == _spriteKey)
-            return;
+        bool speciesChanged = !string.Equals(_observedSpeciesId, Pokemon.SpeciesId, StringComparison.Ordinal);
+        if (speciesChanged)
+        {
+            _observedSpeciesId = Pokemon.SpeciesId;
+            _sections.Clear();
+            _selectedAbility = null;
+            _sectionError = null;
+        }
 
-        _spriteKey = key;
-        _spriteSource = LocalSpriteLoader.Load(GameRoot, Pokemon.SpritePath);
+        _sections[PokemonInformationPage.Overview] = Pokemon;
+        string? key = GameRoot is null || Pokemon.SpritePath is null ? null : $"{GameRoot}|{Pokemon.SpritePath}";
+        if (key != _spriteKey)
+        {
+            _spriteKey = key;
+            _spriteSource = LocalSpriteLoader.Load(GameRoot, Pokemon.SpritePath);
+        }
+
+        if (speciesChanged && _selectedPage != PokemonInformationPage.Overview)
+            await LoadSectionAsync(_selectedPage);
     }
 
     /// <summary>
-    /// Gets the first evolution requirement or the absence label.
+    /// Gets the snapshot for the selected section, falling back to the overview identity while it loads.
     /// </summary>
-    /// <returns>The evolution requirement.</returns>
-    private string GetEvolutionRequirement()
-        => Pokemon.Evolutions.Count == 0 ? Text["Lookup.Card.None"] : Pokemon.Evolutions[0].Label;
+    /// <returns>The selected section snapshot.</returns>
+    private PokemonLookupSnapshot ActivePokemon
+        => _sections.GetValueOrDefault(_selectedPage) ?? Pokemon;
 
     /// <summary>
     /// Gets whether the lookup contains generated evolution destinations.
@@ -73,14 +109,21 @@ public partial class PokemonLookupCard
     /// </summary>
     /// <returns>The generated branch count.</returns>
     private int GetGeneratedEvolutionBranchCount()
-        => Pokemon.EvolutionTargets.Count + Pokemon.HeadEvolutionTargets.Count + Pokemon.BodyEvolutionTargets.Count;
+        => ActivePokemon.EvolutionTargets.Count + ActivePokemon.HeadEvolutionTargets.Count + ActivePokemon.BodyEvolutionTargets.Count;
 
     /// <summary>
     /// Gets whether the lookup contains any generated graph edge.
     /// </summary>
     /// <returns>Whether the evolution graph should be displayed.</returns>
     private bool HasGeneratedEvolutionGraph()
-        => Pokemon.EvolutionPredecessors.Count + GetGeneratedEvolutionBranchCount() > 0;
+        => ActivePokemon.EvolutionPredecessors.Count + GetGeneratedEvolutionBranchCount() > 0;
+
+    /// <summary>
+    /// Gets whether the represented species is a fusion without requiring Overview relationship data.
+    /// </summary>
+    /// <returns>Whether the represented species is a fusion.</returns>
+    private bool IsFusion()
+        => Inspector?.Fusion ?? ActivePokemon.SpeciesId.StartsWith('B') && ActivePokemon.SpeciesId.Contains('H');
 
     /// <summary>
     /// Creates the selected Pokemon's graph node.
@@ -89,11 +132,74 @@ public partial class PokemonLookupCard
     private EvolutionTargetSnapshot GetCurrentEvolutionNode()
         => new()
         {
-            SpeciesId = Pokemon.SpeciesId,
-            SpeciesName = Pokemon.SpeciesName,
-            SpritePath = Pokemon.SpritePath,
-            BaseStatTotal = Pokemon.BaseStatTotal
+            SpeciesId = ActivePokemon.SpeciesId,
+            SpeciesName = ActivePokemon.SpeciesName,
+            SpritePath = ActivePokemon.SpritePath,
+            BaseStatTotal = ActivePokemon.BaseStatTotal
         };
+
+    /// <summary>
+    /// Selects one shared Pokemon information page.
+    /// </summary>
+    /// <param name="page">The requested page.</param>
+    private async Task SelectPageAsync(PokemonInformationPage page)
+    {
+        _selectedPage = page;
+        _selectedAbility = null;
+        _sectionError = null;
+        await Task.WhenAll(InformationPageSelected.InvokeAsync(page), LoadSectionAsync(page));
+    }
+
+    /// <summary>
+    /// Loads one information section once for the current Pokemon.
+    /// </summary>
+    /// <param name="page">The requested page.</param>
+    /// <returns>A task representing the request.</returns>
+    private async Task LoadSectionAsync(PokemonInformationPage page)
+    {
+        if (page == PokemonInformationPage.Overview || _sections.ContainsKey(page) || _loadingPage == page)
+            return;
+
+        if (!DebugMode && Recipe is null)
+            return;
+
+        string speciesId = Pokemon.SpeciesId;
+        _loadingPage = page;
+        try
+        {
+            PokemonLookupSection section = (PokemonLookupSection)(int)page;
+            PokemonLookupSnapshot snapshot = DebugMode
+                ? await Connection.LookupDebugPokemonAsync(speciesId, section)
+                : await Connection.LookupPokemonAsync(Recipe!, speciesId, section);
+
+            if (string.Equals(Pokemon.SpeciesId, speciesId, StringComparison.Ordinal))
+                _sections[page] = snapshot;
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
+        {
+            _sectionError = exception.Message;
+        }
+        finally
+        {
+            if (_loadingPage == page)
+                _loadingPage = null;
+        }
+    }
+
+    /// <summary>
+    /// Gets the selected CSS class for one shared information page.
+    /// </summary>
+    /// <param name="page">The represented page.</param>
+    /// <returns>The page button CSS classes.</returns>
+    private string GetPageClass(PokemonInformationPage page)
+        => page == _selectedPage ? TrackerUiConstants.SelectedCssClass : string.Empty;
+
+    /// <summary>
+    /// Gets live ability-slot diagnostics when available, otherwise the reconstructed lookup diagnostics.
+    /// </summary>
+    /// <returns>The slot diagnostics shown by the shared Abilities page.</returns>
+    private IReadOnlyList<DebugAbilitySlotSnapshot> GetAbilitySlots()
+        => Inspector?.Section == PokemonLookupSection.Abilities ? Inspector.AbilitySlots : ActivePokemon.AbilitySlots;
 
     /// <summary>
     /// Formats an authored encounter-table chance.

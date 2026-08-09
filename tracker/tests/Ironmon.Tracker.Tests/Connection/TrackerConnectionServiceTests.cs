@@ -110,6 +110,7 @@ public sealed class TrackerConnectionServiceTests
         PokemonLookupRequestPayload lookupPayload = TrackerJson.DeserializePayload<PokemonLookupRequestPayload>(lookupRequest!.Payload);
         Assert.Equal("CHARMANDER:0", lookupPayload.SpeciesId);
         Assert.Equal(100, lookupPayload.Level);
+        Assert.Equal(PokemonLookupSection.Overview, lookupPayload.Section);
         PokemonLookupSnapshot lookupResponse = new()
         {
             SpeciesId = "CHARMANDER:0",
@@ -117,6 +118,29 @@ public sealed class TrackerConnectionServiceTests
             Types = ["FIRE"],
             BaseStats = new BaseStatsSnapshot { Hp = 39, Attack = 52, Defense = 43, SpecialAttack = 60, SpecialDefense = 50, Speed = 65 },
             BaseStatTotal = 309,
+            AbilitySlots =
+            [
+                new DebugAbilitySlotSnapshot
+                {
+                    Group = DebugAbilitySlotGroup.Generated,
+                    Kind = DebugAbilitySlotKind.Normal,
+                    Index = 0,
+                    AbilityId = "BLAZE",
+                    AbilityName = "Blaze",
+                    OriginalAbilityId = "BLAZE",
+                    OriginalAbilityName = "Blaze",
+                    Eligibility = DebugAbilityEligibility.Universal
+                }
+            ],
+            AbilityGenerator = new GeneratorDiagnosticsSnapshot
+            {
+                Enabled = true,
+                Entries =
+                [
+                    new GeneratorDiagnosticEntrySnapshot { Key = "schema", Value = "3" },
+                    new GeneratorDiagnosticEntrySnapshot { Key = "pool_fingerprint", Value = "abilities" }
+                ]
+            },
             WildOccurrences =
             [
                 new WildPokemonOccurrenceSnapshot
@@ -183,6 +207,12 @@ public sealed class TrackerConnectionServiceTests
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(lookupRequest.RequestId!, lookupResponse, "run-1"));
         PokemonLookupSnapshot receivedLookup = await lookupTask;
         Assert.Equal(309, receivedLookup.BaseStatTotal);
+        DebugAbilitySlotSnapshot receivedAbilitySlot = Assert.Single(receivedLookup.AbilitySlots);
+        Assert.Equal(DebugAbilitySlotGroup.Generated, receivedAbilitySlot.Group);
+        Assert.Equal("BLAZE", receivedAbilitySlot.AbilityId);
+        Assert.Equal(DebugAbilityEligibility.Universal, receivedAbilitySlot.Eligibility);
+        Assert.Equal("3", receivedLookup.AbilityGenerator.Entries[0].Value);
+        Assert.Equal("abilities", receivedLookup.AbilityGenerator.Entries[1].Value);
         WildPokemonOccurrenceSnapshot receivedWild = Assert.Single(receivedLookup.WildOccurrences);
         Assert.Equal("Route 1", receivedWild.RouteName);
         Assert.Equal(4, receivedWild.MinimumLevel);
@@ -240,6 +270,7 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal("debug_inspect_pokemon", inspectRequest?.Command);
         DebugPokemonInspectionRequestPayload receivedInspectPayload = TrackerJson.DeserializePayload<DebugPokemonInspectionRequestPayload>(inspectRequest!.Payload);
         Assert.Equal(DebugPokemonTarget.Player, receivedInspectPayload.Target);
+        Assert.Equal(PokemonLookupSection.Overview, receivedInspectPayload.Section);
         DebugPokemonInspectorSnapshot inspectResponse = new()
         {
             PokemonId = "1234",
@@ -285,8 +316,12 @@ public sealed class TrackerConnectionServiceTests
         Task<PokemonLookupSnapshot> debugLookupTask = service.Requests.LookupDebugPokemonAsync("CHARMANDER:0");
         TrackerMessage? debugLookupRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
         Assert.Equal("debug_pokemon_lookup", debugLookupRequest?.Command);
+        DebugPokemonLookupRequestPayload debugLookupPayload = TrackerJson.DeserializePayload<DebugPokemonLookupRequestPayload>(debugLookupRequest!.Payload);
+        Assert.Equal(PokemonLookupSection.Overview, debugLookupPayload.Section);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugLookupRequest!.RequestId!, lookupResponse, "run-1"));
-        Assert.Equal(309, (await debugLookupTask).BaseStatTotal);
+        PokemonLookupSnapshot receivedDebugLookup = await debugLookupTask;
+        Assert.Equal(309, receivedDebugLookup.BaseStatTotal);
+        Assert.Equal("BLAZE", Assert.Single(receivedDebugLookup.AbilitySlots).AbilityId);
 
         Task<EvolutionCandidateSearchResponsePayload> debugCandidateTask = service.Requests.SearchDebugEvolutionCandidatesAsync("CHARMANDER:0", EvolutionCandidateSide.Normal, string.Empty);
         TrackerMessage? debugCandidateRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));

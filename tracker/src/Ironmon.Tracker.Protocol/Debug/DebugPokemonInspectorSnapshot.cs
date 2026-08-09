@@ -13,6 +13,11 @@ public sealed class DebugPokemonInspectorSnapshot
     }
 
     /// <summary>
+    /// Gets or initializes the independently populated inspector section.
+    /// </summary>
+    public PokemonLookupSection Section { get; init; } = PokemonLookupSection.Overview;
+
+    /// <summary>
     /// Gets or initializes the individual Pokemon identifier.
     /// </summary>
     public required string PokemonId { get; init; }

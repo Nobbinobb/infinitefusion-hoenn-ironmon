@@ -5,6 +5,7 @@
 - [x] The game starts without a script error.
 - [x] Ironmon forces Hard Mode while leaving Hard AI behavior active.
 - [x] Gameplay Options omits Difficulty and Battle type during Ironmon.
+- [x] Gameplay Options omits Download data during Ironmon.
 - [x] Optional Challenge Options omits Level caps, No reviving, and No heals
   (overworld) during Ironmon.
 - [x] Direct attempts to alter any locked setting retain its forced value.
@@ -19,6 +20,10 @@
   triple encounter retains its requested format.
 - [x] Loading an Ironmon save calls the validated locked-setting enforcement
   path.
+- [x] Loading an older Ironmon save with sprite downloading enabled changes it
+  to disabled, including the F7 checkpoint-loading path.
+- [x] Direct assignments cannot re-enable sprite downloading while Ironmon is
+  active.
 
 The checks ran inside the game's embedded Ruby runtime against installed game
 data. The temporary test hook was removed afterward. Representative results:

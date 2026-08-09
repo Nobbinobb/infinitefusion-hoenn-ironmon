@@ -8,7 +8,8 @@ module Ironmon
 
   LOCKED_GAMEPLAY_OPTIONS = [
     _INTL("Difficulty"),
-    _INTL("Battle type")
+    _INTL("Battle type"),
+    _INTL("Download data")
   ].freeze
   LOCKED_CHALLENGE_OPTIONS = [
     _INTL("Level caps"),
@@ -55,6 +56,7 @@ module Ironmon
       $PokemonSystem.level_caps = 0
       $PokemonSystem.no_reviving = true
       $PokemonSystem.no_healing_items_ow = true
+      $PokemonSystem.download_sprites = 1
     end
     if $game_variables
       $game_variables[VAR_DEFAULT_BATTLE_TYPE] = [1, 1]
@@ -94,6 +96,10 @@ class PokemonSystem
 
   def no_healing_items_ow=(value)
     @no_healing_items_ow = Ironmon.active? ? true : value
+  end
+
+  def download_sprites=(value)
+    @download_sprites = Ironmon.active? ? 1 : value
   end
 end
 
@@ -175,6 +181,7 @@ module Game
     alias ironmon_difficulty_original_load load
     def load(save_data)
       result = ironmon_difficulty_original_load(save_data)
+      $PokemonSystem.download_sprites = 1 if Ironmon.active? && $PokemonSystem
       return result if Ironmon.checkpoint_reset_loading?
       Ironmon.enforce_difficulty_settings if Ironmon.active?
       return result

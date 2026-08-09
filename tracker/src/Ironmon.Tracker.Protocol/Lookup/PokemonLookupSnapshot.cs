@@ -1,3 +1,5 @@
+using Ironmon.Tracker.Protocol.Debug;
+
 namespace Ironmon.Tracker.Protocol.Lookup;
 
 /// <summary>
@@ -61,6 +63,31 @@ public sealed class PokemonLookupSnapshot
     /// Gets or initializes every generated ability slot.
     /// </summary>
     public IReadOnlyList<AbilitySnapshot> Abilities { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes reconstructed original, generated, component, and final fusion ability-slot diagnostics.
+    /// </summary>
+    public IReadOnlyList<DebugAbilitySlotSnapshot> AbilitySlots { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes ability-generator diagnostics for the represented run.
+    /// </summary>
+    public GeneratorDiagnosticsSnapshot AbilityGenerator { get; init; } = new();
+
+    /// <summary>
+    /// Gets or initializes base-stat-generator diagnostics for the represented run.
+    /// </summary>
+    public GeneratorDiagnosticsSnapshot BaseStatGenerator { get; init; } = new();
+
+    /// <summary>
+    /// Gets or initializes move-access-generator diagnostics for the represented run.
+    /// </summary>
+    public GeneratorDiagnosticsSnapshot MoveGenerator { get; init; } = new();
+
+    /// <summary>
+    /// Gets or initializes evolution-generator diagnostics for the represented run.
+    /// </summary>
+    public GeneratorDiagnosticsSnapshot EvolutionGenerator { get; init; } = new();
 
     /// <summary>
     /// Gets or initializes the complete generated level-up learnset.

@@ -21,7 +21,8 @@ and a fast reset to starter selection.
 - `tools/Build-TrackerRelease.ps1` publishes the self-contained Windows tracker
   and creates the combined copy-ready ZIP and SHA-256 checksum in `release/`.
 
-Milestone 3 Step 3.4 is implemented at version `0.6.0`. See
+Milestone 3 Step 3.4 is implemented, with its tracker and runtime fixes released
+as version `0.6.1`. See
 `docs/design/EVOLUTION_RANDOMIZATION.md` for its rules, `docs/ROADMAP.md` for
 cumulative scope, and `docs/guides/INSTALLATION.md` for installation steps.
 

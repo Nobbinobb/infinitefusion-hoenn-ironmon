@@ -43,7 +43,10 @@ require the explicit tracker launch flag:
   -- --debug
 ```
 
-The Debug tab includes tracker-owned raw protocol and state diagnostics.
+Debug Pokemon, Debug Lookup, and completed-run Lookup use the same tabbed
+Pokemon-information card: Overview, Abilities, Stats, Moves, and Evolutions.
+Debug Pokemon merges live player/enemy diagnostics into those shared pages.
+The Debug tab also includes tracker-owned raw protocol and state diagnostics.
 Complete diagnostic reports can be copied or exported to
 `%LocalAppData%\IronmonTracker\diagnostics\`.
 

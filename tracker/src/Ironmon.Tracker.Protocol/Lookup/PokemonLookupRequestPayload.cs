@@ -23,6 +23,11 @@ public sealed class PokemonLookupRequestPayload
     public int Level { get; init; } = TrackerProtocol.CompatibilityLookupLevel;
 
     /// <summary>
+    /// Gets or initializes the independently requested information section.
+    /// </summary>
+    public PokemonLookupSection Section { get; init; } = PokemonLookupSection.Overview;
+
+    /// <summary>
     /// Gets or initializes the completed-run reconstruction recipe.
     /// </summary>
     public required CompletedRunRecipePayload Recipe { get; init; }

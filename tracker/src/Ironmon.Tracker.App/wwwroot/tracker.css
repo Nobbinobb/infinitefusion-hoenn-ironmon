@@ -2004,7 +2004,8 @@ button.move-placeholder:hover {
 }
 
 .debug-pages button,
-.debug-subpages button {
+.debug-subpages button,
+.pokemon-information-tabs button {
     min-height: 2rem;
     border: 0;
     border-radius: 0.42rem;
@@ -2017,13 +2018,15 @@ button.move-placeholder:hover {
 }
 
 .debug-pages button.selected,
-.debug-subpages button.selected {
+.debug-subpages button.selected,
+.pokemon-information-tabs button.selected {
     color: var(--text);
     background: var(--surface-raised);
     box-shadow: 0 0.12rem 0.4rem rgb(0 0 0 / 20%);
 }
 
-.debug-subpages {
+.debug-subpages,
+.pokemon-information-tabs {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0.25rem;
@@ -2128,7 +2131,8 @@ button.move-placeholder:hover {
     font-size: 0.72rem;
 }
 
-.debug-subpages button {
+.debug-subpages button,
+.pokemon-information-tabs button {
     min-height: 1.8rem;
     border: 0;
     border-radius: 0.38rem 0.38rem 0 0;

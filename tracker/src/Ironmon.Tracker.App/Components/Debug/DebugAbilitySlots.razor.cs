@@ -3,15 +3,15 @@ using Microsoft.AspNetCore.Components;
 namespace Ironmon.Tracker.App.Components.Debug;
 
 /// <summary>
-/// Renders grouped ability rows from the game-owned Ironmon inspector.
+/// Renders grouped ability-slot diagnostics from a live inspection or deterministic lookup.
 /// </summary>
 public partial class DebugAbilitySlots
 {
     /// <summary>
-    /// Gets or sets the game-owned inspector snapshot.
+    /// Gets or sets the ability-slot diagnostics to display.
     /// </summary>
     [Parameter]
-    public DebugPokemonInspectorSnapshot Pokemon { get; set; } = null!;
+    public IReadOnlyList<DebugAbilitySlotSnapshot> Slots { get; set; } = [];
 
     /// <summary>
     /// Gets the inspector groups that contain at least one slot.
@@ -28,7 +28,7 @@ public partial class DebugAbilitySlots
             DebugAbilitySlotGroup.HeadGenerated
         ];
 
-        return [.. order.Where(group => Pokemon.AbilitySlots.Any(slot => slot.Group == group))];
+        return [.. order.Where(group => Slots.Any(slot => slot.Group == group))];
     }
 
     /// <summary>
@@ -37,7 +37,7 @@ public partial class DebugAbilitySlots
     /// <param name="group">The requested group.</param>
     /// <returns>The matching slots in protocol order.</returns>
     private IReadOnlyList<DebugAbilitySlotSnapshot> GetSlots(DebugAbilitySlotGroup group)
-        => [.. Pokemon.AbilitySlots.Where(slot => slot.Group == group)];
+        => [.. Slots.Where(slot => slot.Group == group)];
 
     /// <summary>
     /// Gets the visible heading for one ability group.

@@ -394,7 +394,7 @@ contains the inputs needed to reproduce the run:
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.6.0",
+  "ironmon_version": "0.6.1",
   "configuration": {},
   "species_generator_version": 3,
   "ability_generator_version": 2,
@@ -439,8 +439,11 @@ The search flow is:
 2. The game returns a page of matching names, stable identifiers, and the
    complete match count.
 3. The user selects a match.
-4. The tracker sends `pokemon_lookup` with the selected ID and run ID.
-5. The game reconstructs and returns complete generated information.
+4. The tracker sends `pokemon_lookup` with the selected ID, run ID, and the
+   currently selected information section.
+5. The game reconstructs and returns only that section. Overview loads first;
+   Abilities, Stats, Moves, and Evolutions load when selected and are cached
+   independently for that Pokemon.
 
 Search results use pages of 20. Before Step 3.4 is enabled, post-run evolution
 destinations and direct previous evolutions are explicitly the current natural
@@ -509,51 +512,33 @@ hidden run information.
 
 ### Pokemon inspection
 
-Debug mode can inspect the current player, current enemy, or a party Pokemon.
-Arbitrary-species inspection uses a species-only path because Infinite
-Fusion's ordinary Pokemon constructor consumes random values. The tracker owns
-the presentation of these debug values. Pokemon inspection is one top-level
-Debug page with Overview, Abilities, Stats, Learnset, Egg, TM, and Tutor as
-subtabs once their corresponding generators are implemented. Lookup, Run
-Diagnostics, and Protocol remain separate top-level Debug pages.
+The three Pokemon-information entry points use one shared tabbed information
+card with Overview, Abilities, Stats, Moves, and Evolutions:
 
-Overview includes:
+- completed-run Lookup searches the selected archived run recipe;
+- Debug Pokemon selects the current player or enemy and supplies its live
+  instance diagnostics to the shared card; and
+- Debug Lookup searches any Pokemon in the active debug run.
 
-- Pokemon identity, level, gender, sprite, and held item;
-- normal/fusion kind, species ID, form, and form name;
-- displayed body and head for a fusion;
-- active ability slot, name, and ID;
-- run seed;
-- generator schema and pool-rules versions; and
-- pool size and fingerprint.
+Debug Pokemon obtains both a live `DebugPokemonInspectorSnapshot` and the same
+active-run `PokemonLookupSnapshot` used by Debug Lookup, then merges them in the
+same shared pages. The Abilities tab exists in all three entry points and
+reconstructs complete original, generated, component, and final-fusion slot
+diagnostics, including eligibility, source component, source ability, and
+restricted replacements. It also shows each generated ability's detail panel.
+Debug Pokemon merges in the live current slot and marks it active. The Stats
+and Overview pages are enriched with live data in the same way. Ability
+generator metadata belongs to Abilities, base-stat generator metadata belongs
+to Stats, move-access generator metadata belongs to Moves, and normal/fusion
+evolution generator metadata belongs to Evolutions. Every entry point shows
+those diagnostics in the same tabs. Related Pokemon remain clickable and open
+through the appropriate lookup flow.
 
-Abilities includes:
-
-- original and generated normal slots;
-- original and generated hidden slots;
-- final fusion slots;
-- active slot;
-- ability IDs and names;
-- universal, exact-species, or component-compatible eligibility;
-- fusion component and source slot; and
-- restricted-source replacement details.
-
-The Stats subtab is added with Step 3.2. It displays original and generated final
-stats, differences, totals, and base-stat generator metadata. A fusion labels
-the dominant component for each stat but does not duplicate either component's
-stat table; the existing component navigation opens those Pokemon separately.
-The presentation can switch between a comparison table, generated-only bars,
-and bars whose changed segment is colored green or red for positive or negative
-deltas. Generated values are the visual focus in the table.
-Step 3.3 adds Learnset, Egg, TM, and Tutor subtabs. Learnset displays generated
-level-up and level-0 entries chronologically. Egg displays the complete
-generated Egg list. TM displays generated machine compatibility with the item
-and taught move. Tutor displays only moves supported by both generated
-compatibility and an actual generated tutor offering, with tutor location or
-slot. Fusion rows identify body, head, both, or specialized Fusion Tutor as the
-source. Unsupported abstract tutor entries may contribute to a summary count
-but are not listed as learnable moves. Complete move-access subtabs remain
-unavailable during ordinary live play.
+Both debug payloads follow the selected shared page. A player, enemy, starter,
+or encounter refresh therefore computes Overview plus only the currently
+visible live section; it does not generate or transfer hidden-tab stats,
+abilities, moves, or evolutions. Switching pages requests that page once and
+retains it until the represented Pokemon changes.
 
 Step 3.4 adds Evolutions to authorized Debug and completed-run lookup. A normal
 Pokemon receives one clickable valid-candidate list; a fusion receives

@@ -69,17 +69,18 @@ public sealed class TrackerRequestClient
     /// </summary>
     /// <param name="recipe">The completed-run reconstruction recipe.</param>
     /// <param name="speciesId">The selected stable species and form identifier.</param>
+    /// <param name="section">The independently requested information section.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The reconstructed Pokémon information.</returns>
-    public async Task<PokemonLookupSnapshot> LookupPokemonAsync(CompletedRunRecipePayload recipe, string speciesId, CancellationToken cancellationToken = default)
+    public async Task<PokemonLookupSnapshot> LookupPokemonAsync(CompletedRunRecipePayload recipe, string speciesId, PokemonLookupSection section = PokemonLookupSection.Overview, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(recipe);
         ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
-        string cacheKey = $"{recipe.RunId}|{speciesId.ToUpperInvariant()}";
+        string cacheKey = $"{recipe.RunId}|{speciesId.ToUpperInvariant()}|{section}";
         if (_pokemonLookupCache.TryGetValue(cacheKey, out PokemonLookupSnapshot? cached))
             return cached;
 
-        PokemonLookupRequestPayload payload = new() { SpeciesId = speciesId, Level = TrackerProtocol.CompatibilityLookupLevel, Recipe = recipe };
+        PokemonLookupRequestPayload payload = new() { SpeciesId = speciesId, Level = TrackerProtocol.CompatibilityLookupLevel, Section = section, Recipe = recipe };
         PokemonLookupSnapshot response = await _session.SendAsync<PokemonLookupRequestPayload, PokemonLookupSnapshot>(TrackerCommands.PokemonLookup, payload, recipe.RunId, cancellationToken);
         _pokemonLookupCache[cacheKey] = response;
         return response;
@@ -183,13 +184,14 @@ public sealed class TrackerRequestClient
     /// Requests generated information for one Pokémon in the active debug run.
     /// </summary>
     /// <param name="speciesId">The selected stable species and form identifier.</param>
+    /// <param name="section">The independently requested information section.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The active-run generated Pokémon information.</returns>
-    public Task<PokemonLookupSnapshot> LookupDebugPokemonAsync(string speciesId, CancellationToken cancellationToken = default)
+    public Task<PokemonLookupSnapshot> LookupDebugPokemonAsync(string speciesId, PokemonLookupSection section = PokemonLookupSection.Overview, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
         EnsureDebugAuthorized();
-        DebugPokemonLookupRequestPayload request = new() { SpeciesId = speciesId };
+        DebugPokemonLookupRequestPayload request = new() { SpeciesId = speciesId, Section = section };
         return _session.SendAsync<DebugPokemonLookupRequestPayload, PokemonLookupSnapshot>(TrackerCommands.DebugPokemonLookup, request, GetConnectedRunId(), cancellationToken);
     }
 
