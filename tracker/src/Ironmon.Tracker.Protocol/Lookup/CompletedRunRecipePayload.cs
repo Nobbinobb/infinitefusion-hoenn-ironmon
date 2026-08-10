@@ -1,9 +1,7 @@
-using System.Text.Json;
-
 namespace Ironmon.Tracker.Protocol.Lookup;
 
 /// <summary>
-/// Carries the compact deterministic inputs needed to reconstruct one completed run.
+/// Carries the versioned deterministic inputs needed to reconstruct one completed run.
 /// </summary>
 public sealed class CompletedRunRecipePayload
 {
@@ -13,6 +11,11 @@ public sealed class CompletedRunRecipePayload
     public CompletedRunRecipePayload()
     {
     }
+
+    /// <summary>
+    /// Gets or initializes the completed-run recipe schema version.
+    /// </summary>
+    public int SchemaVersion { get; init; } = 1;
 
     /// <summary>
     /// Gets or initializes the stable run identifier.
@@ -40,9 +43,9 @@ public sealed class CompletedRunRecipePayload
     public required string IronmonVersion { get; init; }
 
     /// <summary>
-    /// Gets or initializes the serialized run configuration.
+    /// Gets or initializes the typed run configuration.
     /// </summary>
-    public JsonElement Configuration { get; init; }
+    public required RunConfigurationPayload Configuration { get; init; }
 
     /// <summary>
     /// Gets or initializes the classic, remix, or expert data mode.
@@ -50,172 +53,37 @@ public sealed class CompletedRunRecipePayload
     public string DataMode { get; init; } = "classic";
 
     /// <summary>
-    /// Gets or initializes the species generator schema version.
+    /// Gets or initializes species-generator compatibility metadata.
     /// </summary>
-    public int SpeciesGeneratorVersion { get; init; }
+    public required SpeciesGeneratorRecipePayload SpeciesGenerator { get; init; }
 
     /// <summary>
-    /// Gets or initializes the ability generator schema version.
+    /// Gets or initializes ability-generator compatibility metadata.
     /// </summary>
-    public int AbilityGeneratorVersion { get; init; }
+    public required AbilityGeneratorRecipePayload AbilityGenerator { get; init; }
 
     /// <summary>
-    /// Gets or initializes the base-stat generator schema version when the run uses generated stats.
+    /// Gets or initializes base-stat-generator compatibility metadata when enabled.
     /// </summary>
-    public int? BaseStatGeneratorVersion { get; init; }
+    public BaseStatGeneratorRecipePayload? BaseStatGenerator { get; init; }
 
     /// <summary>
-    /// Gets or initializes the player-fusion generator schema version.
+    /// Gets or initializes evolution-generator compatibility metadata when enabled.
     /// </summary>
-    public int PlayerFusionGeneratorVersion { get; init; } = TrackerProtocol.DefaultPlayerFusionGeneratorVersion;
+    public EvolutionGeneratorRecipePayload? EvolutionGenerator { get; init; }
 
     /// <summary>
-    /// Gets or initializes the normal-species pool fingerprint.
+    /// Gets or initializes move-access-generator compatibility metadata when enabled.
     /// </summary>
-    public required string SpeciesPoolFingerprint { get; init; }
+    public MoveAccessGeneratorRecipePayload? MoveAccessGenerator { get; init; }
 
     /// <summary>
-    /// Gets or initializes the ability-pool fingerprint.
+    /// Gets or initializes player-fusion-generator compatibility metadata.
     /// </summary>
-    public required string AbilityPoolFingerprint { get; init; }
+    public required PlayerFusionGeneratorRecipePayload PlayerFusionGenerator { get; init; }
 
     /// <summary>
-    /// Gets or initializes the source-stat fingerprint when the run uses generated stats.
-    /// </summary>
-    public string? BaseStatSourceFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the normal evolution generator schema when enabled.
-    /// </summary>
-    public int? EvolutionGeneratorVersion { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the normal evolution rules version when enabled.
-    /// </summary>
-    public int? EvolutionRulesVersion { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the evolution source-catalog fingerprint.
-    /// </summary>
-    public string? EvolutionSourceFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the native evolution taxonomy fingerprint.
-    /// </summary>
-    public string? EvolutionTaxonomyFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the effective evolution-method fingerprint.
-    /// </summary>
-    public string? EvolutionMethodFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the normal evolution target-pool fingerprint.
-    /// </summary>
-    public string? EvolutionTargetFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the base-stat generator schema used by evolution.
-    /// </summary>
-    public int? EvolutionBaseStatGeneratorVersion { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the base-stat source fingerprint used by evolution.
-    /// </summary>
-    public string? EvolutionBaseStatSourceFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the complete-fusion evolution generator schema.
-    /// </summary>
-    public int? FusionEvolutionGeneratorVersion { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the complete-fusion evolution rules version.
-    /// </summary>
-    public int? FusionEvolutionRulesVersion { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the custom fusion target-pool schema.
-    /// </summary>
-    public int? FusionEvolutionTargetPoolVersion { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the custom fusion target-pool size.
-    /// </summary>
-    public int? FusionEvolutionTargetPoolSize { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the custom fusion target-pool fingerprint.
-    /// </summary>
-    public string? FusionEvolutionTargetPoolFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the move-access generator schema when the run uses generated access.
-    /// </summary>
-    public int? MoveAccessGeneratorVersion { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the permitted-move pool fingerprint.
-    /// </summary>
-    public string? MovePoolFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the contextual move-restriction fingerprint.
-    /// </summary>
-    public string? MoveContextualRestrictionFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the level-up move source fingerprint.
-    /// </summary>
-    public string? MoveSourceFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the Egg move source fingerprint.
-    /// </summary>
-    public string? EggMoveSourceFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the TM roster fingerprint.
-    /// </summary>
-    public string? TmRosterFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the TM compatibility source fingerprint.
-    /// </summary>
-    public string? TmSourceFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the TR roster fingerprint.
-    /// </summary>
-    public string? TrRosterFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the TR compatibility source fingerprint.
-    /// </summary>
-    public string? TrSourceFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the ordinary tutor-slot catalog fingerprint.
-    /// </summary>
-    public string? TutorCatalogFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the ordinary tutor compatibility source fingerprint.
-    /// </summary>
-    public string? TutorSourceFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the specialized Fusion Tutor catalog fingerprint.
-    /// </summary>
-    public string? FusionTutorCatalogFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the specialized Fusion Tutor source fingerprint.
-    /// </summary>
-    public string? FusionTutorSourceFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the locally observed move-access iteration data.
+    /// Gets or initializes locally observed move-access iteration data.
     /// </summary>
     public MoveAccessMetricsPayload? MoveAccessMetrics { get; init; }
 
@@ -223,9 +91,275 @@ public sealed class CompletedRunRecipePayload
     /// Gets or initializes locally observed generated-evolution outcomes.
     /// </summary>
     public EvolutionMetricsPayload? EvolutionMetrics { get; init; }
+}
+
+/// <summary>
+/// Describes the versioned Ironmon run configuration stored in a completed recipe.
+/// </summary>
+public sealed class RunConfigurationPayload
+{
+    /// <summary>
+    /// Gets or initializes the configuration schema version.
+    /// </summary>
+    public int SchemaVersion { get; init; }
 
     /// <summary>
-    /// Gets or initializes the custom-fusion pool fingerprint.
+    /// Gets or initializes the wild fusion policy.
     /// </summary>
-    public required string FusionPoolFingerprint { get; init; }
+    public required string WildPolicy { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the trainer fusion policy.
+    /// </summary>
+    public required string TrainerPolicy { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the caught-fusion unfusion policy.
+    /// </summary>
+    public required string UnfusionSetting { get; init; }
+}
+
+/// <summary>
+/// Describes species-generator compatibility metadata.
+/// </summary>
+public sealed class SpeciesGeneratorRecipePayload
+{
+    /// <summary>
+    /// Gets or initializes the generator schema version.
+    /// </summary>
+    public int Version { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the normal-species pool fingerprint.
+    /// </summary>
+    public required string PoolFingerprint { get; init; }
+}
+
+/// <summary>
+/// Describes ability-generator compatibility metadata.
+/// </summary>
+public sealed class AbilityGeneratorRecipePayload
+{
+    /// <summary>
+    /// Gets or initializes the generator schema version.
+    /// </summary>
+    public int Version { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the ability-pool size.
+    /// </summary>
+    public int PoolSize { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the ability-pool fingerprint.
+    /// </summary>
+    public required string PoolFingerprint { get; init; }
+}
+
+/// <summary>
+/// Describes base-stat-generator compatibility metadata.
+/// </summary>
+public sealed class BaseStatGeneratorRecipePayload
+{
+    /// <summary>
+    /// Gets or initializes the generator schema version.
+    /// </summary>
+    public int Version { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the source-stat fingerprint.
+    /// </summary>
+    public required string SourceFingerprint { get; init; }
+}
+
+/// <summary>
+/// Describes normal and complete-fusion evolution-generator compatibility metadata.
+/// </summary>
+public sealed class EvolutionGeneratorRecipePayload
+{
+    /// <summary>
+    /// Gets or initializes the normal generator schema version.
+    /// </summary>
+    public int Version { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the normal evolution rules version.
+    /// </summary>
+    public int RulesVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the evolution source-catalog fingerprint.
+    /// </summary>
+    public required string SourceFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the native evolution taxonomy fingerprint.
+    /// </summary>
+    public required string TaxonomyFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the effective evolution-method fingerprint.
+    /// </summary>
+    public required string MethodFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the normal evolution target-pool fingerprint.
+    /// </summary>
+    public required string TargetFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the base-stat dependency used by evolution generation.
+    /// </summary>
+    public required BaseStatGeneratorRecipePayload BaseStatGenerator { get; init; }
+
+    /// <summary>
+    /// Gets or initializes complete-fusion evolution metadata.
+    /// </summary>
+    public required FusionEvolutionGeneratorRecipePayload Fusion { get; init; }
+}
+
+/// <summary>
+/// Describes complete-fusion evolution-generator compatibility metadata.
+/// </summary>
+public sealed class FusionEvolutionGeneratorRecipePayload
+{
+    /// <summary>
+    /// Gets or initializes the generator schema version.
+    /// </summary>
+    public int Version { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the generator rules version.
+    /// </summary>
+    public int RulesVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the custom-fusion target-pool metadata.
+    /// </summary>
+    public required VersionedPoolRecipePayload TargetPool { get; init; }
+}
+
+/// <summary>
+/// Describes one versioned deterministic pool.
+/// </summary>
+public sealed class VersionedPoolRecipePayload
+{
+    /// <summary>
+    /// Gets or initializes the pool schema version.
+    /// </summary>
+    public int Version { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the pool size.
+    /// </summary>
+    public int Size { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the pool fingerprint.
+    /// </summary>
+    public required string Fingerprint { get; init; }
+}
+
+/// <summary>
+/// Describes move-access-generator compatibility metadata.
+/// </summary>
+public sealed class MoveAccessGeneratorRecipePayload
+{
+    /// <summary>
+    /// Gets or initializes the generator schema version.
+    /// </summary>
+    public int Version { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the permitted-move pool fingerprint.
+    /// </summary>
+    public required string PoolFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the contextual restriction fingerprint.
+    /// </summary>
+    public required string ContextualRestrictionFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the level-up source fingerprint.
+    /// </summary>
+    public required string LevelUpSourceFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the Egg source fingerprint.
+    /// </summary>
+    public required string EggSourceFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes TM source metadata.
+    /// </summary>
+    public required MachineSourceRecipePayload Tm { get; init; }
+
+    /// <summary>
+    /// Gets or initializes TR source metadata.
+    /// </summary>
+    public required MachineSourceRecipePayload Tr { get; init; }
+
+    /// <summary>
+    /// Gets or initializes ordinary tutor source metadata.
+    /// </summary>
+    public required TutorSourceRecipePayload Tutor { get; init; }
+
+    /// <summary>
+    /// Gets or initializes Fusion Tutor source metadata.
+    /// </summary>
+    public required TutorSourceRecipePayload FusionTutor { get; init; }
+}
+
+/// <summary>
+/// Describes a machine roster and its compatibility source.
+/// </summary>
+public sealed class MachineSourceRecipePayload
+{
+    /// <summary>
+    /// Gets or initializes the machine roster fingerprint.
+    /// </summary>
+    public required string RosterFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the compatibility source fingerprint.
+    /// </summary>
+    public required string SourceFingerprint { get; init; }
+}
+
+/// <summary>
+/// Describes a tutor catalog and its compatibility source.
+/// </summary>
+public sealed class TutorSourceRecipePayload
+{
+    /// <summary>
+    /// Gets or initializes the tutor catalog fingerprint.
+    /// </summary>
+    public required string CatalogFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the compatibility source fingerprint.
+    /// </summary>
+    public required string SourceFingerprint { get; init; }
+}
+
+/// <summary>
+/// Describes player-fusion-generator compatibility metadata.
+/// </summary>
+public sealed class PlayerFusionGeneratorRecipePayload
+{
+    /// <summary>
+    /// Gets or initializes the generator schema version.
+    /// </summary>
+    public int Version { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the custom-fusion result pool size.
+    /// </summary>
+    public int PoolSize { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the custom-fusion result pool fingerprint.
+    /// </summary>
+    public required string PoolFingerprint { get; init; }
 }

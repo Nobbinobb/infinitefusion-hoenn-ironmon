@@ -1,7 +1,7 @@
 namespace Ironmon.Tracker.Protocol.Debug;
 
 /// <summary>
-/// Reproduces the game-owned Ironmon Pokemon inspector data for debug mode.
+/// Describes one independently requested section of live Pokemon diagnostics.
 /// </summary>
 public sealed class DebugPokemonInspectorSnapshot
 {
@@ -13,10 +13,31 @@ public sealed class DebugPokemonInspectorSnapshot
     }
 
     /// <summary>
-    /// Gets or initializes the independently populated inspector section.
+    /// Gets or initializes the populated inspector section.
     /// </summary>
-    public PokemonLookupSection Section { get; init; } = PokemonLookupSection.Overview;
+    public PokemonLookupSection Section { get; init; }
 
+    /// <summary>
+    /// Gets or initializes live identity and current-state information.
+    /// </summary>
+    public required DebugPokemonIdentitySnapshot Identity { get; init; }
+
+    /// <summary>
+    /// Gets or initializes live ability-slot diagnostics when requested.
+    /// </summary>
+    public DebugPokemonAbilitiesSnapshot? Abilities { get; init; }
+
+    /// <summary>
+    /// Gets or initializes live base-stat diagnostics when requested.
+    /// </summary>
+    public DebugPokemonStatsSnapshot? Stats { get; init; }
+}
+
+/// <summary>
+/// Describes identity and current state shared by every live inspector section.
+/// </summary>
+public sealed class DebugPokemonIdentitySnapshot
+{
     /// <summary>
     /// Gets or initializes the individual Pokemon identifier.
     /// </summary>
@@ -106,64 +127,51 @@ public sealed class DebugPokemonInspectorSnapshot
     /// Gets or initializes the localized active ability name.
     /// </summary>
     public required string ActiveAbilityName { get; init; }
+}
 
+/// <summary>
+/// Describes live ability-slot information for the Abilities page.
+/// </summary>
+public sealed class DebugPokemonAbilitiesSnapshot
+{
     /// <summary>
     /// Gets or initializes the active ability generator metadata.
     /// </summary>
     public DebugAbilityGeneratorSnapshot Generator { get; init; } = new() { PoolFingerprint = string.Empty };
 
     /// <summary>
+    /// Gets or initializes every ability row exposed by the live inspector.
+    /// </summary>
+    public IReadOnlyList<DebugAbilitySlotSnapshot> Slots { get; init; } = [];
+}
+
+/// <summary>
+/// Describes live original and generated base stats for the Stats page.
+/// </summary>
+public sealed class DebugPokemonStatsSnapshot
+{
+    /// <summary>
     /// Gets or initializes all six final original base stats.
     /// </summary>
-    public BaseStatsSnapshot OriginalBaseStats { get; init; } = new();
+    public BaseStatsSnapshot Original { get; init; } = new();
 
     /// <summary>
     /// Gets or initializes the final original base-stat total.
     /// </summary>
-    public int OriginalBaseStatTotal { get; init; }
+    public int OriginalTotal { get; init; }
 
     /// <summary>
     /// Gets or initializes all six final generated base stats.
     /// </summary>
-    public BaseStatsSnapshot GeneratedBaseStats { get; init; } = new();
+    public BaseStatsSnapshot Generated { get; init; } = new();
 
     /// <summary>
     /// Gets or initializes the final generated base-stat total.
     /// </summary>
-    public int GeneratedBaseStatTotal { get; init; }
+    public int GeneratedTotal { get; init; }
 
     /// <summary>
     /// Gets or initializes the active base-stat generator metadata.
     /// </summary>
-    public DebugBaseStatGeneratorSnapshot BaseStatGenerator { get; init; } = new();
-
-    /// <summary>
-    /// Gets or initializes generated normal Pokemon which evolve directly into the inspected Pokemon.
-    /// </summary>
-    public IReadOnlyList<EvolutionTargetSnapshot> EvolutionPredecessors { get; init; } = [];
-
-    /// <summary>
-    /// Gets or initializes generated destinations for an inspected normal Pokemon.
-    /// </summary>
-    public IReadOnlyList<EvolutionTargetSnapshot> EvolutionTargets { get; init; } = [];
-
-    /// <summary>
-    /// Gets or initializes generated destinations activated by the inspected fusion's head.
-    /// </summary>
-    public IReadOnlyList<EvolutionTargetSnapshot> HeadEvolutionTargets { get; init; } = [];
-
-    /// <summary>
-    /// Gets or initializes generated destinations activated by the inspected fusion's body.
-    /// </summary>
-    public IReadOnlyList<EvolutionTargetSnapshot> BodyEvolutionTargets { get; init; } = [];
-
-    /// <summary>
-    /// Gets or initializes every ability row exposed by the in-game inspector.
-    /// </summary>
-    public IReadOnlyList<DebugAbilitySlotSnapshot> AbilitySlots { get; init; } = [];
-
-    /// <summary>
-    /// Gets or initializes every generated move-access channel.
-    /// </summary>
-    public MoveAccessSnapshot MoveAccess { get; init; } = new();
+    public DebugBaseStatGeneratorSnapshot Generator { get; init; } = new();
 }

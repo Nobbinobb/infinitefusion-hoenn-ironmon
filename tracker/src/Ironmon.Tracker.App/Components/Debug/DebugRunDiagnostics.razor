@@ -2,37 +2,42 @@
     <section class="debug-data-section">
         <p class="section-label">@Text["Debug.Run.RuntimeHeading"]</p>
         <dl class="debug-data-grid">
-            <div><dt>@Text["Debug.Run.Game"]</dt><dd>@Diagnostics.GameVersion</dd></div>
-            <div><dt>Ironmon</dt><dd>@Diagnostics.IronmonVersion</dd></div>
-            <div><dt>@Text["Debug.Run.Protocol"]</dt><dd>@Diagnostics.ProtocolVersion</dd></div>
-            <div><dt>@Text["Debug.Run.Seed"]</dt><dd>@(Diagnostics.RunSeed?.ToString() ?? Text["Debug.Run.None"])</dd></div>
-            <div class="wide"><dt>@Text["Debug.Run.RunId"]</dt><dd>@(Diagnostics.RunId ?? Text["Debug.Run.None"])</dd></div>
-            <div class="wide"><dt>@Text["Debug.Run.BattleId"]</dt><dd>@(Diagnostics.BattleId ?? Text["Debug.Run.None"])</dd></div>
+            <div><dt>@Text["Debug.Run.Game"]</dt><dd>@Diagnostics.Runtime.GameVersion</dd></div>
+            <div><dt>Ironmon</dt><dd>@Diagnostics.Runtime.IronmonVersion</dd></div>
+            <div><dt>@Text["Debug.Run.Protocol"]</dt><dd>@Diagnostics.Runtime.ProtocolVersion</dd></div>
+            <div><dt>@Text["Debug.Run.Seed"]</dt><dd>@(Diagnostics.Runtime.RunSeed?.ToString() ?? Text["Debug.Run.None"])</dd></div>
+            <div class="wide"><dt>@Text["Debug.Run.RunId"]</dt><dd>@(Diagnostics.Runtime.RunId ?? Text["Debug.Run.None"])</dd></div>
+            <div class="wide"><dt>@Text["Debug.Run.BattleId"]</dt><dd>@(Diagnostics.Runtime.BattleId ?? Text["Debug.Run.None"])</dd></div>
         </dl>
     </section>
 
     <section class="debug-data-section">
         <p class="section-label">@Text["Debug.Run.ConfigurationHeading"]</p>
         <dl class="debug-data-grid">
-            <div><dt>@Text["Debug.Run.Wild"]</dt><dd>@Diagnostics.WildPolicy</dd></div>
-            <div><dt>@Text["Debug.Run.Trainer"]</dt><dd>@Diagnostics.TrainerPolicy</dd></div>
-            <div class="wide"><dt>@Text["Debug.Run.Unfusion"]</dt><dd>@Diagnostics.UnfusionSetting</dd></div>
+            <div><dt>@Text["Debug.Run.Wild"]</dt><dd>@Diagnostics.Configuration.WildPolicy</dd></div>
+            <div><dt>@Text["Debug.Run.Trainer"]</dt><dd>@Diagnostics.Configuration.TrainerPolicy</dd></div>
+            <div class="wide"><dt>@Text["Debug.Run.Unfusion"]</dt><dd>@Diagnostics.Configuration.UnfusionSetting</dd></div>
         </dl>
     </section>
 
     <section class="debug-data-section">
         <p class="section-label">@Text["Debug.Run.GeneratorsAndPoolsHeading"]</p>
         <dl class="debug-data-grid">
-            <div><dt>@Text["Debug.Run.CustomFusions"]</dt><dd>@Diagnostics.CustomFusionPoolSize</dd></div>
-            <div><dt>@Text["Debug.Run.SpeciesSchema"]</dt><dd>@Diagnostics.SpeciesGeneratorVersion</dd></div>
-            <div><dt>@Text["Debug.Run.AbilitySchema"]</dt><dd>@Diagnostics.AbilityGeneratorVersion</dd></div>
-            <div><dt>@Text["Debug.Run.BaseStatSchema"]</dt><dd>@(Diagnostics.BaseStatGeneratorVersion?.ToString() ?? Text["Debug.Run.Legacy"])</dd></div>
-            <div><dt>@Text["Debug.Run.AbilityPool"]</dt><dd>@Diagnostics.AbilityPoolSize</dd></div>
-            <div><dt>@Text["Debug.Run.WildMappings"]</dt><dd>@Diagnostics.WildMappingCount</dd></div>
-            <div><dt>@Text["Debug.Run.TrainerMappings"]</dt><dd>@Diagnostics.TrainerMappingCount</dd></div>
-            <div class="wide"><dt>@Text["Debug.Run.FusionFingerprint"]</dt><dd>@Diagnostics.CustomFusionPoolFingerprint</dd></div>
-            <div class="wide"><dt>@Text["Debug.Run.AbilityFingerprint"]</dt><dd>@Diagnostics.AbilityPoolFingerprint</dd></div>
-            <div class="wide"><dt>@Text["Debug.Run.BaseStatFingerprint"]</dt><dd>@(Diagnostics.BaseStatSourceFingerprint ?? Text["Debug.Run.None"])</dd></div>
+            <div><dt>@Text["Debug.Run.CustomFusions"]</dt><dd>@Diagnostics.PlayerFusionGenerator.PoolSize</dd></div>
+            <div><dt>@Text["Debug.Run.SpeciesSchema"]</dt><dd>@Diagnostics.SpeciesGenerator.Version</dd></div>
+            <div><dt>@Text["Debug.Run.AbilitySchema"]</dt><dd>@Diagnostics.AbilityGenerator.Version</dd></div>
+            <div><dt>@Text["Debug.Run.BaseStatSchema"]</dt><dd>@(Diagnostics.BaseStatGenerator?.Version.ToString() ?? Text["Debug.Run.Legacy"])</dd></div>
+            <div><dt>@Text["Debug.Run.EvolutionSchema"]</dt><dd>@(Diagnostics.EvolutionGenerator?.Version.ToString() ?? Text["Debug.Run.None"])</dd></div>
+            <div><dt>@Text["Debug.Run.MoveSchema"]</dt><dd>@(Diagnostics.MoveAccessGenerator?.Version.ToString() ?? Text["Debug.Run.None"])</dd></div>
+            <div><dt>@Text["Debug.Run.AbilityPool"]</dt><dd>@Diagnostics.AbilityGenerator.PoolSize</dd></div>
+            <div><dt>@Text["Debug.Run.WildMappings"]</dt><dd>@Diagnostics.Mappings.Wild</dd></div>
+            <div><dt>@Text["Debug.Run.TrainerMappings"]</dt><dd>@Diagnostics.Mappings.Trainer</dd></div>
+            <div class="wide"><dt>@Text["Debug.Run.SpeciesFingerprint"]</dt><dd>@Diagnostics.SpeciesGenerator.PoolFingerprint</dd></div>
+            <div class="wide"><dt>@Text["Debug.Run.FusionFingerprint"]</dt><dd>@Diagnostics.PlayerFusionGenerator.PoolFingerprint</dd></div>
+            <div class="wide"><dt>@Text["Debug.Run.AbilityFingerprint"]</dt><dd>@Diagnostics.AbilityGenerator.PoolFingerprint</dd></div>
+            <div class="wide"><dt>@Text["Debug.Run.BaseStatFingerprint"]</dt><dd>@(Diagnostics.BaseStatGenerator?.SourceFingerprint ?? Text["Debug.Run.None"])</dd></div>
+            <div class="wide"><dt>@Text["Debug.Run.EvolutionFingerprint"]</dt><dd>@(Diagnostics.EvolutionGenerator?.TargetFingerprint ?? Text["Debug.Run.None"])</dd></div>
+            <div class="wide"><dt>@Text["Debug.Run.MoveFingerprint"]</dt><dd>@(Diagnostics.MoveAccessGenerator?.PoolFingerprint ?? Text["Debug.Run.None"])</dd></div>
         </dl>
     </section>
 </article>

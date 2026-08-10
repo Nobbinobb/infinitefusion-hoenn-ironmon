@@ -1,3 +1,5 @@
+using Ironmon.Tracker.Connection;
+
 namespace Ironmon.Tracker.Tests.Connection;
 
 /// <summary>
@@ -47,5 +49,35 @@ public sealed class TrackerDiagnosticsStoreTests
 
         Assert.Null(store.LastProtocolError);
         Assert.Empty(store.Entries);
+    }
+
+    /// <summary>
+    /// Verifies an error atomically preserves its complete detail and preceding protocol history.
+    /// </summary>
+    [Fact]
+    public void ErrorPersistsLatestAutomaticDiagnosticSnapshot()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"ironmon-diagnostics-{Guid.NewGuid():N}");
+        try
+        {
+            TrackerDiagnosticsStore store = new(new TrackerKnowledgeOptions(root));
+            TrackerMessage request = TrackerMessageFactory.CreateRequest("request-1", "pokemon_lookup", new { Query = "B445H175:0" });
+            store.RecordOutgoing(request);
+            store.RecordError(new TrackerProtocolException("The tracker message exceeds the framing limit."));
+
+            string path = Path.Combine(root, TrackerStorageNames.DiagnosticsDirectory, TrackerStorageNames.LatestProtocolErrorFile);
+            Assert.Equal(path, store.AutomaticErrorPath);
+            Assert.True(File.Exists(path));
+            string json = File.ReadAllText(path);
+            Assert.Contains("TrackerProtocolException", json, StringComparison.Ordinal);
+            Assert.Contains("framing limit", json, StringComparison.Ordinal);
+            Assert.Contains("pokemon_lookup", json, StringComparison.Ordinal);
+            Assert.Contains("B445H175:0", json, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, true);
+        }
     }
 }

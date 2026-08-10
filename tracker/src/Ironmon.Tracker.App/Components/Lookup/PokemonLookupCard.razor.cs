@@ -69,21 +69,21 @@ public partial class PokemonLookupCard
     /// </summary>
     protected override async Task OnParametersSetAsync()
     {
-        bool speciesChanged = !string.Equals(_observedSpeciesId, Pokemon.SpeciesId, StringComparison.Ordinal);
+        bool speciesChanged = !string.Equals(_observedSpeciesId, Pokemon.Identity.SpeciesId, StringComparison.Ordinal);
         if (speciesChanged)
         {
-            _observedSpeciesId = Pokemon.SpeciesId;
+            _observedSpeciesId = Pokemon.Identity.SpeciesId;
             _sections.Clear();
             _selectedAbility = null;
             _sectionError = null;
         }
 
         _sections[PokemonInformationPage.Overview] = Pokemon;
-        string? key = GameRoot is null || Pokemon.SpritePath is null ? null : $"{GameRoot}|{Pokemon.SpritePath}";
+        string? key = GameRoot is null || Pokemon.Identity.SpritePath is null ? null : $"{GameRoot}|{Pokemon.Identity.SpritePath}";
         if (key != _spriteKey)
         {
             _spriteKey = key;
-            _spriteSource = LocalSpriteLoader.Load(GameRoot, Pokemon.SpritePath);
+            _spriteSource = LocalSpriteLoader.Load(GameRoot, Pokemon.Identity.SpritePath);
         }
 
         if (speciesChanged && _selectedPage != PokemonInformationPage.Overview)
@@ -98,6 +98,36 @@ public partial class PokemonLookupCard
         => _sections.GetValueOrDefault(_selectedPage) ?? Pokemon;
 
     /// <summary>
+    /// Gets the selected Abilities section.
+    /// </summary>
+    private PokemonLookupAbilitiesSnapshot AbilitySection
+        => ActivePokemon.Abilities ?? throw new InvalidOperationException("The Abilities lookup response is missing its section payload.");
+
+    /// <summary>
+    /// Gets the selected Stats section.
+    /// </summary>
+    private PokemonLookupStatsSnapshot StatsSection
+        => ActivePokemon.Stats ?? throw new InvalidOperationException("The Stats lookup response is missing its section payload.");
+
+    /// <summary>
+    /// Gets the required live inspector Stats section.
+    /// </summary>
+    private DebugPokemonStatsSnapshot InspectorStats
+        => Inspector?.Stats ?? throw new InvalidOperationException("The live inspector response is missing its Stats section payload.");
+
+    /// <summary>
+    /// Gets the selected Moves section.
+    /// </summary>
+    private PokemonLookupMovesSnapshot MovesSection
+        => ActivePokemon.Moves ?? throw new InvalidOperationException("The Moves lookup response is missing its section payload.");
+
+    /// <summary>
+    /// Gets the selected Evolutions section.
+    /// </summary>
+    private PokemonLookupEvolutionsSnapshot EvolutionSection
+        => ActivePokemon.Evolutions ?? throw new InvalidOperationException("The Evolutions lookup response is missing its section payload.");
+
+    /// <summary>
     /// Gets whether the lookup contains generated evolution destinations.
     /// </summary>
     /// <returns>Whether any generated target list is populated.</returns>
@@ -109,34 +139,33 @@ public partial class PokemonLookupCard
     /// </summary>
     /// <returns>The generated branch count.</returns>
     private int GetGeneratedEvolutionBranchCount()
-        => ActivePokemon.EvolutionTargets.Count + ActivePokemon.HeadEvolutionTargets.Count + ActivePokemon.BodyEvolutionTargets.Count;
+        => EvolutionSection.GeneratedTargets.Count + EvolutionSection.HeadTargets.Count + EvolutionSection.BodyTargets.Count;
 
     /// <summary>
     /// Gets whether the lookup contains any generated graph edge.
     /// </summary>
     /// <returns>Whether the evolution graph should be displayed.</returns>
     private bool HasGeneratedEvolutionGraph()
-        => ActivePokemon.EvolutionPredecessors.Count + GetGeneratedEvolutionBranchCount() > 0;
+        => EvolutionSection.GeneratedPredecessors.Count + GetGeneratedEvolutionBranchCount() > 0;
 
     /// <summary>
     /// Gets whether the represented species is a fusion without requiring Overview relationship data.
     /// </summary>
     /// <returns>Whether the represented species is a fusion.</returns>
     private bool IsFusion()
-        => Inspector?.Fusion ?? ActivePokemon.SpeciesId.StartsWith('B') && ActivePokemon.SpeciesId.Contains('H');
+        => Inspector?.Identity.Fusion ?? ActivePokemon.Identity.Fusion;
 
     /// <summary>
     /// Creates the selected Pokemon's graph node.
     /// </summary>
     /// <returns>The current generated graph node.</returns>
-    private EvolutionTargetSnapshot GetCurrentEvolutionNode()
-        => new()
-        {
-            SpeciesId = ActivePokemon.SpeciesId,
-            SpeciesName = ActivePokemon.SpeciesName,
-            SpritePath = ActivePokemon.SpritePath,
-            BaseStatTotal = ActivePokemon.BaseStatTotal
-        };
+    private EvolutionTargetSnapshot GetCurrentEvolutionNode() => new()
+    {
+        SpeciesId = ActivePokemon.Identity.SpeciesId,
+        SpeciesName = ActivePokemon.Identity.SpeciesName,
+        SpritePath = ActivePokemon.Identity.SpritePath,
+        BaseStatTotal = EvolutionSection.CurrentBaseStatTotal
+    };
 
     /// <summary>
     /// Selects one shared Pokemon information page.
@@ -163,7 +192,7 @@ public partial class PokemonLookupCard
         if (!DebugMode && Recipe is null)
             return;
 
-        string speciesId = Pokemon.SpeciesId;
+        string speciesId = Pokemon.Identity.SpeciesId;
         _loadingPage = page;
         try
         {
@@ -172,7 +201,7 @@ public partial class PokemonLookupCard
                 ? await Connection.LookupDebugPokemonAsync(speciesId, section)
                 : await Connection.LookupPokemonAsync(Recipe!, speciesId, section);
 
-            if (string.Equals(Pokemon.SpeciesId, speciesId, StringComparison.Ordinal))
+            if (string.Equals(Pokemon.Identity.SpeciesId, speciesId, StringComparison.Ordinal))
                 _sections[page] = snapshot;
         }
         catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
@@ -199,7 +228,7 @@ public partial class PokemonLookupCard
     /// </summary>
     /// <returns>The slot diagnostics shown by the shared Abilities page.</returns>
     private IReadOnlyList<DebugAbilitySlotSnapshot> GetAbilitySlots()
-        => Inspector?.Section == PokemonLookupSection.Abilities ? Inspector.AbilitySlots : ActivePokemon.AbilitySlots;
+        => Inspector?.Abilities?.Slots ?? AbilitySection.Slots;
 
     /// <summary>
     /// Formats an authored encounter-table chance.

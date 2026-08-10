@@ -11,6 +11,7 @@ module Ironmon
   TRACKER_RECONNECT_SECONDS = 2.0
   TRACKER_UPTIME_UNITS_PER_SECOND = 1_000_000.0
   TRACKER_MAXIMUM_MESSAGE_BYTES = 1_048_576
+  TRACKER_MAXIMUM_ERROR_MESSAGE_CHARACTERS = 2_000
   TRACKER_STATE_INTERVAL_SECONDS = 0.1
   TRACKER_FIXED_HEALING = {
     :POTION => 20,
@@ -177,7 +178,23 @@ module Ironmon
     end
 
     def queue_message(message)
-      @output_buffer << Ironmon.tracker_json_generate(message) << "\n"
+      serialized = Ironmon.tracker_json_generate(message)
+      if serialized.bytesize > TRACKER_MAXIMUM_MESSAGE_BYTES
+        if message["type"] == "response" && message["request_id"]
+          oversized_bytes = serialized.bytesize
+          message = error_response(
+            message["request_id"], "response_too_large",
+            "The tracker response required #{oversized_bytes} bytes and was not sent.",
+            message["run_id"]
+          )
+          serialized = Ironmon.tracker_json_generate(message)
+        else
+          echoln "Ironmon tracker skipped oversized #{message["type"]} message."
+          return false
+        end
+      end
+      @output_buffer << serialized << "\n"
+      return true
     end
 
     def flush_output
@@ -263,6 +280,21 @@ module Ironmon
           message["payload"], message["run_id"]
         )
         queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "fusion_material_search"
+        payload = Ironmon.tracker_fusion_material_search(
+          message["payload"], message["run_id"]
+        )
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "wild_occurrence_search"
+        payload = Ironmon.tracker_wild_occurrence_search(
+          message["payload"], message["run_id"]
+        )
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "trainer_occurrence_search"
+        payload = Ironmon.tracker_trainer_occurrence_search(
+          message["payload"], message["run_id"]
+        )
+        queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "fusion_preview"
         payload = Ironmon.tracker_fusion_preview(message["payload"], message["run_id"])
         queue_message(success_response(request_id, payload, message["run_id"]))
@@ -323,6 +355,41 @@ module Ironmon
           message["payload"]
         )
         queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "debug_fusion_material_search"
+        if !debug_authorized?
+          queue_message(error_response(
+            request_id, "debug_forbidden",
+            "Both the game and tracker must authorize debug access.",
+            message["run_id"]
+          ))
+          return
+        end
+        payload = Ironmon.tracker_debug_fusion_material_search(
+          message["payload"]
+        )
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "debug_wild_occurrence_search"
+        if !debug_authorized?
+          queue_message(error_response(
+            request_id, "debug_forbidden",
+            "Both the game and tracker must authorize debug access.",
+            message["run_id"]
+          ))
+          return
+        end
+        payload = Ironmon.tracker_debug_wild_occurrence_search(message["payload"])
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "debug_trainer_occurrence_search"
+        if !debug_authorized?
+          queue_message(error_response(
+            request_id, "debug_forbidden",
+            "Both the game and tracker must authorize debug access.",
+            message["run_id"]
+          ))
+          return
+        end
+        payload = Ironmon.tracker_debug_trainer_occurrence_search(message["payload"])
+        queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "debug_fusion_preview"
         if !debug_authorized?
           queue_message(error_response(
@@ -361,6 +428,12 @@ module Ironmon
     end
 
     def error_response(request_id, code, message, run_id = nil)
+      error_message = message.to_s
+      suffix = "... [truncated]"
+      if error_message.length > TRACKER_MAXIMUM_ERROR_MESSAGE_CHARACTERS
+        retained = TRACKER_MAXIMUM_ERROR_MESSAGE_CHARACTERS - suffix.length
+        error_message = error_message[0, retained] + suffix
+      end
       return {
         "schema_version" => TRACKER_SCHEMA_VERSION,
         "type" => "response",
@@ -369,7 +442,7 @@ module Ironmon
         "battle_id" => Ironmon.tracker_battle_id,
         "sent_at" => Ironmon.tracker_timestamp,
         "success" => false,
-        "error" => { "code" => code, "message" => message },
+        "error" => { "code" => code, "message" => error_message },
         "payload" => {}
       }
     end

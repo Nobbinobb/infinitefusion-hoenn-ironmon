@@ -19,7 +19,7 @@
         <div class="debug-target-controls">
             <label>
                 Inspect
-                <select value="@_selectedTarget" disabled="@_loading" @onchange="SelectTarget" @onkeydown:stopPropagation="true">
+                <select value="@_selectedTarget" disabled="@(_loading || (Player is null && Enemies.Count == 0))" @onchange="SelectTarget" @onkeydown:stopPropagation="true">
                     @if (Player is not null)
                     {
                         <option value="@DebugTargetIds.Player">@Text["Debug.Inspector.Player"] · @Player.Nickname</option>

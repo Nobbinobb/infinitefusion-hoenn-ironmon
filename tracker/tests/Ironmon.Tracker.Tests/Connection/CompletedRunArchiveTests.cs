@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace Ironmon.Tracker.Tests.Connection;
 
 /// <summary>
@@ -15,50 +13,43 @@ public sealed class CompletedRunArchiveTests
     }
 
     /// <summary>
-    /// Verifies that a stored recipe survives archive reconstruction without lookup results.
+    /// Verifies that a stored nested recipe survives archive reconstruction without lookup results.
     /// </summary>
     [Fact]
     public void StorePersistsOnlyCompletedRunRecipe()
     {
-        string root = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
-        TrackerKnowledgeOptions options = new(root);
-        CompletedRunArchive archive = new(options);
-        CompletedRunRecipePayload recipe = CreateRecipe("run-archive");
+        string root = CreateRoot();
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(root));
+        archive.Store(CreateRecipe("run-archive"));
 
-        archive.Store(recipe);
+        CompletedRunRecipePayload stored = Assert.Single(new CompletedRunArchive(new TrackerKnowledgeOptions(root)).Recipes);
 
-        CompletedRunArchive reloaded = new(options);
-        CompletedRunRecipePayload stored = Assert.Single(reloaded.Recipes);
         Assert.Equal("run-archive", stored.RunId);
         Assert.Equal(98765, stored.Seed);
-        Assert.Equal(6, stored.MoveAccessGeneratorVersion);
-        Assert.Equal("fusion-tutor-source", stored.FusionTutorSourceFingerprint);
-        Assert.Equal(1, stored.EvolutionGeneratorVersion);
-        Assert.Equal("fusion-evolution-targets", stored.FusionEvolutionTargetPoolFingerprint);
+        Assert.Equal(6, stored.MoveAccessGenerator!.Version);
+        Assert.Equal("fusion-tutor-source", stored.MoveAccessGenerator.FusionTutor.SourceFingerprint);
+        Assert.Equal(1, stored.EvolutionGenerator!.Version);
+        Assert.Equal("fusion-evolution-targets", stored.EvolutionGenerator.Fusion.TargetPool.Fingerprint);
         Assert.Equal(4, Assert.Single(stored.MoveAccessMetrics!.Encounters).LevelOneMoveCount);
         Assert.Equal("TACKLE", Assert.Single(stored.MoveAccessMetrics.MoveUses).MoveId);
-        EvolutionMetricPayload evolution = Assert.Single(stored.EvolutionMetrics!.Events);
-        Assert.Equal("BULBASAUR", evolution.SourceSpeciesId);
-        Assert.Equal(EvolutionMetricIdentifiers.CompletedOutcome, evolution.Outcome);
+        Assert.Equal(EvolutionMetricIdentifiers.CompletedOutcome, Assert.Single(stored.EvolutionMetrics!.Events).Outcome);
         string recipePath = Path.Combine(root, "runs", "run-archive", "recipe.json");
         Assert.True(File.Exists(recipePath));
         Assert.DoesNotContain("lookup", File.ReadAllText(recipePath), StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
-    /// Verifies that move-access fingerprints cannot be persisted without their generator version.
+    /// Verifies that move metrics cannot be persisted without their generator manifest.
     /// </summary>
     [Fact]
-    public void StoreRejectsPartialMoveAccessMetadata()
+    public void StoreRejectsMoveMetricsWithoutGenerator()
     {
-        string root = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
-        TrackerKnowledgeOptions options = new(root);
-        CompletedRunArchive archive = new(options);
-        CompletedRunRecipePayload recipe = CreateRecipe("run-partial-moves", null);
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
+        CompletedRunRecipePayload recipe = CreateRecipe("run-orphaned-moves", includeMoveGenerator: false, includeMoveMetrics: true);
 
         ArgumentException exception = Assert.Throws<ArgumentException>(() => archive.Store(recipe));
 
-        Assert.Contains("generator version", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Move-access metrics", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -67,35 +58,19 @@ public sealed class CompletedRunArchiveTests
     [Fact]
     public void StoreRejectsUnsupportedMoveAccessMetricsSchema()
     {
-        string root = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
-        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(root));
-        CompletedRunRecipePayload recipe = CreateRecipe("run-bad-metrics", metricsSchemaVersion: 99);
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => archive.Store(recipe));
+        Assert.Throws<ArgumentOutOfRangeException>(() => archive.Store(CreateRecipe("run-bad-metrics", moveMetricsSchemaVersion: 99)));
     }
 
     /// <summary>
-    /// Verifies that an unsupported evolution metrics schema is rejected explicitly.
+    /// Verifies that evolution metrics cannot be persisted without their generator manifest.
     /// </summary>
     [Fact]
-    public void StoreRejectsUnsupportedEvolutionMetricsSchema()
+    public void StoreRejectsEvolutionMetricsWithoutGenerator()
     {
-        string root = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
-        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(root));
-        CompletedRunRecipePayload recipe = CreateRecipe("run-bad-evolution-metrics", evolutionMetricsSchemaVersion: 99);
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => archive.Store(recipe));
-    }
-
-    /// <summary>
-    /// Verifies that evolution metrics cannot bypass generator validation in a legacy move-access recipe.
-    /// </summary>
-    [Fact]
-    public void StoreRejectsEvolutionMetricsWithoutEvolutionMetadata()
-    {
-        string root = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
-        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(root));
-        CompletedRunRecipePayload recipe = CreateRecipe("run-orphaned-evolution-metrics", null, includeMoveAccessMetadata: false, includeEvolutionMetadata: false, includeEvolutionMetrics: true);
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
+        CompletedRunRecipePayload recipe = CreateRecipe("run-orphaned-evolutions", includeEvolutionGenerator: false, includeEvolutionMetrics: true);
 
         ArgumentException exception = Assert.Throws<ArgumentException>(() => archive.Store(recipe));
 
@@ -103,140 +78,198 @@ public sealed class CompletedRunArchiveTests
     }
 
     /// <summary>
-    /// Verifies that evolution fingerprints cannot be persisted without their generator version.
+    /// Verifies that an unsupported recipe schema is rejected instead of being migrated implicitly.
     /// </summary>
     [Fact]
-    public void StoreRejectsPartialEvolutionMetadata()
+    public void StoreRejectsUnsupportedRecipeSchema()
     {
-        string root = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
-        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(root));
-        CompletedRunRecipePayload recipe = CreateRecipe("run-partial-evolutions", partialEvolutionMetadata: true);
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
 
-        ArgumentException exception = Assert.Throws<ArgumentException>(() => archive.Store(recipe));
-
-        Assert.Contains("generator version", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Throws<ArgumentOutOfRangeException>(() => archive.Store(CreateRecipe("run-old-schema", schemaVersion: 0)));
     }
 
     /// <summary>
-    /// Verifies that a recipe predating evolution randomization remains loadable.
+    /// Verifies that a run which did not enable optional generators remains valid.
     /// </summary>
     [Fact]
-    public void StoreAcceptsLegacyRecipeWithoutEvolutionMetadata()
+    public void StoreAcceptsRecipeWithoutOptionalGenerators()
     {
-        string root = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
-        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(root));
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
 
-        archive.Store(CreateRecipe("run-legacy-evolutions", includeEvolutionMetadata: false));
+        archive.Store(CreateRecipe("run-minimal", includeMoveGenerator: false, includeMoveMetrics: false, includeEvolutionGenerator: false, includeEvolutionMetrics: false));
 
-        Assert.Null(Assert.Single(archive.Recipes).EvolutionGeneratorVersion);
+        CompletedRunRecipePayload stored = Assert.Single(archive.Recipes);
+        Assert.Null(stored.MoveAccessGenerator);
+        Assert.Null(stored.EvolutionGenerator);
     }
 
     /// <summary>
-    /// Creates a valid compact completed-run recipe.
+    /// Verifies that legacy flat recipes are ignored instead of being interpreted as the new contract.
+    /// </summary>
+    [Fact]
+    public void LoadIgnoresLegacyFlatRecipe()
+    {
+        string root = CreateRoot();
+        string runDirectory = Path.Combine(root, "runs", "legacy-run");
+        Directory.CreateDirectory(runDirectory);
+        File.WriteAllText(Path.Combine(runDirectory, "recipe.json"), """
+            {
+              "run_id": "legacy-run",
+              "seed": 123,
+              "result": "lost",
+              "game_version": "6.8.0",
+              "ironmon_version": "0.6.1",
+              "species_generator_version": 3,
+              "ability_generator_version": 3,
+              "player_fusion_generator_version": 2
+            }
+            """);
+
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(root));
+
+        Assert.Empty(archive.Recipes);
+        Assert.NotNull(archive.LastError);
+        Assert.Contains("Ignored incompatible completed-run recipe", archive.LastError, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Creates a unique archive root.
+    /// </summary>
+    /// <returns>The temporary root.</returns>
+    private static string CreateRoot()
+        => Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
+
+    /// <summary>
+    /// Creates a valid nested completed-run recipe.
     /// </summary>
     /// <param name="runId">The stable test run identifier.</param>
-    /// <param name="moveAccessGeneratorVersion">The optional move-access generator version.</param>
-    /// <param name="metricsSchemaVersion">The local metrics schema version.</param>
-    /// <param name="includeMoveAccessMetadata">Whether move-access metadata and metrics are included.</param>
-    /// <param name="includeEvolutionMetadata">Whether current evolution metadata is included.</param>
-    /// <param name="partialEvolutionMetadata">Whether evolution fingerprints intentionally omit their generator version.</param>
-    /// <param name="evolutionMetricsSchemaVersion">The evolution metrics schema version.</param>
+    /// <param name="schemaVersion">The recipe schema version.</param>
+    /// <param name="moveMetricsSchemaVersion">The move metrics schema version.</param>
+    /// <param name="includeMoveGenerator">Whether the move generator manifest is included.</param>
+    /// <param name="includeMoveMetrics">Whether move metrics are included.</param>
+    /// <param name="includeEvolutionGenerator">Whether the evolution generator manifest is included.</param>
     /// <param name="includeEvolutionMetrics">Whether evolution metrics are included.</param>
     /// <returns>The recipe.</returns>
-    private static CompletedRunRecipePayload CreateRecipe(string runId, int? moveAccessGeneratorVersion = 6, int metricsSchemaVersion = MoveAccessMetricIdentifiers.SchemaVersion, bool includeMoveAccessMetadata = true, bool includeEvolutionMetadata = true, bool partialEvolutionMetadata = false, int evolutionMetricsSchemaVersion = EvolutionMetricIdentifiers.SchemaVersion, bool? includeEvolutionMetrics = null) => new()
+    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, int moveMetricsSchemaVersion = MoveAccessMetricIdentifiers.SchemaVersion, bool includeMoveGenerator = true, bool includeMoveMetrics = true, bool includeEvolutionGenerator = true, bool includeEvolutionMetrics = true) => new()
     {
+        SchemaVersion = schemaVersion,
         RunId = runId,
         Seed = 98765,
         Result = "lost",
         GameVersion = "6.8.0",
         IronmonVersion = "0.3.3",
-        Configuration = JsonSerializer.SerializeToElement(new { wild_policy = "mixed", trainer_policy = "mixed" }),
-        SpeciesGeneratorVersion = 1,
-        AbilityGeneratorVersion = 3,
-        PlayerFusionGeneratorVersion = 2,
-        SpeciesPoolFingerprint = "species",
-        AbilityPoolFingerprint = "abilities",
-        FusionPoolFingerprint = "fusions",
-        EvolutionGeneratorVersion = partialEvolutionMetadata ? null : includeEvolutionMetadata ? 1 : null,
-        EvolutionRulesVersion = includeEvolutionMetadata ? 1 : null,
-        EvolutionSourceFingerprint = includeEvolutionMetadata ? "evolution-source" : null,
-        EvolutionTaxonomyFingerprint = includeEvolutionMetadata ? "evolution-taxonomy" : null,
-        EvolutionMethodFingerprint = includeEvolutionMetadata ? "evolution-methods" : null,
-        EvolutionTargetFingerprint = includeEvolutionMetadata ? "evolution-targets" : null,
-        EvolutionBaseStatGeneratorVersion = includeEvolutionMetadata ? 1 : null,
-        EvolutionBaseStatSourceFingerprint = includeEvolutionMetadata ? "evolution-stats" : null,
-        FusionEvolutionGeneratorVersion = includeEvolutionMetadata ? 1 : null,
-        FusionEvolutionRulesVersion = includeEvolutionMetadata ? 1 : null,
-        FusionEvolutionTargetPoolVersion = includeEvolutionMetadata ? 2 : null,
-        FusionEvolutionTargetPoolSize = includeEvolutionMetadata ? 100 : null,
-        FusionEvolutionTargetPoolFingerprint = includeEvolutionMetadata ? "fusion-evolution-targets" : null,
-        MoveAccessGeneratorVersion = moveAccessGeneratorVersion,
-        MovePoolFingerprint = includeMoveAccessMetadata ? "moves" : null,
-        MoveContextualRestrictionFingerprint = includeMoveAccessMetadata ? "move-restrictions" : null,
-        MoveSourceFingerprint = includeMoveAccessMetadata ? "move-source" : null,
-        EggMoveSourceFingerprint = includeMoveAccessMetadata ? "egg-source" : null,
-        TmRosterFingerprint = includeMoveAccessMetadata ? "tm-roster" : null,
-        TmSourceFingerprint = includeMoveAccessMetadata ? "tm-source" : null,
-        TrRosterFingerprint = includeMoveAccessMetadata ? "tr-roster" : null,
-        TrSourceFingerprint = includeMoveAccessMetadata ? "tr-source" : null,
-        TutorCatalogFingerprint = includeMoveAccessMetadata ? "tutor-catalog" : null,
-        TutorSourceFingerprint = includeMoveAccessMetadata ? "tutor-source" : null,
-        FusionTutorCatalogFingerprint = includeMoveAccessMetadata ? "fusion-tutor-catalog" : null,
-        FusionTutorSourceFingerprint = includeMoveAccessMetadata ? "fusion-tutor-source" : null,
-        MoveAccessMetrics = includeMoveAccessMetadata ? new MoveAccessMetricsPayload
+        Configuration = new RunConfigurationPayload { SchemaVersion = 1, WildPolicy = "mixed", TrainerPolicy = "mixed", UnfusionSetting = "random_component" },
+        SpeciesGenerator = new SpeciesGeneratorRecipePayload { Version = 1, PoolFingerprint = "species" },
+        AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 3, PoolSize = 100, PoolFingerprint = "abilities" },
+        BaseStatGenerator = new BaseStatGeneratorRecipePayload { Version = 1, SourceFingerprint = "base-stats" },
+        EvolutionGenerator = includeEvolutionGenerator ? CreateEvolutionGenerator() : null,
+        MoveAccessGenerator = includeMoveGenerator ? CreateMoveGenerator() : null,
+        PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 100, PoolFingerprint = "fusions" },
+        MoveAccessMetrics = includeMoveMetrics ? CreateMoveMetrics(moveMetricsSchemaVersion) : null,
+        EvolutionMetrics = includeEvolutionMetrics ? CreateEvolutionMetrics() : null
+    };
+
+    /// <summary>
+    /// Creates valid evolution-generator metadata.
+    /// </summary>
+    /// <returns>The generator metadata.</returns>
+    private static EvolutionGeneratorRecipePayload CreateEvolutionGenerator() => new()
+    {
+        Version = 1,
+        RulesVersion = 1,
+        SourceFingerprint = "evolution-source",
+        TaxonomyFingerprint = "evolution-taxonomy",
+        MethodFingerprint = "evolution-methods",
+        TargetFingerprint = "evolution-targets",
+        BaseStatGenerator = new BaseStatGeneratorRecipePayload { Version = 1, SourceFingerprint = "evolution-stats" },
+        Fusion = new FusionEvolutionGeneratorRecipePayload
         {
-            SchemaVersion = metricsSchemaVersion,
-            Encounters =
-            [
-                new MoveAccessEncounterMetricPayload
-                {
-                    SpeciesId = "BULBASAUR",
-                    SpeciesName = "Bulbasaur",
-                    Level = 5,
-                    Side = MoveAccessMetricIdentifiers.PlayerSide,
-                    EncounterCount = 1,
-                    LevelOneMoveCount = 4,
-                    LevelOneDamagingMoveCount = 1,
-                    LevelOneGuaranteeSatisfied = true
-                }
-            ],
-            MoveUses =
-            [
-                new MoveUseMetricPayload
-                {
-                    Side = MoveAccessMetricIdentifiers.PlayerSide,
-                    SpeciesId = "BULBASAUR",
-                    SpeciesName = "Bulbasaur",
-                    MoveId = "TACKLE",
-                    MoveName = "Tackle",
-                    Count = 2
-                }
-            ]
-        } : null,
-        EvolutionMetrics = (includeEvolutionMetrics ?? includeEvolutionMetadata) ? new EvolutionMetricsPayload
-        {
-            SchemaVersion = evolutionMetricsSchemaVersion,
-            Events =
-            [
-                new EvolutionMetricPayload
-                {
-                    EventId = 1,
-                    PokemonId = "123",
-                    SourceKind = "normal",
-                    SourceSpeciesId = "BULBASAUR",
-                    SourceSpeciesName = "Bulbasaur",
-                    TargetSpeciesId = "IVYSAUR",
-                    TargetSpeciesName = "Ivysaur",
-                    Level = 16,
-                    ActivationContext = "level_up",
-                    EffectiveMethod = "Level",
-                    EffectiveParameter = "16",
-                    SourceBst = 318,
-                    ReferenceBst = 405,
-                    TargetBst = 405,
-                    Outcome = EvolutionMetricIdentifiers.CompletedOutcome
-                }
-            ]
-        } : null
+            Version = 1,
+            RulesVersion = 1,
+            TargetPool = new VersionedPoolRecipePayload { Version = 2, Size = 100, Fingerprint = "fusion-evolution-targets" }
+        }
+    };
+
+    /// <summary>
+    /// Creates valid move-access-generator metadata.
+    /// </summary>
+    /// <returns>The generator metadata.</returns>
+    private static MoveAccessGeneratorRecipePayload CreateMoveGenerator() => new()
+    {
+        Version = 6,
+        PoolFingerprint = "moves",
+        ContextualRestrictionFingerprint = "move-restrictions",
+        LevelUpSourceFingerprint = "move-source",
+        EggSourceFingerprint = "egg-source",
+        Tm = new MachineSourceRecipePayload { RosterFingerprint = "tm-roster", SourceFingerprint = "tm-source" },
+        Tr = new MachineSourceRecipePayload { RosterFingerprint = "tr-roster", SourceFingerprint = "tr-source" },
+        Tutor = new TutorSourceRecipePayload { CatalogFingerprint = "tutor-catalog", SourceFingerprint = "tutor-source" },
+        FusionTutor = new TutorSourceRecipePayload { CatalogFingerprint = "fusion-tutor-catalog", SourceFingerprint = "fusion-tutor-source" }
+    };
+
+    /// <summary>
+    /// Creates move-access metrics.
+    /// </summary>
+    /// <param name="schemaVersion">The metrics schema version.</param>
+    /// <returns>The metrics.</returns>
+    private static MoveAccessMetricsPayload CreateMoveMetrics(int schemaVersion) => new()
+    {
+        SchemaVersion = schemaVersion,
+        Encounters =
+        [
+            new MoveAccessEncounterMetricPayload
+            {
+                SpeciesId = "BULBASAUR",
+                SpeciesName = "Bulbasaur",
+                Level = 5,
+                Side = MoveAccessMetricIdentifiers.PlayerSide,
+                EncounterCount = 1,
+                LevelOneMoveCount = 4,
+                LevelOneDamagingMoveCount = 1,
+                LevelOneGuaranteeSatisfied = true
+            }
+        ],
+        MoveUses =
+        [
+            new MoveUseMetricPayload
+            {
+                Side = MoveAccessMetricIdentifiers.PlayerSide,
+                SpeciesId = "BULBASAUR",
+                SpeciesName = "Bulbasaur",
+                MoveId = "TACKLE",
+                MoveName = "Tackle",
+                Count = 2
+            }
+        ]
+    };
+
+    /// <summary>
+    /// Creates evolution metrics.
+    /// </summary>
+    /// <returns>The metrics.</returns>
+    private static EvolutionMetricsPayload CreateEvolutionMetrics() => new()
+    {
+        SchemaVersion = EvolutionMetricIdentifiers.SchemaVersion,
+        Events =
+        [
+            new EvolutionMetricPayload
+            {
+                EventId = 1,
+                PokemonId = "123",
+                SourceKind = "normal",
+                SourceSpeciesId = "BULBASAUR",
+                SourceSpeciesName = "Bulbasaur",
+                TargetSpeciesId = "IVYSAUR",
+                TargetSpeciesName = "Ivysaur",
+                Level = 16,
+                ActivationContext = "level_up",
+                EffectiveMethod = "Level",
+                EffectiveParameter = "16",
+                SourceBst = 318,
+                ReferenceBst = 405,
+                TargetBst = 405,
+                Outcome = EvolutionMetricIdentifiers.CompletedOutcome
+            }
+        ]
     };
 }

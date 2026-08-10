@@ -33,6 +33,12 @@ public partial class Home : IDisposable
     private TrackerConnectionService TrackerConnection { get; set; } = null!;
 
     /// <summary>
+    /// Gets or initializes the foreground-safe global shortcut service.
+    /// </summary>
+    [Inject]
+    private TrackerGlobalShortcutService ShortcutService { get; set; } = null!;
+
+    /// <summary>
     /// Subscribes the tracker shell to connection and run-state changes.
     /// </summary>
     protected override void OnInitialized()
@@ -46,6 +52,7 @@ public partial class Home : IDisposable
 
         ConnectionState.Changed += HandleConnectionChanged;
         RunState.Changed += HandleRunChanged;
+        ShortcutService.ViewRequested += HandleGlobalViewRequested;
     }
 
     /// <summary>
@@ -66,17 +73,33 @@ public partial class Home : IDisposable
     /// <param name="args">The browser keyboard event.</param>
     private void HandleKeyDown(KeyboardEventArgs args)
     {
+        if (!args.CtrlKey)
+            return;
+
         TrackerView? requestedView = args.Key.ToUpperInvariant() switch
         {
-            TrackerKeyboardKeys.PlayerLetter or TrackerKeyboardKeys.PlayerNumber => TrackerView.Player,
-            TrackerKeyboardKeys.EnemyLetter or TrackerKeyboardKeys.EnemyNumber => TrackerView.Enemy,
-            TrackerKeyboardKeys.LookupLetter or TrackerKeyboardKeys.LookupNumber => TrackerView.Lookup,
-            TrackerKeyboardKeys.DebugLetter or TrackerKeyboardKeys.DebugNumber when TrackerConnection.DebugAuthorized => TrackerView.Debug,
+            TrackerKeyboardKeys.PlayerNumber => TrackerView.Player,
+            TrackerKeyboardKeys.EnemyNumber => TrackerView.Enemy,
+            TrackerKeyboardKeys.LookupNumber => TrackerView.Lookup,
+            TrackerKeyboardKeys.DebugNumber when TrackerConnection.DebugAuthorized => TrackerView.Debug,
             _ => null
         };
 
         if (requestedView is not null)
             SelectView(requestedView.Value);
+    }
+
+    /// <summary>
+    /// Applies a view requested while Infinite Fusion owns keyboard or controller focus.
+    /// </summary>
+    /// <param name="view">The requested tracker view.</param>
+    private void HandleGlobalViewRequested(TrackerView view)
+    {
+        _ = InvokeAsync(() =>
+        {
+            SelectView(view);
+            StateHasChanged();
+        });
     }
 
     /// <summary>
@@ -195,5 +218,6 @@ public partial class Home : IDisposable
     {
         ConnectionState.Changed -= HandleConnectionChanged;
         RunState.Changed -= HandleRunChanged;
+        ShortcutService.ViewRequested -= HandleGlobalViewRequested;
     }
 }

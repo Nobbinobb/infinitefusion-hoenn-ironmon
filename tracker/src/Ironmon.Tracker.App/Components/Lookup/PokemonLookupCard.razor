@@ -9,9 +9,9 @@
 
     @if (_selectedPage == PokemonInformationPage.Overview)
     {
-        @if (Inspector?.Section == PokemonLookupSection.Stats)
+        @if (Inspector is not null)
         {
-            <DebugPokemonOverview Pokemon="@Inspector" Types="@Pokemon.Types" GameRoot="@GameRoot" />
+            <DebugPokemonOverview Pokemon="@Inspector.Identity" Types="@Pokemon.Identity.Types" GameRoot="@GameRoot" />
         }
         else
         {
@@ -28,9 +28,9 @@
                 </div>
                 <div class="identity-placeholder">
                     <p class="card-kicker">@(DebugMode ? "ACTIVE DEBUG RUN" : "POST-RUN DATA")</p>
-                    <h2 class="identity-name"><span>@Pokemon.SpeciesName</span></h2>
+                    <h2 class="identity-name"><span>@Pokemon.Identity.SpeciesName</span></h2>
                     <p class="typing-line">
-                        @foreach (string type in Pokemon.Types)
+                        @foreach (string type in Pokemon.Identity.Types)
                         {
                             <span class="typing-type @MovePresentation.GetTypeColorClass(type)">@type</span>
                         }
@@ -60,7 +60,7 @@
         <section class="lookup-abilities" aria-label="@Text["Lookup.Card.AbilitiesHeading"]">
             <p class="section-label">@Text["Lookup.Card.AbilitiesHeading"]</p>
             <div>
-                @foreach (AbilitySnapshot ability in ActivePokemon.Abilities)
+                @foreach (AbilitySnapshot ability in AbilitySection.Values)
                 {
                     <button type="button" @onclick="() => SelectAbility(ability)">@ability.Name</button>
                 }
@@ -68,64 +68,64 @@
         </section>
 
         <GeneratorDiagnostics Heading="@Text["Debug.Overview.AbilityGeneratorHeading"]"
-                              Diagnostics="@ActivePokemon.AbilityGenerator" />
+                              Diagnostics="@AbilitySection.Generator" />
     }
     else if (_selectedPage == PokemonInformationPage.Stats)
     {
         @if (Inspector is not null)
         {
-            <DebugBaseStats Pokemon="@Inspector" />
+            <DebugBaseStats Stats="@InspectorStats" Fusion="@Inspector.Identity.Fusion" />
         }
         else
         {
-            <BaseStatVisualization Original="@ActivePokemon.OriginalBaseStats"
-                                   Generated="@ActivePokemon.BaseStats"
-                                   OriginalTotal="@ActivePokemon.OriginalBaseStatTotal"
-                                   GeneratedTotal="@ActivePokemon.BaseStatTotal"
-                                   Randomized="@ActivePokemon.BaseStatsRandomized"
+            <BaseStatVisualization Original="@StatsSection.Original"
+                                   Generated="@StatsSection.Generated"
+                                   OriginalTotal="@StatsSection.OriginalTotal"
+                                   GeneratedTotal="@StatsSection.GeneratedTotal"
+                                   Randomized="@StatsSection.Randomized"
                                    Fusion="@IsFusion()" />
         }
 
         <GeneratorDiagnostics Heading="@Text["Debug.BaseStats.GeneratorHeading"]"
-                              Diagnostics="@ActivePokemon.BaseStatGenerator" />
+                              Diagnostics="@StatsSection.Generator" />
     }
     else if (_selectedPage == PokemonInformationPage.Moves)
     {
-        <MoveAccessTabs Access="@ActivePokemon.MoveAccess" />
+        <MoveAccessTabs Access="@MovesSection.Access" />
         <GeneratorDiagnostics Heading="@Text["Lookup.Generator.MoveHeading"]"
-                              Diagnostics="@ActivePokemon.MoveGenerator" />
+                              Diagnostics="@MovesSection.Generator" />
     }
     else
     {
+        @if (HasGeneratedEvolutionGraph())
+        {
+            <EvolutionGraph Current="@GetCurrentEvolutionNode()"
+                            Predecessors="@EvolutionSection.GeneratedPredecessors"
+                            Targets="@EvolutionSection.GeneratedTargets"
+                            HeadTargets="@EvolutionSection.HeadTargets"
+                            BodyTargets="@EvolutionSection.BodyTargets"
+                            GameRoot="@GameRoot"
+                            Selected="@PokemonSelected" />
+        }
+
         @if (HasGeneratedEvolutionTargets())
         {
-            <EvolutionCandidateLists SpeciesId="@ActivePokemon.SpeciesId"
-                                     HasNormal="@(ActivePokemon.EvolutionTargets.Count > 0)"
-                                     HasHead="@(ActivePokemon.HeadEvolutionTargets.Count > 0)"
-                                     HasBody="@(ActivePokemon.BodyEvolutionTargets.Count > 0)"
+            <EvolutionCandidateLists SpeciesId="@ActivePokemon.Identity.SpeciesId"
+                                     HasNormal="@(EvolutionSection.GeneratedTargets.Count > 0)"
+                                     HasHead="@(EvolutionSection.HeadTargets.Count > 0)"
+                                     HasBody="@(EvolutionSection.BodyTargets.Count > 0)"
                                      Recipe="@Recipe"
                                      DebugMode="@DebugMode"
                                      GameRoot="@GameRoot"
                                      Selected="PokemonSelected" />
         }
 
-        @if (HasGeneratedEvolutionGraph())
-        {
-            <EvolutionGraph Current="@GetCurrentEvolutionNode()"
-                            Predecessors="@ActivePokemon.EvolutionPredecessors"
-                            Targets="@ActivePokemon.EvolutionTargets"
-                            HeadTargets="@ActivePokemon.HeadEvolutionTargets"
-                            BodyTargets="@ActivePokemon.BodyEvolutionTargets"
-                            GameRoot="@GameRoot"
-                            Selected="@PokemonSelected" />
-        }
-
-        @if (ActivePokemon.Evolutions.Count > 0)
+        @if (EvolutionSection.NativeTargets.Count > 0)
         {
             <section class="lookup-relations" aria-label="@Text["Lookup.Card.EvolutionDestinations"]">
                 <header><p class="section-label">@Text["Lookup.Card.CurrentEvolutionsHeading"]</p></header>
                 <div class="lookup-relation-grid">
-                    @foreach (PokemonRelationSnapshot evolution in ActivePokemon.Evolutions)
+                    @foreach (PokemonRelationSnapshot evolution in EvolutionSection.NativeTargets)
                     {
                         <PokemonRelationButton Relation="@evolution" GameRoot="@GameRoot" Selected="PokemonSelected" />
                     }
@@ -133,12 +133,12 @@
             </section>
         }
 
-        @if (ActivePokemon.PreviousEvolutions.Count > 0)
+        @if (EvolutionSection.NativePredecessors.Count > 0)
         {
             <section class="lookup-relations" aria-label="@Text["Lookup.Card.PreviousEvolutions"]">
                 <header><p class="section-label">@Text["Lookup.Card.PreviousEvolutionHeading"]</p></header>
                 <div class="lookup-relation-grid">
-                    @foreach (PokemonRelationSnapshot previousEvolution in ActivePokemon.PreviousEvolutions)
+                    @foreach (PokemonRelationSnapshot previousEvolution in EvolutionSection.NativePredecessors)
                     {
                         <PokemonRelationButton Relation="@previousEvolution" GameRoot="@GameRoot" Selected="PokemonSelected" />
                     }
@@ -146,13 +146,13 @@
             </section>
         }
 
-        @if (!HasGeneratedEvolutionGraph() && ActivePokemon.Evolutions.Count == 0 && ActivePokemon.PreviousEvolutions.Count == 0)
+        @if (!HasGeneratedEvolutionGraph() && EvolutionSection.NativeTargets.Count == 0 && EvolutionSection.NativePredecessors.Count == 0)
         {
             <p class="lookup-message">@Text["Debug.Inspector.NoGeneratedEvolutionTargets"]</p>
         }
 
         <GeneratorDiagnostics Heading="@Text["Lookup.Generator.EvolutionHeading"]"
-                              Diagnostics="@ActivePokemon.EvolutionGenerator" />
+                              Diagnostics="@EvolutionSection.Generator" />
     }
 </article>
 

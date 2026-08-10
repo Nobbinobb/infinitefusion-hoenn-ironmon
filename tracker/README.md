@@ -46,9 +46,21 @@ require the explicit tracker launch flag:
 Debug Pokemon, Debug Lookup, and completed-run Lookup use the same tabbed
 Pokemon-information card: Overview, Abilities, Stats, Moves, and Evolutions.
 Debug Pokemon merges live player/enemy diagnostics into those shared pages.
+Overview wild locations, trainer locations, and fusion materials use bounded
+50-row pages so high-collision fusions cannot exceed the protocol frame.
 The Debug tab also includes tracker-owned raw protocol and state diagnostics.
 Complete diagnostic reports can be copied or exported to
 `%LocalAppData%\IronmonTracker\diagnostics\`.
+Protocol and connection failures are also captured automatically in
+`%LocalAppData%\IronmonTracker\diagnostics\latest-protocol-error.json`. The
+stable file retains the complete exception and recent message history across
+run resets and tracker restarts.
+
+While the connected game owns the foreground window, `Ctrl+1`, `Ctrl+2`,
+`Ctrl+3`, and `Ctrl+4` select Player, Enemy, Lookup, and Debug without focusing
+the tracker. On an XInput controller, hold both triggers and flick the right
+stick left, right, up, or down for those same views. Debug requests are ignored
+unless the game authorized development access.
 
 ## Validate the implementation
 

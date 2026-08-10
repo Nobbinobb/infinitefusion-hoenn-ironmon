@@ -1,9 +1,9 @@
-@if (Pokemon.WildOccurrences.Count > 0)
+@if (_wildOccurrences.Total > 0)
 {
     <section class="lookup-occurrences" aria-label="@Text["Lookup.Card.WildEncounterLocations"]">
-        <header><p class="section-label">@Text["Lookup.Card.WildLocationsHeading"]</p><span>@Text["Lookup.Card.SlotCount", Pokemon.WildOccurrences.Count]</span></header>
+        <header><p class="section-label">@Text["Lookup.Card.WildLocationsHeading"]</p><span>@Text["Lookup.Card.SlotCount", _wildOccurrences.Total]</span></header>
         <div class="lookup-occurrence-list">
-            @foreach (WildPokemonOccurrenceSnapshot occurrence in Pokemon.WildOccurrences)
+            @foreach (WildPokemonOccurrenceSnapshot occurrence in _wildOccurrences.Matches)
             {
                 <div class="lookup-occurrence">
                     <div>
@@ -26,15 +26,27 @@
                 </div>
             }
         </div>
+        @if (_wildOccurrenceError is not null)
+        {
+            <p class="lookup-error" role="alert">@_wildOccurrenceError</p>
+        }
+        @if (_wildOccurrences.Total > TrackerProtocol.OccurrencePageSize)
+        {
+            <nav class="lookup-pager" aria-label="@Text["Lookup.Card.WildEncounterLocations"]">
+                <button type="button" disabled="@(_loadingWildOccurrences || _wildOccurrenceOffset == 0)" @onclick="PreviousWildOccurrencePageAsync">@Text["Lookup.Fusion.Previous"]</button>
+                <span>@GetOccurrenceRangeText(_wildOccurrenceOffset, _wildOccurrences.Matches.Count, _wildOccurrences.Total)</span>
+                <button type="button" disabled="@(_loadingWildOccurrences || _wildOccurrenceOffset + _wildOccurrences.Matches.Count >= _wildOccurrences.Total)" @onclick="NextWildOccurrencePageAsync">@Text["Lookup.Fusion.Next"]</button>
+            </nav>
+        }
     </section>
 }
 
-@if (Pokemon.TrainerOccurrences.Count > 0)
+@if (_trainerOccurrences.Total > 0)
 {
     <section class="lookup-occurrences" aria-label="@Text["Lookup.Card.TrainerPartyLocations"]">
-        <header><p class="section-label">@Text["Lookup.Card.TrainersHeading"]</p><span>@Text["Lookup.Card.SlotCount", Pokemon.TrainerOccurrences.Count]</span></header>
+        <header><p class="section-label">@Text["Lookup.Card.TrainersHeading"]</p><span>@Text["Lookup.Card.SlotCount", _trainerOccurrences.Total]</span></header>
         <div class="lookup-occurrence-list">
-            @foreach (TrainerPokemonOccurrenceSnapshot occurrence in Pokemon.TrainerOccurrences)
+            @foreach (TrainerPokemonOccurrenceSnapshot occurrence in _trainerOccurrences.Matches)
             {
                 <div class="lookup-occurrence">
                     <div>
@@ -47,15 +59,27 @@
                 </div>
             }
         </div>
+        @if (_trainerOccurrenceError is not null)
+        {
+            <p class="lookup-error" role="alert">@_trainerOccurrenceError</p>
+        }
+        @if (_trainerOccurrences.Total > TrackerProtocol.OccurrencePageSize)
+        {
+            <nav class="lookup-pager" aria-label="@Text["Lookup.Card.TrainerPartyLocations"]">
+                <button type="button" disabled="@(_loadingTrainerOccurrences || _trainerOccurrenceOffset == 0)" @onclick="PreviousTrainerOccurrencePageAsync">@Text["Lookup.Fusion.Previous"]</button>
+                <span>@GetOccurrenceRangeText(_trainerOccurrenceOffset, _trainerOccurrences.Matches.Count, _trainerOccurrences.Total)</span>
+                <button type="button" disabled="@(_loadingTrainerOccurrences || _trainerOccurrenceOffset + _trainerOccurrences.Matches.Count >= _trainerOccurrences.Total)" @onclick="NextTrainerOccurrencePageAsync">@Text["Lookup.Fusion.Next"]</button>
+            </nav>
+        }
     </section>
 }
 
-@if (Pokemon.FusionBases.Count > 0)
+@if (Overview.FusionBases.Count > 0)
 {
     <section class="lookup-relations" aria-label="@Text["Lookup.Card.DisplayedFusionComponents"]">
         <header><p class="section-label">@Text["Lookup.Card.DisplayedComponentsHeading"]</p></header>
         <div class="lookup-relation-grid">
-            @foreach (PokemonRelationSnapshot fusionBase in Pokemon.FusionBases)
+            @foreach (PokemonRelationSnapshot fusionBase in Overview.FusionBases)
             {
                 <PokemonRelationButton Relation="@fusionBase" GameRoot="@GameRoot" Selected="PokemonSelected" />
             }
@@ -63,22 +87,22 @@
     </section>
 }
 
-@if (Pokemon.ReverseFusion is not null)
+@if (Overview.ReverseFusion is not null)
 {
     <section class="lookup-relations" aria-label="@Text["Lookup.Card.IronmonReverseFusion"]">
         <header><p class="section-label">@Text["Lookup.Card.IronmonReverseHeading"]</p></header>
         <div class="lookup-relation-grid">
-            <PokemonRelationButton Relation="@Pokemon.ReverseFusion" GameRoot="@GameRoot" Selected="PokemonSelected" />
+            <PokemonRelationButton Relation="@Overview.ReverseFusion" GameRoot="@GameRoot" Selected="PokemonSelected" />
         </div>
     </section>
 }
 
-@if (Pokemon.FusionMaterials.Count > 0)
+@if (_fusionMaterials.Total > 0)
 {
     <section class="lookup-relations" aria-label="@Text["Lookup.Card.IronmonFusionMaterials"]">
         <header><p class="section-label">@Text["Lookup.Card.FusionMaterialsHeading"]</p></header>
         <div class="lookup-material-list">
-            @foreach (FusionMaterialPairSnapshot materials in Pokemon.FusionMaterials)
+            @foreach (FusionMaterialPairSnapshot materials in _fusionMaterials.Matches)
             {
                 <div class="lookup-material-pair">
                     <PokemonRelationButton Relation="@materials.Body" GameRoot="@GameRoot" Selected="PokemonSelected" />
@@ -87,10 +111,22 @@
                 </div>
             }
         </div>
+        @if (_fusionMaterialError is not null)
+        {
+            <p class="lookup-error" role="alert">@_fusionMaterialError</p>
+        }
+        @if (_fusionMaterials.Total > TrackerProtocol.FusionMaterialPageSize)
+        {
+            <nav class="lookup-pager" aria-label="@Text["Lookup.Fusion.FusionMaterialSearchPages"]">
+                <button type="button" disabled="@(_loadingFusionMaterials || _fusionMaterialOffset == 0)" @onclick="PreviousFusionMaterialPageAsync">@Text["Lookup.Fusion.Previous"]</button>
+                <span>@GetFusionMaterialRangeText()</span>
+                <button type="button" disabled="@(_loadingFusionMaterials || _fusionMaterialOffset + _fusionMaterials.Matches.Count >= _fusionMaterials.Total)" @onclick="NextFusionMaterialPageAsync">@Text["Lookup.Fusion.Next"]</button>
+            </nav>
+        }
     </section>
 }
 
-@if (Pokemon.FusionBases.Count == 0)
+@if (Overview.FusionBases.Count == 0)
 {
     <IronmonFusionSearch Pokemon="@Pokemon"
                          Recipe="@Recipe"

@@ -14,7 +14,7 @@ public partial class DebugPokemonOverview
     /// Gets or sets the game-owned inspector snapshot.
     /// </summary>
     [Parameter]
-    public DebugPokemonInspectorSnapshot Pokemon { get; set; } = null!;
+    public DebugPokemonIdentitySnapshot Pokemon { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the generated typing from the shared lookup snapshot.

@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Ironmon.Tracker.Connection.Diagnostics;
 
 /// <summary>
@@ -5,7 +7,10 @@ namespace Ironmon.Tracker.Connection.Diagnostics;
 /// </summary>
 public sealed class TrackerDiagnosticsStore
 {
+    private static readonly JsonSerializerOptions AutomaticSnapshotJsonOptions = new(TrackerJson.Options) { WriteIndented = true };
     private readonly List<TrackerDiagnosticEntry> _entries = [];
+    private readonly string? _automaticErrorPath;
+    private readonly Lock _persistenceSync = new();
     private readonly Lock _sync = new();
     private string? _lastProtocolError;
 
@@ -14,6 +19,17 @@ public sealed class TrackerDiagnosticsStore
     /// </summary>
     public TrackerDiagnosticsStore()
     {
+    }
+
+    /// <summary>
+    /// Initializes an empty diagnostic history with automatic error persistence.
+    /// </summary>
+    /// <param name="options">The tracker-owned persistence options.</param>
+    /// <exception cref="ArgumentNullException">Thrown when options is null.</exception>
+    public TrackerDiagnosticsStore(TrackerKnowledgeOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        _automaticErrorPath = Path.Combine(options.RootDirectory, TrackerStorageNames.DiagnosticsDirectory, TrackerStorageNames.LatestProtocolErrorFile);
     }
 
     /// <summary>
@@ -44,6 +60,11 @@ public sealed class TrackerDiagnosticsStore
                 return _lastProtocolError;
         }
     }
+
+    /// <summary>
+    /// Gets the automatic diagnostic snapshot path, or null when persistence is disabled.
+    /// </summary>
+    public string? AutomaticErrorPath => _automaticErrorPath;
 
     /// <summary>
     /// Records one incoming validated protocol message.
@@ -89,6 +110,7 @@ public sealed class TrackerDiagnosticsStore
             _lastProtocolError = detail;
 
         Add(TrackerDiagnosticDirection.Lifecycle, TrackerDiagnosticConstants.Error, detail);
+        PersistError(exception);
     }
 
     /// <summary>
@@ -123,6 +145,37 @@ public sealed class TrackerDiagnosticsStore
         }
 
         Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Atomically persists the latest error and retained protocol history without masking the original failure.
+    /// </summary>
+    /// <param name="exception">The observed exception.</param>
+    private void PersistError(Exception exception)
+    {
+        if (_automaticErrorPath is null)
+            return;
+
+        IReadOnlyList<TrackerDiagnosticEntry> entries;
+        lock (_sync)
+            entries = [.. _entries];
+
+        TrackerAutomaticDiagnosticSnapshot snapshot = new(DateTimeOffset.UtcNow, exception.ToString(), entries);
+        lock (_persistenceSync)
+        {
+            try
+            {
+                string directory = Path.GetDirectoryName(_automaticErrorPath) ?? throw new IOException("The automatic diagnostic path has no parent directory.");
+                Directory.CreateDirectory(directory);
+                string temporaryPath = _automaticErrorPath + TrackerStorageNames.TemporaryExtension;
+                File.WriteAllText(temporaryPath, JsonSerializer.Serialize(snapshot, AutomaticSnapshotJsonOptions));
+                File.Move(temporaryPath, _automaticErrorPath, true);
+            }
+            catch (Exception)
+            {
+                // Diagnostic persistence must never replace the protocol failure it is trying to preserve.
+            }
+        }
     }
 
     /// <summary>

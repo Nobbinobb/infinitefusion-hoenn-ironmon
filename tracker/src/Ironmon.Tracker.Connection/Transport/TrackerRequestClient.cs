@@ -8,9 +8,12 @@ namespace Ironmon.Tracker.Connection.Transport;
 public sealed class TrackerRequestClient
 {
     private readonly ConcurrentDictionary<string, FusionPreviewResponsePayload> _fusionPreviewCache = new();
+    private readonly ConcurrentDictionary<string, FusionMaterialSearchResponsePayload> _fusionMaterialCache = new();
     private readonly ConcurrentDictionary<string, PokemonLookupSnapshot> _pokemonLookupCache = new();
     private readonly ConcurrentDictionary<string, PokemonSearchResponsePayload> _pokemonSearchCache = new();
     private readonly ConcurrentDictionary<string, EvolutionCandidateSearchResponsePayload> _evolutionCandidateCache = new();
+    private readonly ConcurrentDictionary<string, TrainerOccurrenceSearchResponsePayload> _trainerOccurrenceCache = new();
+    private readonly ConcurrentDictionary<string, WildOccurrenceSearchResponsePayload> _wildOccurrenceCache = new();
     private readonly TrackerConnectionOptions _options;
     private readonly TrackerRequestSession _session;
     private readonly TrackerConnectionState _state;
@@ -109,6 +112,75 @@ public sealed class TrackerRequestClient
         EvolutionCandidateSearchRequestPayload request = new() { SpeciesId = speciesId, Side = side, Query = normalizedQuery, Offset = offset, Recipe = recipe };
         EvolutionCandidateSearchResponsePayload response = await _session.SendAsync<EvolutionCandidateSearchRequestPayload, EvolutionCandidateSearchResponsePayload>(TrackerCommands.EvolutionCandidateSearch, request, recipe.RunId, cancellationToken);
         _evolutionCandidateCache[cacheKey] = response;
+        return response;
+    }
+
+    /// <summary>
+    /// Requests one page of normal material pairs which produce a completed-run fusion.
+    /// </summary>
+    /// <param name="recipe">The completed-run reconstruction recipe.</param>
+    /// <param name="speciesId">The fusion species identifier.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested material-pair page.</returns>
+    public async Task<FusionMaterialSearchResponsePayload> SearchFusionMaterialsAsync(CompletedRunRecipePayload recipe, string speciesId, int offset = 0, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        string cacheKey = $"{recipe.RunId}|{speciesId.ToUpperInvariant()}|{offset}";
+        if (_fusionMaterialCache.TryGetValue(cacheKey, out FusionMaterialSearchResponsePayload? cached))
+            return cached;
+
+        FusionMaterialSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset, Recipe = recipe };
+        FusionMaterialSearchResponsePayload response = await _session.SendAsync<FusionMaterialSearchRequestPayload, FusionMaterialSearchResponsePayload>(TrackerCommands.FusionMaterialSearch, request, recipe.RunId, cancellationToken);
+        _fusionMaterialCache[cacheKey] = response;
+        return response;
+    }
+
+    /// <summary>
+    /// Requests one page of wild occurrences for a completed-run Pokemon.
+    /// </summary>
+    /// <param name="recipe">The completed-run reconstruction recipe.</param>
+    /// <param name="speciesId">The generated species identifier.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested wild-occurrence page.</returns>
+    public async Task<WildOccurrenceSearchResponsePayload> SearchWildOccurrencesAsync(CompletedRunRecipePayload recipe, string speciesId, int offset = 0, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        string cacheKey = $"{recipe.RunId}|{speciesId.ToUpperInvariant()}|{offset}";
+        if (_wildOccurrenceCache.TryGetValue(cacheKey, out WildOccurrenceSearchResponsePayload? cached))
+            return cached;
+
+        WildOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset, Recipe = recipe };
+        WildOccurrenceSearchResponsePayload response = await _session.SendAsync<WildOccurrenceSearchRequestPayload, WildOccurrenceSearchResponsePayload>(TrackerCommands.WildOccurrenceSearch, request, recipe.RunId, cancellationToken);
+        _wildOccurrenceCache[cacheKey] = response;
+        return response;
+    }
+
+    /// <summary>
+    /// Requests one page of trainer occurrences for a completed-run Pokemon.
+    /// </summary>
+    /// <param name="recipe">The completed-run reconstruction recipe.</param>
+    /// <param name="speciesId">The generated species identifier.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested trainer-occurrence page.</returns>
+    public async Task<TrainerOccurrenceSearchResponsePayload> SearchTrainerOccurrencesAsync(CompletedRunRecipePayload recipe, string speciesId, int offset = 0, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        string cacheKey = $"{recipe.RunId}|{speciesId.ToUpperInvariant()}|{offset}";
+        if (_trainerOccurrenceCache.TryGetValue(cacheKey, out TrainerOccurrenceSearchResponsePayload? cached))
+            return cached;
+
+        TrainerOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset, Recipe = recipe };
+        TrainerOccurrenceSearchResponsePayload response = await _session.SendAsync<TrainerOccurrenceSearchRequestPayload, TrainerOccurrenceSearchResponsePayload>(TrackerCommands.TrainerOccurrenceSearch, request, recipe.RunId, cancellationToken);
+        _trainerOccurrenceCache[cacheKey] = response;
         return response;
     }
 
@@ -214,6 +286,54 @@ public sealed class TrackerRequestClient
     }
 
     /// <summary>
+    /// Requests one page of fusion-material pairs from the authorized active run.
+    /// </summary>
+    /// <param name="speciesId">The fusion species identifier.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested material-pair page.</returns>
+    public Task<FusionMaterialSearchResponsePayload> SearchDebugFusionMaterialsAsync(string speciesId, int offset = 0, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        EnsureDebugAuthorized();
+        DebugFusionMaterialSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset };
+        return _session.SendAsync<DebugFusionMaterialSearchRequestPayload, FusionMaterialSearchResponsePayload>(TrackerCommands.DebugFusionMaterialSearch, request, GetConnectedRunId(), cancellationToken);
+    }
+
+    /// <summary>
+    /// Requests one page of wild occurrences from the authorized active run.
+    /// </summary>
+    /// <param name="speciesId">The generated species identifier.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested wild-occurrence page.</returns>
+    public Task<WildOccurrenceSearchResponsePayload> SearchDebugWildOccurrencesAsync(string speciesId, int offset = 0, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        EnsureDebugAuthorized();
+        DebugWildOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset };
+        return _session.SendAsync<DebugWildOccurrenceSearchRequestPayload, WildOccurrenceSearchResponsePayload>(TrackerCommands.DebugWildOccurrenceSearch, request, GetConnectedRunId(), cancellationToken);
+    }
+
+    /// <summary>
+    /// Requests one page of trainer occurrences from the authorized active run.
+    /// </summary>
+    /// <param name="speciesId">The generated species identifier.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested trainer-occurrence page.</returns>
+    public Task<TrainerOccurrenceSearchResponsePayload> SearchDebugTrainerOccurrencesAsync(string speciesId, int offset = 0, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        EnsureDebugAuthorized();
+        DebugTrainerOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset };
+        return _session.SendAsync<DebugTrainerOccurrenceSearchRequestPayload, TrainerOccurrenceSearchResponsePayload>(TrackerCommands.DebugTrainerOccurrenceSearch, request, GetConnectedRunId(), cancellationToken);
+    }
+
+    /// <summary>
     /// Requests both generated fusion orientations for the active debug run.
     /// </summary>
     /// <param name="firstSpeciesId">The first normal fusion material.</param>
@@ -236,9 +356,12 @@ public sealed class TrackerRequestClient
     {
         _session.Disconnect();
         _fusionPreviewCache.Clear();
+        _fusionMaterialCache.Clear();
         _pokemonLookupCache.Clear();
         _pokemonSearchCache.Clear();
         _evolutionCandidateCache.Clear();
+        _trainerOccurrenceCache.Clear();
+        _wildOccurrenceCache.Clear();
     }
 
     /// <summary>

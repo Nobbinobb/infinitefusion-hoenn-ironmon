@@ -185,8 +185,16 @@ Ironmon tracker layouts. It provides:
 - remembered window position and size;
 - a visible connection state;
 - Player and Enemy tabs;
-- keyboard switching between the two views; and
+- foreground-safe `Ctrl+1` through `Ctrl+4` keyboard switching;
+- foreground-safe controller switching by holding both triggers and flicking
+  the right stick left for Player, right for Enemy, up for Lookup, or down for
+  Debug; and
 - a Debug tab only when development access is authorized.
+
+Global shortcuts are accepted only while the connected Infinite Fusion
+executable owns the foreground window. They change the tracker view without
+activating or focusing the tracker window. The controller chord uses inputs
+that Infinite Fusion does not bind by default.
 
 When an opponent is sent out, the tracker automatically shows the Enemy view.
 The player can switch back to Player at any time. Ending the battle returns to
@@ -390,27 +398,76 @@ contains the inputs needed to reproduce the run:
 
 ```json
 {
+  "schema_version": 1,
   "run_id": "run-123",
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.6.1",
-  "configuration": {},
-  "species_generator_version": 3,
-  "ability_generator_version": 2,
-  "base_stat_generator_version": 1,
-  "move_access_generator_version": 1,
-  "player_fusion_generator_version": 2,
-  "species_pool_fingerprint": "...",
-  "ability_pool_fingerprint": "...",
-  "base_stat_source_fingerprint": "...",
-  "move_allowed_pool_fingerprint": "...",
-  "move_contextual_restriction_fingerprint": "...",
-  "move_source_fingerprint": "...",
-  "tutor_slot_catalog_fingerprint": "...",
-  "fusion_pool_fingerprint": "..."
+  "ironmon_version": "0.6.2",
+  "configuration": {
+    "schema_version": 2,
+    "wild_policy": "mixed",
+    "trainer_policy": "mixed",
+    "unfusion_setting": "random_component"
+  },
+  "species_generator": {
+    "version": 3,
+    "pool_fingerprint": "..."
+  },
+  "ability_generator": {
+    "version": 3,
+    "pool_size": 250,
+    "pool_fingerprint": "..."
+  },
+  "base_stat_generator": {
+    "version": 1,
+    "source_fingerprint": "..."
+  },
+  "evolution_generator": {
+    "version": 1,
+    "rules_version": 1,
+    "source_fingerprint": "...",
+    "taxonomy_fingerprint": "...",
+    "method_fingerprint": "...",
+    "target_fingerprint": "...",
+    "base_stat_generator": {
+      "version": 1,
+      "source_fingerprint": "..."
+    },
+    "fusion": {
+      "version": 1,
+      "rules_version": 1,
+      "target_pool": {
+        "version": 2,
+        "size": 500,
+        "fingerprint": "..."
+      }
+    }
+  },
+  "move_access_generator": {
+    "version": 6,
+    "pool_fingerprint": "...",
+    "contextual_restriction_fingerprint": "...",
+    "level_up_source_fingerprint": "...",
+    "egg_source_fingerprint": "...",
+    "tm": { "roster_fingerprint": "...", "source_fingerprint": "..." },
+    "tr": { "roster_fingerprint": "...", "source_fingerprint": "..." },
+    "tutor": { "catalog_fingerprint": "...", "source_fingerprint": "..." },
+    "fusion_tutor": { "catalog_fingerprint": "...", "source_fingerprint": "..." }
+  },
+  "player_fusion_generator": {
+    "version": 2,
+    "pool_size": 500,
+    "pool_fingerprint": "..."
+  }
 }
 ```
+
+The nested recipe is a versioned protocol contract. Flat pre-schema recipes
+are intentionally not migrated during early development and are ignored by the
+archive loader. Their shape is recognized before typed deserialization so they
+do not produce handled startup exceptions. Deleting those old run folders is
+the supported cleanup path.
 
 Post-run lookup has no arbitrary expiration. It remains reproducible for as
 long as Ironmon retains the requested generator implementation and compatible
@@ -451,15 +508,19 @@ graph. Step 3.4 replaces them with the generated operational graph for runs
 that declare compatible evolution metadata. Target rows include icons, names,
 and generated BSTs and can be selected for another lookup. Fusion results
 expose their displayed body and head components, their seeded Ironmon reverse,
-and the ordered normal-material pairs that produce them. Encounter and pivot
-inputs do not replace a fusion's displayed components.
+and the ordered normal-material pairs that produce them. Material pairs use
+50-row pages so a fusion with many deterministic source collisions cannot
+exceed the protocol framing limit. Encounter and pivot inputs do not replace a
+fusion's displayed components.
 
 Lookup also reconstructs every authored wild and trainer slot which maps to
 the selected species. Wild rows show data mode, route, encounter type, slot,
 source species, and the authored table percentage. Trainer rows show trainer
 identity, party slot, and source species. Normal Only fusion encounters show
 their ordered pair of route slots and the pair probability conditional on the
-fusion event triggering.
+fusion event triggering. Wild and trainer occurrences use independent 50-row
+pages. This bounds self-fusion and other high-collision Overview responses
+without discarding their complete occurrence totals.
 
 Legacy schema-version-1 runs use the wild and trainer source maps stored in the
 currently loaded save. Their occurrence lists cannot be reconstructed later
@@ -540,6 +601,13 @@ visible live section; it does not generate or transfer hidden-tab stats,
 abilities, moves, or evolutions. Switching pages requests that page once and
 retains it until the represented Pokemon changes.
 
+`PokemonLookupSnapshot` always contains an `identity` object and exactly one
+optional section object (`overview`, `abilities`, `stats`, `moves`, or
+`evolutions`). `DebugPokemonInspectorSnapshot` follows the same pattern for
+live identity plus its live Abilities or Stats enrichment. Run diagnostics are
+grouped into runtime identity, configuration, generator manifests, and mapping
+counts, and reuse the same generator-manifest types as completed-run recipes.
+
 Step 3.4 adds Evolutions to authorized Debug and completed-run lookup. A normal
 Pokemon receives one clickable valid-candidate list; a fusion receives
 separate Head and Body candidate lists when applicable. Candidate lists use
@@ -591,6 +659,13 @@ The Debug tab also shows:
 - persisted move-discovery state.
 
 Values and raw JSON can be copied, and a diagnostic report can be exported.
+Whenever a protocol or connection failure occurs, the tracker atomically
+replaces
+`%LocalAppData%\IronmonTracker\diagnostics\latest-protocol-error.json` with a
+self-contained snapshot of the complete exception and bounded incoming,
+outgoing, and lifecycle history. Failed request responses and response-payload
+validation failures use the same capture path. Clearing in-memory history or
+resetting the game does not delete this recovery file.
 The tracker Debug view is the supported Ironmon inspection interface.
 
 ## Information and safety boundaries
@@ -605,6 +680,12 @@ The tracker Debug view is the supported Ironmon inspection interface.
 - Unknown protocol fields are ignored for forward compatibility.
 - Unsupported schema versions and malformed required fields are rejected with
   diagnostics rather than partially applied.
+- Game-provided error text is capped at 2,000 characters before serialization,
+  preventing an exception that embeds a large inspected object from exceeding
+  the protocol framing limit.
+- The game measures every serialized outbound message before queueing it. An
+  oversized request response is replaced with a bounded `response_too_large`
+  failure instead of disconnecting the tracker.
 - Network or tracker failures must not crash, pause, or invalidate the game.
 
 ## First-version event set

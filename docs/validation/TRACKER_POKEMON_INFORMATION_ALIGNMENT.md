@@ -21,7 +21,19 @@ same five information tabs:
   both lookup flows and Debug Pokemon.
 - [x] Evolution candidate lists and the one-step evolution graph.
 - [x] Authored wild and trainer occurrences.
+- [x] Wild and trainer occurrences use independent bounded 50-row pages, so
+  combinatorial self-fusion slot pairs cannot exceed the one-message framing
+  limit.
 - [x] Fusion components, reverse, materials, and fusion exploration.
+- [x] Fusion materials use bounded 50-row pages in both completed-run and
+  active Debug lookup, preventing large collision sets from exceeding the
+  one-message framing limit.
+- [x] A fusion with no reverse-index material entry returns an empty material
+  page without mutating the frozen reverse index.
+- [x] Game-side protocol error text is capped at 2,000 characters so Ruby
+  object inspection cannot create an oversized failed response.
+- [x] The game replaces any still-oversized serialized response with a bounded
+  `response_too_large` failure before it reaches the socket.
 - [x] Complete generated move-access channels.
 - [x] Ability, base-stat, move-access, and normal/fusion evolution generator
   diagnostics in their corresponding tabs.
@@ -59,4 +71,4 @@ same five information tabs:
 - [x] End-to-end active-run fusion lookup measured about 662 ms for the single
   cold index build and about 98 ms for the next previously unseen fusion.
 - [x] The tracker Release build completed with zero warnings and zero errors.
-- [x] All 40 tracker tests passed.
+- [x] All 41 tracker tests passed.

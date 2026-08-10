@@ -41,6 +41,11 @@ public static class TrackerStorageNames
     public const string DiagnosticFilePrefix = "ironmon-diagnostic-";
 
     /// <summary>
+    /// Gets the stable filename containing the most recently captured protocol error.
+    /// </summary>
+    public const string LatestProtocolErrorFile = "latest-protocol-error.json";
+
+    /// <summary>
     /// Gets the timestamp format used in diagnostic export filenames.
     /// </summary>
     public const string DiagnosticTimestampFormat = "yyyyMMdd-HHmmss";

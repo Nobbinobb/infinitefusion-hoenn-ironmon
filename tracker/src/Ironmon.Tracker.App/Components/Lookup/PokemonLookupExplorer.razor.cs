@@ -224,7 +224,7 @@ public partial class PokemonLookupExplorer
         try
         {
             _lookup = await LookupPokemonAsync(speciesId);
-            _currentSpeciesId = _lookup.SpeciesId;
+            _currentSpeciesId = _lookup.Identity.SpeciesId;
             _matches = [];
             return true;
         }

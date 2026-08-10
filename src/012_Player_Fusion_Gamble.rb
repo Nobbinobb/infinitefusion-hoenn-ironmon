@@ -87,7 +87,7 @@ module Ironmon
       )
       return @material_pairs[species_id] if @material_pairs[species_id]
       ensure_material_pair_codes
-      codes = @material_pair_codes[species_id] || []
+      codes = @material_pair_codes.fetch(species_id, [])
       pairs = codes.map do |code|
         [code >> MATERIAL_ID_BITS, code & MATERIAL_ID_MASK]
       end.freeze
@@ -104,14 +104,16 @@ module Ironmon
 
     def ensure_material_pair_codes
       return if @material_pair_codes
-      codes = Hash.new { |hash, key| hash[key] = [] }
+      codes = {}
       (1..NB_POKEMON).each do |first_id|
         (first_id..NB_POKEMON).each do |second_id|
           pair_index = deterministic_result_value(first_id, second_id) %
                        @fusion_pairs.length
           result_ids = @fusion_pairs[pair_index]
+          codes[result_ids[0]] ||= []
           codes[result_ids[0]] << pack_material_pair(first_id, second_id)
           if first_id != second_id
+            codes[result_ids[1]] ||= []
             codes[result_ids[1]] << pack_material_pair(second_id, first_id)
           end
         end

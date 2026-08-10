@@ -26,6 +26,21 @@ public static class TrackerCommands
     public const string EvolutionCandidateSearch = "evolution_candidate_search";
 
     /// <summary>
+    /// Gets the completed-run fusion-material page command.
+    /// </summary>
+    public const string FusionMaterialSearch = "fusion_material_search";
+
+    /// <summary>
+    /// Gets the completed-run wild-occurrence page command.
+    /// </summary>
+    public const string WildOccurrenceSearch = "wild_occurrence_search";
+
+    /// <summary>
+    /// Gets the completed-run trainer-occurrence page command.
+    /// </summary>
+    public const string TrainerOccurrenceSearch = "trainer_occurrence_search";
+
+    /// <summary>
     /// Gets the completed-run fusion preview command.
     /// </summary>
     public const string FusionPreview = "fusion_preview";
@@ -54,6 +69,21 @@ public static class TrackerCommands
     /// Gets the authorized active-run evolution-candidate search command.
     /// </summary>
     public const string DebugEvolutionCandidateSearch = "debug_evolution_candidate_search";
+
+    /// <summary>
+    /// Gets the authorized active-run fusion-material page command.
+    /// </summary>
+    public const string DebugFusionMaterialSearch = "debug_fusion_material_search";
+
+    /// <summary>
+    /// Gets the authorized active-run wild-occurrence page command.
+    /// </summary>
+    public const string DebugWildOccurrenceSearch = "debug_wild_occurrence_search";
+
+    /// <summary>
+    /// Gets the authorized active-run trainer-occurrence page command.
+    /// </summary>
+    public const string DebugTrainerOccurrenceSearch = "debug_trainer_occurrence_search";
 
     /// <summary>
     /// Gets the authorized active-run fusion preview command.

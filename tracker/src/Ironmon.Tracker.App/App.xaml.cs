@@ -6,21 +6,26 @@ namespace Ironmon.Tracker.App;
 public partial class App : Application
 {
     private readonly TrackerConnectionService _connectionService;
+    private readonly TrackerGlobalShortcutService _shortcutService;
     private readonly IStringLocalizer<TrackerResources> _text;
 
     /// <summary>
     /// Initializes the tracker application.
     /// </summary>
     /// <param name="connectionService">The local game connection service.</param>
+    /// <param name="shortcutService">The foreground-safe global shortcut service.</param>
     /// <param name="text">The localized tracker text.</param>
-    public App(TrackerConnectionService connectionService, IStringLocalizer<TrackerResources> text)
+    public App(TrackerConnectionService connectionService, TrackerGlobalShortcutService shortcutService, IStringLocalizer<TrackerResources> text)
     {
         ArgumentNullException.ThrowIfNull(connectionService);
+        ArgumentNullException.ThrowIfNull(shortcutService);
         ArgumentNullException.ThrowIfNull(text);
         _connectionService = connectionService;
+        _shortcutService = shortcutService;
         _text = text;
         InitializeComponent();
         _connectionService.Start();
+        _shortcutService.Start();
     }
 
     /// <summary>
@@ -68,6 +73,7 @@ public partial class App : Application
         if (sender is Window window)
             SaveWindowSize(window);
 
+        await _shortcutService.StopAsync();
         await _connectionService.StopAsync();
     }
 

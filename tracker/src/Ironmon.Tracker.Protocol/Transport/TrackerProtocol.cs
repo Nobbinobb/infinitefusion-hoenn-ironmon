@@ -51,6 +51,16 @@ public static class TrackerProtocol
     public const int EvolutionCandidatePageSize = 50;
 
     /// <summary>
+    /// Gets the number of fusion material pairs returned per page.
+    /// </summary>
+    public const int FusionMaterialPageSize = 50;
+
+    /// <summary>
+    /// Gets the number of wild or trainer occurrences returned per page.
+    /// </summary>
+    public const int OccurrencePageSize = 50;
+
+    /// <summary>
     /// Gets the fixed lookup level retained for compatibility with earlier game scripts.
     /// </summary>
     public const int CompatibilityLookupLevel = 100;

@@ -61,5 +61,5 @@ file in `Data/Scripts` as Ruby.
 27. `022_Tracker_Evolution_Metrics.rb`: offered, completed, cancelled, and
     duplicate evolution events for completed-run analysis.
 
-Version `0.6.1` supports Infinite Fusion game version `6.8.0`. An unsupported
+Version `0.6.2` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.

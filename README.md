@@ -22,7 +22,7 @@ and a fast reset to starter selection.
   and creates the combined copy-ready ZIP and SHA-256 checksum in `release/`.
 
 Milestone 3 Step 3.4 is implemented, with its tracker and runtime fixes released
-as version `0.6.1`. See
+as version `0.6.2`. See
 `docs/design/EVOLUTION_RANDOMIZATION.md` for its rules, `docs/ROADMAP.md` for
 cumulative scope, and `docs/guides/INSTALLATION.md` for installation steps.
 

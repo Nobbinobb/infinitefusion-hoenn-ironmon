@@ -8,8 +8,14 @@ namespace Ironmon.Tracker.App.Components.Debug;
 public partial class DebugBaseStats
 {
     /// <summary>
-    /// Gets or sets the game-owned inspector snapshot.
+    /// Gets or sets the game-owned stats snapshot.
     /// </summary>
     [Parameter]
-    public DebugPokemonInspectorSnapshot Pokemon { get; set; } = null!;
+    public DebugPokemonStatsSnapshot Stats { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets whether the inspected Pokemon is a fusion.
+    /// </summary>
+    [Parameter]
+    public bool Fusion { get; set; }
 }

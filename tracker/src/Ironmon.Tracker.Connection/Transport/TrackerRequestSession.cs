@@ -87,9 +87,19 @@ internal sealed class TrackerRequestSession : IDisposable
                 await WriteAsync(writer, request, cancellationToken).ConfigureAwait(false);
                 TrackerMessage response = await completion.Task.WaitAsync(TimeSpan.FromSeconds(TrackerProtocol.RequestTimeoutSeconds), cancellationToken).ConfigureAwait(false);
                 if (response.Success != true)
-                    throw new TrackerProtocolException(response.Error?.Message ?? "The game rejected the tracker request.");
+                    throw new TrackerProtocolException(response.Error?.Code, response.Error?.Message ?? "The game rejected the tracker request.");
 
                 return TrackerJson.DeserializePayload<TResponse>(response.Payload);
+            }
+            catch (TrackerProtocolException exception)
+            {
+                _diagnostics.RecordError(exception);
+                throw;
+            }
+            catch (Exception exception) when (exception is TimeoutException or IOException)
+            {
+                _diagnostics.RecordError(exception);
+                throw;
             }
             finally
             {

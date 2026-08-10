@@ -44,30 +44,34 @@ module Ironmon
     head = fusion ? tracker_debug_species(species.head_pokemon) : nil
     result = {
       "section" => section,
-      "pokemon_id" => pokemon.personalID.to_s,
-      "nickname" => pokemon.name,
-      "species_id" => tracker_species_id(pokemon),
-      "species_name" => species.name,
-      "sprite_path" => tracker_sprite_path(pokemon),
-      "level" => pokemon.level,
-      "gender" => tracker_gender(pokemon),
-      "held_item_id" => item ? item.id.to_s : nil,
-      "held_item_name" => item ? item.name : nil,
-      "fusion" => fusion,
-      "form" => species.form,
-      "form_name" => species.form_name,
-      "body" => body,
-      "head" => head,
-      "active_ability_index" => pokemon.ability_index.to_i,
-      "active_ability_slot" => tracker_debug_active_slot(pokemon),
-      "active_ability_id" => tracker_debug_ability_id(ability),
-      "active_ability_name" => tracker_debug_ability_name(ability)
+      "identity" => {
+        "pokemon_id" => pokemon.personalID.to_s,
+        "nickname" => pokemon.name,
+        "species_id" => tracker_species_id(pokemon),
+        "species_name" => species.name,
+        "sprite_path" => tracker_sprite_path(pokemon),
+        "level" => pokemon.level,
+        "gender" => tracker_gender(pokemon),
+        "held_item_id" => item ? item.id.to_s : nil,
+        "held_item_name" => item ? item.name : nil,
+        "fusion" => fusion,
+        "form" => species.form,
+        "form_name" => species.form_name,
+        "body" => body,
+        "head" => head,
+        "active_ability_index" => pokemon.ability_index.to_i,
+        "active_ability_slot" => tracker_debug_active_slot(pokemon),
+        "active_ability_id" => tracker_debug_ability_id(ability),
+        "active_ability_name" => tracker_debug_ability_name(ability)
+      }
     }
 
     case section
     when "abilities"
-      result["generator"] = tracker_debug_generator_snapshot
-      result["ability_slots"] = tracker_debug_ability_slots(pokemon)
+      result["abilities"] = {
+        "generator" => tracker_debug_generator_snapshot,
+        "slots" => tracker_debug_ability_slots(pokemon)
+      }
     when "stats"
       original_stats = original_base_stats_for_pokemon(pokemon)
       generated_stats = if base_stat_randomization_active?
@@ -75,69 +79,41 @@ module Ironmon
                         else
                           original_stats
                         end
-      result.merge!({
-      "original_base_stats" => tracker_base_stat_snapshot(original_stats),
-      "original_base_stat_total" => tracker_base_stat_total(original_stats),
-      "generated_base_stats" => tracker_base_stat_snapshot(generated_stats),
-      "generated_base_stat_total" => tracker_base_stat_total(generated_stats),
-      "base_stat_generator" => tracker_debug_base_stat_generator_snapshot
-      })
+      result["stats"] = {
+        "original" => tracker_base_stat_snapshot(original_stats),
+        "original_total" => tracker_base_stat_total(original_stats),
+        "generated" => tracker_base_stat_snapshot(generated_stats),
+        "generated_total" => tracker_base_stat_total(generated_stats),
+        "generator" => tracker_debug_base_stat_generator_snapshot
+      }
     end
     return result
   end
 
   def self.tracker_debug_run_diagnostics
     tracker_validate_debug_context
-    configuration_value = configuration
-    fusion_info = custom_fusion_pool_info
     wild_mappings = $PokemonGlobal.ironmon_wild_species_map
     trainer_mappings = $PokemonGlobal.ironmon_trainer_species_map
     return {
-      "game_version" => tracker_game_version,
-      "ironmon_version" => VERSION,
-      "protocol_version" => TRACKER_SCHEMA_VERSION,
-      "run_id" => ensure_tracker_run_id,
-      "battle_id" => tracker_battle_id,
-      "run_seed" => $PokemonGlobal.ironmon_seed,
-      "wild_policy" => configuration_value.wild_policy.to_s,
-      "trainer_policy" => configuration_value.trainer_policy.to_s,
-      "unfusion_setting" => configuration_value.unfusion_setting.to_s,
-      "custom_fusion_pool_size" => fusion_info[:size],
-      "custom_fusion_pool_fingerprint" => fusion_info[:fingerprint],
-      "species_generator_version" => $PokemonGlobal.ironmon_species_generator_version,
-      "ability_generator_version" => AbilityGenerator::SCHEMA_VERSION,
-      "ability_pool_size" => allowed_ability_pool.length,
-      "ability_pool_fingerprint" => ability_pool_fingerprint,
-      "base_stat_generator_version" => $PokemonGlobal.ironmon_base_stat_generator_version,
-      "base_stat_source_fingerprint" => $PokemonGlobal.ironmon_base_stat_source_fingerprint,
-      "evolution_generator_version" => $PokemonGlobal.ironmon_evolution_generator_version,
-      "evolution_rules_version" => $PokemonGlobal.ironmon_evolution_rules_version,
-      "evolution_source_fingerprint" => $PokemonGlobal.ironmon_evolution_source_fingerprint,
-      "evolution_taxonomy_fingerprint" => $PokemonGlobal.ironmon_evolution_taxonomy_fingerprint,
-      "evolution_method_fingerprint" => $PokemonGlobal.ironmon_evolution_method_fingerprint,
-      "evolution_target_fingerprint" => $PokemonGlobal.ironmon_evolution_target_fingerprint,
-      "evolution_base_stat_generator_version" => $PokemonGlobal.ironmon_evolution_base_stat_generator_version,
-      "evolution_base_stat_source_fingerprint" => $PokemonGlobal.ironmon_evolution_base_stat_source_fingerprint,
-      "fusion_evolution_generator_version" => $PokemonGlobal.ironmon_evolution_fusion_generator_version,
-      "fusion_evolution_rules_version" => $PokemonGlobal.ironmon_evolution_fusion_rules_version,
-      "fusion_evolution_target_pool_version" => $PokemonGlobal.ironmon_evolution_fusion_target_pool_version,
-      "fusion_evolution_target_pool_size" => $PokemonGlobal.ironmon_evolution_fusion_target_pool_size,
-      "fusion_evolution_target_pool_fingerprint" => $PokemonGlobal.ironmon_evolution_fusion_target_pool_fingerprint,
-      "move_access_generator_version" => $PokemonGlobal.ironmon_move_access_generator_version,
-      "move_pool_fingerprint" => $PokemonGlobal.ironmon_move_pool_fingerprint,
-      "move_contextual_restriction_fingerprint" => $PokemonGlobal.ironmon_move_contextual_restriction_fingerprint,
-      "move_source_fingerprint" => $PokemonGlobal.ironmon_move_source_fingerprint,
-      "egg_move_source_fingerprint" => $PokemonGlobal.ironmon_egg_move_source_fingerprint,
-      "tm_roster_fingerprint" => $PokemonGlobal.ironmon_tm_roster_fingerprint,
-      "tm_source_fingerprint" => $PokemonGlobal.ironmon_tm_source_fingerprint,
-      "tr_roster_fingerprint" => $PokemonGlobal.ironmon_tr_roster_fingerprint,
-      "tr_source_fingerprint" => $PokemonGlobal.ironmon_tr_source_fingerprint,
-      "tutor_catalog_fingerprint" => $PokemonGlobal.ironmon_tutor_catalog_fingerprint,
-      "tutor_source_fingerprint" => $PokemonGlobal.ironmon_tutor_source_fingerprint,
-      "fusion_tutor_catalog_fingerprint" => $PokemonGlobal.ironmon_fusion_tutor_catalog_fingerprint,
-      "fusion_tutor_source_fingerprint" => $PokemonGlobal.ironmon_fusion_tutor_source_fingerprint,
-      "wild_mapping_count" => wild_mappings.is_a?(Hash) ? wild_mappings.length : 0,
-      "trainer_mapping_count" => trainer_mappings.is_a?(Hash) ? trainer_mappings.length : 0
+      "runtime" => {
+        "game_version" => tracker_game_version,
+        "ironmon_version" => VERSION,
+        "protocol_version" => TRACKER_SCHEMA_VERSION,
+        "run_id" => ensure_tracker_run_id,
+        "battle_id" => tracker_battle_id,
+        "run_seed" => $PokemonGlobal.ironmon_seed
+      },
+      "configuration" => configuration_snapshot,
+      "species_generator" => tracker_species_generator_recipe,
+      "ability_generator" => tracker_ability_generator_recipe,
+      "base_stat_generator" => tracker_base_stat_generator_recipe,
+      "evolution_generator" => tracker_evolution_generator_recipe,
+      "move_access_generator" => tracker_move_access_generator_recipe,
+      "player_fusion_generator" => tracker_player_fusion_generator_recipe,
+      "mappings" => {
+        "wild" => wild_mappings.is_a?(Hash) ? wild_mappings.length : 0,
+        "trainer" => trainer_mappings.is_a?(Hash) ? trainer_mappings.length : 0
+      }
     }
   end
 
@@ -155,6 +131,27 @@ module Ironmon
     tracker_validate_debug_context
     return tracker_evolution_candidate_search_for_recipe(
       payload || {}, tracker_debug_active_recipe
+    )
+  end
+
+  def self.tracker_debug_fusion_material_search(payload)
+    tracker_validate_debug_context
+    return tracker_fusion_material_search_for_recipe(
+      payload || {}, tracker_debug_active_recipe
+    )
+  end
+
+  def self.tracker_debug_wild_occurrence_search(payload)
+    tracker_validate_debug_context
+    return tracker_occurrence_search_for_recipe(
+      payload || {}, tracker_debug_active_recipe, :wild
+    )
+  end
+
+  def self.tracker_debug_trainer_occurrence_search(payload)
+    tracker_validate_debug_context
+    return tracker_occurrence_search_for_recipe(
+      payload || {}, tracker_debug_active_recipe, :trainer
     )
   end
 

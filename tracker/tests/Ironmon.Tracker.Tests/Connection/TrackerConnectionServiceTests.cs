@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Sockets;
-using System.Text.Json;
 
 namespace Ironmon.Tracker.Tests.Connection;
 
@@ -55,17 +54,33 @@ public sealed class TrackerConnectionServiceTests
         Assert.Null(reconnectDiagnosticsRequest?.RunId);
         DebugRunDiagnosticsSnapshot reconnectDiagnostics = new()
         {
-            GameVersion = "6.8.0",
-            IronmonVersion = "0.3.3",
-            WildPolicy = "mixed",
-            TrainerPolicy = "mixed",
-            UnfusionSetting = "random_component",
-            CustomFusionPoolFingerprint = "fusions",
-            AbilityPoolFingerprint = "abilities"
+            Runtime = CreateRuntimeDiagnostics(),
+            Configuration = CreateConfiguration(),
+            SpeciesGenerator = new SpeciesGeneratorRecipePayload { Version = 1, PoolFingerprint = "species" },
+            AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 3, PoolSize = 10, PoolFingerprint = "abilities" },
+            PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 10, PoolFingerprint = "fusions" },
+            Mappings = new DebugMappingDiagnosticsSnapshot()
         };
 
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(reconnectDiagnosticsRequest!.RequestId!, reconnectDiagnostics));
-        Assert.Equal("mixed", (await reconnectDiagnosticsTask).WildPolicy);
+        Assert.Equal("mixed", (await reconnectDiagnosticsTask).Configuration.WildPolicy);
+
+        Task<DebugRunDiagnosticsSnapshot> rejectedDiagnosticsTask = service.Requests.GetDebugRunDiagnosticsAsync();
+        TrackerMessage? rejectedDiagnosticsRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        TrackerProtocolError rejectedError = new("debug_failure", "The debug diagnostic request failed.");
+        await writer.WriteAsync(TrackerMessageFactory.CreateErrorResponse(rejectedDiagnosticsRequest!.RequestId!, rejectedError));
+        TrackerProtocolException rejectedException = await Assert.ThrowsAsync<TrackerProtocolException>(() => rejectedDiagnosticsTask);
+        Assert.Equal(rejectedError.Code, rejectedException.ErrorCode);
+        Assert.Equal(rejectedError.Message, rejectedException.Message);
+        Assert.Equal($"TrackerProtocolException: {rejectedError.Message}", diagnostics.LastProtocolError);
+
+        Task<DebugPokemonInspectorSnapshot> staleInspectionTask = service.Requests.InspectPokemonAsync(new DebugPokemonInspectionRequestPayload { Target = DebugPokemonTarget.Player });
+        TrackerMessage? staleInspectionRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        TrackerProtocolError staleInspectionError = new(TrackerErrorCodes.PokemonNotFound, "The requested Pokemon is not available for inspection.");
+        await writer.WriteAsync(TrackerMessageFactory.CreateErrorResponse(staleInspectionRequest!.RequestId!, staleInspectionError));
+        TrackerProtocolException staleInspectionException = await Assert.ThrowsAsync<TrackerProtocolException>(() => staleInspectionTask);
+        Assert.Equal(TrackerErrorCodes.PokemonNotFound, staleInspectionException.ErrorCode);
+        Assert.Equal($"TrackerProtocolException: {staleInspectionError.Message}", diagnostics.LastProtocolError);
 
         GameCurrentStatePayload currentState = new(true, "run-1", null, 7);
         TrackerMessage response = TrackerMessageFactory.CreateResponse(requestId, currentState, "run-1");
@@ -113,119 +128,132 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal(PokemonLookupSection.Overview, lookupPayload.Section);
         PokemonLookupSnapshot lookupResponse = new()
         {
-            SpeciesId = "CHARMANDER:0",
-            SpeciesName = "Charmander",
-            Types = ["FIRE"],
-            BaseStats = new BaseStatsSnapshot { Hp = 39, Attack = 52, Defense = 43, SpecialAttack = 60, SpecialDefense = 50, Speed = 65 },
-            BaseStatTotal = 309,
-            AbilitySlots =
-            [
-                new DebugAbilitySlotSnapshot
-                {
-                    Group = DebugAbilitySlotGroup.Generated,
-                    Kind = DebugAbilitySlotKind.Normal,
-                    Index = 0,
-                    AbilityId = "BLAZE",
-                    AbilityName = "Blaze",
-                    OriginalAbilityId = "BLAZE",
-                    OriginalAbilityName = "Blaze",
-                    Eligibility = DebugAbilityEligibility.Universal
-                }
-            ],
-            AbilityGenerator = new GeneratorDiagnosticsSnapshot
+            Identity = new PokemonLookupIdentitySnapshot { SpeciesId = "CHARMANDER:0", SpeciesName = "Charmander", Types = ["FIRE"] },
+            Overview = new PokemonLookupOverviewSnapshot
             {
-                Enabled = true,
-                Entries =
-                [
-                    new GeneratorDiagnosticEntrySnapshot { Key = "schema", Value = "3" },
-                    new GeneratorDiagnosticEntrySnapshot { Key = "pool_fingerprint", Value = "abilities" }
-                ]
+                WildOccurrences = new WildOccurrenceSearchResponsePayload
+                {
+                    Matches =
+                    [
+                        new WildPokemonOccurrenceSnapshot
+                        {
+                            MapId = 4,
+                            RouteName = "Route 1",
+                            Mode = "Classic",
+                            EncounterType = "Land",
+                            Slot = 2,
+                            MinimumLevel = 4,
+                            MaximumLevel = 6,
+                            SourceSpeciesId = "RATTATA:0",
+                            SourceSpeciesName = "Rattata",
+                            ChancePercent = 20m
+                        }
+                    ],
+                    Total = 1
+                },
+                TrainerOccurrences = new TrainerOccurrenceSearchResponsePayload
+                {
+                    Matches =
+                    [
+                        new TrainerPokemonOccurrenceSnapshot
+                        {
+                            TrainerId = "YOUNGSTER_BEN_0",
+                            TrainerName = "Ben",
+                            TrainerType = "Youngster",
+                            Slot = 1,
+                            Level = 7,
+                            MapId = 4,
+                            RouteName = "Route 1",
+                            SourceSpeciesId = "PIDGEY:0",
+                            SourceSpeciesName = "Pidgey"
+                        }
+                    ],
+                    Total = 1
+                }
             },
-            WildOccurrences =
-            [
-                new WildPokemonOccurrenceSnapshot
+            Stats = new PokemonLookupStatsSnapshot
+            {
+                Generated = new BaseStatsSnapshot { Hp = 39, Attack = 52, Defense = 43, SpecialAttack = 60, SpecialDefense = 50, Speed = 65 },
+                GeneratedTotal = 309
+            },
+            Abilities = new PokemonLookupAbilitiesSnapshot
+            {
+                Slots =
+                [
+                    new DebugAbilitySlotSnapshot
+                    {
+                        Group = DebugAbilitySlotGroup.Generated,
+                        Kind = DebugAbilitySlotKind.Normal,
+                        Index = 0,
+                        AbilityId = "BLAZE",
+                        AbilityName = "Blaze",
+                        OriginalAbilityId = "BLAZE",
+                        OriginalAbilityName = "Blaze",
+                        Eligibility = DebugAbilityEligibility.Universal
+                    }
+                ],
+                Generator = new GeneratorDiagnosticsSnapshot
                 {
-                    MapId = 4,
-                    RouteName = "Route 1",
-                    Mode = "Classic",
-                    EncounterType = "Land",
-                    Slot = 2,
-                    MinimumLevel = 4,
-                    MaximumLevel = 6,
-                    SourceSpeciesId = "RATTATA:0",
-                    SourceSpeciesName = "Rattata",
-                    ChancePercent = 20m
+                    Enabled = true,
+                    Entries =
+                    [
+                        new GeneratorDiagnosticEntrySnapshot { Key = "schema", Value = "3" },
+                        new GeneratorDiagnosticEntrySnapshot { Key = "pool_fingerprint", Value = "abilities" }
+                    ]
                 }
-            ],
-            TrainerOccurrences =
-            [
-                new TrainerPokemonOccurrenceSnapshot
-                {
-                    TrainerId = "YOUNGSTER_BEN_0",
-                    TrainerName = "Ben",
-                    TrainerType = "Youngster",
-                    Slot = 1,
-                    Level = 7,
-                    MapId = 4,
-                    RouteName = "Route 1",
-                    SourceSpeciesId = "PIDGEY:0",
-                    SourceSpeciesName = "Pidgey"
-                }
-            ],
-            Evolutions =
-            [
-                new PokemonRelationSnapshot
-                {
-                    SpeciesId = "CHARMELEON:0",
-                    SpeciesName = "Charmeleon",
-                    Label = "Level 16"
-                }
-            ],
-            EvolutionTargets =
-            [
-                new EvolutionTargetSnapshot
-                {
-                    SpeciesId = "PYUKUMUKU:0",
-                    SpeciesName = "Pyukumuku",
-                    SpritePath = "Graphics/Battlers/pyukumuku.png",
-                    BaseStatTotal = 410,
-                    EffectiveMethods = ["Level 25", "Moon Stone"]
-                }
-            ],
-            EvolutionPredecessors =
-            [
-                new EvolutionTargetSnapshot
-                {
-                    SpeciesId = "CYNDAQUIL:0",
-                    SpeciesName = "Cyndaquil",
-                    BaseStatTotal = 309,
-                    EffectiveMethods = ["Level 16"]
-                }
-            ]
+            },
+            Evolutions = new PokemonLookupEvolutionsSnapshot
+            {
+                NativeTargets =
+                [
+                    new PokemonRelationSnapshot { SpeciesId = "CHARMELEON:0", SpeciesName = "Charmeleon", Label = "Level 16" }
+                ],
+                GeneratedTargets =
+                [
+                    new EvolutionTargetSnapshot
+                    {
+                        SpeciesId = "PYUKUMUKU:0",
+                        SpeciesName = "Pyukumuku",
+                        SpritePath = "Graphics/Battlers/pyukumuku.png",
+                        BaseStatTotal = 410,
+                        EffectiveMethods = ["Level 25", "Moon Stone"]
+                    }
+                ],
+                GeneratedPredecessors =
+                [
+                    new EvolutionTargetSnapshot
+                    {
+                        SpeciesId = "CYNDAQUIL:0",
+                        SpeciesName = "Cyndaquil",
+                        BaseStatTotal = 309,
+                        EffectiveMethods = ["Level 16"]
+                    }
+                ]
+            }
         };
 
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(lookupRequest.RequestId!, lookupResponse, "run-1"));
         PokemonLookupSnapshot receivedLookup = await lookupTask;
-        Assert.Equal(309, receivedLookup.BaseStatTotal);
-        DebugAbilitySlotSnapshot receivedAbilitySlot = Assert.Single(receivedLookup.AbilitySlots);
+        Assert.Equal(309, receivedLookup.Stats!.GeneratedTotal);
+        DebugAbilitySlotSnapshot receivedAbilitySlot = Assert.Single(receivedLookup.Abilities!.Slots);
         Assert.Equal(DebugAbilitySlotGroup.Generated, receivedAbilitySlot.Group);
         Assert.Equal("BLAZE", receivedAbilitySlot.AbilityId);
         Assert.Equal(DebugAbilityEligibility.Universal, receivedAbilitySlot.Eligibility);
-        Assert.Equal("3", receivedLookup.AbilityGenerator.Entries[0].Value);
-        Assert.Equal("abilities", receivedLookup.AbilityGenerator.Entries[1].Value);
-        WildPokemonOccurrenceSnapshot receivedWild = Assert.Single(receivedLookup.WildOccurrences);
+        Assert.Equal("3", receivedLookup.Abilities.Generator.Entries[0].Value);
+        Assert.Equal("abilities", receivedLookup.Abilities.Generator.Entries[1].Value);
+        WildPokemonOccurrenceSnapshot receivedWild = Assert.Single(receivedLookup.Overview!.WildOccurrences.Matches);
         Assert.Equal("Route 1", receivedWild.RouteName);
         Assert.Equal(4, receivedWild.MinimumLevel);
         Assert.Equal(6, receivedWild.MaximumLevel);
-        TrainerPokemonOccurrenceSnapshot receivedTrainer = Assert.Single(receivedLookup.TrainerOccurrences);
+        TrainerPokemonOccurrenceSnapshot receivedTrainer = Assert.Single(receivedLookup.Overview.TrainerOccurrences.Matches);
         Assert.Equal("Ben", receivedTrainer.TrainerName);
         Assert.Equal(7, receivedTrainer.Level);
         Assert.Equal("Route 1", receivedTrainer.RouteName);
-        EvolutionTargetSnapshot receivedTarget = Assert.Single(receivedLookup.EvolutionTargets);
+        EvolutionTargetSnapshot receivedTarget = Assert.Single(receivedLookup.Evolutions!.GeneratedTargets);
         Assert.Equal("PYUKUMUKU:0", receivedTarget.SpeciesId);
         Assert.Equal(410, receivedTarget.BaseStatTotal);
         Assert.Equal(["Level 25", "Moon Stone"], receivedTarget.EffectiveMethods);
-        EvolutionTargetSnapshot receivedPredecessor = Assert.Single(receivedLookup.EvolutionPredecessors);
+        EvolutionTargetSnapshot receivedPredecessor = Assert.Single(receivedLookup.Evolutions.GeneratedPredecessors);
         Assert.Equal("CYNDAQUIL:0", receivedPredecessor.SpeciesId);
         Assert.Equal(["Level 16"], receivedPredecessor.EffectiveMethods);
         Assert.Same(receivedLookup, await service.Requests.LookupPokemonAsync(recipe, "CHARMANDER:0"));
@@ -248,6 +276,52 @@ public sealed class TrackerConnectionServiceTests
         EvolutionCandidateSearchResponsePayload receivedCandidates = await candidateTask;
         Assert.Equal("BULBASAUR:0", Assert.Single(receivedCandidates.Matches).SpeciesId);
         Assert.Same(receivedCandidates, await service.Requests.SearchEvolutionCandidatesAsync(recipe, "CHARMANDER:0", EvolutionCandidateSide.Normal, "saur"));
+
+        Task<FusionMaterialSearchResponsePayload> materialTask = service.Requests.SearchFusionMaterialsAsync(recipe, "B445H175:0", 50);
+        TrackerMessage? materialRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("fusion_material_search", materialRequest?.Command);
+        FusionMaterialSearchRequestPayload materialPayload = TrackerJson.DeserializePayload<FusionMaterialSearchRequestPayload>(materialRequest!.Payload);
+        Assert.Equal("B445H175:0", materialPayload.SpeciesId);
+        Assert.Equal(50, materialPayload.Offset);
+        Assert.Equal(TrackerProtocol.FusionMaterialPageSize, materialPayload.Limit);
+        FusionMaterialSearchResponsePayload materialResponse = new()
+        {
+            Matches =
+            [
+                new FusionMaterialPairSnapshot
+                {
+                    Body = new PokemonRelationSnapshot { SpeciesId = "MUDKIP:0", SpeciesName = "Mudkip", Label = "Body material" },
+                    Head = new PokemonRelationSnapshot { SpeciesId = "TOGEPI:0", SpeciesName = "Togepi", Label = "Head material" }
+                }
+            ],
+            Total = 5_000
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(materialRequest.RequestId!, materialResponse, "run-1"));
+        FusionMaterialSearchResponsePayload receivedMaterials = await materialTask;
+        Assert.Equal(5_000, receivedMaterials.Total);
+        Assert.Equal("MUDKIP:0", Assert.Single(receivedMaterials.Matches).Body.SpeciesId);
+        Assert.Same(receivedMaterials, await service.Requests.SearchFusionMaterialsAsync(recipe, "B445H175:0", 50));
+
+        Task<WildOccurrenceSearchResponsePayload> wildOccurrenceTask = service.Requests.SearchWildOccurrencesAsync(recipe, "B310H310:0", 50);
+        TrackerMessage? wildOccurrenceRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("wild_occurrence_search", wildOccurrenceRequest?.Command);
+        WildOccurrenceSearchRequestPayload wildOccurrencePayload = TrackerJson.DeserializePayload<WildOccurrenceSearchRequestPayload>(wildOccurrenceRequest!.Payload);
+        Assert.Equal(50, wildOccurrencePayload.Offset);
+        Assert.Equal(TrackerProtocol.OccurrencePageSize, wildOccurrencePayload.Limit);
+        WildOccurrenceSearchResponsePayload wildOccurrenceResponse = new() { Matches = lookupResponse.Overview!.WildOccurrences.Matches, Total = 12_000 };
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(wildOccurrenceRequest.RequestId!, wildOccurrenceResponse, "run-1"));
+        Assert.Equal(12_000, (await wildOccurrenceTask).Total);
+
+        Task<TrainerOccurrenceSearchResponsePayload> trainerOccurrenceTask = service.Requests.SearchTrainerOccurrencesAsync(recipe, "B310H310:0", 100);
+        TrackerMessage? trainerOccurrenceRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("trainer_occurrence_search", trainerOccurrenceRequest?.Command);
+        TrainerOccurrenceSearchRequestPayload trainerOccurrencePayload = TrackerJson.DeserializePayload<TrainerOccurrenceSearchRequestPayload>(trainerOccurrenceRequest!.Payload);
+        Assert.Equal(100, trainerOccurrencePayload.Offset);
+        Assert.Equal(TrackerProtocol.OccurrencePageSize, trainerOccurrencePayload.Limit);
+        TrainerOccurrenceSearchResponsePayload trainerOccurrenceResponse = new() { Matches = lookupResponse.Overview.TrainerOccurrences.Matches, Total = 2_000 };
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(trainerOccurrenceRequest.RequestId!, trainerOccurrenceResponse, "run-1"));
+        Assert.Equal(2_000, (await trainerOccurrenceTask).Total);
 
         Task<FusionPreviewResponsePayload> fusionTask = service.Requests.PreviewFusionAsync(recipe, "CHARMANDER:0", "ALTARIA:0");
         TrackerMessage? fusionRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
@@ -273,37 +347,38 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal(PokemonLookupSection.Overview, receivedInspectPayload.Section);
         DebugPokemonInspectorSnapshot inspectResponse = new()
         {
-            PokemonId = "1234",
-            Nickname = "Charmander",
-            SpeciesId = "CHARMANDER:0",
-            SpeciesName = "Charmander",
-            Level = 5,
-            Gender = "male",
-            ActiveAbilitySlot = "Normal 0",
-            ActiveAbilityId = "BLAZE",
-            ActiveAbilityName = "Blaze",
-            Generator = new DebugAbilityGeneratorSnapshot { PoolFingerprint = "abilities" }
+            Identity = new DebugPokemonIdentitySnapshot
+            {
+                PokemonId = "1234",
+                Nickname = "Charmander",
+                SpeciesId = "CHARMANDER:0",
+                SpeciesName = "Charmander",
+                Level = 5,
+                Gender = "male",
+                ActiveAbilitySlot = "Normal 0",
+                ActiveAbilityId = "BLAZE",
+                ActiveAbilityName = "Blaze"
+            }
         };
 
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(inspectRequest.RequestId!, inspectResponse, "run-1"));
-        Assert.Equal("BLAZE", (await inspectTask).ActiveAbilityId);
+        Assert.Equal("BLAZE", (await inspectTask).Identity.ActiveAbilityId);
 
         Task<DebugRunDiagnosticsSnapshot> diagnosticsTask = service.Requests.GetDebugRunDiagnosticsAsync();
         TrackerMessage? diagnosticsRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
         Assert.Equal("debug_run_diagnostics", diagnosticsRequest?.Command);
         DebugRunDiagnosticsSnapshot diagnosticsResponse = new()
         {
-            GameVersion = "6.8.0",
-            IronmonVersion = "0.3.3",
-            WildPolicy = "mixed",
-            TrainerPolicy = "mixed",
-            UnfusionSetting = "random_component",
-            CustomFusionPoolFingerprint = "fusions",
-            AbilityPoolFingerprint = "abilities"
+            Runtime = CreateRuntimeDiagnostics(),
+            Configuration = CreateConfiguration(),
+            SpeciesGenerator = new SpeciesGeneratorRecipePayload { Version = 1, PoolFingerprint = "species" },
+            AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 3, PoolSize = 10, PoolFingerprint = "abilities" },
+            PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 10, PoolFingerprint = "fusions" },
+            Mappings = new DebugMappingDiagnosticsSnapshot()
         };
 
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(diagnosticsRequest!.RequestId!, diagnosticsResponse, "run-1"));
-        Assert.Equal("mixed", (await diagnosticsTask).WildPolicy);
+        Assert.Equal("mixed", (await diagnosticsTask).Configuration.WildPolicy);
 
         Task<PokemonSearchResponsePayload> debugSearchTask = service.Requests.SearchDebugPokemonAsync("char");
         TrackerMessage? debugSearchRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
@@ -320,8 +395,8 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal(PokemonLookupSection.Overview, debugLookupPayload.Section);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugLookupRequest!.RequestId!, lookupResponse, "run-1"));
         PokemonLookupSnapshot receivedDebugLookup = await debugLookupTask;
-        Assert.Equal(309, receivedDebugLookup.BaseStatTotal);
-        Assert.Equal("BLAZE", Assert.Single(receivedDebugLookup.AbilitySlots).AbilityId);
+        Assert.Equal(309, receivedDebugLookup.Stats!.GeneratedTotal);
+        Assert.Equal("BLAZE", Assert.Single(receivedDebugLookup.Abilities!.Slots).AbilityId);
 
         Task<EvolutionCandidateSearchResponsePayload> debugCandidateTask = service.Requests.SearchDebugEvolutionCandidatesAsync("CHARMANDER:0", EvolutionCandidateSide.Normal, string.Empty);
         TrackerMessage? debugCandidateRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
@@ -330,6 +405,31 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal(EvolutionCandidateSide.Normal, debugCandidatePayload.Side);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugCandidateRequest.RequestId!, candidateResponse, "run-1"));
         Assert.Equal("BULBASAUR:0", Assert.Single((await debugCandidateTask).Matches).SpeciesId);
+
+        Task<FusionMaterialSearchResponsePayload> debugMaterialTask = service.Requests.SearchDebugFusionMaterialsAsync("B445H175:0", 100);
+        TrackerMessage? debugMaterialRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("debug_fusion_material_search", debugMaterialRequest?.Command);
+        DebugFusionMaterialSearchRequestPayload debugMaterialPayload = TrackerJson.DeserializePayload<DebugFusionMaterialSearchRequestPayload>(debugMaterialRequest!.Payload);
+        Assert.Equal(100, debugMaterialPayload.Offset);
+        Assert.Equal(TrackerProtocol.FusionMaterialPageSize, debugMaterialPayload.Limit);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugMaterialRequest.RequestId!, materialResponse, "run-1"));
+        Assert.Equal(5_000, (await debugMaterialTask).Total);
+
+        Task<WildOccurrenceSearchResponsePayload> debugWildOccurrenceTask = service.Requests.SearchDebugWildOccurrencesAsync("B310H310:0", 150);
+        TrackerMessage? debugWildOccurrenceRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("debug_wild_occurrence_search", debugWildOccurrenceRequest?.Command);
+        DebugWildOccurrenceSearchRequestPayload debugWildOccurrencePayload = TrackerJson.DeserializePayload<DebugWildOccurrenceSearchRequestPayload>(debugWildOccurrenceRequest!.Payload);
+        Assert.Equal(150, debugWildOccurrencePayload.Offset);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugWildOccurrenceRequest.RequestId!, wildOccurrenceResponse, "run-1"));
+        Assert.Equal(12_000, (await debugWildOccurrenceTask).Total);
+
+        Task<TrainerOccurrenceSearchResponsePayload> debugTrainerOccurrenceTask = service.Requests.SearchDebugTrainerOccurrencesAsync("B310H310:0", 200);
+        TrackerMessage? debugTrainerOccurrenceRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("debug_trainer_occurrence_search", debugTrainerOccurrenceRequest?.Command);
+        DebugTrainerOccurrenceSearchRequestPayload debugTrainerOccurrencePayload = TrackerJson.DeserializePayload<DebugTrainerOccurrenceSearchRequestPayload>(debugTrainerOccurrenceRequest!.Payload);
+        Assert.Equal(200, debugTrainerOccurrencePayload.Offset);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugTrainerOccurrenceRequest.RequestId!, trainerOccurrenceResponse, "run-1"));
+        Assert.Equal(2_000, (await debugTrainerOccurrenceTask).Total);
 
         Task<FusionPreviewResponsePayload> debugFusionTask = service.Requests.PreviewDebugFusionAsync("CHARMANDER:0", "ALTARIA:0");
         TrackerMessage? debugFusionRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
@@ -681,13 +781,33 @@ public sealed class TrackerConnectionServiceTests
         Result = "lost",
         GameVersion = "6.8.0",
         IronmonVersion = "0.3.3",
-        Configuration = JsonSerializer.SerializeToElement(new { wild_policy = "mixed" }),
-        SpeciesGeneratorVersion = 1,
-        AbilityGeneratorVersion = 3,
-        PlayerFusionGeneratorVersion = 2,
-        SpeciesPoolFingerprint = "species",
-        AbilityPoolFingerprint = "abilities",
-        FusionPoolFingerprint = "fusions"
+        Configuration = CreateConfiguration(),
+        SpeciesGenerator = new SpeciesGeneratorRecipePayload { Version = 1, PoolFingerprint = "species" },
+        AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 3, PoolSize = 10, PoolFingerprint = "abilities" },
+        PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 10, PoolFingerprint = "fusions" }
+    };
+
+    /// <summary>
+    /// Creates a valid typed configuration for connection tests.
+    /// </summary>
+    /// <returns>The test configuration.</returns>
+    private static RunConfigurationPayload CreateConfiguration() => new()
+    {
+        SchemaVersion = 1,
+        WildPolicy = "mixed",
+        TrainerPolicy = "mixed",
+        UnfusionSetting = "random_component"
+    };
+
+    /// <summary>
+    /// Creates valid runtime diagnostics for connection tests.
+    /// </summary>
+    /// <returns>The test runtime diagnostics.</returns>
+    private static DebugRuntimeDiagnosticsSnapshot CreateRuntimeDiagnostics() => new()
+    {
+        GameVersion = "6.8.0",
+        IronmonVersion = "0.3.3",
+        ProtocolVersion = TrackerProtocol.CurrentSchemaVersion
     };
 
     /// <summary>

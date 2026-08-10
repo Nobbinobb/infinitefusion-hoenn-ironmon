@@ -1,7 +1,7 @@
 namespace Ironmon.Tracker.Protocol.Debug;
 
 /// <summary>
-/// Describes game-owned run and randomizer diagnostics in authorized debug mode.
+/// Describes grouped game-owned run and randomizer diagnostics in authorized debug mode.
 /// </summary>
 public sealed class DebugRunDiagnosticsSnapshot
 {
@@ -12,6 +12,57 @@ public sealed class DebugRunDiagnosticsSnapshot
     {
     }
 
+    /// <summary>
+    /// Gets or initializes runtime and run identity diagnostics.
+    /// </summary>
+    public required DebugRuntimeDiagnosticsSnapshot Runtime { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the active run configuration.
+    /// </summary>
+    public required RunConfigurationPayload Configuration { get; init; }
+
+    /// <summary>
+    /// Gets or initializes species-generator compatibility metadata.
+    /// </summary>
+    public required SpeciesGeneratorRecipePayload SpeciesGenerator { get; init; }
+
+    /// <summary>
+    /// Gets or initializes ability-generator compatibility metadata.
+    /// </summary>
+    public required AbilityGeneratorRecipePayload AbilityGenerator { get; init; }
+
+    /// <summary>
+    /// Gets or initializes base-stat-generator compatibility metadata when enabled.
+    /// </summary>
+    public BaseStatGeneratorRecipePayload? BaseStatGenerator { get; init; }
+
+    /// <summary>
+    /// Gets or initializes evolution-generator compatibility metadata when enabled.
+    /// </summary>
+    public EvolutionGeneratorRecipePayload? EvolutionGenerator { get; init; }
+
+    /// <summary>
+    /// Gets or initializes move-access-generator compatibility metadata when enabled.
+    /// </summary>
+    public MoveAccessGeneratorRecipePayload? MoveAccessGenerator { get; init; }
+
+    /// <summary>
+    /// Gets or initializes player-fusion-generator compatibility metadata.
+    /// </summary>
+    public required PlayerFusionGeneratorRecipePayload PlayerFusionGenerator { get; init; }
+
+    /// <summary>
+    /// Gets or initializes persisted mapping counts.
+    /// </summary>
+    public required DebugMappingDiagnosticsSnapshot Mappings { get; init; }
+}
+
+/// <summary>
+/// Describes runtime identity for an authorized debug run.
+/// </summary>
+public sealed class DebugRuntimeDiagnosticsSnapshot
+{
     /// <summary>
     /// Gets or initializes the Infinite Fusion version.
     /// </summary>
@@ -41,69 +92,20 @@ public sealed class DebugRunDiagnosticsSnapshot
     /// Gets or initializes the active run seed.
     /// </summary>
     public long? RunSeed { get; init; }
+}
 
-    /// <summary>
-    /// Gets or initializes the wild randomization policy.
-    /// </summary>
-    public required string WildPolicy { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the trainer randomization policy.
-    /// </summary>
-    public required string TrainerPolicy { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the unfusion policy.
-    /// </summary>
-    public required string UnfusionSetting { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the custom-fusion pool size.
-    /// </summary>
-    public int CustomFusionPoolSize { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the custom-fusion pool fingerprint.
-    /// </summary>
-    public required string CustomFusionPoolFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the species generator schema version.
-    /// </summary>
-    public int SpeciesGeneratorVersion { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the ability generator schema version.
-    /// </summary>
-    public int AbilityGeneratorVersion { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the ability-pool size.
-    /// </summary>
-    public int AbilityPoolSize { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the ability-pool fingerprint.
-    /// </summary>
-    public required string AbilityPoolFingerprint { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the base-stat generator schema version when enabled.
-    /// </summary>
-    public int? BaseStatGeneratorVersion { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the base-stat source fingerprint when enabled.
-    /// </summary>
-    public string? BaseStatSourceFingerprint { get; init; }
-
+/// <summary>
+/// Describes persisted species mapping counts for an active run.
+/// </summary>
+public sealed class DebugMappingDiagnosticsSnapshot
+{
     /// <summary>
     /// Gets or initializes the persisted wild mapping count.
     /// </summary>
-    public int WildMappingCount { get; init; }
+    public int Wild { get; init; }
 
     /// <summary>
     /// Gets or initializes the persisted trainer mapping count.
     /// </summary>
-    public int TrainerMappingCount { get; init; }
+    public int Trainer { get; init; }
 }

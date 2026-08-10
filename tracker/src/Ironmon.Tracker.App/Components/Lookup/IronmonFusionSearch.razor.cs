@@ -59,10 +59,10 @@ public partial class IronmonFusionSearch
     /// </summary>
     protected override void OnParametersSet()
     {
-        if (_pokemonKey == Pokemon.SpeciesId)
+        if (_pokemonKey == Pokemon.Identity.SpeciesId)
             return;
 
-        _pokemonKey = Pokemon.SpeciesId;
+        _pokemonKey = Pokemon.Identity.SpeciesId;
         _matches = [];
         _outcomes = [];
         _query = string.Empty;
@@ -217,9 +217,9 @@ public partial class IronmonFusionSearch
     private Task<FusionPreviewResponsePayload> PreviewFusionAsync(string secondSpeciesId)
     {
         if (DebugMode)
-            return Connection.PreviewDebugFusionAsync(Pokemon.SpeciesId, secondSpeciesId);
+            return Connection.PreviewDebugFusionAsync(Pokemon.Identity.SpeciesId, secondSpeciesId);
 
         CompletedRunRecipePayload recipe = Recipe ?? throw new InvalidOperationException(Text["Lookup.Fusion.CompletedRunRecipeRequired"]);
-        return Connection.PreviewFusionAsync(recipe, Pokemon.SpeciesId, secondSpeciesId);
+        return Connection.PreviewFusionAsync(recipe, Pokemon.Identity.SpeciesId, secondSpeciesId);
     }
 }

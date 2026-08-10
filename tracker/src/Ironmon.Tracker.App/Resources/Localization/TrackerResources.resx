@@ -582,6 +582,12 @@
   <data name="Debug.Run.FusionFingerprint" xml:space="preserve">
     <value>Fusion fingerprint</value>
   </data>
+  <data name="Debug.Run.EvolutionFingerprint" xml:space="preserve">
+    <value>Evolution target fingerprint</value>
+  </data>
+  <data name="Debug.Run.EvolutionSchema" xml:space="preserve">
+    <value>Evolution schema</value>
+  </data>
   <data name="Debug.Run.Game" xml:space="preserve">
     <value>Game</value>
   </data>
@@ -593,6 +599,12 @@
   </data>
   <data name="Debug.Run.None" xml:space="preserve">
     <value>None</value>
+  </data>
+  <data name="Debug.Run.MoveFingerprint" xml:space="preserve">
+    <value>Move pool fingerprint</value>
+  </data>
+  <data name="Debug.Run.MoveSchema" xml:space="preserve">
+    <value>Move schema</value>
   </data>
   <data name="Debug.Run.Protocol" xml:space="preserve">
     <value>Protocol</value>
@@ -611,6 +623,9 @@
   </data>
   <data name="Debug.Run.SpeciesSchema" xml:space="preserve">
     <value>Species schema</value>
+  </data>
+  <data name="Debug.Run.SpeciesFingerprint" xml:space="preserve">
+    <value>Species fingerprint</value>
   </data>
   <data name="Debug.Run.Trainer" xml:space="preserve">
     <value>Trainer</value>

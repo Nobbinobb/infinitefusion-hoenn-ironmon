@@ -20,7 +20,7 @@
                 role="tab"
                 aria-selected="@(_selectedView == TrackerView.Player)"
                 @onclick="() => SelectView(TrackerView.Player)">
-            <span class="tab-key">P</span>
+            <span class="tab-key">Ctrl+1</span>
             @Text["App.Shell.Player"]
         </button>
         <button class="@GetTabClass(TrackerView.Enemy)"
@@ -28,7 +28,7 @@
                 role="tab"
                 aria-selected="@(_selectedView == TrackerView.Enemy)"
                 @onclick="() => SelectView(TrackerView.Enemy)">
-            <span class="tab-key">E</span>
+            <span class="tab-key">Ctrl+2</span>
             @Text["App.Shell.Enemy"]
         </button>
         <button class="@GetTabClass(TrackerView.Lookup)"
@@ -36,7 +36,7 @@
                 role="tab"
                 aria-selected="@(_selectedView == TrackerView.Lookup)"
                 @onclick="() => SelectView(TrackerView.Lookup)">
-            <span class="tab-key">L</span>
+            <span class="tab-key">Ctrl+3</span>
             @Text["App.Shell.Lookup"]
         </button>
         @if (TrackerConnection.DebugAuthorized)
@@ -46,7 +46,7 @@
                     role="tab"
                     aria-selected="@(_selectedView == TrackerView.Debug)"
                     @onclick="() => SelectView(TrackerView.Debug)">
-                <span class="tab-key">D</span>
+                <span class="tab-key">Ctrl+4</span>
                 @Text["App.Shell.Debug"]
             </button>
         }
@@ -75,10 +75,10 @@
     <footer class="tracker-footer">
         <span>@Text["App.Shell.LocalConnection"]</span>
         <span>
-            <kbd>P</kbd> @Text["App.Shell.Player"]&nbsp;&nbsp;<kbd>E</kbd> @Text["App.Shell.Enemy"]&nbsp;&nbsp;<kbd>L</kbd> @Text["App.Shell.Lookup"]
+            <kbd>Ctrl+1</kbd> @Text["App.Shell.Player"]&nbsp;&nbsp;<kbd>Ctrl+2</kbd> @Text["App.Shell.Enemy"]&nbsp;&nbsp;<kbd>Ctrl+3</kbd> @Text["App.Shell.Lookup"]
             @if (TrackerConnection.DebugAuthorized)
             {
-                <text>&nbsp;&nbsp;<kbd>D</kbd> @Text["App.Shell.Debug"]</text>
+                <text>&nbsp;&nbsp;<kbd>Ctrl+4</kbd> @Text["App.Shell.Debug"]</text>
             }
         </span>
     </footer>

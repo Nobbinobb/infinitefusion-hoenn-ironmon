@@ -1092,3 +1092,21 @@ Status: **Complete**
   `463c4bd24e6c9aababe68e2265fa7cff5fe2d3e684ceb4ecb455178bc0f1bd4f`.
 - Two consecutive release builds were byte-for-byte reproducible.
 - All 40 tracker tests and the combined game/tracker startup smoke test passed.
+
+## Ironmon 0.6.2 patch release
+
+Status: **Complete**
+
+- Unified the Pokemon information models used by live Debug Pokemon,
+  active-run Debug Lookup, and completed-run Lookup while retaining live slot
+  diagnostics and tab-specific generator details.
+- Nested completed-run recipe and run-diagnostic payloads, paged large
+  occurrence and fusion-material searches, and added automatic protocol error
+  reports with request and response context.
+- Added foreground-safe `Ctrl+1` through `Ctrl+4` navigation and the XInput
+  dual-trigger/right-stick controller chord.
+- Created `Ironmon-v0.6.2-evolutions.zip` with 457 entries and the SHA-256
+  checksum
+  `e32e3193188aed807ad13bf8dcce25f03777f030318c22916ac2cb6d3c78f67f`.
+- Two consecutive release builds were byte-for-byte reproducible.
+- All 41 tracker tests and the combined game/tracker startup smoke test passed.

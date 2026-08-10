@@ -6,7 +6,7 @@ namespace Ironmon.Tracker.App.Components.Debug;
 /// <summary>
 /// Coordinates combined current-Pokemon inspection, generated lookup, and run diagnostics.
 /// </summary>
-public partial class DebugInspector
+public partial class DebugInspector : IDisposable
 {
     private DebugInspectorPage _selectedPage = DebugInspectorPage.Pokemon;
     private PokemonInformationPage _selectedPokemonPage = PokemonInformationPage.Overview;
@@ -20,6 +20,7 @@ public partial class DebugInspector
     private bool _backgroundRefresh;
     private bool _targetInitialized;
     private bool _refreshPending;
+    private CancellationTokenSource? _inspectionCancellation;
     private PlayerPokemonSnapshot? _observedPlayer;
     private IReadOnlyList<EnemyPokemonSnapshot> _observedEnemies = [];
 
@@ -72,6 +73,19 @@ public partial class DebugInspector
         _observedEnemies = Enemies;
         if (!selectedChanged)
             return;
+
+        if (_selectedPage != DebugInspectorPage.Pokemon)
+            return;
+
+        if (!IsSelectedTargetAvailable())
+        {
+            _inspectionCancellation?.Cancel();
+            _refreshPending = false;
+            _pokemon = null;
+            _lookup = null;
+            _error = null;
+            return;
+        }
 
         if (_loading)
         {
@@ -144,7 +158,9 @@ public partial class DebugInspector
         if (!firstRender)
             return;
 
-        await InspectSelectedAsync();
+        if (IsSelectedTargetAvailable())
+            await InspectSelectedAsync();
+
         await InvokeAsync(StateHasChanged);
     }
 
@@ -171,8 +187,15 @@ public partial class DebugInspector
 
         _selectedPage = page;
         _error = null;
-        if (page == DebugInspectorPage.Diagnostics)
+        if (page == DebugInspectorPage.Pokemon)
+        {
+            EnsureSelectedTargetAvailable();
+            await InspectSelectedAsync();
+        }
+        else if (page == DebugInspectorPage.Diagnostics)
+        {
             await LoadDiagnosticsAsync();
+        }
     }
 
     /// <summary>
@@ -197,15 +220,28 @@ public partial class DebugInspector
         if (_loading)
             return;
 
+        if (!IsSelectedTargetAvailable())
+        {
+            _pokemon = null;
+            _lookup = null;
+            _error = null;
+            return;
+        }
+
+        using CancellationTokenSource cancellation = new();
+        _inspectionCancellation = cancellation;
         _loading = true;
         _backgroundRefresh = preserveContent && _pokemon is not null && _lookup is not null;
         _error = null;
         try
         {
-            DebugPokemonInspectorSnapshot pokemon = await Connection.InspectPokemonAsync(CreateInspectionRequest());
+            DebugPokemonInspectorSnapshot pokemon = await Connection.InspectPokemonAsync(CreateInspectionRequest(), cancellation.Token);
             _pokemon = pokemon;
             if (refreshLookup)
-                _lookup = await Connection.LookupDebugPokemonAsync(pokemon.SpeciesId);
+                _lookup = await Connection.LookupDebugPokemonAsync(pokemon.Identity.SpeciesId, cancellationToken: cancellation.Token);
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
         }
         catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
         {
@@ -219,6 +255,9 @@ public partial class DebugInspector
         }
         finally
         {
+            if (ReferenceEquals(_inspectionCancellation, cancellation))
+                _inspectionCancellation = null;
+
             _loading = false;
             _backgroundRefresh = false;
         }
@@ -286,11 +325,36 @@ public partial class DebugInspector
     }
 
     /// <summary>
+    /// Determines whether the selected live inspection target is present in the latest tracker state.
+    /// </summary>
+    /// <returns><see langword="true"/> when the selected target can be inspected.</returns>
+    private bool IsSelectedTargetAvailable()
+    {
+        string[] parts = _selectedTarget.Split(DebugTargetIds.Separator, DebugTargetIds.EnemySegmentCount);
+        if (parts[0] == DebugTargetIds.Player)
+            return Player is not null;
+
+        return parts[0] == DebugTargetIds.Enemy
+            && parts.Length == DebugTargetIds.EnemySegmentCount
+            && int.TryParse(parts[1], out int position)
+            && Enemies.Any(enemy => enemy.Position == position);
+    }
+
+    /// <summary>
     /// Gets the CSS class for one debug page button.
     /// </summary>
     /// <param name="page">The represented page.</param>
     /// <returns>The page button CSS classes.</returns>
     private string GetPageClass(DebugInspectorPage page)
         => page == _selectedPage ? TrackerUiConstants.SelectedCssClass : string.Empty;
+
+    /// <summary>
+    /// Cancels an inspection request when the debug view is removed.
+    /// </summary>
+    public void Dispose()
+    {
+        _inspectionCancellation?.Cancel();
+        _inspectionCancellation?.Dispose();
+    }
 
 }
