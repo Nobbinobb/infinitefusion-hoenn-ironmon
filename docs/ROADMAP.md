@@ -612,15 +612,162 @@ Acceptance criteria:
 
 ### Milestone 4: Full game-path coverage
 
-- Complete audits of encounters, gifts, static Pokemon, trainers, rematches, and
-  special battles.
-- Compatibility handling for event paths that bypass standard systems.
+#### Step 4.0: Game-path inventory and gap audit
+
+Status: **Complete**
+
+- Inventory compiled map and common-event calls that create Pokemon or begin
+  wild and trainer battles.
+- Trace standard, visible-overworld, static, gift, trade, trainer, rematch,
+  multi-battle, and alternate battle paths to their final Ironmon boundary.
+- Separate current Hoenn paths from dormant framework compatibility paths.
+- Record every confirmed bypass, ambiguous exception, and required follow-up.
+
+Acceptance criteria:
+
+- Every compiled event page and common event is included in the inventory.
+- Every permanent acquisition and battle family has a documented owner.
+- Existing evidence is linked rather than assumed.
+- Uncovered or ambiguous paths become explicit follow-up work.
+
+Result: the standard Hoenn event graph is broadly covered. The audit found a
+policy bypass in the PC Porygon and Mystery Gift silent-acquisition family, an
+unwrapped Pokemon-object double-wild entry point, and alternate Battle Frontier
+opponents outside the normal trainer boundaries. The chosen resolutions are now
+implemented: disable PC Porygon, disable Pokemon Mystery Gifts while retaining
+item gifts, support Pokemon-object double wild battles, and block organized
+challenge facilities during Ironmon. See
+`validation/milestone-4/STEP_4_0_AUDIT.md` and
+`validation/milestone-4/STEP_4_0_DECISIONS_VALIDATION.md`.
+
+#### Step 4.1: Boundary decisions and validation closure
+
+Status: **Complete**
+
+- Disable the PC Porygon encounter during Ironmon.
+- Disable Pokemon Mystery Gift claims while retaining item gifts.
+- Support Pokemon-object double wild battles through the shared mapping path.
+- Block Battle Frontier and organized challenge battles during Ironmon.
+- Validate schema-version-2 contexts and alternate wild override routing in the
+  bundled runtime.
+- Retire superseded manual validation queues and retain objective automated
+  evidence.
+
+Milestone 4 status: **Complete**
 
 ### Milestone 5: Remaining challenge rules
 
-- Run failure detection.
-- Optional automatic reset after losing.
-- Attempt counter and run statistics.
+Status: **Planned**
+
+The detailed behavior is defined in `design/CHALLENGE_LIFECYCLE.md`.
+
+#### Step 5.1: Game-owned run lifecycle and attempt ledger
+
+- Promote the existing tracker-only completion signal into one game-owned,
+  idempotent run lifecycle with `active`, `lost`, `won`, and `abandoned`
+  results.
+- Begin an attempt when its seed is generated and starter selection opens.
+- Mark F7 on an active attempt as abandoned before generating the next seed.
+- Keep the attempt number and aggregate result counts per save slot.
+- Carry the ledger forward across checkpoint restoration instead of restoring
+  the checkpoint's older counters.
+- Measure duration with accumulated active game time, excluding time while the
+  application is closed.
+
+Acceptance criteria:
+
+- Every generated seed receives exactly one increasing attempt number.
+- A run result can transition from active exactly once.
+- Saving, loading, manual F7, and automatic reset preserve the per-slot ledger.
+- Existing saves migrate with automatic reset disabled and their next generated
+  run as attempt 1.
+
+#### Step 5.2: Failure enforcement and optional automatic reset
+
+- Treat battle decisions 2 (loss) and 5 (draw) as failure, including battles
+  the base game allows the player to lose safely.
+- With automatic reset disabled, lock the failed run against movement, battles,
+  and acquisitions while retaining F7 and tracker access.
+- Add an `Automatic reset` pre-run setting, disabled by default and retained
+  across F7.
+- With automatic reset enabled, archive the result and immediately queue the
+  existing checkpoint reset without an in-game failure message or confirmation.
+- If checkpoint loading or generation fails, leave the failed run locked and
+  show the actionable error.
+- Keep Hall of Fame completion as `won`; never reset automatically after a win.
+
+Acceptance criteria:
+
+- Losses and draws end the attempt once regardless of `canLose`.
+- A locked failed run cannot continue gameplay but can still use F7.
+- Automatic reset never runs inside the battle callback and never races the
+  base game's battle cleanup.
+- The completed recipe and statistics are available before the next run starts.
+
+#### Step 5.3: Challenge statistics collection
+
+- Record attempt number, seed, active duration, result, battles completed,
+  highest player Pokemon level, and badges earned.
+- Record attempts started, lost, won, and abandoned as per-slot aggregates.
+- Record actual HP restored by player item use and healing wasted because the
+  target reached full HP.
+- Count successfully consumed player resources by item and source (`Bag` or
+  `Held`), including Poke Balls, activated held items, and Fling-like deliberate
+  consumption. Exclude enemy-owned items, key items, transfers, Knock Off, and
+  story-script removals.
+- For trainer Pokemon actually defeated, record displayed generated BST count,
+  average, minimum, and maximum with their species.
+- Count each displayed trainer species once per opposing Pokemon per battle,
+  regardless of switch-ins; rematches count again. Record distinct species,
+  frequency, and every species tied for most encountered.
+
+Acceptance criteria:
+
+- Statistics update only from authoritative gameplay boundaries and never from
+  tracker reconstruction or inspection.
+- Repeated callbacks, switch-ins, and reconnects cannot double-count an event.
+- Normal and fused displayed identities use the same generated-data resolvers.
+- Save/load and checkpoint reset preserve exact aggregate and attempt values.
+
+#### Step 5.4: Tracker lifecycle and statistics presentation
+
+- Add versioned current-attempt and completed-attempt statistics to the protocol
+  and completed-run recipe.
+- Show the full statistics in the tracker. The game exposes only the attempt
+  number through starter/reset notices and diagnostics.
+- On every completed attempt, automatically navigate the tracker to Lookup and
+  select that run.
+- If automatic reset immediately emits a new `run_started`, keep the completed
+  run selected instead of returning to Live.
+- Preserve lookup and archive compatibility for recipes created before
+  Milestone 5 statistics.
+
+Acceptance criteria:
+
+- Lost, won, and abandoned attempts archive once and select themselves in
+  Lookup.
+- Reconnect recovery archives and selects a completion that was missed live.
+- Starting the next automatic attempt does not steal focus from the completed
+  run.
+- Older completed recipes remain readable with unavailable statistics shown
+  explicitly rather than fabricated.
+
+#### Step 5.5: Milestone regression and release
+
+- Exercise ordinary losses, draws, safe-to-lose battles, wins, manual F7,
+  automatic reset, missing checkpoints, save/load, and repeated attempts.
+- Validate Bag and Held item accounting, actual and wasted healing, trainer BST
+  aggregation, and encounter-frequency ties.
+- Validate the game/tracker navigation race under immediate automatic reset.
+- Run tracker tests, clean-install startup, reproducible packaging, and cleanup.
+- Package the cumulative release as `0.6.5`.
+
+Acceptance criteria:
+
+- The complete lifecycle and statistics matrix passes in the bundled runtime.
+- No loss path permits gameplay continuation or loses the completed recipe.
+- Per-slot counters remain correct across every reset and recovery path.
+- Two release builds reproduce the same archive checksum.
 
 ### Milestone 6: Release quality
 

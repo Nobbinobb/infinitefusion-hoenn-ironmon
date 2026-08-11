@@ -183,6 +183,22 @@ def pbWildBattleSpecific(pokemon, outcomeVar = 1, canRun = true,
   )
 end
 
+alias ironmon_original_pb_wild_double_battle_specific pbWildDoubleBattleSpecific
+def pbWildDoubleBattleSpecific(pokemon1, pokemon2, outcomeVar = 1,
+                               canRun = true, canLose = false)
+  if Ironmon.active?
+    Ironmon.prepare_wild_pokemon(
+      pokemon1, Ironmon.wild_script_context(:specific_double, 0)
+    )
+    Ironmon.prepare_wild_pokemon(
+      pokemon2, Ironmon.wild_script_context(:specific_double, 1)
+    )
+  end
+  return ironmon_original_pb_wild_double_battle_specific(
+    pokemon1, pokemon2, outcomeVar, canRun, canLose
+  )
+end
+
 alias ironmon_original_pb_1v2_wild_battle_specific pb1v2WildBattleSpecific
 def pb1v2WildBattleSpecific(pokemon1, pokemon2, outcomeVar = 1,
                             canRun = true, canLose = false)
@@ -242,6 +258,46 @@ def tryRandomizeGiftPokemon(pokemon, dontRandomize = false)
     return
   end
   return ironmon_original_try_randomize_gift_pokemon(pokemon, dontRandomize)
+end
+
+alias ironmon_original_check_porygon_encounter checkPorygonEncounter
+def checkPorygonEncounter
+  return if Ironmon.active?
+  return ironmon_original_check_porygon_encounter
+end
+
+alias ironmon_original_receive_mystery_gift pbReceiveMysteryGift
+def pbReceiveMysteryGift(id)
+  if Ironmon.active? && $Trainer && $Trainer.mystery_gifts
+    gift = $Trainer.mystery_gifts.find do |entry|
+      entry[0] == id && entry.length > 1
+    end
+    if gift && gift[2].is_a?(Pokemon)
+      pbMessage(_INTL("Pokemon Mystery Gifts are unavailable during an Ironmon run."))
+      return false
+    end
+  end
+  return ironmon_original_receive_mystery_gift(id)
+end
+
+alias ironmon_original_battle_challenge_battle pbBattleChallengeBattle
+def pbBattleChallengeBattle
+  if Ironmon.active?
+    pbMessage(_INTL("Battle Frontier challenges are unavailable during an Ironmon run."))
+    return false
+  end
+  return ironmon_original_battle_challenge_battle
+end
+
+alias ironmon_original_organized_battle_ex pbOrganizedBattleEx
+def pbOrganizedBattleEx(opponent, challengedata, endspeech, endspeechwin)
+  if Ironmon.active?
+    pbMessage(_INTL("Organized challenge battles are unavailable during an Ironmon run."))
+    return false
+  end
+  return ironmon_original_organized_battle_ex(
+    opponent, challengedata, endspeech, endspeechwin
+  )
 end
 
 alias ironmon_original_obtain_randomized_starter obtainRandomizedStarter

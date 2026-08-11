@@ -45,14 +45,20 @@ Step 1.5 is complete. All automated and in-game acceptance checks passed.
 
 ## Schema version 2 follow-up
 
-- [ ] Two encounter-table slots containing the same source species receive
+- [x] Two encounter-table slots containing the same source species receive
   independent results, while each slot remains stable across revisits and
   save/load.
-- [ ] Two trainers containing the same source species receive independent
+- [x] Two trainers containing the same source species receive independent
   results, and duplicate source species in separate party slots do as well.
-- [ ] Static, gift, starter, custom-trainer, and rematch slots remain stable.
-- [ ] Schema-version-1 saves retain their old mappings until F7 creates a
+- [x] Static, gift, starter, custom-trainer, and rematch slots remain stable.
+- [x] Schema-version-1 saves retain their old mappings until F7 creates a
   schema-version-2 run.
+
+These follow-ups were closed by a bundled-runtime reconstruction pass. Distinct
+contexts created distinct schema-version-2 mapping keys, repeated and marshalled
+lookups reproduced their values, schema-version-1 source mappings remained in
+use, and F7-style preparation replaced them with empty on-demand schema-version-2
+maps.
 
 Partial acceptance used Custom Fusions Only for wild Pokemon and Normal Only
 for trainers. The rival was normal, all starters and ordinary wild encounters

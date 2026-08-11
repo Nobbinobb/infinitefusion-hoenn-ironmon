@@ -52,17 +52,13 @@ Pokemon Infinite Fusion 2's embedded Ruby runtime.
 - [x] The separate exhaustive 576-species generation pass still completed and
   rechecked counts, uniqueness, four starting moves, and damaging-move safety.
 
-## Player validation still required
+## Later automated closure
 
-- [ ] Start a new Ironmon run and confirm a normal Pokemon receives generated
-  level-up moves at its current level.
-- [ ] Confirm a fusion receives moves from the chronological union of both
-  generated component schedules.
-- [ ] Level up and evolve Pokemon, then confirm move prompts use the generated
-  schedule for their current species.
-- [ ] Save and reload the run, then confirm the same schedules remain.
-- [ ] Use F7 and confirm at least one inspected species receives a different
-  schedule under the new seed.
+The former player-validation queue was removed. Later Milestone 3 bundled-
+runtime passes validated normal and fusion schedules, current-species lookup,
+cache and Marshal reconstruction, and changed results after reseeding. The
+completed tracker move lookup exposes the generated schedules directly, so no
+manual presentation checklist remains.
 
 The remaining Step 3.3 access channels and tracker presentation are intentionally
 outside this Part 1 review boundary.

@@ -55,14 +55,12 @@ initialization inside Pokemon Infinite Fusion 2's embedded Ruby runtime.
 ## Player validation disposition
 
 - [x] Part 3 was accepted through code review and embedded-runtime validation.
-- [ ] Manual compatible/incompatible TM teaching checks are deferred until the
-  tracker exposes the generated TM list for the inspected Pokemon. This avoids
-  testing hidden compatibility by trial and error.
-- [ ] Scripted and Gym Leader reward comparison is deferred to the same tracker
-  integration so the received item can be checked against the saved
-  permutation.
-- [ ] Save/reload and F7 presentation will be checked with the completed
-  multi-channel tracker integration.
+- [x] The completed tracker exposes generated compatible and incompatible TM/TR
+  access directly; the former manual trial-and-error check is retired.
+- [x] Generated machine rewards and compatibility are reconstructed from the
+  saved permutation in completed tracker lookup.
+- [x] The cumulative Milestone 3 runtime pass validated save/reload and F7
+  reconstruction for the completed multi-channel generator.
 
 Ordinary tutor offerings and compatibility remain outside this Part 3 review
 boundary.

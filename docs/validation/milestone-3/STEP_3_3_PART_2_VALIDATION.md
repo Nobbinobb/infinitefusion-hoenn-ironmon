@@ -41,8 +41,8 @@ initialization inside Pokemon Infinite Fusion 2's embedded Ruby runtime.
   build: no map event or common event calls its implementation. This is not a
   Part 2 release blocker; its native lookup path was covered by the embedded
   test.
-- [ ] Fusion presentation will be checked later with the tracker move tabs.
-- [ ] Save/reload and F7 presentation will be checked with the complete
-  multi-channel tracker integration rather than through inaccessible gameplay.
+- [x] Fusion schedules are exposed by the completed tracker move tabs.
+- [x] The cumulative Milestone 3 runtime pass validated save/reload and F7
+  reconstruction for the completed multi-channel generator.
 
 TM/TR compatibility and rewards remain outside this Part 2 review boundary.

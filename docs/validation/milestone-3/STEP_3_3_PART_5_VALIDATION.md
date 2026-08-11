@@ -85,9 +85,9 @@ of starter generation, encounters, sprite selection, or ordinary move access.
 ## Player validation disposition
 
 - [x] Part 5 is ready for code review and embedded-runtime acceptance.
-- [ ] Manual teaching and progression-gate checks are deferred because the
-  specialized tutor may not be reachable in the early-access boundary.
-- [ ] Full-list and generated compatibility presentation will be compared with
-  the Tutor tab during Part 6 tracker integration.
+- [x] The inaccessible manual teaching queue is retired; specialized tutor
+  capacity and compatibility were validated through the generator boundary.
+- [x] The completed Tutor tab exposes the full generated compatibility list
+  through the same deterministic recipe.
 
 Tracker/debug move-access tabs remain outside this Part 5 boundary.

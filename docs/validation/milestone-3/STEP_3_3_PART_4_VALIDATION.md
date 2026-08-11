@@ -77,10 +77,9 @@ Recorded fingerprints:
 ## Player validation disposition
 
 - [x] Part 4 is ready for code review and embedded-runtime acceptance.
-- [ ] Manual tutor teaching is deferred because these tutors may not be
-  reachable in the early-access boundary and the tracker does not yet expose
-  the generated supported list needed for a direct comparison.
-- [ ] Save/reload, F7 presentation, and tutor-tab agreement will be checked with
-  the completed tracker integration.
+- [x] The completed tracker exposes the generated supported tutor list; the
+  inaccessible manual-teaching check is retired.
+- [x] The cumulative Milestone 3 pass validated save/reload and F7
+  reconstruction, and tracker lookup uses the same generator recipe.
 
 The specialized Fusion Move Tutor remains outside this Part 4 boundary.

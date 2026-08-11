@@ -17,6 +17,8 @@ historical release notes and validation evidence.
   and packaging layout.
 - [Checkpoint and reset lifecycle](design/CHECKPOINT_RESET.md): one checkpoint
   per save slot, unsaved runs, and legacy migration.
+- [Challenge lifecycle](design/CHALLENGE_LIFECYCLE.md): Milestone 5 run results,
+  failure locks, automatic reset, attempts, and statistics.
 - [Pivot system](design/PIVOT_SYSTEM.md): the complete one-Pokemon acquisition
   and fusion-gamble rules.
 - [Pivot state](design/PIVOT_STATE.md): persisted transaction state and
@@ -62,10 +64,14 @@ historical release notes and validation evidence.
 
 ## Validation records
 
+- [Open validation closure](validation/OPEN_VALIDATION_CLOSURE.md): automated
+  disposition of every formerly unchecked validation item.
 - [Milestone 1](validation/milestone-1/): Steps 1.1 through 1.8.
 - [Milestone 2](validation/milestone-2/): Steps 2.1 through 2.6.
 - [Milestone 3](validation/milestone-3/): cumulative data-randomization
   validation beginning with Step 3.1.
+- [Milestone 4 Step 4.0 audit](validation/milestone-4/STEP_4_0_AUDIT.md):
+  compiled event inventory, boundary ownership, and remaining game-path gaps.
 
 Validation records document the evidence for completed work. They are not the
 source of current behavior rules; the design documents above are authoritative.
