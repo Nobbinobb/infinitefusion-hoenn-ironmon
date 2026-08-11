@@ -25,6 +25,8 @@ historical release notes and validation evidence.
   lock, automatic reset, configuration migration, and runtime boundaries.
 - [Step 5.3 validation](validation/milestone-5/STEP_5_3_VALIDATION.md): attempt,
   item, healing, encounter-frequency, and defeated-BST statistics.
+- [Step 5.4 validation](validation/milestone-5/STEP_5_4_VALIDATION.md): tracker
+  statistics, completed-run selection, recovery, and legacy compatibility.
 - [Pivot system](design/PIVOT_SYSTEM.md): the complete one-Pokemon acquisition
   and fusion-gamble rules.
 - [Pivot state](design/PIVOT_STATE.md): persisted transaction state and

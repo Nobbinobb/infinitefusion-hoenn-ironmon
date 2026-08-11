@@ -33,9 +33,41 @@ public sealed class CompletedRunArchiveTests
         Assert.Equal(4, Assert.Single(stored.MoveAccessMetrics!.Encounters).LevelOneMoveCount);
         Assert.Equal("TACKLE", Assert.Single(stored.MoveAccessMetrics.MoveUses).MoveId);
         Assert.Equal(EvolutionMetricIdentifiers.CompletedOutcome, Assert.Single(stored.EvolutionMetrics!.Events).Outcome);
+        Assert.Equal(14, stored.Statistics!.ItemsUsed);
+        Assert.Equal("run-archive", archive.RequestedRunId);
         string recipePath = Path.Combine(root, "runs", "run-archive", "recipe.json");
         Assert.True(File.Exists(recipePath));
         Assert.DoesNotContain("lookup", File.ReadAllText(recipePath), StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Verifies that each stored completion requests selection of that exact run.
+    /// </summary>
+    [Fact]
+    public void StoreRequestsNewestCompletedRunSelection()
+    {
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
+        int requests = 0;
+        archive.SelectionRequested += (_, _) => requests++;
+        archive.Store(CreateRecipe("run-first"));
+        archive.Store(CreateRecipe("run-second"));
+        archive.Store(CreateRecipe("run-second"));
+
+        Assert.Equal("run-second", archive.RequestedRunId);
+        Assert.Equal("run-second", archive.Recipes[0].RunId);
+        Assert.Equal(2, requests);
+    }
+
+    /// <summary>
+    /// Verifies that an unsupported statistics schema is rejected explicitly.
+    /// </summary>
+    [Fact]
+    public void StoreRejectsUnsupportedStatisticsSchema()
+    {
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
+        CompletedRunRecipePayload recipe = CreateRecipe("run-bad-statistics", statisticsSchemaVersion: 99);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => archive.Store(recipe));
     }
 
     /// <summary>
@@ -149,8 +181,9 @@ public sealed class CompletedRunArchiveTests
     /// <param name="includeMoveMetrics">Whether move metrics are included.</param>
     /// <param name="includeEvolutionGenerator">Whether the evolution generator manifest is included.</param>
     /// <param name="includeEvolutionMetrics">Whether evolution metrics are included.</param>
+    /// <param name="statisticsSchemaVersion">The authoritative statistics schema version.</param>
     /// <returns>The recipe.</returns>
-    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, int moveMetricsSchemaVersion = MoveAccessMetricIdentifiers.SchemaVersion, bool includeMoveGenerator = true, bool includeMoveMetrics = true, bool includeEvolutionGenerator = true, bool includeEvolutionMetrics = true) => new()
+    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, int moveMetricsSchemaVersion = MoveAccessMetricIdentifiers.SchemaVersion, bool includeMoveGenerator = true, bool includeMoveMetrics = true, bool includeEvolutionGenerator = true, bool includeEvolutionMetrics = true, int statisticsSchemaVersion = 1) => new()
     {
         SchemaVersion = schemaVersion,
         RunId = runId,
@@ -165,8 +198,47 @@ public sealed class CompletedRunArchiveTests
         EvolutionGenerator = includeEvolutionGenerator ? CreateEvolutionGenerator() : null,
         MoveAccessGenerator = includeMoveGenerator ? CreateMoveGenerator() : null,
         PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 100, PoolFingerprint = "fusions" },
+        Statistics = CreateStatistics(statisticsSchemaVersion),
         MoveAccessMetrics = includeMoveMetrics ? CreateMoveMetrics(moveMetricsSchemaVersion) : null,
         EvolutionMetrics = includeEvolutionMetrics ? CreateEvolutionMetrics() : null
+    };
+
+    /// <summary>
+    /// Creates authoritative attempt statistics.
+    /// </summary>
+    /// <param name="schemaVersion">The statistics schema version.</param>
+    /// <returns>The statistics payload.</returns>
+    private static RunStatisticsPayload CreateStatistics(int schemaVersion) => new()
+    {
+        SchemaVersion = schemaVersion,
+        AttemptNumber = 4,
+        Seed = 98765,
+        Result = "lost",
+        ActiveSeconds = 3723,
+        AttemptsStarted = 4,
+        AttemptsLost = 3,
+        AttemptsWon = 0,
+        AttemptsAbandoned = 1,
+        BattlesCompleted = 18,
+        HighestPlayerLevel = 42,
+        BadgesEarned = 3,
+        TotalItemHealing = 350,
+        WastedItemHealing = 45,
+        ItemsUsed = 14,
+        ItemsBySource = new Dictionary<string, Dictionary<string, int>>
+        {
+            ["Bag"] = new() { ["POTION"] = 3 },
+            ["Held"] = new() { ["ORANBERRY"] = 1 }
+        },
+        TrainerSpeciesCounts = new Dictionary<string, int> { ["BULBASAUR"] = 2 },
+        TrainerSpeciesDistinct = 1,
+        TrainerSpeciesMostEncountered = ["BULBASAUR"],
+        TrainerDefeatedCount = 12,
+        TrainerDefeatedBstAverage = 401.5,
+        TrainerDefeatedBstMinimum = 300,
+        TrainerDefeatedBstMinimumSpecies = ["BULBASAUR"],
+        TrainerDefeatedBstMaximum = 534,
+        TrainerDefeatedBstMaximumSpecies = ["CHARIZARD"]
     };
 
     /// <summary>

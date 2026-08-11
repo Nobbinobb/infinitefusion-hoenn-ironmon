@@ -17,7 +17,8 @@ module Ironmon
       "attempts_won" => 0,
       "attempts_abandoned" => 0,
       "current_attempt" => nil,
-      "last_completed_attempt" => nil
+      "last_completed_attempt" => nil,
+      "last_completed_recipe" => nil
     }
   end
 
@@ -46,6 +47,8 @@ module Ironmon
     ledger["current_attempt"] = normalize_run_attempt(value["current_attempt"])
     ledger["last_completed_attempt"] =
       normalize_run_attempt(value["last_completed_attempt"], false)
+    ledger["last_completed_recipe"] = value["last_completed_recipe"] if
+      value["last_completed_recipe"].is_a?(Hash)
     return ledger
   end
 

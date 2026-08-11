@@ -29,6 +29,7 @@ public partial class PostRunLookup : IDisposable
     {
         RefreshRecipes();
         CompletedRuns.Changed += HandleCompletedRunsChanged;
+        CompletedRuns.SelectionRequested += HandleCompletedRunSelectionRequested;
     }
 
     /// <summary>
@@ -56,11 +57,17 @@ public partial class PostRunLookup : IDisposable
     /// <summary>
     /// Reloads recipes while retaining a still-valid selection.
     /// </summary>
-    private void RefreshRecipes()
+    private void RefreshRecipes(string? requestedRunId = null)
     {
         _recipes = CompletedRuns.Recipes;
-        if (_selectedRunId is null || _recipes.All(recipe => recipe.RunId != _selectedRunId))
+        if (requestedRunId is not null && _recipes.Any(recipe => recipe.RunId == requestedRunId))
+        {
+            _selectedRunId = requestedRunId;
+        }
+        else if (_selectedRunId is null || _recipes.All(recipe => recipe.RunId != _selectedRunId))
+        {
             _selectedRunId = _recipes.Count > 0 ? _recipes[0].RunId : null;
+        }
     }
 
     /// <summary>
@@ -75,8 +82,22 @@ public partial class PostRunLookup : IDisposable
     }
 
     /// <summary>
+    /// Selects a newly archived completion and refreshes the component.
+    /// </summary>
+    /// <param name="sender">The archive requesting selection.</param>
+    /// <param name="args">The selection event arguments.</param>
+    private void HandleCompletedRunSelectionRequested(object? sender, EventArgs args)
+    {
+        RefreshRecipes(CompletedRuns.RequestedRunId);
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
     /// Removes the completed-run archive subscription.
     /// </summary>
     public void Dispose()
-        => CompletedRuns.Changed -= HandleCompletedRunsChanged;
+    {
+        CompletedRuns.Changed -= HandleCompletedRunsChanged;
+        CompletedRuns.SelectionRequested -= HandleCompletedRunSelectionRequested;
+    }
 }

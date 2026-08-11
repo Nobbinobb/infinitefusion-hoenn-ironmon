@@ -967,6 +967,65 @@ button.move-placeholder:hover {
     font-size: 0.8rem;
 }
 
+.run-statistics .analysis-summary-grid strong {
+    color: var(--accent-soft);
+}
+
+.statistics-list {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.statistics-list > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    padding: 0.48rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 0.45rem;
+    color: var(--muted);
+    background: var(--surface-raised);
+    font-size: 0.7rem;
+}
+
+.statistics-list strong {
+    color: var(--text);
+    text-align: right;
+}
+
+.statistics-list small {
+    margin-left: 0.3rem;
+    color: var(--muted);
+    font-size: 0.6rem;
+}
+
+.statistics-breakdown {
+    margin: 0 0.8rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+}
+
+.statistics-breakdown > summary {
+    padding: 0.6rem;
+    color: var(--muted-strong);
+    font-size: 0.72rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.statistics-breakdown[open] > summary {
+    border-bottom: 1px solid var(--border);
+}
+
+.statistics-breakdown .statistics-list {
+    padding: 0.6rem;
+}
+
+.statistics-attempts {
+    padding-top: 0;
+}
+
 .analysis-encounter-card,
 .analysis-columns > article {
     display: grid;

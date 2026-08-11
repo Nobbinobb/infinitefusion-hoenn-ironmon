@@ -1,0 +1,80 @@
+<details class="run-analysis run-statistics" open>
+    <summary>
+        <span>@Text["Lookup.Statistics.Heading"]</span>
+        <small>@(Statistics is null ? Text["Lookup.Statistics.UnavailableShort"] : Text["Lookup.Statistics.Attempt", Statistics.AttemptNumber])</small>
+    </summary>
+
+    @if (Statistics is null)
+    {
+        <div class="lookup-empty run-analysis-empty">
+            <strong>@Text["Lookup.Statistics.Unavailable"]</strong>
+            <p>@Text["Lookup.Statistics.UnavailableDescription"]</p>
+        </div>
+    }
+    else
+    {
+        <div class="analysis-summary-grid">
+            <article><strong>@Statistics.AttemptNumber</strong><span>@Text["Lookup.Statistics.AttemptNumber"]</span></article>
+            <article><strong>@FormatDuration(Statistics.ActiveSeconds)</strong><span>@Text["Lookup.Statistics.ActiveTime"]</span></article>
+            <article><strong>@Statistics.BattlesCompleted</strong><span>@Text["Lookup.Statistics.Battles"]</span></article>
+            <article><strong>@Statistics.HighestPlayerLevel</strong><span>@Text["Lookup.Statistics.HighestLevel"]</span></article>
+            <article><strong>@Statistics.BadgesEarned</strong><span>@Text["Lookup.Statistics.Badges"]</span></article>
+            <article><strong>@Statistics.ItemsUsed</strong><span>@Text["Lookup.Statistics.ItemsUsed"]</span></article>
+            <article><strong>@Statistics.TotalItemHealing</strong><span>@Text["Lookup.Statistics.TotalHealing"]</span></article>
+            <article><strong>@Statistics.WastedItemHealing</strong><span>@Text["Lookup.Statistics.WastedHealing"]</span></article>
+        </div>
+
+        <section class="analysis-section">
+            <h3>@Text["Lookup.Statistics.TrainerHeading"]</h3>
+            <div class="statistics-list">
+                <div><span>@Text["Lookup.Statistics.DistinctSpecies"]</span><strong>@Statistics.TrainerSpeciesDistinct</strong></div>
+                <div><span>@Text["Lookup.Statistics.MostEncountered"]</span><strong>@FormatMostEncountered(Statistics)</strong></div>
+                <div><span>@Text["Lookup.Statistics.Defeated"]</span><strong>@Statistics.TrainerDefeatedCount</strong></div>
+                <div><span>@Text["Lookup.Statistics.AverageBst"]</span><strong>@FormatAverage(Statistics.TrainerDefeatedBstAverage)</strong></div>
+                <div><span>@Text["Lookup.Statistics.LowestBst"]</span><strong>@FormatBoundary(Statistics.TrainerDefeatedBstMinimum, Statistics.TrainerDefeatedBstMinimumSpecies)</strong></div>
+                <div><span>@Text["Lookup.Statistics.HighestBst"]</span><strong>@FormatBoundary(Statistics.TrainerDefeatedBstMaximum, Statistics.TrainerDefeatedBstMaximumSpecies)</strong></div>
+            </div>
+        </section>
+
+        <details class="statistics-breakdown">
+            <summary>@Text["Lookup.Statistics.ItemBreakdown"]</summary>
+            <div class="statistics-list">
+                @foreach (KeyValuePair<string, Dictionary<string, int>> source in Statistics.ItemsBySource.OrderBy(entry => entry.Key))
+                {
+                    @foreach (KeyValuePair<string, int> item in source.Value.OrderByDescending(entry => entry.Value).ThenBy(entry => entry.Key))
+                    {
+                        <div><span>@FormatIdentifier(item.Key) <small>@source.Key</small></span><strong>@item.Value</strong></div>
+                    }
+                }
+                @if (Statistics.ItemsBySource.Values.All(items => items.Count == 0))
+                {
+                    <div><span>@Text["Lookup.Statistics.None"]</span><strong>0</strong></div>
+                }
+            </div>
+        </details>
+
+        <details class="statistics-breakdown">
+            <summary>@Text["Lookup.Statistics.SpeciesFrequency"]</summary>
+            <div class="statistics-list">
+                @foreach (KeyValuePair<string, int> species in Statistics.TrainerSpeciesCounts.OrderByDescending(entry => entry.Value).ThenBy(entry => entry.Key))
+                {
+                    <div><span>@FormatIdentifier(species.Key)</span><strong>@species.Value</strong></div>
+                }
+                @if (Statistics.TrainerSpeciesCounts.Count == 0)
+                {
+                    <div><span>@Text["Lookup.Statistics.None"]</span><strong>0</strong></div>
+                }
+            </div>
+        </details>
+
+        <section class="analysis-section statistics-attempts">
+            <h3>@Text["Lookup.Statistics.SaveHistory"]</h3>
+            <div class="statistics-list">
+                <div><span>@Text["Lookup.Statistics.Started"]</span><strong>@Statistics.AttemptsStarted</strong></div>
+                <div><span>@Text["Lookup.Statistics.Lost"]</span><strong>@Statistics.AttemptsLost</strong></div>
+                <div><span>@Text["Lookup.Statistics.Won"]</span><strong>@Statistics.AttemptsWon</strong></div>
+                <div><span>@Text["Lookup.Statistics.Abandoned"]</span><strong>@Statistics.AttemptsAbandoned</strong></div>
+            </div>
+        </section>
+    }
+</details>

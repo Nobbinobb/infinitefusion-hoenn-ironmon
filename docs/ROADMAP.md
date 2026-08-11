@@ -657,7 +657,7 @@ Milestone 4 status: **Complete**
 
 ### Milestone 5: Remaining challenge rules
 
-Status: **In progress (Steps 5.1-5.3 complete)**
+Status: **In progress (Steps 5.1-5.4 complete)**
 
 The detailed behavior is defined in `design/CHALLENGE_LIFECYCLE.md`.
 
@@ -758,6 +758,8 @@ values before the attempt is archived. See
 
 #### Step 5.4: Tracker lifecycle and statistics presentation
 
+Status: **Complete**
+
 - Add versioned current-attempt and completed-attempt statistics to the protocol
   and completed-run recipe.
 - Show the full statistics in the tracker. The game exposes only the attempt
@@ -778,6 +780,14 @@ Acceptance criteria:
   run.
 - Older completed recipes remain readable with unavailable statistics shown
   explicitly rather than fabricated.
+
+Result: current-state and completed-run messages now carry one optional,
+versioned attempt-statistics payload. Newly received and reconnect-recovered
+completions select themselves in Lookup, while duplicate recovery is
+idempotent and an immediate automatic `run_started` cannot steal focus. The
+tracker presents summary, healing, item-source, trainer frequency, BST, and
+save-history statistics; older recipes explicitly show that statistics were
+not recorded. See `validation/milestone-5/STEP_5_4_VALIDATION.md`.
 
 #### Step 5.5: Milestone regression and release
 

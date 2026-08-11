@@ -706,7 +706,12 @@ module Ironmon
       "battle" => tracker_battle_snapshot,
       "player" => @tracker_player_pokemon ? tracker_player_snapshot : nil,
       "enemies" => tracker_enemy_snapshots,
-      "completed_run" => tracker_completed_run_recipe
+      "attempt_statistics" => if respond_to?(:tracker_attempt_statistics)
+                                tracker_attempt_statistics(current_run_attempt)
+                              else
+                                nil
+                              end,
+      "completed_run" => tracker_recoverable_completed_run_recipe
     }
   end
 

@@ -83,6 +83,11 @@ public sealed class CompletedRunRecipePayload
     public required PlayerFusionGeneratorRecipePayload PlayerFusionGenerator { get; init; }
 
     /// <summary>
+    /// Gets or initializes authoritative attempt statistics when the recipe provides them.
+    /// </summary>
+    public RunStatisticsPayload? Statistics { get; init; }
+
+    /// <summary>
     /// Gets or initializes locally observed move-access iteration data.
     /// </summary>
     public MoveAccessMetricsPayload? MoveAccessMetrics { get; init; }

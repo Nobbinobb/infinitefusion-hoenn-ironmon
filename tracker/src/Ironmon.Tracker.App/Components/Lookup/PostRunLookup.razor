@@ -29,6 +29,7 @@
 
         @if (GetSelectedRecipe() is CompletedRunRecipePayload selectedRecipe)
         {
+            <RunStatistics @key="@($"statistics-{selectedRecipe.RunId}")" Statistics="@selectedRecipe.Statistics" />
             <PokemonLookupExplorer @key="selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
             <MoveAccessRunAnalysis @key="@($"metrics-{selectedRecipe.RunId}")" Metrics="@selectedRecipe.MoveAccessMetrics" />
             <EvolutionRunAnalysis @key="@($"evolution-metrics-{selectedRecipe.RunId}")" Metrics="@selectedRecipe.EvolutionMetrics" />

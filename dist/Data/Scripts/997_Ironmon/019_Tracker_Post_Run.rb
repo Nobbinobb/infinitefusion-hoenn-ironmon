@@ -20,9 +20,20 @@ module Ironmon
 
   def self.publish_run_completion
     recipe = tracker_completed_run_recipe
-    tracker_connection.send_event("run_completed", recipe) if recipe
+    if recipe
+      run_ledger["last_completed_recipe"] = Marshal.load(Marshal.dump(recipe))
+      tracker_connection.send_event("run_completed", recipe)
+    end
   rescue Exception => e
     echoln "Ironmon tracker could not complete the run recipe: #{e.message}"
+  end
+
+  def self.tracker_recoverable_completed_run_recipe
+    recipe = tracker_completed_run_recipe
+    return recipe if recipe
+    stored = run_ledger["last_completed_recipe"]
+    return stored if stored.is_a?(Hash)
+    return nil
   end
 
   def self.tracker_completed_run_recipe
@@ -44,8 +55,50 @@ module Ironmon
       "evolution_generator" => tracker_evolution_generator_recipe,
       "move_access_generator" => tracker_move_access_generator_recipe,
       "player_fusion_generator" => tracker_player_fusion_generator_recipe,
+      "statistics" => tracker_attempt_statistics(current_run_attempt),
       "move_access_metrics" => move_access_metrics_snapshot,
       "evolution_metrics" => evolution_metrics_snapshot
+    }
+  end
+
+  def self.tracker_attempt_statistics(attempt)
+    return nil if !attempt.is_a?(Hash)
+    tick_active_run_duration if attempt["result"] == "active"
+    statistics = attempt["statistics"]
+    return nil if !statistics.is_a?(Hash)
+    ledger = run_ledger
+    return {
+      "schema_version" => statistics["schema_version"],
+      "attempt_number" => attempt["attempt_number"],
+      "seed" => attempt["seed"],
+      "result" => attempt["result"],
+      "active_seconds" => attempt["active_seconds"],
+      "attempts_started" => ledger["attempts_started"],
+      "attempts_lost" => ledger["attempts_lost"],
+      "attempts_won" => ledger["attempts_won"],
+      "attempts_abandoned" => ledger["attempts_abandoned"],
+      "battles_completed" => statistics["battles_completed"],
+      "highest_player_level" => statistics["highest_player_level"],
+      "badges_earned" => statistics["badges_earned"],
+      "total_item_healing" => statistics["total_item_healing"],
+      "wasted_item_healing" => statistics["wasted_item_healing"],
+      "items_used" => statistics["items_used"],
+      "items_by_source" => statistics["items_by_source"],
+      "trainer_species_counts" => statistics["trainer_species_counts"],
+      "trainer_species_distinct" => statistics["trainer_species_distinct"],
+      "trainer_species_most_encountered" =>
+        statistics["trainer_species_most_encountered"],
+      "trainer_defeated_count" => statistics["trainer_defeated_count"],
+      "trainer_defeated_bst_average" =>
+        statistics["trainer_defeated_bst_average"],
+      "trainer_defeated_bst_minimum" =>
+        statistics["trainer_defeated_bst_minimum"],
+      "trainer_defeated_bst_minimum_species" =>
+        statistics["trainer_defeated_bst_minimum_species"],
+      "trainer_defeated_bst_maximum" =>
+        statistics["trainer_defeated_bst_maximum"],
+      "trainer_defeated_bst_maximum_species" =>
+        statistics["trainer_defeated_bst_maximum_species"]
     }
   end
 

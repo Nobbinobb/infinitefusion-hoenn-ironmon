@@ -13,6 +13,7 @@ public partial class Home : IDisposable
     private TrackerView _selectedView = TrackerView.Player;
     private string? _selectedEnemyId;
     private string? _lastMoveMenuPokemonId;
+    private bool _completedRunNavigationPending;
 
     /// <summary>
     /// Gets or initializes the shared connection status service.
@@ -31,6 +32,12 @@ public partial class Home : IDisposable
     /// </summary>
     [Inject]
     private TrackerConnectionService TrackerConnection { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or initializes the completed-run archive and selection source.
+    /// </summary>
+    [Inject]
+    private CompletedRunArchive CompletedRuns { get; set; } = null!;
 
     /// <summary>
     /// Gets or initializes the foreground-safe global shortcut service.
@@ -52,6 +59,7 @@ public partial class Home : IDisposable
 
         ConnectionState.Changed += HandleConnectionChanged;
         RunState.Changed += HandleRunChanged;
+        CompletedRuns.SelectionRequested += HandleCompletedRunSelectionRequested;
         ShortcutService.ViewRequested += HandleGlobalViewRequested;
     }
 
@@ -64,6 +72,7 @@ public partial class Home : IDisposable
         if (view == TrackerView.Debug && !TrackerConnection.DebugAuthorized)
             return;
 
+        _completedRunNavigationPending = false;
         _selectedView = view;
     }
 
@@ -197,7 +206,7 @@ public partial class Home : IDisposable
             _selectedEnemyId = _run.Enemies.Count > 0 ? _run.Enemies[0].EnemyId : null;
 
         bool moveMenuOpened = _run.MoveMenuPokemonId is not null && _run.MoveMenuPokemonId != _lastMoveMenuPokemonId;
-        if (_selectedView != TrackerView.Debug)
+        if (_selectedView != TrackerView.Debug && !_completedRunNavigationPending)
         {
             _selectedView = (enemyAppeared, moveMenuOpened, battleEnded) switch
             {
@@ -212,12 +221,25 @@ public partial class Home : IDisposable
     }
 
     /// <summary>
+    /// Navigates to Lookup when a completed run is stored or recovered.
+    /// </summary>
+    /// <param name="sender">The completed-run archive raising the event.</param>
+    /// <param name="args">The change event arguments.</param>
+    private void HandleCompletedRunSelectionRequested(object? sender, EventArgs args)
+    {
+        _completedRunNavigationPending = true;
+        _selectedView = TrackerView.Lookup;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
     /// Removes tracker-state subscriptions when the page is disposed.
     /// </summary>
     public void Dispose()
     {
         ConnectionState.Changed -= HandleConnectionChanged;
         RunState.Changed -= HandleRunChanged;
+        CompletedRuns.SelectionRequested -= HandleCompletedRunSelectionRequested;
         ShortcutService.ViewRequested -= HandleGlobalViewRequested;
     }
 }

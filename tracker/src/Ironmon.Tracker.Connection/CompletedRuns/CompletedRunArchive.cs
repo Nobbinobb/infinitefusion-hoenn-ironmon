@@ -10,6 +10,7 @@ public sealed class CompletedRunArchive
     private readonly TrackerKnowledgeOptions _options;
     private readonly Lock _sync = new();
     private readonly List<CompletedRunRecipePayload> _recipes;
+    private string? _requestedRunId;
 
     /// <summary>
     /// Initializes and loads the completed-run recipe archive.
@@ -29,6 +30,11 @@ public sealed class CompletedRunArchive
     public event EventHandler? Changed;
 
     /// <summary>
+    /// Occurs when a previously unknown completed run should be selected.
+    /// </summary>
+    public event EventHandler? SelectionRequested;
+
+    /// <summary>
     /// Gets the available completed-run recipes with the newest files first.
     /// </summary>
     public IReadOnlyList<CompletedRunRecipePayload> Recipes
@@ -46,6 +52,18 @@ public sealed class CompletedRunArchive
     public string? LastError { get; private set; }
 
     /// <summary>
+    /// Gets the completed run most recently requested for foreground selection.
+    /// </summary>
+    public string? RequestedRunId
+    {
+        get
+        {
+            lock (_sync)
+                return _requestedRunId;
+        }
+    }
+
+    /// <summary>
     /// Adds or replaces one completed-run recipe and persists it atomically.
     /// </summary>
     /// <param name="recipe">The compact deterministic recipe.</param>
@@ -53,8 +71,10 @@ public sealed class CompletedRunArchive
     {
         ArgumentNullException.ThrowIfNull(recipe);
         Validate(recipe);
+        bool selectionRequested;
         lock (_sync)
         {
+            selectionRequested = _recipes.All(candidate => candidate.RunId != recipe.RunId);
             string path = GetRecipePath(recipe.RunId);
             try
             {
@@ -64,6 +84,9 @@ public sealed class CompletedRunArchive
                 File.Move(temporaryPath, path, true);
                 _recipes.RemoveAll(candidate => candidate.RunId == recipe.RunId);
                 _recipes.Insert(0, recipe);
+                if (selectionRequested)
+                    _requestedRunId = recipe.RunId;
+
                 LastError = null;
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -74,6 +97,8 @@ public sealed class CompletedRunArchive
         }
 
         Changed?.Invoke(this, EventArgs.Empty);
+        if (selectionRequested)
+            SelectionRequested?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -204,6 +229,50 @@ public sealed class CompletedRunArchive
             if (recipe.EvolutionGenerator is null)
                 throw new ArgumentException("Evolution metrics require evolution generator metadata.", nameof(recipe));
         }
+
+        if (recipe.Statistics is not null)
+            ValidateStatistics(recipe.Statistics);
+    }
+
+    /// <summary>
+    /// Validates one authoritative run-statistics payload.
+    /// </summary>
+    /// <param name="statistics">The statistics to validate.</param>
+    private static void ValidateStatistics(RunStatisticsPayload statistics)
+    {
+        ArgumentOutOfRangeException.ThrowIfNotEqual(statistics.SchemaVersion, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(statistics.AttemptNumber, 1);
+        ArgumentException.ThrowIfNullOrWhiteSpace(statistics.Result);
+        ArgumentOutOfRangeException.ThrowIfNegative(statistics.ActiveSeconds);
+        ArgumentOutOfRangeException.ThrowIfNegative(statistics.AttemptsStarted);
+        ArgumentOutOfRangeException.ThrowIfNegative(statistics.AttemptsLost);
+        ArgumentOutOfRangeException.ThrowIfNegative(statistics.AttemptsWon);
+        ArgumentOutOfRangeException.ThrowIfNegative(statistics.AttemptsAbandoned);
+        ArgumentOutOfRangeException.ThrowIfNegative(statistics.BattlesCompleted);
+        ArgumentOutOfRangeException.ThrowIfNegative(statistics.HighestPlayerLevel);
+        ArgumentOutOfRangeException.ThrowIfNegative(statistics.BadgesEarned);
+        ArgumentOutOfRangeException.ThrowIfNegative(statistics.TotalItemHealing);
+        ArgumentOutOfRangeException.ThrowIfNegative(statistics.WastedItemHealing);
+        ArgumentOutOfRangeException.ThrowIfNegative(statistics.ItemsUsed);
+        ArgumentOutOfRangeException.ThrowIfNegative(statistics.TrainerSpeciesDistinct);
+        ArgumentOutOfRangeException.ThrowIfNegative(statistics.TrainerDefeatedCount);
+        if (statistics.TrainerDefeatedBstAverage is double average)
+            ArgumentOutOfRangeException.ThrowIfNegative(average);
+
+        if (statistics.TrainerDefeatedBstMinimum is int minimum)
+            ArgumentOutOfRangeException.ThrowIfNegative(minimum);
+
+        if (statistics.TrainerDefeatedBstMaximum is int maximum)
+            ArgumentOutOfRangeException.ThrowIfNegative(maximum);
+
+        foreach (IReadOnlyDictionary<string, int> counts in statistics.ItemsBySource.Values)
+        {
+            foreach (int count in counts.Values)
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
+        }
+
+        foreach (int count in statistics.TrainerSpeciesCounts.Values)
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
     }
 
     /// <summary>

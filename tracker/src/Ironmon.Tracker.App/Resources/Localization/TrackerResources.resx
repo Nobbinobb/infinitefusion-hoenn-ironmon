@@ -1185,4 +1185,32 @@
   <data name="Lookup.Analysis.Source.copy_effect" xml:space="preserve"><value>copy effect</value></data>
   <data name="Lookup.Generator.MoveHeading" xml:space="preserve"><value>MOVE GENERATOR</value></data>
   <data name="Lookup.Generator.EvolutionHeading" xml:space="preserve"><value>EVOLUTION GENERATOR</value></data>
+  <data name="Lookup.Statistics.Heading" xml:space="preserve"><value>RUN STATISTICS</value></data>
+  <data name="Lookup.Statistics.UnavailableShort" xml:space="preserve"><value>Not recorded</value></data>
+  <data name="Lookup.Statistics.Attempt" xml:space="preserve"><value>Attempt {0}</value></data>
+  <data name="Lookup.Statistics.Unavailable" xml:space="preserve"><value>Statistics unavailable</value></data>
+  <data name="Lookup.Statistics.UnavailableDescription" xml:space="preserve"><value>This run was archived before statistics were added. Its generated Pokemon lookup remains available.</value></data>
+  <data name="Lookup.Statistics.AttemptNumber" xml:space="preserve"><value>Attempt</value></data>
+  <data name="Lookup.Statistics.ActiveTime" xml:space="preserve"><value>Active time</value></data>
+  <data name="Lookup.Statistics.Battles" xml:space="preserve"><value>Battles completed</value></data>
+  <data name="Lookup.Statistics.HighestLevel" xml:space="preserve"><value>Highest level</value></data>
+  <data name="Lookup.Statistics.Badges" xml:space="preserve"><value>Badges earned</value></data>
+  <data name="Lookup.Statistics.ItemsUsed" xml:space="preserve"><value>Items used</value></data>
+  <data name="Lookup.Statistics.TotalHealing" xml:space="preserve"><value>Total item healing</value></data>
+  <data name="Lookup.Statistics.WastedHealing" xml:space="preserve"><value>Wasted healing</value></data>
+  <data name="Lookup.Statistics.TrainerHeading" xml:space="preserve"><value>Trainer Pokemon</value></data>
+  <data name="Lookup.Statistics.DistinctSpecies" xml:space="preserve"><value>Different species encountered</value></data>
+  <data name="Lookup.Statistics.MostEncountered" xml:space="preserve"><value>Most encountered</value></data>
+  <data name="Lookup.Statistics.Defeated" xml:space="preserve"><value>Pokemon defeated</value></data>
+  <data name="Lookup.Statistics.AverageBst" xml:space="preserve"><value>Average BST</value></data>
+  <data name="Lookup.Statistics.LowestBst" xml:space="preserve"><value>Lowest BST</value></data>
+  <data name="Lookup.Statistics.HighestBst" xml:space="preserve"><value>Highest BST</value></data>
+  <data name="Lookup.Statistics.ItemBreakdown" xml:space="preserve"><value>Items by source</value></data>
+  <data name="Lookup.Statistics.SpeciesFrequency" xml:space="preserve"><value>Trainer species frequency</value></data>
+  <data name="Lookup.Statistics.None" xml:space="preserve"><value>None recorded</value></data>
+  <data name="Lookup.Statistics.SaveHistory" xml:space="preserve"><value>Save-slot attempt history</value></data>
+  <data name="Lookup.Statistics.Started" xml:space="preserve"><value>Started</value></data>
+  <data name="Lookup.Statistics.Lost" xml:space="preserve"><value>Lost</value></data>
+  <data name="Lookup.Statistics.Won" xml:space="preserve"><value>Won</value></data>
+  <data name="Lookup.Statistics.Abandoned" xml:space="preserve"><value>Abandoned</value></data>
 </root>
