@@ -3,7 +3,7 @@
 #===============================================================================
 
 module Ironmon
-  VERSION = "0.6.2"
+  VERSION = "0.6.4"
   SUPPORTED_GAME_VERSIONS = ["6.8.0"].freeze
   RESET_KEY = Input::F7
   FULL_RANDOM_BST_RANGE = 999

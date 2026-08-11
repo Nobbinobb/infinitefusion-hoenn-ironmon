@@ -403,7 +403,7 @@ contains the inputs needed to reproduce the run:
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.6.2",
+  "ironmon_version": "0.6.4",
   "configuration": {
     "schema_version": 2,
     "wild_policy": "mixed",

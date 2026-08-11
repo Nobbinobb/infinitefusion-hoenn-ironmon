@@ -403,8 +403,8 @@ Planned release sequence:
 2. Base-stat randomization: `0.4.0`.
 3. Move-access randomization: `0.5.0`.
 4. Evolution randomization: `0.6.0`.
-5. Fusion data integration: `0.7.0`.
-6. Milestone-wide integration and regression: `0.8.0`.
+5. Fusion data integration audit: `0.6.3`.
+6. Milestone-wide integration and regression: `0.6.4`.
 
 Release builds are cumulative. For example, `0.5.0` contains ability,
 base-stat, and move-access randomization.
@@ -568,7 +568,7 @@ Acceptance criteria:
 
 ### Step 3.5: Fusion data integration
 
-Status: **Planned**
+Status: **Complete**
 
 - Audit the implemented component rules for randomized abilities.
 - Audit the implemented component rules for randomized base stats.
@@ -578,7 +578,8 @@ Status: **Planned**
 - Cover directly encountered and pivot-generated fusions without losing run
   consistency.
 - Respect the pivot system's prohibition on later reversal and unfusion.
-- Package release `0.7.0` as `Ironmon-v0.7.0-fusion-integration.zip`.
+- Package release `0.6.3` as
+  `Ironmon-v0.6.3-fusion-integration.zip`.
 
 Acceptance criteria:
 
@@ -590,14 +591,14 @@ Acceptance criteria:
 
 ### Step 3.6: Milestone integration and regression pass
 
-Status: **Planned**
+Status: **Complete**
 
 - Test all Pokemon data randomizers together.
 - Test initial generation, save/load, and repeated F7 resets.
 - Verify inspection tools for normal Pokemon and fusions.
 - Record diagnostics sufficient to reproduce generated data.
 - Document compatibility, exclusions, and known exceptions.
-- Package release `0.8.0` as `Ironmon-v0.8.0-randomization.zip`.
+- Package release `0.6.4` as `Ironmon-v0.6.4-randomization.zip`.
 
 Acceptance criteria:
 

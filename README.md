@@ -21,10 +21,10 @@ and a fast reset to starter selection.
 - `tools/Build-TrackerRelease.ps1` publishes the self-contained Windows tracker
   and creates the combined copy-ready ZIP and SHA-256 checksum in `release/`.
 
-Milestone 3 Step 3.4 is implemented, with its tracker and runtime fixes released
-as version `0.6.2`. See
-`docs/design/EVOLUTION_RANDOMIZATION.md` for its rules, `docs/ROADMAP.md` for
-cumulative scope, and `docs/guides/INSTALLATION.md` for installation steps.
+Milestone 3 is complete. Step 3.6's cumulative integration and regression pass
+is released as version `0.6.4`. See `docs/design/POKEMON_DATA_RANDOMIZATION.md`
+for the shared normal and fusion rules, `docs/ROADMAP.md` for cumulative scope,
+and `docs/guides/INSTALLATION.md` for installation steps.
 
 This repository is maintained independently from the official Pokemon Infinite
 Fusion game repository.

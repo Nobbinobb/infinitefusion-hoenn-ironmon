@@ -1110,3 +1110,33 @@ Status: **Complete**
   `e32e3193188aed807ad13bf8dcce25f03777f030318c22916ac2cb6d3c78f67f`.
 - Two consecutive release builds were byte-for-byte reproducible.
 - All 41 tracker tests and the combined game/tracker startup smoke test passed.
+
+## Ironmon 0.6.3 fusion-integration audit release
+
+Status: **Complete**
+
+- Updated tracker and runtime release metadata to 0.6.3 without changing any
+  generator schema or deterministic mapping rules.
+- Passed the cumulative fusion-integration runtime audit across all 174,348
+  custom-sprite fusions and 574 Body/Head evolution branch mappings.
+- Created `Ironmon-v0.6.3-fusion-integration.zip` with 457 entries and the
+  SHA-256 checksum
+  `14734850b1f7cc7a42649c5169dc71e0a7e36a3358e35ff07dbdd8d4273e93bb`.
+- Two consecutive release builds were byte-for-byte reproducible.
+- All 41 tracker tests and the combined game/tracker startup smoke test passed.
+
+## Ironmon 0.6.4 milestone regression release
+
+Status: **Complete**
+
+- Completed the Milestone 3 integration matrix across all four Pokemon data
+  randomizers without changing their generator schemas or deterministic rules.
+- Validated 576 eligible normal species and 287 normal evolution branches in
+  the bundled runtime across cache rebuild, Marshal reload, and three seeds.
+- Verified live inspection, active generated lookup, and complete structured and
+  text diagnostics for deterministic reconstruction.
+- Created `Ironmon-v0.6.4-randomization.zip` with 457 entries and the SHA-256
+  checksum
+  `6b073324420ae072d52c0d7d8054361e922b4ba7b2afea48dde9986b749ee414`.
+- Two consecutive release builds were byte-for-byte reproducible.
+- All 41 tracker tests and the combined game/tracker startup smoke test passed.

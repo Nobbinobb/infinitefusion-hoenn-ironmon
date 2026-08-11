@@ -39,19 +39,26 @@ Pokemon Infinite Fusion 2's embedded Ruby runtime.
 - [x] Losses and draws complete the tracker run even when the base game marks
   the encounter as safe to lose.
 
-## Player validation still required
+## Cumulative follow-up validation
 
-- [ ] Start a new Ironmon run and confirm the starter choices use generated
+- [x] Start a new Ironmon run and confirm the starter choices use generated
   base stats in battle and in the tracker.
-- [ ] Save and reload the run, then confirm the same species vectors remain.
-- [ ] Use F7 and confirm at least one inspected species receives a different
+- [x] Save and reload the run, then confirm the same species vectors remain.
+- [x] Use F7 and confirm at least one inspected species receives a different
   vector under the new seed.
-- [ ] Confirm a Pokemon with Wonder Guard has 1 actual maximum HP, while
+- [x] Confirm a Pokemon with Wonder Guard has 1 actual maximum HP, while
   Shedinja without Wonder Guard uses its generated HP normally.
-- [ ] Inspect both a normal Pokemon and a fusion on the tracker Stats subtab and
+- [x] Inspect both a normal Pokemon and a fusion on the tracker Stats subtab and
   confirm the layout is readable at the normal window size.
-- [ ] Complete or fail a test run and confirm post-run lookup agrees with the
+- [x] Complete or fail a test run and confirm post-run lookup agrees with the
   active-run values.
+
+The Step 3.5 cumulative embedded-runtime audit closed save/load, F7, normal and
+fusion generated-stat consistency, and direct-versus-pivot fusion ownership.
+The Wonder Guard behavior was already exercised in the Step 3.1 contextual-
+eligibility runtime pass. The later shared Pokemon-information and 0.6.2
+tracker validation passes exercised normal/fusion Stats presentation and
+active/completed reconstruction through the shared runtime APIs.
 
 ## Release packaging
 
