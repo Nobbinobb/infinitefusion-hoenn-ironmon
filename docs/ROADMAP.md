@@ -657,7 +657,7 @@ Milestone 4 status: **Complete**
 
 ### Milestone 5: Remaining challenge rules
 
-Status: **In progress (Steps 5.1-5.4 complete)**
+Status: **Complete**
 
 The detailed behavior is defined in `design/CHALLENGE_LIFECYCLE.md`.
 
@@ -791,6 +791,8 @@ not recorded. See `validation/milestone-5/STEP_5_4_VALIDATION.md`.
 
 #### Step 5.5: Milestone regression and release
 
+Status: **Complete**
+
 - Exercise ordinary losses, draws, safe-to-lose battles, wins, manual F7,
   automatic reset, missing checkpoints, save/load, and repeated attempts.
 - Validate Bag and Held item accounting, actual and wasted healing, trainer BST
@@ -805,6 +807,15 @@ Acceptance criteria:
 - No loss path permits gameplay continuation or loses the completed recipe.
 - Per-slot counters remain correct across every reset and recovery path.
 - Two release builds reproduce the same archive checksum.
+
+Result: the cumulative bundled-runtime matrix passed all 44 lifecycle,
+failure, reset, ledger, statistics, and recipe-recovery assertions. All 45
+tracker tests and the combined clean-install startup passed. Two independent
+release builds produced the same archive checksum, and cumulative release
+`0.6.5` is packaged as `Ironmon-v0.6.5-challenge-lifecycle.zip`. See
+`validation/IRONMON_0.6.5_RELEASE.md`.
+
+Milestone 5 status: **Complete**
 
 ### Milestone 6: Release quality
 

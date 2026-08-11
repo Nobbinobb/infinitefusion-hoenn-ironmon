@@ -231,6 +231,7 @@ public sealed class CompletedRunArchiveTests
             ["Held"] = new() { ["ORANBERRY"] = 1 }
         },
         TrainerSpeciesCounts = new Dictionary<string, int> { ["BULBASAUR"] = 2 },
+        TrainerSpeciesNames = new Dictionary<string, string> { ["BULBASAUR"] = "Bulbasaur" },
         TrainerSpeciesDistinct = 1,
         TrainerSpeciesMostEncountered = ["BULBASAUR"],
         TrainerDefeatedCount = 12,

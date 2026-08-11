@@ -98,6 +98,11 @@ public sealed class RunStatisticsPayload
     public IReadOnlyDictionary<string, int> TrainerSpeciesCounts { get; init; } = new Dictionary<string, int>();
 
     /// <summary>
+    /// Gets or initializes display names keyed by trainer-species identifier.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> TrainerSpeciesNames { get; init; } = new Dictionary<string, string>();
+
+    /// <summary>
     /// Gets or initializes the number of distinct displayed trainer species encountered.
     /// </summary>
     public int TrainerSpeciesDistinct { get; init; }

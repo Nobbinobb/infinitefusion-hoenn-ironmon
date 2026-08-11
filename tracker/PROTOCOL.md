@@ -41,7 +41,7 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.0",
-    "ironmon_version": "0.6.4",
+    "ironmon_version": "0.6.5",
     "ironmon_active": false,
     "debug_available": true,
     "game_root": "C:/Games/InfiniteFusion2",
@@ -335,7 +335,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.6.4",
+  "ironmon_version": "0.6.5",
   "configuration": {
     "schema_version": 2,
     "wild_policy": "mixed",
@@ -519,6 +519,22 @@ the completed-run lookup equivalents, but their request payloads omit the
 completion recipe and the game resolves them from the currently loaded run.
 All three commands independently require the same dual debug authorization and
 are unavailable through the normal post-run API while a run remains active.
+
+## Milestone 5 attempt statistics
+
+`current_state` and `run_started` optionally include `attempt_statistics`.
+Completed recipes optionally include the same versioned payload as
+`statistics`. Schema version 1 contains attempt number, seed, result, active
+seconds, per-save result totals, completed battles, highest player level,
+badges earned, actual and wasted item healing, item counts grouped by `Bag` or
+`Held`, trainer species frequencies with display names keyed by species
+identifier, and defeated-trainer BST aggregates.
+
+Recipes archived before these fields existed remain valid. The tracker shows
+their statistics as unavailable rather than creating zero values. The game
+also retains the last completed recipe in the save ledger while the next
+attempt is active. A reconnect after immediate automatic reset can therefore
+recover, archive, navigate to Lookup, and select the missed completion.
 
 ## Failure behavior
 

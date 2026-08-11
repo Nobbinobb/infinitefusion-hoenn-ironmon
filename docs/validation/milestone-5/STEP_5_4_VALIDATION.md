@@ -6,8 +6,8 @@ The game emits an optional schema-version-1 attempt-statistics payload in
 current-state and `run_started` messages and embeds the final payload in each
 completed-run recipe. It includes attempt identity, active duration, result,
 per-slot result totals, progress, healing, item-source counts, trainer species
-frequency, and defeated-BST aggregates. Historical recipes remain valid when
-the optional payload is absent.
+frequency and names, and defeated-BST aggregates. Historical recipes remain
+valid when the optional payload is absent.
 
 Every completion stores its complete recipe in the save ledger before network
 delivery. The next active attempt continues to expose that recipe for recovery,
@@ -20,8 +20,14 @@ A new live or recovered completion requests selection exactly once, navigates
 to Lookup, and keeps that selection through the following battle cleanup and
 immediate `run_started`. Duplicate reconnect messages update persistence
 without overriding manual navigation. The Lookup screen shows full statistics
-with expandable item and species breakdowns; legacy runs display an explicit
-statistics-unavailable notice while retaining generated Pokemon lookup.
+with expandable item and named-species breakdowns; legacy runs display an
+explicit statistics-unavailable notice while retaining generated Pokemon
+lookup.
+
+Completed-run Lookup navigation remains stable through cleanup and immediate
+attempt startup, then releases when the first enemy of the new attempt appears.
+That encounter opens Enemy, while the following player move menu restores the
+normal Player view.
 
 ## Bundled-runtime matrix
 

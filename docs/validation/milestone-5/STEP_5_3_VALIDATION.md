@@ -5,9 +5,9 @@
 Every active attempt owns a schema-version-1 statistics record. It retains
 battles completed, the highest usable player Pokemon level reached, badges
 earned, actual and wasted item healing, consumed resources by item and source,
-trainer species frequency, and defeated trainer Pokemon BST aggregates. The
-existing ledger remains authoritative for attempt identity, seed, duration,
-result, and per-slot result totals.
+trainer species frequency with display names, and defeated trainer Pokemon BST
+aggregates. The existing ledger remains authoritative for attempt identity,
+seed, duration, result, and per-slot result totals.
 
 Battle statistics use one generated token per battle. Completion and each
 opposing Pokemon identity are recorded idempotently, so repeated callbacks,

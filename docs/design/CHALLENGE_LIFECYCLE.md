@@ -113,7 +113,8 @@ not count it twice. A later rematch is a new battle and counts again.
 
 The attempt records:
 
-- encounter frequency by displayed species identity;
+- encounter frequency by displayed species identity, retaining both its
+  protocol identifier and authoritative display name;
 - the number of distinct displayed trainer species; and
 - every species tied for the highest encounter frequency.
 

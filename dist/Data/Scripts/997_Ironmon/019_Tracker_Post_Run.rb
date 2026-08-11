@@ -66,6 +66,10 @@ module Ironmon
     tick_active_run_duration if attempt["result"] == "active"
     statistics = attempt["statistics"]
     return nil if !statistics.is_a?(Hash)
+    if !statistics["trainer_species_names"].is_a?(Hash)
+      statistics = normalize_attempt_statistics(statistics)
+      attempt["statistics"] = statistics
+    end
     ledger = run_ledger
     return {
       "schema_version" => statistics["schema_version"],
@@ -85,6 +89,7 @@ module Ironmon
       "items_used" => statistics["items_used"],
       "items_by_source" => statistics["items_by_source"],
       "trainer_species_counts" => statistics["trainer_species_counts"],
+      "trainer_species_names" => statistics["trainer_species_names"],
       "trainer_species_distinct" => statistics["trainer_species_distinct"],
       "trainer_species_most_encountered" =>
         statistics["trainer_species_most_encountered"],

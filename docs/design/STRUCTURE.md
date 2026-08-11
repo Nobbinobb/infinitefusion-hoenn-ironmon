@@ -19,47 +19,30 @@ file in `Data/Scripts` as Ruby.
 
 ## Source responsibilities
 
-1. `001_Core.rb`: constants, runtime state, metadata, and compatibility check.
-2. `002_Configuration.rb`: save-backed policy settings and migrations.
-3. `002_Configuration_Screen.rb`: transactional policy selection and summary.
-4. `002_Pivot_State.rb`: save-backed pivot transactions, mappings, identifiers,
-   and Pokemon transformation markers.
-5. `002_Custom_Fusion_Pool.rb`: validated, cached custom-fusion candidates.
-6. `002_Randomization.rb`: Ironmon preset activation and run setup.
-7. `003_Checkpoint_Reset.rb`: checkpoint persistence and F7 reset lifecycle.
-8. `003_Species_Generators.rb`: deterministic wild and trainer policy mappings.
-9. `003_Ability_Randomization.rb`: deterministic ability slots, fusion
-   inheritance, evolution fallback, and hidden-ability paths.
-10. `004_Encounter_Hooks.rb`: wild, gift, starter, scripted, and trainer hooks.
-11. `005_Mode_Hooks.rb`: mode-menu integration and preset activation.
-12. `006_Scene_Hooks.rb`: map scene integration for resets and static refreshes.
-13. `007_Difficulty_Enforcement.rb`: locked challenge settings and 1.6 scaling.
-14. `008_Gym_Leader_Parties.rb`: persistent six-Pokemon Gym Leader expansion.
-15. `009_Diagnostics.rb`: run, load, and reset diagnostic records.
-16. `010_Pivot_Acquisition.rb`: transactional catches, gifts, trades, party
-    enforcement, exclusions, and PC movement safeguards.
-17. `011_Blind_Pivot_Interface.rb`: legal-action selection, blind decisions,
-    transactional pivot result preparation, and non-cancellable completion.
-18. `012_Player_Fusion_Gamble.rb`: unordered-pair player-fusion mappings,
-    reversible custom-result validation, orientation, and discovery tracking.
-19. `013_Caught_Fusion_Transformations.rb`: acquisition-stable caught-fusion
-    component selection and Ironmon-only DNA item blocking.
-20. `015_Pivot_Integration.rb`: legacy mapping migration support, Egg-hatch and
-    duplicate-evolution pivots, Day Care protection, and temporary-mode party
-    eligibility safeguards.
-21. `016_Progression_Support.rb`: deterministic temporary Pokemon for required
-    gifts and trades without exposing the current party Pokemon.
-22. `017_HM_Tools.rb`: HM reward interception and transactional migration to
-    permanent field-tool key items.
-23. `018_Tracker_Connection.rb`: local tracker transport and ordinary live
-    snapshots.
-24. `019_Tracker_Post_Run.rb`: completed-run recipes and authorized deterministic
-    lookup reconstruction.
-25. `020_Tracker_Debug.rb`: development-only inspector and diagnostic commands.
-26. `021_Tracker_Move_Access_Metrics.rb`: encountered move-access events for
-    completed-run analysis.
-27. `022_Tracker_Evolution_Metrics.rb`: offered, completed, cancelled, and
-    duplicate evolution events for completed-run analysis.
+1. `001_Core.rb`: constants, runtime state, metadata, and compatibility checks.
+2. The `002_*` files: configuration, custom-fusion pools, pivot state, and run
+   randomization setup.
+3. The randomization-focused `003_*` files: ability, base-stat, move-access,
+   species, normal-evolution, and fusion-evolution generation and integration.
+4. `003_Checkpoint_Reset.rb`: checkpoint persistence and F7 reset lifecycle.
+5. `003_Run_Lifecycle.rb`: attempt identity, results, duration, ledger, and
+   failed-run enforcement.
+6. `004_Encounter_Hooks.rb`: wild, gift, starter, scripted, and trainer hooks.
+7. `005_Mode_Hooks.rb` and `006_Scene_Hooks.rb`: mode-menu and map-scene
+   integration.
+8. `007_Challenge_Failure.rb`: loss/draw completion and locked battle rejection.
+9. `007_Difficulty_Enforcement.rb`: locked challenge settings and 1.6 scaling.
+10. `008_Challenge_Statistics.rb`: authoritative progress, healing, item,
+    trainer encounter, and defeated-BST statistics.
+11. `008_Gym_Leader_Parties.rb` through `017_HM_Tools.rb`: difficulty, pivot,
+    fusion, progression, acquisition, and permanent field-tool behavior.
+12. `018_Tracker_Connection.rb`: local tracker transport, current-state
+    recovery, and ordinary live snapshots.
+13. `019_Tracker_Post_Run.rb`: completed-run recipes, statistics recovery, and
+    authorized deterministic lookup reconstruction.
+14. `020_Tracker_Debug.rb`: development-only inspector and diagnostics.
+15. `021_Tracker_Move_Access_Metrics.rb` and
+    `022_Tracker_Evolution_Metrics.rb`: observed completed-run analysis data.
 
-Version `0.6.4` supports Infinite Fusion game version `6.8.0`. An unsupported
+Version `0.6.5` supports Infinite Fusion game version `6.8.0`. An unsupported
 version emits a startup warning to the debug log without preventing startup.

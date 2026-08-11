@@ -1140,3 +1140,20 @@ Status: **Complete**
   `6b073324420ae072d52c0d7d8054361e922b4ba7b2afea48dde9986b749ee414`.
 - Two consecutive release builds were byte-for-byte reproducible.
 - All 41 tracker tests and the combined game/tracker startup smoke test passed.
+
+## Ironmon 0.6.5 challenge lifecycle release
+
+Status: **Complete**
+
+- Added game-owned attempt results, failure enforcement, optional automatic
+  reset, authoritative challenge statistics, and completed-run tracker
+  presentation without changing deterministic Pokemon generator schemas.
+- Preserved missed completed recipes through the immediate automatic-reset
+  startup race and kept duplicate reconnect recovery idempotent.
+- Passed 44 cumulative and 9 focused trainer-name bundled-runtime assertions,
+  plus all 45 tracker tests.
+- Created `Ironmon-v0.6.5-challenge-lifecycle.zip` with 460 entries and the
+  SHA-256 checksum
+  `661fc320cc62e20f41a5f9fde6c03a2c746e55b4ebf04e73f54d2ad8fa3c147b`.
+- Two consecutive release builds were byte-for-byte reproducible, and the
+  packaged tracker and game passed their concurrent startup smoke test.

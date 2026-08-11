@@ -58,7 +58,7 @@
             <div class="statistics-list">
                 @foreach (KeyValuePair<string, int> species in Statistics.TrainerSpeciesCounts.OrderByDescending(entry => entry.Value).ThenBy(entry => entry.Key))
                 {
-                    <div><span>@FormatIdentifier(species.Key)</span><strong>@species.Value</strong></div>
+                    <div><span>@FormatTrainerSpecies(Statistics, species.Key)</span><strong>@species.Value</strong></div>
                 }
                 @if (Statistics.TrainerSpeciesCounts.Count == 0)
                 {

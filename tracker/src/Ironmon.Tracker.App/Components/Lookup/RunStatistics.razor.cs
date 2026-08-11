@@ -39,6 +39,20 @@ public partial class RunStatistics
     }
 
     /// <summary>
+    /// Formats a trainer species with its authoritative display name and identifier.
+    /// </summary>
+    /// <param name="statistics">The complete statistics payload.</param>
+    /// <param name="identifier">The species identifier.</param>
+    /// <returns>The combined display name and species identifier.</returns>
+    private static string FormatTrainerSpecies(RunStatisticsPayload statistics, string identifier)
+    {
+        if (!statistics.TrainerSpeciesNames.TryGetValue(identifier, out string? name) || string.IsNullOrWhiteSpace(name))
+            return FormatIdentifier(identifier);
+
+        return $"{name} ({identifier})";
+    }
+
+    /// <summary>
     /// Formats an optional average BST.
     /// </summary>
     /// <param name="value">The optional average.</param>
@@ -72,6 +86,6 @@ public partial class RunStatistics
             return "\u2014";
 
         int count = statistics.TrainerSpeciesMostEncountered.Max(species => statistics.TrainerSpeciesCounts.TryGetValue(species, out int frequency) ? frequency : 0);
-        return $"{string.Join(", ", statistics.TrainerSpeciesMostEncountered.Select(FormatIdentifier))} \u00B7 {count}";
+        return $"{string.Join(", ", statistics.TrainerSpeciesMostEncountered.Select(species => FormatTrainerSpecies(statistics, species)))} \u00B7 {count}";
     }
 }

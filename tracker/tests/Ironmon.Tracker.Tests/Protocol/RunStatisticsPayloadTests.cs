@@ -39,6 +39,7 @@ public sealed class RunStatisticsPayloadTests
             ItemsUsed = 6,
             ItemsBySource = new Dictionary<string, Dictionary<string, int>> { ["Held"] = new() { ["SITRUSBERRY"] = 1 } },
             TrainerSpeciesCounts = new Dictionary<string, int> { ["PIKACHU"] = 3 },
+            TrainerSpeciesNames = new Dictionary<string, string> { ["PIKACHU"] = "Pikachu" },
             TrainerSpeciesDistinct = 1,
             TrainerSpeciesMostEncountered = ["PIKACHU"],
             TrainerDefeatedCount = 8,
@@ -55,6 +56,7 @@ public sealed class RunStatisticsPayloadTests
 
         Assert.Equal(7, result.AttemptStatistics!.AttemptNumber);
         Assert.Equal(1, result.AttemptStatistics.ItemsBySource["Held"]["SITRUSBERRY"]);
+        Assert.Equal("Pikachu", result.AttemptStatistics.TrainerSpeciesNames["PIKACHU"]);
         Assert.True(json.TryGetProperty("attempt_statistics", out _));
     }
 

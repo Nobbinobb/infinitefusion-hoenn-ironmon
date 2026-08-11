@@ -20,6 +20,7 @@ module Ironmon
       "items_used" => 0,
       "items_by_source" => { "Bag" => {}, "Held" => {} },
       "trainer_species_counts" => {},
+      "trainer_species_names" => {},
       "trainer_species_distinct" => 0,
       "trainer_species_most_encountered" => [],
       "trainer_defeated_count" => 0,
@@ -55,6 +56,9 @@ module Ironmon
     )
     statistics["trainer_species_counts"] = normalize_count_hash(
       value["trainer_species_counts"]
+    )
+    statistics["trainer_species_names"] = normalize_string_hash(
+      value["trainer_species_names"]
     )
     statistics["trainer_species_most_encountered"] = normalize_string_array(
       value["trainer_species_most_encountered"]
@@ -108,6 +112,17 @@ module Ironmon
     return result
   end
 
+  def self.normalize_string_hash(value)
+    result = {}
+    return result if !value.is_a?(Hash)
+    value.each do |key, text|
+      key = key.to_s
+      text = text.to_s
+      result[key] = text if !key.empty? && !text.empty?
+    end
+    return result
+  end
+
   def self.normalize_string_array(value)
     return [] if !value.is_a?(Array)
     return value.map(&:to_s).uniq.sort
@@ -118,7 +133,8 @@ module Ironmon
     return nil if !attempt
     if !attempt["statistics"].is_a?(Hash) ||
        attempt["statistics"]["schema_version"] !=
-         ATTEMPT_STATISTICS_SCHEMA_VERSION
+         ATTEMPT_STATISTICS_SCHEMA_VERSION ||
+       !attempt["statistics"]["trainer_species_names"].is_a?(Hash)
       attempt["statistics"] = normalize_attempt_statistics(
         attempt["statistics"]
       )
@@ -185,6 +201,8 @@ module Ironmon
     species = battler.pokemon.species.to_s
     counts = statistics["trainer_species_counts"]
     counts[species] = counts.fetch(species, 0) + 1
+    statistics["trainer_species_names"][species] =
+      battler.pokemon.species_data.name.to_s
     update_derived_attempt_statistics(statistics)
   end
 

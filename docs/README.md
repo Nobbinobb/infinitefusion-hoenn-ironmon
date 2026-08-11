@@ -55,6 +55,7 @@ historical release notes and validation evidence.
 
 ## Release notes
 
+- [0.6.5](releases/RELEASE_NOTES_0.6.5.md)
 - [0.6.4](releases/RELEASE_NOTES_0.6.4.md)
 - [0.6.3](releases/RELEASE_NOTES_0.6.3.md)
 - [0.6.2](releases/RELEASE_NOTES_0.6.2.md)
@@ -72,6 +73,8 @@ historical release notes and validation evidence.
 
 ## Validation records
 
+- [Ironmon 0.6.5 release](validation/IRONMON_0.6.5_RELEASE.md): cumulative
+  Milestone 5 regression, reproducible package, and clean-install startup.
 - [Open validation closure](validation/OPEN_VALIDATION_CLOSURE.md): automated
   disposition of every formerly unchecked validation item.
 - [Milestone 1](validation/milestone-1/): Steps 1.1 through 1.8.
@@ -80,6 +83,8 @@ historical release notes and validation evidence.
   validation beginning with Step 3.1.
 - [Milestone 4 Step 4.0 audit](validation/milestone-4/STEP_4_0_AUDIT.md):
   compiled event inventory, boundary ownership, and remaining game-path gaps.
+- [Milestone 5](validation/milestone-5/): game-owned lifecycle, failure rules,
+  statistics, tracker presentation, and cumulative release evidence.
 
 Validation records document the evidence for completed work. They are not the
 source of current behavior rules; the design documents above are authoritative.

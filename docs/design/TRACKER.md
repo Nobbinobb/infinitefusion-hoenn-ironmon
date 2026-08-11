@@ -197,8 +197,9 @@ activating or focusing the tracker window. The controller chord uses inputs
 that Infinite Fusion does not bind by default.
 
 When an opponent is sent out, the tracker automatically shows the Enemy view.
-The player can switch back to Player at any time. Ending the battle returns to
-the Player view.
+This includes the first encounter of a new attempt after completed-run Lookup
+navigation. Opening the player's move menu and ending the battle return to the
+Player view. The player can switch views manually at any time.
 
 The state model supports multiple opposing battlers even if the first UI shows
 only one active enemy at a time. This avoids redesigning the protocol for
@@ -403,7 +404,7 @@ contains the inputs needed to reproduce the run:
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.6.4",
+  "ironmon_version": "0.6.5",
   "configuration": {
     "schema_version": 2,
     "wild_policy": "mixed",

@@ -273,6 +273,12 @@ public sealed class CompletedRunArchive
 
         foreach (int count in statistics.TrainerSpeciesCounts.Values)
             ArgumentOutOfRangeException.ThrowIfNegative(count);
+
+        foreach (KeyValuePair<string, string> species in statistics.TrainerSpeciesNames)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(species.Key);
+            ArgumentException.ThrowIfNullOrWhiteSpace(species.Value);
+        }
     }
 
     /// <summary>
