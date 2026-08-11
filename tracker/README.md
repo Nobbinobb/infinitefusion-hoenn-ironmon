@@ -1,9 +1,10 @@
 # Ironmon tracker workspace
 
 The production tracker is being implemented in reviewable parts under `src/`
-and `tests/`. See `IMPLEMENTATION_STATUS.md` for the completed boundary and
-`../docs/design/TRACKER.md` for the agreed design. The exact implemented
-connection subset is recorded in `PROTOCOL.md`.
+and `tests/`. See `IMPLEMENTATION_STATUS.md` for the completed boundary and the
+[Ironmon Mechanics Manual](../docs/IRONMON_MECHANICS.html#tracker) for the
+current product behavior. The exact implemented connection subset is recorded
+in `PROTOCOL.md`.
 
 ## Project organization
 

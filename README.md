@@ -7,12 +7,11 @@ and a fast reset to starter selection.
 ## Project layout
 
 - `src/` contains the canonical Ruby source.
-- `docs/README.md` is the documentation index.
+- `docs/IRONMON_MECHANICS.html` is the complete public mechanics manual.
+- `docs/README.md` is the compact documentation index.
 - `docs/ROADMAP.md` tracks milestone scope and status.
 - `docs/guides/` contains installation, configuration, and development guides.
-- `docs/design/` contains stable behavior and architecture specifications.
 - `docs/releases/` contains versioned release notes.
-- `docs/validation/` contains milestone-specific validation records.
 - `dist/` contains the copy-ready game directory layout.
 - `tools/Build-Distribution.ps1` synchronizes the source into `dist/` and the
   local game installation.
@@ -23,9 +22,9 @@ and a fast reset to starter selection.
 
 Milestone 5 is complete. Version `0.6.5` adds the game-owned challenge
 lifecycle, failure lock and optional automatic reset, per-attempt statistics,
-and completed-run tracker presentation. See
-`docs/design/CHALLENGE_LIFECYCLE.md` for the rules, `docs/ROADMAP.md` for
-cumulative scope, and `docs/guides/INSTALLATION.md` for installation steps.
+and completed-run tracker presentation. See `docs/IRONMON_MECHANICS.html` for
+the complete behavior reference, `docs/ROADMAP.md` for cumulative scope, and
+`docs/guides/INSTALLATION.md` for installation steps.
 
 This repository is maintained independently from the official Pokemon Infinite
 Fusion game repository.

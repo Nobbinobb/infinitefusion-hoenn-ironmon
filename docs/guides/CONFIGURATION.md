@@ -41,8 +41,9 @@ preserved and automatic reset disabled.
 Before an F7 reset, Ironmon snapshots the current configuration. It restores
 that snapshot after loading the pre-starter checkpoint and before generating
 the new run mappings. The new run receives a different seed while retaining the
-same policy and unfusion-setting identifiers plus the automatic-reset choice. See
-`../design/PIVOT_SYSTEM.md` for the complete pivot and determinism rules.
+same policy and unfusion-setting identifiers plus the automatic-reset choice.
+See the [Ironmon Mechanics Manual](../IRONMON_MECHANICS.html#pivot-system) for
+the complete pivot and determinism rules.
 
 ## Selection flow
 

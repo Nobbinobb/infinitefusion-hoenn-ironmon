@@ -1,7 +1,8 @@
 # Ironmon Tracker implementation status
 
 This document records which reviewed implementation parts exist. The stable
-product behavior remains defined by `../docs/design/TRACKER.md`.
+product behavior is defined by the
+[Ironmon Mechanics Manual](../docs/IRONMON_MECHANICS.html#tracker).
 
 ## Part overview
 
