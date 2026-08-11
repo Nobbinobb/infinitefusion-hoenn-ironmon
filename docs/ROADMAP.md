@@ -657,7 +657,7 @@ Milestone 4 status: **Complete**
 
 ### Milestone 5: Remaining challenge rules
 
-Status: **Planned**
+Status: **In progress (Steps 5.1-5.3 complete)**
 
 The detailed behavior is defined in `design/CHALLENGE_LIFECYCLE.md`.
 
@@ -724,6 +724,8 @@ and show their actionable error. See
 
 #### Step 5.3: Challenge statistics collection
 
+Status: **Complete**
+
 - Record attempt number, seed, active duration, result, battles completed,
   highest player Pokemon level, and badges earned.
 - Record attempts started, lost, won, and abandoned as per-slot aggregates.
@@ -746,6 +748,13 @@ Acceptance criteria:
 - Repeated callbacks, switch-ins, and reconnects cannot double-count an event.
 - Normal and fused displayed identities use the same generated-data resolvers.
 - Save/load and checkpoint reset preserve exact aggregate and attempt values.
+
+Result: each attempt now retains versioned authoritative progress, item,
+healing, trainer encounter, and defeated-BST statistics. Battle tokens and
+per-Pokemon identities make callbacks idempotent, player-owned held-item
+provenance survives transfers and switching, and completion finalizes derived
+values before the attempt is archived. See
+`validation/milestone-5/STEP_5_3_VALIDATION.md`.
 
 #### Step 5.4: Tracker lifecycle and statistics presentation
 

@@ -1,13 +1,13 @@
 # Challenge lifecycle and statistics
 
-Status: **Steps 5.1-5.2 implemented; Steps 5.3-5.4 planned**
+Status: **Steps 5.1-5.3 implemented; Step 5.4 planned**
 
 This document defines when an Ironmon attempt starts and ends, how a failed run
 is enforced, how checkpoint resets preserve attempt history, and which
 statistics are authoritative. The game-owned attempt lifecycle, per-save
-ledger, active duration, manual F7 carry-over, failure enforcement, and
-automatic reset are implemented. Extended statistics and tracker presentation
-remain in their later steps.
+ledger, active duration, manual F7 carry-over, failure enforcement, automatic
+reset, and authoritative statistics collection are implemented. Tracker
+presentation remains in Step 5.4.
 
 ## Attempt identity and results
 

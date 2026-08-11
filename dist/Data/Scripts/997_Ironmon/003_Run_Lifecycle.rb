@@ -63,7 +63,12 @@ module Ironmon
       "run_id" => value["run_id"].to_s,
       "seed" => value["seed"].to_i,
       "result" => result,
-      "active_seconds" => seconds
+      "active_seconds" => seconds,
+      "statistics" => if respond_to?(:normalize_attempt_statistics)
+                        normalize_attempt_statistics(value["statistics"])
+                      else
+                        value["statistics"]
+                      end
     }
   end
 
@@ -107,7 +112,12 @@ module Ironmon
       "run_id" => $PokemonGlobal.ironmon_run_id,
       "seed" => seed.to_i,
       "result" => "active",
-      "active_seconds" => 0.0
+      "active_seconds" => 0.0,
+      "statistics" => if respond_to?(:default_attempt_statistics)
+                        default_attempt_statistics
+                      else
+                        nil
+                      end
     }
     ledger["current_attempt"] = attempt
     ledger["next_attempt_number"] = number + 1
@@ -125,6 +135,7 @@ module Ironmon
     attempt = current_run_attempt
     return false if !attempt || attempt["result"] != "active"
     tick_active_run_duration
+    finalize_attempt_statistics if respond_to?(:finalize_attempt_statistics)
     attempt["result"] = result_name
     ledger = run_ledger
     ledger["attempts_#{result_name}"] += 1

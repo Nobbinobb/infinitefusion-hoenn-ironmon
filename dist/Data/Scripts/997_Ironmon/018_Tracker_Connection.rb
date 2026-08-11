@@ -547,6 +547,8 @@ module Ironmon
 
   def self.tracker_player_sent_out(battler)
     return if !active? || !@tracker_battle_id || !battler
+    register_statistics_battler_item(battler) if
+      respond_to?(:register_statistics_battler_item)
     @tracker_player_battler = battler
     @tracker_player_pokemon = battler.pokemon
     record_move_access_encounter(battler.pokemon, battler.level, "player") if
@@ -598,6 +600,10 @@ module Ironmon
 
   def self.tracker_enemy_sent_out(battler)
     return if !active? || !@tracker_battle_id || !battler
+    register_statistics_battler_item(battler) if
+      respond_to?(:register_statistics_battler_item)
+    record_trainer_species_encounter(battler) if
+      respond_to?(:record_trainer_species_encounter)
     current = @tracker_enemy_battlers[battler.index]
     return if current && current.pokemon.equal?(battler.pokemon)
     @tracker_enemy_battlers[battler.index] = battler
