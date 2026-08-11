@@ -663,6 +663,8 @@ The detailed behavior is defined in `design/CHALLENGE_LIFECYCLE.md`.
 
 #### Step 5.1: Game-owned run lifecycle and attempt ledger
 
+Status: **Complete**
+
 - Promote the existing tracker-only completion signal into one game-owned,
   idempotent run lifecycle with `active`, `lost`, `won`, and `abandoned`
   results.
@@ -681,6 +683,12 @@ Acceptance criteria:
 - Saving, loading, manual F7, and automatic reset preserve the per-slot ledger.
 - Existing saves migrate with automatic reset disabled and their next generated
   run as attempt 1.
+
+Result: the game now owns an idempotent lifecycle and a versioned per-save
+ledger. Successful generation starts one numbered attempt, losses/wins/F7 use
+the shared completion boundary, active runtime is accumulated from the bundled
+game clock, and F7 carries the newer ledger across the older checkpoint. See
+`validation/milestone-5/STEP_5_1_VALIDATION.md`.
 
 #### Step 5.2: Failure enforcement and optional automatic reset
 

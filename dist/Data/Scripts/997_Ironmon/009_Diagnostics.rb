@@ -37,6 +37,7 @@ module Ironmon
                       0
                     end
     seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : nil
+    attempt_number = current_attempt_number
     ability_version = if $PokemonGlobal
                         $PokemonGlobal.ironmon_ability_generator_version
                       else
@@ -134,7 +135,7 @@ module Ironmon
       $PokemonGlobal.ironmon_fusion_tutor_catalog_fingerprint : nil
     fusion_tutor_source_fingerprint = $PokemonGlobal ?
       $PokemonGlobal.ironmon_fusion_tutor_source_fingerprint : nil
-    return "[Ironmon #{VERSION}] context=#{context} seed=#{seed} " +
+    return "[Ironmon #{VERSION}] context=#{context} attempt=#{attempt_number} seed=#{seed} " +
       "wild_policy=#{configuration_value.wild_policy} " +
       "trainer_policy=#{configuration_value.trainer_policy} " +
       "unfusion_setting=#{configuration_value.unfusion_setting} " +

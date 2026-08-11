@@ -491,7 +491,12 @@ module Ironmon
 
   def self.start_tracker_run
     return if !$PokemonGlobal
-    $PokemonGlobal.ironmon_run_id = new_tracker_run_id
+    attempt = current_run_attempt if respond_to?(:current_run_attempt)
+    $PokemonGlobal.ironmon_run_id = if attempt && !attempt["run_id"].empty?
+                                      attempt["run_id"]
+                                    else
+                                      new_tracker_run_id
+                                    end
     $PokemonGlobal.ironmon_tracker_sequence = 0
     $PokemonGlobal.ironmon_run_result = nil
     reset_move_access_metrics if respond_to?(:reset_move_access_metrics)

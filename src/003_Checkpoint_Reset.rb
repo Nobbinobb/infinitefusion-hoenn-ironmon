@@ -140,7 +140,8 @@ module Ironmon
     elsif notice == :save_failed
       pbMessage(_INTL("The run restarted, but the save slot could not be updated. Please save manually."))
     else
-      pbMessage(_INTL("A new Ironmon run has been generated. Choose your starter."))
+      number = current_attempt_number
+      pbMessage(_INTL("Ironmon attempt {1} has been generated. Choose your starter.", number))
     end
     return true
   end
@@ -170,11 +171,14 @@ module Ironmon
     end
 
     configuration_snapshot = Ironmon.configuration_snapshot
+    Ironmon.complete_run(:abandoned)
+    ledger_snapshot = Ironmon.run_ledger_snapshot
     remember_current_seed_for_reset
     @reset_in_progress = true
     @reset_save_slot = $Trainer.save_slot
-    $scene = IronmonCheckpointLoadScene.new(checkpoint_data,
-                                            configuration_snapshot)
+    $scene = IronmonCheckpointLoadScene.new(
+      checkpoint_data, configuration_snapshot, ledger_snapshot
+    )
     return true
   end
 end
@@ -195,14 +199,16 @@ module Game
 end
 
 class IronmonCheckpointLoadScene
-  def initialize(save_data, configuration_snapshot)
+  def initialize(save_data, configuration_snapshot, ledger_snapshot)
     @save_data = save_data
     @configuration_snapshot = configuration_snapshot
+    @ledger_snapshot = ledger_snapshot
   end
 
   def main
     SaveData.mark_values_as_unloaded
     Ironmon.with_checkpoint_reset_load { Game.load(@save_data) }
     Ironmon.configuration = @configuration_snapshot
+    Ironmon.restore_run_ledger(@ledger_snapshot)
   end
 end

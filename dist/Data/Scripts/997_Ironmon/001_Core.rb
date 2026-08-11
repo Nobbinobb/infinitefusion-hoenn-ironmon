@@ -104,6 +104,7 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_run_id
   attr_accessor :ironmon_tracker_sequence
   attr_accessor :ironmon_run_result
+  attr_accessor :ironmon_run_ledger
   attr_accessor :ironmon_move_access_metrics
   attr_accessor :ironmon_evolution_metrics
 end

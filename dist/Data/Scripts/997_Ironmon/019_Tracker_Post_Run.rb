@@ -15,9 +15,10 @@ module Ironmon
   end
 
   def self.complete_tracker_run(result)
-    return if !active? || !$PokemonGlobal
-    return if $PokemonGlobal.ironmon_run_result
-    $PokemonGlobal.ironmon_run_result = result.to_s
+    return complete_run(result)
+  end
+
+  def self.publish_run_completion
     recipe = tracker_completed_run_recipe
     tracker_connection.send_event("run_completed", recipe) if recipe
   rescue Exception => e
@@ -1744,11 +1745,11 @@ end
 
 Events.onEndBattle += proc do |_sender, event|
   decision = event[0]
-  Ironmon.complete_tracker_run(:lost) if [2, 5].include?(decision)
+  Ironmon.complete_run(:lost) if [2, 5].include?(decision)
 end
 
 alias ironmon_tracker_original_hall_of_fame_entry pbHallOfFameEntry
 def pbHallOfFameEntry
-  Ironmon.complete_tracker_run(:won)
+  Ironmon.complete_run(:won)
   return ironmon_tracker_original_hall_of_fame_entry
 end

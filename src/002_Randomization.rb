@@ -36,7 +36,6 @@ module Ironmon
     $PokemonGlobal.ironmon_mode = true
     configuration
     $PokemonGlobal.ironmon_seed = generate_run_seed
-    start_tracker_run
     $PokemonGlobal.ironmon_gym_leader_teams = {}
     reset_pivot_state
     prepare_player_fusion_pairing
@@ -92,6 +91,8 @@ module Ironmon
     pbShuffleItems
     pbShuffleTMs
     randomize_loaded_static_events
+    return false if !begin_run_attempt($PokemonGlobal.ironmon_seed)
+    start_tracker_run
     log_run_diagnostics(context)
     return true
   end
