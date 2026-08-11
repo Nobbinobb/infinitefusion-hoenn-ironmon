@@ -113,6 +113,7 @@ module Ironmon
     ledger["next_attempt_number"] = number + 1
     ledger["attempts_started"] += 1
     $PokemonGlobal.ironmon_run_result = nil
+    reset_failed_run_runtime_state
     resume_run_duration
     return attempt
   end
@@ -133,6 +134,48 @@ module Ironmon
     @run_duration_identity = nil
     publish_run_completion if respond_to?(:publish_run_completion)
     return true
+  end
+
+  def self.failed_run_locked?
+    return false if !active?
+    attempt = current_run_attempt
+    return attempt && attempt["result"] == "lost"
+  end
+
+  def self.reset_failed_run_runtime_state
+    @failed_run_notice_id = nil
+    @automatic_reset_attempted_id = nil
+  end
+
+  def self.handle_failed_run_state
+    return false if !failed_run_locked?
+    attempt = current_run_attempt
+    run_id = attempt["run_id"]
+    if configuration.automatic_reset &&
+       @automatic_reset_attempted_id != run_id
+      @automatic_reset_attempted_id = run_id
+      start_checkpoint_reset(true)
+      return true
+    end
+    if @failed_run_notice_id != run_id
+      @failed_run_notice_id = run_id
+      pbMessage(_INTL("This Ironmon attempt has ended. Press F7 to begin a new attempt."))
+    end
+    return true
+  end
+
+  def self.block_failed_run_action
+    return false if !failed_run_locked?
+    pbMessage(_INTL("This Ironmon attempt has ended. Press F7 to begin a new attempt."))
+    return true
+  end
+
+  def self.blocked_battle_result
+    outcome_variable = $PokemonTemp.battleRules["outcomeVar"] || 1
+    pbSet(outcome_variable, 5)
+    $PokemonTemp.clearBattleRules
+    block_failed_run_action
+    return 5
   end
 
   def self.run_uptime_seconds

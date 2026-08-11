@@ -131,6 +131,7 @@ module Ironmon
 
   def self.intercept_acquisition(pokemon, source = nil,
                                  action_selector = nil)
+    return false if block_failed_run_action
     raise PivotTransactionError, "No Pokemon was supplied." if !pokemon
     source ||= current_acquisition_source
     source = :starter if starter_pokemon?(pokemon)
@@ -250,6 +251,7 @@ end
 
 alias ironmon_pivot_original_prompt_caught_pokemon_action promptCaughtPokemonAction
 def promptCaughtPokemonAction(pokemon)
+  return false if Ironmon.block_failed_run_action
   return ironmon_pivot_original_prompt_caught_pokemon_action(pokemon) if
     !Ironmon.active?
   if pokemon.egg? || Ironmon.current_acquisition_exclusion
@@ -260,6 +262,7 @@ end
 
 alias ironmon_pivot_original_pb_store_pokemon pbStorePokemon
 def pbStorePokemon(pokemon)
+  return false if Ironmon.block_failed_run_action
   return ironmon_pivot_original_pb_store_pokemon(pokemon) if !Ironmon.active?
   if pokemon.egg? || Ironmon.current_acquisition_exclusion
     reason = Ironmon.current_acquisition_exclusion || :egg
@@ -290,6 +293,7 @@ end
 
 alias ironmon_pivot_original_pb_add_pokemon_silent pbAddPokemonSilent
 def pbAddPokemonSilent(pokemon, level = 1, see_form = true)
+  return false if Ironmon.block_failed_run_action
   return ironmon_pivot_original_pb_add_pokemon_silent(
     pokemon, level, see_form
   ) if !Ironmon.active?
@@ -314,6 +318,7 @@ end
 
 alias ironmon_pivot_original_pb_add_to_party_silent pbAddToPartySilent
 def pbAddToPartySilent(pokemon, level = nil, see_form = true)
+  return false if Ironmon.block_failed_run_action
   return ironmon_pivot_original_pb_add_to_party_silent(
     pokemon, level, see_form
   ) if !Ironmon.active?
@@ -335,6 +340,7 @@ end
 
 alias ironmon_pivot_original_pb_add_rental_pokemon pbAddRentalPokemon
 def pbAddRentalPokemon(species, level)
+  return false if Ironmon.block_failed_run_action
   return Ironmon.with_acquisition_exclusion(:rental) do
     ironmon_pivot_original_pb_add_rental_pokemon(species, level)
   end
@@ -342,6 +348,7 @@ end
 
 alias ironmon_pivot_original_pb_generate_egg pbGenerateEgg
 def pbGenerateEgg(pokemon, obtain_text = "")
+  return false if Ironmon.block_failed_run_action
   result = ironmon_pivot_original_pb_generate_egg(pokemon, obtain_text)
   if result && Ironmon.active?
     Ironmon.record_excluded_acquisition(pokemon, :egg, :egg)
@@ -360,6 +367,7 @@ end
 alias ironmon_pivot_original_pb_start_trade pbStartTrade
 def pbStartTrade(pokemonIndex, newpoke, nickname, trainerName,
                  trainerGender = 0, savegame = false)
+  return false if Ironmon.block_failed_run_action
   if Ironmon.active? && Ironmon.pivot_state.pending?
     pbMessage(_INTL("Another Pokemon acquisition must be resolved before trading."))
     return nil

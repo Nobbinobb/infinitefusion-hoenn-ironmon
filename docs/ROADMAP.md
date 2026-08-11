@@ -692,6 +692,8 @@ game clock, and F7 carries the newer ledger across the older checkpoint. See
 
 #### Step 5.2: Failure enforcement and optional automatic reset
 
+Status: **Complete**
+
 - Treat battle decisions 2 (loss) and 5 (draw) as failure, including battles
   the base game allows the player to lose safely.
 - With automatic reset disabled, lock the failed run against movement, battles,
@@ -711,6 +713,14 @@ Acceptance criteria:
 - Automatic reset never runs inside the battle callback and never races the
   base game's battle cleanup.
 - The completed recipe and statistics are available before the next run starts.
+
+Result: loss and draw completion now hard-lock player input, new battle cores,
+and Pokemon acquisitions after native battle cleanup. Automatic reset is a
+schema-version-3 pre-run option that defaults off, survives checkpoint restore,
+and schedules the reset only from a safe map update. Successful automatic
+resets are silent; checkpoint, generation, and save failures retain the lock
+and show their actionable error. See
+`validation/milestone-5/STEP_5_2_VALIDATION.md`.
 
 #### Step 5.3: Challenge statistics collection
 

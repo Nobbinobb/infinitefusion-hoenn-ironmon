@@ -21,6 +21,8 @@ historical release notes and validation evidence.
   failure locks, automatic reset, attempts, and statistics.
 - [Step 5.1 validation](validation/milestone-5/STEP_5_1_VALIDATION.md):
   game-owned lifecycle, per-save attempt ledger, duration, and F7 carry-over.
+- [Step 5.2 validation](validation/milestone-5/STEP_5_2_VALIDATION.md): failure
+  lock, automatic reset, configuration migration, and runtime boundaries.
 - [Pivot system](design/PIVOT_SYSTEM.md): the complete one-Pokemon acquisition
   and fusion-gamble rules.
 - [Pivot state](design/PIVOT_STATE.md): persisted transaction state and

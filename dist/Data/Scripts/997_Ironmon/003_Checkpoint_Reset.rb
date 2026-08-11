@@ -110,13 +110,21 @@ module Ironmon
       elsif @reset_save_slot
         $Trainer.save_slot = @reset_save_slot
         saved = Game.save(@reset_save_slot)
-        @reset_notice = saved ? :success : :save_failed
+        @reset_notice = if !saved
+                          :save_failed
+                        elsif @automatic_reset_in_progress
+                          :automatic_success
+                        else
+                          :success
+                        end
       else
-        @reset_notice = :success
+        @reset_notice = @automatic_reset_in_progress ?
+          :automatic_success : :success
       end
     ensure
       @reset_save_slot = nil
       @reset_in_progress = false
+      @automatic_reset_in_progress = false
     end
   end
 
@@ -135,7 +143,9 @@ module Ironmon
     return false if !@reset_notice
     notice = @reset_notice
     @reset_notice = nil
-    if notice == :generation_failed
+    if notice == :automatic_success
+      return true
+    elsif notice == :generation_failed
       pbMessage(generation_error_message)
     elsif notice == :save_failed
       pbMessage(_INTL("The run restarted, but the save slot could not be updated. Please save manually."))
@@ -156,18 +166,25 @@ module Ironmon
     warning = _INTL("Restart this Ironmon run from the starter selection with a new randomization? The current run will be replaced.")
     return true if !pbConfirmMessage(warning)
 
+    start_checkpoint_reset(false)
+    return true
+  end
+
+  def self.start_checkpoint_reset(automatic)
+    return false if @reset_in_progress
+
     slot = $Trainer ? $Trainer.save_slot : nil
     path = existing_checkpoint_path(slot)
     if !path
       pbMessage(_INTL("No Ironmon starter checkpoint exists yet. Start one new Ironmon run and reach the starter selection once to create it."))
-      return true
+      return false
     end
 
     begin
       checkpoint_data = SaveData.read_from_file(path)
     rescue Exception => e
       pbMessage(_INTL("The Ironmon checkpoint could not be loaded: {1}", e.message))
-      return true
+      return false
     end
 
     configuration_snapshot = Ironmon.configuration_snapshot
@@ -175,6 +192,7 @@ module Ironmon
     ledger_snapshot = Ironmon.run_ledger_snapshot
     remember_current_seed_for_reset
     @reset_in_progress = true
+    @automatic_reset_in_progress = automatic
     @reset_save_slot = $Trainer.save_slot
     $scene = IronmonCheckpointLoadScene.new(
       checkpoint_data, configuration_snapshot, ledger_snapshot

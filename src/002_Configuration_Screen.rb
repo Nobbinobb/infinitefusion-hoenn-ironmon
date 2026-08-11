@@ -31,6 +31,7 @@ module Ironmon
       @wild_policy = initial_configuration.wild_policy
       @trainer_policy = initial_configuration.trainer_policy
       @unfusion_setting = initial_configuration.unfusion_setting
+      @automatic_reset = initial_configuration.automatic_reset
     end
 
     def run
@@ -39,11 +40,12 @@ module Ironmon
           _INTL("Wild Pokemon: {1}", policy_label(@wild_policy)),
           _INTL("Trainer Pokemon: {1}", policy_label(@trainer_policy)),
           _INTL("Caught-fusion unfusion: {1}", unfusion_label(@unfusion_setting)),
+          _INTL("Automatic reset: {1}", automatic_reset_label),
           _INTL("Confirm"),
           _INTL("Back")
         ]
         message = _INTL("Configure this Ironmon run. Settings are applied only after final confirmation.")
-        choice = pbMessage(message, commands, 5)
+        choice = pbMessage(message, commands, 6)
         case choice
         when 0
           selected_policy = choose_policy(@wild_policy, _INTL("Choose the wild Pokemon fusion policy."))
@@ -55,9 +57,11 @@ module Ironmon
           selected_setting = choose_unfusion_setting(@unfusion_setting)
           @unfusion_setting = selected_setting if selected_setting
         when 3
+          @automatic_reset = !@automatic_reset
+        when 4
           configuration = confirmed_configuration
           return configuration if configuration
-        when 4
+        when 5
           return nil
         end
       end
@@ -90,15 +94,16 @@ module Ironmon
 
     def confirmed_configuration
       summary = _INTL(
-        "Begin Ironmon with these settings?\nWild Pokemon: {1}\nTrainer Pokemon: {2}\nCaught-fusion unfusion: {3}\n\nAutomatic sprite downloads are disabled in Ironmon. Install the spritepack before starting.",
+        "Begin Ironmon with these settings?\nWild Pokemon: {1}\nTrainer Pokemon: {2}\nCaught-fusion unfusion: {3}\nAutomatic reset: {4}\n\nAutomatic sprite downloads are disabled in Ironmon. Install the spritepack before starting.",
         policy_label(@wild_policy),
         policy_label(@trainer_policy),
-        unfusion_label(@unfusion_setting)
+        unfusion_label(@unfusion_setting),
+        automatic_reset_label
       )
       commands = [_INTL("Back"), _INTL("Begin Ironmon")]
       return nil if pbMessage(summary, commands, 1) != 1
       return Configuration.new(@wild_policy, @trainer_policy,
-                               @unfusion_setting)
+                               @unfusion_setting, @automatic_reset)
     end
 
     def choose_unfusion_setting(current_setting)
@@ -120,6 +125,10 @@ module Ironmon
 
     def unfusion_label(setting)
       return UNFUSION_LABELS[setting] || setting.to_s
+    end
+
+    def automatic_reset_label
+      return @automatic_reset ? _INTL("On") : _INTL("Off")
     end
   end
 end

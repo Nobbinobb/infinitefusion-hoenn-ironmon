@@ -139,6 +139,7 @@ module Ironmon
       "wild_policy=#{configuration_value.wild_policy} " +
       "trainer_policy=#{configuration_value.trainer_policy} " +
       "unfusion_setting=#{configuration_value.unfusion_setting} " +
+      "automatic_reset=#{configuration_value.automatic_reset} " +
       "custom_pool_size=#{pool_size} " +
       "custom_pool_fingerprint=#{pool_fingerprint} " +
       "ability_generator=#{ability_version} " +

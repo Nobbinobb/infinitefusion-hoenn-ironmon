@@ -4,7 +4,7 @@
 
 module Ironmon
   class Configuration
-    SCHEMA_VERSION = 2
+    SCHEMA_VERSION = 3
 
     POLICY_MIXED = :mixed
     POLICY_CUSTOM_FUSIONS_ONLY = :custom_fusions_only
@@ -25,19 +25,23 @@ module Ironmon
       UNFUSION_PLAYER_CHOICE
     ].freeze
     DEFAULT_UNFUSION_SETTING = UNFUSION_RANDOM_COMPONENT
+    DEFAULT_AUTOMATIC_RESET = false
 
     attr_reader :schema_version
     attr_reader :wild_policy
     attr_reader :trainer_policy
     attr_reader :unfusion_setting
+    attr_reader :automatic_reset
 
     def initialize(wild_policy = DEFAULT_WILD_POLICY,
                    trainer_policy = DEFAULT_TRAINER_POLICY,
-                   unfusion_setting = DEFAULT_UNFUSION_SETTING)
+                   unfusion_setting = DEFAULT_UNFUSION_SETTING,
+                   automatic_reset = DEFAULT_AUTOMATIC_RESET)
       @schema_version = SCHEMA_VERSION
       self.wild_policy = wild_policy
       self.trainer_policy = trainer_policy
       self.unfusion_setting = unfusion_setting
+      self.automatic_reset = automatic_reset
     end
 
     def wild_policy=(policy)
@@ -56,10 +60,15 @@ module Ironmon
       )
     end
 
+    def automatic_reset=(value)
+      @automatic_reset = value == true
+    end
+
     def migrate!
       self.wild_policy = @wild_policy
       self.trainer_policy = @trainer_policy
       self.unfusion_setting = @unfusion_setting
+      self.automatic_reset = @automatic_reset
       @schema_version = SCHEMA_VERSION
       return self
     end
@@ -69,6 +78,7 @@ module Ironmon
       return false if !POLICY_IDS.include?(@wild_policy)
       return false if !POLICY_IDS.include?(@trainer_policy)
       return false if !UNFUSION_SETTING_IDS.include?(@unfusion_setting)
+      return false if ![true, false].include?(@automatic_reset)
       return true
     end
 
@@ -77,7 +87,8 @@ module Ironmon
         :schema_version => @schema_version,
         :wild_policy => @wild_policy,
         :trainer_policy => @trainer_policy,
-        :unfusion_setting => @unfusion_setting
+        :unfusion_setting => @unfusion_setting,
+        :automatic_reset => @automatic_reset
       }
     end
 
@@ -88,7 +99,13 @@ module Ironmon
         trainer_policy = value[:trainer_policy] || value["trainer_policy"]
         unfusion_setting = value[:unfusion_setting] ||
                            value["unfusion_setting"]
-        return new(wild_policy, trainer_policy, unfusion_setting)
+        automatic_reset = if value.key?(:automatic_reset)
+                            value[:automatic_reset]
+                          else
+                            value["automatic_reset"]
+                          end
+        return new(wild_policy, trainer_policy, unfusion_setting,
+                   automatic_reset)
       end
       return new
     rescue Exception => e
