@@ -94,7 +94,7 @@ module Ironmon
 
     def confirmed_configuration
       summary = _INTL(
-        "Begin Ironmon with these settings?\nWild Pokemon: {1}\nTrainer Pokemon: {2}\nCaught-fusion unfusion: {3}\nAutomatic reset: {4}\n\nAutomatic sprite downloads are disabled in Ironmon. Install the spritepack before starting.",
+        "Begin Ironmon with these settings?\nWild Pokemon: {1}\nTrainer Pokemon: {2}\nCaught-fusion unfusion: {3}\nAutomatic reset: {4}\n\nLeave Download data enabled. Installing the spritepack is optional and reduces downloads during play. Disable Download data only if sprite loading causes performance problems.",
         policy_label(@wild_policy),
         policy_label(@trainer_policy),
         unfusion_label(@unfusion_setting),

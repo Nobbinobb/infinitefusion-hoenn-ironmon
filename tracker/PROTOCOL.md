@@ -41,7 +41,7 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.0",
-    "ironmon_version": "0.7.0",
+    "ironmon_version": "0.7.1",
     "ironmon_active": false,
     "debug_available": true,
     "game_root": "C:/Games/InfiniteFusion2",
@@ -437,7 +437,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.7.0",
+  "ironmon_version": "0.7.1",
   "configuration": {
     "schema_version": 2,
     "wild_policy": "mixed",

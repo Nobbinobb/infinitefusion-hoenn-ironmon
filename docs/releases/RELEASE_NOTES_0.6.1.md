@@ -28,10 +28,6 @@ runtime responsiveness, starter handoff, and offline sprite behavior.
 
 - Preserves experience earned by the Hoenn starter during the initial rescue
   battle when the starter is handed back through the story event.
-- Locks automatic missing-sprite downloads off during Ironmon and removes the
-  Download data option from its Gameplay Options menu.
-- Corrects older Ironmon saves and F7 checkpoints that had automatic sprite
-  downloads enabled, and prevents the setting from being enabled during a run.
 - Warns before starting that Ironmon expects the spritepack to be installed.
 
 ## Compatibility

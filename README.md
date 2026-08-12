@@ -21,8 +21,9 @@ and a fast reset to starter selection.
   and creates the combined copy-ready ZIP and SHA-256 checksum in `release/`.
 
 Milestone 6 is on hold while the 0.7 improvement cycle develops optional
-quality-of-life features. Version `0.7.0` adds tracker-assisted starter
-selection, persistent autoselect settings, and the Favorite Clause. See
+quality-of-life features. Version `0.7.1` includes tracker-assisted starter
+selection, persistent autoselect settings, the Favorite Clause, corrected
+Mixed starter generation, and sprite-loading performance safeguards. See
 `docs/IRONMON_MECHANICS.html` for the complete behavior reference,
 `docs/ROADMAP.md` for cumulative scope, and `docs/guides/INSTALLATION.md` for
 installation steps.

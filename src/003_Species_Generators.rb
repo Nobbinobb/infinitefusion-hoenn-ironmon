@@ -6,21 +6,33 @@ module Ironmon
   class SpeciesGenerationError < StandardError; end
 
   class SpeciesGenerator
-    SCHEMA_VERSION = 2
+    SCHEMA_VERSION = 3
+    PREVIOUS_SCHEMA_VERSION = 2
     LEGACY_SCHEMA_VERSION = 1
+    SLOT_SCHEMA_VERSIONS = [PREVIOUS_SCHEMA_VERSION, SCHEMA_VERSION].freeze
+    SUPPORTED_SCHEMA_VERSIONS = [LEGACY_SCHEMA_VERSION,
+                                 *SLOT_SCHEMA_VERSIONS].freeze
     FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
     FNV_PRIME = 1_099_511_628_211
     FNV_MASK = 0xFFFFFFFFFFFFFFFF
+    MIX_MULTIPLIER_ONE = 0xBF58476D1CE4E5B9
+    MIX_MULTIPLIER_TWO = 0x94D049BB133111EB
 
     attr_reader :mapping
 
-    def initialize(seed, namespace, policy, normal_pool, fusion_pool, mapping)
+    def initialize(seed, namespace, policy, normal_pool, fusion_pool, mapping,
+                   schema_version = SCHEMA_VERSION)
       @seed = seed.to_i
       @namespace = namespace.to_s
       @policy = policy
       @normal_pool = normal_pool
       @fusion_pool = fusion_pool
       @mapping = mapping || {}
+      @schema_version = schema_version.to_i
+      if !SLOT_SCHEMA_VERSIONS.include?(@schema_version)
+        raise SpeciesGenerationError,
+              "species generator schema #{@schema_version} is unsupported"
+      end
     end
 
     def map(species, context)
@@ -94,20 +106,31 @@ module Ironmon
       when Configuration::POLICY_CUSTOM_FUSIONS_ONLY
         return @fusion_pool
       else
-        category = deterministic_value(source_id, context, "category") % 2
+        category = deterministic_category(source_id, context)
         return category == 0 ? @normal_pool : @fusion_pool
       end
     end
 
+    def deterministic_category(source_id, context)
+      value = deterministic_value(source_id, context, "category")
+      return value % 2 if @schema_version == PREVIOUS_SCHEMA_VERSION
+      value ^= value >> 30
+      value = (value * MIX_MULTIPLIER_ONE) & FNV_MASK
+      value ^= value >> 27
+      value = (value * MIX_MULTIPLIER_TWO) & FNV_MASK
+      value ^= value >> 31
+      return value % 2
+    end
+
     def mapping_key(source_id, context)
       normalized = context.is_a?(Array) ? context : [context]
-      return [SCHEMA_VERSION, @namespace, *normalized, source_id]
+      return [@schema_version, @namespace, *normalized, source_id]
     end
 
     def deterministic_value(source_id, context, purpose)
       value = FNV_OFFSET_BASIS
       normalized = context.is_a?(Array) ? context : [context]
-      input = [SCHEMA_VERSION, @seed, @namespace, *normalized, source_id,
+      input = [@schema_version, @seed, @namespace, *normalized, source_id,
                purpose].join("|")
       input.each_byte do |byte|
         value ^= byte
@@ -158,13 +181,22 @@ module Ironmon
       :@trainer_species_generator
     generator = instance_variable_get(variable)
     if !generator
+      schema_version = if $PokemonGlobal &&
+                          SpeciesGenerator::SLOT_SCHEMA_VERSIONS.include?(
+                            $PokemonGlobal.ironmon_species_generator_version
+                          )
+                         $PokemonGlobal.ironmon_species_generator_version
+                       else
+                         SpeciesGenerator::SCHEMA_VERSION
+                       end
       generator = SpeciesGenerator.new(
         $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0,
         kind,
         policy,
         normal_species_pool,
         custom_fusion_pool,
-        stored_species_mapping(kind)
+        stored_species_mapping(kind),
+        schema_version
       )
       instance_variable_set(variable, generator)
     end
@@ -446,9 +478,7 @@ module Ironmon
 
   def self.current_species_mappings?
     return false if !$PokemonGlobal
-    versions = [SpeciesGenerator::LEGACY_SCHEMA_VERSION,
-                SpeciesGenerator::SCHEMA_VERSION]
-    return false if !versions.include?(
+    return false if !SpeciesGenerator::SUPPORTED_SCHEMA_VERSIONS.include?(
       $PokemonGlobal.ironmon_species_generator_version
     )
     return false if !$PokemonGlobal.ironmon_wild_species_map.is_a?(Hash)

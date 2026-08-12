@@ -475,9 +475,7 @@ module Ironmon
       raise TrackerLookupError.new("invalid_recipe", "The completed-run recipe schema is unsupported.")
     end
     recipe = tracker_flatten_completed_recipe(recipe)
-    supported_species_versions = [SpeciesGenerator::LEGACY_SCHEMA_VERSION,
-                                  SpeciesGenerator::SCHEMA_VERSION]
-    if !supported_species_versions.include?(
+    if !SpeciesGenerator::SUPPORTED_SCHEMA_VERSIONS.include?(
       recipe["species_generator_version"]
     )
       raise TrackerLookupError.new("generator_unavailable", "The required species generator is unavailable.")
@@ -1372,15 +1370,17 @@ module Ironmon
        SpeciesGenerator::LEGACY_SCHEMA_VERSION
       return tracker_lookup_legacy_wild_occurrences(target, recipe)
     end
-    return [] if recipe["species_generator_version"] !=
-      SpeciesGenerator::SCHEMA_VERSION
+    return [] if !SpeciesGenerator::SLOT_SCHEMA_VERSIONS.include?(
+      recipe["species_generator_version"]
+    )
     configuration_value = Configuration.from(recipe["configuration"])
     generator = if tracker_loaded_recipe?(recipe)
                   species_generator(:wild)
-                else
+                 else
                   SpeciesGenerator.new(
                     recipe["seed"], :wild, configuration_value.wild_policy,
-                    normal_species_pool, custom_fusion_pool, {}
+                    normal_species_pool, custom_fusion_pool, {},
+                    recipe["species_generator_version"]
                   )
                 end
     modes = if recipe["data_mode"] == "remix" &&
@@ -1543,16 +1543,18 @@ module Ironmon
        SpeciesGenerator::LEGACY_SCHEMA_VERSION
       return tracker_lookup_legacy_trainer_occurrences(target, recipe)
     end
-    return [] if recipe["species_generator_version"] !=
-      SpeciesGenerator::SCHEMA_VERSION
+    return [] if !SpeciesGenerator::SLOT_SCHEMA_VERSIONS.include?(
+      recipe["species_generator_version"]
+    )
     configuration_value = Configuration.from(recipe["configuration"])
     generator = if tracker_loaded_recipe?(recipe)
                   species_generator(:trainer)
-                else
+                 else
                   SpeciesGenerator.new(
                     recipe["seed"], :trainer,
                     configuration_value.trainer_policy,
-                    normal_species_pool, custom_fusion_pool, {}
+                    normal_species_pool, custom_fusion_pool, {},
+                    recipe["species_generator_version"]
                   )
                 end
     occurrences = []

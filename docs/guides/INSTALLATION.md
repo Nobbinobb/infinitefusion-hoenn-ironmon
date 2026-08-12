@@ -1,6 +1,6 @@
-# Installing Ironmon 0.7.0
+# Installing Ironmon 0.7.1
 
-Ironmon `0.7.0` targets Pokemon Infinite Fusion 2 version 6.8.0.
+Ironmon `0.7.1` targets Pokemon Infinite Fusion 2 version 6.8.0.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
 
@@ -8,7 +8,7 @@ official game's Git repository.
 
 1. Fully close Pokemon Infinite Fusion 2.
 2. Keep a backup of saves you care about.
-3. Extract `Ironmon-v0.7.0-starter-selection.zip` into the game's root directory—the
+3. Extract `Ironmon-v0.7.1-randomization-fixes.zip` into the game's root directory—the
    directory containing `InfiniteFusion2.exe`.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
    directory. The package installs Ruby files under
@@ -16,8 +16,11 @@ official game's Git repository.
    `Ironmon Tracker`.
 5. Double-click `Ironmon Tracker/Ironmon Tracker.exe`. No .NET installation or
    terminal command is required. Starting the game first also works.
-6. Install the current Infinite Fusion spritepack before starting an Ironmon
-   run. Automatic missing-sprite downloads are disabled during Ironmon.
+6. Leave `Download data` enabled in Gameplay Options so missing sprites are
+   downloaded automatically. You can optionally install the current Infinite
+   Fusion spritepack to reduce downloads during play. Disable `Download data`
+   only if sprite loading causes performance problems; if you disable it,
+   install and update the spritepack manually to keep sprites current.
 7. Start the game and select Ironmon when beginning a supported Hoenn run.
 
 Existing non-Ironmon saves retain their normal behavior. Ironmon runs created

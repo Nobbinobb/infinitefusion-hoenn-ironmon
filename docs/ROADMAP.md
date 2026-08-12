@@ -63,9 +63,11 @@ acceptance criteria are defined in `design/PIVOT_SYSTEM.md`.
   from Ironmon's absolute level-100 limit below.
 - The Optional Challenge `No reviving` setting is locked on.
 - The Optional Challenge `No heals (overworld)` setting is locked on.
-- Automatic missing-sprite downloads are locked off and the `Download data`
-  control is unavailable. Ironmon players install the spritepack before a run
-  so sprite resolution never pauses gameplay for network access.
+- Normally leave `Download data` enabled so missing sprites are downloaded
+  automatically. Installing the current spritepack is optional and reduces
+  downloads during play. Disable automatic downloads only if sprite loading
+  causes performance problems; while disabled, install and update the
+  spritepack manually to keep sprites current.
 - Wild Pokemon levels are 160% of their original levels.
 - Trainer Pokemon levels are 160% of their original levels.
 - The internal Hard Mode level multiplier must not stack with the Ironmon
@@ -821,7 +823,7 @@ Milestone 5 status: **Complete**
 
 Status: **On hold**
 
-Milestone 6 is intentionally deferred. Version 0.7.0 provides a
+Milestone 6 is intentionally deferred. Version 0.7.1 provides a
 playable build with the required randomization and challenge mechanics. Its
 remaining release-quality work can resume when the project is ready to focus
 on packaging, compatibility, migration, and formal release preparation.
@@ -834,7 +836,7 @@ on packaging, compatibility, migration, and formal release preparation.
 
 ### Version 0.7 improvement cycle
 
-Status: **Complete for 0.7.0**
+Status: **Complete for 0.7.1**
 
 Version 0.7 improves existing implementations and adds optional quality-of-life
 features that are useful but not required for a playable Ironmon run. Work is
@@ -861,6 +863,17 @@ warnings or errors, and the packaged tracker and synchronized game passed their
 connected startup smoke test. Two independent package builds produced the same
 SHA-256 checksum:
 `4abb4eb0fe01d4a75f52c26ad8cbbd35273c4203bda3097384de0fed22e169cb`.
+
+Version 0.7.1 corrects independent Mixed category selection for starter slots,
+preserves schema-2 run compatibility, and adds the audited sprite-loading
+performance safeguards without controlling the base game's `Download data`
+setting. It packages these maintenance fixes as
+`Ironmon-v0.7.1-randomization-fixes.zip`.
+
+Release result: all 48 tracker tests passed, the synchronized game completed
+its bundled-runtime startup smoke test, and two independent builds produced
+the same SHA-256 checksum:
+`32ff8b16b070559604f7cceb85b38445e3955b4a648f4d57bc68ec2384b8bc96`.
 
 ## Working rule
 
