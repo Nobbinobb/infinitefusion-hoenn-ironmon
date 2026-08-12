@@ -444,6 +444,27 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal(1, newRun.CurrentState?.Sequence);
         knowledge.SelectRun(null);
 
+        StarterSelectionSnapshot starterSelection = new()
+        {
+            Active = true,
+            RandomPickIndex = 2,
+            Choices =
+            [
+                new StarterChoiceSnapshot { Index = 0 },
+                new StarterChoiceSnapshot { Index = 1 },
+                new StarterChoiceSnapshot { Index = 2 }
+            ]
+        };
+
+        TrackerMessage starterSelectionChanged = TrackerMessageFactory.CreateEvent(TrackerEvents.StarterSelectionChanged, 2, starterSelection, "run-2");
+        await writer.WriteAsync(starterSelectionChanged);
+        TrackerRunStateSnapshot starterState = await WaitForRunSnapshotAsync(runState, snapshot => snapshot.StarterSelection is not null);
+        Assert.Equal(2, starterState.StarterSelection?.RandomPickIndex);
+
+        TrackerMessage starterSelectionEnded = TrackerMessageFactory.CreateEvent(TrackerEvents.StarterSelectionChanged, 3, new StarterSelectionSnapshot(), "run-2");
+        await writer.WriteAsync(starterSelectionEnded);
+        await WaitForRunSnapshotAsync(runState, snapshot => snapshot.StarterSelection is null);
+
         BattleSnapshot battle = new() { BattleId = "battle-1" };
         TrackerMessage battleStarted = TrackerMessageFactory.CreateEvent("battle_started", 2, battle, "run-2", "battle-1");
         await writer.WriteAsync(battleStarted);

@@ -54,7 +54,14 @@
 
     @if (_selectedView == TrackerView.Player)
     {
-        <PlayerCard Player="@_run.Player" GameRoot="@_connection.Game?.GameRoot" TargetTypes="@GetSelectedEnemy()?.Types" />
+        @if (_run.StarterSelection is not null)
+        {
+            <StarterSelection Selection="@_run.StarterSelection" GameRoot="@_connection.Game?.GameRoot" />
+        }
+        else
+        {
+            <PlayerCard Player="@_run.Player" GameRoot="@_connection.Game?.GameRoot" TargetTypes="@GetSelectedEnemy()?.Types" />
+        }
     }
     else if (_selectedView == TrackerView.Enemy)
     {

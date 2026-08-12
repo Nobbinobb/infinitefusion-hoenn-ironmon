@@ -1,0 +1,41 @@
+<section class="starter-selection" role="tabpanel" aria-label="@Text["Starter.Selection.StarterSelection"]">
+    <header class="starter-selection-heading">
+        <div>
+            <p class="card-kicker">@Text["Starter.Selection.RunStart"]</p>
+            <h2>@Text["Starter.Selection.ChooseStarter"]</h2>
+        </div>
+        <p>@Text["Starter.Selection.RevealInstructions"]</p>
+    </header>
+
+    <div class="starter-choices">
+        @foreach (StarterChoiceSnapshot choice in Selection.Choices.OrderBy(choice => choice.Index))
+        {
+            <article class="@GetChoiceClass(choice)" aria-label="@GetChoiceLabel(choice)">
+                @if (Selection.RandomPickIndex == choice.Index)
+                {
+                    <span class="starter-random-pick">@Text["Starter.Selection.RandomPick"]</span>
+                }
+                <div class="starter-sprite" aria-hidden="true">
+                    @if (choice.Revealed && GetSpriteSource(choice) is string spriteSource)
+                    {
+                        <img src="@spriteSource" alt="" />
+                    }
+                    else
+                    {
+                        <span>?</span>
+                    }
+                </div>
+                @if (choice.Revealed)
+                {
+                    <strong>@choice.SpeciesName</strong>
+                    <small>BST <b>@choice.BaseStatTotal</b></small>
+                }
+                else
+                {
+                    <strong>@Text["Starter.Selection.Hidden"]</strong>
+                    <small>@Text["Starter.Selection.OpenBall"]</small>
+                }
+            </article>
+        }
+    </div>
+</section>

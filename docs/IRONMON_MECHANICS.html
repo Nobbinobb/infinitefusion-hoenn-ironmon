@@ -151,7 +151,7 @@ footer { padding:2rem 9% 4rem; color:var(--muted); font-size:.88rem; }
 <h3 id="encounters-policies">Policies</h3>
 <ul>
 <li><code>Normal Only</code> selects from the 576 validated base species.</li>
-<li><code>Custom Fusions Only</code> selects from the validated the custom-fusion pool generator custom-fusion pool.</li>
+<li><code>Custom Fusions Only</code> selects from the validated custom-fusion pool.</li>
 <li><code>Mixed</code> makes a deterministic 50/50 normal-versus-fusion category decision<span> before selecting a species from that category's pool.</span>
 </li>
 </ul>
@@ -1150,6 +1150,7 @@ footer { padding:2rem 9% 4rem; color:var(--muted); font-size:.88rem; }
 <li>the active battle;</li>
 <li>the player's active Pokemon;</li>
 <li>active opposing Pokemon;</li>
+<li>the active starter-selection slots, their reveal state, and the random pick;</li>
 <li>current healing inventory;</li>
 <li>current HP, status, held-item and PP values; and</li>
 <li>other state needed to continue the live display.</li>
@@ -1171,6 +1172,9 @@ footer { padding:2rem 9% 4rem; color:var(--muted); font-size:.88rem; }
 <p>Global shortcuts are accepted only while the connected Infinite Fusion executable owns the foreground window. They change the tracker view without activating or focusing the tracker window. The controller chord uses inputs that Infinite Fusion does not bind by default.</p>
 <p>When an opponent is sent out, the tracker automatically shows the Enemy view. This includes the first encounter of a new attempt after completed-run Lookup navigation. Opening the player's move menu and ending the battle return to the Player view. The player can switch views manually at any time.</p>
 <p>The state model supports multiple opposing battlers even if the first UI shows only one active enemy at a time. This avoids redesigning the protocol for double or triple battles.</p>
+<h3 id="tracker-starter-selection">Starter selection</h3>
+<p>Opening the starter bag begins a tracker-owned starter-selection presentation with three slots. All slots initially hide their Pokemon identity. One slot is marked as the run's random pick before any candidate is revealed. The random pick is derived without consuming gameplay random values, remains stable throughout the selection, and is restored if the tracker reconnects.</p>
+<p>When the player opens a starter's ball in the game, the matching tracker slot reveals that candidate's sprite, species name, and generated base-stat total. Unopened slots transmit no species identity, sprite path, or base-stat total. Moving among already opened balls preserves their revealed tracker entries. The starter-selection presentation closes when the game leaves the three-candidate selection scene.</p>
 <h3 id="tracker-player-view">Player view</h3>
 <p>The player view is initialized when the player's Pokemon is actually sent into battle. Merely entering party slot one does not initialize the production tracker.</p>
 <p>The initial <code>player_sent_out</code> snapshot includes:</p>

@@ -512,6 +512,7 @@ module Ironmon
     @tracker_enemy_move_signatures = {}
     @tracker_enemy_abilities = {}
     @tracker_next_enemy_state_at = 0.0
+    @tracker_starter_selection = nil
     tracker_connection.send_run_started
   end
 
@@ -706,6 +707,11 @@ module Ironmon
       "battle" => tracker_battle_snapshot,
       "player" => @tracker_player_pokemon ? tracker_player_snapshot : nil,
       "enemies" => tracker_enemy_snapshots,
+      "starter_selection" => if respond_to?(:tracker_starter_selection_snapshot)
+                               tracker_starter_selection_snapshot
+                             else
+                               nil
+                             end,
       "attempt_statistics" => if respond_to?(:tracker_attempt_statistics)
                                 tracker_attempt_statistics(current_run_attempt)
                               else
@@ -961,8 +967,8 @@ module Ironmon
     return TRACKER_FIXED_HEALING[item] || 0
   end
 
-  def self.tracker_sprite_path(pokemon)
-    pif_sprite = pokemon.pif_sprite
+  def self.tracker_sprite_path(pokemon, preferred_sprite = nil)
+    pif_sprite = preferred_sprite || pokemon.pif_sprite
     if !pif_sprite
       loader = BattleSpriteLoader.new
       pif_sprite = loader.get_pif_sprite_from_species(pokemon.species)

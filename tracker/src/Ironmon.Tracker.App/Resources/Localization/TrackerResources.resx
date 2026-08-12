@@ -1035,6 +1035,16 @@
   <data name="Player.Card.Ability" xml:space="preserve">
     <value>Ability</value>
   </data>
+  <data name="Starter.Selection.ChooseStarter" xml:space="preserve"><value>Choose your starter</value></data>
+  <data name="Starter.Selection.Hidden" xml:space="preserve"><value>Hidden starter</value></data>
+  <data name="Starter.Selection.HiddenChoice" xml:space="preserve"><value>Hidden starter choice {0}</value></data>
+  <data name="Starter.Selection.OpenBall" xml:space="preserve"><value>Open its ball in the game</value></data>
+  <data name="Starter.Selection.RandomPick" xml:space="preserve"><value>Random Pick</value></data>
+  <data name="Starter.Selection.RandomPickChoice" xml:space="preserve"><value>Random Pick: {0}</value></data>
+  <data name="Starter.Selection.RevealInstructions" xml:space="preserve"><value>Reveal each Pokemon in the game. The marked slot is your random choice.</value></data>
+  <data name="Starter.Selection.RevealedChoice" xml:space="preserve"><value>{0}, BST {1}</value></data>
+  <data name="Starter.Selection.RunStart" xml:space="preserve"><value>RUN START</value></data>
+  <data name="Starter.Selection.StarterSelection" xml:space="preserve"><value>Starter selection</value></data>
   <data name="Player.Card.ActivePokemon" xml:space="preserve">
     <value>ACTIVE POKEMON</value>
   </data>

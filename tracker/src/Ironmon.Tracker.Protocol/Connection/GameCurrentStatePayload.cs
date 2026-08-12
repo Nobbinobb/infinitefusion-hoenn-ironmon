@@ -15,10 +15,11 @@ public sealed class GameCurrentStatePayload
     /// <param name="battle">The active battle when one exists.</param>
     /// <param name="player">The initialized player Pokemon when one exists.</param>
     /// <param name="enemies">The legally visible active opposing Pokemon.</param>
+    /// <param name="starterSelection">The active starter-selection view when one exists.</param>
     /// <param name="attemptStatistics">The current attempt statistics when available.</param>
     /// <param name="completedRun">The completed-run recipe when the active save's run has ended.</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when sequence is negative.</exception>
-    public GameCurrentStatePayload(bool ironmonActive, string? runId, string? battleId, long sequence, BattleSnapshot? battle = null, PlayerPokemonSnapshot? player = null, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null, RunStatisticsPayload? attemptStatistics = null, CompletedRunRecipePayload? completedRun = null)
+    public GameCurrentStatePayload(bool ironmonActive, string? runId, string? battleId, long sequence, BattleSnapshot? battle = null, PlayerPokemonSnapshot? player = null, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null, StarterSelectionSnapshot? starterSelection = null, RunStatisticsPayload? attemptStatistics = null, CompletedRunRecipePayload? completedRun = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(sequence);
         IronmonActive = ironmonActive;
@@ -28,6 +29,7 @@ public sealed class GameCurrentStatePayload
         Battle = battle;
         Player = player;
         Enemies = enemies ?? [];
+        StarterSelection = starterSelection;
         AttemptStatistics = attemptStatistics;
         CompletedRun = completedRun;
     }
@@ -66,6 +68,11 @@ public sealed class GameCurrentStatePayload
     /// Gets the legally visible active opposing Pokemon.
     /// </summary>
     public IReadOnlyList<EnemyPokemonSnapshot> Enemies { get; }
+
+    /// <summary>
+    /// Gets the active starter-selection view when one exists.
+    /// </summary>
+    public StarterSelectionSnapshot? StarterSelection { get; }
 
     /// <summary>
     /// Gets the current attempt statistics when available.

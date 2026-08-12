@@ -26,6 +26,11 @@ public static class TrackerEvents
     public const string RunCompleted = "run_completed";
 
     /// <summary>
+    /// Gets the starter-selection state event.
+    /// </summary>
+    public const string StarterSelectionChanged = "starter_selection_changed";
+
+    /// <summary>
     /// Gets the battle-start event.
     /// </summary>
     public const string BattleStarted = "battle_started";

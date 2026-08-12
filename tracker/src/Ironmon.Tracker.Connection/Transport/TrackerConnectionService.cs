@@ -354,6 +354,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         {
             TrackerEvents.BattleStarted => () => _runState.StartBattle(TrackerJson.DeserializePayload<BattleSnapshot>(message.Payload)),
             TrackerEvents.BattleEnded => _runState.EndBattle,
+            TrackerEvents.StarterSelectionChanged => () => _runState.UpdateStarterSelection(TrackerJson.DeserializePayload<StarterSelectionSnapshot>(message.Payload)),
             TrackerEvents.PlayerSentOut or TrackerEvents.PlayerStateChanged => () => ApplyPlayerUpdate(message),
             TrackerEvents.PlayerMoveMenuOpened => () => _runState.OpenPlayerMoveMenu(TrackerJson.DeserializePayload<PlayerMoveMenuOpenedPayload>(message.Payload)),
             TrackerEvents.EnemySentOut or TrackerEvents.EnemyStateChanged => () => ApplyEnemyUpdate(message),

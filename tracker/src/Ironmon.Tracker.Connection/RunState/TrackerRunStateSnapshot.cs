@@ -10,7 +10,8 @@ namespace Ironmon.Tracker.Connection.RunState;
 /// <param name="player">The initialized player Pokemon when one exists.</param>
 /// <param name="enemies">The active legally visible opposing Pokemon.</param>
 /// <param name="moveMenuPokemonId">The player Pokémon whose move menu most recently opened.</param>
-public sealed class TrackerRunStateSnapshot(BattleSnapshot? battle, PlayerPokemonSnapshot? player, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null, string? moveMenuPokemonId = null)
+/// <param name="starterSelection">The active starter-selection view when one exists.</param>
+public sealed class TrackerRunStateSnapshot(BattleSnapshot? battle, PlayerPokemonSnapshot? player, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null, string? moveMenuPokemonId = null, StarterSelectionSnapshot? starterSelection = null)
 {
     /// <summary>
     /// Gets the active battle when one exists.
@@ -31,4 +32,9 @@ public sealed class TrackerRunStateSnapshot(BattleSnapshot? battle, PlayerPokemo
     /// Gets the player Pokémon whose move menu most recently opened.
     /// </summary>
     public string? MoveMenuPokemonId { get; } = moveMenuPokemonId;
+
+    /// <summary>
+    /// Gets the active starter-selection view when one exists.
+    /// </summary>
+    public StarterSelectionSnapshot? StarterSelection { get; } = starterSelection;
 }

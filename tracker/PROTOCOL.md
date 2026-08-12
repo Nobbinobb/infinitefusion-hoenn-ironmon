@@ -112,6 +112,33 @@ During battle, `battle` contains the active battle identifier. Once a player
 Pokemon has actually been sent out, `player` contains the same complete player
 snapshot used by the live events below. `enemies` contains the currently active
 legal enemy snapshots and remains an empty array outside battle.
+`starter_selection` contains the active three-slot starter view while the bag
+scene is open, including only details that have been revealed in the game.
+
+## Starter selection
+
+`starter_selection_changed` sends a complete starter-selection snapshot when
+the three-candidate scene opens, when another starter is revealed, and when the
+scene closes. A newly opened selection contains three hidden choices and one
+stable random pick:
+
+```json
+{
+  "active": true,
+  "random_pick_index": 1,
+  "choices": [
+    { "index": 0, "revealed": false },
+    { "index": 1, "revealed": false },
+    { "index": 2, "revealed": false }
+  ]
+}
+```
+
+After the player reveals a candidate, that choice additionally contains
+`species_id`, `species_name`, `sprite_path`, and `base_stat_total`. Hidden
+choices never transmit those fields. Closing the scene sends
+`{"active":false,"choices":[]}` and removes `starter_selection` from later
+current-state recovery responses.
 
 ## Battle lifecycle
 

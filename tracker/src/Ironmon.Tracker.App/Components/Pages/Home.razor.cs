@@ -201,6 +201,7 @@ public partial class Home : IDisposable
         TrackerRunStateSnapshot next = RunState.Snapshot;
         bool battleEnded = _run.Battle is not null && next.Battle is null;
         bool enemyAppeared = next.Enemies.Any(enemy => _run.Enemies.All(previous => previous.EnemyId != enemy.EnemyId));
+        bool starterSelectionAppeared = _run.StarterSelection is null && next.StarterSelection is not null;
         _run = next;
         if (_selectedEnemyId is null || _run.Enemies.All(enemy => enemy.EnemyId != _selectedEnemyId))
             _selectedEnemyId = _run.Enemies.Count > 0 ? _run.Enemies[0].EnemyId : null;
@@ -209,7 +210,12 @@ public partial class Home : IDisposable
         if (enemyAppeared)
             _completedRunNavigationPending = false;
 
-        if (_selectedView != TrackerView.Debug && !_completedRunNavigationPending)
+        if (starterSelectionAppeared)
+        {
+            _completedRunNavigationPending = false;
+            _selectedView = TrackerView.Player;
+        }
+        else if (_selectedView != TrackerView.Debug && !_completedRunNavigationPending)
         {
             _selectedView = (enemyAppeared, moveMenuOpened, battleEnded) switch
             {
