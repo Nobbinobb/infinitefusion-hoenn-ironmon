@@ -64,7 +64,12 @@ public static class MauiProgram
 #if DEBUG
         debugRequested = true;
 #endif
-        return new TrackerConnectionOptions(TrackerProtocol.Port, version, debugRequested, TimeSpan.FromSeconds(TrackerProtocol.HandshakeTimeoutSeconds));
+        TrackerConnectionOptions options = new(TrackerProtocol.Port, version, debugRequested, TimeSpan.FromSeconds(TrackerProtocol.HandshakeTimeoutSeconds))
+        {
+            AutoSelectStarter = Preferences.Default.Get(TrackerApplicationConstants.AutoSelectStarterPreferenceKey, false)
+        };
+
+        return options;
     }
 
     /// <summary>

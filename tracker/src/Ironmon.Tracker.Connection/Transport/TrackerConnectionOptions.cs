@@ -43,6 +43,11 @@ public sealed class TrackerConnectionOptions
     public bool DebugRequested { get; }
 
     /// <summary>
+    /// Gets or sets whether starter selection is controlled automatically.
+    /// </summary>
+    public bool AutoSelectStarter { get; set; }
+
+    /// <summary>
     /// Gets the maximum time allowed for the game handshake.
     /// </summary>
     public TimeSpan HandshakeTimeout { get; }

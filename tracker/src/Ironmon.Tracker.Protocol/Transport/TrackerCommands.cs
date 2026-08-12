@@ -11,6 +11,11 @@ public static class TrackerCommands
     public const string CurrentState = "current_state";
 
     /// <summary>
+    /// Gets the tracker-settings update command.
+    /// </summary>
+    public const string UpdateSettings = "update_settings";
+
+    /// <summary>
     /// Gets the completed-run Pokemon search command.
     /// </summary>
     public const string PokemonSearch = "pokemon_search";

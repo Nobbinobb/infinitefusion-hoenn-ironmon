@@ -83,6 +83,7 @@ module Ironmon
       @last_error = nil
       @last_error_at = 0.0
       @debug_requested = false
+      @auto_select_starter = false
     end
 
     def update
@@ -107,6 +108,10 @@ module Ironmon
     def send_event(event_name, payload)
       return if @state != :connected
       queue_message(event_message(event_name, payload))
+    end
+
+    def auto_select_starter?
+      return @auto_select_starter == true
     end
 
     private
@@ -249,6 +254,7 @@ module Ironmon
       if message["type"] == "event" && message["event"] == "tracker_connected"
         payload = message["payload"] || {}
         @debug_requested = payload["debug_requested"] == true
+        @auto_select_starter = payload["auto_select_starter"] == true
       elsif message["type"] == "request"
         handle_request(message)
       end
@@ -269,6 +275,13 @@ module Ironmon
       raise "Tracker request_id is missing." if !request_id.is_a?(String) || request_id.empty?
       if message["command"] == "current_state"
         queue_message(success_response(request_id, Ironmon.tracker_current_state))
+      elsif message["command"] == "update_settings"
+        payload = message["payload"] || {}
+        @auto_select_starter = payload["auto_select_starter"] == true
+        queue_message(success_response(
+          request_id, { "auto_select_starter" => @auto_select_starter },
+          message["run_id"]
+        ))
       elsif message["command"] == "pokemon_search"
         payload = Ironmon.tracker_pokemon_search(message["payload"], message["run_id"])
         queue_message(success_response(request_id, payload, message["run_id"]))

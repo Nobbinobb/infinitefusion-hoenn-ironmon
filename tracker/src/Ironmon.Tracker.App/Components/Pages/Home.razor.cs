@@ -14,6 +14,9 @@ public partial class Home : IDisposable
     private string? _selectedEnemyId;
     private string? _lastMoveMenuPokemonId;
     private bool _completedRunNavigationPending;
+    private bool _settingsOpen;
+    private bool _autoSelectStarter;
+    private string? _settingsStatus;
 
     /// <summary>
     /// Gets or initializes the shared connection status service.
@@ -46,6 +49,12 @@ public partial class Home : IDisposable
     private TrackerGlobalShortcutService ShortcutService { get; set; } = null!;
 
     /// <summary>
+    /// Gets or initializes mutable listener and handshake options.
+    /// </summary>
+    [Inject]
+    private TrackerConnectionOptions ConnectionOptions { get; set; } = null!;
+
+    /// <summary>
     /// Subscribes the tracker shell to connection and run-state changes.
     /// </summary>
     protected override void OnInitialized()
@@ -54,6 +63,7 @@ public partial class Home : IDisposable
         _run = RunState.Snapshot;
         _selectedEnemyId = _run.Enemies.Count > 0 ? _run.Enemies[0].EnemyId : null;
         _lastMoveMenuPokemonId = _run.MoveMenuPokemonId;
+        _autoSelectStarter = ConnectionOptions.AutoSelectStarter;
         if (_selectedEnemyId is not null)
             _selectedView = TrackerView.Enemy;
 
@@ -73,7 +83,52 @@ public partial class Home : IDisposable
             return;
 
         _completedRunNavigationPending = false;
+        _settingsOpen = false;
         _selectedView = view;
+    }
+
+    /// <summary>
+    /// Opens or closes tracker settings.
+    /// </summary>
+    private void ToggleSettings()
+    {
+        _settingsOpen = !_settingsOpen;
+        _settingsStatus = null;
+    }
+
+    /// <summary>
+    /// Gets the visual classes for the settings button.
+    /// </summary>
+    /// <returns>The settings button CSS classes.</returns>
+    private string GetSettingsButtonClass()
+        => _settingsOpen ? "settings-button selected" : "settings-button";
+
+    /// <summary>
+    /// Persists and synchronizes the automatic starter-selection setting.
+    /// </summary>
+    /// <param name="enabled">Whether automatic selection is enabled.</param>
+    /// <returns>A task representing game synchronization.</returns>
+    private async Task HandleAutoSelectStarterChanged(bool enabled)
+    {
+        _autoSelectStarter = enabled;
+        ConnectionOptions.AutoSelectStarter = enabled;
+        Preferences.Default.Set(TrackerApplicationConstants.AutoSelectStarterPreferenceKey, enabled);
+        if (_connection.Status != TrackerConnectionStatus.Connected)
+        {
+            _settingsStatus = Text["Settings.Page.AppliesOnConnection"];
+            return;
+        }
+
+        try
+        {
+            TrackerSettingsPayload settings = new() { AutoSelectStarter = enabled };
+            await TrackerConnection.Requests.UpdateSettingsAsync(settings);
+            _settingsStatus = Text["Settings.Page.Saved"];
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException or TrackerProtocolException or TimeoutException)
+        {
+            _settingsStatus = Text["Settings.Page.AppliesOnConnection"];
+        }
     }
 
     /// <summary>
@@ -213,6 +268,7 @@ public partial class Home : IDisposable
         if (starterSelectionAppeared)
         {
             _completedRunNavigationPending = false;
+            _settingsOpen = false;
             _selectedView = TrackerView.Player;
         }
         else if (_selectedView != TrackerView.Debug && !_completedRunNavigationPending)

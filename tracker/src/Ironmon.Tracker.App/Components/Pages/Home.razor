@@ -8,9 +8,14 @@
             <p class="eyebrow">@Text["App.Shell.HomeEyebrow"]</p>
             <h1>@Text["App.Shell.HomeHeading"]</h1>
         </div>
-        <div class="connection-state" role="status" title="@GetConnectionDetail()">
-            <span class="@GetConnectionDotClass()" aria-hidden="true"></span>
-            <span>@GetConnectionText()</span>
+        <div class="header-actions">
+            <div class="connection-state" role="status" title="@GetConnectionDetail()">
+                <span class="@GetConnectionDotClass()" aria-hidden="true"></span>
+                <span>@GetConnectionText()</span>
+            </div>
+            <button class="@GetSettingsButtonClass()" type="button" aria-label="@Text["Settings.Page.OpenSettings"]" title="@Text["Settings.Page.Settings"]" @onclick="ToggleSettings">
+                <span aria-hidden="true">&#9881;</span>
+            </button>
         </div>
     </header>
 
@@ -52,7 +57,11 @@
         }
     </nav>
 
-    @if (_selectedView == TrackerView.Player)
+    @if (_settingsOpen)
+    {
+        <TrackerSettingsPage AutoSelectStarter="@_autoSelectStarter" AutoSelectStarterChanged="HandleAutoSelectStarterChanged" Status="@_settingsStatus" />
+    }
+    else if (_selectedView == TrackerView.Player)
     {
         @if (_run.StarterSelection is not null)
         {

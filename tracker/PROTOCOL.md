@@ -65,13 +65,28 @@ battle is active.
   "sent_at": "2026-08-06T20:05:45.300Z",
   "payload": {
     "tracker_version": "0.1.0.0",
-    "debug_requested": false
+    "debug_requested": false,
+    "auto_select_starter": false
   }
 }
 ```
 
 `debug_requested` records the `--debug` command-line request. It does not grant
 debug access; the game remains authoritative through `debug_available`.
+`auto_select_starter` supplies the tracker-owned persisted starter setting on
+every connection or reconnection.
+
+The tracker sends `update_settings` when that setting changes while connected:
+
+```json
+{
+  "auto_select_starter": true
+}
+```
+
+The game applies and echoes the complete settings payload. When the tracker is
+not connected, the preference remains local and is supplied by the next
+handshake.
 
 ## Current-state recovery
 
@@ -139,6 +154,11 @@ After the player reveals a candidate, that choice additionally contains
 choices never transmit those fields. Closing the scene sends
 `{"active":false,"choices":[]}` and removes `starter_selection` from later
 current-state recovery responses.
+
+When `auto_select_starter` is enabled, the opening snapshot reveals all three
+choices immediately. The game ignores player selection input for two seconds,
+opens the choice at `random_pick_index`, displays it for 0.75 seconds, and
+returns that Pokemon without a confirmation prompt.
 
 ## Battle lifecycle
 

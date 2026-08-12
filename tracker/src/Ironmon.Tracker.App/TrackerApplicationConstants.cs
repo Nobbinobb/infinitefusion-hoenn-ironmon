@@ -36,6 +36,11 @@ internal static class TrackerApplicationConstants
     internal const string WindowHeightPreferenceKey = "tracker_window_height";
 
     /// <summary>
+    /// Gets the persisted automatic starter-selection preference key.
+    /// </summary>
+    internal const string AutoSelectStarterPreferenceKey = "auto_select_starter";
+
+    /// <summary>
     /// Gets the fallback application version.
     /// </summary>
     internal const string DefaultVersion = "0.1.0";

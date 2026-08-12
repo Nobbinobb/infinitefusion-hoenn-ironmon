@@ -1045,6 +1045,13 @@
   <data name="Starter.Selection.RevealedChoice" xml:space="preserve"><value>{0}, BST {1}</value></data>
   <data name="Starter.Selection.RunStart" xml:space="preserve"><value>RUN START</value></data>
   <data name="Starter.Selection.StarterSelection" xml:space="preserve"><value>Starter selection</value></data>
+  <data name="Settings.Page.AppliesOnConnection" xml:space="preserve"><value>Saved. It will apply when the game connects.</value></data>
+  <data name="Settings.Page.OpenSettings" xml:space="preserve"><value>Open tracker settings</value></data>
+  <data name="Settings.Page.Saved" xml:space="preserve"><value>Saved and applied to the connected game.</value></data>
+  <data name="Settings.Page.Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="Settings.Page.TrackerPreferences" xml:space="preserve"><value>TRACKER PREFERENCES</value></data>
+  <data name="Settings.Starter.AutoSelectDescription" xml:space="preserve"><value>Reveal all three starters, block player input, then choose the Random Pick after two seconds.</value></data>
+  <data name="Settings.Starter.AutoSelectStarter" xml:space="preserve"><value>Autoselect starter</value></data>
   <data name="Player.Card.ActivePokemon" xml:space="preserve">
     <value>ACTIVE POKEMON</value>
   </data>

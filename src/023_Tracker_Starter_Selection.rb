@@ -4,6 +4,8 @@
 
 module Ironmon
   TRACKER_STARTER_RANDOM_PICK_NAMESPACE = "starter_random_pick"
+  TRACKER_STARTER_AUTOSELECT_DELAY_SECONDS = 2.0
+  TRACKER_STARTER_AUTOSELECT_REVEAL_SECONDS = 0.75
 
   def self.begin_tracker_starter_selection(pokemon)
     return if !active? || !pokemon || pokemon.empty?
@@ -14,6 +16,9 @@ module Ironmon
       :revealed => Array.new(pokemon.length, false),
       :random_pick_index => random_pick
     }
+    if tracker_auto_select_starter?
+      @tracker_starter_selection[:revealed] = Array.new(pokemon.length, true)
+    end
     tracker_connection.send_event(
       "starter_selection_changed", tracker_starter_selection_snapshot
     )
@@ -81,6 +86,15 @@ module Ironmon
     end
     return hash % choice_count
   end
+
+  def self.tracker_starter_random_pick_index
+    selection = @tracker_starter_selection
+    return selection ? selection[:random_pick_index] : nil
+  end
+
+  def self.tracker_auto_select_starter?
+    return tracker_connection.auto_select_starter?
+  end
 end
 
 class StartersSelectionScene
@@ -97,10 +111,38 @@ class StartersSelectionScene
     return ironmon_tracker_original_start_scene if
       self.class != StartersSelectionScene || !Ironmon.starter_acquisition?
     begin
+      return ironmon_tracker_auto_select_starter if
+        Ironmon.tracker_auto_select_starter?
       return ironmon_tracker_original_start_scene
     ensure
       Ironmon.end_tracker_starter_selection
     end
+  end
+
+  def ironmon_tracker_auto_select_starter
+    initializeGraphics
+    deadline = Ironmon.tracker_uptime_seconds +
+      Ironmon::TRACKER_STARTER_AUTOSELECT_DELAY_SECONDS
+    while Ironmon.tracker_uptime_seconds < deadline
+      Input.update
+      Graphics.update
+    end
+    @index = Ironmon.tracker_starter_random_pick_index ||
+      Ironmon.tracker_starter_random_pick(@starter_pokemon.length)
+    updateOpenPokeballPosition
+    updateStarterSelectionGraphics
+    reveal_deadline = Ironmon.tracker_uptime_seconds +
+      Ironmon::TRACKER_STARTER_AUTOSELECT_REVEAL_SECONDS
+    while Ironmon.tracker_uptime_seconds < reveal_deadline
+      Input.update
+      Graphics.update
+    end
+    chosen_pokemon = @starter_pokemon[@index]
+    @spritesLoader.registerSpriteSubstitution(@pif_sprite)
+    disposeGraphics
+    pbSet(VAR_HOENN_CHOSEN_STARTER_INDEX, @index)
+    chosen_pokemon.pif_sprite = @pif_sprite
+    return chosen_pokemon
   end
 
   alias ironmon_tracker_original_update_starter_selection_graphics updateStarterSelectionGraphics

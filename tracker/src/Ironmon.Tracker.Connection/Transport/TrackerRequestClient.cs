@@ -40,6 +40,19 @@ public sealed class TrackerRequestClient
     public bool DebugAuthorized => _options.DebugRequested && _state.Snapshot.Game?.DebugAvailable == true;
 
     /// <summary>
+    /// Updates tracker-owned settings in the connected game.
+    /// </summary>
+    /// <param name="settings">The complete current tracker settings.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>A task containing the settings accepted by the game.</returns>
+    public Task<TrackerSettingsPayload> UpdateSettingsAsync(TrackerSettingsPayload settings, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        _options.AutoSelectStarter = settings.AutoSelectStarter;
+        return _session.SendAsync<TrackerSettingsPayload, TrackerSettingsPayload>(TrackerCommands.UpdateSettings, settings, GetConnectedRunId(), cancellationToken);
+    }
+
+    /// <summary>
     /// Searches the connected game for Pokémon names compatible with one completed-run recipe.
     /// </summary>
     /// <param name="recipe">The completed-run reconstruction recipe.</param>

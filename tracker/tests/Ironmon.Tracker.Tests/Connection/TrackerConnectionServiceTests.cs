@@ -27,6 +27,7 @@ public sealed class TrackerConnectionServiceTests
         TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
         CompletedRunArchive completedRuns = CreateCompletedRunArchive();
         TrackerConnectionOptions options = new(0, "0.1.0", true, TimeSpan.FromSeconds(2));
+        options.AutoSelectStarter = true;
         await using TrackerConnectionService service = new(options, diagnostics, state, runState, knowledge, completedRuns);
         service.Start();
 
@@ -44,6 +45,8 @@ public sealed class TrackerConnectionServiceTests
         TrackerMessage? currentStateRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
 
         Assert.Equal("tracker_connected", trackerHandshake?.Event);
+        TrackerHandshakePayload trackerPayload = TrackerJson.DeserializePayload<TrackerHandshakePayload>(trackerHandshake!.Payload);
+        Assert.True(trackerPayload.AutoSelectStarter);
         Assert.Equal("current_state", currentStateRequest?.Command);
         string requestId = Assert.IsType<string>(currentStateRequest?.RequestId);
 
@@ -93,6 +96,16 @@ public sealed class TrackerConnectionServiceTests
         Assert.True(service.DebugAuthorized);
         Assert.Contains(diagnostics.Entries, entry => entry.Direction == TrackerDiagnosticDirection.Incoming && entry.Name == "game_connected");
         Assert.Contains(diagnostics.Entries, entry => entry.Direction == TrackerDiagnosticDirection.Outgoing && entry.Name == "current_state");
+
+        TrackerSettingsPayload changedSettings = new() { AutoSelectStarter = false };
+        Task<TrackerSettingsPayload> settingsTask = service.Requests.UpdateSettingsAsync(changedSettings);
+        TrackerMessage? settingsRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(TrackerCommands.UpdateSettings, settingsRequest?.Command);
+        TrackerSettingsPayload requestedSettings = TrackerJson.DeserializePayload<TrackerSettingsPayload>(settingsRequest!.Payload);
+        Assert.False(requestedSettings.AutoSelectStarter);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(settingsRequest.RequestId!, requestedSettings, "run-1"));
+        Assert.False((await settingsTask).AutoSelectStarter);
+        Assert.False(options.AutoSelectStarter);
 
         CompletedRunRecipePayload recipe = CreateRecipe("run-1");
         TrackerMessage runCompleted = TrackerMessageFactory.CreateEvent("run_completed", 1, recipe, "run-1");

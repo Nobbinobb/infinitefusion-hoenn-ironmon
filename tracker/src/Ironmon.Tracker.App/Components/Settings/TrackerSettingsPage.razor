@@ -1,0 +1,21 @@
+<section class="tracker-settings" aria-label="@Text["Settings.Page.Settings"]">
+    <header class="settings-heading">
+        <div>
+            <p class="card-kicker">@Text["Settings.Page.TrackerPreferences"]</p>
+            <h2>@Text["Settings.Page.Settings"]</h2>
+        </div>
+    </header>
+
+    <label class="settings-option">
+        <span>
+            <strong>@Text["Settings.Starter.AutoSelectStarter"]</strong>
+            <small>@Text["Settings.Starter.AutoSelectDescription"]</small>
+        </span>
+        <input type="checkbox" checked="@AutoSelectStarter" @onchange="HandleAutoSelectChanged" />
+    </label>
+
+    @if (!string.IsNullOrWhiteSpace(Status))
+    {
+        <p class="settings-status" role="status">@Status</p>
+    }
+</section>
