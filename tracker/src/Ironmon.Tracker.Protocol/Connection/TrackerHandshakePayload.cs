@@ -12,12 +12,14 @@ public sealed class TrackerHandshakePayload
     /// <param name="debugRequested">Whether the tracker was launched in debug mode.</param>
     /// <param name="autoSelectStarter">Whether starter selection is controlled automatically.</param>
     /// <exception cref="ArgumentException">Thrown when the tracker version is empty.</exception>
-    public TrackerHandshakePayload(string trackerVersion, bool debugRequested, bool autoSelectStarter = false)
+    /// <param name="favoriteSpeciesIds">The normal species covered by the Favorite Clause.</param>
+    public TrackerHandshakePayload(string trackerVersion, bool debugRequested, bool autoSelectStarter = false, IReadOnlyList<string>? favoriteSpeciesIds = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(trackerVersion);
         TrackerVersion = trackerVersion;
         DebugRequested = debugRequested;
         AutoSelectStarter = autoSelectStarter;
+        FavoriteSpeciesIds = favoriteSpeciesIds ?? [];
     }
 
     /// <summary>
@@ -34,4 +36,9 @@ public sealed class TrackerHandshakePayload
     /// Gets whether starter selection is controlled automatically.
     /// </summary>
     public bool AutoSelectStarter { get; }
+
+    /// <summary>
+    /// Gets the stable normal-species identifiers covered by the Favorite Clause.
+    /// </summary>
+    public IReadOnlyList<string> FavoriteSpeciesIds { get; }
 }

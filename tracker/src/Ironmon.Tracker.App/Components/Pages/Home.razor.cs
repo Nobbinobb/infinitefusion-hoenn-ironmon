@@ -121,7 +121,7 @@ public partial class Home : IDisposable
 
         try
         {
-            TrackerSettingsPayload settings = new() { AutoSelectStarter = enabled };
+            TrackerSettingsPayload settings = CreateSettingsPayload();
             await TrackerConnection.Requests.UpdateSettingsAsync(settings);
             _settingsStatus = Text["Settings.Page.Saved"];
         }
@@ -130,6 +130,38 @@ public partial class Home : IDisposable
             _settingsStatus = Text["Settings.Page.AppliesOnConnection"];
         }
     }
+
+    /// <summary>
+    /// Synchronizes a changed Favorite Clause list with the connected game.
+    /// </summary>
+    /// <param name="speciesIds">The complete stable normal-species identifier list.</param>
+    /// <returns>A task representing game synchronization.</returns>
+    private async Task HandleFavoriteSpeciesIdsChanged(IReadOnlyList<string> speciesIds)
+    {
+        ConnectionOptions.FavoriteSpeciesIds = speciesIds;
+        if (_connection.Status != TrackerConnectionStatus.Connected)
+        {
+            _settingsStatus = Text["Settings.Page.AppliesOnConnection"];
+            return;
+        }
+
+        try
+        {
+            await TrackerConnection.Requests.UpdateSettingsAsync(CreateSettingsPayload());
+            _settingsStatus = Text["Settings.Page.Saved"];
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException or TrackerProtocolException or TimeoutException)
+        {
+            _settingsStatus = Text["Settings.Page.AppliesOnConnection"];
+        }
+    }
+
+    /// <summary>
+    /// Creates the complete current tracker settings payload.
+    /// </summary>
+    /// <returns>The settings synchronized to the game.</returns>
+    private TrackerSettingsPayload CreateSettingsPayload()
+        => new() { AutoSelectStarter = _autoSelectStarter, FavoriteSpeciesIds = ConnectionOptions.FavoriteSpeciesIds };
 
     /// <summary>
     /// Handles keyboard shortcuts for switching between primary tracker views.

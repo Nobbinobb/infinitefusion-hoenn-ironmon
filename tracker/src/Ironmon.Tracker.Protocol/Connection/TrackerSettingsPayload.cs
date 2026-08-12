@@ -16,4 +16,9 @@ public sealed class TrackerSettingsPayload
     /// Gets or initializes whether starter selection is controlled automatically.
     /// </summary>
     public bool AutoSelectStarter { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the stable normal-species identifiers covered by the Favorite Clause.
+    /// </summary>
+    public IReadOnlyList<string> FavoriteSpeciesIds { get; init; } = [];
 }

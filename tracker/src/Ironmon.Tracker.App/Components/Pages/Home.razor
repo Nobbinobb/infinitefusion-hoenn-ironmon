@@ -59,7 +59,7 @@
 
     @if (_settingsOpen)
     {
-        <TrackerSettingsPage AutoSelectStarter="@_autoSelectStarter" AutoSelectStarterChanged="HandleAutoSelectStarterChanged" Status="@_settingsStatus" />
+        <TrackerSettingsPage AutoSelectStarter="@_autoSelectStarter" AutoSelectStarterChanged="HandleAutoSelectStarterChanged" FavoriteSpeciesIdsChanged="HandleFavoriteSpeciesIdsChanged" Status="@_settingsStatus" />
     }
     else if (_selectedView == TrackerView.Player)
     {

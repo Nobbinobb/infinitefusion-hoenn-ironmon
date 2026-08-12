@@ -1230,4 +1230,20 @@
   <data name="Lookup.Statistics.Lost" xml:space="preserve"><value>Lost</value></data>
   <data name="Lookup.Statistics.Won" xml:space="preserve"><value>Won</value></data>
   <data name="Lookup.Statistics.Abandoned" xml:space="preserve"><value>Abandoned</value></data>
+  <data name="Settings.Favorites.FavoriteClause" xml:space="preserve"><value>Favorite Clause</value></data>
+  <data name="Settings.Favorites.Description" xml:space="preserve"><value>Add any number of normal Pokémon. Fusions count when either half is a favorite.</value></data>
+  <data name="Settings.Favorites.SearchPlaceholder" xml:space="preserve"><value>Search normal Pokémon…</value></data>
+  <data name="Settings.Favorites.Searching" xml:space="preserve"><value>Searching…</value></data>
+  <data name="Settings.Favorites.Add" xml:space="preserve"><value>Add</value></data>
+  <data name="Settings.Favorites.Added" xml:space="preserve"><value>Added</value></data>
+  <data name="Settings.Favorites.YourFavorites" xml:space="preserve"><value>Your favorites</value></data>
+  <data name="Settings.Favorites.Count" xml:space="preserve"><value>{0} Pokémon</value></data>
+  <data name="Settings.Favorites.Empty" xml:space="preserve"><value>No favorite Pokémon added yet.</value></data>
+  <data name="Settings.Favorites.Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="Settings.Favorites.Pages" xml:space="preserve"><value>Favorite Pokémon pages</value></data>
+  <data name="Settings.Favorites.Previous" xml:space="preserve"><value>Previous</value></data>
+  <data name="Settings.Favorites.Next" xml:space="preserve"><value>Next</value></data>
+  <data name="Settings.Favorites.Page" xml:space="preserve"><value>{0} / {1}</value></data>
+  <data name="Settings.Favorites.ConnectToSearch" xml:space="preserve"><value>Connect the game to search its normal Pokémon list.</value></data>
+  <data name="Starter.Selection.Favorite" xml:space="preserve"><value>Favorite</value></data>
 </root>

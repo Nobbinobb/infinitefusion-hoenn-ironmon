@@ -16,6 +16,16 @@ public static class TrackerStorageNames
     public const string RunsDirectory = "runs";
 
     /// <summary>
+    /// Gets the tracker-settings directory name.
+    /// </summary>
+    public const string SettingsDirectory = "settings";
+
+    /// <summary>
+    /// Gets the favorite-Pokemon settings filename.
+    /// </summary>
+    public const string FavoritePokemonFile = "favorite-pokemon.json";
+
+    /// <summary>
     /// Gets the completed-run recipe filename.
     /// </summary>
     public const string RecipeFile = "recipe.json";

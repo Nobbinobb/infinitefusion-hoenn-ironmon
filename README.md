@@ -20,11 +20,12 @@ and a fast reset to starter selection.
 - `tools/Build-TrackerRelease.ps1` publishes the self-contained Windows tracker
   and creates the combined copy-ready ZIP and SHA-256 checksum in `release/`.
 
-Milestone 5 is complete. Version `0.6.5` adds the game-owned challenge
-lifecycle, failure lock and optional automatic reset, per-attempt statistics,
-and completed-run tracker presentation. See `docs/IRONMON_MECHANICS.html` for
-the complete behavior reference, `docs/ROADMAP.md` for cumulative scope, and
-`docs/guides/INSTALLATION.md` for installation steps.
+Milestone 6 is on hold while the 0.7 improvement cycle develops optional
+quality-of-life features. Version `0.7.0` adds tracker-assisted starter
+selection, persistent autoselect settings, and the Favorite Clause. See
+`docs/IRONMON_MECHANICS.html` for the complete behavior reference,
+`docs/ROADMAP.md` for cumulative scope, and `docs/guides/INSTALLATION.md` for
+installation steps.
 
 This repository is maintained independently from the official Pokemon Infinite
 Fusion game repository.

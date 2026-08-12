@@ -31,6 +31,9 @@ public partial class StarterSelection
         if (Selection.RandomPickIndex == choice.Index)
             classes.Add("random-pick");
 
+        if (choice.Revealed && choice.Favorite)
+            classes.Add("favorite");
+
         return string.Join(' ', classes);
     }
 

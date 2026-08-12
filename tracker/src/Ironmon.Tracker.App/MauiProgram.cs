@@ -15,8 +15,9 @@ public static class MauiProgram
         builder.UseMauiApp<App>().ConfigureFonts(ConfigureFonts);
         builder.Services.AddLocalization(options => options.ResourcesPath = TrackerLocalizationConstants.ResourcesPath);
         builder.Services.AddMauiBlazorWebView();
-        builder.Services.AddSingleton(CreateConnectionOptions());
         builder.Services.AddSingleton(CreateKnowledgeOptions());
+        builder.Services.AddSingleton<FavoritePokemonStore>();
+        builder.Services.AddSingleton(static services => CreateConnectionOptions(services.GetRequiredService<FavoritePokemonStore>()));
         builder.Services.AddSingleton<TrackerDiagnosticsStore>();
         builder.Services.AddSingleton<TrackerConnectionState>();
         builder.Services.AddSingleton<TrackerRunState>();
@@ -55,8 +56,9 @@ public static class MauiProgram
     /// <summary>
     /// Creates the production loopback listener and tracker handshake options.
     /// </summary>
+    /// <param name="favorites">The persisted Favorite Clause list.</param>
     /// <returns>The production tracker connection options.</returns>
-    private static TrackerConnectionOptions CreateConnectionOptions()
+    private static TrackerConnectionOptions CreateConnectionOptions(FavoritePokemonStore favorites)
     {
         string version = typeof(MauiProgram).Assembly.GetName().Version?.ToString() ?? TrackerApplicationConstants.DefaultVersion;
         string[] arguments = Environment.GetCommandLineArgs();
@@ -66,7 +68,8 @@ public static class MauiProgram
 #endif
         TrackerConnectionOptions options = new(TrackerProtocol.Port, version, debugRequested, TimeSpan.FromSeconds(TrackerProtocol.HandshakeTimeoutSeconds))
         {
-            AutoSelectStarter = Preferences.Default.Get(TrackerApplicationConstants.AutoSelectStarterPreferenceKey, false)
+            AutoSelectStarter = Preferences.Default.Get(TrackerApplicationConstants.AutoSelectStarterPreferenceKey, false),
+            FavoriteSpeciesIds = favorites.Favorites.Select(favorite => favorite.SpeciesId).ToArray()
         };
 
         return options;

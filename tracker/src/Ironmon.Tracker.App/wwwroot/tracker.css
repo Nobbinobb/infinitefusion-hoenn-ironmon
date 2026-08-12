@@ -246,6 +246,88 @@ h1 {
     line-height: 1.45;
 }
 
+.favorite-settings {
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.65rem;
+    background: var(--surface-soft);
+}
+
+.favorite-settings > div:first-child,
+.favorite-list-heading {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.favorite-settings strong {
+    font-size: 0.82rem;
+}
+
+.favorite-settings small,
+.favorite-empty {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.66rem;
+    line-height: 1.45;
+}
+
+.favorite-search {
+    width: 100%;
+    padding: 0.58rem 0.65rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 0.5rem;
+    color: var(--text);
+    background: var(--surface);
+}
+
+.favorite-suggestions,
+.favorite-list {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.favorite-suggestions button,
+.favorite-list > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.48rem 0.58rem;
+    border: 1px solid var(--border);
+    border-radius: 0.45rem;
+    color: var(--text);
+    background: var(--surface-raised);
+}
+
+.favorite-suggestions button {
+    cursor: pointer;
+}
+
+.favorite-suggestions button:disabled {
+    cursor: default;
+    opacity: 0.62;
+}
+
+.favorite-list button,
+.favorite-pager button {
+    border: 1px solid var(--border-strong);
+    border-radius: 0.4rem;
+    color: var(--muted-strong);
+    background: transparent;
+    cursor: pointer;
+}
+
+.favorite-pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    color: var(--muted);
+    font-size: 0.65rem;
+}
+
 .settings-option input {
     flex: 0 0 auto;
     width: 1.15rem;
@@ -306,6 +388,24 @@ h1 {
 .starter-choice.random-pick {
     border-color: var(--accent-soft);
     box-shadow: inset 0 0 0 1px rgb(183 164 255 / 22%), 0 0.5rem 1.2rem rgb(0 0 0 / 14%);
+}
+
+.starter-choice.favorite {
+    padding-bottom: 2rem;
+    border-color: #ff9fcf;
+}
+
+.starter-favorite {
+    position: absolute;
+    right: 0.42rem;
+    bottom: 0.42rem;
+    padding: 0.16rem 0.35rem;
+    border-radius: 999px;
+    color: #29121f;
+    background: #ff9fcf;
+    font-size: 0.48rem;
+    font-weight: 800;
+    text-transform: uppercase;
 }
 
 .starter-random-pick {

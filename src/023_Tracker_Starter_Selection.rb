@@ -66,6 +66,7 @@ module Ironmon
         choice["base_stat_total"] = pokemon.baseStats.values.inject(0) do |sum, value|
           sum + value
         end
+        choice["favorite"] = tracker_favorite_pokemon?(pokemon)
       end
       choice
     end
@@ -94,6 +95,25 @@ module Ironmon
 
   def self.tracker_auto_select_starter?
     return tracker_connection.auto_select_starter?
+  end
+
+  def self.tracker_favorite_pokemon?(pokemon)
+    favorites = tracker_connection.favorite_species_ids.map do |identifier|
+      identifier.to_s.split(":", 2)[0]
+    end
+    return false if favorites.empty? || !pokemon
+    species = pokemon.species_data
+    identifiers = [species.id.to_s.upcase]
+    if species.respond_to?(:get_body_species_symbol)
+      identifiers << species.get_body_species_symbol.to_s.upcase
+      identifiers << species.get_head_species_symbol.to_s.upcase
+    elsif species.respond_to?(:body_pokemon) && species.body_pokemon
+      identifiers << species.body_pokemon.id.to_s.upcase
+      identifiers << species.head_pokemon.id.to_s.upcase
+    end
+    return identifiers.any? { |identifier| favorites.include?(identifier) }
+  rescue Exception
+    return false
   end
 end
 
@@ -131,12 +151,48 @@ class StartersSelectionScene
       Ironmon.tracker_starter_random_pick(@starter_pokemon.length)
     updateOpenPokeballPosition
     updateStarterSelectionGraphics
+    favorite_indices = @starter_pokemon.each_index.select do |index|
+      Ironmon.tracker_favorite_pokemon?(@starter_pokemon[index])
+    end
+    if !favorite_indices.empty? && !favorite_indices.include?(@index)
+      return ironmon_tracker_choose_random_or_favorite(
+        [@index] + favorite_indices
+      )
+    end
     reveal_deadline = Ironmon.tracker_uptime_seconds +
       Ironmon::TRACKER_STARTER_AUTOSELECT_REVEAL_SECONDS
     while Ironmon.tracker_uptime_seconds < reveal_deadline
       Input.update
       Graphics.update
     end
+    return ironmon_tracker_finalize_starter
+  end
+
+  def ironmon_tracker_choose_random_or_favorite(allowed_indices)
+    allowed_indices = allowed_indices.uniq
+    random_pick = Ironmon.tracker_starter_random_pick_index
+    commands = allowed_indices.map do |index|
+      pokemon_name = @starter_pokemon[index].species_data.name
+      label = index == random_pick ? "Random Pick" : "Favorite"
+      _INTL("{1} ({2})", pokemon_name, label)
+    end
+    position = pbMessage(
+      _INTL("Favorite Clause: choose from the available starters."),
+      commands, 0
+    )
+    @index = allowed_indices[position]
+    updateOpenPokeballPosition
+    updateStarterSelectionGraphics
+    reveal_deadline = Ironmon.tracker_uptime_seconds +
+      Ironmon::TRACKER_STARTER_AUTOSELECT_REVEAL_SECONDS
+    while Ironmon.tracker_uptime_seconds < reveal_deadline
+      Input.update
+      Graphics.update
+    end
+    return ironmon_tracker_finalize_starter
+  end
+
+  def ironmon_tracker_finalize_starter
     chosen_pokemon = @starter_pokemon[@index]
     @spritesLoader.registerSpriteSubstitution(@pif_sprite)
     disposeGraphics

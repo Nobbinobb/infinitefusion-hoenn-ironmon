@@ -28,6 +28,7 @@ public sealed class TrackerConnectionServiceTests
         CompletedRunArchive completedRuns = CreateCompletedRunArchive();
         TrackerConnectionOptions options = new(0, "0.1.0", true, TimeSpan.FromSeconds(2));
         options.AutoSelectStarter = true;
+        options.FavoriteSpeciesIds = ["BULBASAUR:0"];
         await using TrackerConnectionService service = new(options, diagnostics, state, runState, knowledge, completedRuns);
         service.Start();
 
@@ -47,6 +48,7 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal("tracker_connected", trackerHandshake?.Event);
         TrackerHandshakePayload trackerPayload = TrackerJson.DeserializePayload<TrackerHandshakePayload>(trackerHandshake!.Payload);
         Assert.True(trackerPayload.AutoSelectStarter);
+        Assert.Equal("BULBASAUR:0", Assert.Single(trackerPayload.FavoriteSpeciesIds));
         Assert.Equal("current_state", currentStateRequest?.Command);
         string requestId = Assert.IsType<string>(currentStateRequest?.RequestId);
 
@@ -97,15 +99,31 @@ public sealed class TrackerConnectionServiceTests
         Assert.Contains(diagnostics.Entries, entry => entry.Direction == TrackerDiagnosticDirection.Incoming && entry.Name == "game_connected");
         Assert.Contains(diagnostics.Entries, entry => entry.Direction == TrackerDiagnosticDirection.Outgoing && entry.Name == "current_state");
 
-        TrackerSettingsPayload changedSettings = new() { AutoSelectStarter = false };
+        TrackerSettingsPayload changedSettings = new() { AutoSelectStarter = false, FavoriteSpeciesIds = ["SQUIRTLE:0"] };
         Task<TrackerSettingsPayload> settingsTask = service.Requests.UpdateSettingsAsync(changedSettings);
         TrackerMessage? settingsRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
         Assert.Equal(TrackerCommands.UpdateSettings, settingsRequest?.Command);
         TrackerSettingsPayload requestedSettings = TrackerJson.DeserializePayload<TrackerSettingsPayload>(settingsRequest!.Payload);
         Assert.False(requestedSettings.AutoSelectStarter);
+        Assert.Equal("SQUIRTLE:0", Assert.Single(requestedSettings.FavoriteSpeciesIds));
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(settingsRequest.RequestId!, requestedSettings, "run-1"));
         Assert.False((await settingsTask).AutoSelectStarter);
         Assert.False(options.AutoSelectStarter);
+        Assert.Equal("SQUIRTLE:0", Assert.Single(options.FavoriteSpeciesIds));
+
+        Task<PokemonSearchResponsePayload> favoriteSearchTask = service.Requests.SearchFavoritePokemonAsync("squirt");
+        TrackerMessage? favoriteSearchRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(TrackerCommands.FavoritePokemonSearch, favoriteSearchRequest?.Command);
+        DebugPokemonSearchRequestPayload favoriteSearchPayload = TrackerJson.DeserializePayload<DebugPokemonSearchRequestPayload>(favoriteSearchRequest!.Payload);
+        Assert.True(favoriteSearchPayload.NormalOnly);
+        PokemonSearchResponsePayload favoriteSearchResponse = new()
+        {
+            Matches = [new PokemonSearchMatch { SpeciesId = "SQUIRTLE:0", SpeciesName = "Squirtle" }],
+            Total = 1
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(favoriteSearchRequest.RequestId!, favoriteSearchResponse, "run-1"));
+        Assert.Equal("SQUIRTLE:0", Assert.Single((await favoriteSearchTask).Matches).SpeciesId);
 
         CompletedRunRecipePayload recipe = CreateRecipe("run-1");
         TrackerMessage runCompleted = TrackerMessageFactory.CreateEvent("run_completed", 1, recipe, "run-1");

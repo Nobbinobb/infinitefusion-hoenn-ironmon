@@ -1158,3 +1158,36 @@ Status: **Complete**
   `661fc320cc62e20f41a5f9fde6c03a2c746e55b4ebf04e73f54d2ad8fa3c147b`.
 - Two consecutive release builds were byte-for-byte reproducible, and the
   packaged tracker and game passed their concurrent startup smoke test.
+
+## Ironmon 0.7 starter tracker improvements
+
+Status: **Complete**
+
+- Added a three-slot starter-selection presentation that withholds candidate
+  identity until the corresponding ball is opened in the game, then displays
+  its sprite, species name, and generated BST.
+- Added a stable seed-derived Random Pick that does not consume gameplay random
+  values and survives tracker reconnection.
+- Added a Settings page and persistent Autoselect starter preference. When
+  enabled, all tracker candidates reveal immediately and the game normally
+  selects the Random Pick after a fixed two-second delay without player input.
+- Added an unlimited, tracker-owned Favorite Clause list stored outside the
+  release directory, with debounced normal-Pokemon search suggestions, paging,
+  duplicate prevention, and removal.
+- Synchronized autoselect and favorites through the handshake and live settings
+  updates. Favorite matching accepts normal Pokemon and fusions whose body or
+  head is in the saved normal-species list.
+- Marked revealed qualifying starters as Favorite. Manual selection remains
+  unrestricted; autoselect immediately accepts a favorite Random Pick, or shows
+  a named list containing the Random Pick and every qualifying favorite when
+  the Random Pick is not a favorite.
+- Updated the mechanics manual and protocol reference with the complete final
+  behavior and visibility boundaries.
+- All 48 tracker tests pass, the desktop tracker builds with zero warnings and
+  errors, and the synchronized bundled game and tracker remained running during
+  the connected startup smoke test.
+- Created `Ironmon-v0.7.0-starter-selection.zip` with 461 entries, including all
+  37 canonical Ruby scripts and the self-contained tracker executable, with no
+  PDB or generated XML documentation files.
+- Two independent release builds were byte-for-byte reproducible with SHA-256
+  `4abb4eb0fe01d4a75f52c26ad8cbbd35273c4203bda3097384de0fed22e169cb`.

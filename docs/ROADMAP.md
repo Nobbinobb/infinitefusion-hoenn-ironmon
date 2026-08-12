@@ -819,14 +819,52 @@ Milestone 5 status: **Complete**
 
 ### Milestone 6: Release quality
 
+Status: **On hold**
+
+Milestone 6 is intentionally deferred. Version 0.7.0 provides a
+playable build with the required randomization and challenge mechanics. Its
+remaining release-quality work can resume when the project is ready to focus
+on packaging, compatibility, migration, and formal release preparation.
+
 - Installer or copy-ready package.
 - Game-version compatibility detection.
 - Save migration and upgrade handling.
 - User documentation and changelog.
 - Release regression suite.
 
+### Version 0.7 improvement cycle
+
+Status: **Complete for 0.7.0**
+
+Version 0.7 improves existing implementations and adds optional quality-of-life
+features that are useful but not required for a playable Ironmon run. Work is
+selected as ideas arise rather than committed to a fixed milestone sequence.
+
+Completed improvement slices:
+
+- Added a tracker starter-selection view with three legally hidden slots,
+  reveal-on-open sprite, name, and generated BST information, and a stable
+  seeded Random Pick marker.
+- Added tracker settings and persistent Autoselect starter behavior. Autoselect
+  reveals all candidates, waits two seconds, and normally takes the Random Pick
+  without player input.
+- Added the Favorite Clause with normal-Pokemon search suggestions, an unlimited
+  paged saved list, removal, fusion matching through either component, Favorite
+  markers, and a named choice between the Random Pick and every qualifying
+  favorite when autoselect requires player input.
+
+Version 0.7.0 packages these completed starter-tracker improvements as
+`Ironmon-v0.7.0-starter-selection.zip`.
+
+Release result: all 48 tracker tests passed, the release tracker built without
+warnings or errors, and the packaged tracker and synchronized game passed their
+connected startup smoke test. Two independent package builds produced the same
+SHA-256 checksum:
+`4abb4eb0fe01d4a75f52c26ad8cbbd35273c4203bda3097384de0fed22e169cb`.
+
 ## Working rule
 
-Only one milestone step should be implemented at a time. Each step must pass its
-acceptance criteria before the next step begins. If engine behavior discovered
-during implementation changes the design, update this roadmap before continuing.
+Only one selected improvement slice or milestone step should be implemented at
+a time. Each slice must pass validation and review before another begins. If
+engine behavior discovered during implementation changes the design, update
+this roadmap before continuing.

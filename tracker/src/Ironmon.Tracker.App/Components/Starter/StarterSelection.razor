@@ -15,6 +15,10 @@
                 {
                     <span class="starter-random-pick">@Text["Starter.Selection.RandomPick"]</span>
                 }
+                @if (choice.Revealed && choice.Favorite)
+                {
+                    <span class="starter-favorite">@Text["Starter.Selection.Favorite"]</span>
+                }
                 <div class="starter-sprite" aria-hidden="true">
                     @if (choice.Revealed && GetSpriteSource(choice) is string spriteSource)
                     {

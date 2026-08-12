@@ -14,6 +14,64 @@
         <input type="checkbox" checked="@AutoSelectStarter" @onchange="HandleAutoSelectChanged" />
     </label>
 
+    <section class="favorite-settings" aria-label="@Text["Settings.Favorites.FavoriteClause"]">
+        <div>
+            <strong>@Text["Settings.Favorites.FavoriteClause"]</strong>
+            <small>@Text["Settings.Favorites.Description"]</small>
+        </div>
+        <input class="favorite-search" type="search" value="@_query" @oninput="HandleSearchInput" placeholder="@Text["Settings.Favorites.SearchPlaceholder"]" autocomplete="off" />
+
+        @if (_searching)
+        {
+            <p class="settings-status">@Text["Settings.Favorites.Searching"]</p>
+        }
+        else if (!string.IsNullOrWhiteSpace(_searchError))
+        {
+            <p class="settings-status">@_searchError</p>
+        }
+        else if (_matches.Count > 0)
+        {
+            <div class="favorite-suggestions">
+                @foreach (PokemonSearchMatch match in _matches)
+                {
+                    <button type="button" disabled="@IsFavorite(match.SpeciesId)" @onclick="() => AddFavoriteAsync(match)">
+                        <span>@match.SpeciesName</span>
+                        <small>@(IsFavorite(match.SpeciesId) ? Text["Settings.Favorites.Added"] : Text["Settings.Favorites.Add"])</small>
+                    </button>
+                }
+            </div>
+        }
+
+        <div class="favorite-list-heading">
+            <strong>@Text["Settings.Favorites.YourFavorites"]</strong>
+            <small>@Text["Settings.Favorites.Count", _favorites.Count]</small>
+        </div>
+        @if (_favorites.Count == 0)
+        {
+            <p class="favorite-empty">@Text["Settings.Favorites.Empty"]</p>
+        }
+        else
+        {
+            <div class="favorite-list">
+                @foreach (PokemonSearchMatch favorite in PagedFavorites)
+                {
+                    <div>
+                        <span>@favorite.SpeciesName</span>
+                        <button type="button" @onclick="() => RemoveFavoriteAsync(favorite.SpeciesId)">@Text["Settings.Favorites.Remove"]</button>
+                    </div>
+                }
+            </div>
+            @if (FavoritePageCount > 1)
+            {
+                <nav class="favorite-pager" aria-label="@Text["Settings.Favorites.Pages"]">
+                    <button type="button" disabled="@(_favoritePage == 0)" @onclick="PreviousFavoritePage">@Text["Settings.Favorites.Previous"]</button>
+                    <span>@Text["Settings.Favorites.Page", _favoritePage + 1, FavoritePageCount]</span>
+                    <button type="button" disabled="@(_favoritePage + 1 >= FavoritePageCount)" @onclick="NextFavoritePage">@Text["Settings.Favorites.Next"]</button>
+                </nav>
+            }
+        }
+    </section>
+
     @if (!string.IsNullOrWhiteSpace(Status))
     {
         <p class="settings-status" role="status">@Status</p>

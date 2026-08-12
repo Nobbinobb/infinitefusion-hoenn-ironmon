@@ -49,7 +49,26 @@ public sealed class TrackerRequestClient
     {
         ArgumentNullException.ThrowIfNull(settings);
         _options.AutoSelectStarter = settings.AutoSelectStarter;
+        _options.FavoriteSpeciesIds = settings.FavoriteSpeciesIds;
         return _session.SendAsync<TrackerSettingsPayload, TrackerSettingsPayload>(TrackerCommands.UpdateSettings, settings, GetConnectedRunId(), cancellationToken);
+    }
+
+    /// <summary>
+    /// Searches normal Pokemon in the connected game for Favorite Clause suggestions.
+    /// </summary>
+    /// <param name="query">The name fragment entered by the user.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="limit">The maximum number of matches to return.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The matching normal Pokemon.</returns>
+    public Task<PokemonSearchResponsePayload> SearchFavoritePokemonAsync(string query, int offset = 0, int limit = TrackerProtocol.DefaultSearchPageSize, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(query);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, TrackerProtocol.MinimumSearchPageSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, TrackerProtocol.MaximumSearchPageSize);
+        DebugPokemonSearchRequestPayload request = new() { Query = query.Trim(), Offset = offset, Limit = limit, NormalOnly = true };
+        return _session.SendAsync<DebugPokemonSearchRequestPayload, PokemonSearchResponsePayload>(TrackerCommands.FavoritePokemonSearch, request, GetConnectedRunId(), cancellationToken);
     }
 
     /// <summary>

@@ -41,7 +41,7 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.0",
-    "ironmon_version": "0.6.5",
+    "ironmon_version": "0.7.0",
     "ironmon_active": false,
     "debug_available": true,
     "game_root": "C:/Games/InfiniteFusion2",
@@ -66,7 +66,8 @@ battle is active.
   "payload": {
     "tracker_version": "0.1.0.0",
     "debug_requested": false,
-    "auto_select_starter": false
+    "auto_select_starter": false,
+    "favorite_species_ids": ["BULBASAUR:0"]
   }
 }
 ```
@@ -75,12 +76,15 @@ battle is active.
 debug access; the game remains authoritative through `debug_available`.
 `auto_select_starter` supplies the tracker-owned persisted starter setting on
 every connection or reconnection.
+`favorite_species_ids` contains the tracker-owned normal-species favorites used
+by the Favorite Clause.
 
 The tracker sends `update_settings` when that setting changes while connected:
 
 ```json
 {
-  "auto_select_starter": true
+  "auto_select_starter": true,
+  "favorite_species_ids": ["BULBASAUR:0", "SQUIRTLE:0"]
 }
 ```
 
@@ -150,7 +154,9 @@ stable random pick:
 ```
 
 After the player reveals a candidate, that choice additionally contains
-`species_id`, `species_name`, `sprite_path`, and `base_stat_total`. Hidden
+`species_id`, `species_name`, `sprite_path`, `base_stat_total`, and `favorite`.
+The last field reports whether the normal species or either half of a fusion is
+in `favorite_species_ids`. Hidden
 choices never transmit those fields. Closing the scene sends
 `{"active":false,"choices":[]}` and removes `starter_selection` from later
 current-state recovery responses.
@@ -159,6 +165,55 @@ When `auto_select_starter` is enabled, the opening snapshot reveals all three
 choices immediately. The game ignores player selection input for two seconds,
 opens the choice at `random_pick_index`, displays it for 0.75 seconds, and
 returns that Pokemon without a confirmation prompt.
+
+If the Random Pick is not a favorite while one or more favorites are present,
+automatic completion pauses after the delay. The game displays a named command
+for the Random Pick and every favorite candidate, and the player selects from
+that complete list. A favorite Random Pick is still selected automatically.
+
+The settings page uses the public `favorite_pokemon_search` command for
+autocomplete suggestions. The request uses the active connection rather than a
+completed-run recipe:
+
+```json
+{
+  "schema_version": 1,
+  "type": "request",
+  "command": "favorite_pokemon_search",
+  "request_id": "ef63cbe80641442785b59eb7c2682dce",
+  "run_id": "run-seed-1652146642",
+  "sent_at": "2026-08-12T21:15:10.100Z",
+  "payload": {
+    "query": "squirt",
+    "offset": 0,
+    "limit": 8,
+    "normal_only": true
+  }
+}
+```
+
+The game enforces normal-only matching even if a client omits or changes
+`normal_only`, so fusion identifiers cannot enter the saved favorites list:
+
+```json
+{
+  "schema_version": 1,
+  "type": "response",
+  "request_id": "ef63cbe80641442785b59eb7c2682dce",
+  "run_id": "run-seed-1652146642",
+  "sent_at": "2026-08-12T21:15:10.110Z",
+  "success": true,
+  "payload": {
+    "matches": [
+      {
+        "species_id": "SQUIRTLE:0",
+        "species_name": "Squirtle"
+      }
+    ],
+    "total": 1
+  }
+}
+```
 
 ## Battle lifecycle
 
@@ -382,7 +437,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.6.5",
+  "ironmon_version": "0.7.0",
   "configuration": {
     "schema_version": 2,
     "wild_policy": "mixed",

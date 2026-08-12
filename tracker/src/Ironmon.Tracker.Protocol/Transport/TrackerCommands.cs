@@ -16,6 +16,11 @@ public static class TrackerCommands
     public const string UpdateSettings = "update_settings";
 
     /// <summary>
+    /// Gets the connected-game normal-Pokemon search command used by Favorite Clause settings.
+    /// </summary>
+    public const string FavoritePokemonSearch = "favorite_pokemon_search";
+
+    /// <summary>
     /// Gets the completed-run Pokemon search command.
     /// </summary>
     public const string PokemonSearch = "pokemon_search";

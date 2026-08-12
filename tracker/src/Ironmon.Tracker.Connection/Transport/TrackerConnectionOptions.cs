@@ -48,6 +48,11 @@ public sealed class TrackerConnectionOptions
     public bool AutoSelectStarter { get; set; }
 
     /// <summary>
+    /// Gets or sets the stable normal species covered by the Favorite Clause.
+    /// </summary>
+    public IReadOnlyList<string> FavoriteSpeciesIds { get; set; } = [];
+
+    /// <summary>
     /// Gets the maximum time allowed for the game handshake.
     /// </summary>
     public TimeSpan HandshakeTimeout { get; }

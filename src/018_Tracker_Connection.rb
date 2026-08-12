@@ -84,6 +84,7 @@ module Ironmon
       @last_error_at = 0.0
       @debug_requested = false
       @auto_select_starter = false
+      @favorite_species_ids = []
     end
 
     def update
@@ -112,6 +113,10 @@ module Ironmon
 
     def auto_select_starter?
       return @auto_select_starter == true
+    end
+
+    def favorite_species_ids
+      return @favorite_species_ids || []
     end
 
     private
@@ -255,6 +260,9 @@ module Ironmon
         payload = message["payload"] || {}
         @debug_requested = payload["debug_requested"] == true
         @auto_select_starter = payload["auto_select_starter"] == true
+        @favorite_species_ids = normalize_favorite_species_ids(
+          payload["favorite_species_ids"]
+        )
       elsif message["type"] == "request"
         handle_request(message)
       end
@@ -278,10 +286,21 @@ module Ironmon
       elsif message["command"] == "update_settings"
         payload = message["payload"] || {}
         @auto_select_starter = payload["auto_select_starter"] == true
+        @favorite_species_ids = normalize_favorite_species_ids(
+          payload["favorite_species_ids"]
+        )
         queue_message(success_response(
-          request_id, { "auto_select_starter" => @auto_select_starter },
+          request_id, {
+            "auto_select_starter" => @auto_select_starter,
+            "favorite_species_ids" => @favorite_species_ids
+          },
           message["run_id"]
         ))
+      elsif message["command"] == "favorite_pokemon_search"
+        payload = message["payload"] || {}
+        payload["normal_only"] = true
+        payload = Ironmon.tracker_pokemon_search_for_recipe(payload, nil)
+        queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "pokemon_search"
         payload = Ironmon.tracker_pokemon_search(message["payload"], message["run_id"])
         queue_message(success_response(request_id, payload, message["run_id"]))
@@ -421,6 +440,13 @@ module Ironmon
       queue_message(error_response(request_id, e.code, e.message, message["run_id"]))
     rescue Exception => e
       queue_message(error_response(request_id, "lookup_failed", e.message, message["run_id"]))
+    end
+
+    def normalize_favorite_species_ids(values)
+      return [] if !values.is_a?(Array)
+      identifiers = values.map { |value| value.to_s.split(":", 2)[0].upcase }
+      return identifiers.reject { |value| value.empty? }.
+        map { |value| "#{value}:0" }.uniq
     end
 
     def debug_authorized?
@@ -606,6 +632,7 @@ module Ironmon
         pokemon.personalID == pokemon_id
       end
     end
+
     party_pokemon ||= $Trainer.party.find do |pokemon|
       !pokemon.respond_to?(:egg?) || !pokemon.egg?
     end

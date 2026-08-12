@@ -41,4 +41,9 @@ public sealed class StarterChoiceSnapshot
     /// Gets or initializes the generated base-stat total after revelation.
     /// </summary>
     public int? BaseStatTotal { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether the revealed starter is covered by the Favorite Clause.
+    /// </summary>
+    public bool Favorite { get; init; }
 }
