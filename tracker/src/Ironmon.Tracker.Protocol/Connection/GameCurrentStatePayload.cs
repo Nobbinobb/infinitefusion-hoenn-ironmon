@@ -83,4 +83,5 @@ public sealed class GameCurrentStatePayload
     /// Gets the completed-run recipe when the active save's run has ended.
     /// </summary>
     public CompletedRunRecipePayload? CompletedRun { get; }
+
 }

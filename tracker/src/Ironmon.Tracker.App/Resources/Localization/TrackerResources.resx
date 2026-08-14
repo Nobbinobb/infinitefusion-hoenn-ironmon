@@ -1246,4 +1246,39 @@
   <data name="Settings.Favorites.Page" xml:space="preserve"><value>{0} / {1}</value></data>
   <data name="Settings.Favorites.ConnectToSearch" xml:space="preserve"><value>Connect the game to search its normal Pokémon list.</value></data>
   <data name="Starter.Selection.Favorite" xml:space="preserve"><value>Favorite</value></data>
+  <data name="Lookup.Areas.Title" xml:space="preserve"><value>Area progress</value></data>
+  <data name="Lookup.Areas.Kicker" xml:space="preserve"><value>WORLD LOOKUP</value></data>
+  <data name="Lookup.Areas.Categories" xml:space="preserve"><value>Area content categories</value></data>
+  <data name="Lookup.Areas.Trainers" xml:space="preserve"><value>Trainers</value></data>
+  <data name="Lookup.Areas.Encounters" xml:space="preserve"><value>Encounters</value></data>
+  <data name="Lookup.Areas.Items" xml:space="preserve"><value>Items</value></data>
+  <data name="Lookup.Areas.Loading" xml:space="preserve"><value>Loading areas…</value></data>
+  <data name="Lookup.Areas.LoadingDetails" xml:space="preserve"><value>Loading area details…</value></data>
+  <data name="Lookup.Areas.Empty" xml:space="preserve"><value>No areas are available for this category.</value></data>
+  <data name="Lookup.Areas.DefeatedProgress" xml:space="preserve"><value>{0} / {1} defeated</value></data>
+  <data name="Lookup.Areas.EncounteredProgress" xml:space="preserve"><value>{0} / {1} encountered</value></data>
+  <data name="Lookup.Areas.CollectedProgress" xml:space="preserve"><value>{0} / {1} collected</value></data>
+  <data name="Lookup.Areas.Defeated" xml:space="preserve"><value>Defeated</value></data>
+  <data name="Lookup.Areas.NotDefeated" xml:space="preserve"><value>Not defeated</value></data>
+  <data name="Lookup.Areas.Encountered" xml:space="preserve"><value>Encountered</value></data>
+  <data name="Lookup.Areas.NotEncountered" xml:space="preserve"><value>Not encountered</value></data>
+  <data name="Lookup.Areas.Collected" xml:space="preserve"><value>Collected</value></data>
+  <data name="Lookup.Areas.NotCollected" xml:space="preserve"><value>Not collected</value></data>
+  <data name="Lookup.Areas.PokemonCount" xml:space="preserve"><value>{0} Pokémon</value></data>
+  <data name="Lookup.Areas.PokemonLevel" xml:space="preserve"><value>{0} · Lv. {1}</value></data>
+  <data name="Lookup.Areas.UnknownPokemon" xml:space="preserve"><value>Unknown Pokémon</value></data>
+  <data name="Lookup.Areas.Slot" xml:space="preserve"><value>Slot {0}</value></data>
+  <data name="Lookup.Areas.Level" xml:space="preserve"><value>Lv. {0}</value></data>
+  <data name="Lookup.Areas.LevelRange" xml:space="preserve"><value>Lv. {0}–{1}</value></data>
+  <data name="Lookup.Areas.Probability" xml:space="preserve"><value>{0:0.##}%</value></data>
+  <data name="Lookup.Areas.IndependentFusion" xml:space="preserve"><value>independent fusion slot</value></data>
+  <data name="Lookup.Areas.Coordinates" xml:space="preserve"><value>Position {0}, {1}</value></data>
+  <data name="Lookup.Areas.HiddenItem" xml:space="preserve"><value>Hidden item · marked in game</value></data>
+  <data name="Lookup.Areas.GroundItem" xml:space="preserve"><value>Ground item</value></data>
+  <data name="Lookup.Areas.UnknownItem" xml:space="preserve"><value>Unknown item</value></data>
+  <data name="Lookup.Areas.EnlargePokemon" xml:space="preserve"><value>Enlarge {0} image</value></data>
+  <data name="Lookup.Areas.CloseImage" xml:space="preserve"><value>Close enlarged image</value></data>
+  <data name="Lookup.Runs.RunLookup" xml:space="preserve"><value>Run lookup</value></data>
+  <data name="Lookup.Runs.LookupHeading" xml:space="preserve"><value>RUN DATA</value></data>
+  <data name="Lookup.Runs.CurrentRun" xml:space="preserve"><value>Current run</value></data>
 </root>

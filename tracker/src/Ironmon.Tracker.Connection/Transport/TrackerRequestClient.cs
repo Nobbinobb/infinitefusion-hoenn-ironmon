@@ -7,6 +7,8 @@ namespace Ironmon.Tracker.Connection.Transport;
 /// </summary>
 public sealed class TrackerRequestClient
 {
+    private readonly ConcurrentDictionary<string, AreaLookupDetailResponsePayload> _areaDetailCache = new();
+    private readonly ConcurrentDictionary<string, AreaLookupSummaryResponsePayload> _areaSummaryCache = new();
     private readonly ConcurrentDictionary<string, FusionPreviewResponsePayload> _fusionPreviewCache = new();
     private readonly ConcurrentDictionary<string, FusionMaterialSearchResponsePayload> _fusionMaterialCache = new();
     private readonly ConcurrentDictionary<string, PokemonLookupSnapshot> _pokemonLookupCache = new();
@@ -14,6 +16,7 @@ public sealed class TrackerRequestClient
     private readonly ConcurrentDictionary<string, EvolutionCandidateSearchResponsePayload> _evolutionCandidateCache = new();
     private readonly ConcurrentDictionary<string, TrainerOccurrenceSearchResponsePayload> _trainerOccurrenceCache = new();
     private readonly ConcurrentDictionary<string, WildOccurrenceSearchResponsePayload> _wildOccurrenceCache = new();
+    private readonly AreaDiscoveryStore _areaDiscoveries;
     private readonly TrackerConnectionOptions _options;
     private readonly TrackerRequestSession _session;
     private readonly TrackerConnectionState _state;
@@ -24,14 +27,17 @@ public sealed class TrackerRequestClient
     /// <param name="session">The correlated request session.</param>
     /// <param name="options">The tracker connection options.</param>
     /// <param name="state">The shared connection state.</param>
-    internal TrackerRequestClient(TrackerRequestSession session, TrackerConnectionOptions options, TrackerConnectionState state)
+    /// <param name="areaDiscoveries">The tracker-owned area discovery store.</param>
+    internal TrackerRequestClient(TrackerRequestSession session, TrackerConnectionOptions options, TrackerConnectionState state, AreaDiscoveryStore areaDiscoveries)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(areaDiscoveries);
         _session = session;
         _options = options;
         _state = state;
+        _areaDiscoveries = areaDiscoveries;
     }
 
     /// <summary>
@@ -69,6 +75,57 @@ public sealed class TrackerRequestClient
         ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, TrackerProtocol.MaximumSearchPageSize);
         DebugPokemonSearchRequestPayload request = new() { Query = query.Trim(), Offset = offset, Limit = limit, NormalOnly = true };
         return _session.SendAsync<DebugPokemonSearchRequestPayload, PokemonSearchResponsePayload>(TrackerCommands.FavoritePokemonSearch, request, GetConnectedRunId(), cancellationToken);
+    }
+
+    /// <summary>
+    /// Requests compact public area totals for the active or one archived run.
+    /// </summary>
+    /// <param name="category">The selected content category.</param>
+    /// <param name="recipe">The archived run recipe, or null for the active run.</param>
+    /// <param name="forceRefresh">Whether to bypass a previously cached response.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The public area summaries.</returns>
+    public async Task<AreaLookupSummaryResponsePayload> GetAreaSummariesAsync(AreaContentCategory category, CompletedRunRecipePayload? recipe = null, bool forceRefresh = false, CancellationToken cancellationToken = default)
+    {
+        string runId = recipe?.RunId ?? GetConnectedRunId() ?? throw new InvalidOperationException("No Ironmon run is connected.");
+        long revision = _areaDiscoveries.GetRevision(runId);
+        string source = recipe is null ? "active" : "archive";
+        string cacheKey = $"{source}|{runId}|{revision}|{category}";
+        if (!forceRefresh && _areaSummaryCache.TryGetValue(cacheKey, out AreaLookupSummaryResponsePayload? cached))
+            return cached;
+
+        AreaLookupSummaryRequestPayload request = new() { Recipe = recipe, Category = category };
+        AreaLookupSummaryResponsePayload gameResponse = await _session.SendAsync<AreaLookupSummaryRequestPayload, AreaLookupSummaryResponsePayload>(TrackerCommands.AreaLookupSummary, request, runId, cancellationToken);
+        AreaLookupSummaryResponsePayload response = ApplyTrackerCounts(runId, category, gameResponse);
+        _areaSummaryCache[$"{source}|{runId}|{response.Revision}|{category}"] = response;
+        return response;
+    }
+
+    /// <summary>
+    /// Requests one lazily loaded public area category for the active or one archived run.
+    /// </summary>
+    /// <param name="areaId">The stable logical area identifier.</param>
+    /// <param name="category">The requested category.</param>
+    /// <param name="recipe">The archived run recipe, or null for the active run.</param>
+    /// <param name="forceRefresh">Whether to bypass a previously cached response.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested area category.</returns>
+    public async Task<AreaLookupDetailResponsePayload> GetAreaDetailsAsync(string areaId, AreaContentCategory category, CompletedRunRecipePayload? recipe = null, bool forceRefresh = false, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(areaId);
+        string runId = recipe?.RunId ?? GetConnectedRunId() ?? throw new InvalidOperationException("No Ironmon run is connected.");
+        long revision = _areaDiscoveries.GetRevision(runId);
+        string source = recipe is null ? "active" : "archive";
+        string cacheKey = $"{source}|{runId}|{revision}|{DebugAuthorized}|{category}|{areaId}";
+        if (!forceRefresh && _areaDetailCache.TryGetValue(cacheKey, out AreaLookupDetailResponsePayload? cached))
+            return cached;
+
+        AreaLookupDetailRequestPayload request = new() { AreaId = areaId, Category = category, Recipe = recipe, DiscoveryKeys = _areaDiscoveries.GetKeys(runId, areaId, category) };
+        AreaLookupDetailResponsePayload gameResponse = await _session.SendAsync<AreaLookupDetailRequestPayload, AreaLookupDetailResponsePayload>(TrackerCommands.AreaLookupDetail, request, runId, cancellationToken);
+        _areaDiscoveries.RecordDetails(runId, gameResponse);
+        AreaLookupDetailResponsePayload response = WithTrackerRevision(runId, gameResponse);
+        _areaDetailCache[$"{source}|{runId}|{response.Revision}|{DebugAuthorized}|{category}|{areaId}"] = response;
+        return response;
     }
 
     /// <summary>
@@ -387,6 +444,8 @@ public sealed class TrackerRequestClient
     internal void Disconnect()
     {
         _session.Disconnect();
+        _areaDetailCache.Clear();
+        _areaSummaryCache.Clear();
         _fusionPreviewCache.Clear();
         _fusionMaterialCache.Clear();
         _pokemonLookupCache.Clear();
@@ -412,4 +471,49 @@ public sealed class TrackerRequestClient
     /// <returns>The connected run identifier when available.</returns>
     private string? GetConnectedRunId()
         => _state.Snapshot.CurrentState?.RunId ?? _state.Snapshot.Game?.RunId;
+
+    /// <summary>
+    /// Applies tracker-owned completed counts to one game-provided area list.
+    /// </summary>
+    /// <param name="runId">The owning run identifier.</param>
+    /// <param name="category">The requested category.</param>
+    /// <param name="response">The game-provided area list.</param>
+    /// <returns>The tracker-counted area list.</returns>
+    private AreaLookupSummaryResponsePayload ApplyTrackerCounts(string runId, AreaContentCategory category, AreaLookupSummaryResponsePayload response)
+    {
+        AreaSummaryPayload[] areas = [.. response.Areas.Select(area => new AreaSummaryPayload
+        {
+            AreaId = area.AreaId,
+            Name = area.Name,
+            MapIds = area.MapIds,
+            TrainerTotal = area.TrainerTotal,
+            TrainerDefeated = category == AreaContentCategory.Trainer ? Math.Min(area.TrainerTotal, Math.Max(area.TrainerDefeated, _areaDiscoveries.GetCount(runId, area.AreaId, category))) : 0,
+            EncounterTotal = area.EncounterTotal,
+            Encountered = category == AreaContentCategory.Encounter ? Math.Min(area.EncounterTotal, _areaDiscoveries.GetCount(runId, area.AreaId, category)) : 0,
+            ItemTotal = area.ItemTotal,
+            ItemsCollected = category == AreaContentCategory.Item ? Math.Min(area.ItemTotal, Math.Max(area.ItemsCollected, _areaDiscoveries.GetCount(runId, area.AreaId, category))) : 0
+        })];
+
+        return new AreaLookupSummaryResponsePayload { SchemaVersion = response.SchemaVersion, Revision = _areaDiscoveries.GetRevision(runId), Areas = areas };
+    }
+
+    /// <summary>
+    /// Replaces a game response's revision with the tracker-owned persisted revision.
+    /// </summary>
+    /// <param name="runId">The owning run identifier.</param>
+    /// <param name="response">The game detail response.</param>
+    /// <returns>The response carrying the tracker revision.</returns>
+    private AreaLookupDetailResponsePayload WithTrackerRevision(string runId, AreaLookupDetailResponsePayload response)
+    {
+        return new AreaLookupDetailResponsePayload
+        {
+            AreaId = response.AreaId,
+            Name = response.Name,
+            Category = response.Category,
+            Revision = _areaDiscoveries.GetRevision(runId),
+            Trainers = response.Trainers,
+            Encounters = response.Encounters,
+            Items = response.Items
+        };
+    }
 }

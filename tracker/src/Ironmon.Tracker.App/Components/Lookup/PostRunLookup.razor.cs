@@ -7,14 +7,21 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class PostRunLookup : IDisposable
 {
+    private readonly LookupRunSelectionState _selection = new();
     private IReadOnlyList<CompletedRunRecipePayload> _recipes = [];
-    private string? _selectedRunId;
+    private TrackerConnectionSnapshot _connection = new(TrackerConnectionStatus.Stopped, null, null, null);
 
     /// <summary>
     /// Gets or initializes the completed-run recipe archive.
     /// </summary>
     [Inject]
     private CompletedRunArchive CompletedRuns { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or initializes the shared connection status service.
+    /// </summary>
+    [Inject]
+    private TrackerConnectionState ConnectionState { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the connected game installation directory.
@@ -27,9 +34,11 @@ public partial class PostRunLookup : IDisposable
     /// </summary>
     protected override void OnInitialized()
     {
+        _connection = ConnectionState.Snapshot;
         RefreshRecipes();
         CompletedRuns.Changed += HandleCompletedRunsChanged;
         CompletedRuns.SelectionRequested += HandleCompletedRunSelectionRequested;
+        ConnectionState.Changed += HandleConnectionChanged;
     }
 
     /// <summary>
@@ -37,14 +46,39 @@ public partial class PostRunLookup : IDisposable
     /// </summary>
     /// <param name="args">The select element change.</param>
     private void SelectRun(ChangeEventArgs args)
-        => _selectedRunId = args.Value?.ToString();
+        => _selection.Select(args.Value?.ToString());
 
     /// <summary>
     /// Gets the currently selected completed-run recipe.
     /// </summary>
     /// <returns>The selected recipe or null.</returns>
     private CompletedRunRecipePayload? GetSelectedRecipe()
-        => _recipes.FirstOrDefault(recipe => recipe.RunId == _selectedRunId);
+        => _recipes.FirstOrDefault(recipe => recipe.RunId == _selection.SelectedRunId);
+
+    /// <summary>
+    /// Gets whether the connected game exposes an active Ironmon run.
+    /// </summary>
+    /// <returns>Whether an active run can be selected.</returns>
+    private bool HasActiveRun()
+    {
+        return _connection.Status == TrackerConnectionStatus.Connected
+            && _connection.CurrentState?.IronmonActive == true
+            && GetActiveRunId() is not null;
+    }
+
+    /// <summary>
+    /// Gets whether the active run is the selected lookup source.
+    /// </summary>
+    /// <returns>Whether the active run is selected.</returns>
+    private bool IsActiveRunSelected()
+        => _selection.SelectedRunId == LookupRunSelectionState.ActiveRunSelection && HasActiveRun();
+
+    /// <summary>
+    /// Gets the connected run identifier.
+    /// </summary>
+    /// <returns>The active run identifier, or null.</returns>
+    private string? GetActiveRunId()
+        => _connection.CurrentState?.RunId ?? _connection.Game?.RunId;
 
     /// <summary>
     /// Formats one completed-run selection label.
@@ -60,14 +94,19 @@ public partial class PostRunLookup : IDisposable
     private void RefreshRecipes(string? requestedRunId = null)
     {
         _recipes = CompletedRuns.Recipes;
-        if (requestedRunId is not null && _recipes.Any(recipe => recipe.RunId == requestedRunId))
-        {
-            _selectedRunId = requestedRunId;
-        }
-        else if (_selectedRunId is null || _recipes.All(recipe => recipe.RunId != _selectedRunId))
-        {
-            _selectedRunId = _recipes.Count > 0 ? _recipes[0].RunId : null;
-        }
+        _selection.Refresh(HasActiveRun(), [.. _recipes.Select(recipe => recipe.RunId)], requestedRunId);
+    }
+
+    /// <summary>
+    /// Refreshes active-run availability and progress after a connection update.
+    /// </summary>
+    /// <param name="sender">The connection state raising the event.</param>
+    /// <param name="args">The change event arguments.</param>
+    private void HandleConnectionChanged(object? sender, EventArgs args)
+    {
+        _connection = ConnectionState.Snapshot;
+        RefreshRecipes();
+        _ = InvokeAsync(StateHasChanged);
     }
 
     /// <summary>
@@ -99,5 +138,6 @@ public partial class PostRunLookup : IDisposable
     {
         CompletedRuns.Changed -= HandleCompletedRunsChanged;
         CompletedRuns.SelectionRequested -= HandleCompletedRunSelectionRequested;
+        ConnectionState.Changed -= HandleConnectionChanged;
     }
 }

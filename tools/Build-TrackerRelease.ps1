@@ -3,9 +3,9 @@ $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $distribution = Join-Path $projectRoot "dist"
 $releaseDirectory = Join-Path $projectRoot "release"
-$archiveName = "Ironmon-v0.7.1-randomization-fixes.zip"
+$archiveName = "Ironmon-v0.7.2-area-lookup.zip"
 $archive = Join-Path $releaseDirectory $archiveName
-$checksum = Join-Path $releaseDirectory "Ironmon-v0.7.1-randomization-fixes.sha256.txt"
+$checksum = Join-Path $releaseDirectory "Ironmon-v0.7.2-area-lookup.sha256.txt"
 
 & (Join-Path $PSScriptRoot "Build-Distribution.ps1")
 & (Join-Path $PSScriptRoot "Publish-Tracker.ps1")

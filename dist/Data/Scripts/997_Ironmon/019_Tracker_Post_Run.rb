@@ -1620,7 +1620,8 @@ module Ironmon
 
   def self.tracker_loaded_recipe?(recipe)
     return false if !$PokemonGlobal
-    return recipe["run_id"] == $PokemonGlobal.ironmon_run_id
+    return recipe["active_run"] == true &&
+      recipe["run_id"] == $PokemonGlobal.ironmon_run_id
   end
 
   def self.tracker_lookup_trainer_id(trainer)

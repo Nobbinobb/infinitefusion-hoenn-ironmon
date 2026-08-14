@@ -13,6 +13,7 @@ module Ironmon
   TRACKER_MAXIMUM_MESSAGE_BYTES = 1_048_576
   TRACKER_MAXIMUM_ERROR_MESSAGE_CHARACTERS = 2_000
   TRACKER_STATE_INTERVAL_SECONDS = 0.1
+  TRACKER_DISCOVERY_RETRY_SECONDS = 1.0
   TRACKER_FIXED_HEALING = {
     :POTION => 20,
     :BERRYJUICE => 20,
@@ -85,6 +86,8 @@ module Ironmon
       @debug_requested = false
       @auto_select_starter = false
       @favorite_species_ids = []
+      @pending_area_discoveries = {}
+      @area_discovery_sequence = 0
     end
 
     def update
@@ -93,6 +96,7 @@ module Ironmon
       elsif @state == :connecting
         finish_connect
       elsif @state == :connected
+        resend_area_discoveries
         flush_output
         read_input
         flush_output
@@ -109,6 +113,35 @@ module Ironmon
     def send_event(event_name, payload)
       return if @state != :connected
       queue_message(event_message(event_name, payload))
+    end
+
+    def connected?
+      return @state == :connected
+    end
+
+    def send_area_discovery(area_id, category, entry_keys)
+      return false if !connected?
+      keys = entry_keys.map { |key| key.to_s }.reject { |key| key.empty? }.uniq
+      return false if area_id.to_s.empty? || keys.empty?
+      @area_discovery_sequence += 1
+      package_id = "#{Ironmon.ensure_tracker_run_id}:area:#{@area_discovery_sequence}"
+      payload = {
+        "package_id" => package_id,
+        "area_id" => area_id.to_s,
+        "category" => category.to_s,
+        "entry_keys" => keys
+      }
+      @pending_area_discoveries[package_id] = {
+        "payload" => payload,
+        "next_send_at" => 0.0
+      }
+      send_pending_area_discovery(package_id)
+      return true
+    end
+
+    def reset_area_discoveries
+      @pending_area_discoveries = {}
+      @area_discovery_sequence = 0
     end
 
     def auto_select_starter?
@@ -263,9 +296,40 @@ module Ironmon
         @favorite_species_ids = normalize_favorite_species_ids(
           payload["favorite_species_ids"]
         )
+      elsif message["type"] == "event" &&
+            message["event"] == "area_discovery_acknowledged"
+        acknowledge_area_discovery(message)
       elsif message["type"] == "request"
         handle_request(message)
       end
+    end
+
+    def acknowledge_area_discovery(message)
+      payload = message["payload"] || {}
+      package_id = payload["package_id"].to_s
+      return if package_id.empty?
+      pending = @pending_area_discoveries[package_id]
+      return if !pending
+      return if message["run_id"].to_s != Ironmon.ensure_tracker_run_id.to_s
+      @pending_area_discoveries.delete(package_id)
+    end
+
+    def resend_area_discoveries
+      now = Ironmon.tracker_uptime_seconds
+      @pending_area_discoveries.keys.each do |package_id|
+        pending = @pending_area_discoveries[package_id]
+        next if !pending || now < pending["next_send_at"]
+        send_pending_area_discovery(package_id)
+      end
+    end
+
+    def send_pending_area_discovery(package_id)
+      pending = @pending_area_discoveries[package_id]
+      return false if !pending || !connected?
+      queue_message(event_message("area_discovery", pending["payload"]))
+      pending["next_send_at"] = Ironmon.tracker_uptime_seconds +
+        TRACKER_DISCOVERY_RETRY_SECONDS
+      return true
     end
 
     def validate_envelope(message)
@@ -300,6 +364,16 @@ module Ironmon
         payload = message["payload"] || {}
         payload["normal_only"] = true
         payload = Ironmon.tracker_pokemon_search_for_recipe(payload, nil)
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "area_lookup_summary"
+        payload = Ironmon.tracker_area_lookup_summary(
+          message["payload"], message["run_id"]
+        )
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "area_lookup_detail"
+        payload = Ironmon.tracker_area_lookup_detail(
+          message["payload"], message["run_id"], debug_authorized?
+        )
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "pokemon_search"
         payload = Ironmon.tracker_pokemon_search(message["payload"], message["run_id"])
@@ -538,6 +612,7 @@ module Ironmon
                                     end
     $PokemonGlobal.ironmon_tracker_sequence = 0
     $PokemonGlobal.ironmon_run_result = nil
+    tracker_connection.reset_area_discoveries
     reset_move_access_metrics if respond_to?(:reset_move_access_metrics)
     reset_evolution_metrics if respond_to?(:reset_evolution_metrics)
     @tracker_battle = nil
@@ -552,6 +627,11 @@ module Ironmon
     @tracker_enemy_abilities = {}
     @tracker_next_enemy_state_at = 0.0
     @tracker_starter_selection = nil
+    tracker_connection.send_run_started
+  end
+
+  def self.refresh_tracker_run_after_load
+    return if checkpoint_reset_loading?
     tracker_connection.send_run_started
   end
 
@@ -1026,6 +1106,18 @@ module Ironmon
 
   def self.tracker_timestamp
     return Time.now.utc.strftime("%Y-%m-%dT%H:%M:%S.%LZ")
+  end
+end
+
+
+module Game
+  class << self
+    alias ironmon_tracker_original_load load
+    def load(save_data)
+      result = ironmon_tracker_original_load(save_data)
+      Ironmon.refresh_tracker_run_after_load
+      return result
+    end
   end
 end
 

@@ -1,0 +1,305 @@
+record_type,area_id,area_name,map_ids,entry_id,map_id,event_id,x,y,hidden,kind,authored_ids
+area,area:5,Route 101,5,,,,,,,,
+area,area:6,Slateport City,6,,,,,,,,
+item,area:6,Slateport City,6,item:6:98,6,98,33,2,true,hidden_item,SUPERPOTION
+area,area:7,Petalburg Town,7,,,,,,,,
+item,area:7,Petalburg Town,7,item:7:36,7,36,23,6,false,standard_ground_item,RARECANDY
+area,area:10,Route 102,10,,,,,,,,
+trainer,area:10,Route 102,10,trainer:10:YOUNGSTER:Allen,10,1,,,,,YOUNGSTER:Allen:0
+trainer,area:10,Route 102,10,trainer:10:YOUNGSTER:Charlie,10,2,,,,,YOUNGSTER:Charlie:0
+trainer,area:10,Route 102,10,trainer:10:BUGCATCHER:Rick,10,7,,,,,BUGCATCHER:Rick:0
+trainer,area:10,Route 102,10,trainer:10:LASS:Tiana,10,8,,,,,LASS:Tiana:0
+item,area:10,Route 102,10,item:10:19,10,19,13,25,false,standard_ground_item,POTION
+area,area:11,Route 103,11,,,,,,,,
+trainer,area:11,Route 103,11,trainer:11:ROCKER:Marcos,11,13,,,,,ROCKER:Marcos:0
+trainer,area:11,Route 103,11,trainer:11:BLACKBELT:Rhett,11,15,,,,,BLACKBELT:Rhett:0
+trainer,area:11,Route 103,11,trainer:11:FISHERMAN:Andrew,11,16,,,,,FISHERMAN:Andrew:0
+trainer,area:11,Route 103,11,trainer:11:POKEFAN_M:Miguel,11,19,,,,,POKEFAN_M:Miguel:0
+trainer,area:11,Route 103,11,trainer:11:AROMALADY:Daisy,11,20,,,,,AROMALADY:Daisy:0
+trainer,area:11,Route 103,11,trainer:11:TEAM_MAGMA_GRUNT_M:Simon,11,21,,,,,TEAM_MAGMA_GRUNT_M:Simon:0
+trainer,area:11,Route 103,11,trainer:11:TEAM_AQUA_GRUNT_F:Meg,11,48,,,,,TEAM_AQUA_GRUNT_F:Meg:0
+item,area:11,Route 103,11,item:11:25,11,25,93,7,false,standard_ground_item,PPUP
+item,area:11,Route 103,11,item:11:27,11,27,64,11,false,standard_ground_item,GUARDSPEC
+area,"area:12,19",Route 104 (South),12|19,,,,,,,,
+trainer,"area:12,19",Route 104 (South),12|19,trainer:12:YOUNGSTER:Billy,12,5,,,,,YOUNGSTER:Billy:0
+trainer,"area:12,19",Route 104 (South),12|19,trainer:12:FISHERMAN:Darian,12,8,,,,,FISHERMAN:Darian:0
+trainer,"area:12,19",Route 104 (South),12|19,trainer:12:LADY:Cindy,12,9,,,,,LADY:Cindy:0
+trainer,"area:12,19",Route 104 (South),12|19,trainer:19:YOUNGSTER:Charlie,19,5,,,,,YOUNGSTER:Charlie:0
+item,"area:12,19",Route 104 (South),12|19,item:12:30,12,30,35,28,false,standard_ground_item,DNASPLICERS
+item,"area:12,19",Route 104 (South),12|19,item:12:31,12,31,17,28,true,hidden_item,POTION
+item,"area:12,19",Route 104 (South),12|19,item:12:32,12,32,21,47,true,hidden_item,HEARTSCALE
+item,"area:12,19",Route 104 (South),12|19,item:12:33,12,33,19,51,true,hidden_item,ANTIDOTE
+area,area:13,Littleroot Interiors,13,,,,,,,,
+item,area:13,Littleroot Interiors,13,item:13:97,13,97,7,9,false,special_present,PRESENT
+item,area:13,Littleroot Interiors,13,item:13:98,13,98,26,9,false,special_present,PRESENT
+area,area:18,Professor Birch's Lab,18,,,,,,,,
+item,area:18,Professor Birch's Lab,18,item:18:24,18,24,8,5,false,special_present,PRESENT
+area,area:20,Route 104 (North),20,,,,,,,,
+trainer,area:20,Route 104 (North),20,trainer:20:LASS:Haley,20,9,,,,,LASS:Haley:0
+trainer,area:20,Route 104 (North),20,trainer:20:FISHERMAN:Ivan,20,11,,,,,FISHERMAN:Ivan:0
+trainer,area:20,Route 104 (North),20,trainer:20:RICHBOY:Winston,20,15,,,,,RICHBOY:Winston:0
+item,area:20,Route 104 (North),20,item:20:2,20,2,52,19,false,standard_ground_item,XACCURACY
+item,area:20,Route 104 (North),20,item:20:4,20,4,11,17,false,standard_ground_item,POKEBALL
+item,area:20,Route 104 (North),20,item:20:6,20,6,17,13,true,hidden_item,SUPERPOTION
+item,area:20,Route 104 (North),20,item:20:29,20,29,26,22,false,standard_ground_item,PPUP
+item,area:20,Route 104 (North),20,item:20:30,20,30,19,25,false,standard_ground_item,TM32
+item,area:20,Route 104 (North),20,item:20:33,20,33,26,18,false,standard_ground_item,PPUP
+area,area:27,Happy Birthday!,27,,,,,,,,
+item,area:27,Happy Birthday!,27,item:27:17,27,17,15,8,false,special_present,PRESENT
+area,area:28,Rusturf Tunnel,28,,,,,,,,
+trainer,area:28,Rusturf Tunnel,28,trainer:28:HIKER:Mike,28,5,,,,,HIKER:Mike:0
+trainer,area:28,Rusturf Tunnel,28,trainer:28:TEAM_MAGMA_GRUNT_M:Walter,28,7,,,,,TEAM_MAGMA_GRUNT_M:Walter:2
+item,area:28,Rusturf Tunnel,28,item:28:3,28,3,8,6,false,standard_ground_item,POKEBALL
+item,area:28,Rusturf Tunnel,28,item:28:4,28,4,35,7,false,standard_ground_item,MAXETHER
+item,area:28,Rusturf Tunnel,28,item:28:20,28,20,13,15,true,hidden_item,TINYMUSHROOM
+area,area:30,Petalburg Woods,30,,,,,,,,
+trainer,area:30,Petalburg Woods,30,trainer:30:TEAM_MAGMA_GRUNT_M:Walter,30,1,,,,,TEAM_MAGMA_GRUNT_M:Walter:1
+trainer,area:30,Petalburg Woods,30,trainer:30:BUGCATCHER:Lyle,30,37,,,,,BUGCATCHER:Lyle:0
+trainer,area:30,Petalburg Woods,30,trainer:30:BUGCATCHER:James,30,38,,,,,BUGCATCHER:James:0
+item,area:30,Petalburg Woods,30,item:30:31,30,31,12,29,false,standard_ground_item,DNASPLICERS
+item,area:30,Petalburg Woods,30,item:30:34,30,34,26,15,false,standard_ground_item,PARLYZHEAL
+item,area:30,Petalburg Woods,30,item:30:36,30,36,56,38,true,hidden_item,POTION
+item,area:30,Petalburg Woods,30,item:30:40,30,40,57,25,true,hidden_item,TINYMUSHROOM
+item,area:30,Petalburg Woods,30,item:30:42,30,42,11,16,true,hidden_item,DNASPLICERS
+item,area:30,Petalburg Woods,30,item:30:43,30,43,39,8,true,hidden_item,TINYMUSHROOM
+item,area:30,Petalburg Woods,30,item:30:44,30,44,56,10,false,standard_ground_item,MIRACLESEED
+area,area:31,Route 116,31,,,,,,,,
+trainer,area:31,Route 116,31,trainer:31:YOUNGSTER:Joey,31,18,,,,,YOUNGSTER:Joey:0
+trainer,area:31,Route 116,31,trainer:31:BUGCATCHER:Jose,31,20,,,,,BUGCATCHER:Jose:0
+trainer,area:31,Route 116,31,trainer:31:SCHOOLGIRL:Karen,31,21,,,,,SCHOOLGIRL:Karen:0
+trainer,area:31,Route 116,31,trainer:31:YOUNGSTER:Johnson,31,23,,,,,YOUNGSTER:Johnson:0
+trainer,area:31,Route 116,31,trainer:31:HIKER:Devan,31,25,,,,,HIKER:Devan:0
+trainer,area:31,Route 116,31,trainer:31:RICHBOY:Dawson,31,27,,,,,RICHBOY:Dawson:0
+trainer,area:31,Route 116,31,trainer:31:LADY:Sarah,31,28,,,,,LADY:Sarah:0
+trainer,area:31,Route 116,31,trainer:31:SCHOOLMATE_SR:Janice,31,29,,,,,SCHOOLMATE_SR:Janice:0
+trainer,area:31,Route 116,31,trainer:31:SCHOOLBOY:Jerry,31,30,,,,,SCHOOLBOY:Jerry:0
+trainer,area:31,Route 116,31,trainer:31:HIKER:Clark,31,37,,,,,HIKER:Clark:0
+item,area:31,Route 116,31,item:31:12,31,12,55,18,false,standard_ground_item,XSPATK
+item,area:31,Route 116,31,item:31:13,31,13,70,18,true,hidden_item,BLACKGLASSES
+item,area:31,Route 116,31,item:31:14,31,14,34,13,false,standard_ground_item,POTION
+item,area:31,Route 116,31,item:31:15,31,15,26,13,false,standard_ground_item,ETHER
+item,area:31,Route 116,31,item:31:16,31,16,22,15,false,standard_ground_item,SUPERPOTION
+item,area:31,Route 116,31,item:31:17,31,17,10,22,false,standard_ground_item,REPEL
+item,area:31,Route 116,31,item:31:32,31,32,26,15,false,standard_ground_item,ANTIDOTE
+item,area:31,Route 116,31,item:31:34,31,34,58,6,true,hidden_item,NUGGET
+item,area:31,Route 116,31,item:31:43,31,43,68,8,true,hidden_item,WISEGLASSES
+item,area:31,Route 116,31,item:31:45,31,45,52,13,true,hidden_item,AWAKENING
+area,area:32,Granite Cave 1F,32,,,,,,,,
+item,area:32,Granite Cave 1F,32,item:32:5,32,5,34,13,false,standard_ground_item,ESCAPEROPE
+area,area:34,Granite Cave B1F,34,,,,,,,,
+item,area:34,Granite Cave B1F,34,item:34:66,34,66,22,26,false,standard_ground_item,POKEBALL
+area,area:35,Granite Cave B2F,35,,,,,,,,
+item,area:35,Granite Cave B2F,35,item:35:3,35,3,10,9,false,standard_ground_item,REPEL
+item,area:35,Granite Cave B2F,35,item:35:4,35,4,36,10,false,standard_ground_item,RARECANDY
+item,area:35,Granite Cave B2F,35,item:35:5,35,5,35,11,true,hidden_item,EVERSTONE
+item,area:35,Granite Cave B2F,35,item:35:6,35,6,22,16,true,hidden_item,EVERSTONE
+item,area:35,Granite Cave B2F,35,item:35:12,35,12,26,2,false,standard_ground_item,TM65
+area,area:37,Route 107,37,,,,,,,,
+area,area:38,Route 108,38,,,,,,,,
+item,area:38,Route 108,38,item:38:32,38,32,56,62,true,hidden_item,RARECANDY
+item,area:38,Route 108,38,item:38:33,38,33,54,46,false,standard_ground_item,STARPIECE
+item,area:38,Route 108,38,item:38:34,38,34,30,57,false,standard_ground_item,PEARL
+item,area:38,Route 108,38,item:38:35,38,35,52,63,true,hidden_item,HEARTSCALE
+item,area:38,Route 108,38,item:38:36,38,36,51,60,true,hidden_item,HEARTSCALE
+item,area:38,Route 108,38,item:38:37,38,37,62,63,true,hidden_item,HEARTSCALE
+item,area:38,Route 108,38,item:38:64,38,64,84,29,false,special_present,PRESENT
+area,area:39,Route 109,39,,,,,,,,
+trainer,area:39,Route 109,39,trainer:39:TUBER_F:Lola,39,26,,,,,TUBER_F:Lola:0
+trainer,area:39,Route 109,39,trainer:39:TUBER_M:Chandler,39,27,,,,,TUBER_M:Chandler:0
+trainer,area:39,Route 109,39,trainer:39:SAILOR:Huey,39,33,,,,,SAILOR:Huey:0
+trainer,area:39,Route 109,39,trainer:39:SAILOR:Edmond,39,34,,,,,SAILOR:Edmond:0
+trainer,area:39,Route 109,39,trainer:39:TUBER_M:Ricky,39,35,,,,,TUBER_M:Ricky:0
+trainer,area:39,Route 109,39,trainer:39:TUBER_F:Hailey,39,36,,,,,TUBER_F:Hailey:0
+trainer,area:39,Route 109,39,trainer:39:TEAM_AQUA_GRUNT_F:Martha,39,39,,,,,TEAM_AQUA_GRUNT_F:Martha:0
+trainer,area:39,Route 109,39,trainer:39:TEAM_MAGMA_GRUNT_M:Greg,39,94,,,,,TEAM_MAGMA_GRUNT_M:Greg:0
+item,area:39,Route 109,39,item:39:41,39,41,7,25,false,standard_ground_item,PPUP
+item,area:39,Route 109,39,item:39:42,39,42,42,6,false,standard_ground_item,SUPERPOTION
+item,area:39,Route 109,39,item:39:43,39,43,20,7,false,standard_ground_item,LEMONADE
+item,area:39,Route 109,39,item:39:44,39,44,19,9,true,hidden_item,GREATBALL
+item,area:39,Route 109,39,item:39:45,39,45,24,16,true,hidden_item,HEARTSCALE
+item,area:39,Route 109,39,item:39:46,39,46,30,21,true,hidden_item,REVIVE
+item,area:39,Route 109,39,item:39:47,39,47,37,13,true,hidden_item,ETHER
+item,area:39,Route 109,39,item:39:48,39,48,43,9,true,hidden_item,HEARTSCALE
+item,area:39,Route 109,39,item:39:49,39,49,38,22,true,hidden_item,PEARL
+item,area:39,Route 109,39,item:39:50,39,50,13,37,true,hidden_item,REVIVE
+item,area:39,Route 109,39,item:39:53,39,53,44,33,false,standard_ground_item,MAXREVIVE
+area,area:42,Orre Desert,42,,,,,,,,
+trainer,area:42,Orre Desert,42,trainer:42:RIDER:Willie,42,2,,,,,RIDER:Willie:0
+area,area:47,Rustboro City,47,,,,,,,,
+item,area:47,Rustboro City,47,item:47:20,47,20,23,60,false,standard_ground_item,AWAKENING
+item,area:47,Rustboro City,47,item:47:50,47,50,37,16,false,standard_ground_item,DNASPLICERS
+item,area:47,Rustboro City,47,item:47:51,47,51,18,28,false,standard_ground_item,FUSIONREPEL
+item,area:47,Rustboro City,47,item:47:54,47,54,11,7,true,hidden_item,STARDUST
+item,area:47,Rustboro City,47,item:47:91,47,91,51,60,false,standard_ground_item,GREATBALL
+area,area:49,Route 106,49,,,,,,,,
+trainer,area:49,Route 106,49,trainer:49:FISHERMAN:Ned,49,6,,,,,FISHERMAN:Ned:0
+trainer,area:49,Route 106,49,trainer:49:FISHERMAN:Elliot,49,7,,,,,FISHERMAN:Elliot:0
+item,area:49,Route 106,49,item:49:21,49,21,27,16,false,standard_ground_item,SUPERPOTION
+item,area:49,Route 106,49,item:49:23,49,23,70,17,true,hidden_item,HEARTSCALE
+item,area:49,Route 106,49,item:49:25,49,25,61,18,true,hidden_item,STARDUST
+item,area:49,Route 106,49,item:49:26,49,26,27,15,true,hidden_item,DNASPLICERS
+area,area:50,Route 105,50,,,,,,,,
+area,area:51,Dewford Town,51,,,,,,,,
+area,area:58,Seaside Cottage,58,,,,,,,,
+item,area:58,Seaside Cottage,58,item:58:5,58,5,10,5,false,special_present,PRESENT
+area,area:61,Petalburg Gym,61,,,,,,,,
+item,area:61,Petalburg Gym,61,item:61:12,61,12,9,7,false,special_present,PRESENT
+area,area:62,Hidden Clearing,62,,,,,,,,
+item,area:62,Hidden Clearing,62,item:62:5,62,5,19,13,false,standard_ground_item,LEAFSTONE
+area,area:65,Route 115,65,,,,,,,,
+item,area:65,Route 115,65,item:65:5,65,5,33,23,false,special_tile_pickup,COMETSHARD
+item,area:65,Route 115,65,item:65:13,65,13,49,54,false,standard_ground_item,SUPERPOTION
+item,area:65,Route 115,65,item:65:14,65,14,55,72,true,hidden_item,ELIXIR
+item,area:65,Route 115,65,item:65:15,65,15,38,71,false,standard_ground_item,PPUP
+item,area:65,Route 115,65,item:65:16,65,16,46,64,false,standard_ground_item,GREATBALL
+item,area:65,Route 115,65,item:65:17,65,17,30,65,false,standard_ground_item,SUPERPOTION
+item,area:65,Route 115,65,item:65:18,65,18,40,30,false,standard_ground_item,IRON
+item,area:65,Route 115,65,item:65:19,65,19,20,15,false,standard_ground_item,HEALPOWDER
+item,area:65,Route 115,65,item:65:20,65,20,36,9,false,standard_ground_item,TM01
+item,area:65,Route 115,65,item:65:21,65,21,39,24,false,special_tile_pickup,COMETSHARD
+item,area:65,Route 115,65,item:65:22,65,22,41,28,false,special_tile_pickup,COMETSHARD
+area,area:69,Hidden Cove,69,,,,,,,,
+item,area:69,Hidden Cove,69,item:69:5,69,5,31,6,false,standard_ground_item,TM105
+item,area:69,Hidden Cove,69,item:69:6,69,6,16,24,false,standard_ground_item,PRISMSCALE
+area,area:70,Altering Cave,70,,,,,,,,
+area,area:71,Route 110,71,,,,,,,,
+trainer,area:71,Route 110,71,trainer:71:BEAUTY:Melissa,71,33,,,,,BEAUTY:Melissa:0
+trainer,area:71,Route 110,71,trainer:71:POKEFAN_F:Isabel,71,57,,,,,POKEFAN_F:Isabel:0
+trainer,area:71,Route 110,71,trainer:71:PSYCHIC_F:Jaclyn,71,58,,,,,PSYCHIC_F:Jaclyn:0
+trainer,area:71,Route 110,71,trainer:71:YOUNGSTER:Timmy,71,59,,,,,YOUNGSTER:Timmy:0
+trainer,area:71,Route 110,71,trainer:71:FISHERMAN:Dale,71,61,,,,,FISHERMAN:Dale:0
+trainer,area:71,Route 110,71,trainer:71:TRIATHLETE_BIKE_F:Abigail,71,62,,,,,TRIATHLETE_BIKE_F:Abigail:0
+trainer,area:71,Route 110,71,trainer:71:PSYCHIC_M:Edward,71,63,,,,,PSYCHIC_M:Edward:0
+trainer,area:71,Route 110,71,trainer:71:TRIATHLETE_BIKE_M:Anthony,71,64,,,,,TRIATHLETE_BIKE_M:Anthony:0
+trainer,area:71,Route 110,71,trainer:71:TRIATHLETE_BIKE_M:Benjamin,71,65,,,,,TRIATHLETE_BIKE_M:Benjamin:0
+trainer,area:71,Route 110,71,trainer:71:TRIATHLETE_BIKE_F:Jasmine,71,66,,,,,TRIATHLETE_BIKE_F:Jasmine:0
+trainer,area:71,Route 110,71,trainer:71:TRIATHLETE_BIKE_M:Jacob,71,67,,,,,TRIATHLETE_BIKE_M:Jacob:0
+trainer,area:71,Route 110,71,trainer:71:COLLECTOR:Edwin,71,75,,,,,COLLECTOR:Edwin:0
+item,area:71,Route 110,71,item:71:7,71,7,39,90,false,standard_ground_item,TM12
+item,area:71,Route 110,71,item:71:8,71,8,18,82,false,standard_ground_item,THUNDERSTONE
+item,area:71,Route 110,71,item:71:12,71,12,31,93,false,standard_ground_item,SUPERPOTION
+item,area:71,Route 110,71,item:71:29,71,29,25,26,false,standard_ground_item,MAXREVIVE
+item,area:71,Route 110,71,item:71:39,71,39,32,58,false,standard_ground_item,TM62
+item,area:71,Route 110,71,item:71:50,71,50,15,38,false,standard_ground_item,ELIXIR
+item,area:71,Route 110,71,item:71:51,71,51,43,40,true,hidden_item,REVIVE
+item,area:71,Route 110,71,item:71:52,71,52,41,45,true,hidden_item,GREATBALL
+item,area:71,Route 110,71,item:71:53,71,53,32,46,false,standard_ground_item,RARECANDY
+item,area:71,Route 110,71,item:71:54,71,54,44,66,true,hidden_item,FULLHEAL
+item,area:71,Route 110,71,item:71:55,71,55,36,69,true,hidden_item,DNAREVERSER
+item,area:71,Route 110,71,item:71:56,71,56,41,69,false,standard_ground_item,DIREHIT
+item,area:71,Route 110,71,item:71:70,71,70,10,55,false,standard_ground_item,DAWNSTONE
+item,area:71,Route 110,71,item:71:77,71,77,14,60,true,hidden_item,DNAREVERSERS
+area,area:73,Mauville City,73,,,,,,,,
+trainer,area:73,Mauville City,73,trainer:73:TEAM_AQUA_GRUNT_M:Cedric,73,58,,,,,TEAM_AQUA_GRUNT_M:Cedric:0
+trainer,area:73,Mauville City,73,trainer:73:CAMPER:Tyron,73,62,,,,,CAMPER:Tyron:0
+trainer,area:73,Mauville City,73,trainer:73:AROMALADY:Celina,73,63,,,,,AROMALADY:Celina:0
+trainer,area:73,Mauville City,73,trainer:73:TEAM_MAGMA_GRUNT_M:Vic,73,71,,,,,TEAM_MAGMA_GRUNT_M:Vic:0
+item,area:73,Mauville City,73,item:73:20,73,20,36,15,false,standard_ground_item,REVIVE
+item,area:73,Mauville City,73,item:73:34,73,34,27,41,false,standard_ground_item,XSPEED
+item,area:73,Mauville City,73,item:73:68,73,68,2,36,false,standard_ground_item,TM48
+item,area:73,Mauville City,73,item:73:72,73,72,53,44,true,hidden_item,
+item,area:73,Mauville City,73,item:73:74,73,74,55,35,true,hidden_item,
+area,area:74,Route 117,74,,,,,,,,
+trainer,area:74,Route 117,74,trainer:74:TRIATHLETE_RUN_M:Dylan,74,13,,,,,TRIATHLETE_RUN_M:Dylan:0
+trainer,area:74,Route 117,74,trainer:74:TRIATHLETE_RUN_F:Melina,74,14,,,,,TRIATHLETE_RUN_F:Melina:0
+trainer,area:74,Route 117,74,trainer:74:CRUSHGIRL:Aisha,74,15,,,,,CRUSHGIRL:Aisha:0
+trainer,area:74,Route 117,74,trainer:74:POKEMONBREEDER_F:Lydia,74,16,,,,,POKEMONBREEDER_F:Lydia:0
+trainer,area:74,Route 117,74,trainer:74:TRIATHLETE_RUN_F:Maria,74,17,,,,,TRIATHLETE_RUN_F:Maria:0
+trainer,area:74,Route 117,74,trainer:74:BUGMANIAC:Derek,74,18,,,,,BUGMANIAC:Derek:0
+trainer,area:74,Route 117,74,trainer:74:POKEMONBREEDER_M:Isaac,74,32,,,,,POKEMONBREEDER_M:Isaac:0
+item,area:74,Route 117,74,item:74:6,74,6,2,29,true,hidden_item,REPEL
+item,area:74,Route 117,74,item:74:7,74,7,17,29,false,standard_ground_item,GREATBALL
+item,area:74,Route 117,74,item:74:8,74,8,8,8,false,standard_ground_item,REVIVE
+area,area:75,Mauville City Interiors,75,,,,,,,,
+item,area:75,Mauville City Interiors,75,item:75:95,75,95,33,47,true,hidden_item,FULLHEAL
+area,area:76,Route 118,76,,,,,,,,
+trainer,area:76,Route 118,76,trainer:76:AROMALADY:Rose,76,9,,,,,AROMALADY:Rose:0
+trainer,area:76,Route 118,76,trainer:76:ROCKER:Dalton,76,10,,,,,ROCKER:Dalton:0
+trainer,area:76,Route 118,76,trainer:76:YOUNGSTER:Deandre,76,11,,,,,YOUNGSTER:Deandre:0
+trainer,area:76,Route 118,76,trainer:76:FISHERMAN:Wade,76,12,,,,,FISHERMAN:Wade:0
+item,area:76,Route 118,76,item:76:5,76,5,7,33,true,hidden_item,HEARTSCALE
+item,area:76,Route 118,76,item:76:6,76,6,33,28,true,hidden_item,IRON
+item,area:76,Route 118,76,item:76:7,76,7,68,16,false,standard_ground_item,HYPERPOTION
+item,area:76,Route 118,76,item:76:8,76,8,64,9,false,standard_ground_item,THUNDERSTONE
+item,area:76,Route 118,76,item:76:18,76,18,35,48,true,hidden_item,
+item,area:76,Route 118,76,item:76:19,76,19,22,47,true,hidden_item,
+area,area:77,Route 111 (South),77,,,,,,,,
+trainer,area:77,Route 111 (South),77,trainer:77:POKEFAN_M:Victor,77,5,,,,,POKEFAN_M:Victor:0
+trainer,area:77,Route 111 (South),77,trainer:77:LASS:Bianca,77,6,,,,,LASS:Bianca:0
+trainer,area:77,Route 111 (South),77,trainer:77:POKEFAN_F:Victoria,77,7,,,,,POKEFAN_F:Victoria:0
+trainer,area:77,Route 111 (South),77,trainer:77:LASS:Vivi,77,8,,,,,LASS:Vivi:0
+trainer,area:77,Route 111 (South),77,trainer:77:EXPERT_F:Vicky,77,9,,,,,EXPERT_F:Vicky:0
+trainer,area:77,Route 111 (South),77,trainer:77:CAMPER:Hayden,77,11,,,,,CAMPER:Hayden:0
+item,area:77,Route 111 (South),77,item:77:3,77,3,39,67,false,standard_ground_item,ELIXIR
+item,area:77,Route 111 (South),77,item:77:4,77,4,8,64,false,standard_ground_item,HPUP
+item,area:77,Route 111 (South),77,item:77:35,77,35,10,57,false,standard_ground_item,PPMAX
+area,area:78,Rustboro Gym,78,,,,,,,,
+trainer,area:78,Rustboro Gym,78,trainer:78:YOUNGSTER:Josh,78,5,,,,,YOUNGSTER:Josh:0
+trainer,area:78,Rustboro Gym,78,trainer:78:YOUNGSTER:Tommy,78,6,,,,,YOUNGSTER:Tommy:0
+trainer,area:78,Rustboro Gym,78,trainer:78:HIKER:Marc,78,7,,,,,HIKER:Marc:0
+trainer,area:78,Rustboro Gym,78,trainer:78:LEADER_Roxanne:Roxanne,78,10,,,,,LEADER_Roxanne:Roxanne:0
+item,area:78,Rustboro Gym,78,item:78:15,78,15,13,32,false,special_present,PRESENT
+area,"area:79,80",Dewford Gym,79|80,,,,,,,,
+trainer,"area:79,80",Dewford Gym,79|80,trainer:79:LEADER_Brawly:Brawly,79,10,,,,,LEADER_Brawly:Brawly:0
+trainer,"area:79,80",Dewford Gym,79|80,trainer:80:CRUSHGIRL:Laura,80,3,,,,,CRUSHGIRL:Laura:0
+trainer,"area:79,80",Dewford Gym,79|80,trainer:80:BLACKBELT:Takao,80,5,,,,,BLACKBELT:Takao:0
+trainer,"area:79,80",Dewford Gym,79|80,trainer:80:SAILOR:Brendan,80,6,,,,,SAILOR:Brendan:0
+trainer,"area:79,80",Dewford Gym,79|80,trainer:80:CRUSHGIRL:Jocelyn,80,7,,,,,CRUSHGIRL:Jocelyn:0
+trainer,"area:79,80",Dewford Gym,79|80,trainer:80:CRUSHGIRL:Lilith,80,8,,,,,CRUSHGIRL:Lilith:0
+trainer,"area:79,80",Dewford Gym,79|80,trainer:80:BLACKBELT:Cristian,80,10,,,,,BLACKBELT:Cristian:0
+item,"area:79,80",Dewford Gym,79|80,item:79:18,79,18,13,27,false,special_present,PRESENT
+area,area:82,Seashore House,82,,,,,,,,
+trainer,area:82,Seashore House,82,trainer:82:TUBER_M:Simon,82,5,,,,,TUBER_M:Simon:0
+trainer,area:82,Seashore House,82,trainer:82:BEAUTY:Johanna,82,6,,,,,BEAUTY:Johanna:0
+trainer,area:82,Seashore House,82,trainer:82:SAILOR:Dwayne,82,7,,,,,SAILOR:Dwayne:0
+area,area:83,Verdanturf Town,83,,,,,,,,
+trainer,area:83,Verdanturf Town,83,trainer:83:MUSICIAN:Louis,83,24,,,,,MUSICIAN:Louis:0
+item,area:83,Verdanturf Town,83,item:83:18,83,18,33,6,false,standard_ground_item,TM54
+area,area:84,Verdanturf Interiors,84,,,,,,,,
+item,area:84,Verdanturf Interiors,84,item:84:20,84,20,9,8,false,special_present,PRESENT
+area,area:88,Stern's Shipyard,88,,,,,,,,
+item,area:88,Stern's Shipyard,88,item:88:29,88,29,22,13,true,hidden_item,ETHER
+area,area:90,Magma Camp,90,,,,,,,,
+item,area:90,Magma Camp,90,item:90:23,90,23,11,8,false,special_present,PRESENT
+area,area:94,Clothing Boutique,94,,,,,,,,
+item,area:94,Clothing Boutique,94,item:94:17,94,17,10,3,false,special_present,PRESENT
+area,area:97,Illusion Grove,97,,,,,,,,
+item,area:97,Illusion Grove,97,item:97:25,97,25,47,42,false,standard_ground_item,TM97
+item,area:97,Illusion Grove,97,item:97:49,97,49,7,46,false,standard_ground_item,TM95
+item,area:97,Illusion Grove,97,item:97:50,97,50,32,47,false,standard_ground_item,SMOKEBALL
+item,area:97,Illusion Grove,97,item:97:60,97,60,12,37,false,standard_ground_item,DNAREVERSERS
+area,area:99,Trick House,99,,,,,,,,
+item,area:99,Trick House,99,item:99:8,99,8,37,6,false,standard_ground_item,LANTERN|MACHETE
+item,area:99,Trick House,99,item:99:10,99,10,5,5,true,hidden_item,
+item,area:99,Trick House,99,item:99:12,99,12,12,7,true,hidden_item,
+area,area:101,Pokémon Day Care,101,,,,,,,,
+item,area:101,Pokémon Day Care,101,item:101:7,101,7,13,7,false,special_present,PRESENT
+area,area:102,Mauville Gym,102,,,,,,,,
+trainer,area:102,Mauville Gym,102,trainer:102:ROCKER:Kirk,102,26,,,,,ROCKER:Kirk:0
+trainer,area:102,Mauville Gym,102,trainer:102:CRUSHGIRL:Vivian,102,27,,,,,CRUSHGIRL:Vivian:0
+trainer,area:102,Mauville Gym,102,trainer:102:YOUNGSTER:Ben,102,28,,,,,YOUNGSTER:Ben:0
+trainer,area:102,Mauville Gym,102,trainer:102:ROCKER:Shawn,102,29,,,,,ROCKER:Shawn:0
+trainer,area:102,Mauville Gym,102,trainer:102:BUGMANIAC:Angelo,102,30,,,,,BUGMANIAC:Angelo:0
+trainer,area:102,Mauville Gym,102,trainer:102:LEADER_Wattson:Wattson,102,31,,,,,LEADER_Wattson:Wattson:0
+item,area:102,Mauville Gym,102,item:102:34,102,34,13,32,false,special_present,PRESENT
+area,area:104,Route 111,104,,,,,,,,
+area,area:106,New Mauville,106,,,,,,,,
+item,area:106,New Mauville,106,item:106:4,106,4,9,15,false,standard_ground_item,TM123
+area,area:107,Trick House 2,107,,,,,,,,
+trainer,area:107,Trick House 2,107,trainer:107:CLOWN:Vinny,107,13,,,,,CLOWN:Vinny:0
+trainer,area:107,Trick House 2,107,trainer:107:CLOWN:Bob,107,14,,,,,CLOWN:Bob:0
+item,area:107,Trick House 2,107,item:107:15,107,15,10,9,false,standard_ground_item,LAVACOOKIE
+item,area:107,Trick House 2,107,item:107:16,107,16,27,13,false,standard_ground_item,LAVACOOKIE
+item,area:107,Trick House 2,107,item:107:17,107,17,18,13,false,standard_ground_item,RARECANDY
+area,area:108,Trick House 1,108,,,,,,,,
+trainer,area:108,Trick House 1,108,trainer:108:LASS:Robin,108,6,,,,,LASS:Robin:0
+trainer,area:108,Trick House 1,108,trainer:108:LASS:Sally,108,20,,,,,LASS:Sally:0
+trainer,area:108,Trick House 1,108,trainer:108:YOUNGSTER:Eddie,108,21,,,,,YOUNGSTER:Eddie:0
+item,area:108,Trick House 1,108,item:108:22,108,22,9,20,false,standard_ground_item,LAVACOOKIE
+item,area:108,Trick House 1,108,item:108:23,108,23,19,21,false,standard_ground_item,LAVACOOKIE
+item,area:108,Trick House 1,108,item:108:24,108,24,23,8,false,standard_ground_item,RARECANDY
+item,area:108,Trick House 1,108,item:108:25,108,25,18,26,false,standard_ground_item,ESCAPEROPE
+area,"area:109,111",Cliffside Sanctuary,109|111,,,,,,,,
+item,"area:109,111",Cliffside Sanctuary,109|111,item:109:22,109,22,31,11,false,standard_ground_item,MAXREVIVE
+item,"area:109,111",Cliffside Sanctuary,109|111,item:111:22,111,22,31,11,false,standard_ground_item,MAXREVIVE
+area,area:112,Underwater,112,,,,,,,,

@@ -10,6 +10,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
 {
     private readonly Lock _lifecycleSync = new();
     private readonly CompletedRunArchive _completedRuns;
+    private readonly AreaDiscoveryStore _areaDiscoveries;
     private readonly TrackerDiagnosticsStore _diagnostics;
     private readonly TrackerKnowledgeStore _knowledge;
     private readonly TrackerConnectionOptions _options;
@@ -29,23 +30,26 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// <param name="state">The shared connection state.</param>
     /// <param name="runState">The shared live run state.</param>
     /// <param name="knowledge">The tracker-owned discovery and annotation store.</param>
+    /// <param name="areaDiscoveries">The tracker-owned area discovery store.</param>
     /// <param name="completedRuns">The tracker-owned completed-run recipe archive.</param>
     /// <exception cref="ArgumentNullException">Thrown when an argument is null.</exception>
-    public TrackerConnectionService(TrackerConnectionOptions options, TrackerDiagnosticsStore diagnostics, TrackerConnectionState state, TrackerRunState runState, TrackerKnowledgeStore knowledge, CompletedRunArchive completedRuns)
+    public TrackerConnectionService(TrackerConnectionOptions options, TrackerDiagnosticsStore diagnostics, TrackerConnectionState state, TrackerRunState runState, TrackerKnowledgeStore knowledge, AreaDiscoveryStore areaDiscoveries, CompletedRunArchive completedRuns)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(diagnostics);
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(runState);
         ArgumentNullException.ThrowIfNull(knowledge);
+        ArgumentNullException.ThrowIfNull(areaDiscoveries);
         ArgumentNullException.ThrowIfNull(completedRuns);
         _options = options;
         _diagnostics = diagnostics;
         _requests = new TrackerRequestSession(diagnostics);
-        Requests = new TrackerRequestClient(_requests, options, state);
+        Requests = new TrackerRequestClient(_requests, options, state, areaDiscoveries);
         _state = state;
         _runState = runState;
         _knowledge = knowledge;
+        _areaDiscoveries = areaDiscoveries;
         _completedRuns = completedRuns;
     }
 
@@ -308,6 +312,12 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 continue;
             }
 
+            if (message.Type == TrackerMessageType.Event && message.Event == TrackerEvents.AreaDiscovery)
+            {
+                await PersistAndAcknowledgeAreaDiscoveryAsync(message, cancellationToken).ConfigureAwait(false);
+                continue;
+            }
+
             if (message.Type == TrackerMessageType.Event)
             {
                 ApplyGameEvent(message);
@@ -333,6 +343,33 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             ObserveRecoveredKnowledge(currentState);
             ObserveCompletedRun(currentState);
         }
+    }
+
+    /// <summary>
+    /// Persists one idempotent area discovery before acknowledging it to the game.
+    /// </summary>
+    /// <param name="message">The received discovery event.</param>
+    /// <param name="cancellationToken">The token that stops the connection.</param>
+    /// <returns>A task representing the acknowledgment write.</returns>
+    private async Task PersistAndAcknowledgeAreaDiscoveryAsync(TrackerMessage message, CancellationToken cancellationToken)
+    {
+        string runId = message.RunId ?? throw new TrackerProtocolException("An area discovery requires a run identifier.");
+        AreaDiscoveryPackagePayload package = TrackerJson.DeserializePayload<AreaDiscoveryPackagePayload>(message.Payload);
+        bool persisted;
+        try
+        {
+            persisted = _areaDiscoveries.RecordPackage(runId, package);
+        }
+        catch (ArgumentException exception)
+        {
+            throw new TrackerProtocolException("The area discovery package is invalid.", exception);
+        }
+
+        if (!persisted)
+            return;
+
+        AreaDiscoveryAcknowledgmentPayload acknowledgment = new() { PackageId = package.PackageId };
+        await _requests.SendEventAsync(TrackerEvents.AreaDiscoveryAcknowledged, acknowledgment, runId, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

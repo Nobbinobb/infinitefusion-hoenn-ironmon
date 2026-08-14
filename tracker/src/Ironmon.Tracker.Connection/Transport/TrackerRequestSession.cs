@@ -13,6 +13,7 @@ internal sealed class TrackerRequestSession : IDisposable
     private readonly SemaphoreSlim _writerLock = new(TrackerConnectionConstants.SingleOperationCapacity, TrackerConnectionConstants.SingleOperationCapacity);
     private readonly TrackerDiagnosticsStore _diagnostics;
     private TrackerMessageWriter? _writer;
+    private long _outgoingEventSequence;
     private bool _disposed;
 
     /// <summary>
@@ -39,7 +40,31 @@ internal sealed class TrackerRequestSession : IDisposable
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             _writer = writer;
+            _outgoingEventSequence = 0;
         }
+    }
+
+    /// <summary>
+    /// Sends one uncorrelated tracker event over the active game connection.
+    /// </summary>
+    /// <typeparam name="TPayload">The event payload type.</typeparam>
+    /// <param name="eventName">The stable event name.</param>
+    /// <param name="payload">The event payload.</param>
+    /// <param name="runId">The owning run identifier.</param>
+    /// <param name="cancellationToken">The token that cancels the write.</param>
+    /// <returns>A task representing the event write.</returns>
+    internal async Task SendEventAsync<TPayload>(string eventName, TPayload payload, string? runId, CancellationToken cancellationToken)
+    {
+        TrackerMessageWriter writer;
+        long sequence;
+        lock (_sync)
+        {
+            writer = _writer ?? throw new InvalidOperationException("The game is not connected.");
+            sequence = ++_outgoingEventSequence;
+        }
+
+        TrackerMessage message = TrackerMessageFactory.CreateEvent(eventName, sequence, payload, runId);
+        await WriteAsync(writer, message, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

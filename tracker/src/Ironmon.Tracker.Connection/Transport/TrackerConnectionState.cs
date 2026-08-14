@@ -46,4 +46,5 @@ public sealed class TrackerConnectionState
 
         Changed?.Invoke(this, EventArgs.Empty);
     }
+
 }

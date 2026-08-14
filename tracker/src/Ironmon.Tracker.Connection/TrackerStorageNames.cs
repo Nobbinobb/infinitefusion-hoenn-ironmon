@@ -31,6 +31,11 @@ public static class TrackerStorageNames
     public const string RecipeFile = "recipe.json";
 
     /// <summary>
+    /// Gets the tracker-owned area-discovery filename.
+    /// </summary>
+    public const string AreaDiscoveriesFile = "area-discoveries.json";
+
+    /// <summary>
     /// Gets the diagnostics export directory name.
     /// </summary>
     public const string DiagnosticsDirectory = "diagnostics";

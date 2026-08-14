@@ -626,6 +626,7 @@ module Game
         Ironmon.prepare_player_fusion_pairing
         Ironmon.refresh_invalid_species_mappings
         Ironmon.record_custom_fusion_pool_metadata
+        Ironmon.refresh_loaded_wild_encounter_table
         Ironmon.enforce_party_limit
         Ironmon.convert_owned_hms_to_tools
       end

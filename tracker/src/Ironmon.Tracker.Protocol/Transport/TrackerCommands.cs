@@ -21,6 +21,16 @@ public static class TrackerCommands
     public const string FavoritePokemonSearch = "favorite_pokemon_search";
 
     /// <summary>
+    /// Gets the compact area-summary lookup command.
+    /// </summary>
+    public const string AreaLookupSummary = "area_lookup_summary";
+
+    /// <summary>
+    /// Gets the lazy area-detail lookup command.
+    /// </summary>
+    public const string AreaLookupDetail = "area_lookup_detail";
+
+    /// <summary>
     /// Gets the completed-run Pokemon search command.
     /// </summary>
     public const string PokemonSearch = "pokemon_search";

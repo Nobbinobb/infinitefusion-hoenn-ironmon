@@ -1,0 +1,206 @@
+<section class="area-lookup" aria-label="@Text["Lookup.Areas.Title"]">
+    <header class="area-lookup-heading">
+        <div>
+            <p class="card-kicker">@Text["Lookup.Areas.Kicker"]</p>
+            <h3>@Text["Lookup.Areas.Title"]</h3>
+        </div>
+    </header>
+
+    <nav class="area-category-tabs" role="tablist" aria-label="@Text["Lookup.Areas.Categories"]">
+        @foreach (AreaContentCategory category in Categories)
+        {
+            <button type="button"
+                    class="@GetCategoryTabClass(category)"
+                    role="tab"
+                    aria-selected="@(_selectedCategory == category)"
+                    @onclick="() => SelectCategory(category)">
+                @GetCategoryName(category)
+            </button>
+        }
+    </nav>
+
+    @if (_error is not null)
+    {
+        <p class="lookup-error" role="alert">@_error</p>
+    }
+    else if (_loadingSummaries)
+    {
+        <p class="lookup-message">@Text["Lookup.Areas.Loading"]</p>
+    }
+    else if (_areas.Count == 0)
+    {
+        <p class="lookup-message">@Text["Lookup.Areas.Empty"]</p>
+    }
+    else
+    {
+        <div class="area-groups" role="tabpanel">
+            @foreach (AreaSummaryPayload area in GetVisibleAreas())
+            {
+                bool expanded = IsExpanded(area.AreaId);
+                <article class="area-group">
+                    <button type="button"
+                            class="area-group-summary"
+                            aria-expanded="@expanded"
+                            @onclick="() => ToggleAreaAsync(area.AreaId)">
+                        <span class="area-group-chevron" aria-hidden="true">@(expanded ? "−" : "+")</span>
+                        <strong>@area.Name</strong>
+                        <span>@GetProgressText(area)</span>
+                    </button>
+
+                    @if (expanded)
+                    {
+                        <div class="area-group-details">
+                            @if (_loadingDetails.Contains(GetDetailKey(area.AreaId)))
+                            {
+                                <p class="lookup-message">@Text["Lookup.Areas.LoadingDetails"]</p>
+                            }
+                            else if (_detailErrors.TryGetValue(GetDetailKey(area.AreaId), out string? detailError))
+                            {
+                                <p class="lookup-error" role="alert">@detailError</p>
+                            }
+                            else if (_details.TryGetValue(GetDetailKey(area.AreaId), out AreaLookupDetailResponsePayload? detail))
+                            {
+                                @switch (_selectedCategory)
+                                {
+                                    case AreaContentCategory.Trainer:
+                                        <div class="area-entry-list">
+                                            @foreach (AreaTrainerEntryPayload trainer in detail.Trainers)
+                                            {
+                                                <article class="area-entry @(trainer.Defeated ? "completed" : null)">
+                                                    <header>
+                                                        <strong>@trainer.TrainerType @trainer.TrainerName</strong>
+                                                        <span>@(trainer.Defeated ? Text["Lookup.Areas.Defeated"] : Text["Lookup.Areas.NotDefeated"])</span>
+                                                    </header>
+                                                    @if (trainer.DetailsRevealed && trainer.Party.Count > 0)
+                                                    {
+                                                        <div class="area-trainer-party">
+                                                            @foreach (AreaTrainerPokemonPayload pokemon in trainer.Party)
+                                                            {
+                                                                <div class="area-trainer-pokemon">
+                                                                    <button class="area-trainer-sprite"
+                                                                            type="button"
+                                                                            disabled="@(GetTrainerSpriteSource(trainer, pokemon) is null)"
+                                                                            aria-label="@Text["Lookup.Areas.EnlargePokemon", pokemon.SpeciesName]"
+                                                                            @onclick="() => OpenSprite(GetTrainerSpriteSource(trainer, pokemon), pokemon.SpeciesName)">
+                                                                        @if (GetTrainerSpriteSource(trainer, pokemon) is string trainerSpriteSource)
+                                                                        {
+                                                                            <img src="@trainerSpriteSource" alt="" />
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <span>?</span>
+                                                                        }
+                                                                    </button>
+                                                                    <div>
+                                                                        <strong>@pokemon.SpeciesName</strong>
+                                                                        <small>@Text["Lookup.Areas.Level", pokemon.Level]</small>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <p>@Text["Lookup.Areas.PokemonCount", trainer.PartySize]</p>
+                                                        <div class="area-trainer-party unknown">
+                                                            @foreach (int slot in Enumerable.Range(1, trainer.PartySize))
+                                                            {
+                                                                <div class="area-trainer-pokemon unknown">
+                                                                    <div class="area-trainer-mystery" aria-hidden="true"><span>?</span></div>
+                                                                    <div>
+                                                                        <strong>@Text["Lookup.Areas.UnknownPokemon"]</strong>
+                                                                        <small>@Text["Lookup.Areas.Slot", slot]</small>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </article>
+                                            }
+                                        </div>
+                                        break;
+                                    case AreaContentCategory.Encounter:
+                                        <div class="area-entry-list">
+                                            @foreach (AreaEncounterEntryPayload encounter in detail.Encounters)
+                                            {
+                                                <article class="area-entry area-encounter-entry @(encounter.Encountered ? "completed" : null)">
+                                                    <header>
+                                                        <strong>@encounter.EncounterType · @Text["Lookup.Areas.Slot", encounter.Slot]</strong>
+                                                        <span>@(encounter.Encountered ? Text["Lookup.Areas.Encountered"] : Text["Lookup.Areas.NotEncountered"])</span>
+                                                    </header>
+                                                    <div class="area-encounter-copy">
+                                                        <p>@FormatEncounterRange(encounter) · @Text["Lookup.Areas.Probability", encounter.ProbabilityPercent]</p>
+                                                        @if (encounter.DetailsRevealed)
+                                                        {
+                                                            <p class="area-entry-identity">@GetEncounterIdentity(encounter)@(encounter.IndependentFusion ? $" · {Text["Lookup.Areas.IndependentFusion"]}" : null)</p>
+                                                        }
+                                                    </div>
+                                                    @if (encounter.DetailsRevealed)
+                                                    {
+                                                        <button class="area-encounter-sprite"
+                                                                type="button"
+                                                                aria-label="@Text["Lookup.Areas.EnlargePokemon", GetEncounterIdentity(encounter)]"
+                                                                @onclick="() => OpenEncounterSprite(encounter)">
+                                                            @if (GetEncounterSpriteSource(encounter) is string spriteSource)
+                                                            {
+                                                                <img src="@spriteSource" alt="" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <span>?</span>
+                                                            }
+                                                        </button>
+                                                    }
+                                                </article>
+                                            }
+                                        </div>
+                                        break;
+                                    case AreaContentCategory.Item:
+                                        <div class="area-entry-list">
+                                            @foreach (AreaItemEntryPayload item in detail.Items)
+                                            {
+                                                <article class="area-entry @(item.Collected ? "completed" : null)">
+                                                    <header>
+                                                        <strong>@Text["Lookup.Areas.Coordinates", item.X, item.Y]</strong>
+                                                        <span>@(item.Collected ? Text["Lookup.Areas.Collected"] : Text["Lookup.Areas.NotCollected"])</span>
+                                                    </header>
+                                                    <p>@(item.Hidden ? Text["Lookup.Areas.HiddenItem"] : Text["Lookup.Areas.GroundItem"])</p>
+                                                    @if (item.DetailsRevealed && item.Items.Count > 0)
+                                                    {
+                                                        <p class="area-entry-identity">@string.Join(", ", item.Items.Select(identity => identity.ItemName))</p>
+                                                    }
+                                                    else
+                                                    {
+                                                        <p class="area-entry-identity unknown">@Text["Lookup.Areas.UnknownItem"]</p>
+                                                    }
+                                                </article>
+                                            }
+                                        </div>
+                                        break;
+                                }
+                            }
+                        </div>
+                    }
+                </article>
+            }
+        </div>
+    }
+
+    @if (_enlargedSpriteSource is not null && _enlargedSpriteLabel is not null)
+    {
+        <div class="area-sprite-modal" role="presentation" @onclick="CloseSprite">
+            <div class="area-sprite-dialog"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-label="@_enlargedSpriteLabel"
+                 tabindex="0"
+                 @onkeydown="HandleSpriteDialogKeyDown"
+                 @onkeydown:stopPropagation="true"
+                 @onclick:stopPropagation="true">
+                <button class="area-sprite-close" type="button" aria-label="@Text["Lookup.Areas.CloseImage"]" @onclick="CloseSprite">×</button>
+                <img src="@_enlargedSpriteSource" alt="@_enlargedSpriteLabel" />
+                <strong>@_enlargedSpriteLabel</strong>
+            </div>
+        </div>
+    }
+</section>

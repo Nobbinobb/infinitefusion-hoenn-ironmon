@@ -1,3 +1,4 @@
+global using Ironmon.Tracker.Connection.Areas;
 global using Ironmon.Tracker.Connection.CompletedRuns;
 global using Ironmon.Tracker.Connection.Diagnostics;
 global using Ironmon.Tracker.Connection.Knowledge;

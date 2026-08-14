@@ -2,6 +2,43 @@
 # Ironmon hooks for encounters that bypass the standard randomizer
 #===============================================================================
 
+module Ironmon
+  def self.mark_wild_table_result(result)
+    if active? && result
+      result.instance_variable_set(:@ironmon_wild_table_result, true)
+    end
+    return result
+  end
+
+  def self.wild_table_result?(result)
+    return result && result.instance_variable_get(
+      :@ironmon_wild_table_result
+    ) == true
+  end
+
+  def self.with_wild_table_spawn(result)
+    previous = @wild_table_spawn_active
+    @wild_table_spawn_active = previous || wild_table_result?(result)
+    return yield
+  ensure
+    @wild_table_spawn_active = previous
+  end
+
+  def self.wild_table_spawn_active?
+    return @wild_table_spawn_active == true
+  end
+
+  def self.overworld_species_for(species, table_result, context)
+    accepted = false
+    if table_result
+      species, accepted = prepare_wild_table_result(species)
+      accepted = true if legacy_species_mappings?
+    end
+    return species if accepted
+    return wild_species_for(species, context)
+  end
+end
+
 class PokemonEncounters
   alias ironmon_original_setup setup
   def setup(map_id)
@@ -21,6 +58,12 @@ class PokemonEncounters
       end
     end
     return result
+  end
+
+  alias ironmon_original_choose_wild_pokemon choose_wild_pokemon
+  def choose_wild_pokemon(enc_type, *arguments)
+    result = ironmon_original_choose_wild_pokemon(enc_type, *arguments)
+    return Ironmon.mark_wild_table_result(result)
   end
 end
 
@@ -79,13 +122,12 @@ class OverworldPokemonEvent
   alias ironmon_original_setup_pokemon setup_pokemon
   def setup_pokemon(species, level, terrain = :Land, behavior_roaming = nil, behavior_noticed = nil)
     if !instance_variable_get(:@ironmon_randomized_species) && Ironmon.active?
-      table_result = false
-      if is_a?(DynamicOverworldPokemonEvent) &&
-         $PokemonTemp && $PokemonTemp.encounterType
-        species, table_result = Ironmon.prepare_wild_table_result(species)
-      end
       context = [:overworld, @map_id, @id]
-      species = Ironmon.wild_species_for(species, context) if !table_result
+      table_result = is_a?(DynamicOverworldPokemonEvent) &&
+        Ironmon.wild_table_spawn_active?
+      species = Ironmon.overworld_species_for(
+        species, table_result, context
+      )
       instance_variable_set(:@ironmon_randomized_species, true)
     end
     result = ironmon_original_setup_pokemon(
@@ -111,6 +153,17 @@ class OverworldPokemonEvent
       appearance_data = body_data if body_data
     end
     return ironmon_original_initialize_sprite(terrain, appearance_data)
+  end
+end
+
+alias ironmon_original_create_overworld_pokemon_event create_overworld_pokemon_event
+def create_overworld_pokemon_event(pokemon, position, terrain,
+                                   behavior_roaming = nil,
+                                   behavior_noticed = nil)
+  return Ironmon.with_wild_table_spawn(pokemon) do
+    ironmon_original_create_overworld_pokemon_event(
+      pokemon, position, terrain, behavior_roaming, behavior_noticed
+    )
   end
 end
 

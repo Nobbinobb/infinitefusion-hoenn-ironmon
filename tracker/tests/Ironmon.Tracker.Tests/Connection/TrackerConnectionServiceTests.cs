@@ -25,11 +25,12 @@ public sealed class TrackerConnectionServiceTests
         TrackerDiagnosticsStore diagnostics = new();
         TrackerRunState runState = new();
         TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
+        AreaDiscoveryStore areaDiscoveries = CreateAreaDiscoveryStore();
         CompletedRunArchive completedRuns = CreateCompletedRunArchive();
         TrackerConnectionOptions options = new(0, "0.1.0", true, TimeSpan.FromSeconds(2));
         options.AutoSelectStarter = true;
         options.FavoriteSpeciesIds = ["BULBASAUR:0"];
-        await using TrackerConnectionService service = new(options, diagnostics, state, runState, knowledge, completedRuns);
+        await using TrackerConnectionService service = new(options, diagnostics, state, runState, knowledge, areaDiscoveries, completedRuns);
         service.Start();
 
         using TcpClient client = new();
@@ -99,6 +100,106 @@ public sealed class TrackerConnectionServiceTests
         Assert.Contains(diagnostics.Entries, entry => entry.Direction == TrackerDiagnosticDirection.Incoming && entry.Name == "game_connected");
         Assert.Contains(diagnostics.Entries, entry => entry.Direction == TrackerDiagnosticDirection.Outgoing && entry.Name == "current_state");
 
+        Task<AreaLookupSummaryResponsePayload> areaSummaryTask = service.Requests.GetAreaSummariesAsync(AreaContentCategory.Trainer);
+        TrackerMessage? areaSummaryRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(TrackerCommands.AreaLookupSummary, areaSummaryRequest?.Command);
+        AreaLookupSummaryRequestPayload areaSummaryPayload = TrackerJson.DeserializePayload<AreaLookupSummaryRequestPayload>(areaSummaryRequest!.Payload);
+        Assert.Null(areaSummaryPayload.Recipe);
+        Assert.Equal(AreaContentCategory.Trainer, areaSummaryPayload.Category);
+        AreaLookupSummaryResponsePayload areaSummaryResponse = new()
+        {
+            Revision = 0,
+            Areas =
+            [
+                new AreaSummaryPayload
+                {
+                    AreaId = "area:4",
+                    Name = "Route 1",
+                    MapIds = [4],
+                    TrainerTotal = 2,
+                    TrainerDefeated = 1
+                }
+            ]
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(areaSummaryRequest.RequestId!, areaSummaryResponse, "run-1"));
+        AreaLookupSummaryResponsePayload receivedAreaSummary = await areaSummaryTask;
+        Assert.Equal("Route 1", Assert.Single(receivedAreaSummary.Areas).Name);
+        Assert.Equal(1, Assert.Single(receivedAreaSummary.Areas).TrainerDefeated);
+        Assert.Same(receivedAreaSummary, await service.Requests.GetAreaSummariesAsync(AreaContentCategory.Trainer));
+
+        Task<AreaLookupDetailResponsePayload> areaDetailTask = service.Requests.GetAreaDetailsAsync("area:4", AreaContentCategory.Trainer);
+        TrackerMessage? areaDetailRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(TrackerCommands.AreaLookupDetail, areaDetailRequest?.Command);
+        AreaLookupDetailRequestPayload areaDetailPayload = TrackerJson.DeserializePayload<AreaLookupDetailRequestPayload>(areaDetailRequest!.Payload);
+        Assert.Equal("area:4", areaDetailPayload.AreaId);
+        Assert.Equal(AreaContentCategory.Trainer, areaDetailPayload.Category);
+        Assert.Null(areaDetailPayload.Recipe);
+        AreaLookupDetailResponsePayload areaDetailResponse = new()
+        {
+            AreaId = "area:4",
+            Name = "Route 1",
+            Category = AreaContentCategory.Trainer,
+            Trainers =
+            [
+                new AreaTrainerEntryPayload
+                {
+                    EntryId = "trainer:4:8",
+                    MapId = 4,
+                    TrainerType = "Youngster",
+                    TrainerName = "Ben",
+                    PartySize = 2
+                }
+            ]
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(areaDetailRequest.RequestId!, areaDetailResponse, "run-1"));
+        AreaLookupDetailResponsePayload receivedAreaDetail = await areaDetailTask;
+        Assert.Equal("Ben", Assert.Single(receivedAreaDetail.Trainers).TrainerName);
+        Assert.Same(receivedAreaDetail, await service.Requests.GetAreaDetailsAsync("area:4", AreaContentCategory.Trainer));
+
+        AreaDiscoveryPackagePayload discovery = new()
+        {
+            PackageId = "discovery-1",
+            AreaId = "area:4",
+            Category = AreaContentCategory.Trainer,
+            EntryKeys = ["trainer:4:8"]
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.AreaDiscovery, 1, discovery, "run-1"));
+        TrackerMessage? acknowledgment = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(TrackerEvents.AreaDiscoveryAcknowledged, acknowledgment?.Event);
+        Assert.Equal("discovery-1", TrackerJson.DeserializePayload<AreaDiscoveryAcknowledgmentPayload>(acknowledgment!.Payload).PackageId);
+        Assert.Equal("trainer:4:8", Assert.Single(areaDiscoveries.GetKeys("run-1", "area:4", AreaContentCategory.Trainer)));
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.AreaDiscovery, 2, discovery, "run-1"));
+        TrackerMessage? duplicateAcknowledgment = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(TrackerEvents.AreaDiscoveryAcknowledged, duplicateAcknowledgment?.Event);
+        Assert.Equal("discovery-1", TrackerJson.DeserializePayload<AreaDiscoveryAcknowledgmentPayload>(duplicateAcknowledgment!.Payload).PackageId);
+        Assert.Equal(1, areaDiscoveries.GetRevision("run-1"));
+
+        Task<AreaLookupSummaryResponsePayload> refreshedAreaSummaryTask = service.Requests.GetAreaSummariesAsync(AreaContentCategory.Trainer);
+        TrackerMessage? refreshedAreaSummaryRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(TrackerCommands.AreaLookupSummary, refreshedAreaSummaryRequest?.Command);
+        AreaLookupSummaryResponsePayload refreshedAreaSummaryResponse = new()
+        {
+            Revision = 1,
+            Areas =
+            [
+                new AreaSummaryPayload
+                {
+                    AreaId = "area:4",
+                    Name = "Route 1",
+                    MapIds = [4],
+                    TrainerTotal = 2,
+                    TrainerDefeated = 2
+                }
+            ]
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(refreshedAreaSummaryRequest!.RequestId!, refreshedAreaSummaryResponse, "run-1"));
+        Assert.Equal(2, Assert.Single((await refreshedAreaSummaryTask).Areas).TrainerDefeated);
+
         TrackerSettingsPayload changedSettings = new() { AutoSelectStarter = false, FavoriteSpeciesIds = ["SQUIRTLE:0"] };
         Task<TrackerSettingsPayload> settingsTask = service.Requests.UpdateSettingsAsync(changedSettings);
         TrackerMessage? settingsRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
@@ -126,6 +227,80 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal("SQUIRTLE:0", Assert.Single((await favoriteSearchTask).Matches).SpeciesId);
 
         CompletedRunRecipePayload recipe = CreateRecipe("run-1");
+        Task<AreaLookupSummaryResponsePayload> archivedAreaSummaryTask = service.Requests.GetAreaSummariesAsync(AreaContentCategory.Trainer, recipe);
+        TrackerMessage? archivedAreaSummaryRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(TrackerCommands.AreaLookupSummary, archivedAreaSummaryRequest?.Command);
+        AreaLookupSummaryRequestPayload archivedAreaSummaryPayload = TrackerJson.DeserializePayload<AreaLookupSummaryRequestPayload>(archivedAreaSummaryRequest!.Payload);
+        Assert.Equal("run-1", archivedAreaSummaryPayload.Recipe?.RunId);
+        AreaLookupSummaryResponsePayload archivedAreaSummaryResponse = new()
+        {
+            Revision = 1,
+            Areas =
+            [
+                new AreaSummaryPayload
+                {
+                    AreaId = "area:4",
+                    Name = "Archived Route 1",
+                    MapIds = [4],
+                    TrainerTotal = 2,
+                    TrainerDefeated = 1
+                }
+            ]
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(archivedAreaSummaryRequest.RequestId!, archivedAreaSummaryResponse, "run-1"));
+        Assert.Equal("Archived Route 1", Assert.Single((await archivedAreaSummaryTask).Areas).Name);
+        Assert.Equal(2, Assert.Single((await service.Requests.GetAreaSummariesAsync(AreaContentCategory.Trainer)).Areas).TrainerDefeated);
+
+        Task<AreaLookupDetailResponsePayload> activeRevisionDetailTask = service.Requests.GetAreaDetailsAsync("area:4", AreaContentCategory.Trainer);
+        TrackerMessage? activeRevisionDetailRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        AreaLookupDetailResponsePayload activeRevisionDetailResponse = new()
+        {
+            AreaId = "area:4",
+            Name = "Active Route 1",
+            Category = AreaContentCategory.Trainer,
+            Revision = 1,
+            Trainers =
+            [
+                new AreaTrainerEntryPayload
+                {
+                    EntryId = "trainer:4:8",
+                    MapId = 4,
+                    TrainerType = "Youngster",
+                    TrainerName = "Active Ben",
+                    PartySize = 2
+                }
+            ]
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(activeRevisionDetailRequest!.RequestId!, activeRevisionDetailResponse, "run-1"));
+        Assert.Equal("Active Ben", Assert.Single((await activeRevisionDetailTask).Trainers).TrainerName);
+
+        Task<AreaLookupDetailResponsePayload> archivedAreaDetailTask = service.Requests.GetAreaDetailsAsync("area:4", AreaContentCategory.Trainer, recipe);
+        TrackerMessage? archivedAreaDetailRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        AreaLookupDetailResponsePayload archivedAreaDetailResponse = new()
+        {
+            AreaId = "area:4",
+            Name = "Archived Route 1",
+            Category = AreaContentCategory.Trainer,
+            Revision = 1,
+            Trainers =
+            [
+                new AreaTrainerEntryPayload
+                {
+                    EntryId = "trainer:4:8",
+                    MapId = 4,
+                    TrainerType = "Youngster",
+                    TrainerName = "Archived Ben",
+                    PartySize = 2
+                }
+            ]
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(archivedAreaDetailRequest!.RequestId!, archivedAreaDetailResponse, "run-1"));
+        Assert.Equal("Archived Ben", Assert.Single((await archivedAreaDetailTask).Trainers).TrainerName);
+        Assert.Equal("Active Ben", Assert.Single((await service.Requests.GetAreaDetailsAsync("area:4", AreaContentCategory.Trainer)).Trainers).TrainerName);
+
         TrackerMessage runCompleted = TrackerMessageFactory.CreateEvent("run_completed", 1, recipe, "run-1");
         await writer.WriteAsync(runCompleted);
         await WaitForRecipeAsync(completedRuns, "run-1");
@@ -606,9 +781,10 @@ public sealed class TrackerConnectionServiceTests
         TrackerConnectionState state = new();
         TrackerRunState runState = new();
         TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
+        AreaDiscoveryStore areaDiscoveries = CreateAreaDiscoveryStore();
         CompletedRunArchive completedRuns = CreateCompletedRunArchive();
         TrackerConnectionOptions options = new(0, "0.1.0", false, TimeSpan.FromSeconds(2));
-        await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, runState, knowledge, completedRuns);
+        await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, runState, knowledge, areaDiscoveries, completedRuns);
         DebugPokemonInspectionRequestPayload request = new() { Target = DebugPokemonTarget.Player };
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.Requests.InspectPokemonAsync(request));
@@ -624,7 +800,7 @@ public sealed class TrackerConnectionServiceTests
         TrackerRunState runState = new();
         TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
         TrackerConnectionOptions options = new(0, "0.1.0", false, TimeSpan.FromSeconds(2));
-        await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, runState, knowledge, CreateCompletedRunArchive());
+        await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, runState, knowledge, CreateAreaDiscoveryStore(), CreateCompletedRunArchive());
         service.Start();
 
         using TcpClient client = new();
@@ -649,7 +825,7 @@ public sealed class TrackerConnectionServiceTests
         TrackerRunState runState = new();
         TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
         TrackerConnectionOptions options = new(0, "0.1.0", false, TimeSpan.FromMilliseconds(50));
-        await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, runState, knowledge, CreateCompletedRunArchive());
+        await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, runState, knowledge, CreateAreaDiscoveryStore(), CreateCompletedRunArchive());
         service.Start();
 
         using TcpClient client = new();
@@ -809,6 +985,16 @@ public sealed class TrackerConnectionServiceTests
     {
         string path = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
         return new TrackerKnowledgeStore(new TrackerKnowledgeOptions(path));
+    }
+
+    /// <summary>
+    /// Creates an isolated tracker-owned area discovery store for a connection test.
+    /// </summary>
+    /// <returns>The isolated area discovery store.</returns>
+    private static AreaDiscoveryStore CreateAreaDiscoveryStore()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
+        return new AreaDiscoveryStore(new TrackerKnowledgeOptions(path));
     }
 
     /// <summary>

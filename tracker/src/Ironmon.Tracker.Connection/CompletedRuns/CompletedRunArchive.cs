@@ -232,6 +232,7 @@ public sealed class CompletedRunArchive
 
         if (recipe.Statistics is not null)
             ValidateStatistics(recipe.Statistics);
+
     }
 
     /// <summary>

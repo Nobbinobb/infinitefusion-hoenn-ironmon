@@ -26,6 +26,16 @@ public static class TrackerEvents
     public const string RunCompleted = "run_completed";
 
     /// <summary>
+    /// Gets the game-to-tracker area-discovery package event.
+    /// </summary>
+    public const string AreaDiscovery = "area_discovery";
+
+    /// <summary>
+    /// Gets the tracker-to-game persisted-discovery acknowledgment event.
+    /// </summary>
+    public const string AreaDiscoveryAcknowledged = "area_discovery_acknowledged";
+
+    /// <summary>
     /// Gets the starter-selection state event.
     /// </summary>
     public const string StarterSelectionChanged = "starter_selection_changed";

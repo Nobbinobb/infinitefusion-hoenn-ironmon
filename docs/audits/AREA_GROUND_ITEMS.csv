@@ -1,0 +1,105 @@
+﻿map_id,area_name,event_id,x,y,pickup_kind,event_name,item_ids,visual
+7,Petalburg Town,36,23,6,standard_ground_item,ItemBall,RARECANDY,Objects
+10,Route 102,19,13,25,standard_ground_item,ItemBall,POTION,Objects
+11,Route 103,27,64,11,standard_ground_item,Item,GUARDSPEC,Objects
+11,Route 103,25,93,7,standard_ground_item,Item,PPUP,Objects
+12,Route 104 (South),30,35,28,standard_ground_item,ItemBall,DNASPLICERS,Objects
+13,Littleroot Interiors,97,7,9,special_present,Item Present,PRESENT,Objects
+13,Littleroot Interiors,98,26,9,special_present,Item Present,PRESENT,Objects
+18,Professor Birch's Lab,24,8,5,special_present,Item Present,PRESENT,Objects
+20,Route 104 (North),33,26,18,standard_ground_item,EV033,PPUP,Objects
+20,Route 104 (North),29,26,22,standard_ground_item,Item,PPUP,Objects
+20,Route 104 (North),2,52,19,standard_ground_item,Item,XACCURACY,Objects
+20,Route 104 (North),30,19,25,standard_ground_item,EV030,TM32,Objects
+20,Route 104 (North),4,11,17,standard_ground_item,item.shadowless,POKEBALL,Objects
+27,Happy Birthday!,17,15,8,special_present,Item Present,PRESENT,Objects
+28,Rusturf Tunnel,3,8,6,standard_ground_item,Item,POKEBALL,Objects
+28,Rusturf Tunnel,4,35,7,standard_ground_item,Item,MAXETHER,Objects
+30,Petalburg Woods,44,56,10,standard_ground_item,ItemBall,MIRACLESEED,Objects
+30,Petalburg Woods,34,26,15,standard_ground_item,ItemBall,PARLYZHEAL,Objects
+30,Petalburg Woods,31,12,29,standard_ground_item,Item,DNASPLICERS,Objects
+31,Route 116,16,22,15,standard_ground_item,Item,SUPERPOTION,Objects
+31,Route 116,17,10,22,standard_ground_item,Item,REPEL,Objects
+31,Route 116,12,55,18,standard_ground_item,itemBall,XSPATK,Objects
+31,Route 116,14,34,13,standard_ground_item,Item,POTION,Objects
+31,Route 116,15,26,13,standard_ground_item,Item,ETHER,Objects
+31,Route 116,32,26,15,standard_ground_item,Item,ANTIDOTE,Objects
+32,Granite Cave 1F,5,34,13,standard_ground_item,EV005,ESCAPEROPE,Objects
+34,Granite Cave B1F,66,22,26,standard_ground_item,EV066,POKEBALL,Objects
+35,Granite Cave B2F,12,26,2,standard_ground_item,Item,TM65,Objects
+35,Granite Cave B2F,3,10,9,standard_ground_item,EV003,REPEL,Objects
+35,Granite Cave B2F,4,36,10,standard_ground_item,EV004,RARECANDY,Objects
+38,Route 108,33,54,46,standard_ground_item,Item,STARPIECE,Objects
+38,Route 108,34,30,57,standard_ground_item,Item,PEARL,Objects
+38,Route 108,64,84,29,special_present,Item Present,PRESENT,Objects
+39,Route 109,41,7,25,standard_ground_item,Item,PPUP,Objects
+39,Route 109,42,42,6,standard_ground_item,Item,SUPERPOTION,Objects
+39,Route 109,43,20,7,standard_ground_item,Item,LEMONADE,Objects
+39,Route 109,53,44,33,standard_ground_item,Item,MAXREVIVE,Objects
+41,quest_route 104N,33,26,18,standard_ground_item,EV033,PPUP,Objects
+41,quest_route 104N,29,26,22,standard_ground_item,Item,PPUP,Objects
+41,quest_route 104N,2,52,19,standard_ground_item,EV002,XACCURACY,Objects
+41,quest_route 104N,30,19,25,standard_ground_item,EV030,TM32,Objects
+41,quest_route 104N,4,11,17,standard_ground_item,item.shadowless,POKEBALL,Objects
+47,Rustboro City,20,23,60,standard_ground_item,EV020,AWAKENING,Objects
+47,Rustboro City,50,37,16,standard_ground_item,Item,DNASPLICERS,Objects
+47,Rustboro City,51,18,28,standard_ground_item,Item,FUSIONREPEL,Objects
+47,Rustboro City,91,51,60,standard_ground_item,Item,GREATBALL,Objects
+49,Route 106,21,27,16,standard_ground_item,EV021,SUPERPOTION,Objects
+58,Seaside Cottage,5,10,5,special_present,Item Present,PRESENT,Objects
+61,Petalburg Gym,12,9,7,special_present,Item Present,PRESENT,Objects
+62,Hidden Clearing,5,19,13,standard_ground_item,Item,LEAFSTONE,Objects
+65,Route 115,5,33,23,special_tile_pickup,Meteorite,COMETSHARD,tile:1234
+65,Route 115,16,46,64,standard_ground_item,Item,GREATBALL,Objects
+65,Route 115,22,41,28,special_tile_pickup,Meteorite,COMETSHARD,tile:1234
+65,Route 115,17,30,65,standard_ground_item,Item,SUPERPOTION,Objects
+65,Route 115,18,40,30,standard_ground_item,Item,IRON,Objects
+65,Route 115,13,49,54,standard_ground_item,Item,SUPERPOTION,Objects
+65,Route 115,19,20,15,standard_ground_item,Item,HEALPOWDER,Objects
+65,Route 115,20,36,9,standard_ground_item,Item,TM01,Objects
+65,Route 115,15,38,71,standard_ground_item,ItemBall,PPUP,Objects
+65,Route 115,21,39,24,special_tile_pickup,Meteorite,COMETSHARD,tile:1234
+69,Hidden Cove,5,31,6,standard_ground_item,Item,TM105,Objects
+69,Hidden Cove,6,16,24,standard_ground_item,Item,PRISMSCALE,Objects
+71,Route 110,29,25,26,standard_ground_item,Item,MAXREVIVE,Objects
+71,Route 110,39,32,58,standard_ground_item,Item,TM62,Objects
+71,Route 110,12,31,93,standard_ground_item,Item,SUPERPOTION,Objects
+71,Route 110,50,15,38,standard_ground_item,Item,ELIXIR,Objects
+71,Route 110,70,10,55,standard_ground_item,Item,DAWNSTONE,Objects
+71,Route 110,53,32,46,standard_ground_item,Item,RARECANDY,Objects
+71,Route 110,7,39,90,standard_ground_item,Item,TM12,Objects
+71,Route 110,8,18,82,standard_ground_item,Item,THUNDERSTONE,Objects
+71,Route 110,56,41,69,standard_ground_item,Item,DIREHIT,Objects
+73,Mauville City,20,36,15,standard_ground_item,Item,REVIVE,Objects
+73,Mauville City,68,2,36,standard_ground_item,Item,TM48,Objects
+73,Mauville City,34,27,41,standard_ground_item,Item,XSPEED,Objects
+74,Route 117,7,17,29,standard_ground_item,Item,GREATBALL,Objects
+74,Route 117,8,8,8,standard_ground_item,Item,REVIVE,Objects
+76,Route 118,7,68,16,standard_ground_item,Item,HYPERPOTION,Objects
+76,Route 118,8,64,9,standard_ground_item,Item,THUNDERSTONE,Objects
+77,Route 111 (South),35,10,57,standard_ground_item,Item,PPMAX,Objects
+77,Route 111 (South),3,39,67,standard_ground_item,Item,ELIXIR,Objects
+77,Route 111 (South),4,8,64,standard_ground_item,Item,HPUP,Objects
+78,Rustboro Gym,15,13,32,special_present,Item Present,PRESENT,Objects
+79,Dewford Gym,18,13,27,special_present,Item Present,PRESENT,Objects
+83,Verdanturf Town,18,33,6,standard_ground_item,Item,TM54,Objects
+84,Verdanturf Interiors,20,9,8,special_present,Item Present,PRESENT,Objects
+90,Magma Camp,23,11,8,special_present,Item Present,PRESENT,Objects
+94,Clothing Boutique,17,10,3,special_present,Item Present,PRESENT,Objects
+97,Illusion Grove,49,7,46,standard_ground_item,Item,TM95,Objects
+97,Illusion Grove,60,12,37,standard_ground_item,Item,DNAREVERSERS,Objects
+97,Illusion Grove,50,32,47,standard_ground_item,Item,SMOKEBALL,Objects
+97,Illusion Grove,25,47,42,standard_ground_item,Item,TM97,Objects
+99,Trick House,8,37,6,standard_ground_item,Item,LANTERN|MACHETE,Objects
+101,Pokémon Day Care,7,13,7,special_present,Item Present,PRESENT,Objects
+102,Mauville Gym,34,13,32,special_present,Item Present,PRESENT,Objects
+106,New Mauville,4,9,15,standard_ground_item,Item,TM123,Objects
+107,Trick House 2,16,27,13,standard_ground_item,Item,LAVACOOKIE,Objects
+107,Trick House 2,17,18,13,standard_ground_item,"Item size(2,1)",RARECANDY,Objects
+107,Trick House 2,15,10,9,standard_ground_item,Item,LAVACOOKIE,Objects
+108,Trick House 1,22,9,20,standard_ground_item,Item,LAVACOOKIE,Objects
+108,Trick House 1,23,19,21,standard_ground_item,Item,LAVACOOKIE,Objects
+108,Trick House 1,24,23,8,standard_ground_item,Item,RARECANDY,Objects
+108,Trick House 1,25,18,26,standard_ground_item,Item,ESCAPEROPE,Objects
+109,Cliffside Sanctuary,22,31,11,standard_ground_item,Item,MAXREVIVE,Objects
+111,Cliffside Sanctuary,22,31,11,standard_ground_item,Item,MAXREVIVE,Objects

@@ -1,0 +1,50 @@
+﻿map_id,area_name,event_id,x,y,confidence,event_name,item_ids,itemfinder_eligible
+6,Slateport City,98,33,2,inferred,Item,SUPERPOTION,yes
+12,Route 104 (South),33,19,51,inferred,ItemBall,ANTIDOTE,yes
+12,Route 104 (South),31,17,28,inferred,ItemBall,POTION,yes
+12,Route 104 (South),32,21,47,inferred,ItemBall,HEARTSCALE,yes
+20,Route 104 (North),6,17,13,inferred,item.shadowless,SUPERPOTION,yes
+28,Rusturf Tunnel,20,13,15,inferred,Item,TINYMUSHROOM,yes
+30,Petalburg Woods,40,57,25,inferred,ItemBall,TINYMUSHROOM,yes
+30,Petalburg Woods,36,56,38,inferred,Item,POTION,yes
+30,Petalburg Woods,42,11,16,inferred,ItemBall,DNASPLICERS,yes
+30,Petalburg Woods,43,39,8,inferred,ItemBall,TINYMUSHROOM,yes
+31,Route 116,34,58,6,inferred,ItemBall,NUGGET,yes
+31,Route 116,45,52,13,inferred,itemBall,AWAKENING,yes
+31,Route 116,13,70,18,inferred,Item,BLACKGLASSES,yes
+31,Route 116,43,68,8,named,HiddenItemSparkle,WISEGLASSES,no
+35,Granite Cave B2F,5,35,11,inferred,EV005,EVERSTONE,no
+35,Granite Cave B2F,6,22,16,inferred,EV006,EVERSTONE,no
+38,Route 108,35,52,63,inferred,Item,HEARTSCALE,yes
+38,Route 108,36,51,60,inferred,Item,HEARTSCALE,yes
+38,Route 108,37,62,63,inferred,Item,HEARTSCALE,yes
+38,Route 108,32,56,62,inferred,Item,RARECANDY,yes
+39,Route 109,47,37,13,inferred,Item,ETHER,yes
+39,Route 109,48,43,9,inferred,Item,HEARTSCALE,yes
+39,Route 109,49,38,22,inferred,Item,PEARL,yes
+39,Route 109,50,13,37,inferred,Item,REVIVE,yes
+39,Route 109,44,19,9,inferred,Item,GREATBALL,yes
+39,Route 109,45,24,16,inferred,Item,HEARTSCALE,yes
+39,Route 109,46,30,21,inferred,Item,REVIVE,yes
+41,quest_route 104N,6,17,13,inferred,item.shadowless,SUPERPOTION,yes
+47,Rustboro City,54,11,7,inferred,Item,STARDUST,yes
+49,Route 106,23,70,17,inferred,Item,HEARTSCALE,yes
+49,Route 106,25,61,18,inferred,Item,STARDUST,yes
+49,Route 106,26,27,15,inferred,Item,DNASPLICERS,yes
+65,Route 115,14,55,72,inferred,EV014,ELIXIR,no
+71,Route 110,77,14,60,inferred,Item,DNAREVERSERS,yes
+71,Route 110,51,43,40,inferred,Item,REVIVE,yes
+71,Route 110,52,41,45,inferred,Item,GREATBALL,yes
+71,Route 110,54,44,66,inferred,Item,FULLHEAL,yes
+71,Route 110,55,36,69,inferred,Item,DNAREVERSER,yes
+73,Mauville City,72,53,44,named,Shell hiddenitem,,no
+73,Mauville City,74,55,35,named,Shell hiddenitem,,no
+74,Route 117,6,2,29,inferred,Item,REPEL,yes
+75,Mauville City Interiors,95,33,47,inferred,Item,FULLHEAL,yes
+76,Route 118,5,7,33,inferred,Item,HEARTSCALE,yes
+76,Route 118,6,33,28,inferred,Item,IRON,yes
+76,Route 118,18,35,48,named,Shell hiddenitem,,no
+76,Route 118,19,22,47,named,Shell hiddenitem,,no
+88,Stern's Shipyard,29,22,13,inferred,Item,ETHER,yes
+99,Trick House,12,12,7,named,hiddenItem,,no
+99,Trick House,10,5,5,named,hiddenItem,,no

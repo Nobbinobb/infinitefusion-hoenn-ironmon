@@ -1,0 +1,716 @@
+﻿map_id,area_name,version,encounter_type,category,slot,weight,species,min_level,max_level
+5,Route 101,0,LandDay,time,1,40,WURMPLE,2,3
+5,Route 101,0,LandDay,time,2,37,ZIGZAGOON,2,3
+5,Route 101,0,LandDay,time,3,20,POOCHYENA,2,3
+5,Route 101,0,LandDay,time,4,3,EEVEE,2,3
+5,Route 101,0,LandFog,weather,1,100,WURMPLE,2,3
+5,Route 101,0,LandMorning,time,1,60,WURMPLE,2,3
+5,Route 101,0,LandMorning,time,2,27,ZIGZAGOON,2,3
+5,Route 101,0,LandMorning,time,3,10,POOCHYENA,2,3
+5,Route 101,0,LandMorning,time,4,3,EEVEE,2,3
+5,Route 101,0,LandNight,time,1,57,POOCHYENA,2,3
+5,Route 101,0,LandNight,time,2,30,WURMPLE,2,3
+5,Route 101,0,LandNight,time,3,10,ZIGZAGOON,2,3
+5,Route 101,0,LandNight,time,4,3,EEVEE,2,3
+5,Route 101,0,LandRain,weather,1,100,WURMPLE,2,3
+5,Route 101,0,LandStorm,weather,1,100,POOCHYENA,2,3
+5,Route 101,0,LandSunny,weather,1,100,ZIGZAGOON,2,3
+5,Route 101,0,LandWind,weather,1,100,POOCHYENA,2,3
+6,Slateport City,0,GoodRod,base,1,40,MAGIKARP,10,30
+6,Slateport City,0,GoodRod,base,2,20,LUVDISC,10,30
+6,Slateport City,0,GoodRod,base,3,20,TENTACOOL,10,30
+6,Slateport City,0,GoodRod,base,4,20,WAILMER,10,30
+6,Slateport City,0,OldRod,base,1,50,MAGIKARP,5,10
+6,Slateport City,0,OldRod,base,2,30,TENTACOOL,5,10
+6,Slateport City,0,OldRod,base,3,20,LUVDISC,5,10
+6,Slateport City,0,SuperRod,base,1,60,WAILMER,20,45
+6,Slateport City,0,SuperRod,base,2,40,LUVDISC,20,45
+6,Slateport City,0,Water,base,1,60,TENTACOOL,5,35
+6,Slateport City,0,Water,base,2,35,WINGULL,10,30
+6,Slateport City,0,Water,base,3,5,PELIPPER,25,30
+6,Slateport City,0,WaterNight,time,1,60,TENTACOOL,5,35
+6,Slateport City,0,WaterNight,time,2,40,STARYU,10,30
+7,Petalburg Town,0,GoodRod,base,1,60,MAGIKARP,10,30
+7,Petalburg Town,0,GoodRod,base,2,20,CORPHISH,10,30
+7,Petalburg Town,0,GoodRod,base,3,20,GOLDEEN,10,30
+7,Petalburg Town,0,OldRod,base,1,70,MAGIKARP,5,10
+7,Petalburg Town,0,OldRod,base,2,30,CORPHISH,5,10
+7,Petalburg Town,0,SuperRod,base,1,100,CORPHISH,20,45
+7,Petalburg Town,0,Water,base,1,70,MARILL,5,35
+7,Petalburg Town,0,Water,base,2,25,LOTAD,5,10
+7,Petalburg Town,0,Water,base,3,5,LOMBRE,20,30
+7,Petalburg Town,0,WaterFog,weather,1,100,WINGULL,25,35
+7,Petalburg Town,0,WaterRain,weather,1,65,MARILL,5,35
+7,Petalburg Town,0,WaterRain,weather,2,20,SURSKIT,20,25
+7,Petalburg Town,0,WaterRain,weather,3,15,AZUMARILL,20,35
+7,Petalburg Town,0,WaterStorm,weather,1,100,SKIPLOOM,20,30
+7,Petalburg Town,0,WaterSunny,weather,1,80,HOPPIP,15,15
+7,Petalburg Town,0,WaterSunny,weather,2,20,BEAUTIFLY,20,25
+7,Petalburg Town,0,WaterWind,weather,1,75,HOPPIP,20,25
+7,Petalburg Town,0,WaterWind,weather,2,25,SKIPLOOM,20,30
+10,Route 102,0,GoodRod,base,1,60,MAGIKARP,10,30
+10,Route 102,0,GoodRod,base,2,20,CORPHISH,10,30
+10,Route 102,0,GoodRod,base,3,20,GOLDEEN,10,30
+10,Route 102,0,Land,base,1,30,POOCHYENA,3,4
+10,Route 102,0,Land,base,2,30,WURMPLE,3,4
+10,Route 102,0,Land,base,3,15,ZIGZAGOON,3,4
+10,Route 102,0,Land,base,4,10,LOTAD,2,4
+10,Route 102,0,Land,base,5,10,SEEDOT,3,3
+10,Route 102,0,Land,base,6,5,RALTS,4,4
+10,Route 102,0,LandFog,weather,1,100,RALTS,3,4
+10,Route 102,0,LandRain,weather,1,70,SURSKIT,3,4
+10,Route 102,0,LandRain,weather,2,30,LOTAD,2,4
+10,Route 102,0,LandStorm,weather,1,60,LOTAD,3,4
+10,Route 102,0,LandStorm,weather,2,40,SURSKIT,4,5
+10,Route 102,0,LandSunny,weather,1,100,FLETCHLING,3,4
+10,Route 102,0,LandWind,weather,1,100,SEEDOT,2,4
+10,Route 102,0,OldRod,base,1,70,MAGIKARP,5,10
+10,Route 102,0,OldRod,base,2,30,GOLDEEN,5,10
+10,Route 102,0,SuperRod,base,1,100,CORPHISH,20,45
+10,Route 102,0,Water,base,1,50,MARILL,5,25
+10,Route 102,0,Water,base,2,20,LOTAD,10,15
+10,Route 102,0,Water,base,3,20,SURSKIT,10,25
+10,Route 102,0,Water,base,4,10,GOLDEEN,20,30
+10,Route 102,0,WaterFog,weather,1,100,WINGULL,10,30
+10,Route 102,0,WaterRain,weather,1,85,WINGULL,10,30
+10,Route 102,0,WaterRain,weather,2,15,PELIPPER,25,30
+10,Route 102,0,WaterSunny,weather,1,100,FLETCHLING,10,30
+10,Route 102,0,WaterWind,weather,1,100,WINGULL,10,30
+11,Route 103,0,GoodRod,base,1,60,MAGIKARP,10,30
+11,Route 103,0,GoodRod,base,2,20,TENTACOOL,10,30
+11,Route 103,0,GoodRod,base,3,20,WAILMER,10,30
+11,Route 103,0,LandDay,time,1,60,ZIGZAGOON,2,4
+11,Route 103,0,LandDay,time,2,30,WINGULL,2,4
+11,Route 103,0,LandDay,time,3,10,POOCHYENA,2,4
+11,Route 103,0,LandMorning,time,1,60,ZIGZAGOON,2,4
+11,Route 103,0,LandMorning,time,2,30,POOCHYENA,2,4
+11,Route 103,0,LandMorning,time,3,10,WINGULL,2,4
+11,Route 103,0,LandNight,time,1,70,POOCHYENA,2,4
+11,Route 103,0,LandNight,time,2,20,ZIGZAGOON,2,4
+11,Route 103,0,LandNight,time,3,10,WINGULL,2,4
+11,Route 103,0,LandRain,weather,1,100,AZURILL,2,4
+11,Route 103,0,LandStorm,weather,1,100,HOPPIP,2,4
+11,Route 103,0,LandSunny,weather,1,100,HOPPIP,2,4
+11,Route 103,0,LandWind,weather,1,100,HOPPIP,2,4
+11,Route 103,0,OldRod,base,1,70,MAGIKARP,5,10
+11,Route 103,0,OldRod,base,2,30,TENTACOOL,5,10
+11,Route 103,0,SuperRod,base,1,60,WAILMER,25,45
+11,Route 103,0,SuperRod,base,2,40,SHARPEDO,30,34
+11,Route 103,0,Water,base,1,60,TENTACOOL,5,35
+11,Route 103,0,Water,base,2,35,WINGULL,10,30
+11,Route 103,0,Water,base,3,5,PELIPPER,25,30
+11,Route 103,0,WaterFog,weather,1,35,WINGULL,10,30
+11,Route 103,0,WaterNight,time,1,60,TENTACOOL,5,35
+11,Route 103,0,WaterNight,time,2,40,STARYU,10,30
+11,Route 103,0,WaterRain,weather,1,5,PELIPPER,25,30
+11,Route 103,0,WaterStorm,weather,1,60,TENTACRUEL,5,35
+11,Route 103,0,WaterSunny,weather,1,100,WINGULL,25,25
+11,Route 103,0,WaterWind,weather,1,5,PELIPPER,25,30
+12,Route 104 (South),0,GoodRod,base,1,100,MAGIKARP,10,30
+12,Route 104 (South),0,Land,base,1,40,POOCHYENA,4,5
+12,Route 104 (South),0,Land,base,2,20,MARILL,4,5
+12,Route 104 (South),0,Land,base,3,20,WURMPLE,4,5
+12,Route 104 (South),0,Land,base,4,10,TAILLOW,4,5
+12,Route 104 (South),0,Land,base,5,10,WINGULL,3,5
+12,Route 104 (South),0,LandFog,weather,1,50,SHROOMISH,4,4
+12,Route 104 (South),0,LandFog,weather,2,30,WINGULL,3,5
+12,Route 104 (South),0,LandFog,weather,3,20,PICHU,3,4
+12,Route 104 (South),0,LandRain,weather,1,60,SHROOMISH,4,4
+12,Route 104 (South),0,LandRain,weather,2,40,WINGULL,3,5
+12,Route 104 (South),0,LandStorm,weather,1,100,PICHU,3,4
+12,Route 104 (South),0,LandSunny,weather,1,100,BUDEW,4,5
+12,Route 104 (South),0,LandWind,weather,1,70,TAILLOW,4,5
+12,Route 104 (South),0,LandWind,weather,2,30,PIDGEY,4,5
+12,Route 104 (South),0,OldRod,base,1,100,MAGIKARP,5,10
+12,Route 104 (South),0,SuperRod,base,1,100,MAGIKARP,20,45
+12,Route 104 (South),0,Water,base,1,95,WINGULL,10,15
+12,Route 104 (South),0,Water,base,2,5,PELIPPER,15,18
+12,Route 104 (South),0,WaterFog,weather,1,100,PELIPPER,25,30
+12,Route 104 (South),0,WaterNight,time,1,55,STARYU,10,15
+12,Route 104 (South),0,WaterNight,time,2,45,TENTACOOL,10,15
+12,Route 104 (South),0,WaterRain,weather,1,100,PELIPPER,25,30
+12,Route 104 (South),0,WaterStorm,weather,1,100,GYARADOS,25,30
+12,Route 104 (South),0,WaterSunny,weather,1,75,WINGULL,10,30
+12,Route 104 (South),0,WaterSunny,weather,2,25,HORSEA,15,25
+12,Route 104 (South),0,WaterWind,weather,1,50,TAILLOW,15,30
+12,Route 104 (South),0,WaterWind,weather,2,50,WINGULL,15,30
+20,Route 104 (North),0,GoodRod,base,1,60,MAGIKARP,10,30
+20,Route 104 (North),0,GoodRod,base,2,20,CORPHISH,10,30
+20,Route 104 (North),0,GoodRod,base,3,20,GOLDEEN,10,30
+20,Route 104 (North),0,Land,base,1,40,POOCHYENA,4,5
+20,Route 104 (North),0,Land,base,2,20,MARILL,4,5
+20,Route 104 (North),0,Land,base,3,20,WURMPLE,4,5
+20,Route 104 (North),0,Land,base,4,10,TAILLOW,4,5
+20,Route 104 (North),0,Land,base,5,10,WINGULL,3,5
+20,Route 104 (North),0,Land1,base,1,40,MARILL,8,10
+20,Route 104 (North),0,Land1,base,2,30,TAILLOW,11,12
+20,Route 104 (North),0,Land1,base,3,15,POLIWAG,8,9
+20,Route 104 (North),0,Land1,base,4,15,SPEAROW,9,10
+20,Route 104 (North),0,Land3,base,1,50,ORICORIO_3,4,5
+20,Route 104 (North),0,Land3,base,2,20,POOCHYENA,4,5
+20,Route 104 (North),0,Land3,base,3,20,WURMPLE,4,5
+20,Route 104 (North),0,Land3,base,4,10,TAILLOW,4,5
+20,Route 104 (North),0,LandFog,weather,1,60,SPEAROW,4,5
+20,Route 104 (North),0,LandFog,weather,2,40,POLIWAG,4,5
+20,Route 104 (North),0,LandRain,weather,1,60,POLIWAG,5,5
+20,Route 104 (North),0,LandRain,weather,2,40,WURMPLE,4,5
+20,Route 104 (North),0,LandStorm,weather,1,100,POLIWAG,5,5
+20,Route 104 (North),0,LandSunny,weather,1,100,SUNKERN,5,6
+20,Route 104 (North),0,LandWind,weather,1,60,SPEAROW,4,5
+20,Route 104 (North),0,LandWind,weather,2,40,TAILLOW,5,6
+20,Route 104 (North),0,OldRod,base,1,70,MAGIKARP,5,10
+20,Route 104 (North),0,OldRod,base,2,30,CORPHISH,5,10
+20,Route 104 (North),0,SuperRod,base,1,100,CORPHISH,20,45
+20,Route 104 (North),0,Water,base,1,55,SURSKIT,20,25
+20,Route 104 (North),0,Water,base,2,20,LOTAD,5,15
+20,Route 104 (North),0,Water,base,3,10,MARILL,5,35
+20,Route 104 (North),0,Water,base,4,10,MASQUERAIN,20,25
+20,Route 104 (North),0,Water,base,5,5,LOMBRE,20,30
+20,Route 104 (North),0,WaterFog,weather,1,100,WINGULL,25,35
+20,Route 104 (North),0,WaterRain,weather,1,65,MARILL,5,35
+20,Route 104 (North),0,WaterRain,weather,2,20,SURSKIT,20,25
+20,Route 104 (North),0,WaterRain,weather,3,15,AZUMARILL,20,35
+20,Route 104 (North),0,WaterStorm,weather,1,100,SKIPLOOM,20,30
+20,Route 104 (North),0,WaterSunny,weather,1,80,HOPPIP,15,15
+20,Route 104 (North),0,WaterSunny,weather,2,20,BEAUTIFLY,20,25
+20,Route 104 (North),0,WaterWind,weather,1,75,HOPPIP,20,25
+20,Route 104 (North),0,WaterWind,weather,2,25,SKIPLOOM,20,30
+28,Rusturf Tunnel,0,Cave,base,1,100,WHISMUR,5,8
+28,Rusturf Tunnel,0,Land,base,1,50,WHISMUR,10,12
+28,Rusturf Tunnel,0,Land,base,2,45,JIGGLYPUFF,12,13
+28,Rusturf Tunnel,0,Land,base,3,5,NOIBAT,12,14
+28,Rusturf Tunnel,0,RockSmash,base,1,100,GEODUDE,5,15
+30,Petalburg Woods,0,Land1,base,1,30,SLAKOTH,5,6
+30,Petalburg Woods,0,Land1,base,2,30,WURMPLE,5,6
+30,Petalburg Woods,0,Land1,base,3,20,PARAS,4,5
+30,Petalburg Woods,0,Land1,base,4,10,CASCOON,5,5
+30,Petalburg Woods,0,Land1,base,5,10,SILCOON,5,5
+30,Petalburg Woods,0,Land3,base,1,30,WURMPLE,5,6
+30,Petalburg Woods,0,Land3,base,2,20,CASCOON,8,9
+30,Petalburg Woods,0,Land3,base,3,20,SILCOON,8,9
+30,Petalburg Woods,0,Land3,base,4,15,BEAUTIFLY,10,10
+30,Petalburg Woods,0,Land3,base,5,15,DUSTOX,10,10
+30,Petalburg Woods,0,LandDay,time,1,40,WURMPLE,5,6
+30,Petalburg Woods,0,LandDay,time,2,20,SHROOMISH,5,6
+30,Petalburg Woods,0,LandDay,time,3,10,CASCOON,5,5
+30,Petalburg Woods,0,LandDay,time,4,10,SILCOON,5,5
+30,Petalburg Woods,0,LandDay,time,5,10,TAILLOW,5,6
+30,Petalburg Woods,0,LandDay,time,6,5,POOCHYENA,4,5
+30,Petalburg Woods,0,LandDay,time,7,5,SLAKOTH,5,6
+30,Petalburg Woods,0,LandFog,weather,1,100,PHANTUMP,4,5
+30,Petalburg Woods,0,LandMorning,time,1,25,WURMPLE,5,6
+30,Petalburg Woods,0,LandMorning,time,2,20,POOCHYENA,4,5
+30,Petalburg Woods,0,LandMorning,time,3,15,SHROOMISH,5,6
+30,Petalburg Woods,0,LandMorning,time,4,15,TAILLOW,5,6
+30,Petalburg Woods,0,LandMorning,time,5,10,CASCOON,5,5
+30,Petalburg Woods,0,LandMorning,time,6,10,SILCOON,5,5
+30,Petalburg Woods,0,LandMorning,time,7,5,SLAKOTH,5,6
+30,Petalburg Woods,0,LandNight,time,1,30,POOCHYENA,4,5
+30,Petalburg Woods,0,LandNight,time,2,15,HOOTHOOT,4,5
+30,Petalburg Woods,0,LandNight,time,3,15,SHROOMISH,5,6
+30,Petalburg Woods,0,LandNight,time,4,15,WURMPLE,5,6
+30,Petalburg Woods,0,LandNight,time,5,10,CASCOON,5,5
+30,Petalburg Woods,0,LandNight,time,6,10,SILCOON,5,5
+30,Petalburg Woods,0,LandNight,time,7,5,SLAKOTH,5,6
+30,Petalburg Woods,0,LandRain,weather,1,45,SHROOMISH,5,6
+30,Petalburg Woods,0,LandRain,weather,2,35,POLIWAG,5,5
+30,Petalburg Woods,0,LandRain,weather,3,20,WURMPLE,5,6
+30,Petalburg Woods,0,LandStorm,weather,1,65,SHROOMISH,5,6
+30,Petalburg Woods,0,LandStorm,weather,2,35,POLIWAG,5,5
+30,Petalburg Woods,0,LandSunny,weather,1,100,COTTONEE,5,6
+30,Petalburg Woods,0,LandWind,weather,1,100,TAILLOW,5,6
+31,Route 116,0,Land,base,1,25,POOCHYENA,6,8
+31,Route 116,0,Land,base,2,20,NINCADA,6,7
+31,Route 116,0,Land,base,3,20,TAILLOW,6,8
+31,Route 116,0,Land,base,4,20,WHISMUR,6,6
+31,Route 116,0,Land,base,5,10,ABRA,7,7
+31,Route 116,0,Land,base,6,5,SKITTY,7,8
+31,Route 116,0,Land2,base,1,60,GEODUDE,15,18
+31,Route 116,0,Land2,base,2,20,WHISMUR,10,16
+31,Route 116,0,Land2,base,3,15,TAILLOW,15,17
+31,Route 116,0,Land2,base,4,5,MUNCHLAX,14,14
+31,Route 116,0,LandFog,weather,1,100,ABRA,4,5
+31,Route 116,0,LandNight,time,1,25,POOCHYENA,6,8
+31,Route 116,0,LandNight,time,2,20,HOOTHOOT,6,8
+31,Route 116,0,LandNight,time,3,20,NINCADA,6,7
+31,Route 116,0,LandNight,time,4,20,WHISMUR,6,6
+31,Route 116,0,LandNight,time,5,15,MEOWTH,7,8
+31,Route 116,0,LandRain,weather,1,60,NINCADA,4,4
+31,Route 116,0,LandRain,weather,2,40,WURMPLE,4,5
+31,Route 116,0,LandStorm,weather,1,100,SHINX,5,5
+31,Route 116,0,LandSunny,weather,1,100,SKITTY,4,5
+31,Route 116,0,LandWind,weather,1,60,SPEAROW,4,5
+31,Route 116,0,LandWind,weather,2,40,WINGULL,3,5
+32,Granite Cave 1F,0,Cave,base,1,50,MAKUHITA,6,10
+32,Granite Cave 1F,0,Cave,base,2,30,ZUBAT,7,8
+32,Granite Cave 1F,0,Cave,base,3,10,ABRA,8,8
+32,Granite Cave 1F,0,Cave,base,4,10,GEODUDE,6,9
+34,Granite Cave B1F,0,Cave,base,1,40,ARON,9,11
+34,Granite Cave B1F,0,Cave,base,2,30,ZUBAT,9,10
+34,Granite Cave B1F,0,Cave,base,3,10,ABRA,9,9
+34,Granite Cave B1F,0,Cave,base,4,10,MAKUHITA,10,11
+34,Granite Cave B1F,0,Cave,base,5,10,SABLEYE,9,11
+35,Granite Cave B2F,0,Cave,base,1,35,ARON,10,12
+35,Granite Cave B2F,0,Cave,base,2,30,ZUBAT,10,11
+35,Granite Cave B2F,0,Cave,base,3,10,ABRA,10,10
+35,Granite Cave B2F,0,Cave,base,4,10,MAWILE,10,12
+35,Granite Cave B2F,0,Cave,base,5,10,SABLEYE,10,12
+35,Granite Cave B2F,0,Cave,base,6,5,NOSEPASS,12,14
+35,Granite Cave B2F,0,RockSmash,base,1,70,GEODUDE,5,20
+35,Granite Cave B2F,0,RockSmash,base,2,30,CARBINK,10,20
+37,Route 107,0,GoodRod,base,1,40,MAGIKARP,10,30
+37,Route 107,0,GoodRod,base,2,20,REMORAID,10,30
+37,Route 107,0,GoodRod,base,3,20,TENTACOOL,10,30
+37,Route 107,0,GoodRod,base,4,20,WAILMER,10,30
+37,Route 107,0,OldRod,base,1,60,MAGIKARP,5,10
+37,Route 107,0,OldRod,base,2,30,TENTACOOL,5,10
+37,Route 107,0,OldRod,base,3,10,REMORAID,5,10
+37,Route 107,0,SuperRod,base,1,100,WAILMER,20,45
+37,Route 107,0,Water,base,1,60,TENTACOOL,5,35
+37,Route 107,0,Water,base,2,35,WINGULL,10,30
+37,Route 107,0,Water,base,3,5,PELIPPER,25,30
+37,Route 107,0,WaterFog,weather,1,80,HORSEA,10,20
+37,Route 107,0,WaterFog,weather,2,20,SEADRA,25,30
+37,Route 107,0,WaterNight,time,1,60,STARYU,10,30
+37,Route 107,0,WaterNight,time,2,40,TENTACOOL,5,35
+37,Route 107,0,WaterRain,weather,1,80,SEADRA,30,30
+37,Route 107,0,WaterRain,weather,2,20,HORSEA,20,25
+37,Route 107,0,WaterStorm,weather,1,80,CHINCHOU,10,20
+37,Route 107,0,WaterStorm,weather,2,20,LANTURN,25,30
+37,Route 107,0,WaterSunny,weather,1,95,REMORAID,10,30
+37,Route 107,0,WaterSunny,weather,2,5,OCTILLERY,25,30
+37,Route 107,0,WaterWind,weather,1,100,PELIPPER,25,30
+38,Route 108,0,GoodRod,base,1,40,MAGIKARP,10,30
+38,Route 108,0,GoodRod,base,2,20,REMORAID,10,30
+38,Route 108,0,GoodRod,base,3,20,TENTACOOL,10,30
+38,Route 108,0,GoodRod,base,4,20,WAILMER,10,30
+38,Route 108,0,OldRod,base,1,60,MAGIKARP,5,10
+38,Route 108,0,OldRod,base,2,30,TENTACOOL,5,10
+38,Route 108,0,OldRod,base,3,10,REMORAID,5,10
+38,Route 108,0,SuperRod,base,1,100,WAILMER,20,45
+38,Route 108,0,Water,base,1,50,TENTACOOL,5,35
+38,Route 108,0,Water,base,2,35,WINGULL,10,30
+38,Route 108,0,Water,base,3,10,WAILMER,25,30
+38,Route 108,0,Water,base,4,5,PELIPPER,25,30
+38,Route 108,0,WaterFog,weather,1,70,REMORAID,10,30
+38,Route 108,0,WaterFog,weather,2,25,MANTINE,20,30
+38,Route 108,0,WaterFog,weather,3,5,DHELMISE,25,30
+38,Route 108,0,WaterNight,time,1,50,TENTACOOL,5,35
+38,Route 108,0,WaterNight,time,2,30,STARYU,10,30
+38,Route 108,0,WaterNight,time,3,20,MANTINE,25,30
+38,Route 108,0,WaterRain,weather,1,90,TENTACOOL,5,35
+38,Route 108,0,WaterRain,weather,2,10,GYARADOS,30,35
+38,Route 108,0,WaterStorm,weather,1,30,GYARADOS,25,35
+38,Route 108,0,WaterStorm,weather,2,25,MANTINE,25,35
+38,Route 108,0,WaterSunny,weather,1,40,WAILMER,25,35
+38,Route 108,0,WaterSunny,weather,2,35,REMORAID,10,30
+38,Route 108,0,WaterSunny,weather,3,5,OCTILLERY,25,30
+38,Route 108,0,WaterWind,weather,1,100,MANTINE,25,35
+39,Route 109,0,GoodRod,base,1,50,MAGIKARP,10,30
+39,Route 109,0,GoodRod,base,2,20,TENTACOOL,10,30
+39,Route 109,0,GoodRod,base,3,20,WAILMER,10,30
+39,Route 109,0,GoodRod,base,4,10,REMORAID,10,30
+39,Route 109,0,Land,base,1,90,KRABBY,8,10
+39,Route 109,0,Land,base,2,10,SANDYGAST,8,10
+39,Route 109,0,OldRod,base,1,60,MAGIKARP,5,10
+39,Route 109,0,OldRod,base,2,30,TENTACOOL,5,10
+39,Route 109,0,OldRod,base,3,10,REMORAID,5,10
+39,Route 109,0,SuperRod,base,1,100,WAILMER,20,45
+39,Route 109,0,Water,base,1,60,TENTACOOL,5,15
+39,Route 109,0,Water,base,2,35,WINGULL,10,15
+39,Route 109,0,Water,base,3,5,PELIPPER,15,18
+39,Route 109,0,WaterFog,weather,1,80,MANTINE,20,30
+39,Route 109,0,WaterFog,weather,2,20,MANTYKE,10,30
+39,Route 109,0,WaterNight,time,1,60,TENTACOOL,5,15
+39,Route 109,0,WaterNight,time,2,30,STARYU,10,15
+39,Route 109,0,WaterNight,time,3,10,MANTINE,10,15
+39,Route 109,0,WaterRain,weather,1,100,MANTINE,20,30
+39,Route 109,0,WaterStorm,weather,1,100,MANTINE,20,30
+39,Route 109,0,WaterSunny,weather,1,100,WAILMER,25,35
+39,Route 109,0,WaterWind,weather,1,100,MANTINE,20,30
+49,Route 106,0,GoodRod,base,1,40,MAGIKARP,10,30
+49,Route 106,0,GoodRod,base,2,20,SKRELP,10,30
+49,Route 106,0,GoodRod,base,3,20,TENTACOOL,10,30
+49,Route 106,0,GoodRod,base,4,20,WAILMER,10,30
+49,Route 106,0,Land2,base,1,40,KRABBY,6,8
+49,Route 106,0,Land2,base,2,40,WINGULL,6,7
+49,Route 106,0,Land2,base,3,20,AZURILL,6,7
+49,Route 106,0,OldRod,base,1,60,MAGIKARP,5,10
+49,Route 106,0,OldRod,base,2,20,SKRELP,5,10
+49,Route 106,0,OldRod,base,3,20,TENTACOOL,5,10
+49,Route 106,0,SuperRod,base,1,80,WAILMER,20,45
+49,Route 106,0,SuperRod,base,2,20,SKRELP,20,45
+49,Route 106,0,Water,base,1,60,TENTACOOL,5,15
+49,Route 106,0,Water,base,2,35,WINGULL,10,15
+49,Route 106,0,Water,base,3,5,PELIPPER,15,18
+49,Route 106,0,WaterFog,weather,1,100,WINGULL,10,30
+49,Route 106,0,WaterNight,time,1,60,TENTACOOL,5,35
+49,Route 106,0,WaterNight,time,2,40,STARYU,10,30
+49,Route 106,0,WaterRain,weather,1,80,TENTACOOL,5,10
+49,Route 106,0,WaterRain,weather,2,20,SKRELP,20,30
+49,Route 106,0,WaterStorm,weather,1,40,TENTACOOL,5,10
+49,Route 106,0,WaterStorm,weather,2,20,GYARADOS,20,30
+49,Route 106,0,WaterStorm,weather,3,20,SKRELP,15,20
+49,Route 106,0,WaterStorm,weather,4,20,TENTACRUEL,25,32
+49,Route 106,0,WaterSunny,weather,1,100,PELIPPER,25,30
+49,Route 106,0,WaterWind,weather,1,100,WINGULL,10,30
+50,Route 105,0,GoodRod,base,1,30,MAGIKARP,10,30
+50,Route 105,0,GoodRod,base,2,30,SKRELP,10,30
+50,Route 105,0,GoodRod,base,3,20,TENTACOOL,10,30
+50,Route 105,0,GoodRod,base,4,20,WAILMER,10,30
+50,Route 105,0,OldRod,base,1,60,MAGIKARP,5,10
+50,Route 105,0,OldRod,base,2,20,SKRELP,5,10
+50,Route 105,0,OldRod,base,3,20,TENTACOOL,5,10
+50,Route 105,0,SuperRod,base,1,70,WAILMER,20,45
+50,Route 105,0,SuperRod,base,2,30,SKRELP,20,45
+50,Route 105,0,Water,base,1,60,TENTACOOL,5,35
+50,Route 105,0,Water,base,2,35,WINGULL,10,30
+50,Route 105,0,Water,base,3,5,PELIPPER,25,30
+50,Route 105,0,WaterFog,weather,1,100,WINGULL,10,30
+50,Route 105,0,WaterNight,time,1,60,TENTACOOL,5,35
+50,Route 105,0,WaterNight,time,2,40,STARYU,10,30
+50,Route 105,0,WaterRain,weather,1,80,TENTACOOL,5,10
+50,Route 105,0,WaterRain,weather,2,20,SKRELP,20,30
+50,Route 105,0,WaterStorm,weather,1,40,TENTACOOL,5,10
+50,Route 105,0,WaterStorm,weather,2,20,GYARADOS,20,30
+50,Route 105,0,WaterStorm,weather,3,20,SKRELP,15,20
+50,Route 105,0,WaterStorm,weather,4,20,TENTACRUEL,25,32
+50,Route 105,0,WaterSunny,weather,1,100,PELIPPER,25,30
+50,Route 105,0,WaterWind,weather,1,100,WINGULL,10,30
+51,Dewford Town,0,GoodRod,base,1,40,MAGIKARP,10,30
+51,Dewford Town,0,GoodRod,base,2,20,SKRELP,10,30
+51,Dewford Town,0,GoodRod,base,3,20,TENTACOOL,10,30
+51,Dewford Town,0,GoodRod,base,4,20,WAILMER,10,30
+51,Dewford Town,0,OldRod,base,1,60,MAGIKARP,5,10
+51,Dewford Town,0,OldRod,base,2,30,TENTACOOL,5,10
+51,Dewford Town,0,OldRod,base,3,10,SKRELP,5,10
+51,Dewford Town,0,SuperRod,base,1,80,WAILMER,20,45
+51,Dewford Town,0,SuperRod,base,2,20,SKRELP,20,45
+51,Dewford Town,0,Water,base,1,60,TENTACOOL,5,15
+51,Dewford Town,0,Water,base,2,35,WINGULL,10,12
+51,Dewford Town,0,Water,base,3,5,PELIPPER,15,18
+51,Dewford Town,0,WaterFog,weather,1,100,WINGULL,10,30
+51,Dewford Town,0,WaterNight,time,1,60,TENTACOOL,5,15
+51,Dewford Town,0,WaterNight,time,2,40,STARYU,10,15
+51,Dewford Town,0,WaterRain,weather,1,80,TENTACOOL,5,10
+51,Dewford Town,0,WaterRain,weather,2,20,SKRELP,20,30
+51,Dewford Town,0,WaterStorm,weather,1,40,TENTACOOL,5,10
+51,Dewford Town,0,WaterStorm,weather,2,20,GYARADOS,20,30
+51,Dewford Town,0,WaterStorm,weather,3,20,SKRELP,15,20
+51,Dewford Town,0,WaterStorm,weather,4,20,TENTACRUEL,25,32
+51,Dewford Town,0,WaterSunny,weather,1,100,PELIPPER,25,30
+51,Dewford Town,0,WaterWind,weather,1,100,WINGULL,10,30
+62,Hidden Clearing,0,Land1,base,1,20,PARAS,24,25
+62,Hidden Clearing,0,Land1,base,2,20,SLAKOTH,25,26
+62,Hidden Clearing,0,Land1,base,3,10,CASCOON,15,15
+62,Hidden Clearing,0,Land1,base,4,10,SILCOON,15,15
+62,Hidden Clearing,0,Land1,base,5,10,ZOROARK,30,30
+62,Hidden Clearing,0,Land3,base,1,30,WURMPLE,5,6
+62,Hidden Clearing,0,Land3,base,2,15,BEAUTIFLY,10,10
+62,Hidden Clearing,0,Land3,base,3,15,CASCOON,8,9
+62,Hidden Clearing,0,Land3,base,4,15,DUSTOX,10,10
+62,Hidden Clearing,0,Land3,base,5,15,SILCOON,8,9
+62,Hidden Clearing,0,Land3,base,6,10,ZORUA,6,8
+62,Hidden Clearing,0,LandDay,time,1,40,WURMPLE,5,6
+62,Hidden Clearing,0,LandDay,time,2,20,SHROOMISH,5,6
+62,Hidden Clearing,0,LandDay,time,3,10,CASCOON,5,5
+62,Hidden Clearing,0,LandDay,time,4,10,SILCOON,5,5
+62,Hidden Clearing,0,LandDay,time,5,10,TAILLOW,5,6
+62,Hidden Clearing,0,LandDay,time,6,5,POOCHYENA,4,5
+62,Hidden Clearing,0,LandDay,time,7,5,SLAKOTH,5,6
+62,Hidden Clearing,0,LandFog,weather,1,100,PHANTUMP,4,5
+62,Hidden Clearing,0,LandMorning,time,1,25,WURMPLE,5,6
+62,Hidden Clearing,0,LandMorning,time,2,20,POOCHYENA,4,5
+62,Hidden Clearing,0,LandMorning,time,3,15,SHROOMISH,5,6
+62,Hidden Clearing,0,LandMorning,time,4,15,TAILLOW,5,6
+62,Hidden Clearing,0,LandMorning,time,5,10,CASCOON,5,5
+62,Hidden Clearing,0,LandMorning,time,6,10,SILCOON,5,5
+62,Hidden Clearing,0,LandMorning,time,7,5,SLAKOTH,5,6
+62,Hidden Clearing,0,LandNight,time,1,30,POOCHYENA,4,5
+62,Hidden Clearing,0,LandNight,time,2,15,HOOTHOOT,4,5
+62,Hidden Clearing,0,LandNight,time,3,15,SHROOMISH,5,6
+62,Hidden Clearing,0,LandNight,time,4,15,WURMPLE,5,6
+62,Hidden Clearing,0,LandNight,time,5,10,CASCOON,5,5
+62,Hidden Clearing,0,LandNight,time,6,10,SILCOON,5,5
+62,Hidden Clearing,0,LandNight,time,7,5,SLAKOTH,5,6
+62,Hidden Clearing,0,LandRain,weather,1,45,SHROOMISH,5,6
+62,Hidden Clearing,0,LandRain,weather,2,35,POLIWAG,5,5
+62,Hidden Clearing,0,LandRain,weather,3,20,WURMPLE,5,6
+62,Hidden Clearing,0,LandStorm,weather,1,65,SHROOMISH,5,6
+62,Hidden Clearing,0,LandStorm,weather,2,35,POLIWAG,5,5
+62,Hidden Clearing,0,LandSunny,weather,1,100,COTTONEE,5,6
+62,Hidden Clearing,0,LandWind,weather,1,100,TAILLOW,5,6
+65,Route 115,0,GoodRod,base,1,60,MAGIKARP,10,30
+65,Route 115,0,GoodRod,base,2,20,TENTACOOL,10,30
+65,Route 115,0,GoodRod,base,3,20,WAILMER,10,30
+65,Route 115,0,Land,base,1,40,TAILLOW,6,8
+65,Route 115,0,Land,base,2,25,IGGLYBUFF,6,8
+65,Route 115,0,Land,base,3,25,WINGULL,6,6
+65,Route 115,0,Land,base,4,15,SKITTY,6,8
+65,Route 115,0,Land1,base,1,40,TAILLOW,23,25
+65,Route 115,0,Land1,base,2,30,SWABLU,23,25
+65,Route 115,0,Land1,base,3,10,CLEFAIRY,24,26
+65,Route 115,0,Land1,base,4,10,JIGGLYPUFF,24,25
+65,Route 115,0,Land1,base,5,10,SWELLOW,25,25
+65,Route 115,0,Land3,base,1,10,SEVIPER,25,25
+65,Route 115,0,Land3,base,2,10,ZANGOOSE,25,25
+65,Route 115,0,LandFog,weather,1,50,MISDREAVUS,4,5
+65,Route 115,0,LandNight,time,1,35,HOOTHOOT,6,8
+65,Route 115,0,LandNight,time,2,25,CLEFFA,6,8
+65,Route 115,0,LandNight,time,3,25,WINGULL,6,6
+65,Route 115,0,LandNight,time,4,15,POOCHYENA,6,8
+65,Route 115,0,LandNight,time,5,5,MISDREAVUS,6,7
+65,Route 115,0,LandRain,weather,1,100,WINGULL,6,6
+65,Route 115,0,LandStorm,weather,1,100,SHINX,5,5
+65,Route 115,0,LandSunny,weather,1,100,JIGGLYPUFF,7,8
+65,Route 115,0,LandWind,weather,1,75,TAILLOW,6,8
+65,Route 115,0,OldRod,base,1,70,MAGIKARP,5,10
+65,Route 115,0,OldRod,base,2,30,TENTACOOL,5,10
+65,Route 115,0,SuperRod,base,1,100,WAILMER,20,45
+65,Route 115,0,Water,base,1,40,TENTACOOL,5,35
+65,Route 115,0,Water,base,2,35,WINGULL,10,30
+65,Route 115,0,Water,base,3,20,MAGIKARP,5,35
+65,Route 115,0,Water,base,4,5,PELIPPER,25,30
+65,Route 115,0,WaterFog,weather,1,35,WINGULL,10,30
+65,Route 115,0,WaterNight,time,1,40,STARYU,10,30
+65,Route 115,0,WaterNight,time,2,40,TENTACOOL,5,35
+65,Route 115,0,WaterNight,time,3,20,MAGIKARP,5,35
+65,Route 115,0,WaterRain,weather,1,5,PELIPPER,25,30
+65,Route 115,0,WaterStorm,weather,1,60,TENTACRUEL,5,35
+65,Route 115,0,WaterSunny,weather,1,100,STARYU,25,25
+65,Route 115,0,WaterWind,weather,1,5,PELIPPER,25,30
+69,Hidden Cove,0,GoodRod,base,1,30,MAGIKARP,10,30
+69,Hidden Cove,0,GoodRod,base,2,30,SKRELP,10,30
+69,Hidden Cove,0,GoodRod,base,3,20,TENTACOOL,10,30
+69,Hidden Cove,0,GoodRod,base,4,20,WAILMER,10,30
+69,Hidden Cove,0,Land,base,1,30,ABRA,10,15
+69,Hidden Cove,0,Land,base,2,25,SHUCKLE,18,21
+69,Hidden Cove,0,Land,base,3,20,MAKUHITA,9,20
+69,Hidden Cove,0,Land,base,4,10,KADABRA,18,22
+69,Hidden Cove,0,Land,base,5,5,TYROGUE,9,20
+69,Hidden Cove,0,Land2,base,1,40,KRABBY,6,8
+69,Hidden Cove,0,Land2,base,2,40,WINGULL,6,7
+69,Hidden Cove,0,Land2,base,3,20,AZURILL,6,7
+69,Hidden Cove,0,LandSunny,weather,1,100,TANGELA,18,21
+69,Hidden Cove,0,OldRod,base,1,60,MAGIKARP,5,10
+69,Hidden Cove,0,OldRod,base,2,20,SKRELP,5,10
+69,Hidden Cove,0,OldRod,base,3,20,TENTACOOL,5,10
+69,Hidden Cove,0,SuperRod,base,1,70,WAILMER,20,45
+69,Hidden Cove,0,SuperRod,base,2,30,SKRELP,20,45
+69,Hidden Cove,0,Water,base,1,60,TENTACOOL,5,35
+69,Hidden Cove,0,Water,base,2,35,WINGULL,10,30
+69,Hidden Cove,0,Water,base,3,5,PELIPPER,25,30
+69,Hidden Cove,0,WaterFog,weather,1,100,WINGULL,10,30
+69,Hidden Cove,0,WaterNight,time,1,60,TENTACOOL,5,35
+69,Hidden Cove,0,WaterNight,time,2,40,STARYU,10,30
+69,Hidden Cove,0,WaterRain,weather,1,80,TENTACOOL,5,10
+69,Hidden Cove,0,WaterRain,weather,2,20,SKRELP,20,30
+69,Hidden Cove,0,WaterStorm,weather,1,40,TENTACOOL,5,10
+69,Hidden Cove,0,WaterStorm,weather,2,20,GYARADOS,20,30
+69,Hidden Cove,0,WaterStorm,weather,3,20,SKRELP,15,20
+69,Hidden Cove,0,WaterStorm,weather,4,20,TENTACRUEL,25,32
+69,Hidden Cove,0,WaterSunny,weather,1,100,PELIPPER,25,30
+69,Hidden Cove,0,WaterWind,weather,1,100,WINGULL,10,30
+70,Altering Cave,0,Cave,base,1,80,ZUBAT,9,12
+70,Altering Cave,0,Cave,base,2,20,WOOBAT,9,12
+71,Route 110,0,GoodRod,base,1,45,MAGIKARP,10,30
+71,Route 110,0,GoodRod,base,2,40,TYNAMO,10,20
+71,Route 110,0,GoodRod,base,3,15,WAILMER,10,30
+71,Route 110,0,Land1,base,1,50,ODDISH,13,13
+71,Route 110,0,Land1,base,2,30,VENIPEDE,10,12
+71,Route 110,0,Land1,base,3,20,MAGNEMITE,12,12
+71,Route 110,0,Land2,base,1,55,MAGNEMITE,10,12
+71,Route 110,0,Land2,base,2,30,VOLTORB,10,12
+71,Route 110,0,Land2,base,3,10,PIKACHU,14,14
+71,Route 110,0,Land2,base,4,5,KLINK,10,11
+71,Route 110,0,Land3,base,1,35,MINUN,14,15
+71,Route 110,0,Land3,base,2,35,PLUSLE,14,15
+71,Route 110,0,Land3,base,3,30,PICHU,14,15
+71,Route 110,0,LandDay,time,1,30,ELECTRIKE,12,13
+71,Route 110,0,LandDay,time,2,20,ZIGZAGOON,12,12
+71,Route 110,0,LandDay,time,3,15,GULPIN,12,13
+71,Route 110,0,LandDay,time,4,15,PLUSLE,12,13
+71,Route 110,0,LandDay,time,5,10,ODDISH,13,13
+71,Route 110,0,LandDay,time,6,8,WINGULL,12,12
+71,Route 110,0,LandDay,time,7,2,MINUN,13,13
+71,Route 110,0,LandFog,weather,1,70,DRIFLOON,11,12
+71,Route 110,0,LandFog,weather,2,30,GULPIN,12,13
+71,Route 110,0,LandNight,time,1,30,POOCHYENA,12,12
+71,Route 110,0,LandNight,time,2,25,ODDISH,13,13
+71,Route 110,0,LandNight,time,3,15,MINUN,13,13
+71,Route 110,0,LandNight,time,4,15,MURKROW,12,13
+71,Route 110,0,LandNight,time,5,8,WINGULL,12,12
+71,Route 110,0,LandNight,time,6,5,TRUBBISH,12,13
+71,Route 110,0,LandNight,time,7,2,PLUSLE,12,13
+71,Route 110,0,LandRain,weather,1,70,ODDISH,13,15
+71,Route 110,0,LandRain,weather,2,30,WINGULL,12,12
+71,Route 110,0,LandStorm,weather,1,60,MAGNEMITE,9,13
+71,Route 110,0,LandStorm,weather,2,30,ELECTRIKE,13,15
+71,Route 110,0,LandStorm,weather,3,10,KLINK,10,11
+71,Route 110,0,LandSunny,weather,1,40,ODDISH,13,15
+71,Route 110,0,LandSunny,weather,2,30,MINUN,13,13
+71,Route 110,0,LandSunny,weather,3,30,PLUSLE,12,13
+71,Route 110,0,LandWind,weather,1,100,WINGULL,12,12
+71,Route 110,0,OldRod,base,1,70,MAGIKARP,5,10
+71,Route 110,0,OldRod,base,2,30,TYNAMO,10,10
+71,Route 110,0,SuperRod,base,1,50,TYNAMO,20,30
+71,Route 110,0,SuperRod,base,2,45,WAILMER,20,45
+71,Route 110,0,SuperRod,base,3,5,EELEKTRIK,40,40
+71,Route 110,0,Water,base,1,60,TENTACOOL,5,35
+71,Route 110,0,Water,base,2,35,WINGULL,10,30
+71,Route 110,0,Water,base,3,5,PELIPPER,25,30
+71,Route 110,0,WaterFog,weather,1,100,DRIFLOON,11,21
+71,Route 110,0,WaterNight,time,1,60,TENTACOOL,5,35
+71,Route 110,0,WaterNight,time,2,40,STARYU,10,30
+72,testing,0,Land,base,1,40,ABRA,2,3
+72,testing,0,Land,base,2,30,DIGLETT,2,3
+72,testing,0,Land,base,3,30,GASTLY,2,3
+74,Route 117,0,GoodRod,base,1,60,MAGIKARP,10,30
+74,Route 117,0,GoodRod,base,2,20,CORPHISH,10,30
+74,Route 117,0,GoodRod,base,3,20,GOLDEEN,10,30
+74,Route 117,0,Land,base,1,30,ROSELIA,13,14
+74,Route 117,0,Land,base,2,25,MARILL,13,13
+74,Route 117,0,Land,base,3,15,ILLUMISE,13,14
+74,Route 117,0,Land,base,4,15,VOLBEAT,13,14
+74,Route 117,0,Land,base,5,10,ODDISH,13,14
+74,Route 117,0,Land,base,6,5,DITTO,10,12
+74,Route 117,0,Land3,base,1,70,ROSELIA,13,14
+74,Route 117,0,Land3,base,2,15,ILLUMISE,13,14
+74,Route 117,0,Land3,base,3,15,VOLBEAT,13,14
+74,Route 117,0,LandFog,weather,1,50,ILLUMISE,13,14
+74,Route 117,0,LandFog,weather,2,50,VOLBEAT,13,14
+74,Route 117,0,LandNight,time,1,25,ILLUMISE,13,14
+74,Route 117,0,LandNight,time,2,25,VOLBEAT,13,14
+74,Route 117,0,LandNight,time,3,20,ODDISH,13,14
+74,Route 117,0,LandNight,time,4,15,POOCHYENA,13,14
+74,Route 117,0,LandNight,time,5,10,ROSELIA,13,14
+74,Route 117,0,LandNight,time,6,5,DITTO,10,12
+74,Route 117,0,LandRain,weather,1,100,SURSKIT,13,13
+74,Route 117,0,LandStorm,weather,1,60,SURSKIT,13,13
+74,Route 117,0,LandStorm,weather,2,30,PIKACHU,13,13
+74,Route 117,0,LandSunny,weather,1,70,ROSELIA,13,14
+74,Route 117,0,LandSunny,weather,2,30,BUDEW,10,11
+74,Route 117,0,LandWind,weather,1,100,SEEDOT,13,13
+74,Route 117,0,OldRod,base,1,70,MAGIKARP,5,10
+74,Route 117,0,OldRod,base,2,30,GOLDEEN,5,10
+74,Route 117,0,SuperRod,base,1,100,CORPHISH,20,45
+74,Route 117,0,Water,base,1,50,MARILL,5,25
+74,Route 117,0,Water,base,2,20,MAGIKARP,10,15
+74,Route 117,0,Water,base,3,20,SURSKIT,10,25
+74,Route 117,0,Water,base,4,10,GOLDEEN,20,30
+74,Route 117,0,WaterRain,weather,1,85,SURSKIT,10,30
+74,Route 117,0,WaterRain,weather,2,15,MASQUERAIN,25,30
+74,Route 117,0,WaterSunny,weather,1,100,FLETCHLING,10,30
+76,Route 118,0,GoodRod,base,1,65,MAGIKARP,15,25
+76,Route 118,0,GoodRod,base,2,45,CARVANHA,15,25
+76,Route 118,0,Land,base,1,40,ELECTRIKE,21,24
+76,Route 118,0,Land,base,2,40,LINOONE,21,24
+76,Route 118,0,Land,base,3,15,WINGULL,22,24
+76,Route 118,0,Land,base,4,5,KECLEON,24,24
+76,Route 118,0,Land2,base,1,75,KRABBY,11,12
+76,Route 118,0,Land2,base,2,25,WINGULL,12,14
+76,Route 118,0,LandFog,weather,1,100,RATICATE,21,24
+76,Route 118,0,LandNight,time,1,40,ELECTRIKE,21,24
+76,Route 118,0,LandNight,time,2,40,RATICATE,21,24
+76,Route 118,0,LandNight,time,3,15,WINGULL,22,24
+76,Route 118,0,LandNight,time,4,5,KECLEON,24,24
+76,Route 118,0,LandRain,weather,1,70,WINGULL,22,24
+76,Route 118,0,LandRain,weather,2,30,PELIPPER,25,30
+76,Route 118,0,LandStorm,weather,1,60,LUXIO,24,24
+76,Route 118,0,LandStorm,weather,2,20,ELECTRIKE,21,24
+76,Route 118,0,LandStorm,weather,3,20,MANECTRIC,25,25
+76,Route 118,0,LandSunny,weather,1,60,AIPOM,22,24
+76,Route 118,0,LandSunny,weather,2,40,KECLEON,24,24
+76,Route 118,0,LandWind,weather,1,40,SWELLOW,21,24
+76,Route 118,0,LandWind,weather,2,40,TAILLOW,21,22
+76,Route 118,0,OldRod,base,1,65,MAGIKARP,5,10
+76,Route 118,0,OldRod,base,2,45,CARVANHA,5,10
+76,Route 118,0,SuperRod,base,1,90,CARVANHA,30,35
+76,Route 118,0,SuperRod,base,2,10,SHARPEDO,40,40
+76,Route 118,0,TallGrass,base,1,40,LINOONE,21,24
+76,Route 118,0,TallGrass,base,2,20,ELECTRIKE,21,24
+76,Route 118,0,TallGrass,base,3,15,AIPOM,22,24
+76,Route 118,0,TallGrass,base,4,15,KECLEON,24,24
+76,Route 118,0,TallGrass,base,5,10,MANECTRIC,25,25
+76,Route 118,0,Water,base,1,50,TENTACOOL,20,25
+76,Route 118,0,Water,base,2,30,WINGULL,20,20
+76,Route 118,0,Water,base,3,15,CARVANHA,20,25
+76,Route 118,0,Water,base,4,5,PELIPPER,25,30
+76,Route 118,0,WaterFog,weather,1,100,CARVANHA,20,25
+76,Route 118,0,WaterNight,time,1,50,TENTACOOL,20,25
+76,Route 118,0,WaterNight,time,2,35,STARYU,20,20
+76,Route 118,0,WaterNight,time,3,15,CARVANHA,20,25
+76,Route 118,0,WaterRain,weather,1,90,PELIPPER,20,25
+76,Route 118,0,WaterRain,weather,2,10,SHARPEDO,25,25
+76,Route 118,0,WaterStorm,weather,1,30,SHARPEDO,25,25
+76,Route 118,0,WaterSunny,weather,1,100,CARVANHA,20,25
+76,Route 118,0,WaterWind,weather,1,60,PELIPPER,20,25
+76,Route 118,0,WaterWind,weather,2,30,SWELLOW,20,25
+77,Route 111 (South),0,GoodRod,base,1,60,MAGIKARP,10,30
+77,Route 111 (South),0,GoodRod,base,2,20,CORPHISH,10,30
+77,Route 111 (South),0,GoodRod,base,3,20,GOLDEEN,10,30
+77,Route 111 (South),0,Land,base,1,70,MACHOP,13,16
+77,Route 111 (South),0,Land,base,2,30,TAILLOW,13,16
+77,Route 111 (South),0,Land,base,3,20,NUMEL,13,16
+77,Route 111 (South),0,LandFog,weather,1,100,MACHOP,16,16
+77,Route 111 (South),0,LandNight,time,1,70,MACHOP,13,16
+77,Route 111 (South),0,LandNight,time,2,30,MURKROW,13,16
+77,Route 111 (South),0,LandNight,time,3,20,NUMEL,13,16
+77,Route 111 (South),0,LandSunny,weather,1,100,PONYTA,16,16
+77,Route 111 (South),0,LandWind,weather,1,100,TYROGUE,16,16
+77,Route 111 (South),0,OldRod,base,1,70,MAGIKARP,5,10
+77,Route 111 (South),0,OldRod,base,2,30,GOLDEEN,5,10
+77,Route 111 (South),0,SuperRod,base,1,100,CORPHISH,20,45
+77,Route 111 (South),0,Water,base,1,50,MARILL,5,25
+77,Route 111 (South),0,Water,base,2,20,MAGIKARP,10,15
+77,Route 111 (South),0,Water,base,3,20,SURSKIT,10,25
+77,Route 111 (South),0,Water,base,4,10,GOLDEEN,20,30
+77,Route 111 (South),0,WaterRain,weather,1,85,SURSKIT,10,30
+77,Route 111 (South),0,WaterRain,weather,2,15,MASQUERAIN,25,30
+77,Route 111 (South),0,WaterSunny,weather,1,100,FLETCHLING,10,30
+78,Rustboro Gym,0,Land,base,1,65,GEODUDE,9,10
+78,Rustboro Gym,0,Land,base,2,20,ARON,9,10
+78,Rustboro Gym,0,Land,base,3,10,NOSEPASS,12,12
+78,Rustboro Gym,0,Land,base,4,5,CARBINK,12,12
+79,Dewford Gym,0,Land,base,1,70,MACHOP,12,14
+79,Dewford Gym,0,Land,base,2,20,MEDITITE,12,12
+79,Dewford Gym,0,Land,base,3,10,MAKUHITA,12,12
+80,Dewford Gym,0,Land,base,1,65,MACHOP,14,16
+80,Dewford Gym,0,Land,base,2,20,MEDITITE,14,16
+80,Dewford Gym,0,Land,base,3,10,MAKUHITA,14,16
+80,Dewford Gym,0,Land,base,4,5,RIOLU,16,18
+97,Illusion Grove,0,Land,base,1,20,CASCOON,15,15
+97,Illusion Grove,0,Land,base,2,20,SHROOMISH,25,26
+97,Illusion Grove,0,Land,base,3,20,SILCOON,15,15
+97,Illusion Grove,0,Land,base,4,20,SLAKOTH,25,25
+97,Illusion Grove,0,Land,base,5,20,WURMPLE,24,25
+97,Illusion Grove,0,Land1,base,1,40,ZOROARK,30,30
+97,Illusion Grove,0,Land1,base,2,20,SLAKOTH,25,25
+97,Illusion Grove,0,Land1,base,3,15,WURMPLE,24,25
+97,Illusion Grove,0,Land1,base,4,10,SHROOMISH,25,26
+97,Illusion Grove,0,Land1,base,5,6,CASCOON,15,15
+97,Illusion Grove,0,Land1,base,6,6,SILCOON,15,15
+97,Illusion Grove,0,Land1,base,7,3,BRELOOM,28,28
+102,Mauville Gym,0,Land,base,1,25,MAGNEMITE,9,10
+102,Mauville Gym,0,Land,base,2,20,ELECTRIKE,12,12
+102,Mauville Gym,0,Land,base,3,20,VOLTORB,9,10
+102,Mauville Gym,0,Land,base,4,10,MINUN,12,12
+102,Mauville Gym,0,Land,base,5,10,PIKACHU,12,12
+102,Mauville Gym,0,Land,base,6,10,PLUSLE,12,12
+102,Mauville Gym,0,Land,base,7,5,KLINK,12,12
+104,Route 111,0,Land,base,1,50,MACHOP,13,16
+104,Route 111,0,Land,base,2,25,TAILLOW,13,16
+104,Route 111,0,Land,base,3,20,NUMEL,13,16
+104,Route 111,0,Land,base,4,10,CORPHISH,13,16
+104,Route 111,0,Land,base,5,10,ROSELIA,13,16
+104,Route 111,0,Land,base,6,5,LOMBRE,13,16
+104,Route 111,0,LandNight,time,1,50,MACHOP,13,16
+104,Route 111,0,LandNight,time,2,30,MURKROW,13,16
+104,Route 111,0,LandNight,time,3,20,NUMEL,13,16
+104,Route 111,0,LandNight,time,4,10,ILLUMISE,13,16
+104,Route 111,0,LandNight,time,5,10,VOLBEAT,13,16
+112,Underwater,0,Land,base,1,30,SKRELP,26,34
+112,Underwater,0,Land,base,2,20,KRABBY,22,28
+112,Underwater,0,Land,base,3,20,STARYU,26,27
+112,Underwater,0,Land,base,4,20,WAILMER,26,30
+112,Underwater,0,Land,base,5,10,HORSEA,27,27

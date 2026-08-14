@@ -1,12 +1,12 @@
-<section class="pokemon-card lookup-view" role="tabpanel" aria-label="@Text["Lookup.Runs.PostRunPokemonLookup"]">
+<section class="pokemon-card lookup-view" role="tabpanel" aria-label="@Text["Lookup.Runs.RunLookup"]">
     <header class="lookup-heading">
         <div>
-            <p class="card-kicker">@Text["Lookup.Runs.CompletedRunsHeading"]</p>
-            <h2>@Text["Lookup.Runs.GeneratedPokemonLookup"]</h2>
+            <p class="card-kicker">@Text["Lookup.Runs.LookupHeading"]</p>
+            <h2>@Text["Lookup.Runs.RunLookup"]</h2>
         </div>
     </header>
 
-    @if (_recipes.Count == 0)
+    @if (!HasActiveRun() && _recipes.Count == 0)
     {
         <div class="lookup-empty">
             <strong>@Text["Lookup.Runs.NoCompletedRun"]</strong>
@@ -18,7 +18,11 @@
         <div class="lookup-controls">
             <label>
                 @Text["Lookup.Runs.Run"]
-                <select value="@_selectedRunId" @onchange="SelectRun" @onkeydown:stopPropagation="true">
+                <select value="@_selection.SelectedRunId" @onchange="SelectRun" @onkeydown:stopPropagation="true">
+                    @if (HasActiveRun())
+                    {
+                        <option value="@LookupRunSelectionState.ActiveRunSelection">@Text["Lookup.Runs.CurrentRun"]</option>
+                    }
                     @foreach (CompletedRunRecipePayload recipe in _recipes)
                     {
                         <option value="@recipe.RunId">@FormatRun(recipe)</option>
@@ -27,8 +31,14 @@
             </label>
         </div>
 
-        @if (GetSelectedRecipe() is CompletedRunRecipePayload selectedRecipe)
+        @if (IsActiveRunSelected())
         {
+            string activeRunId = GetActiveRunId()!;
+            <AreaLookupExplorer @key="@($"active-areas-{activeRunId}")" SourceKey="@($"active:{activeRunId}")" RunId="@activeRunId" GameRoot="@GameRoot" />
+        }
+        else if (GetSelectedRecipe() is CompletedRunRecipePayload selectedRecipe)
+        {
+            <AreaLookupExplorer @key="@($"archive-areas-{selectedRecipe.RunId}")" SourceKey="@($"archive:{selectedRecipe.RunId}")" RunId="@selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
             <RunStatistics @key="@($"statistics-{selectedRecipe.RunId}")" Statistics="@selectedRecipe.Statistics" />
             <PokemonLookupExplorer @key="selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
             <MoveAccessRunAnalysis @key="@($"metrics-{selectedRecipe.RunId}")" Metrics="@selectedRecipe.MoveAccessMetrics" />

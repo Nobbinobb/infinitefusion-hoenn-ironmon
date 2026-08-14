@@ -53,12 +53,20 @@ module Ironmon
   end
 
   def self.gym_leader_source_species(trainer, slot)
+    seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0
+    name = trainer.respond_to?(:name) ? trainer.name : ""
+    return gym_leader_source_species_for(
+      seed, trainer.trainer_type, name, slot
+    )
+  end
+
+  def self.gym_leader_source_species_for(seed, trainer_type, name, slot)
     value = GYM_FNV_OFFSET_BASIS
     input = [
       GYM_LEADER_SCHEMA_VERSION,
-      $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0,
-      trainer.trainer_type,
-      trainer.respond_to?(:name) ? trainer.name : "",
+      seed,
+      trainer_type,
+      name,
       slot
     ].join("|")
     input.each_byte do |byte|

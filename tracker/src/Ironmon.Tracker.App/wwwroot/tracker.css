@@ -1150,6 +1150,338 @@ button.move-placeholder:hover {
     color: #ff8ba2;
 }
 
+.area-lookup {
+    display: grid;
+    gap: 0.7rem;
+    padding: 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.65rem;
+    background: var(--surface-soft);
+}
+
+.area-lookup-heading h3 {
+    margin: 0.2rem 0 0;
+    color: var(--text);
+    font-size: 0.92rem;
+}
+
+.area-category-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.35rem;
+}
+
+.area-category-tab {
+    min-width: 0;
+    padding: 0.55rem 0.35rem;
+    border: 1px solid var(--border);
+    border-radius: 0.45rem;
+    color: var(--muted);
+    background: var(--surface-raised);
+    font: inherit;
+    font-size: 0.7rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.area-category-tab.selected {
+    border-color: rgb(80 220 170 / 55%);
+    color: var(--text);
+    background: rgb(80 220 170 / 12%);
+}
+
+.area-groups,
+.area-entry-list {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.area-group {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 0.52rem;
+    background: var(--surface-raised);
+}
+
+.area-group-summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    width: 100%;
+    gap: 0.55rem;
+    padding: 0.65rem;
+    border: 0;
+    color: var(--text);
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.area-group-summary strong {
+    overflow: hidden;
+    font-size: 0.76rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.area-group-summary > span:last-child {
+    color: var(--muted);
+    font-size: 0.65rem;
+}
+
+.area-group-chevron {
+    width: 1rem;
+    color: var(--accent);
+    font-weight: 900;
+    text-align: center;
+}
+
+.area-group-details {
+    padding: 0.55rem;
+    border-top: 1px solid var(--border);
+}
+
+.area-entry {
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.6rem;
+    border: 1px solid var(--border);
+    border-left: 0.18rem solid #ff647f;
+    border-radius: 0.42rem;
+    background: var(--surface-soft);
+}
+
+.area-entry.completed {
+    border-left-color: var(--accent);
+}
+
+.area-entry header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.area-entry header strong {
+    color: var(--text);
+    font-size: 0.72rem;
+}
+
+.area-entry header span,
+.area-entry p,
+.area-entry li {
+    color: var(--muted);
+    font-size: 0.64rem;
+}
+
+.area-entry p,
+.area-entry ul {
+    margin: 0;
+}
+
+.area-entry ul {
+    display: grid;
+    gap: 0.15rem;
+    padding-left: 1rem;
+}
+
+.area-entry .area-entry-identity {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.area-entry .area-entry-identity.unknown {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.area-trainer-party {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8.75rem, 1fr));
+    gap: 0.4rem;
+}
+
+.area-trainer-pokemon {
+    display: grid;
+    grid-template-columns: 2.8rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.48rem;
+    min-width: 0;
+    padding: 0.34rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: rgb(255 255 255 / 2%);
+}
+
+.area-trainer-pokemon > div:last-child {
+    display: grid;
+    gap: 0.12rem;
+    min-width: 0;
+}
+
+.area-trainer-pokemon strong {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 0.68rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.area-trainer-pokemon small {
+    color: var(--muted);
+    font-size: 0.6rem;
+}
+
+.area-trainer-sprite,
+.area-trainer-mystery {
+    display: grid;
+    width: 2.8rem;
+    height: 2.8rem;
+    padding: 0;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 0.48rem;
+    color: var(--muted);
+    background: var(--surface-raised);
+}
+
+.area-trainer-sprite {
+    cursor: zoom-in;
+}
+
+.area-trainer-sprite:disabled {
+    cursor: default;
+}
+
+.area-trainer-sprite img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.area-trainer-pokemon.unknown {
+    border-style: dashed;
+    background: linear-gradient(135deg, rgb(113 82 173 / 8%), rgb(255 255 255 / 1%));
+}
+
+.area-trainer-mystery {
+    position: relative;
+    border-style: dashed;
+    border-color: rgb(160 125 225 / 45%);
+    background: radial-gradient(circle, rgb(151 111 224 / 18%) 0 38%, transparent 40%), var(--surface-raised);
+}
+
+.area-trainer-mystery::after {
+    position: absolute;
+    width: 1.75rem;
+    height: 0.12rem;
+    content: "";
+    background: rgb(160 125 225 / 30%);
+}
+
+.area-trainer-mystery span {
+    z-index: 1;
+    font-size: 0.95rem;
+    font-weight: 900;
+}
+
+.area-encounter-entry {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+        "heading heading"
+        "copy sprite";
+    column-gap: 0.75rem;
+}
+
+.area-encounter-entry > header {
+    grid-area: heading;
+}
+
+.area-encounter-copy {
+    display: grid;
+    align-content: start;
+    grid-area: copy;
+    gap: 0.4rem;
+}
+
+.area-encounter-sprite {
+    display: grid;
+    grid-area: sprite;
+    width: 2.8rem;
+    height: 2.8rem;
+    padding: 0;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    color: var(--muted);
+    background: var(--surface-raised);
+    cursor: zoom-in;
+}
+
+.area-encounter-sprite img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.area-sprite-modal {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: grid;
+    padding: 1rem;
+    place-items: center;
+    background: rgb(10 8 16 / 78%);
+}
+
+.area-sprite-dialog {
+    position: relative;
+    display: grid;
+    gap: 0.65rem;
+    width: min(16rem, 85vw);
+    padding: 1rem;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    color: var(--text);
+    background: var(--surface-raised);
+    box-shadow: 0 1rem 3rem rgb(0 0 0 / 45%);
+}
+
+.area-sprite-dialog img {
+    width: min(12rem, 70vw);
+    height: min(12rem, 70vw);
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.area-sprite-dialog strong {
+    font-size: 0.85rem;
+}
+
+.area-sprite-close {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.45rem;
+    display: grid;
+    width: 1.8rem;
+    height: 1.8rem;
+    padding: 0;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--text);
+    background: var(--surface-soft);
+    font: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
 .lookup-controls {
     display: grid;
     grid-template-columns: minmax(0, 1fr);

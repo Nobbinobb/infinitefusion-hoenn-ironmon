@@ -25,6 +25,11 @@ module Ironmon
     randomize_loaded_static_events if @static_refresh_pending
   end
 
+  def self.refresh_loaded_wild_encounter_table
+    return if !$PokemonEncounters || !$game_map
+    $PokemonEncounters.setup($game_map.map_id)
+  end
+
   def self.apply_preset(context = :new_run)
     return if !$PokemonGlobal || !$game_switches || !$game_variables
     @ability_randomization_error_message = nil
@@ -90,6 +95,7 @@ module Ironmon
 
     pbShuffleItems
     pbShuffleTMs
+    refresh_loaded_wild_encounter_table
     randomize_loaded_static_events
     return false if !begin_run_attempt($PokemonGlobal.ironmon_seed)
     start_tracker_run

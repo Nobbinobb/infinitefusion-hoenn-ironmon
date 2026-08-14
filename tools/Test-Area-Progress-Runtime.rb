@@ -1,0 +1,440 @@
+module IronmonAreaProgressRuntimeTests
+  class DiscoveryConnection
+    attr_reader :packages
+    attr_reader :run_started_count
+
+    def initialize(connected = true)
+      @connected = connected
+      @packages = []
+      @run_started_count = 0
+    end
+
+    def connected?
+      return @connected
+    end
+
+    def send_area_discovery(area_id, category, entry_keys)
+      return false if !@connected
+      @packages << [area_id, category, entry_keys]
+      return true
+    end
+
+    def send_run_started
+      @run_started_count += 1 if @connected
+    end
+  end
+
+  def self.assert(condition, message)
+    raise "Area discovery runtime test failed: #{message}" if !condition
+  end
+
+  def self.active_attempt
+    return {
+      "attempt_number" => 1,
+      "run_id" => "runtime-test",
+      "seed" => 1,
+      "result" => "active",
+      "active_seconds" => 0.0,
+      "statistics" => nil
+    }
+  end
+
+  def self.run
+    original_global = $PokemonGlobal
+    original_switches = $game_switches
+    original_self_switches = $game_self_switches
+    original_game_map = $game_map
+    original_trainer = $Trainer
+    original_encounters = $PokemonEncounters
+    original_connection = Ironmon.instance_variable_get(:@tracker_connection)
+    original_pool_service = Ironmon.instance_variable_get(
+      :@custom_fusion_pool_service
+    )
+    begin
+      $PokemonGlobal = PokemonGlobalMetadata.new
+      $PokemonGlobal.ironmon_mode = true
+      $PokemonGlobal.ironmon_seed = 1
+      $PokemonGlobal.ironmon_run_id = "runtime-test"
+      $PokemonGlobal.ironmon_configuration = Ironmon::Configuration.new(
+        :normal_only, :normal_only
+      )
+      $PokemonGlobal.encounter_version = 0
+      $game_switches = []
+      $game_self_switches = {}
+      $game_map = Struct.new(:map_id).new(10)
+      $Trainer = Object.new
+      def $Trainer.first_pokemon
+        return nil
+      end
+      def $Trainer.make_foreign_ID
+        return 1
+      end
+      ledger = Ironmon.default_run_ledger
+      ledger["current_attempt"] = active_attempt
+      $PokemonGlobal.ironmon_run_ledger = ledger
+      pool_service = Object.new
+      def pool_service.pool
+        return [:B1H2, :B2H1]
+      end
+      Ironmon.instance_variable_set(:@custom_fusion_pool_service, pool_service)
+      Ironmon.reset_species_generator_cache
+
+      trainer_entries = Ironmon.tracker_area_catalog.find do |area|
+        area["map_ids"].include?(10)
+      end["trainers"]
+      trainer_entry = trainer_entries[0]["entry_id"]
+      second_trainer_entry = trainer_entries[1]["entry_id"]
+      item_entry = Ironmon.tracker_area_event_entry_id("items", 10, 19)
+      assert(!trainer_entry.to_s.empty?, "trainer event lookup")
+      assert(item_entry == "item:10:19", "item event lookup")
+
+      connection = DiscoveryConnection.new
+      Ironmon.instance_variable_set(:@tracker_connection, connection)
+      Ironmon.refresh_tracker_run_after_load
+      assert(
+        connection.run_started_count == 1,
+        "loading a save refreshes an already-connected tracker"
+      )
+      Ironmon.begin_area_trainer_event(trainer_entry)
+      Ironmon.finish_area_trainer_event(false, true)
+      assert(connection.packages.empty?, "waiting trainer is not discovered")
+      Ironmon.begin_area_trainer_event(second_trainer_entry)
+      Ironmon.finish_area_trainer_event(true, false)
+      trainer_package = connection.packages.shift
+      assert(trainer_package[0] == "area:10", "trainer area key")
+      assert(trainer_package[1] == "trainer", "trainer category")
+      assert(
+        trainer_package[2].sort ==
+          [trainer_entry, second_trainer_entry].sort,
+        "simultaneous trainer discovery keys"
+      )
+
+      Ironmon.begin_area_item_event(item_entry)
+      Ironmon.record_current_area_item(:POTION)
+      Ironmon.finish_area_item_event(true, :ANTIDOTE)
+      item_package = connection.packages.shift
+      assert(item_package == ["area:10", "item", [item_entry]],
+             "item discovery package contains keys only")
+      assert(
+        !Ironmon.current_run_attempt.key?("area_progress"),
+        "game attempt does not persist area discoveries"
+      )
+
+      area = Ironmon.tracker_area_catalog.find do |candidate|
+        candidate["map_ids"].include?(10)
+      end
+      $game_switches[SWITCH_RANDOM_TRAINERS] = true
+      $game_switches[SWITCH_FIRST_RIVAL_BATTLE] = false
+      $game_switches[SWITCH_IS_REMATCH] = false
+      $game_switches[SWITCH_REVERSED_MODE] = false
+      $game_switches[SWITCH_SINGLE_POKEMON_MODE] = false
+      active_recipe = Ironmon.tracker_active_area_recipe(active_attempt)
+      trainer_index = Ironmon.tracker_area_trainer_index(active_recipe)
+      catalog_trainer = area["trainers"].find do |entry|
+        trainer_data = trainer_index[[
+          entry["trainer_type"], entry["trainer_name"], entry["party_id"]
+        ]]
+        trainer_data && !Ironmon.gym_leader?(trainer_data)
+      end
+      trainer_data = trainer_index[[
+        catalog_trainer["trainer_type"], catalog_trainer["trainer_name"],
+        catalog_trainer["party_id"]
+      ]]
+      runtime_party = trainer_data.to_trainer.party.map do |pokemon|
+        [pokemon.species, pokemon.level]
+      end
+      lookup_party = Ironmon.tracker_area_trainer_party(
+        trainer_data, active_recipe,
+        Ironmon.tracker_area_species_generator(active_recipe, :trainer)
+      ).map do |pokemon|
+        [pokemon["species"].id, pokemon["level"]]
+      end
+      assert(
+        lookup_party == runtime_party,
+        "active trainer lookup matches the battle party transformation"
+      )
+      completed_trainer = trainer_entries[0]
+      completed_item = area["items"].find do |entry|
+        entry["entry_id"] == item_entry
+      end
+      $game_self_switches[[
+        completed_trainer["map_id"], completed_trainer["event_id"], "A"
+      ]] = true
+      $game_self_switches[[
+        completed_item["map_id"], completed_item["event_id"], "A"
+      ]] = true
+      trainer_summary = Ironmon.tracker_area_lookup_summary(
+        { "category" => "trainer" }, "runtime-test"
+      )["areas"].find { |entry| entry["area_id"] == area["area_id"] }
+      item_summary = Ironmon.tracker_area_lookup_summary(
+        { "category" => "item" }, "runtime-test"
+      )["areas"].find { |entry| entry["area_id"] == area["area_id"] }
+      assert(
+        trainer_summary["trainer_defeated"] == 1,
+        "summary reconciles a trainer defeated while disconnected"
+      )
+      assert(
+        item_summary["items_collected"] == 1,
+        "summary reconciles an item collected while disconnected"
+      )
+      encounter_entries = Ironmon.tracker_area_encounter_metadata(
+        area, { "data_mode" => Ironmon.tracker_data_mode }
+      )
+      independent_id = encounter_entries[0]["entry_id"]
+      decoy_id = encounter_entries[1]["entry_id"]
+      independent = Ironmon::AreaEncounterEntry.new(
+        [20, :BULBASAUR, 3, 5], independent_id
+      )
+      decoy = Ironmon::AreaEncounterEntry.new(
+        [20, :CHARMANDER, 3, 5], decoy_id
+      )
+      Ironmon.begin_area_encounter_sequence
+      Ironmon.begin_area_encounter_selection
+      decoy[1]
+      independent[1]
+      Ironmon.finish_area_encounter_selection([:BULBASAUR, 4])
+      Ironmon.commit_area_encounter_sequence
+      encounter_package = connection.packages.shift
+      assert(
+        encounter_package == ["area:10", "encounter", [independent_id]],
+        "only selected encounter slot is discovered"
+      )
+      assert(
+        !Ironmon.commit_area_encounter_sequence &&
+          connection.packages.empty?,
+        "additional overworld group members do not rediscover the slot"
+      )
+
+      first_id = encounter_entries[2]["entry_id"]
+      second_id = encounter_entries[3]["entry_id"]
+      [first_id, second_id].each do |entry_id|
+        Ironmon.begin_area_encounter_sequence if !Ironmon.area_encounter_sequence_active?
+        Ironmon.begin_area_encounter_selection
+        Ironmon::AreaEncounterEntry.new(
+          [20, :SQUIRTLE, 3, 5], entry_id
+        )[1]
+        Ironmon.finish_area_encounter_selection([:SQUIRTLE, 4])
+      end
+      Ironmon.commit_area_encounter_sequence
+      fusion_package = connection.packages.shift
+      assert(
+        fusion_package == ["area:10", "encounter", [first_id, second_id]],
+        "derived fusion sends both component slot keys"
+      )
+
+      Ironmon.instance_variable_set(
+        :@tracker_connection, DiscoveryConnection.new(false)
+      )
+      assert(
+        !Ironmon.record_defeated_area_trainer(trainer_entry),
+        "discovery is not retained while tracker is disconnected"
+      )
+
+      tracker_connection = Ironmon::TrackerConnection.new
+      tracker_connection.instance_variable_set(:@state, :connected)
+      tracker_connection.instance_variable_set(:@output_buffer, "")
+      assert(
+        tracker_connection.send_area_discovery(
+          "area:10", "trainer", [trainer_entry]
+        ),
+        "connected tracker discovery send"
+      )
+      pending = tracker_connection.instance_variable_get(
+        :@pending_area_discoveries
+      )
+      package_id = pending.keys.first
+      initial_output_length = tracker_connection.instance_variable_get(
+        :@output_buffer
+      ).length
+      pending[package_id]["next_send_at"] = 0.0
+      tracker_connection.send(:resend_area_discoveries)
+      retried_output = tracker_connection.instance_variable_get(:@output_buffer)
+      assert(
+        retried_output.length > initial_output_length,
+        "unacknowledged discovery is resent"
+      )
+      tracker_connection.send(
+        :acknowledge_area_discovery,
+        {
+          "run_id" => Ironmon.ensure_tracker_run_id,
+          "payload" => { "package_id" => package_id }
+        }
+      )
+      assert(
+        pending.empty?, "acknowledged discovery leaves retry queue"
+      )
+
+      encounters = PokemonEncounters.new
+      encounters.setup(10)
+      tables = encounters.instance_variable_get(:@encounter_tables)
+      tagged_entries = tables.values.flat_map { |entries| entries }
+      assert(!tagged_entries.empty?, "runtime encounter table")
+      assert(
+        tagged_entries.all? do |entry|
+          entry.is_a?(Ironmon::AreaEncounterEntry) &&
+            entry.area_entry_id.start_with?("encounter:10:")
+        end,
+        "runtime encounter slot identities"
+      )
+
+      encounter_type = tables.keys.first
+      table_result = encounters.choose_wild_pokemon(encounter_type)
+      assert(
+        Ironmon.wild_table_result?(table_result),
+        "selected encounter is marked as a table result"
+      )
+      resolved_overworld_species = Ironmon.with_wild_table_spawn(
+        table_result
+      ) do
+        assert(
+          Ironmon.wild_table_spawn_active?,
+          "overworld creation retains table-result origin"
+        )
+        Ironmon.overworld_species_for(
+          table_result[0], true, [:overworld, 10, 999]
+        )
+      end
+      assert(
+        resolved_overworld_species == table_result[0],
+        "overworld table result is not randomized a second time"
+      )
+      assert(
+        !Ironmon.wild_table_spawn_active?,
+        "overworld table-result marker is transient"
+      )
+
+      previous_tables = encounters.instance_variable_get(:@encounter_tables)
+      $PokemonEncounters = encounters
+      $game_switches[SWITCH_MODERN_MODE] = false
+      Ironmon.refresh_loaded_wild_encounter_table
+      refreshed_tables = encounters.instance_variable_get(:@encounter_tables)
+      assert(
+        !refreshed_tables.equal?(previous_tables),
+        "run reset rebuilds the loaded encounter table"
+      )
+      assert(
+        refreshed_tables.values.flat_map { |entries| entries }.all? do |entry|
+          entry.is_a?(Ironmon::AreaEncounterEntry)
+        end,
+        "rebuilt encounter table retains slot tracking"
+      )
+
+      ["classic", "remix"].each do |data_mode|
+        $game_switches[SWITCH_MODERN_MODE] = data_mode == "remix"
+        lookup_catalog = Ironmon.tracker_area_encounter_catalog(
+          { "data_mode" => data_mode }
+        )
+        Ironmon.tracker_area_catalog.each do |catalog_area|
+          catalog_area["map_ids"].each do |map_id|
+            runtime_encounters = PokemonEncounters.new
+            runtime_encounters.setup(map_id)
+            runtime_tables = runtime_encounters.instance_variable_get(
+              :@encounter_tables
+            )
+            runtime_ids = runtime_tables.values.flat_map do |entries|
+              entries.map do |entry|
+                entry.is_a?(Ironmon::AreaEncounterEntry) ?
+                  entry.area_entry_id : nil
+              end
+            end.compact
+            lookup_ids = lookup_catalog[map_id].map do |entry|
+              entry["entry_id"]
+            end
+            assert(
+              (runtime_ids - lookup_ids).empty?,
+              "#{data_mode} map #{map_id} runtime encounter identities"
+            )
+          end
+        end
+      end
+
+      detail = Ironmon.tracker_area_lookup_detail(
+        {
+          "area_id" => area["area_id"],
+          "category" => "encounter",
+          "discovery_keys" => [independent_id]
+        },
+        "runtime-test", false
+      )
+      revealed = detail["encounters"].find do |entry|
+        entry["entry_id"] == independent_id
+      end
+      hidden = detail["encounters"].find do |entry|
+        entry["entry_id"] == decoy_id
+      end
+      assert(revealed["details_revealed"], "requested discovery is revealed")
+      assert(!hidden["details_revealed"], "unknown live slot remains hidden")
+      trainer_detail = Ironmon.tracker_area_lookup_detail(
+        {
+          "area_id" => area["area_id"],
+          "category" => "trainer",
+          "discovery_keys" => [catalog_trainer["entry_id"]]
+        },
+        "runtime-test", false
+      )["trainers"].find do |entry|
+        entry["entry_id"] == catalog_trainer["entry_id"]
+      end
+      assert(
+        trainer_detail["party"].all? do |pokemon|
+          pokemon["sprite_path"].is_a?(String) &&
+            !pokemon["sprite_path"].empty?
+        end,
+        "revealed trainer Pokemon include local sprite paths"
+      )
+      begin
+        Ironmon.tracker_area_lookup_detail(
+          {
+            "area_id" => area["area_id"],
+            "category" => "encounter",
+            "discovery_keys" => ["encounter:999:0:Land:1"]
+          },
+          "runtime-test", false
+        )
+        assert(false, "invalid discovery key must be rejected")
+      rescue Ironmon::TrackerLookupError => e
+        assert(e.code == "invalid_area_discovery",
+               "invalid discovery key error code")
+      end
+
+      hidden_item = Ironmon.tracker_area_hidden_items(12).first
+      assert(hidden_item, "hidden item marker catalog lookup")
+      marker_event = Object.new
+      marker_event.instance_variable_set(:@active, true)
+      def marker_event.active?
+        return @active
+      end
+      assert(
+        Ironmon.hidden_area_item_marker_visible?(
+          marker_event, hidden_item["entry_id"]
+        ),
+        "active hidden item marker"
+      )
+      marker_event.instance_variable_set(:@active, false)
+      assert(
+        !Ironmon.hidden_area_item_marker_visible?(
+          marker_event, hidden_item["entry_id"]
+        ),
+        "base event state hides collected marker"
+      )
+
+      File.binwrite(
+        "#{$ironmon_area_catalog_output_path}.tests",
+        "area discovery runtime tests passed\n"
+      )
+    ensure
+      Ironmon.instance_variable_set(:@tracker_connection, original_connection)
+      Ironmon.instance_variable_set(
+        :@custom_fusion_pool_service, original_pool_service
+      )
+      Ironmon.reset_species_generator_cache
+      $PokemonGlobal = original_global
+      $game_switches = original_switches
+      $game_self_switches = original_self_switches
+      $game_map = original_game_map
+      $Trainer = original_trainer
+      $PokemonEncounters = original_encounters
+    end
+  end
+end
+
+IronmonAreaProgressRuntimeTests.run
