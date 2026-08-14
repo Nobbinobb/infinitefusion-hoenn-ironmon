@@ -1,0 +1,4 @@
+@foreach ((string Name, int Stage) stage in GetVisibleStages())
+{
+    <span class="battle-stat-chip" title="@BattleStatStageFormatter.FormatTooltip(stage.Stage)">@stage.Name@BattleStatStageFormatter.FormatSignedStage(stage.Stage)</span>
+}

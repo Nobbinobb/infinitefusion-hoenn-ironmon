@@ -230,6 +230,46 @@ h1 {
     cursor: pointer;
 }
 
+.settings-number-option {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 8rem;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    padding: 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.65rem;
+    background: var(--surface-soft);
+}
+
+.settings-number-option > span {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.settings-number-option strong {
+    font-size: 0.82rem;
+}
+
+.settings-number-option small {
+    color: var(--muted);
+    font-size: 0.66rem;
+    line-height: 1.45;
+}
+
+.settings-number-option input {
+    width: 100%;
+    padding: 0.5rem 0.58rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 0.45rem;
+    color: var(--text);
+    background: var(--surface);
+}
+
+.settings-number-option .settings-validation {
+    grid-column: 1 / -1;
+    color: var(--enemy-soft);
+}
+
 .settings-option > span {
     display: grid;
     gap: 0.25rem;
@@ -393,6 +433,24 @@ h1 {
 .starter-choice.favorite {
     padding-bottom: 2rem;
     border-color: #ff9fcf;
+}
+
+.starter-choice.bst-ineligible {
+    opacity: 0.58;
+}
+
+.starter-eligibility {
+    position: absolute;
+    left: 0.42rem;
+    bottom: 0.42rem;
+    color: var(--muted);
+    font-size: 0.48rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.starter-choice.bst-eligible .starter-eligibility {
+    color: #65d49a;
 }
 
 .starter-favorite {
@@ -801,19 +859,24 @@ h1 {
     font-size: 0.82rem;
 }
 
-.nature-adjustment {
-    display: inline-block;
-    margin-left: 0.22rem;
-    font-size: 1.12rem;
+.summary-row > .battle-stat-chip {
+    border-color: color-mix(in srgb, var(--accent-soft) 42%, var(--border));
+    color: var(--accent-soft);
+    background: color-mix(in srgb, var(--accent-soft) 9%, var(--surface-soft));
     font-weight: 900;
-    line-height: 1;
 }
 
-.nature-adjustment.increased {
+.enemy-stat-values {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.stat-value.increased {
     color: #32ed91;
 }
 
-.nature-adjustment.decreased {
+.stat-value.decreased {
     color: #ff587a;
 }
 

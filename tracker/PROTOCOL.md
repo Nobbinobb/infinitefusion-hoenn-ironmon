@@ -41,7 +41,7 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.0",
-    "ironmon_version": "0.7.2",
+    "ironmon_version": "0.7.3",
     "ironmon_active": false,
     "debug_available": true,
     "game_root": "C:/Games/InfiniteFusion2",
@@ -67,6 +67,7 @@ battle is active.
     "tracker_version": "0.1.0.0",
     "debug_requested": false,
     "auto_select_starter": false,
+    "maximum_starter_base_stat_total": 525,
     "favorite_species_ids": ["BULBASAUR:0"]
   }
 }
@@ -76,6 +77,8 @@ battle is active.
 debug access; the game remains authoritative through `debug_available`.
 `auto_select_starter` supplies the tracker-owned persisted starter setting on
 every connection or reconnection.
+`maximum_starter_base_stat_total` is the optional inclusive generated-BST
+ceiling. It is null when disabled and applies only with autoselect.
 `favorite_species_ids` contains the tracker-owned normal-species favorites used
 by the Favorite Clause.
 
@@ -84,6 +87,7 @@ The tracker sends `update_settings` when that setting changes while connected:
 ```json
 {
   "auto_select_starter": true,
+  "maximum_starter_base_stat_total": 525,
   "favorite_species_ids": ["BULBASAUR:0", "SQUIRTLE:0"]
 }
 ```
@@ -91,6 +95,11 @@ The tracker sends `update_settings` when that setting changes while connected:
 The game applies and echoes the complete settings payload. When the tracker is
 not connected, the preference remains local and is supplied by the next
 handshake.
+
+The foreground controller shortcut sends a `reset_run` request with an empty
+payload. The game responds with `accepted`, queues the request until a safe map
+scene boundary, and then opens the same confirmation flow as F7. Keyboard input
+is not synthesized by the tracker.
 
 ## Current-state recovery
 
@@ -145,6 +154,7 @@ stable random pick:
 {
   "active": true,
   "random_pick_index": 1,
+  "maximum_base_stat_total": 525,
   "choices": [
     { "index": 0, "revealed": false },
     { "index": 1, "revealed": false },
@@ -154,7 +164,8 @@ stable random pick:
 ```
 
 After the player reveals a candidate, that choice additionally contains
-`species_id`, `species_name`, `sprite_path`, `base_stat_total`, and `favorite`.
+`species_id`, `species_name`, `sprite_path`, `base_stat_total`, `bst_eligible`,
+and `favorite`.
 The last field reports whether the normal species or either half of a fusion is
 in `favorite_species_ids`. Hidden
 choices never transmit those fields. Closing the scene sends
@@ -165,6 +176,10 @@ When `auto_select_starter` is enabled, the opening snapshot reveals all three
 choices immediately. The game ignores player selection input for two seconds,
 opens the choice at `random_pick_index`, displays it for 0.75 seconds, and
 returns that Pokemon without a confirmation prompt.
+
+When a maximum BST is configured, candidates above it are removed before the
+Random Pick and Favorite Clause are applied. If none remain, the game abandons
+the attempt and starts the normal checkpoint reset after closing the scene.
 
 If the Random Pick is not a favorite while one or more favorites are present,
 automatic completion pauses after the delay. The game displays a named command
@@ -254,6 +269,13 @@ position alone never initializes the production player view.
   "special_attack": 21,
   "special_defense": 18,
   "speed": 15,
+  "stat_stages": {
+    "attack": 2,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": -1
+  },
   "base_stat_total": 525,
   "nature": "Hardy",
   "moves": [
@@ -315,7 +337,14 @@ visible identity data changes.
   "sprite_path": "Graphics/Battlers/182.png",
   "level": 25,
   "types": ["GRASS"],
-  "base_stat_total": 490
+  "base_stat_total": 490,
+  "stat_stages": {
+    "attack": 0,
+    "defense": 1,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 0
+  }
 }
 ```
 
@@ -437,7 +466,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.7.2",
+  "ironmon_version": "0.7.3",
   "configuration": {
     "schema_version": 2,
     "wild_policy": "mixed",
@@ -449,7 +478,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "ability_generator_version": 3,
   "base_stat_generator_version": 1,
   "move_access_generator_version": 6,
-  "player_fusion_generator_version": 2,
+  "player_fusion_generator_version": 3,
   "species_pool_fingerprint": "...",
   "ability_pool_fingerprint": "...",
   "base_stat_source_fingerprint": "...",
@@ -465,6 +494,12 @@ When a run ends, the game persists its result in the save metadata and emits
   "tutor_source_fingerprint": "...",
   "fusion_tutor_catalog_fingerprint": "...",
   "fusion_tutor_source_fingerprint": "...",
+  "item_mappings": {
+    "POTION": "HYPERPOTION"
+  },
+  "tm_mappings": {
+    "TM01": "TM02"
+  },
   "move_access_metrics": {
     "schema_version": 1,
     "encounters": [],
@@ -482,6 +517,12 @@ tracker started after the loss can still archive the recipe. The tracker writes
 recipes atomically under
 `%LocalAppData%/IronmonTracker/runs/<run-id>/recipe.json`. It never persists
 the reconstructed lookup response.
+
+`item_mappings` and `tm_mappings` preserve the exact mapped shuffles because
+Infinite Fusion generates them from runtime RNG rather than from the Ironmon
+run seed. Historical recipes which omit these fields use already persisted
+area-entry details and leave unknown archived item identities concealed rather
+than consulting the currently loaded run.
 
 New Step 3.3 runs include `move_access_metrics`. The game records only species,
 levels, party compatibility, acquisitions, and move uses that were actually

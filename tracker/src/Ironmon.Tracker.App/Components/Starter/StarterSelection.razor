@@ -19,6 +19,10 @@
                 {
                     <span class="starter-favorite">@Text["Starter.Selection.Favorite"]</span>
                 }
+                @if (choice.Revealed && Selection.MaximumBaseStatTotal is not null)
+                {
+                    <span class="starter-eligibility">@(choice.BstEligible ? Text["Starter.Selection.Eligible"] : Text["Starter.Selection.Ineligible"])</span>
+                }
                 <div class="starter-sprite" aria-hidden="true">
                     @if (choice.Revealed && GetSpriteSource(choice) is string spriteSource)
                     {

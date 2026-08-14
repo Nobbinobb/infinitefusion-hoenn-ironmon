@@ -85,6 +85,7 @@
     <div class="summary-row placeholder-content" aria-label="@Text["Enemy.Card.EnemySummary"]">
         <span>BST <strong>@GetBaseStatTotal()</strong></span>
         <span>@Text["Enemy.Card.Highest"] <strong>@FormatHighestLevel()</strong></span>
+        <BattleStatStageChips Stages="@SelectedEnemy?.StatStages" />
     </div>
 
     <EnemyMoveList Enemy="@SelectedEnemy" PlayerTypes="@PlayerTypes" />

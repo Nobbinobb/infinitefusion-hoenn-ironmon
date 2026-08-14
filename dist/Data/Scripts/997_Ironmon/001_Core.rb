@@ -3,7 +3,7 @@
 #===============================================================================
 
 module Ironmon
-  VERSION = "0.7.2"
+  VERSION = "0.7.3"
   SUPPORTED_GAME_VERSIONS = ["6.8.0"].freeze
   RESET_KEY = Input::F7
   FULL_RANDOM_BST_RANGE = 999
@@ -107,6 +107,8 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_run_ledger
   attr_accessor :ironmon_move_access_metrics
   attr_accessor :ironmon_evolution_metrics
+  attr_accessor :ironmon_first_rival_heal_applied
+  attr_accessor :ironmon_starter_item_reward_applied
 end
 
 class Pokemon

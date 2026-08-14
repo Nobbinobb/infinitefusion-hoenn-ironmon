@@ -75,13 +75,14 @@
     <div class="detail-strip placeholder-content" aria-label="@Text["Player.Card.PokemonConditionAndHealing"]">
         <span>@GetConditionText()</span>
         <span>@Text["Player.Card.Heals"] <strong>@GetHealingText()</strong></span>
+        <span title="@GetNatureTooltip()">@Text["Player.Card.Nature"] <strong>@(Player?.Nature ?? "--")</strong></span>
     </div>
 
     <PlayerStatGrid Player="@Player" />
 
     <div class="summary-row placeholder-content" aria-label="@Text["Player.Card.PokemonSummary"]">
         <span>BST <strong>@(Player?.BaseStatTotal.ToString(CultureInfo.InvariantCulture) ?? "--")</strong></span>
-        <span>@Text["Player.Card.Nature"] <strong>@(Player?.Nature ?? "--")</strong></span>
+        <BattleStatStageChips Stages="@Player?.StatStages" />
     </div>
 
     <PlayerMoveList Player="@Player" TargetTypes="@TargetTypes" />

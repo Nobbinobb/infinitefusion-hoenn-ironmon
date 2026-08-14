@@ -77,6 +77,66 @@ public sealed class AreaDiscoveryStoreTests
     }
 
     /// <summary>
+    /// Verifies that archived reconstruction cannot replace persisted run details and cannot invent legacy item mappings.
+    /// </summary>
+    [Fact]
+    public void ArchivedDetailsRestorePersistedEntriesAndHideUnknownLegacyItems()
+    {
+        AreaDiscoveryStore store = new(new TrackerKnowledgeOptions(CreateRoot()));
+        AreaLookupDetailResponsePayload persisted = new()
+        {
+            AreaId = "area:10",
+            Name = "Route 102",
+            Category = AreaContentCategory.Item,
+            Items =
+            [
+                new AreaItemEntryPayload
+                {
+                    EntryId = "item:10:1",
+                    MapId = 10,
+                    Kind = "visible",
+                    DetailsRevealed = true,
+                    Items = [new AreaItemIdentityPayload { ItemId = "POTION", ItemName = "Potion" }]
+                }
+            ]
+        };
+        Assert.True(store.RecordDetails("run-archive", persisted));
+
+        AreaLookupDetailResponsePayload reconstructed = new()
+        {
+            AreaId = "area:10",
+            Name = "Route 102",
+            Category = AreaContentCategory.Item,
+            Items =
+            [
+                new AreaItemEntryPayload
+                {
+                    EntryId = "item:10:1",
+                    MapId = 10,
+                    Kind = "visible",
+                    DetailsRevealed = true,
+                    Items = [new AreaItemIdentityPayload { ItemId = "MASTERBALL", ItemName = "Master Ball" }]
+                },
+                new AreaItemEntryPayload
+                {
+                    EntryId = "item:10:2",
+                    MapId = 10,
+                    Kind = "hidden",
+                    Hidden = true,
+                    DetailsRevealed = true,
+                    Items = [new AreaItemIdentityPayload { ItemId = "RARECANDY", ItemName = "Rare Candy" }]
+                }
+            ]
+        };
+
+        AreaLookupDetailResponsePayload restored = store.RestoreArchivedDetails("run-archive", reconstructed, false);
+
+        Assert.Equal("POTION", restored.Items[0].Items[0].ItemId);
+        Assert.False(restored.Items[1].DetailsRevealed);
+        Assert.Empty(restored.Items[1].Items);
+    }
+
+    /// <summary>
     /// Creates an isolated persistence root.
     /// </summary>
     /// <returns>The isolated directory path.</returns>

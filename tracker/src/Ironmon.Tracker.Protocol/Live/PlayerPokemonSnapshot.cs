@@ -113,6 +113,11 @@ public sealed class PlayerPokemonSnapshot
     public int Speed { get; init; }
 
     /// <summary>
+    /// Gets or initializes the current in-battle stat stages.
+    /// </summary>
+    public BattleStatStagesSnapshot StatStages { get; init; } = new();
+
+    /// <summary>
     /// Gets or initializes the current species base-stat total.
     /// </summary>
     public int BaseStatTotal { get; init; }

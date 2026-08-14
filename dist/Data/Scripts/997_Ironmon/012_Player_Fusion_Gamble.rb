@@ -6,7 +6,12 @@ module Ironmon
   class PlayerFusionMappingError < StandardError; end
 
   class PlayerFusionMapper
-    SCHEMA_VERSION = 2
+    SCHEMA_VERSION = 3
+    PREVIOUS_SCHEMA_VERSION = 2
+    SUPPORTED_SCHEMA_VERSIONS = [PREVIOUS_SCHEMA_VERSION,
+                                 SCHEMA_VERSION].freeze
+    PREFERRED_MINIMUM_PERCENT = 90
+    PREFERRED_MAXIMUM_PERCENT = 115
     NAMESPACE = "player_fusion"
     FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
     FNV_PRIME = 1_099_511_628_211
@@ -14,15 +19,24 @@ module Ironmon
     MATERIAL_ID_BITS = 10
     MATERIAL_ID_MASK = (1 << MATERIAL_ID_BITS) - 1
 
-    def initialize(seed, fusion_pool, mappings, discoveries)
+    def initialize(seed, fusion_pool, mappings, discoveries,
+                   base_stat_generator = nil,
+                   schema_version = SCHEMA_VERSION)
       @seed = seed.to_i
       @fusion_pool = fusion_pool
       @mappings = mappings
       @discoveries = discoveries
+      @base_stat_generator = base_stat_generator || Ironmon.base_stat_generator
+      @schema_version = schema_version.to_i
+      if !SUPPORTED_SCHEMA_VERSIONS.include?(@schema_version)
+        raise PlayerFusionMappingError,
+              "player fusion schema #{@schema_version} is unsupported"
+      end
       @fusion_pool_ids = nil
       @fusion_components = nil
       @fusion_pairs = nil
       @paired_result_ids = nil
+      @target_data = {}
       @result_hash_prefix = nil
       @material_pair_codes = nil
       @material_pairs = {}
@@ -153,9 +167,13 @@ module Ironmon
           @discoveries.delete(key)
         end
       end
-      pair_index = deterministic_result_value(pair[0], pair[1]) %
-                   @fusion_pairs.length
-      first_id, second_id = @fusion_pairs[pair_index]
+      if @schema_version == PREVIOUS_SCHEMA_VERSION
+        pair_index = deterministic_result_value(pair[0], pair[1]) %
+                     @fusion_pairs.length
+        first_id, second_id = @fusion_pairs[pair_index]
+      else
+        first_id, second_id = select_result_ids(pair)
+      end
       @mappings[key] = [validate_result_id(first_id),
                         validate_result_id(second_id)]
       return @mappings[key]
@@ -167,7 +185,7 @@ module Ironmon
 
     def deterministic_value(*parts)
       value = FNV_OFFSET_BASIS
-      input = [SCHEMA_VERSION, @seed, NAMESPACE, *parts].join("|")
+      input = [@schema_version, @seed, NAMESPACE, *parts].join("|")
       input.each_byte do |byte|
         value ^= byte
         value = (value * FNV_PRIME) & FNV_MASK
@@ -177,7 +195,7 @@ module Ironmon
 
     def deterministic_result_value(first_id, second_id)
       if !@result_hash_prefix
-        prefix = [SCHEMA_VERSION, @seed, NAMESPACE, "result", ""].join("|")
+        prefix = [@schema_version, @seed, NAMESPACE, "result", ""].join("|")
         @result_hash_prefix = update_deterministic_hash(
           FNV_OFFSET_BASIS, prefix
         )
@@ -186,6 +204,99 @@ module Ironmon
       value ^= "|".ord
       value = (value * FNV_PRIME) & FNV_MASK
       return update_deterministic_hash(value, second_id.to_s)
+    end
+
+    def select_result_ids(pair)
+      body = GameData::Species.get(pair[0])
+      head = GameData::Species.get(pair[1])
+      source_types = [body.type1, body.type2, head.type1, head.type2].compact.uniq
+      forward_bst = normal_fusion_bst(body, head)
+      reverse_bst = normal_fusion_bst(head, body)
+      forward_range = preferred_range(forward_bst)
+      reverse_range = preferred_range(reverse_bst)
+      start = deterministic_result_value(pair[0], pair[1]) %
+              @fusion_pairs.length
+      reverse_first = deterministic_value(
+        "orientation", pair[0], pair[1]
+      ).odd?
+      @fusion_pairs.length.times do |offset|
+        fusion_pair = @fusion_pairs[(start + offset) % @fusion_pairs.length]
+        orientations = [fusion_pair, fusion_pair.reverse]
+        orientations.reverse! if reverse_first
+        orientations.each do |first_id, second_id|
+          next if !target_matches?(first_id, source_types, forward_range)
+          next if !target_matches?(second_id, source_types, reverse_range)
+          return [first_id, second_id]
+        end
+      end
+      return closest_result_ids(
+        pair, source_types, forward_bst, reverse_bst, reverse_first
+      )
+    end
+
+    def preferred_range(reference_bst)
+      minimum = divide_round_up(
+        reference_bst * PREFERRED_MINIMUM_PERCENT, 100
+      )
+      maximum = (reference_bst * PREFERRED_MAXIMUM_PERCENT) / 100
+      return minimum..maximum
+    end
+
+    def target_matches?(species_id, source_types, preferred_range)
+      data = target_data(species_id)
+      return false if (data[:types] & source_types).empty?
+      return preferred_range.include?(data[:bst])
+    end
+
+    def closest_result_ids(pair, source_types, forward_bst, reverse_bst,
+                           reverse_first)
+      best = nil
+      @fusion_pairs.each do |fusion_pair|
+        orientations = [fusion_pair, fusion_pair.reverse]
+        orientations.reverse! if reverse_first
+        orientations.each do |first_id, second_id|
+          first = target_data(first_id)
+          second = target_data(second_id)
+          next if (first[:types] & source_types).empty?
+          next if (second[:types] & source_types).empty?
+          score = (first[:bst] - forward_bst).abs +
+                  (second[:bst] - reverse_bst).abs
+          rank = deterministic_value(
+            "fallback", pair[0], pair[1], first_id, second_id
+          )
+          candidate = [score, rank, first_id, second_id]
+          best = candidate if !best ||
+            (candidate[0, 2] <=> best[0, 2]) < 0
+        end
+      end
+      if !best
+        raise PlayerFusionMappingError,
+              "no custom fusion pair shares a consumed Pokemon type"
+      end
+      return [best[2], best[3]]
+    end
+
+    def normal_fusion_bst(body, head)
+      stats = @base_stat_generator.fuse(
+        @base_stat_generator.stats_for(body),
+        @base_stat_generator.stats_for(head)
+      )
+      return stats.values.inject(0) { |sum, value| sum + value.to_i }
+    end
+
+    def target_data(species_id)
+      return @target_data[species_id] if @target_data[species_id]
+      species = GameData::Species.get(species_id)
+      stats = @base_stat_generator.fusion_stats_for(species)
+      @target_data[species_id] = {
+        :bst => stats.values.inject(0) { |sum, value| sum + value.to_i },
+        :types => [species.type1, species.type2].compact.uniq.freeze
+      }.freeze
+      return @target_data[species_id]
+    end
+
+    def divide_round_up(value, divisor)
+      return (value + divisor - 1) / divisor
     end
 
     def update_deterministic_hash(value, input)
@@ -308,7 +419,8 @@ module Ironmon
         seed,
         custom_fusion_pool,
         state.fusion_mappings,
-        state.discovered_fusion_mappings
+        state.discovered_fusion_mappings,
+        base_stat_generator
       )
       @player_fusion_mapper_seed = seed
       @player_fusion_mapper_state_id = state.object_id

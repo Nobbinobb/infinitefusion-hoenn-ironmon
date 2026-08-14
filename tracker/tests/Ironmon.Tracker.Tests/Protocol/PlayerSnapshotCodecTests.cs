@@ -29,6 +29,8 @@ public sealed class PlayerSnapshotCodecTests
         Assert.Equal(125, restored.Healing.Percentage);
         Assert.Equal("female", restored.Gender);
         Assert.True(restored.Confused);
+        Assert.Equal(2, restored.StatStages.Attack);
+        Assert.Equal(-1, restored.StatStages.Speed);
     }
 
     /// <summary>
@@ -105,6 +107,7 @@ public sealed class PlayerSnapshotCodecTests
             SpecialAttack = 21,
             SpecialDefense = 18,
             Speed = 15,
+            StatStages = new BattleStatStagesSnapshot { Attack = 2, Speed = -1 },
             BaseStatTotal = 525,
             Nature = "Hardy",
             Moves = [move],

@@ -70,10 +70,21 @@ public static class MauiProgram
         TrackerConnectionOptions options = new(TrackerProtocol.Port, version, debugRequested, TimeSpan.FromSeconds(TrackerProtocol.HandshakeTimeoutSeconds))
         {
             AutoSelectStarter = Preferences.Default.Get(TrackerApplicationConstants.AutoSelectStarterPreferenceKey, false),
+            MaximumStarterBaseStatTotal = ReadMaximumStarterBaseStatTotal(),
             FavoriteSpeciesIds = favorites.Favorites.Select(favorite => favorite.SpeciesId).ToArray()
         };
 
         return options;
+    }
+
+    /// <summary>
+    /// Reads and validates the optional maximum-starter-BST preference.
+    /// </summary>
+    /// <returns>The valid inclusive ceiling, or null when disabled or invalid.</returns>
+    private static int? ReadMaximumStarterBaseStatTotal()
+    {
+        int value = Preferences.Default.Get(TrackerApplicationConstants.MaximumStarterBaseStatTotalPreferenceKey, 0);
+        return value is >= StarterSelectionConstants.MinimumBaseStatTotal and <= StarterSelectionConstants.MaximumBaseStatTotal ? value : null;
     }
 
     /// <summary>

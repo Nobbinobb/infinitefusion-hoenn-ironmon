@@ -60,6 +60,17 @@ public sealed class TrackerRequestClient
     }
 
     /// <summary>
+    /// Requests the connected game to enter its guarded manual-reset flow.
+    /// </summary>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>A task reporting whether the active game queued the reset.</returns>
+    public Task<ResetRunResponsePayload> ResetRunAsync(CancellationToken cancellationToken = default)
+    {
+        Dictionary<string, object?> request = [];
+        return _session.SendAsync<Dictionary<string, object?>, ResetRunResponsePayload>(TrackerCommands.ResetRun, request, GetConnectedRunId(), cancellationToken);
+    }
+
+    /// <summary>
     /// Searches normal Pokemon in the connected game for Favorite Clause suggestions.
     /// </summary>
     /// <param name="query">The name fragment entered by the user.</param>
@@ -122,7 +133,15 @@ public sealed class TrackerRequestClient
 
         AreaLookupDetailRequestPayload request = new() { AreaId = areaId, Category = category, Recipe = recipe, DiscoveryKeys = _areaDiscoveries.GetKeys(runId, areaId, category) };
         AreaLookupDetailResponsePayload gameResponse = await _session.SendAsync<AreaLookupDetailRequestPayload, AreaLookupDetailResponsePayload>(TrackerCommands.AreaLookupDetail, request, runId, cancellationToken);
-        _areaDiscoveries.RecordDetails(runId, gameResponse);
+        if (recipe is null)
+        {
+            _areaDiscoveries.RecordDetails(runId, gameResponse);
+        }
+        else
+        {
+            gameResponse = _areaDiscoveries.RestoreArchivedDetails(runId, gameResponse, recipe.ItemMappings.Count > 0 || recipe.TmMappings.Count > 0);
+        }
+
         AreaLookupDetailResponsePayload response = WithTrackerRevision(runId, gameResponse);
         _areaDetailCache[$"{source}|{runId}|{response.Revision}|{DebugAuthorized}|{category}|{areaId}"] = response;
         return response;

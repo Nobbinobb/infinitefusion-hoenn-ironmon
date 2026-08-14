@@ -34,6 +34,9 @@ public partial class StarterSelection
         if (choice.Revealed && choice.Favorite)
             classes.Add("favorite");
 
+        if (choice.Revealed && Selection.MaximumBaseStatTotal is not null)
+            classes.Add(choice.BstEligible ? "bst-eligible" : "bst-ineligible");
+
         return string.Join(' ', classes);
     }
 

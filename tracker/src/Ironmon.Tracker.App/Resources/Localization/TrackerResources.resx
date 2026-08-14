@@ -1036,8 +1036,10 @@
     <value>Ability</value>
   </data>
   <data name="Starter.Selection.ChooseStarter" xml:space="preserve"><value>Choose your starter</value></data>
+  <data name="Starter.Selection.Eligible" xml:space="preserve"><value>Eligible</value></data>
   <data name="Starter.Selection.Hidden" xml:space="preserve"><value>Hidden starter</value></data>
   <data name="Starter.Selection.HiddenChoice" xml:space="preserve"><value>Hidden starter choice {0}</value></data>
+  <data name="Starter.Selection.Ineligible" xml:space="preserve"><value>Over ceiling</value></data>
   <data name="Starter.Selection.OpenBall" xml:space="preserve"><value>Open its ball in the game</value></data>
   <data name="Starter.Selection.RandomPick" xml:space="preserve"><value>Random Pick</value></data>
   <data name="Starter.Selection.RandomPickChoice" xml:space="preserve"><value>Random Pick: {0}</value></data>
@@ -1052,6 +1054,10 @@
   <data name="Settings.Page.TrackerPreferences" xml:space="preserve"><value>TRACKER PREFERENCES</value></data>
   <data name="Settings.Starter.AutoSelectDescription" xml:space="preserve"><value>Reveal all three starters, block player input, then choose the Random Pick after two seconds.</value></data>
   <data name="Settings.Starter.AutoSelectStarter" xml:space="preserve"><value>Autoselect starter</value></data>
+  <data name="Settings.Starter.MaximumBst" xml:space="preserve"><value>Maximum starter BST</value></data>
+  <data name="Settings.Starter.MaximumBstDescription" xml:space="preserve"><value>Optional inclusive ceiling for autoselect. Attempts with no eligible starter reset immediately and still count.</value></data>
+  <data name="Settings.Starter.MaximumBstPlaceholder" xml:space="preserve"><value>No ceiling</value></data>
+  <data name="Settings.Starter.MaximumBstValidation" xml:space="preserve"><value>Enter a whole number from {0} to {1}, or leave this empty.</value></data>
   <data name="Player.Card.ActivePokemon" xml:space="preserve">
     <value>ACTIVE POKEMON</value>
   </data>
@@ -1090,6 +1096,9 @@
   </data>
   <data name="Player.Card.Nature" xml:space="preserve">
     <value>Nature</value>
+  </data>
+  <data name="Player.Card.NatureNoStatChange" xml:space="preserve">
+    <value>No stat change</value>
   </data>
   <data name="Player.Card.None" xml:space="preserve">
     <value>None</value>

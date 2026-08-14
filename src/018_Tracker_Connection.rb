@@ -85,6 +85,7 @@ module Ironmon
       @last_error_at = 0.0
       @debug_requested = false
       @auto_select_starter = false
+      @maximum_starter_base_stat_total = nil
       @favorite_species_ids = []
       @pending_area_discoveries = {}
       @area_discovery_sequence = 0
@@ -150,6 +151,10 @@ module Ironmon
 
     def favorite_species_ids
       return @favorite_species_ids || []
+    end
+
+    def maximum_starter_base_stat_total
+      return @maximum_starter_base_stat_total
     end
 
     private
@@ -293,6 +298,9 @@ module Ironmon
         payload = message["payload"] || {}
         @debug_requested = payload["debug_requested"] == true
         @auto_select_starter = payload["auto_select_starter"] == true
+        @maximum_starter_base_stat_total = Ironmon.valid_starter_bst_ceiling(
+          payload["maximum_starter_base_stat_total"]
+        )
         @favorite_species_ids = normalize_favorite_species_ids(
           payload["favorite_species_ids"]
         )
@@ -350,15 +358,25 @@ module Ironmon
       elsif message["command"] == "update_settings"
         payload = message["payload"] || {}
         @auto_select_starter = payload["auto_select_starter"] == true
+        @maximum_starter_base_stat_total = Ironmon.valid_starter_bst_ceiling(
+          payload["maximum_starter_base_stat_total"]
+        )
         @favorite_species_ids = normalize_favorite_species_ids(
           payload["favorite_species_ids"]
         )
         queue_message(success_response(
           request_id, {
             "auto_select_starter" => @auto_select_starter,
+            "maximum_starter_base_stat_total" =>
+              @maximum_starter_base_stat_total,
             "favorite_species_ids" => @favorite_species_ids
           },
           message["run_id"]
+        ))
+      elsif message["command"] == "reset_run"
+        accepted = Ironmon.request_tracker_reset
+        queue_message(success_response(
+          request_id, { "accepted" => accepted }, message["run_id"]
         ))
       elsif message["command"] == "favorite_pokemon_search"
         payload = message["payload"] || {}
@@ -877,6 +895,7 @@ module Ironmon
       "special_attack" => pokemon.spatk,
       "special_defense" => pokemon.spdef,
       "speed" => pokemon.speed,
+      "stat_stages" => tracker_battler_stat_stages(@tracker_player_battler),
       "base_stat_total" => pokemon.baseStats.values.inject(0) { |sum, value| sum + value },
       "nature" => nature ? nature.name : nil,
       "nature_adjustments" => tracker_nature_adjustments(pokemon),
@@ -911,6 +930,7 @@ module Ironmon
       "level" => battler.level,
       "types" => pokemon.types.map { |type| type.to_s },
       "base_stat_total" => pokemon.baseStats.values.inject(0) { |sum, value| sum + value },
+      "stat_stages" => tracker_battler_stat_stages(battler),
       "last_move" => tracker_enemy_last_move(battler),
       "last_ability" => @tracker_enemy_abilities[battler.index]
     }
@@ -923,6 +943,17 @@ module Ironmon
     battle_move = battler.moves.find { |move| move.id == move_id }
     pp_after_use = battle_move ? battle_move.pp : nil
     return tracker_observed_move(battler.pokemon, move_id, "enemy_use", pp_after_use)
+  end
+
+  def self.tracker_battler_stat_stages(battler)
+    stages = battler && battler.respond_to?(:stages) ? battler.stages : {}
+    return {
+      "attack" => stages[:ATTACK].to_i,
+      "defense" => stages[:DEFENSE].to_i,
+      "special_attack" => stages[:SPECIAL_ATTACK].to_i,
+      "special_defense" => stages[:SPECIAL_DEFENSE].to_i,
+      "speed" => stages[:SPEED].to_i
+    }
   end
 
   def self.tracker_player_level_up_moves(pokemon)

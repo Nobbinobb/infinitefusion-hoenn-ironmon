@@ -166,7 +166,7 @@ module Ironmon
       )
     when "item"
       result["items"] = tracker_area_item_entries(
-        area, discovery_keys, full_details, archived
+        area, recipe, discovery_keys, full_details, archived
       )
     else
       raise TrackerLookupError.new(
@@ -443,13 +443,13 @@ module Ironmon
     return species
   end
 
-  def self.tracker_area_item_entries(area, discoveries, full_details,
+  def self.tracker_area_item_entries(area, recipe, discoveries, full_details,
                                      archived)
     return area["items"].map do |entry|
       collected = discoveries.key?(entry["entry_id"]) ||
         (!archived && tracker_area_event_completed?(entry))
       revealed = full_details || collected
-      item_ids = revealed ? tracker_area_resolved_item_ids(entry) : []
+      item_ids = revealed ? tracker_area_resolved_item_ids(entry, recipe) : []
       {
         "entry_id" => entry["entry_id"],
         "map_id" => entry["map_id"],
@@ -470,12 +470,21 @@ module Ironmon
     end
   end
 
-  def self.tracker_area_resolved_item_ids(entry)
+  def self.tracker_area_resolved_item_ids(entry, recipe)
     return entry["authored_item_ids"].map do |item_id|
       replacement = hm_replacement_item(item_id) if
         respond_to?(:hm_replacement_item)
-      item = replacement ? GameData::Item.get(replacement) :
-        pbGetRandomItem(item_id)
+      item = if replacement
+               GameData::Item.get(replacement)
+             elsif recipe["active_run"] == true
+               pbGetRandomItem(item_id)
+             else
+               source = GameData::Item.get(item_id)
+               mappings = source.is_TM? ? recipe["tm_mappings"] :
+                 recipe["item_mappings"]
+               mapped = mappings[item_id.to_s] if mappings.is_a?(Hash)
+               GameData::Item.get(mapped || item_id)
+             end
       item.id.to_s
     end.uniq
   end

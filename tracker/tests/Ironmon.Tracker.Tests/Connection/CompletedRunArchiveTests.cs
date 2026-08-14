@@ -34,6 +34,8 @@ public sealed class CompletedRunArchiveTests
         Assert.Equal("TACKLE", Assert.Single(stored.MoveAccessMetrics.MoveUses).MoveId);
         Assert.Equal(EvolutionMetricIdentifiers.CompletedOutcome, Assert.Single(stored.EvolutionMetrics!.Events).Outcome);
         Assert.Equal(14, stored.Statistics!.ItemsUsed);
+        Assert.Equal("HYPERPOTION", stored.ItemMappings["POTION"]);
+        Assert.Equal("TM02", stored.TmMappings["TM01"]);
         Assert.Equal("run-archive", archive.RequestedRunId);
         string recipePath = Path.Combine(root, "runs", "run-archive", "recipe.json");
         Assert.True(File.Exists(recipePath));
@@ -198,6 +200,8 @@ public sealed class CompletedRunArchiveTests
         EvolutionGenerator = includeEvolutionGenerator ? CreateEvolutionGenerator() : null,
         MoveAccessGenerator = includeMoveGenerator ? CreateMoveGenerator() : null,
         PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 100, PoolFingerprint = "fusions" },
+        ItemMappings = new Dictionary<string, string> { ["POTION"] = "HYPERPOTION" },
+        TmMappings = new Dictionary<string, string> { ["TM01"] = "TM02" },
         Statistics = CreateStatistics(statisticsSchemaVersion),
         MoveAccessMetrics = includeMoveMetrics ? CreateMoveMetrics(moveMetricsSchemaVersion) : null,
         EvolutionMetrics = includeEvolutionMetrics ? CreateEvolutionMetrics() : null

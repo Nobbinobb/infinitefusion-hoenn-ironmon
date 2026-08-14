@@ -136,6 +136,37 @@ public partial class PlayerCard
         => Player is null ? "-- · --%" : $"{Player.Healing.ItemCount} · {Player.Healing.Percentage:0.#}%";
 
     /// <summary>
+    /// Gets the nature's increased and decreased stat abbreviations.
+    /// </summary>
+    /// <returns>The nature adjustment tooltip, or an empty string without a player.</returns>
+    private string GetNatureTooltip()
+    {
+        if (Player is null)
+            return string.Empty;
+
+        NatureAdjustmentsSnapshot adjustments = Player.NatureAdjustments;
+        (string Name, StatAdjustment Adjustment)[] stats =
+        [
+            ("ATK", adjustments.Attack),
+            ("DEF", adjustments.Defense),
+            ("SPA", adjustments.SpecialAttack),
+            ("SPD", adjustments.SpecialDefense),
+            ("SPE", adjustments.Speed)
+        ];
+
+        List<string> description = [];
+        string? increased = stats.FirstOrDefault(stat => stat.Adjustment == StatAdjustment.Increased).Name;
+        string? decreased = stats.FirstOrDefault(stat => stat.Adjustment == StatAdjustment.Decreased).Name;
+        if (increased is not null)
+            description.Add($"+{increased}");
+
+        if (decreased is not null)
+            description.Add($"−{decreased}");
+
+        return description.Count == 0 ? Text["Player.Card.NatureNoStatChange"] : string.Join(" / ", description);
+    }
+
+    /// <summary>
     /// Opens full information for the player's known ability.
     /// </summary>
     /// <param name="ability">The selected ability.</param>

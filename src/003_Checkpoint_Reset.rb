@@ -158,15 +158,24 @@ module Ironmon
 
   def self.handle_reset_hotkey
     return false if @reset_in_progress
-    return false if !active? || !Input.trigger?(RESET_KEY)
+    keyboard_requested = Input.trigger?(RESET_KEY)
+    tracker_requested = @tracker_reset_requested == true
+    return false if !active? || (!keyboard_requested && !tracker_requested)
     return false if !$game_temp || $game_temp.message_window_showing
     return false if pbMapInterpreterRunning?
     return false if !$game_player || $game_player.moving?
 
+    @tracker_reset_requested = false
     warning = _INTL("Restart this Ironmon run from the starter selection with a new randomization? The current run will be replaced.")
     return true if !pbConfirmMessage(warning)
 
     start_checkpoint_reset(false)
+    return true
+  end
+
+  def self.request_tracker_reset
+    return false if !active? || @reset_in_progress
+    @tracker_reset_requested = true
     return true
   end
 

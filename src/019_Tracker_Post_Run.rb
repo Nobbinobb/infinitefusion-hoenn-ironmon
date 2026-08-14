@@ -55,6 +55,12 @@ module Ironmon
       "evolution_generator" => tracker_evolution_generator_recipe,
       "move_access_generator" => tracker_move_access_generator_recipe,
       "player_fusion_generator" => tracker_player_fusion_generator_recipe,
+      "item_mappings" => tracker_item_mapping_recipe(
+        $PokemonGlobal.randomItemsHash
+      ),
+      "tm_mappings" => tracker_item_mapping_recipe(
+        $PokemonGlobal.randomTMsHash
+      ),
       "statistics" => tracker_attempt_statistics(current_run_attempt),
       "move_access_metrics" => move_access_metrics_snapshot,
       "evolution_metrics" => evolution_metrics_snapshot
@@ -191,6 +197,16 @@ module Ironmon
       "pool_size" => $PokemonGlobal.ironmon_custom_fusion_pool_size,
       "pool_fingerprint" => $PokemonGlobal.ironmon_custom_fusion_pool_fingerprint
     }
+  end
+
+  def self.tracker_item_mapping_recipe(mapping)
+    return {} if !mapping.is_a?(Hash)
+    result = {}
+    mapping.each do |source, target|
+      next if !source || !target
+      result[source.to_s] = target.to_s
+    end
+    return result
   end
 
   def self.tracker_pokemon_search(payload, envelope_run_id)
@@ -537,7 +553,9 @@ module Ironmon
         )
       end
     end
-    if recipe["player_fusion_generator_version"] != PlayerFusionMapper::SCHEMA_VERSION
+    if !PlayerFusionMapper::SUPPORTED_SCHEMA_VERSIONS.include?(
+      recipe["player_fusion_generator_version"]
+    )
       raise TrackerLookupError.new("generator_unavailable", "The required player-fusion generator is unavailable.")
     end
     if recipe["species_pool_fingerprint"] != tracker_species_pool_fingerprint
@@ -608,6 +626,8 @@ module Ironmon
       "fusion_tutor_source_fingerprint" => fusion_tutor["source_fingerprint"],
       "player_fusion_generator_version" => player_fusion["version"],
       "fusion_pool_fingerprint" => player_fusion["pool_fingerprint"],
+      "item_mappings" => recipe["item_mappings"] || {},
+      "tm_mappings" => recipe["tm_mappings"] || {},
       "move_access_metrics" => recipe["move_access_metrics"],
       "evolution_metrics" => recipe["evolution_metrics"]
     }
@@ -1725,7 +1745,11 @@ module Ironmon
     return player_fusion_mapper if tracker_loaded_recipe?(recipe)
     run_id = recipe["run_id"]
     tracker_fusion_mappers[run_id] ||= PlayerFusionMapper.new(
-      recipe["seed"], custom_fusion_pool, {}, {}
+      recipe["seed"], custom_fusion_pool, {}, {},
+      base_stat_generator_for(
+        recipe["seed"], recipe["base_stat_source_fingerprint"]
+      ),
+      recipe["player_fusion_generator_version"]
     )
     return tracker_fusion_mappers[run_id]
   end

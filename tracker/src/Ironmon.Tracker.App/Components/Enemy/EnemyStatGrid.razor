@@ -9,14 +9,16 @@
             }
             else
             {
-                <button class="@GetAnnotationClass(stat.Stat)"
-                        type="button"
-                        aria-label="@Text["Enemy.Stats.StatAnnotation", stat.Name, GetAnnotationText(stat.Stat)]"
-                        @onclick="() => CycleAnnotation(stat.Stat, true)"
-                        @oncontextmenu="() => CycleAnnotation(stat.Stat, false)"
-                        @oncontextmenu:preventDefault>
-                    @GetAnnotationSymbol(stat.Stat)
-                </button>
+                <span class="enemy-stat-values">
+                    <button class="@GetAnnotationClass(stat.Stat)"
+                            type="button"
+                            aria-label="@Text["Enemy.Stats.StatAnnotation", stat.Name, GetAnnotationText(stat.Stat)]"
+                            @onclick="() => CycleAnnotation(stat.Stat, true)"
+                            @oncontextmenu="() => CycleAnnotation(stat.Stat, false)"
+                            @oncontextmenu:preventDefault>
+                        @GetAnnotationSymbol(stat.Stat)
+                    </button>
+                </span>
             }
         </div>
     }

@@ -13,6 +13,7 @@ public partial class TrackerSettingsPage : IDisposable
     private IReadOnlyList<PokemonSearchMatch> _matches = [];
     private string _query = string.Empty;
     private string? _searchError;
+    private string? _maximumBstError;
     private int _favoritePage;
     private bool _searching;
 
@@ -39,6 +40,18 @@ public partial class TrackerSettingsPage : IDisposable
     /// </summary>
     [Parameter]
     public EventCallback<bool> AutoSelectStarterChanged { get; set; }
+
+    /// <summary>
+    /// Gets or initializes the inclusive generated-BST ceiling for automatic starter selection.
+    /// </summary>
+    [Parameter]
+    public int? MaximumStarterBaseStatTotal { get; set; }
+
+    /// <summary>
+    /// Gets or initializes the callback raised when the maximum starter BST changes.
+    /// </summary>
+    [Parameter]
+    public EventCallback<int?> MaximumStarterBaseStatTotalChanged { get; set; }
 
     /// <summary>
     /// Gets or initializes the callback raised when the Favorite Clause list changes.
@@ -74,6 +87,30 @@ public partial class TrackerSettingsPage : IDisposable
     /// <returns>A task representing callback dispatch.</returns>
     private Task HandleAutoSelectChanged(ChangeEventArgs args)
         => AutoSelectStarterChanged.InvokeAsync(args.Value is bool enabled && enabled);
+
+    /// <summary>
+    /// Validates and applies a changed maximum-starter-BST value.
+    /// </summary>
+    /// <param name="args">The numeric input change event.</param>
+    /// <returns>A task representing callback dispatch.</returns>
+    private Task HandleMaximumBstChanged(ChangeEventArgs args)
+    {
+        string text = args.Value?.ToString()?.Trim() ?? string.Empty;
+        if (text.Length == 0)
+        {
+            _maximumBstError = null;
+            return MaximumStarterBaseStatTotalChanged.InvokeAsync(null);
+        }
+
+        if (!int.TryParse(text, out int value) || value < StarterSelectionConstants.MinimumBaseStatTotal || value > StarterSelectionConstants.MaximumBaseStatTotal)
+        {
+            _maximumBstError = Text["Settings.Starter.MaximumBstValidation", StarterSelectionConstants.MinimumBaseStatTotal, StarterSelectionConstants.MaximumBaseStatTotal];
+            return Task.CompletedTask;
+        }
+
+        _maximumBstError = null;
+        return MaximumStarterBaseStatTotalChanged.InvokeAsync(value);
+    }
 
     /// <summary>
     /// Debounces user input and requests normal-Pokemon suggestions.

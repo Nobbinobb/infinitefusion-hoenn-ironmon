@@ -11,14 +11,23 @@ public sealed class TrackerHandshakePayload
     /// <param name="trackerVersion">The tracker application version.</param>
     /// <param name="debugRequested">Whether the tracker was launched in debug mode.</param>
     /// <param name="autoSelectStarter">Whether starter selection is controlled automatically.</param>
-    /// <exception cref="ArgumentException">Thrown when the tracker version is empty.</exception>
+    /// <param name="maximumStarterBaseStatTotal">The inclusive generated-BST ceiling for automatic starter selection.</param>
     /// <param name="favoriteSpeciesIds">The normal species covered by the Favorite Clause.</param>
-    public TrackerHandshakePayload(string trackerVersion, bool debugRequested, bool autoSelectStarter = false, IReadOnlyList<string>? favoriteSpeciesIds = null)
+    /// <exception cref="ArgumentException">Thrown when the tracker version is empty.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the maximum starter BST is outside the supported range.</exception>
+    public TrackerHandshakePayload(string trackerVersion, bool debugRequested, bool autoSelectStarter = false, int? maximumStarterBaseStatTotal = null, IReadOnlyList<string>? favoriteSpeciesIds = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(trackerVersion);
+        if (maximumStarterBaseStatTotal is not null)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(maximumStarterBaseStatTotal.Value, StarterSelectionConstants.MinimumBaseStatTotal);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(maximumStarterBaseStatTotal.Value, StarterSelectionConstants.MaximumBaseStatTotal);
+        }
+
         TrackerVersion = trackerVersion;
         DebugRequested = debugRequested;
         AutoSelectStarter = autoSelectStarter;
+        MaximumStarterBaseStatTotal = maximumStarterBaseStatTotal;
         FavoriteSpeciesIds = favoriteSpeciesIds ?? [];
     }
 
@@ -36,6 +45,11 @@ public sealed class TrackerHandshakePayload
     /// Gets whether starter selection is controlled automatically.
     /// </summary>
     public bool AutoSelectStarter { get; }
+
+    /// <summary>
+    /// Gets the inclusive generated-BST ceiling for automatic starter selection.
+    /// </summary>
+    public int? MaximumStarterBaseStatTotal { get; }
 
     /// <summary>
     /// Gets the stable normal-species identifiers covered by the Favorite Clause.

@@ -73,4 +73,5 @@ public partial class EnemyStatGrid
     /// <returns>The current annotation.</returns>
     private EnemyStatAnnotation GetAnnotation(EnemyStat stat)
         => Enemy is null ? EnemyStatAnnotation.Empty : Knowledge.GetAnnotation(Enemy.SpeciesId, stat);
+
 }

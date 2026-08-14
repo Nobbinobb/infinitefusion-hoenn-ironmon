@@ -41,6 +41,11 @@ internal static class TrackerApplicationConstants
     internal const string AutoSelectStarterPreferenceKey = "auto_select_starter";
 
     /// <summary>
+    /// Gets the persisted maximum-starter-BST preference key.
+    /// </summary>
+    internal const string MaximumStarterBaseStatTotalPreferenceKey = "maximum_starter_base_stat_total";
+
+    /// <summary>
     /// Gets the fallback application version.
     /// </summary>
     internal const string DefaultVersion = "0.1.0";

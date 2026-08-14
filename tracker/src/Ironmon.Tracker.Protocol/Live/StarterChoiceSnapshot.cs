@@ -43,6 +43,11 @@ public sealed class StarterChoiceSnapshot
     public int? BaseStatTotal { get; init; }
 
     /// <summary>
+    /// Gets or initializes whether the revealed starter satisfies the configured BST ceiling.
+    /// </summary>
+    public bool BstEligible { get; init; }
+
+    /// <summary>
     /// Gets or initializes whether the revealed starter is covered by the Favorite Clause.
     /// </summary>
     public bool Favorite { get; init; }

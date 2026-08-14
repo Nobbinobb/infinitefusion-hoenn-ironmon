@@ -23,6 +23,11 @@ public sealed class StarterSelectionSnapshot
     public int? RandomPickIndex { get; init; }
 
     /// <summary>
+    /// Gets or initializes the inclusive automatic-selection BST ceiling when enabled.
+    /// </summary>
+    public int? MaximumBaseStatTotal { get; init; }
+
+    /// <summary>
     /// Gets or initializes the starter slots in display order.
     /// </summary>
     public IReadOnlyList<StarterChoiceSnapshot> Choices { get; init; } = [];

@@ -232,3 +232,17 @@ module Ironmon
     return true
   end
 end
+
+class FusionMovesOptionsScene
+  alias ironmon_pivot_original_initialize initialize
+
+  def initialize(poke1, poke2)
+    ironmon_pivot_original_initialize(poke1, poke2)
+    return if !Ironmon.active?
+    return if !poke1.is_a?(Pokemon) || !poke2.is_a?(Pokemon)
+    return if !poke1.original_body.is_a?(Pokemon)
+
+    @head_species = poke2.species_data
+    @body_species = poke1.original_body.species_data
+  end
+end

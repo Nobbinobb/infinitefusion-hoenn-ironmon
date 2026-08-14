@@ -16,6 +16,7 @@ public partial class Home : IDisposable
     private bool _completedRunNavigationPending;
     private bool _settingsOpen;
     private bool _autoSelectStarter;
+    private int? _maximumStarterBaseStatTotal;
     private string? _settingsStatus;
 
     /// <summary>
@@ -64,6 +65,7 @@ public partial class Home : IDisposable
         _selectedEnemyId = _run.Enemies.Count > 0 ? _run.Enemies[0].EnemyId : null;
         _lastMoveMenuPokemonId = _run.MoveMenuPokemonId;
         _autoSelectStarter = ConnectionOptions.AutoSelectStarter;
+        _maximumStarterBaseStatTotal = ConnectionOptions.MaximumStarterBaseStatTotal;
         if (_selectedEnemyId is not null)
             _selectedView = TrackerView.Enemy;
 
@@ -132,6 +134,36 @@ public partial class Home : IDisposable
     }
 
     /// <summary>
+    /// Persists and synchronizes the inclusive maximum starter BST.
+    /// </summary>
+    /// <param name="maximum">The ceiling, or null to disable it.</param>
+    /// <returns>A task representing game synchronization.</returns>
+    private async Task HandleMaximumStarterBaseStatTotalChanged(int? maximum)
+    {
+        if (maximum is not null && (maximum < StarterSelectionConstants.MinimumBaseStatTotal || maximum > StarterSelectionConstants.MaximumBaseStatTotal))
+            return;
+
+        _maximumStarterBaseStatTotal = maximum;
+        ConnectionOptions.MaximumStarterBaseStatTotal = maximum;
+        Preferences.Default.Set(TrackerApplicationConstants.MaximumStarterBaseStatTotalPreferenceKey, maximum ?? 0);
+        if (_connection.Status != TrackerConnectionStatus.Connected)
+        {
+            _settingsStatus = Text["Settings.Page.AppliesOnConnection"];
+            return;
+        }
+
+        try
+        {
+            await TrackerConnection.Requests.UpdateSettingsAsync(CreateSettingsPayload());
+            _settingsStatus = Text["Settings.Page.Saved"];
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException or TrackerProtocolException or TimeoutException)
+        {
+            _settingsStatus = Text["Settings.Page.AppliesOnConnection"];
+        }
+    }
+
+    /// <summary>
     /// Synchronizes a changed Favorite Clause list with the connected game.
     /// </summary>
     /// <param name="speciesIds">The complete stable normal-species identifier list.</param>
@@ -161,7 +193,7 @@ public partial class Home : IDisposable
     /// </summary>
     /// <returns>The settings synchronized to the game.</returns>
     private TrackerSettingsPayload CreateSettingsPayload()
-        => new() { AutoSelectStarter = _autoSelectStarter, FavoriteSpeciesIds = ConnectionOptions.FavoriteSpeciesIds };
+        => new() { AutoSelectStarter = _autoSelectStarter, MaximumStarterBaseStatTotal = _maximumStarterBaseStatTotal, FavoriteSpeciesIds = ConnectionOptions.FavoriteSpeciesIds };
 
     /// <summary>
     /// Handles keyboard shortcuts for switching between primary tracker views.

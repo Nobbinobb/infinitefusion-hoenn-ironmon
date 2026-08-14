@@ -21,8 +21,8 @@ and a fast reset to starter selection.
   and creates the combined copy-ready ZIP and SHA-256 checksum in `release/`.
 
 Milestone 6 is on hold while optional quality-of-life features are developed.
-Version `0.7.2` adds the tracker-owned area lookup for trainers, wild encounter
-slots, visible items, and hidden items while retaining the starter-selection,
+Version `0.7.3` adds early-run healing and reward adjustments, live battle stat
+stages, and maximum-BST starter autoselect while retaining the area lookup,
 Favorite Clause, and randomization safeguards from the 0.7 series. See
 `docs/IRONMON_MECHANICS.html` for the complete behavior reference,
 `docs/ROADMAP.md` for cumulative scope, and `docs/guides/INSTALLATION.md` for

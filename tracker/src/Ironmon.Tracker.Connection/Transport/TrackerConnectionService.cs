@@ -217,7 +217,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         _diagnostics.RecordIncoming(handshakeMessage);
         GameHandshakePayload game = ValidateGameHandshake(handshakeMessage);
         _knowledge.SelectRun(game.RunId);
-        TrackerHandshakePayload tracker = new(_options.TrackerVersion, _options.DebugRequested, _options.AutoSelectStarter, _options.FavoriteSpeciesIds);
+        TrackerHandshakePayload tracker = new(_options.TrackerVersion, _options.DebugRequested, _options.AutoSelectStarter, _options.MaximumStarterBaseStatTotal, _options.FavoriteSpeciesIds);
         TrackerMessage trackerHandshake = TrackerMessageFactory.CreateEvent(TrackerEvents.TrackerConnected, TrackerProtocol.InitialEventSequence, tracker, game.RunId, game.BattleId);
         await writer.WriteAsync(trackerHandshake, cancellationToken).ConfigureAwait(false);
         _diagnostics.RecordOutgoing(trackerHandshake);

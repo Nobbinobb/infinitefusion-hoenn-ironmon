@@ -114,6 +114,57 @@ public sealed class AreaDiscoveryStore
     }
 
     /// <summary>
+    /// Restores tracker-owned disclosed entries into a reconstructed archived response.
+    /// </summary>
+    /// <param name="runId">The owning archived run identifier.</param>
+    /// <param name="response">The game-reconstructed archived response.</param>
+    /// <param name="itemMappingsAvailable">Whether the archived recipe can reconstruct undisclosed randomized items.</param>
+    /// <returns>The response with persisted run-owned details restored.</returns>
+    public AreaLookupDetailResponsePayload RestoreArchivedDetails(string runId, AreaLookupDetailResponsePayload response, bool itemMappingsAvailable)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(runId);
+        ArgumentNullException.ThrowIfNull(response);
+        lock (_sync)
+        {
+            PersistedAreaDiscoveries run = GetOrLoad(runId);
+            IReadOnlyList<AreaTrainerEntryPayload> trainers = [.. response.Trainers.Select(entry => run.Trainers.GetValueOrDefault(entry.EntryId) ?? entry)];
+            IReadOnlyList<AreaEncounterEntryPayload> encounters = [.. response.Encounters.Select(entry => run.Encounters.GetValueOrDefault(entry.EntryId) ?? entry)];
+            IReadOnlyList<AreaItemEntryPayload> items = [.. response.Items.Select(entry =>
+            {
+                if (run.Items.TryGetValue(entry.EntryId, out AreaItemEntryPayload? persisted))
+                    return persisted;
+
+                if (itemMappingsAvailable)
+                    return entry;
+
+                return new AreaItemEntryPayload
+                {
+                    EntryId = entry.EntryId,
+                    MapId = entry.MapId,
+                    X = entry.X,
+                    Y = entry.Y,
+                    Kind = entry.Kind,
+                    Hidden = entry.Hidden,
+                    Collected = entry.Collected,
+                    DetailsRevealed = false,
+                    Items = []
+                };
+            })];
+
+            return new AreaLookupDetailResponsePayload
+            {
+                AreaId = response.AreaId,
+                Name = response.Name,
+                Category = response.Category,
+                Revision = response.Revision,
+                Trainers = trainers,
+                Encounters = encounters,
+                Items = items
+            };
+        }
+    }
+
+    /// <summary>
     /// Persists newly disclosed complete entries and reconciles base-game completion discoveries.
     /// </summary>
     /// <param name="runId">The owning run identifier.</param>

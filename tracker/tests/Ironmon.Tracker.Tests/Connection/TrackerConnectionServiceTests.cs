@@ -212,6 +212,12 @@ public sealed class TrackerConnectionServiceTests
         Assert.False(options.AutoSelectStarter);
         Assert.Equal("SQUIRTLE:0", Assert.Single(options.FavoriteSpeciesIds));
 
+        Task<ResetRunResponsePayload> resetTask = service.Requests.ResetRunAsync();
+        TrackerMessage? resetRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(TrackerCommands.ResetRun, resetRequest?.Command);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(resetRequest!.RequestId!, new ResetRunResponsePayload { Accepted = true }, "run-1"));
+        Assert.True((await resetTask).Accepted);
+
         Task<PokemonSearchResponsePayload> favoriteSearchTask = service.Requests.SearchFavoritePokemonAsync("squirt");
         TrackerMessage? favoriteSearchRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
         Assert.Equal(TrackerCommands.FavoritePokemonSearch, favoriteSearchRequest?.Command);

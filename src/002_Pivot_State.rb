@@ -20,7 +20,7 @@ module Ironmon
   ].freeze
 
   class PivotState
-    SCHEMA_VERSION = 2
+    SCHEMA_VERSION = 3
 
     attr_reader :schema_version
     attr_reader :pending_pivot
@@ -43,6 +43,10 @@ module Ironmon
     end
 
     def migrate!
+      if @schema_version != SCHEMA_VERSION
+        @fusion_mappings = {}
+        @discovered_fusion_mappings = {}
+      end
       @pending_pivot = nil if !@pending_pivot.is_a?(Hash)
       @fusion_mappings = {} if !@fusion_mappings.is_a?(Hash)
       if !@discovered_fusion_mappings.is_a?(Hash)

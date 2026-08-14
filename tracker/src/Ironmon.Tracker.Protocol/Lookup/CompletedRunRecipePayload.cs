@@ -83,6 +83,16 @@ public sealed class CompletedRunRecipePayload
     public required PlayerFusionGeneratorRecipePayload PlayerFusionGenerator { get; init; }
 
     /// <summary>
+    /// Gets or initializes the archived ordinary-item shuffle by source item identifier.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> ItemMappings { get; init; } = new Dictionary<string, string>();
+
+    /// <summary>
+    /// Gets or initializes the archived machine-item shuffle by source item identifier.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> TmMappings { get; init; } = new Dictionary<string, string>();
+
+    /// <summary>
     /// Gets or initializes authoritative attempt statistics when the recipe provides them.
     /// </summary>
     public RunStatisticsPayload? Statistics { get; init; }

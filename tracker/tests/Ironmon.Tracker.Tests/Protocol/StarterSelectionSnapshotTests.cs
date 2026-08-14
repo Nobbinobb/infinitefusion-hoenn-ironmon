@@ -38,6 +38,7 @@ public sealed class StarterSelectionSnapshotTests
         Assert.Equal("Venusaur", revealed.SpeciesName);
         Assert.Equal(525, revealed.BaseStatTotal);
         Assert.True(revealed.Favorite);
+        Assert.True(revealed.BstEligible);
     }
 
     /// <summary>
@@ -65,6 +66,7 @@ public sealed class StarterSelectionSnapshotTests
     {
         Active = true,
         RandomPickIndex = 1,
+        MaximumBaseStatTotal = 525,
         Choices =
         [
             new StarterChoiceSnapshot { Index = 0, Revealed = false },
@@ -76,6 +78,7 @@ public sealed class StarterSelectionSnapshotTests
                 SpeciesName = "Venusaur",
                 SpritePath = "Graphics/Battlers/3.png",
                 BaseStatTotal = 525,
+                BstEligible = true,
                 Favorite = true
             },
             new StarterChoiceSnapshot { Index = 2, Revealed = false }

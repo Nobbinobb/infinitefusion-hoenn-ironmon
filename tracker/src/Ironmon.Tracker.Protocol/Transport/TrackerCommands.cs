@@ -16,6 +16,11 @@ public static class TrackerCommands
     public const string UpdateSettings = "update_settings";
 
     /// <summary>
+    /// Gets the guarded active-run reset command.
+    /// </summary>
+    public const string ResetRun = "reset_run";
+
+    /// <summary>
     /// Gets the connected-game normal-Pokemon search command used by Favorite Clause settings.
     /// </summary>
     public const string FavoritePokemonSearch = "favorite_pokemon_search";

@@ -18,6 +18,11 @@ public sealed class TrackerSettingsPayload
     public bool AutoSelectStarter { get; init; }
 
     /// <summary>
+    /// Gets or initializes the inclusive generated-BST ceiling for automatic starter selection.
+    /// </summary>
+    public int? MaximumStarterBaseStatTotal { get; init; }
+
+    /// <summary>
     /// Gets or initializes the stable normal-species identifiers covered by the Favorite Clause.
     /// </summary>
     public IReadOnlyList<string> FavoriteSpeciesIds { get; init; } = [];

@@ -15,13 +15,16 @@ public sealed partial class TrackerGlobalShortcutService
     private const int TwoVirtualKey = 0x32;
     private const int ThreeVirtualKey = 0x33;
     private const int FourVirtualKey = 0x34;
+    private const ushort StartButton = 0x0010;
     private const byte TriggerThreshold = 192;
     private const int RightStickThreshold = 20_000;
 
     private readonly TrackerConnectionState _connectionState;
+    private readonly TrackerConnectionService _connectionService;
     private readonly Lock _sync = new();
     private readonly bool[] _keyboardLatches = new bool[4];
     private readonly TrackerView?[] _controllerDirections = new TrackerView?[4];
+    private readonly bool[] _controllerResetLatches = new bool[4];
     private CancellationTokenSource? _cancellation;
     private Task? _pollTask;
     private nint _cachedForegroundWindow;
@@ -33,10 +36,13 @@ public sealed partial class TrackerGlobalShortcutService
     /// Initializes the global shortcut monitor.
     /// </summary>
     /// <param name="connectionState">The connection state containing the active game directory.</param>
-    public TrackerGlobalShortcutService(TrackerConnectionState connectionState)
+    /// <param name="connectionService">The service used to send guarded requests to the connected game.</param>
+    public TrackerGlobalShortcutService(TrackerConnectionState connectionState, TrackerConnectionService connectionService)
     {
         ArgumentNullException.ThrowIfNull(connectionState);
+        ArgumentNullException.ThrowIfNull(connectionService);
         _connectionState = connectionState;
+        _connectionService = connectionService;
     }
 
     /// <summary>
@@ -88,6 +94,7 @@ public sealed partial class TrackerGlobalShortcutService
         }
         finally
         {
+            ResetLatches();
             cancellation.Dispose();
         }
     }
@@ -171,16 +178,49 @@ public sealed partial class TrackerGlobalShortcutService
         if (XInputGetState(index, out XInputState state) != 0)
         {
             _controllerDirections[index] = null;
+            SetControllerResetState(index, false);
             return;
         }
 
         XInputGamepad gamepad = state.Gamepad;
         bool chordPressed = gamepad.LeftTrigger >= TriggerThreshold && gamepad.RightTrigger >= TriggerThreshold;
-        TrackerView? direction = chordPressed ? ResolveRightStickDirection(gamepad.RightThumbX, gamepad.RightThumbY) : null;
+        bool resetPressed = chordPressed && (gamepad.Buttons & StartButton) != 0;
+        SetControllerResetState(index, resetPressed);
+
+        TrackerView? direction = chordPressed && !resetPressed ? ResolveRightStickDirection(gamepad.RightThumbX, gamepad.RightThumbY) : null;
         if (direction is not null && direction != _controllerDirections[index])
             ViewRequested?.Invoke(direction.Value);
 
         _controllerDirections[index] = direction;
+    }
+
+    /// <summary>
+    /// Updates one controller's reset state and mirrors the aggregate state to F7.
+    /// </summary>
+    /// <param name="index">The zero-based XInput controller index.</param>
+    /// <param name="pressed">Whether the complete reset chord is pressed.</param>
+    private void SetControllerResetState(uint index, bool pressed)
+    {
+        bool wasPressed = Array.Exists(_controllerResetLatches, static state => state);
+        _controllerResetLatches[index] = pressed;
+        bool isPressed = Array.Exists(_controllerResetLatches, static state => state);
+        if (!wasPressed && isPressed)
+            _ = RequestResetAsync();
+    }
+
+    /// <summary>
+    /// Sends a guarded reset request directly to the connected game runtime.
+    /// </summary>
+    /// <returns>A task representing the request.</returns>
+    private async Task RequestResetAsync()
+    {
+        try
+        {
+            await _connectionService.Requests.ResetRunAsync().ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
+        {
+        }
     }
 
     /// <summary>
@@ -255,6 +295,7 @@ public sealed partial class TrackerGlobalShortcutService
     {
         Array.Clear(_keyboardLatches);
         Array.Clear(_controllerDirections);
+        Array.Clear(_controllerResetLatches);
     }
 
     /// <summary>

@@ -41,26 +41,14 @@ public partial class PlayerStatGrid
         => value.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
-    /// Gets the visible nature-adjustment arrow.
+    /// Gets the CSS classes for a stat value and its nature adjustment.
     /// </summary>
     /// <param name="adjustment">The nature adjustment.</param>
-    /// <returns>The adjustment arrow.</returns>
-    private static string GetNatureIndicator(StatAdjustment adjustment) => adjustment switch
+    /// <returns>The stat-value CSS classes.</returns>
+    private static string GetStatValueClass(StatAdjustment adjustment) => adjustment switch
     {
-        StatAdjustment.Increased => "↑",
-        StatAdjustment.Decreased => "↓",
-        _ => string.Empty
-    };
-
-    /// <summary>
-    /// Gets the CSS classes for a nature-adjustment arrow.
-    /// </summary>
-    /// <param name="adjustment">The nature adjustment.</param>
-    /// <returns>The adjustment CSS classes.</returns>
-    private static string GetNatureClass(StatAdjustment adjustment) => adjustment switch
-    {
-        StatAdjustment.Increased => "nature-adjustment increased",
-        StatAdjustment.Decreased => "nature-adjustment decreased",
-        _ => "nature-adjustment"
+        StatAdjustment.Increased => "stat-value increased",
+        StatAdjustment.Decreased => "stat-value decreased",
+        _ => "stat-value"
     };
 }

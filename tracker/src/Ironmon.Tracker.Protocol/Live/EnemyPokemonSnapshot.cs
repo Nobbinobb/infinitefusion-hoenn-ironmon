@@ -53,6 +53,11 @@ public sealed class EnemyPokemonSnapshot
     public int BaseStatTotal { get; init; }
 
     /// <summary>
+    /// Gets or initializes the current in-battle stat stages.
+    /// </summary>
+    public BattleStatStagesSnapshot StatStages { get; init; } = new();
+
+    /// <summary>
     /// Gets or initializes the most recently used regular move when one has become observable.
     /// </summary>
     public ObservedMoveSnapshot? LastMove { get; init; }

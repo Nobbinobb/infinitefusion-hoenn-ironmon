@@ -14,6 +14,23 @@
         <input type="checkbox" checked="@AutoSelectStarter" @onchange="HandleAutoSelectChanged" />
     </label>
 
+    <label class="settings-number-option">
+        <span>
+            <strong>@Text["Settings.Starter.MaximumBst"]</strong>
+            <small>@Text["Settings.Starter.MaximumBstDescription"]</small>
+        </span>
+        <input type="number"
+               min="@StarterSelectionConstants.MinimumBaseStatTotal"
+               max="@StarterSelectionConstants.MaximumBaseStatTotal"
+               value="@MaximumStarterBaseStatTotal"
+               placeholder="@Text["Settings.Starter.MaximumBstPlaceholder"]"
+               @onchange="HandleMaximumBstChanged" />
+        @if (!string.IsNullOrWhiteSpace(_maximumBstError))
+        {
+            <small class="settings-validation">@_maximumBstError</small>
+        }
+    </label>
+
     <section class="favorite-settings" aria-label="@Text["Settings.Favorites.FavoriteClause"]">
         <div>
             <strong>@Text["Settings.Favorites.FavoriteClause"]</strong>

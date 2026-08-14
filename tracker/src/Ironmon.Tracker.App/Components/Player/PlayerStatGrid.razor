@@ -4,11 +4,7 @@
         <div class="stat-row">
             <span>@stat.Name</span>
             <strong>
-                @stat.Value
-                @if (stat.Adjustment != StatAdjustment.Neutral)
-                {
-                    <span class="@GetNatureClass(stat.Adjustment)">@GetNatureIndicator(stat.Adjustment)</span>
-                }
+                <span class="@GetStatValueClass(stat.Adjustment)">@stat.Value</span>
             </strong>
         </div>
     }

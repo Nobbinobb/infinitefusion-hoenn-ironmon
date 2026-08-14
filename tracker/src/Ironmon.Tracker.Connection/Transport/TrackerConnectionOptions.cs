@@ -48,6 +48,11 @@ public sealed class TrackerConnectionOptions
     public bool AutoSelectStarter { get; set; }
 
     /// <summary>
+    /// Gets or sets the inclusive generated-BST ceiling for automatic starter selection.
+    /// </summary>
+    public int? MaximumStarterBaseStatTotal { get; set; }
+
+    /// <summary>
     /// Gets or sets the stable normal species covered by the Favorite Clause.
     /// </summary>
     public IReadOnlyList<string> FavoriteSpeciesIds { get; set; } = [];
