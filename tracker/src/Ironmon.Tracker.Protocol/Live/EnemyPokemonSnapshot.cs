@@ -53,6 +53,11 @@ public sealed class EnemyPokemonSnapshot
     public int BaseStatTotal { get; init; }
 
     /// <summary>
+    /// Gets or initializes the current ordinary Poke Ball success percentage for a wild opponent.
+    /// </summary>
+    public double? CatchChancePercent { get; init; }
+
+    /// <summary>
     /// Gets or initializes the current in-battle stat stages.
     /// </summary>
     public BattleStatStagesSnapshot StatStages { get; init; } = new();

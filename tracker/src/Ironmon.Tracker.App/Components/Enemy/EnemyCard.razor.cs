@@ -128,6 +128,14 @@ public partial class EnemyCard : IDisposable
         => SelectedEnemy?.BaseStatTotal.ToString(CultureInfo.InvariantCulture) ?? "--";
 
     /// <summary>
+    /// Formats the current ordinary Poke Ball capture chance.
+    /// </summary>
+    /// <param name="catchChance">The percentage supplied by the game.</param>
+    /// <returns>The localized percentage label.</returns>
+    private static string FormatCatchChance(double catchChance)
+        => $"{catchChance.ToString("0.0", CultureInfo.CurrentCulture)}%";
+
+    /// <summary>
     /// Formats the highest level encountered for the selected enemy species and form.
     /// </summary>
     /// <returns>The highest-level label or placeholder.</returns>

@@ -25,6 +25,14 @@
         }
     </div>
 
+    @if (Selection.CurrentMoveTypes.Count > 0)
+    {
+        <p class="coverage-type-source-note">
+            <span class="coverage-type-source-marker" aria-hidden="true"></span>
+            @Text["Lookup.Coverage.CurrentMoveIndicator"]
+        </p>
+    }
+
     @if (_compatibility != TypeCoverageCompatibilityStatus.Compatible)
     {
         <div class="coverage-state" role="status">

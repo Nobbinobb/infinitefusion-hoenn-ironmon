@@ -1022,7 +1022,7 @@ module Ironmon
   def self.tracker_enemy_snapshot(battler)
     pokemon = battler.pokemon
     species = pokemon.species_data
-    return {
+    snapshot = {
       "enemy_id" => tracker_enemy_id(pokemon),
       "position" => battler.index,
       "species_id" => tracker_species_id(pokemon),
@@ -1035,6 +1035,12 @@ module Ironmon
       "last_move" => tracker_enemy_last_move(battler),
       "last_ability" => @tracker_enemy_abilities[battler.index]
     }
+    if catch_assistance_battle?(@tracker_battle)
+      snapshot["catch_chance_percent"] = poke_ball_catch_chance_percent(
+        pokemon, battler, @tracker_battle.caughtOffGuard
+      )
+    end
+    return snapshot
   end
 
   def self.tracker_enemy_last_move(battler)

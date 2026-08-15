@@ -654,6 +654,9 @@
   <data name="Enemy.Card.EnemyPokemon" xml:space="preserve">
     <value>Enemy Pokemon</value>
   </data>
+  <data name="Enemy.Card.EnemyCondition" xml:space="preserve">
+    <value>Enemy condition</value>
+  </data>
   <data name="Enemy.Card.EnemySummary" xml:space="preserve">
     <value>Enemy summary</value>
   </data>
@@ -686,6 +689,9 @@
   </data>
   <data name="Enemy.Card.OpposingPokemonHeading" xml:space="preserve">
     <value>OPPOSING POKEMON</value>
+  </data>
+  <data name="Enemy.Card.PokeBall" xml:space="preserve">
+    <value>Poké Ball</value>
   </data>
   <data name="Enemy.Card.StatusHidden" xml:space="preserve">
     <value>Status hidden</value>
@@ -1301,6 +1307,7 @@
   <data name="Lookup.Coverage.Description" xml:space="preserve"><value>See the best damage multiplier your selected move types can reach across the complete eligible trainer pool.</value></data>
   <data name="Lookup.Coverage.CurrentMoves" xml:space="preserve"><value>Current Moves</value></data>
   <data name="Lookup.Coverage.TypeSelection" xml:space="preserve"><value>Attacking type selection</value></data>
+  <data name="Lookup.Coverage.CurrentMoveIndicator" xml:space="preserve"><value>Available from a current damaging move</value></data>
   <data name="Lookup.Coverage.CurrentType" xml:space="preserve"><value>{0} is available from a current damaging move.</value></data>
   <data name="Lookup.Coverage.HypotheticalType" xml:space="preserve"><value>Select {0} for hypothetical coverage.</value></data>
   <data name="Lookup.Coverage.Unavailable" xml:space="preserve"><value>Coverage unavailable</value></data>
@@ -1310,7 +1317,7 @@
   <data name="Lookup.Coverage.NormalPoolMismatch" xml:space="preserve"><value>The connected normal Pokémon pool does not match this release's coverage data.</value></data>
   <data name="Lookup.Coverage.FusionPoolMismatch" xml:space="preserve"><value>The connected custom-fusion pool does not match this release's coverage data.</value></data>
   <data name="Lookup.Coverage.NoSelection" xml:space="preserve"><value>Select at least one attacking type</value></data>
-  <data name="Lookup.Coverage.NoSelectionDescription" xml:space="preserve"><value>Current damaging moves are selected automatically. You can also select any gray type to test a hypothetical moveset.</value></data>
+  <data name="Lookup.Coverage.NoSelectionDescription" xml:space="preserve"><value>Current damaging moves are selected automatically. You can also select any type to test a hypothetical moveset.</value></data>
   <data name="Lookup.Coverage.Results" xml:space="preserve"><value>Type coverage results</value></data>
   <data name="Lookup.Coverage.Percentage" xml:space="preserve"><value>{0}%</value></data>
   <data name="Lookup.Coverage.MixedWeighting" xml:space="preserve"><value>Counts combine the current Normal and Fusion populations. Percentages reflect the trainer generator's 50/50 category choice.</value></data>

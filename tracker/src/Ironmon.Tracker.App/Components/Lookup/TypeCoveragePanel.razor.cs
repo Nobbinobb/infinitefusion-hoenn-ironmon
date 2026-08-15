@@ -81,12 +81,22 @@ public partial class TypeCoveragePanel
     /// <returns>The button classes.</returns>
     private string GetTypeButtonClass(string type)
     {
-        bool current = Selection.CurrentMoveTypes.Contains(type, StringComparer.Ordinal);
         bool selected = Selection.SelectedTypes.Contains(type, StringComparer.Ordinal);
-        string color = current ? $" current {MovePresentation.GetTypeColorClass(type)}" : string.Empty;
+        string currentClass = IsCurrentMoveType(type)
+            ? " current"
+            : string.Empty;
+        string color = selected ? $" {MovePresentation.GetTypeColorClass(type)}" : string.Empty;
         string selectedClass = selected ? " selected" : string.Empty;
-        return $"coverage-type{color}{selectedClass}";
+        return $"coverage-type{currentClass}{color}{selectedClass}";
     }
+
+    /// <summary>
+    /// Gets whether one type is available from a current damaging move.
+    /// </summary>
+    /// <param name="type">The stable type identifier.</param>
+    /// <returns><see langword="true"/> when a current damaging move has the type.</returns>
+    private bool IsCurrentMoveType(string type)
+        => Selection.CurrentMoveTypes.Contains(type, StringComparer.Ordinal);
 
     /// <summary>
     /// Gets the explanatory tooltip for one type-selection button.
@@ -95,7 +105,7 @@ public partial class TypeCoveragePanel
     /// <returns>The localized tooltip.</returns>
     private string GetTypeTitle(string type)
     {
-        return Selection.CurrentMoveTypes.Contains(type, StringComparer.Ordinal)
+        return IsCurrentMoveType(type)
             ? Text["Lookup.Coverage.CurrentType", type]
             : Text["Lookup.Coverage.HypotheticalType", type];
     }

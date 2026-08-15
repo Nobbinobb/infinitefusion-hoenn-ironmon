@@ -76,8 +76,12 @@
         <div class="hp-bar unknown enemy" aria-label="@Text["Enemy.Card.EnemyHpUnknown"]"><span></span></div>
     </div>
 
-    <div class="detail-strip placeholder-content" aria-label="@Text["Enemy.Card.HiddenEnemyCondition"]">
+    <div class="detail-strip placeholder-content" aria-label="@Text["Enemy.Card.EnemyCondition"]">
         <span>@(SelectedEnemy is null ? Text["Enemy.Card.StatusUnknown"] : Text["Enemy.Card.StatusHidden"])</span>
+        @if (SelectedEnemy?.CatchChancePercent is double catchChance)
+        {
+            <span>@Text["Enemy.Card.PokeBall"] <strong>@FormatCatchChance(catchChance)</strong></span>
+        }
     </div>
 
     <EnemyStatGrid Enemy="@SelectedEnemy" />
