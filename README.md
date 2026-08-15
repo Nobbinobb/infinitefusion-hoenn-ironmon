@@ -12,19 +12,22 @@ and a fast reset to starter selection.
 - `docs/ROADMAP.md` tracks milestone scope and status.
 - `docs/guides/` contains installation, configuration, and development guides.
 - `docs/releases/` contains versioned release notes.
-- `dist/` contains the copy-ready game directory layout.
+- `data/` contains release-generated runtime datasets.
+- `packaging/` contains source templates copied into player distributions.
+- `tracker/` contains the tracker, access-token generator, and their tests.
+- `tests/runtime/` contains bundled-game runtime validation.
+- `dist/` and `release/` are ignored generated output directories.
 - `tools/Build-Distribution.ps1` synchronizes the source into `dist/` and the
   local game installation.
-- `tools/Build-Milestone3.ps1` retains the historical cumulative ability-release
-  build.
 - `tools/Build-TrackerRelease.ps1` publishes the self-contained Windows tracker
   and creates the combined copy-ready ZIP and SHA-256 checksum in `release/`.
+- `tools/generation/` contains release-data generators and their runtime bridge.
 
 Milestone 6 is on hold while optional quality-of-life features are developed.
-Version `0.7.4` adds signed, expiring, capability-based diagnostic access to the
-ordinary Release tracker, including a separate maintainer-only token generator
-and immediate game-side grant updates. It retains the early-run, area lookup,
-Favorite Clause, and randomization safeguards from the 0.7 series. See
+Version `0.7.5` reorganizes the tracker into permanent Player, Enemy, Lookup,
+and Archive views and adds aggregate type coverage for the complete trainer
+randomization populations. It retains signed diagnostic access, early-run and
+area lookup, Favorite Clause, and randomization safeguards from the 0.7 series. See
 `docs/IRONMON_MECHANICS.html` for the complete behavior reference,
 `docs/ROADMAP.md` for cumulative scope, and `docs/guides/INSTALLATION.md` for
 installation steps.

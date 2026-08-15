@@ -1,0 +1,30 @@
+<section class="diagnostic-tools" aria-label="@Text["Diagnostics.Page.Title"]">
+    <nav class="diagnostic-tool-tabs" role="tablist" aria-label="@Text["Diagnostics.Page.Tabs"]">
+        <button type="button"
+                class="@GetTabClass(false)"
+                role="tab"
+                aria-selected="@(!_toolsSelected)"
+                @onclick="ShowAccess">
+            @Text["Diagnostics.Page.Access"]
+        </button>
+        @if (ToolsAvailable)
+        {
+            <button type="button"
+                    class="@GetTabClass(true)"
+                    role="tab"
+                    aria-selected="@_toolsSelected"
+                    @onclick="ShowTools">
+                @Text["Diagnostics.Page.Tools"]
+            </button>
+        }
+    </nav>
+
+    @if (_toolsSelected && ToolsAvailable)
+    {
+        <DebugInspector Player="@Player" Enemies="@Enemies" GameRoot="@GameRoot" />
+    }
+    else
+    {
+        <DiagnosticAccessPage />
+    }
+</section>

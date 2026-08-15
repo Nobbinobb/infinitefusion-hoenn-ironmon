@@ -16,12 +16,12 @@ public enum TrackerView
     Enemy = 1,
 
     /// <summary>
-    /// Searches deterministic generated data for completed runs.
+    /// Shows active-run world information and utility tools.
     /// </summary>
     Lookup = 2,
 
     /// <summary>
-    /// Shows the authorized development inspector and diagnostics.
+    /// Shows completed-run history, lookup, and analysis.
     /// </summary>
-    Debug = 3
+    Archive = 3
 }

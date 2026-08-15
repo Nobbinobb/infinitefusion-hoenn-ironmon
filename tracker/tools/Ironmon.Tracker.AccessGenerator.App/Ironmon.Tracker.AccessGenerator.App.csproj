@@ -8,10 +8,10 @@
     <EnableDefaultCssItems>false</EnableDefaultCssItems>
     <ApplicationTitle>Ironmon Access Token Generator</ApplicationTitle>
     <ApplicationId>com.ironmon.accesstokengenerator</ApplicationId>
-    <ApplicationDisplayVersion>0.7.4</ApplicationDisplayVersion>
-    <ApplicationVersion>704</ApplicationVersion>
+    <ApplicationDisplayVersion>0.7.5</ApplicationDisplayVersion>
+    <ApplicationVersion>705</ApplicationVersion>
     <AssemblyName>Ironmon.AG</AssemblyName>
-    <Version>0.7.4</Version>
+    <Version>0.7.5</Version>
     <NeutralLanguage>en-US</NeutralLanguage>
     <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
     <WindowsPackageType>None</WindowsPackageType>

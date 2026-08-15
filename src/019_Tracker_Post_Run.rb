@@ -650,16 +650,7 @@ module Ironmon
   end
 
   def self.tracker_species_pool_fingerprint
-    value = SpeciesGenerator::FNV_OFFSET_BASIS
-    normal_species_pool.each do |species|
-      species.to_s.each_byte do |byte|
-        value ^= byte
-        value = (value * SpeciesGenerator::FNV_PRIME) & SpeciesGenerator::FNV_MASK
-      end
-      value ^= 0
-      value = (value * SpeciesGenerator::FNV_PRIME) & SpeciesGenerator::FNV_MASK
-    end
-    return sprintf("%016x", value)
+    return species_pool_fingerprint(normal_species_pool)
   end
 
   def self.tracker_lookup_species_pool(_recipe)

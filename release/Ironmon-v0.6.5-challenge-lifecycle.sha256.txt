@@ -1,1 +1,0 @@
-661fc320cc62e20f41a5f9fde6c03a2c746e55b4ebf04e73f54d2ad8fa3c147b  Ironmon-v0.6.5-challenge-lifecycle.zip

@@ -1372,3 +1372,97 @@ Status: **Awaiting review**
 - Two clean builds of `Ironmon-v0.7.4-diagnostic-access.zip` produced the same
   SHA-256 checksum:
   `e3d85fc44fbca4f8bce006f5bb8493a9a5d49466e9acd16f8b38f0d10b6026ef`.
+
+## Ironmon 0.7.5 navigation and lookup composition
+
+Status: **Implemented; awaiting review**
+
+- Replaced conditional Debug navigation with four permanent Player, Enemy,
+  Lookup, and Archive views.
+- Made Lookup active-run only and moved completed-run selection, shared world
+  lookup, Pokemon lookup, statistics, move-access analysis, and evolution
+  analysis into Archive.
+- Retained one world-lookup implementation whose active or archived source
+  parameters continue to control disclosure, loading, caching, and requests.
+- Moved Ctrl+4 and the matching controller direction to Archive.
+- Hosted capability-controlled Debug tools with the always-reachable Diagnostic
+  Access screen and removed their direct primary-view shortcut.
+- All 136 tracker tests pass in Debug and Release. The tracker application
+  builds with zero warnings in both configurations; Release was validated in
+  an isolated output because the user's existing Release tracker process was
+  left running and retained ownership of its normal build files.
+
+## Ironmon 0.7.5 release-precalculated coverage dataset
+
+Status: **Implemented; awaiting review**
+
+- Added a bundled-runtime maintainer generator using the exact normal and
+  eligible custom-fusion pools plus the game's authoritative fusion type rules.
+- Collapsed the population into 170 unique one- or two-type defensive profiles
+  with separate counts totaling 576 normal Pokemon and 174,348 custom fusions.
+- Added pool schema, size, and fingerprint metadata without storing species
+  identities, a seed, generated mappings, or a future trainer roster.
+- Embedded the deterministic JSON in the tracker and added strict startup
+  validation for its schema, metadata, canonical type order, uniqueness, and
+  population totals.
+- Added an aggregate-only CSV audit and shared the safe bundled-runtime launch,
+  script-archive restoration, and exact-process cleanup used by release data
+  generators.
+- Two unchanged-input generations produced the same 13,389-byte resource with
+  SHA-256
+  `ac89cb1ba9da5362a5a0456cf93f080a75aa815b7227b9afd4e5f81acaa93999`.
+- All 144 tracker tests pass in Debug and Release. The tracker application
+  builds with zero warnings in both configurations and contains the expected
+  13,389-byte embedded resource.
+
+## Ironmon 0.7.5 coverage context and calculation
+
+Status: **Implemented; awaiting review**
+
+- Added optional active-run coverage context to both run-start events and
+  current-state recovery with only trainer policy and aggregate pool metadata.
+- Kept older games compatible by treating an absent context as coverage-only
+  unavailability rather than a protocol failure.
+- Added policy-aware compatibility checks: Normal Only requires the normal
+  population, Custom Fusions Only requires the fusion population, and Mixed
+  requires both plus the matching game release.
+- Added best-selected-type aggregation into all six effectiveness buckets.
+  Mixed counts are raw combined populations while percentages retain the
+  generator's category-first 50/50 weighting.
+- Added stable current Physical/Special move-type selection, hypothetical type
+  toggling, Current Moves reset behavior, same-Pokemon manual retention, and
+  different-Pokemon reset behavior for the upcoming shared interface.
+- Added no coverage request, seed, mapping, trainer slot, future opponent, or
+  species identity to the protocol.
+- All 165 tracker tests pass in Debug and Release, including every attacking
+  type over the real release dataset for all three policies. Both tracker builds
+  complete with zero warnings, and the bundled runtime verifies every policy's
+  live context against the unchanged generated dataset. The synchronized game
+  scripts remained loaded through the hidden startup smoke test, after which
+  only the exact test process was stopped.
+
+## Ironmon 0.7.5 coverage interface and release validation
+
+Status: **Implemented; awaiting review**
+
+- Added the four-section live Lookup surface for Trainers, Encounters, Items,
+  and Type Coverage while retaining the shared configurable world explorer for
+  Archive instead of duplicating lookup behavior.
+- Added the complete 18-type selector, current damaging-move coloring, manual
+  hypothetical toggles, Current Moves reset, compatibility states, and the six
+  current-count plus percentage result buckets. Unavailable types remain gray
+  even when manually selected.
+- Moved coverage selection ownership above the live Lookup sections so manual
+  choices survive section changes and same-Pokemon refreshes while the existing
+  selection state resets for a different player Pokemon.
+- Made the release pipeline regenerate and validate both `area_catalog.dat` and
+  `type_coverage.json` before distribution or publication. Fresh temporary
+  generator outputs are compared by hash so unchanged data does not trigger a
+  nondeterministic MAUI-generated assembly rebuild.
+- The release gate verifies the distributed area catalog, the exact embedded
+  coverage resource, and the absence of generators, audits, temporary runtime
+  hooks, access generators, development scripts, and private key material.
+- All 165 tests pass in Debug and Release. Both applications build with zero
+  warnings, the synchronized game and packaged tracker pass hidden startup
+  smoke checks, and two complete releases reproduce SHA-256
+  `ac0e6c988cc6c7414ae423742f67cc684c527cda796034fd7dc1679e0044900a`.

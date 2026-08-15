@@ -1,8 +1,8 @@
 # Ironmon Tracker protocol v1
 
-This document records the implemented protocol through the 0.7.4 diagnostic-access
-inspection additions. Later parts extend the payload catalog without changing
-the common envelope or transport.
+This document records the implemented protocol through the 0.7.5 type-coverage
+context additions. Later parts extend the payload catalog without changing the
+common envelope or transport.
 
 ## Transport
 
@@ -41,7 +41,7 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.0",
-    "ironmon_version": "0.7.4",
+    "ironmon_version": "0.7.5",
     "ironmon_active": false,
     "debug_available": true,
     "supported_diagnostic_capabilities": ["pokemon.current_player", "run.seed"],
@@ -152,6 +152,27 @@ snapshot used by the live events below. `enemies` contains the currently active
 legal enemy snapshots and remains an empty array outside battle.
 `starter_selection` contains the active three-slot starter view while the bag
 scene is open, including only details that have been revealed in the game.
+
+An active 0.7.5 run also includes optional aggregate type-coverage context:
+
+```json
+{
+  "type_coverage": {
+    "trainer_policy": "mixed",
+    "normal_pool_size": 576,
+    "normal_pool_fingerprint": "5ab45fb7fa469aa5",
+    "fusion_pool_schema_version": 2,
+    "fusion_pool_size": 174348,
+    "fusion_pool_fingerprint": "a71c6c1c12491b47"
+  }
+}
+```
+
+The context contains only the selected trainer category policy and release-pool
+compatibility metadata. It contains no run seed, generated species mapping,
+trainer slot, future roster, or species identity. Older game versions omit the
+whole optional object and remain protocol-compatible; the tracker disables only
+type coverage for that connection.
 
 ## Starter selection
 
@@ -464,7 +485,7 @@ It deliberately excludes hidden or conditional ability effects.
 
 Starting or resetting an Ironmon run assigns a new persisted `run_id`, resets
 its event sequence, and emits `run_started` when connected. Its payload uses
-the same Part 3 current-state shape. If the tracker is absent at that moment,
+the same current-state shape, including optional type-coverage context. If the tracker is absent at that moment,
 the next handshake and `current_state` response recover the active run.
 
 When a run ends, the game persists its result in the save metadata and emits
@@ -476,7 +497,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.7.4",
+  "ironmon_version": "0.7.5",
   "configuration": {
     "schema_version": 2,
     "wild_policy": "mixed",

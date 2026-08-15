@@ -26,7 +26,7 @@ internal static class TrackerKeyboardKeys
     internal const string LookupNumber = "3";
 
     /// <summary>
-    /// Gets the debug-view numeric shortcut.
+    /// Gets the archive-view numeric shortcut.
     /// </summary>
-    internal const string DebugNumber = "4";
+    internal const string ArchiveNumber = "4";
 }

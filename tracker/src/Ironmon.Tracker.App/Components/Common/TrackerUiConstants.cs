@@ -36,11 +36,6 @@ internal static class TrackerUiConstants
     internal const string ViewTabsCssClass = "view-tabs";
 
     /// <summary>
-    /// Gets the debug-enabled primary-view container CSS classes.
-    /// </summary>
-    internal const string DebugViewTabsCssClass = "view-tabs debug-enabled";
-
-    /// <summary>
     /// Gets the base connection-indicator CSS class.
     /// </summary>
     internal const string ConnectionDotCssClass = "connection-dot";

@@ -15,6 +15,7 @@ public static class MauiProgram
         builder.UseMauiApp<App>().ConfigureFonts(ConfigureFonts);
         builder.Services.AddLocalization(options => options.ResourcesPath = TrackerLocalizationConstants.ResourcesPath);
         builder.Services.AddMauiBlazorWebView();
+        builder.Services.AddSingleton(TrackerTypeCoverageDatasetCatalog.Load());
         builder.Services.AddSingleton(CreateKnowledgeOptions());
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton(static _ => TrackerDiagnosticAccessKeyCatalog.Create());

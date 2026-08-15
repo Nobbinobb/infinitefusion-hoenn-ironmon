@@ -66,6 +66,24 @@ public partial class AreaLookupExplorer : IDisposable
     public string? GameRoot { get; set; }
 
     /// <summary>
+    /// Gets or sets a parent-controlled category, or null to expose the component's own category tabs.
+    /// </summary>
+    [Parameter]
+    public AreaContentCategory? FixedCategory { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the shared world-lookup heading is shown.
+    /// </summary>
+    [Parameter]
+    public bool ShowHeading { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the component's own category tabs are shown.
+    /// </summary>
+    [Parameter]
+    public bool ShowCategoryTabs { get; set; } = true;
+
+    /// <summary>
     /// Subscribes to tracker-owned discoveries received regardless of the visible page.
     /// </summary>
     protected override void OnInitialized()
@@ -80,32 +98,26 @@ public partial class AreaLookupExplorer : IDisposable
     /// <returns>A task representing summary loading.</returns>
     protected override async Task OnParametersSetAsync()
     {
-        if (_observedSourceKey == SourceKey)
+        AreaContentCategory desiredCategory = FixedCategory ?? _selectedCategory;
+        bool sourceChanged = _observedSourceKey != SourceKey;
+        bool categoryChanged = desiredCategory != _selectedCategory;
+        if (!sourceChanged && !categoryChanged)
             return;
 
-        _observedSourceKey = SourceKey;
-        _areas = [];
-        _details.Clear();
-        _detailErrors.Clear();
-        _encounterSpriteSources.Clear();
-        _trainerSpriteSources.Clear();
+        if (sourceChanged)
+        {
+            _observedSourceKey = SourceKey;
+            _areas = [];
+            _details.Clear();
+            _detailErrors.Clear();
+            _encounterSpriteSources.Clear();
+            _trainerSpriteSources.Clear();
+        }
+
+        _selectedCategory = desiredCategory;
         _expandedAreas.Clear();
         _loadingDetails.Clear();
-        _loadingSummaries = true;
-        _error = null;
-        try
-        {
-            AreaLookupSummaryResponsePayload response = await Connection.GetAreaSummariesAsync(_selectedCategory, Recipe, forceRefresh: true);
-            _areas = response.Areas;
-        }
-        catch (Exception exception) when (IsExpectedRequestException(exception))
-        {
-            _error = exception.Message;
-        }
-        finally
-        {
-            _loadingSummaries = false;
-        }
+        await LoadSummariesAsync(true);
     }
 
     /// <summary>
@@ -184,6 +196,7 @@ public partial class AreaLookupExplorer : IDisposable
             return;
 
         _loadingSummaries = true;
+        _error = null;
         try
         {
             AreaLookupSummaryResponsePayload response = await Connection.GetAreaSummariesAsync(_selectedCategory, Recipe, forceRefresh);

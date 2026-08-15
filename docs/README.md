@@ -14,8 +14,15 @@ also suitable for saving as PDF.
 
 - [Installation](guides/INSTALLATION.md): install, update, and remove Ironmon.
 - [Configuration](guides/CONFIGURATION.md): run settings and reset behavior.
-- [Development and diagnostic access](guides/DEVELOPMENT.md): unrestricted
-  local development mode and capability-limited Release tracker access.
+- [Development and diagnostic access](guides/DEVELOPMENT.md): tracker builds,
+  runtime validation, and capability-limited diagnostic access.
+
+## Audits
+
+- `audits/generated/` contains the current release-generated area-catalog and
+  type-coverage audits.
+- `audits/area-content/` contains the detailed area-content snapshot used while
+  the area catalog was designed.
 
 ## Project history
 

@@ -18,8 +18,9 @@ public sealed class GameCurrentStatePayload
     /// <param name="starterSelection">The active starter-selection view when one exists.</param>
     /// <param name="attemptStatistics">The current attempt statistics when available.</param>
     /// <param name="completedRun">The completed-run recipe when the active save's run has ended.</param>
+    /// <param name="typeCoverage">The non-sensitive type-coverage compatibility context when supported.</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when sequence is negative.</exception>
-    public GameCurrentStatePayload(bool ironmonActive, string? runId, string? battleId, long sequence, BattleSnapshot? battle = null, PlayerPokemonSnapshot? player = null, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null, StarterSelectionSnapshot? starterSelection = null, RunStatisticsPayload? attemptStatistics = null, CompletedRunRecipePayload? completedRun = null)
+    public GameCurrentStatePayload(bool ironmonActive, string? runId, string? battleId, long sequence, BattleSnapshot? battle = null, PlayerPokemonSnapshot? player = null, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null, StarterSelectionSnapshot? starterSelection = null, RunStatisticsPayload? attemptStatistics = null, CompletedRunRecipePayload? completedRun = null, TypeCoverageContextPayload? typeCoverage = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(sequence);
         IronmonActive = ironmonActive;
@@ -32,6 +33,7 @@ public sealed class GameCurrentStatePayload
         StarterSelection = starterSelection;
         AttemptStatistics = attemptStatistics;
         CompletedRun = completedRun;
+        TypeCoverage = typeCoverage;
     }
 
     /// <summary>
@@ -84,4 +86,8 @@ public sealed class GameCurrentStatePayload
     /// </summary>
     public CompletedRunRecipePayload? CompletedRun { get; }
 
+    /// <summary>
+    /// Gets the non-sensitive type-coverage compatibility context when supported.
+    /// </summary>
+    public TypeCoverageContextPayload? TypeCoverage { get; }
 }

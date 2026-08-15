@@ -1,0 +1,60 @@
+@using System.Globalization
+
+<section class="type-coverage" aria-label="@Text["Lookup.Coverage.Title"]">
+    <header class="type-coverage-heading">
+        <div>
+            <p class="card-kicker">@Text["Lookup.Coverage.Kicker"]</p>
+            <h3>@Text["Lookup.Coverage.Title"]</h3>
+            <p>@Text["Lookup.Coverage.Description"]</p>
+        </div>
+        <button type="button" class="coverage-reset" disabled="@(!Selection.IsManual)" @onclick="ResetToCurrentMoves">
+            @Text["Lookup.Coverage.CurrentMoves"]
+        </button>
+    </header>
+
+    <div class="coverage-type-grid" aria-label="@Text["Lookup.Coverage.TypeSelection"]">
+        @foreach (string type in PokemonTypeCatalog.StandardTypes)
+        {
+            <button type="button"
+                    class="@GetTypeButtonClass(type)"
+                    aria-pressed="@Selection.SelectedTypes.Contains(type, StringComparer.Ordinal)"
+                    title="@GetTypeTitle(type)"
+                    @onclick="() => ToggleType(type)">
+                <span>@type</span>
+            </button>
+        }
+    </div>
+
+    @if (_compatibility != TypeCoverageCompatibilityStatus.Compatible)
+    {
+        <div class="coverage-state" role="status">
+            <strong>@Text["Lookup.Coverage.Unavailable"]</strong>
+            <p>@GetCompatibilityMessage()</p>
+        </div>
+    }
+    else if (_calculation is null || !_calculation.HasSelection)
+    {
+        <div class="coverage-state" role="status">
+            <strong>@Text["Lookup.Coverage.NoSelection"]</strong>
+            <p>@Text["Lookup.Coverage.NoSelectionDescription"]</p>
+        </div>
+    }
+    else
+    {
+        <div class="coverage-buckets" aria-label="@Text["Lookup.Coverage.Results"]">
+            @foreach (TypeCoverageBucketResult bucket in _calculation.Buckets)
+            {
+                <article class="coverage-bucket @GetBucketClass(bucket.Effectiveness)">
+                    <span>@GetEffectivenessLabel(bucket.Effectiveness)</span>
+                    <strong>@bucket.Count.ToString("N0", CultureInfo.CurrentCulture)</strong>
+                    <small>@Text["Lookup.Coverage.Percentage", bucket.Percentage.ToString("0.0", CultureInfo.CurrentCulture)]</small>
+                </article>
+            }
+        </div>
+
+        @if (_context?.Policy == TypeCoveragePolicy.Mixed)
+        {
+            <p class="coverage-weighting-note">@Text["Lookup.Coverage.MixedWeighting"]</p>
+        }
+    }
+</section>

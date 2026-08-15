@@ -13,7 +13,7 @@ in `PROTOCOL.md`.
 - `src/Ironmon.Tracker.Connection/` separates transport, run state, persisted
   knowledge, diagnostics, and completed-run storage.
 - `src/Ironmon.Tracker.Core/` contains move rules and completed-run domain
-  types.
+  types, including strict aggregate type-coverage dataset validation.
 - `src/Ironmon.Tracker.Protocol/` groups transport envelopes, connection
   payloads, live snapshots, lookup payloads, Pokémon data, and debug payloads.
 - `tests/Ironmon.Tracker.Tests/` mirrors the production project areas.
@@ -25,9 +25,11 @@ boundaries.
 ## Run the desktop shell
 
 The current review build is a Windows-only .NET 10 Blazor Hybrid application
-with live Player and Enemy views plus deterministic completed-run lookup,
-fusion exploration, and session Back/Forward navigation. The game connects
-locally on port `38521`; no browser or HTTP server is used.
+with permanent Player, Enemy, live Lookup, and completed-run Archive views.
+Archive includes deterministic Pokemon lookup, fusion exploration, and session
+Back/Forward navigation. Live Lookup contains Trainers, Encounters, Items, and
+Type Coverage. The game connects locally on port `38521`; no browser or HTTP
+server is used.
 
 ```powershell
 & 'C:\Program Files\dotnet\dotnet.exe' run `
@@ -55,12 +57,13 @@ diagnostic page. Activation, replacement, removal, and expiration update a
 connected game immediately, while the raw token and its metadata remain
 tracker-local.
 
-Debug Pokemon, Debug Lookup, and completed-run Lookup use the same tabbed
+Debug Pokemon, Debug Lookup, and completed-run Archive use the same tabbed
 Pokemon-information card: Overview, Abilities, Stats, Moves, and Evolutions.
 Debug Pokemon merges live player/enemy diagnostics into those shared pages.
 Overview wild locations, trainer locations, and fusion materials use bounded
 50-row pages so high-collision fusions cannot exceed the protocol frame.
-The Debug tab also includes tracker-owned raw protocol and state diagnostics.
+The diagnostic tools hosted with Diagnostic Access also include tracker-owned
+raw protocol and state diagnostics.
 Protocol history, raw tracker state, and persisted knowledge are separately
 granted groups. Diagnostic reports contain only currently authorized groups
 and can be copied or exported to
@@ -70,11 +73,18 @@ Protocol and connection failures are also captured automatically in
 stable file retains the complete exception and recent message history across
 run resets and tracker restarts.
 
+The tracker embeds the release's aggregate type-coverage dataset. Type Coverage
+uses current damaging-move types by default and permits hypothetical selections
+across all standard types. The resource stores only defensive profiles and
+their Normal/Fusion population counts, never individual species or
+seed-generated opponents.
+
 While the connected game owns the foreground window, `Ctrl+1`, `Ctrl+2`,
-`Ctrl+3`, and `Ctrl+4` select Player, Enemy, Lookup, and Debug without focusing
+`Ctrl+3`, and `Ctrl+4` select Player, Enemy, Lookup, and Archive without focusing
 the tracker. On an XInput controller, hold both triggers and flick the right
-stick left, right, up, or down for those same views. Debug requests are ignored
-unless the game authorized development access.
+stick left, right, up, or down for those same views. Diagnostic tools have no
+direct shortcut and remain unavailable unless signed access or the local
+developer override authorizes them.
 
 ## Validate the implementation
 
@@ -94,4 +104,7 @@ packaging part and will not need the SDK or workload.
 Run `tools/Publish-Tracker.ps1` from the repository root to create the
 self-contained `win-x64` application under `dist/Ironmon Tracker`. Run
 `tools/Build-TrackerRelease.ps1` to rebuild the Ruby distribution, publish the
-tracker, and create the combined deterministic release ZIP and checksum.
+tracker, and create the combined deterministic release ZIP and checksum. The
+release command first regenerates and validates both `area_catalog.dat` and the
+coverage dataset in the bundled game runtime; it aborts rather than packaging
+stale data and excludes the generators and audits from the player archive.

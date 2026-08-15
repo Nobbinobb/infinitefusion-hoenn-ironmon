@@ -1,0 +1,39 @@
+<section class="pokemon-card lookup-view" role="tabpanel" aria-label="@Text["Archive.Title"]">
+    <header class="lookup-heading">
+        <div>
+            <p class="card-kicker">@Text["Archive.Kicker"]</p>
+            <h2>@Text["Archive.Title"]</h2>
+        </div>
+    </header>
+
+    @if (_recipes.Count == 0)
+    {
+        <div class="lookup-empty">
+            <strong>@Text["Archive.NoCompletedRun"]</strong>
+            <p>@Text["Archive.NoCompletedRunDescription"]</p>
+        </div>
+    }
+    else
+    {
+        <div class="lookup-controls">
+            <label>
+                @Text["Archive.Run"]
+                <select value="@_selection.SelectedRunId" @onchange="SelectRun" @onkeydown:stopPropagation="true">
+                    @foreach (CompletedRunRecipePayload recipe in _recipes)
+                    {
+                        <option value="@recipe.RunId">@FormatRun(recipe)</option>
+                    }
+                </select>
+            </label>
+        </div>
+
+        @if (GetSelectedRecipe() is CompletedRunRecipePayload selectedRecipe)
+        {
+            <AreaLookupExplorer @key="@($"archive-areas-{selectedRecipe.RunId}")" SourceKey="@($"archive:{selectedRecipe.RunId}")" RunId="@selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
+            <RunStatistics @key="@($"statistics-{selectedRecipe.RunId}")" Statistics="@selectedRecipe.Statistics" />
+            <PokemonLookupExplorer @key="selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
+            <MoveAccessRunAnalysis @key="@($"metrics-{selectedRecipe.RunId}")" Metrics="@selectedRecipe.MoveAccessMetrics" />
+            <EvolutionRunAnalysis @key="@($"evolution-metrics-{selectedRecipe.RunId}")" Metrics="@selectedRecipe.EvolutionMetrics" />
+        }
+    }
+</section>

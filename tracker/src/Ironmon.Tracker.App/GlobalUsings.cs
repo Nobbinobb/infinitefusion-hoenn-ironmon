@@ -1,5 +1,8 @@
 global using Ironmon.Tracker.Access;
+global using Ironmon.Tracker.App.Components.Access;
 global using Ironmon.Tracker.App.Components.Common;
+global using Ironmon.Tracker.App.Components.Debug;
+global using Ironmon.Tracker.App.Components.Lookup;
 global using Ironmon.Tracker.App.Components.Navigation;
 global using Ironmon.Tracker.Connection;
 global using Ironmon.Tracker.Connection.Access;
@@ -11,6 +14,7 @@ global using Ironmon.Tracker.Connection.RunState;
 global using Ironmon.Tracker.Connection.Settings;
 global using Ironmon.Tracker.Connection.Transport;
 global using Ironmon.Tracker.Core;
+global using Ironmon.Tracker.Core.Coverage;
 global using Ironmon.Tracker.Core.Moves;
 global using Ironmon.Tracker.Protocol.Connection;
 global using Ironmon.Tracker.Protocol.Debug;

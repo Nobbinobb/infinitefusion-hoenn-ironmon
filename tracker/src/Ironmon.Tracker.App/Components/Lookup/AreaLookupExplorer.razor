@@ -1,23 +1,29 @@
 <section class="area-lookup" aria-label="@Text["Lookup.Areas.Title"]">
-    <header class="area-lookup-heading">
-        <div>
-            <p class="card-kicker">@Text["Lookup.Areas.Kicker"]</p>
-            <h3>@Text["Lookup.Areas.Title"]</h3>
-        </div>
-    </header>
+    @if (ShowHeading)
+    {
+        <header class="area-lookup-heading">
+            <div>
+                <p class="card-kicker">@Text["Lookup.Areas.Kicker"]</p>
+                <h3>@Text["Lookup.Areas.Title"]</h3>
+            </div>
+        </header>
+    }
 
-    <nav class="area-category-tabs" role="tablist" aria-label="@Text["Lookup.Areas.Categories"]">
-        @foreach (AreaContentCategory category in Categories)
-        {
-            <button type="button"
-                    class="@GetCategoryTabClass(category)"
-                    role="tab"
-                    aria-selected="@(_selectedCategory == category)"
-                    @onclick="() => SelectCategory(category)">
-                @GetCategoryName(category)
-            </button>
-        }
-    </nav>
+    @if (ShowCategoryTabs)
+    {
+        <nav class="area-category-tabs" role="tablist" aria-label="@Text["Lookup.Areas.Categories"]">
+            @foreach (AreaContentCategory category in Categories)
+            {
+                <button type="button"
+                        class="@GetCategoryTabClass(category)"
+                        role="tab"
+                        aria-selected="@(_selectedCategory == category)"
+                        @onclick="() => SelectCategory(category)">
+                    @GetCategoryName(category)
+                </button>
+            }
+        </nav>
+    }
 
     @if (_error is not null)
     {

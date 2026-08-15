@@ -5,6 +5,7 @@ global using Ironmon.Tracker.Access;
 global using Ironmon.Tracker.Connection.Diagnostics;
 global using Ironmon.Tracker.Connection.Knowledge;
 global using Ironmon.Tracker.Connection.RunState;
+global using Ironmon.Tracker.Core.Coverage;
 global using Ironmon.Tracker.Core.Moves;
 global using Ironmon.Tracker.Protocol.Connection;
 global using Ironmon.Tracker.Protocol.Debug;

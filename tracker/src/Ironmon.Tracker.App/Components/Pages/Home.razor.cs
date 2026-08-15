@@ -11,6 +11,7 @@ public partial class Home : IDisposable
     private TrackerConnectionSnapshot _connection = new(TrackerConnectionStatus.Stopped, null, null, null);
     private TrackerRunStateSnapshot _run = new(null, null);
     private TrackerView _selectedView = TrackerView.Player;
+    private string? _activeRunId;
     private string? _selectedEnemyId;
     private string? _lastMoveMenuPokemonId;
     private bool _completedRunNavigationPending;
@@ -69,6 +70,7 @@ public partial class Home : IDisposable
     {
         _connection = ConnectionState.Snapshot;
         _run = RunState.Snapshot;
+        _activeRunId = _connection.CurrentState?.RunId;
         _selectedEnemyId = _run.Enemies.Count > 0 ? _run.Enemies[0].EnemyId : null;
         _lastMoveMenuPokemonId = _run.MoveMenuPokemonId;
         _autoSelectStarter = ConnectionOptions.AutoSelectStarter;
@@ -89,9 +91,6 @@ public partial class Home : IDisposable
     /// <param name="view">The view selected by the user.</param>
     private void SelectView(TrackerView view)
     {
-        if (view == TrackerView.Debug && !CanShowDebug)
-            return;
-
         _completedRunNavigationPending = false;
         _accessOpen = false;
         _settingsOpen = false;
@@ -118,9 +117,9 @@ public partial class Home : IDisposable
     }
 
     /// <summary>
-    /// Gets whether the debug navigation entry currently has any local authorization path.
+    /// Gets whether diagnostic tools currently have any local authorization path.
     /// </summary>
-    private bool CanShowDebug => TrackerConnection.DebugAuthorized || AccessService.Snapshot.IsActive;
+    private bool CanShowDiagnosticTools => TrackerConnection.DebugAuthorized || AccessService.Snapshot.IsActive;
 
     /// <summary>
     /// Gets the visual classes for the diagnostic-access button.
@@ -240,7 +239,7 @@ public partial class Home : IDisposable
             TrackerKeyboardKeys.PlayerNumber => TrackerView.Player,
             TrackerKeyboardKeys.EnemyNumber => TrackerView.Enemy,
             TrackerKeyboardKeys.LookupNumber => TrackerView.Lookup,
-            TrackerKeyboardKeys.DebugNumber when CanShowDebug => TrackerView.Debug,
+            TrackerKeyboardKeys.ArchiveNumber => TrackerView.Archive,
             _ => null
         };
 
@@ -268,13 +267,6 @@ public partial class Home : IDisposable
     /// <returns>The tab CSS classes.</returns>
     private string GetTabClass(TrackerView view)
         => view == _selectedView ? TrackerUiConstants.SelectedViewTabCssClass : TrackerUiConstants.ViewTabCssClass;
-
-    /// <summary>
-    /// Gets the tab-container class for the authorized number of views.
-    /// </summary>
-    /// <returns>The tab-container CSS classes.</returns>
-    private string GetViewTabsClass()
-        => CanShowDebug ? TrackerUiConstants.DebugViewTabsCssClass : TrackerUiConstants.ViewTabsCssClass;
 
     /// <summary>
     /// Gets the concise connection state shown in the tracker header.
@@ -334,10 +326,15 @@ public partial class Home : IDisposable
     /// <param name="args">The connection change event arguments.</param>
     private void HandleConnectionChanged(object? sender, EventArgs args)
     {
-        _connection = ConnectionState.Snapshot;
-        if (_selectedView == TrackerView.Debug && !CanShowDebug)
-            _selectedView = TrackerView.Player;
+        TrackerConnectionSnapshot next = ConnectionState.Snapshot;
+        string? nextRunId = next.CurrentState?.RunId;
+        if (nextRunId is not null && !string.Equals(_activeRunId, nextRunId, StringComparison.Ordinal))
+        {
+            _activeRunId = nextRunId;
+            _completedRunNavigationPending = false;
+        }
 
+        _connection = next;
         _ = InvokeAsync(StateHasChanged);
     }
 
@@ -360,14 +357,14 @@ public partial class Home : IDisposable
         if (enemyAppeared)
             _completedRunNavigationPending = false;
 
-        if (starterSelectionAppeared)
+        if (starterSelectionAppeared && !_completedRunNavigationPending)
         {
             _completedRunNavigationPending = false;
             _accessOpen = false;
             _settingsOpen = false;
             _selectedView = TrackerView.Player;
         }
-        else if (_selectedView != TrackerView.Debug && !_completedRunNavigationPending)
+        else if (!_completedRunNavigationPending)
         {
             _selectedView = (enemyAppeared, moveMenuOpened, battleEnded) switch
             {
@@ -382,14 +379,16 @@ public partial class Home : IDisposable
     }
 
     /// <summary>
-    /// Navigates to Lookup when a completed run is stored or recovered.
+    /// Navigates to Archive when a completed run is stored or recovered.
     /// </summary>
     /// <param name="sender">The completed-run archive raising the event.</param>
     /// <param name="args">The change event arguments.</param>
     private void HandleCompletedRunSelectionRequested(object? sender, EventArgs args)
     {
         _completedRunNavigationPending = true;
-        _selectedView = TrackerView.Lookup;
+        _accessOpen = false;
+        _settingsOpen = false;
+        _selectedView = TrackerView.Archive;
         _ = InvokeAsync(StateHasChanged);
     }
 
@@ -400,9 +399,6 @@ public partial class Home : IDisposable
     /// <param name="args">The empty change event arguments.</param>
     private void HandleDiagnosticAccessChanged(object? sender, EventArgs args)
     {
-        if (_selectedView == TrackerView.Debug && !CanShowDebug)
-            _selectedView = TrackerView.Player;
-
         _ = InvokeAsync(StateHasChanged);
     }
 

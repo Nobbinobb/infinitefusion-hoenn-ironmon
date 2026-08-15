@@ -98,16 +98,12 @@ h1 {
 
 .view-tabs {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.3rem;
     padding: 0.3rem;
     border: 1px solid var(--border);
     border-radius: 0.8rem;
     background: var(--surface-soft);
-}
-
-.view-tabs.debug-enabled {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .view-tab {
@@ -382,6 +378,44 @@ h1 {
 
 .diagnostic-access {
     overflow: auto;
+}
+
+.diagnostic-tools {
+    display: grid;
+    gap: 0.85rem;
+    min-height: 0;
+}
+
+.diagnostic-tool-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.3rem;
+    padding: 0.3rem;
+    border: 1px solid var(--border);
+    border-radius: 0.8rem;
+    background: var(--surface-soft);
+}
+
+.diagnostic-tool-tab {
+    min-height: 2.25rem;
+    border: 0;
+    border-radius: 0.58rem;
+    color: var(--muted);
+    background: transparent;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.diagnostic-tool-tab:hover {
+    color: var(--text);
+}
+
+.diagnostic-tool-tab.selected {
+    color: var(--text);
+    background: var(--surface-raised);
+    box-shadow: 0 0.16rem 0.5rem rgb(0 0 0 / 22%);
 }
 
 .access-state,
@@ -1368,6 +1402,204 @@ button.move-placeholder:hover {
 .lookup-heading h2 {
     margin: 0.25rem 0 0;
     font-size: 1.15rem;
+}
+
+.live-lookup-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.35rem;
+}
+
+.live-lookup-tab {
+    min-width: 0;
+    padding: 0.55rem 0.3rem;
+    border: 1px solid var(--border);
+    border-radius: 0.45rem;
+    color: var(--muted);
+    background: var(--surface-raised);
+    font: inherit;
+    font-size: 0.68rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.live-lookup-tab:hover {
+    color: var(--text);
+    border-color: var(--border-strong);
+}
+
+.live-lookup-tab.selected {
+    border-color: rgb(80 220 170 / 55%);
+    color: var(--text);
+    background: rgb(80 220 170 / 12%);
+}
+
+.type-coverage {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.65rem;
+    background: var(--surface-soft);
+}
+
+.type-coverage-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.type-coverage-heading h3 {
+    margin: 0.2rem 0 0;
+    color: var(--text);
+    font-size: 0.92rem;
+}
+
+.type-coverage-heading p:last-child {
+    max-width: 34rem;
+    margin: 0.3rem 0 0;
+    color: var(--muted);
+    font-size: 0.7rem;
+    line-height: 1.45;
+}
+
+.coverage-reset {
+    flex: 0 0 auto;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 0.42rem;
+    color: var(--accent-soft);
+    background: var(--surface-raised);
+    font: inherit;
+    font-size: 0.65rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.coverage-reset:disabled {
+    opacity: 0.42;
+    cursor: default;
+}
+
+.coverage-type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.35rem;
+}
+
+.coverage-type {
+    position: relative;
+    min-width: 0;
+    padding: 0.52rem 0.3rem;
+    border: 1px solid var(--border);
+    border-radius: 0.4rem;
+    color: var(--muted);
+    background: rgb(255 255 255 / 2%);
+    font: inherit;
+    font-size: 0.64rem;
+    font-weight: 850;
+    letter-spacing: 0.025em;
+    cursor: pointer;
+}
+
+.coverage-type:hover {
+    color: var(--text);
+    border-color: var(--border-strong);
+}
+
+.coverage-type.current {
+    border-color: color-mix(in srgb, var(--move-type) 72%, var(--border));
+    color: var(--move-type);
+    background: color-mix(in srgb, var(--move-type) 13%, var(--surface-raised));
+}
+
+.coverage-type.selected {
+    box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.coverage-type.selected::after {
+    position: absolute;
+    top: 0.15rem;
+    right: 0.25rem;
+    color: var(--accent-soft);
+    content: "✓";
+    font-size: 0.58rem;
+}
+
+.coverage-state {
+    padding: 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.55rem;
+    background: var(--surface-raised);
+}
+
+.coverage-state strong {
+    color: var(--text);
+    font-size: 0.76rem;
+}
+
+.coverage-state p,
+.coverage-weighting-note {
+    margin: 0.3rem 0 0;
+    color: var(--muted);
+    font-size: 0.68rem;
+    line-height: 1.45;
+}
+
+.coverage-buckets {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+}
+
+.coverage-bucket {
+    display: grid;
+    gap: 0.14rem;
+    padding: 0.62rem;
+    border: 1px solid var(--border);
+    border-radius: 0.48rem;
+    background: var(--surface-raised);
+}
+
+.coverage-bucket > span {
+    color: var(--muted-strong);
+    font-size: 0.72rem;
+    font-weight: 900;
+}
+
+.coverage-bucket strong {
+    color: var(--text);
+    font-size: 1rem;
+}
+
+.coverage-bucket small {
+    color: var(--muted);
+    font-size: 0.64rem;
+}
+
+.coverage-bucket.immune,
+.coverage-bucket.resisted {
+    border-color: rgb(255 88 122 / 28%);
+}
+
+.coverage-bucket.immune > span,
+.coverage-bucket.resisted > span {
+    color: #ff8ba2;
+}
+
+.coverage-bucket.effective {
+    border-color: rgb(50 237 145 / 28%);
+}
+
+.coverage-bucket.effective > span {
+    color: #32ed91;
+}
+
+.coverage-weighting-note {
+    margin: 0;
+    padding-left: 0.55rem;
+    border-left: 0.15rem solid var(--accent);
 }
 
 .lookup-empty,
@@ -3360,7 +3592,7 @@ kbd {
         font-size: 0.72rem;
     }
 
-    .view-tabs.debug-enabled .tab-key {
+    .view-tabs .tab-key {
         display: none;
     }
 
@@ -3393,5 +3625,22 @@ kbd {
 
     .debug-ability-list {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    .live-lookup-tabs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .type-coverage-heading {
+        display: grid;
+    }
+
+    .coverage-reset {
+        justify-self: start;
+    }
+
+    .coverage-type-grid,
+    .coverage-buckets {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }

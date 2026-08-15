@@ -22,7 +22,7 @@
         </div>
     </header>
 
-    <nav class="@GetViewTabsClass()" aria-label="@Text["App.Shell.TrackerViewsLabel"]" role="tablist">
+    <nav class="@TrackerUiConstants.ViewTabsCssClass" aria-label="@Text["App.Shell.TrackerViewsLabel"]" role="tablist">
         <button class="@GetTabClass(TrackerView.Player)"
                 type="button"
                 role="tab"
@@ -47,22 +47,19 @@
             <span class="tab-key">Ctrl+3</span>
             @Text["App.Shell.Lookup"]
         </button>
-        @if (CanShowDebug)
-        {
-            <button class="@GetTabClass(TrackerView.Debug)"
-                    type="button"
-                    role="tab"
-                    aria-selected="@(_selectedView == TrackerView.Debug)"
-                    @onclick="() => SelectView(TrackerView.Debug)">
-                <span class="tab-key">Ctrl+4</span>
-                @Text["App.Shell.Debug"]
-            </button>
-        }
+        <button class="@GetTabClass(TrackerView.Archive)"
+                type="button"
+                role="tab"
+                aria-selected="@(_selectedView == TrackerView.Archive)"
+                @onclick="() => SelectView(TrackerView.Archive)">
+            <span class="tab-key">Ctrl+4</span>
+            @Text["App.Shell.Archive"]
+        </button>
     </nav>
 
     @if (_accessOpen)
     {
-        <DiagnosticAccessPage />
+        <DiagnosticToolsPage ToolsAvailable="@CanShowDiagnosticTools" Player="@_run.Player" Enemies="@_run.Enemies" GameRoot="@_connection.Game?.GameRoot" />
     }
     else if (_settingsOpen)
     {
@@ -88,21 +85,17 @@
     }
     else if (_selectedView == TrackerView.Lookup)
     {
-        <PostRunLookup GameRoot="@_connection.Game?.GameRoot" />
+        <LiveLookup GameRoot="@_connection.Game?.GameRoot" />
     }
     else
     {
-        <DebugInspector Player="@_run.Player" Enemies="@_run.Enemies" GameRoot="@_connection.Game?.GameRoot" />
+        <ArchiveView GameRoot="@_connection.Game?.GameRoot" />
     }
 
     <footer class="tracker-footer">
         <span>@Text["App.Shell.LocalConnection"]</span>
         <span>
-            <kbd>Ctrl+1</kbd> @Text["App.Shell.Player"]&nbsp;&nbsp;<kbd>Ctrl+2</kbd> @Text["App.Shell.Enemy"]&nbsp;&nbsp;<kbd>Ctrl+3</kbd> @Text["App.Shell.Lookup"]
-            @if (CanShowDebug)
-            {
-                <text>&nbsp;&nbsp;<kbd>Ctrl+4</kbd> @Text["App.Shell.Debug"]</text>
-            }
+            <kbd>Ctrl+1</kbd> @Text["App.Shell.Player"]&nbsp;&nbsp;<kbd>Ctrl+2</kbd> @Text["App.Shell.Enemy"]&nbsp;&nbsp;<kbd>Ctrl+3</kbd> @Text["App.Shell.Lookup"]&nbsp;&nbsp;<kbd>Ctrl+4</kbd> @Text["App.Shell.Archive"]
         </span>
     </footer>
 </main>

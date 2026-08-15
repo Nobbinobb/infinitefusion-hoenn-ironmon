@@ -1309,6 +1309,177 @@ Acceptance criteria:
   generator, private key, development script, or unreviewed diagnostic grant.
 - Two release builds reproduce the same archive checksum.
 
+### Milestone 0.7.5: Tracker navigation and type coverage
+
+Status: **Implemented; awaiting review**
+
+Version 0.7.5 reorganizes the tracker around four permanent primary views and
+adds a release-precalculated type-coverage checker. Coverage describes the
+complete eligible trainer-randomization pools rather than the seed-generated
+trainer roster, so it reveals no future opponent information.
+
+#### Step 0.7.5.1: Four-view navigation and shared lookup composition
+
+Status: **Implemented; awaiting review**
+
+- Replace the conditional Player, Enemy, Lookup, and Debug navigation with the
+  permanent Player, Enemy, Lookup, and Archive views.
+- Make Lookup an active-run surface containing Trainers, Encounters, Items,
+  and, after its later implementation slice, Type Coverage.
+- Move completed-run selection, world lookup, Pokemon lookup, run statistics,
+  move-access analysis, and evolution analysis to Archive.
+- Navigate to Archive and select the completed attempt when a run is archived;
+  an immediate automatic reset must not steal that navigation focus.
+- Move Ctrl+4 and the matching controller direction from Debug to Archive.
+- Place capability-controlled Debug tools with the always-reachable Diagnostic
+  Access screen, without a direct navigation hotkey.
+- Extract shared components where behavior is common. Active and archived world
+  lookup must use one implementation whose source context controls disclosure,
+  loading, caching, and request behavior.
+
+Acceptance criteria:
+
+- Exactly four primary tabs remain visible regardless of diagnostic access.
+- Lookup contains no run selector or archived-run analysis.
+- Archive contains no active-run selector and retains every completed-run
+  information surface previously available through Lookup.
+- Active and archived world lookup retain their distinct disclosure rules
+  without duplicated loading, caching, authorization, or presentation logic.
+- Diagnostic access replacement, removal, and expiration immediately remove
+  protected tools and clear their rendered data.
+
+#### Step 0.7.5.2: Release-precalculated coverage dataset
+
+Status: **Implemented; awaiting review**
+
+- Generate the dataset inside Infinite Fusion's bundled runtime from the exact
+  eligible normal-species and custom-fusion pools.
+- Collapse species into one- or two-type defensive profiles containing separate
+  Normal and Fusion counts; do not store species identities.
+- Include schema, pool-size, and pool-fingerprint metadata and package the small
+  deterministic result as a tracker resource.
+- Fail generation on invalid types, duplicate profiles, inconsistent totals,
+  or nondeterministic output.
+
+Acceptance criteria:
+
+- Profile counts sum exactly to their corresponding eligible pool sizes.
+- Two generations from unchanged release inputs are byte-identical.
+- The packaged dataset contains no run seed, generated mapping, future roster,
+  or individual species identity.
+
+Implementation result: added a bundled-runtime release generator which uses
+the exact normal-species and eligible custom-fusion pools and the game's
+authoritative fusion type calculation. The generated resource contains 170
+occupied defensive profiles representing 576 normal Pokemon and 174,348 custom
+fusions, with separate category counts and matching pool fingerprints. The
+tracker embeds and strictly validates the schema, canonical type order,
+uniqueness, metadata, and population totals at startup. A CSV audit contains
+only type profiles and aggregate counts. Repeated generation from unchanged
+inputs produced the byte-identical 13,389-byte JSON resource with SHA-256
+`ac89cb1ba9da5362a5a0456cf93f080a75aa815b7227b9afd4e5f81acaa93999`.
+All 144 tracker tests pass in Debug and Release, both tracker builds complete
+with zero warnings, and the built application contains the validated resource.
+
+#### Step 0.7.5.3: Coverage context and calculation
+
+Status: **Implemented; awaiting review**
+
+- Add the active trainer policy and non-sensitive coverage-dataset compatibility
+  metadata to run-start and current-state recovery payloads.
+- Disable coverage with a clear compatibility state when the connected pools do
+  not match the packaged dataset; older games remain otherwise compatible.
+- Select unique attacking types from the current non-Status moves by default and
+  permit manual hypothetical selection of any standard type.
+- For every defensive profile, retain the best multiplier supplied by any
+  selected attacking type and add its population to the 0x, 1/4x, 1/2x, 1x,
+  2x, or 4x bucket.
+- In Mixed mode, display the raw combined Normal-plus-Fusion count while
+  calculating each percentage as 50% of the Normal pool percentage plus 50% of
+  the Fusion pool percentage.
+
+Acceptance criteria:
+
+- Bucket counts and percentages are correct for Normal Only, Custom Fusions
+  Only, and Mixed policies.
+- Mixed percentages follow category-first 50/50 selection rather than raw pool
+  size, and the interface explains why count and percentage use different
+  weighting.
+- Empty selection has an instructional state rather than classifying every
+  species as immune.
+- No coverage request or payload contains seed-dependent opponent information.
+
+Implementation result: active `run_started` and `current_state` payloads now
+include the trainer policy plus normal and custom-fusion pool compatibility
+metadata, while inactive and older games omit the optional context. The tracker
+checks the game release and only the populations needed by the selected policy;
+Normal Only does not depend on the unused fusion pool and Custom Fusions Only
+does not depend on the unused normal pool. Calculation uses the best selected
+attacking multiplier per aggregate profile. Normal and Fusion policies use
+their own populations, while Mixed returns raw combined counts and equal-weight
+category percentages. Current Physical and Special move types form the stable
+default selection; manual choices survive refreshes for the same Pokemon,
+Current Moves restores automatic selection, and a different Pokemon resets it.
+No coverage command or species-level payload was added. All 165 tracker tests
+pass in Debug and Release, both tracker builds complete with zero warnings, and
+the bundled runtime verifies every policy context against the byte-identical
+generated dataset. The synchronized ordinary game scripts also remain loaded
+through the hidden startup smoke test.
+
+#### Step 0.7.5.4: Coverage interface and release validation
+
+Status: **Implemented; awaiting review**
+
+- Add Type Coverage beside Trainers, Encounters, and Items in live Lookup.
+- Show all standard types in stable chart order. Current damaging-move types are
+  selected and colored; unavailable types begin gray but remain selectable for
+  hypothetical coverage.
+- Provide a Current Moves reset and retain manual selection across ordinary
+  battle-state refreshes, while a different player Pokemon resets the selection.
+- Show only the current count and percentage for each effectiveness bucket, not
+  a count denominator.
+- Make `Build-TrackerRelease.ps1` regenerate both `area_catalog.dat` and
+  `type_coverage.json` from the currently supported Infinite Fusion installation
+  before copying scripts, publishing the tracker, or creating the archive.
+- Treat both generators and their validation as mandatory release gates. A
+  runtime error, invalid aggregate, missing output, or failed audit must abort
+  the release rather than allowing an older generated file to be packaged.
+- Package `area_catalog.dat` with the game scripts and embed
+  `type_coverage.json` in the tracker, while excluding both generators,
+  temporary runtime hooks, and maintainer audit files from the player archive.
+- Update mechanics, protocol, localization, tracker guidance, and release notes.
+- Run complete Debug and Release tests and builds, bundled-runtime dataset and
+  script validation, connected policy tests, compatibility tests, and release
+  reproducibility checks.
+
+Acceptance criteria:
+
+- Coverage recalculates immediately without enumerating Pokemon at runtime.
+- Tracker navigation, completion focus, diagnostic revocation, and all existing
+  live and archived lookup behavior pass regression validation.
+- A release build cannot succeed from stale checked-in generated data when
+  either bundled-runtime regeneration fails.
+- The player distribution contains the freshly generated area catalog and
+  aggregate coverage dataset but not either release generator, their audits,
+  or development hooks.
+
+Implementation evidence:
+
+- Live Lookup now owns the four Trainers, Encounters, Items, and Type Coverage
+  tabs while Archive continues to reuse the same configurable world explorer.
+  The coverage selection remains stable across ordinary state refreshes and
+  shows all six count-and-percentage buckets without a population denominator.
+- The release pipeline regenerates both datasets into fresh verified outputs,
+  updates the canonical artifacts only when their bytes changed, validates the
+  distributed area catalog and embedded coverage resource, and rejects
+  maintainer or generator files from the player package.
+- All 165 tracker tests pass in Debug and Release. The tracker and diagnostic
+  access application build with zero warnings, and hidden startup smoke tests
+  keep both the synchronized game and packaged tracker running until the exact
+  validation processes are stopped.
+- Two complete release pipeline runs produced the identical archive SHA-256
+  `ac0e6c988cc6c7414ae423742f67cc684c527cda796034fd7dc1679e0044900a`.
+
 ## Working rule
 
 Only one selected improvement slice or milestone step should be implemented at

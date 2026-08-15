@@ -1,6 +1,6 @@
-# Installing Ironmon 0.7.4
+# Installing Ironmon 0.7.5
 
-Ironmon `0.7.4` targets Pokemon Infinite Fusion 2 version 6.8.0.
+Ironmon `0.7.5` targets Pokemon Infinite Fusion 2 version 6.8.0.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
 
@@ -8,7 +8,7 @@ official game's Git repository.
 
 1. Fully close Pokemon Infinite Fusion 2.
 2. Keep a backup of saves you care about.
-3. Extract `Ironmon-v0.7.4-diagnostic-access.zip` into the game's root directory—the
+3. Extract `Ironmon-v0.7.5-type-coverage.zip` into the game's root directory—the
    directory containing `InfiniteFusion2.exe`.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
    directory. The package installs Ruby files under
@@ -28,7 +28,7 @@ official game's Git repository.
 The ordinary Release tracker can accept a maintainer-issued diagnostic-access
 token; users do not need a separate Debug tracker build.
 
-1. Open **Diagnostic Access** from the tracker's main navigation.
+1. Open **Diagnostic Access** with the key button in the tracker header.
 2. Paste the complete token and select **Activate**, or load the supplied
    `.ironmon-access` file.
 3. Review the displayed note, expiration, token and key identifiers, direct
@@ -57,11 +57,14 @@ reproduce its assignments.
 
 ## Build the package from this repository
 
-Run `tools/Build-TrackerRelease.ps1` from PowerShell. It synchronizes `src` into
-`dist` and the adjacent local game installation, publishes the self-contained
-Windows x64 tracker, then creates the release ZIP and SHA-256 checksum in
-`release`. The player-package build rejects token files, private-key formats,
-the maintainer generator, and development scripts.
+Run `tools/Build-TrackerRelease.ps1` from PowerShell. It first regenerates and
+validates both `area_catalog.dat` and the aggregate type-coverage dataset in the
+adjacent Infinite Fusion bundled runtime. It then synchronizes `src` into
+`dist` and the local game installation, publishes the self-contained Windows
+x64 tracker, verifies both fresh datasets in the player output, and creates the
+release ZIP and SHA-256 checksum in `release`. Any failed or stale generation
+aborts the release. The player-package build rejects token and private-key
+files, maintainer or release-data generators, audits, and development scripts.
 
 ## Diagnostic log
 

@@ -129,7 +129,7 @@ public sealed partial class TrackerGlobalShortcutService
         PollKeyboardShortcut(0, controlPressed && IsVirtualKeyPressed(OneVirtualKey), TrackerView.Player);
         PollKeyboardShortcut(1, controlPressed && IsVirtualKeyPressed(TwoVirtualKey), TrackerView.Enemy);
         PollKeyboardShortcut(2, controlPressed && IsVirtualKeyPressed(ThreeVirtualKey), TrackerView.Lookup);
-        PollKeyboardShortcut(3, controlPressed && IsVirtualKeyPressed(FourVirtualKey), TrackerView.Debug);
+        PollKeyboardShortcut(3, controlPressed && IsVirtualKeyPressed(FourVirtualKey), TrackerView.Archive);
     }
 
     /// <summary>
@@ -239,7 +239,7 @@ public sealed partial class TrackerGlobalShortcutService
         if (horizontalMagnitude >= verticalMagnitude)
             return horizontal < 0 ? TrackerView.Player : TrackerView.Enemy;
 
-        return vertical > 0 ? TrackerView.Lookup : TrackerView.Debug;
+        return vertical > 0 ? TrackerView.Lookup : TrackerView.Archive;
     }
 
     /// <summary>

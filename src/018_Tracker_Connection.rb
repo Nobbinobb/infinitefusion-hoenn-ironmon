@@ -921,7 +921,7 @@ module Ironmon
   end
 
   def self.tracker_current_state
-    return {
+    payload = {
       "ironmon_active" => active?,
       "run_id" => ensure_tracker_run_id,
       "battle_id" => tracker_battle_id,
@@ -940,6 +940,23 @@ module Ironmon
                                 nil
                               end,
       "completed_run" => tracker_recoverable_completed_run_recipe
+    }
+    coverage = tracker_type_coverage_context
+    payload["type_coverage"] = coverage if coverage
+    return payload
+  end
+
+  def self.tracker_type_coverage_context
+    return nil if !active?
+    normal_pool = normal_species_pool
+    fusion_pool = custom_fusion_pool_info
+    return {
+      "trainer_policy" => configuration.trainer_policy.to_s,
+      "normal_pool_size" => normal_pool.length,
+      "normal_pool_fingerprint" => species_pool_fingerprint(normal_pool),
+      "fusion_pool_schema_version" => fusion_pool[:schema_version],
+      "fusion_pool_size" => fusion_pool[:size],
+      "fusion_pool_fingerprint" => fusion_pool[:fingerprint]
     }
   end
 

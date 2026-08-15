@@ -3,13 +3,29 @@
 #===============================================================================
 
 module Ironmon
+  SPECIES_POOL_FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
+  SPECIES_POOL_FNV_PRIME = 1_099_511_628_211
+  SPECIES_POOL_FNV_MASK = 0xFFFFFFFFFFFFFFFF
+
+  def self.species_pool_fingerprint(species_pool)
+    hash_value = SPECIES_POOL_FNV_OFFSET_BASIS
+    species_pool.each do |species|
+      species.to_s.each_byte do |byte|
+        hash_value ^= byte
+        hash_value = (hash_value * SPECIES_POOL_FNV_PRIME) &
+          SPECIES_POOL_FNV_MASK
+      end
+      hash_value ^= 0
+      hash_value = (hash_value * SPECIES_POOL_FNV_PRIME) &
+        SPECIES_POOL_FNV_MASK
+    end
+    return sprintf("%016x", hash_value)
+  end
+
   class CustomFusionPoolError < StandardError; end
 
   class CustomFusionPool
     SCHEMA_VERSION = 2
-    FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
-    FNV_PRIME = 1_099_511_628_211
-    FNV_MASK = 0xFFFFFFFFFFFFFFFF
 
     attr_reader :source_entry_count
     attr_reader :rejected_entry_count
@@ -151,16 +167,7 @@ module Ironmon
     end
 
     def fingerprint_for(species_pool)
-      hash_value = FNV_OFFSET_BASIS
-      species_pool.each do |species|
-        species.to_s.each_byte do |byte|
-          hash_value ^= byte
-          hash_value = (hash_value * FNV_PRIME) & FNV_MASK
-        end
-        hash_value ^= 0
-        hash_value = (hash_value * FNV_PRIME) & FNV_MASK
-      end
-      return sprintf("%016x", hash_value)
+      return Ironmon.species_pool_fingerprint(species_pool)
     end
   end
 

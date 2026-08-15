@@ -27,6 +27,9 @@
   <data name="App.Shell.AppTitle" xml:space="preserve">
     <value>Ironmon Tracker</value>
   </data>
+  <data name="App.Shell.Archive" xml:space="preserve">
+    <value>Archive</value>
+  </data>
   <data name="App.Shell.ConnectedGameVersions" xml:space="preserve">
     <value>Infinite Fusion {0} · Ironmon {1}</value>
   </data>
@@ -35,9 +38,6 @@
   </data>
   <data name="App.Shell.ConnectionError" xml:space="preserve">
     <value>Connection error</value>
-  </data>
-  <data name="App.Shell.Debug" xml:space="preserve">
-    <value>Debug</value>
   </data>
   <data name="App.Shell.Enemy" xml:space="preserve">
     <value>Enemy</value>
@@ -1290,6 +1290,39 @@
   <data name="Lookup.Runs.RunLookup" xml:space="preserve"><value>Run lookup</value></data>
   <data name="Lookup.Runs.LookupHeading" xml:space="preserve"><value>RUN DATA</value></data>
   <data name="Lookup.Runs.CurrentRun" xml:space="preserve"><value>Current run</value></data>
+  <data name="Lookup.Live.Kicker" xml:space="preserve"><value>ACTIVE RUN</value></data>
+  <data name="Lookup.Live.Title" xml:space="preserve"><value>World lookup</value></data>
+  <data name="Lookup.Live.Sections" xml:space="preserve"><value>Active run lookup sections</value></data>
+  <data name="Lookup.Live.NoActiveRun" xml:space="preserve"><value>No active run</value></data>
+  <data name="Lookup.Live.NoActiveRunDescription" xml:space="preserve"><value>Start or load an Ironmon run to inspect its world progress.</value></data>
+  <data name="Lookup.Coverage.Tab" xml:space="preserve"><value>Type Coverage</value></data>
+  <data name="Lookup.Coverage.Kicker" xml:space="preserve"><value>ATTACKING TYPES</value></data>
+  <data name="Lookup.Coverage.Title" xml:space="preserve"><value>Type coverage</value></data>
+  <data name="Lookup.Coverage.Description" xml:space="preserve"><value>See the best damage multiplier your selected move types can reach across the complete eligible trainer pool.</value></data>
+  <data name="Lookup.Coverage.CurrentMoves" xml:space="preserve"><value>Current Moves</value></data>
+  <data name="Lookup.Coverage.TypeSelection" xml:space="preserve"><value>Attacking type selection</value></data>
+  <data name="Lookup.Coverage.CurrentType" xml:space="preserve"><value>{0} is available from a current damaging move.</value></data>
+  <data name="Lookup.Coverage.HypotheticalType" xml:space="preserve"><value>Select {0} for hypothetical coverage.</value></data>
+  <data name="Lookup.Coverage.Unavailable" xml:space="preserve"><value>Coverage unavailable</value></data>
+  <data name="Lookup.Coverage.MissingContext" xml:space="preserve"><value>The connected game does not provide type-coverage metadata. Other tracker features remain available.</value></data>
+  <data name="Lookup.Coverage.UnsupportedPolicy" xml:space="preserve"><value>The active trainer randomization policy is not supported by this tracker.</value></data>
+  <data name="Lookup.Coverage.GameVersionMismatch" xml:space="preserve"><value>The packaged coverage data targets a different Infinite Fusion version.</value></data>
+  <data name="Lookup.Coverage.NormalPoolMismatch" xml:space="preserve"><value>The connected normal Pokémon pool does not match this release's coverage data.</value></data>
+  <data name="Lookup.Coverage.FusionPoolMismatch" xml:space="preserve"><value>The connected custom-fusion pool does not match this release's coverage data.</value></data>
+  <data name="Lookup.Coverage.NoSelection" xml:space="preserve"><value>Select at least one attacking type</value></data>
+  <data name="Lookup.Coverage.NoSelectionDescription" xml:space="preserve"><value>Current damaging moves are selected automatically. You can also select any gray type to test a hypothetical moveset.</value></data>
+  <data name="Lookup.Coverage.Results" xml:space="preserve"><value>Type coverage results</value></data>
+  <data name="Lookup.Coverage.Percentage" xml:space="preserve"><value>{0}%</value></data>
+  <data name="Lookup.Coverage.MixedWeighting" xml:space="preserve"><value>Counts combine the current Normal and Fusion populations. Percentages reflect the trainer generator's 50/50 category choice.</value></data>
+  <data name="Archive.Kicker" xml:space="preserve"><value>COMPLETED RUNS</value></data>
+  <data name="Archive.Title" xml:space="preserve"><value>Run archive</value></data>
+  <data name="Archive.Run" xml:space="preserve"><value>Run</value></data>
+  <data name="Archive.NoCompletedRun" xml:space="preserve"><value>No completed run yet</value></data>
+  <data name="Archive.NoCompletedRunDescription" xml:space="preserve"><value>A lost, won, or abandoned Ironmon run will appear here.</value></data>
+  <data name="Diagnostics.Page.Title" xml:space="preserve"><value>Diagnostic access and tools</value></data>
+  <data name="Diagnostics.Page.Tabs" xml:space="preserve"><value>Diagnostic pages</value></data>
+  <data name="Diagnostics.Page.Access" xml:space="preserve"><value>Access</value></data>
+  <data name="Diagnostics.Page.Tools" xml:space="preserve"><value>Tools</value></data>
   <data name="Access.Page.Kicker" xml:space="preserve"><value>DIAGNOSTIC ACCESS</value></data>
   <data name="Access.Page.Title" xml:space="preserve"><value>Diagnostic access</value></data>
   <data name="Access.Page.Open" xml:space="preserve"><value>Open diagnostic access</value></data>

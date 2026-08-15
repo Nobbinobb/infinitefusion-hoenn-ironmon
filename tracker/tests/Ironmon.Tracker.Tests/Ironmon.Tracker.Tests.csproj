@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="..\..\..\data\type_coverage.json" Link="type_coverage.json" CopyToOutputDirectory="PreserveNewest" />
     <ProjectReference Include="..\..\src\Ironmon.Tracker.Access\Ironmon.Tracker.Access.csproj" />
     <ProjectReference Include="..\..\src\Ironmon.Tracker.Connection\Ironmon.Tracker.Connection.csproj" />
     <ProjectReference Include="..\..\src\Ironmon.Tracker.Core\Ironmon.Tracker.Core.csproj" />
