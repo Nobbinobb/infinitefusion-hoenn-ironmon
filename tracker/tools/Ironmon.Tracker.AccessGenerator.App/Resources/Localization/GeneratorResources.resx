@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="App.Native.AppTitle" xml:space="preserve">
+    <value>Ironmon Access Token Generator</value>
+  </data>
+  <data name="Generator.Header.Release" xml:space="preserve">
+    <value>Ironmon {0}</value>
+  </data>
+  <data name="Generator.Header.Title" xml:space="preserve">
+    <value>Diagnostic access token</value>
+  </data>
+  <data name="Generator.Header.Description" xml:space="preserve">
+    <value>Create a signed token that enables only the selected diagnostic information. The private key remains in this process and is never included in the token.</value>
+  </data>
+  <data name="Generator.Common.Optional" xml:space="preserve">
+    <value>(optional)</value>
+  </data>
+  <data name="Generator.SigningKey.Title" xml:space="preserve">
+    <value>Signing key</value>
+  </data>
+  <data name="Generator.SigningKey.Description" xml:space="preserve">
+    <value>Select an external PKCS#8 P-256 private-key PEM file.</value>
+  </data>
+  <data name="Generator.SigningKey.KeyId" xml:space="preserve">
+    <value>Key ID</value>
+  </data>
+  <data name="Generator.Details.Title" xml:space="preserve">
+    <value>Token details</value>
+  </data>
+  <data name="Generator.Details.Description" xml:space="preserve">
+    <value>Presets only prefill the form. Every capability remains individually editable.</value>
+  </data>
+  <data name="Generator.Details.Preset" xml:space="preserve">
+    <value>Preset</value>
+  </data>
+  <data name="Generator.Details.CustomSelection" xml:space="preserve">
+    <value>Custom selection</value>
+  </data>
+  <data name="Generator.Details.SupportNote" xml:space="preserve">
+    <value>Support note</value>
+  </data>
+  <data name="Generator.Details.SupportNotePlaceholder" xml:space="preserve">
+    <value>Why this token was issued</value>
+  </data>
+  <data name="Generator.Details.LifetimeAccess" xml:space="preserve">
+    <value>Lifetime access</value>
+  </data>
+  <data name="Generator.Details.ExpiresAt" xml:space="preserve">
+    <value>Expires at</value>
+  </data>
+  <data name="Generator.Capabilities.Title" xml:space="preserve">
+    <value>Diagnostic capabilities</value>
+  </data>
+  <data name="Generator.Capabilities.Description" xml:space="preserve">
+    <value>Included capabilities are selected and locked while their parent capability remains enabled.</value>
+  </data>
+  <data name="Generator.Capabilities.IncludedByAllActive" xml:space="preserve">
+    <value>Included by All active-run Pokemon</value>
+  </data>
+  <data name="Generator.CapabilityGroups.PokemonAvailability" xml:space="preserve">
+    <value>Pokemon availability</value>
+  </data>
+  <data name="Generator.CapabilityGroups.PokemonInformation" xml:space="preserve">
+    <value>Pokemon information</value>
+  </data>
+  <data name="Generator.CapabilityGroups.EvolutionInformation" xml:space="preserve">
+    <value>Evolution information</value>
+  </data>
+  <data name="Generator.CapabilityGroups.AreaInformation" xml:space="preserve">
+    <value>Area information</value>
+  </data>
+  <data name="Generator.CapabilityGroups.FusionInformation" xml:space="preserve">
+    <value>Fusion information</value>
+  </data>
+  <data name="Generator.CapabilityGroups.RunInformation" xml:space="preserve">
+    <value>Run information</value>
+  </data>
+  <data name="Generator.CapabilityGroups.TrackerDiagnostics" xml:space="preserve">
+    <value>Tracker diagnostics</value>
+  </data>
+  <data name="Generator.Review.Title" xml:space="preserve">
+    <value>Review and generate</value>
+  </data>
+  <data name="Generator.Review.Description" xml:space="preserve">
+    <value>The summary reflects the claims that will be signed.</value>
+  </data>
+  <data name="Generator.Review.KeyId" xml:space="preserve">
+    <value>Key ID</value>
+  </data>
+  <data name="Generator.Review.NoKeySelected" xml:space="preserve">
+    <value>No key selected</value>
+  </data>
+  <data name="Generator.Review.TokenId" xml:space="preserve">
+    <value>Token ID</value>
+  </data>
+  <data name="Generator.Review.Expiration" xml:space="preserve">
+    <value>Expiration</value>
+  </data>
+  <data name="Generator.Review.DirectGrantCount" xml:space="preserve">
+    <value>Direct grants</value>
+  </data>
+  <data name="Generator.Review.EffectiveGrantCount" xml:space="preserve">
+    <value>Effective grants</value>
+  </data>
+  <data name="Generator.Review.DirectGrants" xml:space="preserve">
+    <value>Direct grants</value>
+  </data>
+  <data name="Generator.Review.EffectiveGrants" xml:space="preserve">
+    <value>Effective grants</value>
+  </data>
+  <data name="Generator.Review.InvalidExpiration" xml:space="preserve">
+    <value>Invalid expiration</value>
+  </data>
+  <data name="Generator.Review.Generate" xml:space="preserve">
+    <value>Generate signed token</value>
+  </data>
+  <data name="Generator.Result.Title" xml:space="preserve">
+    <value>Token ready</value>
+  </data>
+  <data name="Generator.Result.Description" xml:space="preserve">
+    <value>Send this compact token to the person who needs temporary or lifetime diagnostic access.</value>
+  </data>
+  <data name="Generator.Result.Copy" xml:space="preserve">
+    <value>Copy token</value>
+  </data>
+  <data name="Generator.Result.Save" xml:space="preserve">
+    <value>Save token file</value>
+  </data>
+  <data name="Generator.Result.CreateAnother" xml:space="preserve">
+    <value>Create another</value>
+  </data>
+  <data name="Generator.Errors.SelectSigningKey" xml:space="preserve">
+    <value>Select a private signing key before generating a token.</value>
+  </data>
+  <data name="Generator.Errors.InvalidExpiration" xml:space="preserve">
+    <value>Enter a valid expiration date and time.</value>
+  </data>
+  <data name="Generator.Errors.WindowUnavailable" xml:space="preserve">
+    <value>The generator window is unavailable.</value>
+  </data>
+  <data name="Generator.Errors.NativeWindowUnavailable" xml:space="preserve">
+    <value>The native generator window is unavailable.</value>
+  </data>
+  <data name="Generator.Errors.CopyFailed" xml:space="preserve">
+    <value>The token could not be copied. It remains available in the token field.</value>
+  </data>
+  <data name="Generator.Errors.SaveFailed" xml:space="preserve">
+    <value>The token file could not be saved. The generated token has not been changed.</value>
+  </data>
+  <data name="Generator.Messages.TokenCopied" xml:space="preserve">
+    <value>Token copied to the clipboard.</value>
+  </data>
+  <data name="Generator.Messages.SaveCancelled" xml:space="preserve">
+    <value>Save cancelled.</value>
+  </data>
+  <data name="Generator.Messages.TokenSaved" xml:space="preserve">
+    <value>Token saved to {0}</value>
+  </data>
+  <data name="Generator.FilePicker.AccessTokenType" xml:space="preserve">
+    <value>Ironmon access token</value>
+  </data>
+  <data name="Generator.Presets.protocol_problem.Name" xml:space="preserve">
+    <value>Protocol problem</value>
+  </data>
+  <data name="Generator.Presets.protocol_problem.Description" xml:space="preserve">
+    <value>Prefills tracker connection history and raw state diagnostics.</value>
+  </data>
+  <data name="Generator.Presets.ability_generation.Name" xml:space="preserve">
+    <value>Ability generation</value>
+  </data>
+  <data name="Generator.Presets.ability_generation.Description" xml:space="preserve">
+    <value>Prefills current Pokemon ability and run-generator diagnostics.</value>
+  </data>
+  <data name="Generator.Presets.encounter_mapping.Name" xml:space="preserve">
+    <value>Encounter mapping</value>
+  </data>
+  <data name="Generator.Presets.encounter_mapping.Description" xml:space="preserve">
+    <value>Prefills active-run Pokemon, wild, trainer, seed, and generator information.</value>
+  </data>
+  <data name="Generator.Presets.full_current_debug.Name" xml:space="preserve">
+    <value>Full current debug access</value>
+  </data>
+  <data name="Generator.Presets.full_current_debug.Description" xml:space="preserve">
+    <value>Prefills every capability currently supported by the generator.</value>
+  </data>
+  <data name="Generator.Capabilities.pokemon.current_player.Name" xml:space="preserve">
+    <value>Current player</value>
+  </data>
+  <data name="Generator.Capabilities.pokemon.current_player.Description" xml:space="preserve">
+    <value>Inspect the current live player Pokemon.</value>
+  </data>
+  <data name="Generator.Capabilities.pokemon.current_enemies.Name" xml:space="preserve">
+    <value>Current enemies</value>
+  </data>
+  <data name="Generator.Capabilities.pokemon.current_enemies.Description" xml:space="preserve">
+    <value>Inspect current live enemy Pokemon.</value>
+  </data>
+  <data name="Generator.Capabilities.pokemon.all_active.Name" xml:space="preserve">
+    <value>All active-run Pokemon</value>
+  </data>
+  <data name="Generator.Capabilities.pokemon.all_active.Description" xml:space="preserve">
+    <value>Search and inspect any Pokemon generated for the active run.</value>
+  </data>
+  <data name="Generator.Capabilities.pokemon.overview.Name" xml:space="preserve">
+    <value>Pokemon overview</value>
+  </data>
+  <data name="Generator.Capabilities.pokemon.overview.Description" xml:space="preserve">
+    <value>View identity, form, level, held item, fusion components, and active ability context.</value>
+  </data>
+  <data name="Generator.Capabilities.pokemon.abilities.Name" xml:space="preserve">
+    <value>Generated abilities</value>
+  </data>
+  <data name="Generator.Capabilities.pokemon.abilities.Description" xml:space="preserve">
+    <value>View original and generated ability slots and fusion-source diagnostics.</value>
+  </data>
+  <data name="Generator.Capabilities.pokemon.base_stats.Name" xml:space="preserve">
+    <value>Generated base stats</value>
+  </data>
+  <data name="Generator.Capabilities.pokemon.base_stats.Description" xml:space="preserve">
+    <value>View original and generated base stats and totals.</value>
+  </data>
+  <data name="Generator.Capabilities.pokemon.move_access.Name" xml:space="preserve">
+    <value>Generated move access</value>
+  </data>
+  <data name="Generator.Capabilities.pokemon.move_access.Description" xml:space="preserve">
+    <value>View generated Learnset, Egg, machine, and supported Tutor access.</value>
+  </data>
+  <data name="Generator.Capabilities.evolution.results.Name" xml:space="preserve">
+    <value>Evolution results</value>
+  </data>
+  <data name="Generator.Capabilities.evolution.results.Description" xml:space="preserve">
+    <value>View exact generated evolution results and graphs.</value>
+  </data>
+  <data name="Generator.Capabilities.evolution.candidates.Name" xml:space="preserve">
+    <value>Evolution candidates</value>
+  </data>
+  <data name="Generator.Capabilities.evolution.candidates.Description" xml:space="preserve">
+    <value>View valid generated evolution candidate pools.</value>
+  </data>
+  <data name="Generator.Capabilities.evolution.generator_details.Name" xml:space="preserve">
+    <value>Evolution generator details</value>
+  </data>
+  <data name="Generator.Capabilities.evolution.generator_details.Description" xml:space="preserve">
+    <value>View evolution rules, versions, and fingerprints.</value>
+  </data>
+  <data name="Generator.Capabilities.world.wild_encounters.Name" xml:space="preserve">
+    <value>Wild encounters</value>
+  </data>
+  <data name="Generator.Capabilities.world.wild_encounters.Description" xml:space="preserve">
+    <value>View undiscovered generated wild mappings and reverse occurrences.</value>
+  </data>
+  <data name="Generator.Capabilities.world.trainer_parties.Name" xml:space="preserve">
+    <value>Trainer parties</value>
+  </data>
+  <data name="Generator.Capabilities.world.trainer_parties.Description" xml:space="preserve">
+    <value>View undefeated generated trainer parties and reverse occurrences.</value>
+  </data>
+  <data name="Generator.Capabilities.world.items.Name" xml:space="preserve">
+    <value>Ground items</value>
+  </data>
+  <data name="Generator.Capabilities.world.items.Description" xml:space="preserve">
+    <value>View generated results for uncollected ground items.</value>
+  </data>
+  <data name="Generator.Capabilities.fusion.preview_results.Name" xml:space="preserve">
+    <value>Fusion previews</value>
+  </data>
+  <data name="Generator.Capabilities.fusion.preview_results.Description" xml:space="preserve">
+    <value>Preview both generated orientations for selected normal Pokemon.</value>
+  </data>
+  <data name="Generator.Capabilities.fusion.material_pairs.Name" xml:space="preserve">
+    <value>Fusion material pairs</value>
+  </data>
+  <data name="Generator.Capabilities.fusion.material_pairs.Description" xml:space="preserve">
+    <value>View ordered material pairs that generate a selected fusion.</value>
+  </data>
+  <data name="Generator.Capabilities.run.configuration.Name" xml:space="preserve">
+    <value>Run configuration</value>
+  </data>
+  <data name="Generator.Capabilities.run.configuration.Description" xml:space="preserve">
+    <value>View active randomization and unfusion configuration.</value>
+  </data>
+  <data name="Generator.Capabilities.run.seed.Name" xml:space="preserve">
+    <value>Run seed</value>
+  </data>
+  <data name="Generator.Capabilities.run.seed.Description" xml:space="preserve">
+    <value>View the active run seed.</value>
+  </data>
+  <data name="Generator.Capabilities.run.generator_manifests.Name" xml:space="preserve">
+    <value>Generator manifests</value>
+  </data>
+  <data name="Generator.Capabilities.run.generator_manifests.Description" xml:space="preserve">
+    <value>View generator versions, pools, fingerprints, and mapping counts.</value>
+  </data>
+  <data name="Generator.Capabilities.tracker.protocol_history.Name" xml:space="preserve">
+    <value>Protocol history</value>
+  </data>
+  <data name="Generator.Capabilities.tracker.protocol_history.Description" xml:space="preserve">
+    <value>View tracker connection lifecycle, errors, requests, and responses.</value>
+  </data>
+  <data name="Generator.Capabilities.tracker.raw_state.Name" xml:space="preserve">
+    <value>Raw tracker state</value>
+  </data>
+  <data name="Generator.Capabilities.tracker.raw_state.Description" xml:space="preserve">
+    <value>View raw current connection and tracker-run state.</value>
+  </data>
+  <data name="Generator.Capabilities.tracker.persisted_knowledge.Name" xml:space="preserve">
+    <value>Persisted knowledge</value>
+  </data>
+  <data name="Generator.Capabilities.tracker.persisted_knowledge.Description" xml:space="preserve">
+    <value>View raw persisted move-discovery knowledge.</value>
+  </data>
+</root>

@@ -6,7 +6,7 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// <summary>
 /// Coordinates generated Pokémon search, paging, lookup, and navigation history.
 /// </summary>
-public partial class PokemonLookupExplorer
+public partial class PokemonLookupExplorer : IDisposable
 {
     private readonly List<string> _backHistory = [];
     private readonly List<string> _forwardHistory = [];
@@ -26,6 +26,12 @@ public partial class PokemonLookupExplorer
     /// </summary>
     [Inject]
     private TrackerRequestClient Connection { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or initializes tracker-owned diagnostic access.
+    /// </summary>
+    [Inject]
+    private DiagnosticAccessService AccessService { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the completed-run reconstruction recipe.
@@ -50,6 +56,12 @@ public partial class PokemonLookupExplorer
     /// </summary>
     [Parameter]
     public string? RequestedSpeciesId { get; set; }
+
+    /// <summary>
+    /// Subscribes active-run lookup state to diagnostic-access changes.
+    /// </summary>
+    protected override void OnInitialized()
+        => AccessService.Changed += HandleDiagnosticAccessChanged;
 
     /// <summary>
     /// Opens a newly requested species without adding an artificial history entry.
@@ -161,12 +173,24 @@ public partial class PokemonLookupExplorer
             return;
 
         string? previousSpeciesId = _currentSpeciesId;
-        if (!await LoadPokemonAsync(speciesId))
+        PokemonSearchMatch? match = _matches.FirstOrDefault(candidate => candidate.SpeciesId == speciesId);
+        if (!await LoadPokemonAsync(speciesId, match))
             return;
 
         if (previousSpeciesId is not null)
             _backHistory.Add(previousSpeciesId);
         _forwardHistory.Clear();
+    }
+
+    /// <summary>
+    /// Navigates to one selected search match and records history.
+    /// </summary>
+    /// <param name="match">The selected Pokemon search match.</param>
+    /// <returns>A task representing the lookup.</returns>
+    private Task NavigateToPokemonAsync(PokemonSearchMatch match)
+    {
+        ArgumentNullException.ThrowIfNull(match);
+        return NavigateToPokemonAsync(match.SpeciesId);
     }
 
     /// <summary>
@@ -213,8 +237,9 @@ public partial class PokemonLookupExplorer
     /// Loads one generated Pokémon without changing navigation history.
     /// </summary>
     /// <param name="speciesId">The selected stable Pokémon identifier.</param>
+    /// <param name="match">The originating search match when one is available.</param>
     /// <returns>Whether the lookup succeeded.</returns>
-    private async Task<bool> LoadPokemonAsync(string speciesId)
+    private async Task<bool> LoadPokemonAsync(string speciesId, PokemonSearchMatch? match = null)
     {
         if (_loading || !DebugMode && Recipe is null)
             return false;
@@ -223,7 +248,32 @@ public partial class PokemonLookupExplorer
         _error = null;
         try
         {
-            _lookup = await LookupPokemonAsync(speciesId);
+            PokemonLookupSection? section = GetFirstAuthorizedLookupSection();
+            if (!DebugMode || section is not null)
+            {
+                _lookup = await LookupPokemonAsync(speciesId, section ?? PokemonLookupSection.Overview);
+            }
+            else if (match is not null)
+            {
+                PokemonInformationPage page = TrackerDiagnosticCapabilityRules.HasAnyOverviewSurface(Connection)
+                    ? PokemonInformationPage.Overview
+                    : PokemonInformationPage.Evolutions;
+                _lookup = new PokemonLookupSnapshot
+                {
+                    Identity = new PokemonLookupIdentitySnapshot
+                    {
+                        SpeciesId = match.SpeciesId,
+                        SpeciesName = match.SpeciesName,
+                        Fusion = match.Fusion
+                    },
+                    Section = (PokemonLookupSection)(int)page
+                };
+            }
+            else
+            {
+                throw new InvalidOperationException(Text["Lookup.Search.SelectPokemonFromResults"]);
+            }
+
             _currentSpeciesId = _lookup.Identity.SpeciesId;
             _matches = [];
             return true;
@@ -243,9 +293,29 @@ public partial class PokemonLookupExplorer
     /// Sends a lookup request using the configured lookup source.
     /// </summary>
     /// <param name="speciesId">The stable Pokémon identifier.</param>
+    /// <param name="section">The independently requested information section.</param>
     /// <returns>The generated Pokémon snapshot.</returns>
-    private Task<PokemonLookupSnapshot> LookupPokemonAsync(string speciesId)
-        => DebugMode ? Connection.LookupDebugPokemonAsync(speciesId) : Connection.LookupPokemonAsync(Recipe!, speciesId);
+    private Task<PokemonLookupSnapshot> LookupPokemonAsync(string speciesId, PokemonLookupSection section)
+        => DebugMode ? Connection.LookupDebugPokemonAsync(speciesId, section) : Connection.LookupPokemonAsync(Recipe!, speciesId, section);
+
+    /// <summary>
+    /// Gets the first active-run information section that may be requested directly.
+    /// </summary>
+    /// <returns>The first authorized section, or null when only independent tools are granted.</returns>
+    private PokemonLookupSection? GetFirstAuthorizedLookupSection()
+    {
+        if (!DebugMode)
+            return PokemonLookupSection.Overview;
+
+        foreach (PokemonInformationPage page in Enum.GetValues<PokemonInformationPage>())
+        {
+            string capability = TrackerDiagnosticCapabilityRules.GetPokemonInformationCapability(page);
+            if (Connection.HasDiagnosticCapability(capability))
+                return (PokemonLookupSection)(int)page;
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Gets whether an earlier search page exists.
@@ -293,4 +363,30 @@ public partial class PokemonLookupExplorer
     /// <returns>Whether the exception can be displayed as a lookup error.</returns>
     private static bool IsExpectedRequestException(Exception exception)
         => exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException;
+
+    /// <summary>
+    /// Clears protected active-run lookup data immediately after access changes.
+    /// </summary>
+    /// <param name="sender">The diagnostic-access service.</param>
+    /// <param name="args">The empty change arguments.</param>
+    private void HandleDiagnosticAccessChanged(object? sender, EventArgs args)
+    {
+        if (!DebugMode)
+            return;
+
+        _matches = [];
+        _lookup = null;
+        _currentSpeciesId = null;
+        _backHistory.Clear();
+        _forwardHistory.Clear();
+        _error = null;
+        _searched = false;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Removes the diagnostic-access subscription.
+    /// </summary>
+    public void Dispose()
+        => AccessService.Changed -= HandleDiagnosticAccessChanged;
 }

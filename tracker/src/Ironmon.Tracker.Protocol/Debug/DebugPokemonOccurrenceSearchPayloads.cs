@@ -18,6 +18,16 @@ public sealed class DebugWildOccurrenceSearchRequestPayload
     public required string SpeciesId { get; init; }
 
     /// <summary>
+    /// Gets or initializes the live source whose represented species must override <see cref="SpeciesId"/>.
+    /// </summary>
+    public DebugPokemonTarget? Target { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the enemy battler position when the live source is an enemy.
+    /// </summary>
+    public int? EnemyPosition { get; init; }
+
+    /// <summary>
     /// Gets or initializes the zero-based result offset.
     /// </summary>
     public int Offset { get; init; }
@@ -44,6 +54,16 @@ public sealed class DebugTrainerOccurrenceSearchRequestPayload
     /// Gets or initializes the generated species identifier.
     /// </summary>
     public required string SpeciesId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the live source whose represented species must override <see cref="SpeciesId"/>.
+    /// </summary>
+    public DebugPokemonTarget? Target { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the enemy battler position when the live source is an enemy.
+    /// </summary>
+    public int? EnemyPosition { get; init; }
 
     /// <summary>
     /// Gets or initializes the zero-based result offset.

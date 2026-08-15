@@ -363,7 +363,7 @@ module Ironmon
     }
   end
 
-  def self.tracker_pokemon_lookup_for_recipe(payload, recipe)
+  def self.tracker_pokemon_lookup_for_recipe(payload, recipe, visibility = nil)
     species_id = payload["species_id"].to_s
     section = payload["section"].to_s
     section = "overview" if section.empty?
@@ -377,7 +377,8 @@ module Ironmon
       raise TrackerLookupError.new("pokemon_not_found", "The selected Pokemon is not available in this run.")
     end
 
-    cache_key = "#{recipe["run_id"]}|#{species.id}|#{section}"
+    visibility_key = visibility ? visibility.sort_by { |entry| entry[0].to_s }.to_s : "all"
+    cache_key = "#{recipe["run_id"]}|#{species.id}|#{section}|#{visibility_key}"
     cached = tracker_lookup_cache[cache_key]
     return cached if cached
 
@@ -396,19 +397,25 @@ module Ironmon
     when "overview"
       fusion_mapper = tracker_post_run_fusion_mapper(recipe)
       result["overview"] = {
-        "wild_occurrences" => tracker_occurrence_search_for_recipe(
-          { "species_id" => species_id, "offset" => 0, "limit" => 50 },
-          recipe, :wild
-        ),
-        "trainer_occurrences" => tracker_occurrence_search_for_recipe(
-          { "species_id" => species_id, "offset" => 0, "limit" => 50 },
-          recipe, :trainer
-        ),
-        "fusion_bases" => tracker_lookup_fusion_bases(species),
-        "reverse_fusion" => tracker_lookup_reverse_fusion(species, fusion_mapper),
-        "fusion_materials" => tracker_lookup_fusion_materials(
-          species, fusion_mapper, 0, 50
-        )
+        "wild_occurrences" => visibility && !visibility[:wild] ?
+          { "matches" => [], "total" => 0 } :
+          tracker_occurrence_search_for_recipe(
+            { "species_id" => species_id, "offset" => 0, "limit" => 50 },
+            recipe, :wild
+          ),
+        "trainer_occurrences" => visibility && !visibility[:trainer] ?
+          { "matches" => [], "total" => 0 } :
+          tracker_occurrence_search_for_recipe(
+            { "species_id" => species_id, "offset" => 0, "limit" => 50 },
+            recipe, :trainer
+          ),
+        "fusion_bases" => visibility && !visibility[:overview] ?
+          [] : tracker_lookup_fusion_bases(species),
+        "reverse_fusion" => visibility && !visibility[:overview] ?
+          nil : tracker_lookup_reverse_fusion(species, fusion_mapper),
+        "fusion_materials" => visibility && !visibility[:materials] ?
+          { "matches" => [], "total" => 0 } :
+          tracker_lookup_fusion_materials(species, fusion_mapper, 0, 50)
       }
     when "abilities"
       result["abilities"] = {
@@ -435,18 +442,27 @@ module Ironmon
         "generator" => tracker_lookup_move_generator(recipe)
       }
     when "evolutions"
-      evolution_targets = tracker_lookup_evolution_targets(species, recipe)
+      show_results = !visibility || visibility[:evolution_results]
+      evolution_targets = show_results ?
+        tracker_lookup_evolution_targets(species, recipe) :
+        { :normal => [], :head => [], :body => [] }
       generated_evolutions = tracker_evolution_recipe?(recipe)
-      generated_stats = tracker_lookup_generated_base_stats(species, recipe)
+      generated_stats = show_results ?
+        tracker_lookup_generated_base_stats(species, recipe) : {}
       result["evolutions"] = {
-        "current_base_stat_total" => tracker_base_stat_total(generated_stats),
-        "native_targets" => generated_evolutions ? [] : tracker_lookup_evolutions(species),
-        "native_predecessors" => generated_evolutions ? [] : tracker_lookup_previous_evolutions(species),
-        "generated_predecessors" => tracker_lookup_evolution_predecessors(species, recipe),
+        "current_base_stat_total" => show_results ?
+          tracker_base_stat_total(generated_stats) : 0,
+        "native_targets" => !show_results || generated_evolutions ?
+          [] : tracker_lookup_evolutions(species),
+        "native_predecessors" => !show_results || generated_evolutions ?
+          [] : tracker_lookup_previous_evolutions(species),
+        "generated_predecessors" => show_results ?
+          tracker_lookup_evolution_predecessors(species, recipe) : [],
         "generated_targets" => evolution_targets[:normal],
         "head_targets" => evolution_targets[:head],
         "body_targets" => evolution_targets[:body],
-        "generator" => tracker_lookup_evolution_generator(recipe)
+        "generator" => visibility && !visibility[:evolution_generator] ?
+          {} : tracker_lookup_evolution_generator(recipe)
       }
     end
     tracker_store_bounded(tracker_lookup_cache, cache_key, result, 256)
@@ -659,7 +675,8 @@ module Ironmon
       next if !entry[2].include?(normalized_query)
       {
         "species_id" => entry[0],
-        "species_name" => entry[1]
+        "species_name" => entry[1],
+        "fusion" => entry[3]
       }
     end.compact
     matches.sort_by! do |match|
@@ -678,7 +695,8 @@ module Ironmon
       name = tracker_search_species_name(species_id)
       next if !name
       stable_id = "#{species_id}:0"
-      [stable_id, name, "#{name} #{species_id}".downcase]
+      fusion = /\AB\d+H\d+\z/.match?(species_id.to_s)
+      [stable_id, name, "#{name} #{species_id}".downcase, fusion]
     end.compact
     tracker_search_indexes[key] = index.freeze
     return tracker_search_indexes[key]

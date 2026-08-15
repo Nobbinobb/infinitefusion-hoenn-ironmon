@@ -1191,3 +1191,184 @@ Status: **Complete**
   PDB or generated XML documentation files.
 - Two independent release builds were byte-for-byte reproducible with SHA-256
   `4abb4eb0fe01d4a75f52c26ad8cbbd35273c4203bda3097384de0fed22e169cb`.
+
+## Ironmon 0.7.4 diagnostic-access foundation
+
+Status: **Reviewed**
+
+- Added the shared `Ironmon.Tracker.Access` project with the 21 stable
+  diagnostic capability definitions and immutable catalog metadata for future
+  tracker and generator presentation.
+- Added transitive implication expansion so All Active Pokemon includes Current
+  Player and Current Enemies while retaining distinct direct and effective
+  grants.
+- Added a bounded ES256 JWT contract with fixed type, issuer, audience,
+  application version, key ID, token ID, issue time, optional expiration,
+  optional note, and sorted capability claims.
+- Added a P-256 public-key ring and strict Microsoft IdentityModel validation
+  that rejects unsecured or unexpected algorithms, types, signing keys,
+  signatures, application claims, duplicate or unsorted capabilities, malformed
+  values, and expired tokens.
+- Preserved signed unknown future capabilities for user reporting without
+  granting them or implicitly authorizing future features.
+- Added 22 focused capability and JWT cases. All 82 tracker tests and the full
+  tracker solution build pass with zero warnings in Debug and Release.
+- No production public key, token persistence, tracker UI, generator UI, or
+  game-protocol authorization is introduced by this foundation slice.
+
+## Ironmon 0.7.4 maintainer token generator
+
+Status: **Reviewed**
+
+- Added a separate Windows .NET MAUI Blazor Hybrid generator application and a
+  platform-neutral signing core under `tracker/tools`; the player distribution
+  continues to publish only the tracker application.
+- Added strict external PKCS#8 P-256 private-key import, deterministic public-key
+  fingerprint IDs, ES256 signing, and immediate clearing of decoded private-key
+  bytes after import. No private key is persisted, logged, or returned.
+- Added editable local presets, note and temporary-or-lifetime expiration
+  controls, and individual checkboxes for all 21 capabilities.
+- Enforced All Active Pokemon as the direct grant that selects and locks Current
+  Player and Current Enemies, while preserving separate direct and effective
+  grant summaries.
+- Added pre-generation dependency validation and a review summary containing
+  the key ID, token ID, UTC expiration, and direct and effective capabilities.
+- Added clipboard output and native save-file output using identical compact
+  JWT text and the `.ironmon-access` extension.
+- Kept clipboard and native-save failures inside the generator form without
+  clearing or replacing the generated token.
+- Added the same resource-based localization infrastructure and startup probe
+  used by the tracker, including localized native text, form text, presets,
+  capability groups, and all capability names and descriptions.
+- Extracted native window and font settings, token-form formats and defaults,
+  preset IDs, localization key construction, and capability presentation groups
+  from the application shell and generator page.
+- Added a separate maintainer-only self-contained publish script whose output
+  remains outside the player distribution and fails if it contains private-key
+  or generated-token file extensions.
+- Added 37 generator-focused cases, including every capability with its minimum
+  valid dependencies. All 119 tests pass, full Debug and Release solution
+  builds complete with zero warnings, and both the build output and published
+  generator passed hidden startup smoke tests.
+- Completed maintainer review by creating a real P-256 key and signed
+  `.ironmon-access` token through the packaged generator.
+- No tracker token activation, token persistence, game protocol negotiation, or
+  capability-gated debug presentation is introduced by this slice.
+
+## Ironmon 0.7.4 tracker diagnostic-access lifecycle
+
+Status: **Reviewed**
+
+- Added an always-reachable Diagnostic Access screen beside Settings in the
+  ordinary Release tracker, independent of game connection state.
+- Added paste-first activation and bounded `.ironmon-access` file loading with
+  localized validation outcomes and a clear active-token replacement warning.
+- Embedded only the supplied maintainer P-256 public key in the tracker and
+  added strict SubjectPublicKeyInfo import with the same deterministic key ID
+  derivation used by the generator. The private key remains external.
+- Added tracker-owned single-token persistence under Local App Data with
+  temporary-file replacement, immediate removal, invalid-replacement
+  protection, and no raw token in public state or UI after activation.
+- Added no-access, active, lifetime, expired, invalid, and clearly identified
+  Debug developer-override states. Active presentation includes the signed
+  note, expiration, token ID, key ID, direct grants, included grants, and
+  unknown future identifiers.
+- Added timer-driven expiration and immediate navigation recomputation after
+  activation, replacement, removal, or expiration. Expired access has no
+  effective capabilities and cannot leave a protected view selected.
+- Updated the tracker application version to 0.7.4 and added localized access
+  presentation following the existing resource infrastructure.
+- Added six lifecycle tests and three strict public-key import tests. All 128
+  tests pass in Release, the tracker builds with zero warnings in Debug and
+  Release, and the real Release WebView passed access-screen and malformed-input
+  interaction smoke tests.
+- Game protocol negotiation, live grant synchronization, and named request
+  authorization are implemented in the following review slice.
+
+## Ironmon 0.7.4 protocol negotiation and game authorization
+
+Status: **Reviewed**
+
+- Added bounded optional game-supported and tracker-granted capability lists to
+  the existing handshake without removing the 0.7.3 development fields.
+- Added live `diagnostic_access_changed` replacement events for activation,
+  replacement, removal, and expiration without reconnecting or transmitting
+  token metadata.
+- Intersected effective tracker grants with game support before either the
+  handshake or a live update reaches Ruby.
+- Made malformed, duplicated, unknown, and oversized Ruby capability lists
+  fail closed to an empty grant.
+- Replaced blanket tracker and Ruby debug decisions with named availability and
+  information checks for live Pokemon inspection, arbitrary active-run lookup,
+  candidates, occurrences, fusion tools, areas, and run diagnostics.
+- Preserved the dual `$DEBUG` and `debug_requested` path as the unrestricted
+  local developer override, while valid release-token access no longer depends
+  on `$DEBUG`.
+- Filtered run configuration, seed, generator manifests, and evolution
+  generator details before Ruby serialization when their individual grant is
+  absent.
+- Documented exact 0.7.3 pairing behavior and the request-to-capability mapping
+  in the protocol reference and synchronized the mechanics information boundary.
+- Added four protocol and signed connection cases, including supported-set
+  intersection and immediate live removal. All 132 tests pass, the Debug
+  tracker build completes with zero warnings, and Infinite Fusion's bundled
+  runtime loaded the synchronized scripts for a 15-second hidden smoke test.
+
+## Ironmon 0.7.4 capability-aware information surfaces
+
+Status: **Reviewed**
+
+- Made Debug navigation and every shared Pokemon tab reflect the independently
+  authorized surfaces, including an Area-only empty state.
+- Split exact evolution result and graph serialization from paged evolution
+  candidates so either grant is useful without the other.
+- Added target-bound player and enemy tool requests. The game resolves the
+  represented live Pokemon and replaces the submitted species identifier;
+  target-free candidate, occurrence, material, search, and lookup requests
+  continue to require All Active Pokemon.
+- Applied wild and trainer capabilities consistently to Area-first and
+  Pokemon-first lookup, and retained ordinary discovered trainer, encounter,
+  and collected-item behavior without their diagnostic grants.
+- Filtered Overview relationships, reverse occurrences, material pairs, exact
+  evolution data, and evolution generator metadata before active-run
+  serialization instead of relying on visual concealment.
+- Made tracker protocol history, raw state, persisted knowledge, copy actions,
+  and exports independently visible and authorized. The shared report builder
+  serializes only granted groups and never receives token metadata as report
+  content.
+- Clear protected Pokemon, Area detail, run diagnostic, and tracker diagnostic
+  state immediately when access changes.
+- Added target-tampering, candidate-only inspection, and per-report-group
+  allow/deny coverage. All 135 tests pass in Debug and Release, both tracker
+  application builds complete with zero warnings, and Infinite Fusion's
+  bundled runtime kept the synchronized scripts loaded during a 15-second
+  hidden startup smoke test.
+
+## Ironmon 0.7.4 documentation, runtime validation, and release candidate
+
+Status: **Awaiting review**
+
+- Updated the game version, mechanics manual, protocol reference, project and
+  tracker READMEs, installation and development guides, localization guidance,
+  distribution summary, and versioned release notes for the final 0.7.4 token
+  behavior.
+- Documented activation, grant review, replacement, removal, expiration, local
+  persistence, legacy developer override, and the separation between the
+  player tracker and maintainer-only generator/private key.
+- Removed the unnecessary Pokemon-availability prerequisite from standalone
+  evolution-generator diagnostics so generator and runtime dependency rules
+  agree.
+- Added a bundled-runtime capability harness covering all 18 game-owned named
+  allow and deny paths, malformed replacements, live removal/expiration,
+  target mappings, and developer override. Its temporary installed test hook
+  was removed after a passing run.
+- All 135 unit tests pass in Debug and Release. The complete tracker and
+  generator solution builds with zero warnings in both configurations.
+- The packaged tracker and game passed a 15-second hidden connected startup
+  smoke test; only the two processes launched by the test were stopped.
+- Added player-package rejection for generator, token, private-key, maintainer,
+  and development files. The final archive contains 475 inspected entries and
+  none of the forbidden content.
+- Two clean builds of `Ironmon-v0.7.4-diagnostic-access.zip` produced the same
+  SHA-256 checksum:
+  `e3d85fc44fbca4f8bce006f5bb8493a9a5d49466e9acd16f8b38f0d10b6026ef`.

@@ -14,6 +14,28 @@ module Ironmon
   TRACKER_MAXIMUM_ERROR_MESSAGE_CHARACTERS = 2_000
   TRACKER_STATE_INTERVAL_SECONDS = 0.1
   TRACKER_DISCOVERY_RETRY_SECONDS = 1.0
+  TRACKER_MAXIMUM_DIAGNOSTIC_CAPABILITIES = 128
+  TRACKER_MAXIMUM_DIAGNOSTIC_CAPABILITY_CHARACTERS = 128
+  TRACKER_DIAGNOSTIC_CAPABILITIES = [
+    "evolution.candidates",
+    "evolution.generator_details",
+    "evolution.results",
+    "fusion.material_pairs",
+    "fusion.preview_results",
+    "pokemon.abilities",
+    "pokemon.all_active",
+    "pokemon.base_stats",
+    "pokemon.current_enemies",
+    "pokemon.current_player",
+    "pokemon.move_access",
+    "pokemon.overview",
+    "run.configuration",
+    "run.generator_manifests",
+    "run.seed",
+    "world.items",
+    "world.trainer_parties",
+    "world.wild_encounters"
+  ]
   TRACKER_FIXED_HEALING = {
     :POTION => 20,
     :BERRYJUICE => 20,
@@ -84,6 +106,7 @@ module Ironmon
       @last_error = nil
       @last_error_at = 0.0
       @debug_requested = false
+      @diagnostic_capabilities = []
       @auto_select_starter = false
       @maximum_starter_base_stat_total = nil
       @favorite_species_ids = []
@@ -157,6 +180,19 @@ module Ironmon
       return @maximum_starter_base_stat_total
     end
 
+    def diagnostic_capability?(capability)
+      return true if debug_authorized?
+      return @diagnostic_capabilities.include?(capability.to_s)
+    end
+
+    def diagnostic_capabilities?(*capabilities)
+      return capabilities.all? { |capability| diagnostic_capability?(capability) }
+    end
+
+    def any_diagnostic_capability?(*capabilities)
+      return capabilities.any? { |capability| diagnostic_capability?(capability) }
+    end
+
     private
 
     def begin_connect
@@ -205,6 +241,7 @@ module Ironmon
         "ironmon_version" => Ironmon::VERSION,
         "ironmon_active" => Ironmon.active?,
         "debug_available" => ($DEBUG == true),
+        "supported_diagnostic_capabilities" => TRACKER_DIAGNOSTIC_CAPABILITIES,
         "game_root" => File.expand_path("."),
         "run_id" => run_id,
         "battle_id" => Ironmon.tracker_battle_id
@@ -297,12 +334,21 @@ module Ironmon
       if message["type"] == "event" && message["event"] == "tracker_connected"
         payload = message["payload"] || {}
         @debug_requested = payload["debug_requested"] == true
+        @diagnostic_capabilities = normalize_diagnostic_capabilities(
+          payload["diagnostic_capabilities"]
+        )
         @auto_select_starter = payload["auto_select_starter"] == true
         @maximum_starter_base_stat_total = Ironmon.valid_starter_bst_ceiling(
           payload["maximum_starter_base_stat_total"]
         )
         @favorite_species_ids = normalize_favorite_species_ids(
           payload["favorite_species_ids"]
+        )
+      elsif message["type"] == "event" &&
+            message["event"] == "diagnostic_access_changed"
+        payload = message["payload"] || {}
+        @diagnostic_capabilities = normalize_diagnostic_capabilities(
+          payload["diagnostic_capabilities"]
         )
       elsif message["type"] == "event" &&
             message["event"] == "area_discovery_acknowledged"
@@ -389,8 +435,10 @@ module Ironmon
         )
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "area_lookup_detail"
+        category = (message["payload"] || {})["category"].to_s
         payload = Ironmon.tracker_area_lookup_detail(
-          message["payload"], message["run_id"], debug_authorized?
+          message["payload"], message["run_id"],
+          diagnostic_capability?(area_diagnostic_capability(category))
         )
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "pokemon_search"
@@ -423,106 +471,67 @@ module Ironmon
         payload = Ironmon.tracker_fusion_preview(message["payload"], message["run_id"])
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "debug_inspect_pokemon"
-        if !debug_authorized?
-          queue_message(error_response(
-            request_id, "debug_forbidden",
-            "Both the game and tracker must authorize debug access.",
-            message["run_id"]
-          ))
-          return
-        end
+        inspection_payload = message["payload"] || {}
+        require_diagnostic_capabilities([
+          inspection_diagnostic_capability(inspection_payload)
+        ])
+        require_any_diagnostic_capability(
+          pokemon_information_capabilities(inspection_payload["section"])
+        )
         payload = Ironmon.tracker_debug_inspect_pokemon(message["payload"])
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "debug_run_diagnostics"
-        if !debug_authorized?
-          queue_message(error_response(
-            request_id, "debug_forbidden",
-            "Both the game and tracker must authorize debug access.",
-            message["run_id"]
-          ))
-          return
-        end
+        require_any_diagnostic_capability([
+          "run.configuration", "run.seed", "run.generator_manifests",
+          "evolution.generator_details"
+        ])
         payload = Ironmon.tracker_debug_run_diagnostics
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "debug_pokemon_search"
-        if !debug_authorized?
-          queue_message(error_response(
-            request_id, "debug_forbidden",
-            "Both the game and tracker must authorize debug access.",
-            message["run_id"]
-          ))
-          return
-        end
+        require_diagnostic_capabilities(["pokemon.all_active"])
         payload = Ironmon.tracker_debug_pokemon_search(message["payload"])
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "debug_pokemon_lookup"
-        if !debug_authorized?
-          queue_message(error_response(
-            request_id, "debug_forbidden",
-            "Both the game and tracker must authorize debug access.",
-            message["run_id"]
-          ))
-          return
-        end
+        section = (message["payload"] || {})["section"].to_s
+        require_diagnostic_capabilities([
+          "pokemon.all_active", pokemon_information_capability(section)
+        ])
         payload = Ironmon.tracker_debug_pokemon_lookup(message["payload"])
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "debug_evolution_candidate_search"
-        if !debug_authorized?
-          queue_message(error_response(
-            request_id, "debug_forbidden",
-            "Both the game and tracker must authorize debug access.",
-            message["run_id"]
-          ))
-          return
-        end
+        require_diagnostic_capabilities([
+          pokemon_source_diagnostic_capability(message["payload"] || {}),
+          "evolution.candidates"
+        ])
         payload = Ironmon.tracker_debug_evolution_candidate_search(
           message["payload"]
         )
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "debug_fusion_material_search"
-        if !debug_authorized?
-          queue_message(error_response(
-            request_id, "debug_forbidden",
-            "Both the game and tracker must authorize debug access.",
-            message["run_id"]
-          ))
-          return
-        end
+        require_diagnostic_capabilities([
+          pokemon_source_diagnostic_capability(message["payload"] || {}),
+          "fusion.material_pairs"
+        ])
         payload = Ironmon.tracker_debug_fusion_material_search(
           message["payload"]
         )
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "debug_wild_occurrence_search"
-        if !debug_authorized?
-          queue_message(error_response(
-            request_id, "debug_forbidden",
-            "Both the game and tracker must authorize debug access.",
-            message["run_id"]
-          ))
-          return
-        end
+        require_diagnostic_capabilities([
+          pokemon_source_diagnostic_capability(message["payload"] || {}),
+          "world.wild_encounters"
+        ])
         payload = Ironmon.tracker_debug_wild_occurrence_search(message["payload"])
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "debug_trainer_occurrence_search"
-        if !debug_authorized?
-          queue_message(error_response(
-            request_id, "debug_forbidden",
-            "Both the game and tracker must authorize debug access.",
-            message["run_id"]
-          ))
-          return
-        end
+        require_diagnostic_capabilities([
+          pokemon_source_diagnostic_capability(message["payload"] || {}),
+          "world.trainer_parties"
+        ])
         payload = Ironmon.tracker_debug_trainer_occurrence_search(message["payload"])
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "debug_fusion_preview"
-        if !debug_authorized?
-          queue_message(error_response(
-            request_id, "debug_forbidden",
-            "Both the game and tracker must authorize debug access.",
-            message["run_id"]
-          ))
-          return
-        end
+        require_diagnostic_capabilities(["fusion.preview_results"])
         payload = Ironmon.tracker_debug_fusion_preview(message["payload"])
         queue_message(success_response(request_id, payload, message["run_id"]))
       else
@@ -539,6 +548,79 @@ module Ironmon
       identifiers = values.map { |value| value.to_s.split(":", 2)[0].upcase }
       return identifiers.reject { |value| value.empty? }.
         map { |value| "#{value}:0" }.uniq
+    end
+
+    def normalize_diagnostic_capabilities(values)
+      return [] if !values.is_a?(Array)
+      return [] if values.length > TRACKER_MAXIMUM_DIAGNOSTIC_CAPABILITIES
+      normalized = []
+      values.each do |value|
+        return [] if !value.is_a?(String) || value.empty?
+        return [] if value.length > TRACKER_MAXIMUM_DIAGNOSTIC_CAPABILITY_CHARACTERS
+        return [] if !TRACKER_DIAGNOSTIC_CAPABILITIES.include?(value)
+        return [] if normalized.include?(value)
+        normalized << value
+      end
+      return normalized
+    end
+
+    def require_diagnostic_capabilities(capabilities)
+      return true if diagnostic_capabilities?(*capabilities)
+      raise Ironmon::TrackerDebugError.new(
+        "debug_forbidden",
+        "The tracker has not granted every required diagnostic capability."
+      )
+    end
+
+    def require_any_diagnostic_capability(capabilities)
+      return true if any_diagnostic_capability?(*capabilities)
+      raise Ironmon::TrackerDebugError.new(
+        "debug_forbidden",
+        "The tracker has not granted access to any requested diagnostic section."
+      )
+    end
+
+    def inspection_diagnostic_capability(payload)
+      target = payload["target"].to_s
+      return "pokemon.current_player" if target == "player"
+      return "pokemon.current_enemies" if target == "enemy"
+      raise Ironmon::TrackerDebugError.new(
+        "invalid_target",
+        "Only the represented current player or current enemy may be inspected."
+      )
+    end
+
+    def pokemon_source_diagnostic_capability(payload)
+      return "pokemon.all_active" if payload["target"].to_s.empty?
+      return inspection_diagnostic_capability(payload)
+    end
+
+    def pokemon_information_capabilities(section)
+      if section.to_s == "overview" || section.to_s.empty?
+        return [
+          "pokemon.overview", "world.wild_encounters",
+          "world.trainer_parties", "fusion.material_pairs",
+          "fusion.preview_results"
+        ]
+      end
+      if section.to_s == "evolutions"
+        return ["evolution.results", "evolution.candidates"]
+      end
+      return [pokemon_information_capability(section)]
+    end
+
+    def pokemon_information_capability(section)
+      return "pokemon.abilities" if section.to_s == "abilities"
+      return "pokemon.base_stats" if section.to_s == "stats"
+      return "pokemon.move_access" if section.to_s == "moves"
+      return "evolution.results" if section.to_s == "evolutions"
+      return "pokemon.overview"
+    end
+
+    def area_diagnostic_capability(category)
+      return "world.trainer_parties" if category == "trainer"
+      return "world.wild_encounters" if category == "encounter"
+      return "world.items"
     end
 
     def debug_authorized?
@@ -593,6 +675,8 @@ module Ironmon
       @state = :disconnected
       @input_buffer = ""
       @output_buffer = ""
+      @debug_requested = false
+      @diagnostic_capabilities = []
       @next_attempt_at = Ironmon.tracker_uptime_seconds +
         TRACKER_RECONNECT_SECONDS
       log_error(error) if error

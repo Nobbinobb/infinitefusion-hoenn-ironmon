@@ -10,6 +10,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
 {
     private readonly Lock _lifecycleSync = new();
     private readonly CompletedRunArchive _completedRuns;
+    private readonly DiagnosticAccessService? _diagnosticAccess;
     private readonly AreaDiscoveryStore _areaDiscoveries;
     private readonly TrackerDiagnosticsStore _diagnostics;
     private readonly TrackerKnowledgeStore _knowledge;
@@ -32,8 +33,9 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// <param name="knowledge">The tracker-owned discovery and annotation store.</param>
     /// <param name="areaDiscoveries">The tracker-owned area discovery store.</param>
     /// <param name="completedRuns">The tracker-owned completed-run recipe archive.</param>
+    /// <param name="diagnosticAccess">The current signed diagnostic access, when configured.</param>
     /// <exception cref="ArgumentNullException">Thrown when an argument is null.</exception>
-    public TrackerConnectionService(TrackerConnectionOptions options, TrackerDiagnosticsStore diagnostics, TrackerConnectionState state, TrackerRunState runState, TrackerKnowledgeStore knowledge, AreaDiscoveryStore areaDiscoveries, CompletedRunArchive completedRuns)
+    public TrackerConnectionService(TrackerConnectionOptions options, TrackerDiagnosticsStore diagnostics, TrackerConnectionState state, TrackerRunState runState, TrackerKnowledgeStore knowledge, AreaDiscoveryStore areaDiscoveries, CompletedRunArchive completedRuns, DiagnosticAccessService? diagnosticAccess = null)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(diagnostics);
@@ -45,12 +47,14 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         _options = options;
         _diagnostics = diagnostics;
         _requests = new TrackerRequestSession(diagnostics);
-        Requests = new TrackerRequestClient(_requests, options, state, areaDiscoveries);
+        Requests = new TrackerRequestClient(_requests, options, state, areaDiscoveries, diagnosticAccess);
         _state = state;
         _runState = runState;
         _knowledge = knowledge;
         _areaDiscoveries = areaDiscoveries;
         _completedRuns = completedRuns;
+        _diagnosticAccess = diagnosticAccess;
+        _diagnosticAccess?.Changed += OnDiagnosticAccessChanged;
     }
 
     /// <summary>
@@ -141,6 +145,9 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             return;
 
         await StopAsync().ConfigureAwait(false);
+        if (_diagnosticAccess is not null)
+            _diagnosticAccess.Changed -= OnDiagnosticAccessChanged;
+
         _requests.Dispose();
         _disposed = true;
     }
@@ -217,7 +224,8 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         _diagnostics.RecordIncoming(handshakeMessage);
         GameHandshakePayload game = ValidateGameHandshake(handshakeMessage);
         _knowledge.SelectRun(game.RunId);
-        TrackerHandshakePayload tracker = new(_options.TrackerVersion, _options.DebugRequested, _options.AutoSelectStarter, _options.MaximumStarterBaseStatTotal, _options.FavoriteSpeciesIds);
+        IReadOnlyList<string> diagnosticCapabilities = Requests.GetNegotiatedDiagnosticCapabilities(game);
+        TrackerHandshakePayload tracker = new(_options.TrackerVersion, _options.DebugRequested, _options.AutoSelectStarter, _options.MaximumStarterBaseStatTotal, _options.FavoriteSpeciesIds, diagnosticCapabilities);
         TrackerMessage trackerHandshake = TrackerMessageFactory.CreateEvent(TrackerEvents.TrackerConnected, TrackerProtocol.InitialEventSequence, tracker, game.RunId, game.BattleId);
         await writer.WriteAsync(trackerHandshake, cancellationToken).ConfigureAwait(false);
         _diagnostics.RecordOutgoing(trackerHandshake);
@@ -378,6 +386,32 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     private void ClearRequestSession()
     {
         Requests.Disconnect();
+    }
+
+    /// <summary>
+    /// Immediately replaces the named capability grants held by a connected game.
+    /// </summary>
+    /// <param name="sender">The diagnostic-access service.</param>
+    /// <param name="eventArgs">The empty change arguments.</param>
+    private async void OnDiagnosticAccessChanged(object? sender, EventArgs eventArgs)
+    {
+        TrackerConnectionSnapshot snapshot = _state.Snapshot;
+        if (snapshot.Status != TrackerConnectionStatus.Connected || snapshot.Game is null)
+            return;
+
+        DiagnosticAccessChangedPayload payload = new()
+        {
+            DiagnosticCapabilities = Requests.GetNegotiatedDiagnosticCapabilities(snapshot.Game)
+        };
+
+        try
+        {
+            await _requests.SendEventAsync(TrackerEvents.DiagnosticAccessChanged, payload, snapshot.CurrentState?.RunId ?? snapshot.Game.RunId, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException or ObjectDisposedException)
+        {
+            _diagnostics.RecordError(exception);
+        }
     }
 
     /// <summary>

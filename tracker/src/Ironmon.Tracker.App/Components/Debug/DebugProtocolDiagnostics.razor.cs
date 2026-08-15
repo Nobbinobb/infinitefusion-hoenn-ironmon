@@ -8,7 +8,7 @@ namespace Ironmon.Tracker.App.Components.Debug;
 /// </summary>
 public partial class DebugProtocolDiagnostics : IDisposable
 {
-    private static readonly JsonSerializerOptions ReportJsonOptions = new(TrackerJson.Options) { WriteIndented = true };
+    private static readonly JsonSerializerOptions DisplayJsonOptions = new(TrackerJson.Options) { WriteIndented = true };
     private IReadOnlyList<TrackerDiagnosticEntry> _entries = [];
     private string _connectionJson = "{}";
     private string _runStateJson = "{}";
@@ -41,6 +41,12 @@ public partial class DebugProtocolDiagnostics : IDisposable
     private TrackerKnowledgeStore Knowledge { get; set; } = null!;
 
     /// <summary>
+    /// Gets or initializes tracker-owned diagnostic access.
+    /// </summary>
+    [Inject]
+    private DiagnosticAccessService AccessService { get; set; } = null!;
+
+    /// <summary>
     /// Loads diagnostic values and subscribes to their stores.
     /// </summary>
     protected override void OnInitialized()
@@ -50,6 +56,7 @@ public partial class DebugProtocolDiagnostics : IDisposable
         ConnectionState.Changed += HandleStateChanged;
         RunState.Changed += HandleStateChanged;
         Knowledge.Changed += HandleStateChanged;
+        AccessService.Changed += HandleStateChanged;
     }
 
     /// <summary>
@@ -57,11 +64,11 @@ public partial class DebugProtocolDiagnostics : IDisposable
     /// </summary>
     private void Refresh()
     {
-        _entries = Diagnostics.Entries;
-        _lastProtocolError = Diagnostics.LastProtocolError;
-        _connectionJson = Serialize(ConnectionState.Snapshot);
-        _runStateJson = Serialize(RunState.Snapshot);
-        _knowledgeJson = Serialize(Knowledge.GetDiagnosticSnapshot());
+        _entries = HasProtocolHistory ? Diagnostics.Entries : [];
+        _lastProtocolError = HasProtocolHistory ? Diagnostics.LastProtocolError : null;
+        _connectionJson = HasRawState ? Serialize(ConnectionState.Snapshot) : "{}";
+        _runStateJson = HasRawState ? Serialize(RunState.Snapshot) : "{}";
+        _knowledgeJson = HasPersistedKnowledge ? Serialize(Knowledge.GetDiagnosticSnapshot()) : "{}";
     }
 
     /// <summary>
@@ -69,28 +76,28 @@ public partial class DebugProtocolDiagnostics : IDisposable
     /// </summary>
     /// <returns>A task representing the clipboard operation.</returns>
     private Task CopyReportAsync()
-        => CopyAsync(BuildReport(), Text["Debug.Protocol.DiagnosticReportCopied"]);
+        => HasAnyDiagnosticGroup ? CopyAsync(BuildReport(), Text["Debug.Protocol.DiagnosticReportCopied"]) : Task.CompletedTask;
 
     /// <summary>
     /// Copies the current connection state to the system clipboard.
     /// </summary>
     /// <returns>A task representing the clipboard operation.</returns>
     private Task CopyConnectionAsync()
-        => CopyAsync(_connectionJson, Text["Debug.Protocol.ConnectionStateCopied"]);
+        => HasRawState ? CopyAsync(_connectionJson, Text["Debug.Protocol.ConnectionStateCopied"]) : Task.CompletedTask;
 
     /// <summary>
     /// Copies the current tracker run state to the system clipboard.
     /// </summary>
     /// <returns>A task representing the clipboard operation.</returns>
     private Task CopyRunStateAsync()
-        => CopyAsync(_runStateJson, Text["Debug.Protocol.TrackerStateCopied"]);
+        => HasRawState ? CopyAsync(_runStateJson, Text["Debug.Protocol.TrackerStateCopied"]) : Task.CompletedTask;
 
     /// <summary>
     /// Copies persisted tracker knowledge to the system clipboard.
     /// </summary>
     /// <returns>A task representing the clipboard operation.</returns>
     private Task CopyKnowledgeAsync()
-        => CopyAsync(_knowledgeJson, Text["Debug.Protocol.KnowledgeCopied"]);
+        => HasPersistedKnowledge ? CopyAsync(_knowledgeJson, Text["Debug.Protocol.KnowledgeCopied"]) : Task.CompletedTask;
 
     /// <summary>
     /// Copies one raw history entry to the system clipboard.
@@ -98,7 +105,7 @@ public partial class DebugProtocolDiagnostics : IDisposable
     /// <param name="entry">The selected diagnostic entry.</param>
     /// <returns>A task representing the clipboard operation.</returns>
     private Task CopyEntryAsync(TrackerDiagnosticEntry entry)
-        => CopyAsync(entry.RawValue, Text["Debug.Protocol.EntryCopied"]);
+        => HasProtocolHistory ? CopyAsync(entry.RawValue, Text["Debug.Protocol.EntryCopied"]) : Task.CompletedTask;
 
     /// <summary>
     /// Exports the complete diagnostic report to tracker-owned local storage.
@@ -106,6 +113,9 @@ public partial class DebugProtocolDiagnostics : IDisposable
     /// <returns>A task representing the export operation.</returns>
     private async Task ExportReportAsync()
     {
+        if (!HasAnyDiagnosticGroup)
+            return;
+
         try
         {
             string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
@@ -147,6 +157,9 @@ public partial class DebugProtocolDiagnostics : IDisposable
     /// </summary>
     private void ClearHistory()
     {
+        if (!HasProtocolHistory)
+            return;
+
         Diagnostics.Clear();
         _status = Text["Debug.Protocol.DiagnosticHistoryCleared"];
     }
@@ -156,19 +169,31 @@ public partial class DebugProtocolDiagnostics : IDisposable
     /// </summary>
     /// <returns>The formatted diagnostic report JSON.</returns>
     private string BuildReport()
-    {
-        object report = new
-        {
-            GeneratedAt = DateTimeOffset.UtcNow,
-            Connection = ConnectionState.Snapshot,
-            RunState = RunState.Snapshot,
-            Knowledge = Knowledge.GetDiagnosticSnapshot(),
-            Diagnostics.LastProtocolError,
-            ProtocolHistory = Diagnostics.Entries
-        };
+        => TrackerDiagnosticReportBuilder.Build(AccessService.Snapshot, ConnectionState.Snapshot, RunState.Snapshot, Knowledge.GetDiagnosticSnapshot(), Diagnostics.LastProtocolError, Diagnostics.Entries, DateTimeOffset.UtcNow);
 
-        return JsonSerializer.Serialize(report, ReportJsonOptions);
-    }
+    /// <summary>
+    /// Gets whether connection and protocol history is locally authorized.
+    /// </summary>
+    private bool HasProtocolHistory
+        => AccessService.Snapshot.HasCapability(DiagnosticCapabilities.TrackerProtocolHistory);
+
+    /// <summary>
+    /// Gets whether raw connection and run state is locally authorized.
+    /// </summary>
+    private bool HasRawState
+        => AccessService.Snapshot.HasCapability(DiagnosticCapabilities.TrackerRawState);
+
+    /// <summary>
+    /// Gets whether persisted tracker knowledge is locally authorized.
+    /// </summary>
+    private bool HasPersistedKnowledge
+        => AccessService.Snapshot.HasCapability(DiagnosticCapabilities.TrackerPersistedKnowledge);
+
+    /// <summary>
+    /// Gets whether any report group is locally authorized.
+    /// </summary>
+    private bool HasAnyDiagnosticGroup
+        => HasProtocolHistory || HasRawState || HasPersistedKnowledge;
 
     /// <summary>
     /// Serializes one diagnostic value as formatted JSON.
@@ -176,7 +201,7 @@ public partial class DebugProtocolDiagnostics : IDisposable
     /// <param name="value">The value to serialize.</param>
     /// <returns>The formatted JSON.</returns>
     private static string Serialize<T>(T value)
-        => JsonSerializer.Serialize(value, ReportJsonOptions);
+        => JsonSerializer.Serialize(value, DisplayJsonOptions);
 
     /// <summary>
     /// Refreshes the component after diagnostic history changes.
@@ -209,5 +234,6 @@ public partial class DebugProtocolDiagnostics : IDisposable
         ConnectionState.Changed -= HandleStateChanged;
         RunState.Changed -= HandleStateChanged;
         Knowledge.Changed -= HandleStateChanged;
+        AccessService.Changed -= HandleStateChanged;
     }
 }

@@ -1,0 +1,171 @@
+@implements IDisposable
+@inject DiagnosticAccessTokenGenerator TokenGenerator
+@inject GeneratorFileService FileService
+
+<main class="generator-shell">
+    <header class="page-header">
+        <p class="eyebrow">@Text["Generator.Header.Release", AppInfo.Current.VersionString]</p>
+        <h1>@Text["Generator.Header.Title"]</h1>
+        <p>@Text["Generator.Header.Description"]</p>
+    </header>
+
+    <section class="panel">
+        <div class="section-heading">
+            <span class="step">1</span>
+            <div>
+                <h2>@Text["Generator.SigningKey.Title"]</h2>
+                <p>@Text["Generator.SigningKey.Description"]</p>
+            </div>
+        </div>
+        <InputFile OnChange="LoadSigningKeyAsync" accept="@GeneratorApplicationConstants.PrivateKeyFileExtension" />
+        @if (_signingKey is not null)
+        {
+            <div class="key-summary success">
+                <strong>@_signingKey.SourceName</strong>
+                <span>@Text["Generator.SigningKey.KeyId"]: <code>@_signingKey.KeyId</code></span>
+            </div>
+        }
+    </section>
+
+    <section class="panel">
+        <div class="section-heading">
+            <span class="step">2</span>
+            <div>
+                <h2>@Text["Generator.Details.Title"]</h2>
+                <p>@Text["Generator.Details.Description"]</p>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <label>
+                @Text["Generator.Details.Preset"]
+                <select @bind="_presetId" @bind:after="ApplySelectedPreset">
+                    <option value="">@Text["Generator.Details.CustomSelection"]</option>
+                    @foreach (DiagnosticAccessPreset preset in DiagnosticAccessPresetCatalog.All)
+                    {
+                        <option value="@preset.Id">@Text[GeneratorLocalizationKeys.GetPresetName(preset.Id)]</option>
+                    }
+                </select>
+            </label>
+            <label>
+                @Text["Generator.Details.SupportNote"] <span class="muted">@Text["Generator.Common.Optional"]</span>
+                <input value="@_note" @oninput="UpdateNote" maxlength="@DiagnosticAccessTokenConstants.MaximumNoteLength" placeholder="@Text["Generator.Details.SupportNotePlaceholder"]" />
+            </label>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(_presetDescription))
+        {
+            <p class="preset-description">@_presetDescription</p>
+        }
+
+        <div class="expiration-row">
+            <label class="check-option compact">
+                <input type="checkbox" checked="@_neverExpires" @onchange="SetNeverExpires" />
+                <span>@Text["Generator.Details.LifetimeAccess"]</span>
+            </label>
+            <label class="expiration-input">
+                @Text["Generator.Details.ExpiresAt"]
+                <input type="datetime-local" value="@_expirationLocal" @oninput="UpdateExpiration" disabled="@_neverExpires" />
+            </label>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="section-heading">
+            <span class="step">3</span>
+            <div>
+                <h2>@Text["Generator.Capabilities.Title"]</h2>
+                <p>@Text["Generator.Capabilities.Description"]</p>
+            </div>
+        </div>
+
+        <div class="capability-groups">
+            @foreach (GeneratorCapabilityGroup group in GeneratorCapabilityGroupCatalog.All)
+            {
+                <fieldset>
+                    <legend>@Text[group.ResourceKey]</legend>
+                    @foreach (string capability in group.Capabilities)
+                    {
+                        bool included = _selection.IsIncluded(capability);
+                        <label class="check-option @(included ? "included" : null)">
+                            <input type="checkbox" @bind:get="_selection.IsSelected(capability)" @bind:set="selected => SetCapability(capability, selected)" disabled="@included" />
+                            <span>
+                                <strong>@Text[GeneratorLocalizationKeys.GetCapabilityName(capability)]</strong>
+                                <small>@Text[GeneratorLocalizationKeys.GetCapabilityDescription(capability)]</small>
+                                @if (included)
+                                {
+                                    <em>@Text["Generator.Capabilities.IncludedByAllActive"]</em>
+                                }
+                            </span>
+                        </label>
+                    }
+                </fieldset>
+            }
+        </div>
+    </section>
+
+    <section class="panel review-panel">
+        <div class="section-heading">
+            <span class="step">4</span>
+            <div>
+                <h2>@Text["Generator.Review.Title"]</h2>
+                <p>@Text["Generator.Review.Description"]</p>
+            </div>
+        </div>
+
+        <dl class="review-grid">
+            <div><dt>@Text["Generator.Review.KeyId"]</dt><dd>@(_signingKey?.KeyId ?? Text["Generator.Review.NoKeySelected"])</dd></div>
+            <div><dt>@Text["Generator.Review.TokenId"]</dt><dd><code>@_tokenId</code></dd></div>
+            <div><dt>@Text["Generator.Review.Expiration"]</dt><dd>@GetExpirationSummary()</dd></div>
+            <div><dt>@Text["Generator.Review.DirectGrantCount"]</dt><dd>@_selection.DirectCapabilities.Count</dd></div>
+            <div><dt>@Text["Generator.Review.EffectiveGrantCount"]</dt><dd>@_selection.EffectiveCapabilities.Count</dd></div>
+        </dl>
+
+        @if (_selection.DirectCapabilities.Count > 0)
+        {
+            <h3>@Text["Generator.Review.DirectGrants"]</h3>
+            <div class="capability-summary">
+                @foreach (string capability in _selection.DirectCapabilities)
+                {
+                    <span>@Text[GeneratorLocalizationKeys.GetCapabilityName(capability)]</span>
+                }
+            </div>
+            <h3>@Text["Generator.Review.EffectiveGrants"]</h3>
+            <div class="capability-summary">
+                @foreach (string capability in _selection.EffectiveCapabilities)
+                {
+                    <span>@Text[GeneratorLocalizationKeys.GetCapabilityName(capability)]</span>
+                }
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_errorMessage))
+        {
+            <p class="message error">@_errorMessage</p>
+        }
+
+        <button class="primary" @onclick="GenerateToken">@Text["Generator.Review.Generate"]</button>
+    </section>
+
+    @if (_result is not null)
+    {
+        <section class="panel result-panel">
+            <div class="section-heading">
+                <span class="step complete">✓</span>
+                <div>
+                    <h2>@Text["Generator.Result.Title"]</h2>
+                    <p>@Text["Generator.Result.Description"]</p>
+                </div>
+            </div>
+            <textarea class="token-output" readonly rows="7">@_result.Token</textarea>
+            <div class="result-actions">
+                <button class="primary" @onclick="CopyTokenAsync">@Text["Generator.Result.Copy"]</button>
+                <button @onclick="SaveTokenAsync">@Text["Generator.Result.Save"]</button>
+                <button @onclick="StartNewToken">@Text["Generator.Result.CreateAnother"]</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_resultMessage))
+            {
+                <p class="message success">@_resultMessage</p>
+            }
+        </section>
+    }
+</main>

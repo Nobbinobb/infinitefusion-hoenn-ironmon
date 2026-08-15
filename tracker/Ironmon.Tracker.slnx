@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Ironmon.Tracker.Access/Ironmon.Tracker.Access.csproj" />
     <Project Path="src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj" />
     <Project Path="src/Ironmon.Tracker.Connection/Ironmon.Tracker.Connection.csproj" />
     <Project Path="src/Ironmon.Tracker.Core/Ironmon.Tracker.Core.csproj" />
@@ -7,5 +8,9 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Ironmon.Tracker.AccessGenerator.App/Ironmon.Tracker.AccessGenerator.App.csproj" />
+    <Project Path="tools/Ironmon.Tracker.AccessGenerator.Core/Ironmon.Tracker.AccessGenerator.Core.csproj" />
   </Folder>
 </Solution>

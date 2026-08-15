@@ -1290,4 +1290,71 @@
   <data name="Lookup.Runs.RunLookup" xml:space="preserve"><value>Run lookup</value></data>
   <data name="Lookup.Runs.LookupHeading" xml:space="preserve"><value>RUN DATA</value></data>
   <data name="Lookup.Runs.CurrentRun" xml:space="preserve"><value>Current run</value></data>
+  <data name="Access.Page.Kicker" xml:space="preserve"><value>DIAGNOSTIC ACCESS</value></data>
+  <data name="Access.Page.Title" xml:space="preserve"><value>Diagnostic access</value></data>
+  <data name="Access.Page.Open" xml:space="preserve"><value>Open diagnostic access</value></data>
+  <data name="Access.State.None" xml:space="preserve"><value>No diagnostic access</value></data>
+  <data name="Access.State.NoneDescription" xml:space="preserve"><value>Paste a token or import an access file to enable selected diagnostic information.</value></data>
+  <data name="Access.State.Active" xml:space="preserve"><value>Diagnostic access active</value></data>
+  <data name="Access.State.ActiveDescription" xml:space="preserve"><value>The signed capabilities remain available until the displayed expiration.</value></data>
+  <data name="Access.State.Lifetime" xml:space="preserve"><value>Lifetime diagnostic access</value></data>
+  <data name="Access.State.LifetimeDescription" xml:space="preserve"><value>The signed capabilities remain active until this token is removed or replaced.</value></data>
+  <data name="Access.State.Expired" xml:space="preserve"><value>Diagnostic access expired</value></data>
+  <data name="Access.State.ExpiredDescription" xml:space="preserve"><value>The stored token no longer grants any diagnostic capabilities.</value></data>
+  <data name="Access.State.Invalid" xml:space="preserve"><value>Stored access is invalid</value></data>
+  <data name="Access.State.InvalidDescription" xml:space="preserve"><value>The stored token cannot be trusted. Remove it or replace it with a valid token.</value></data>
+  <data name="Access.State.Developer" xml:space="preserve"><value>Debug developer override</value></data>
+  <data name="Access.State.DeveloperDescription" xml:space="preserve"><value>This Debug tracker build locally grants every supported diagnostic capability without a token.</value></data>
+  <data name="Access.Input.Paste" xml:space="preserve"><value>Access token</value></data>
+  <data name="Access.Input.Placeholder" xml:space="preserve"><value>Paste the complete signed token here</value></data>
+  <data name="Access.Input.ImportFile" xml:space="preserve"><value>Import token file</value></data>
+  <data name="Access.Input.Activate" xml:space="preserve"><value>Activate access</value></data>
+  <data name="Access.Input.ReplacementWarning" xml:space="preserve"><value>Activating a valid token will replace the currently active token. Invalid input will leave the current access unchanged.</value></data>
+  <data name="Access.Messages.Activated" xml:space="preserve"><value>Diagnostic access activated.</value></data>
+  <data name="Access.Messages.Removed" xml:space="preserve"><value>Diagnostic access removed.</value></data>
+  <data name="Access.Errors.ImportFailed" xml:space="preserve"><value>The selected token file could not be read.</value></data>
+  <data name="Access.Errors.SaveFailed" xml:space="preserve"><value>The valid token could not be saved to tracker-owned storage.</value></data>
+  <data name="Access.Errors.RemoveFailed" xml:space="preserve"><value>The stored token could not be removed.</value></data>
+  <data name="Access.Errors.Malformed" xml:space="preserve"><value>The access token is malformed.</value></data>
+  <data name="Access.Errors.Expired" xml:space="preserve"><value>The access token has expired.</value></data>
+  <data name="Access.Errors.UnknownKey" xml:space="preserve"><value>The access token was signed by a key this tracker does not trust.</value></data>
+  <data name="Access.Errors.Unsupported" xml:space="preserve"><value>The access token uses an unsupported format or signing algorithm.</value></data>
+  <data name="Access.Errors.InvalidSignature" xml:space="preserve"><value>The access token signature is invalid.</value></data>
+  <data name="Access.Errors.InvalidClaims" xml:space="preserve"><value>The signed access-token contents are invalid.</value></data>
+  <data name="Access.Details.Note" xml:space="preserve"><value>Support note</value></data>
+  <data name="Access.Details.NoNote" xml:space="preserve"><value>No note</value></data>
+  <data name="Access.Details.Expiration" xml:space="preserve"><value>Expiration</value></data>
+  <data name="Access.Details.Never" xml:space="preserve"><value>Never</value></data>
+  <data name="Access.Details.TokenId" xml:space="preserve"><value>Token ID</value></data>
+  <data name="Access.Details.KeyId" xml:space="preserve"><value>Key ID</value></data>
+  <data name="Access.Grants.Direct" xml:space="preserve"><value>Direct grants</value></data>
+  <data name="Access.Grants.Included" xml:space="preserve"><value>Included grants</value></data>
+  <data name="Access.Grants.Developer" xml:space="preserve"><value>Developer capabilities</value></data>
+  <data name="Access.Grants.Unknown" xml:space="preserve"><value>Unknown signed capabilities</value></data>
+  <data name="Access.Grants.UnknownDescription" xml:space="preserve"><value>These signed identifiers are preserved for review but grant no access in this tracker version.</value></data>
+  <data name="Access.Remove.Button" xml:space="preserve"><value>Remove diagnostic access</value></data>
+  <data name="Access.Capabilities.pokemon.current_player.Name" xml:space="preserve"><value>Current player</value></data>
+  <data name="Access.Capabilities.pokemon.current_enemies.Name" xml:space="preserve"><value>Current enemies</value></data>
+  <data name="Access.Capabilities.pokemon.all_active.Name" xml:space="preserve"><value>All active-run Pokemon</value></data>
+  <data name="Access.Capabilities.pokemon.overview.Name" xml:space="preserve"><value>Pokemon overview</value></data>
+  <data name="Access.Capabilities.pokemon.abilities.Name" xml:space="preserve"><value>Generated abilities</value></data>
+  <data name="Access.Capabilities.pokemon.base_stats.Name" xml:space="preserve"><value>Generated base stats</value></data>
+  <data name="Access.Capabilities.pokemon.move_access.Name" xml:space="preserve"><value>Generated move access</value></data>
+  <data name="Access.Capabilities.evolution.results.Name" xml:space="preserve"><value>Evolution results</value></data>
+  <data name="Access.Capabilities.evolution.candidates.Name" xml:space="preserve"><value>Evolution candidates</value></data>
+  <data name="Access.Capabilities.evolution.generator_details.Name" xml:space="preserve"><value>Evolution generator details</value></data>
+  <data name="Access.Capabilities.world.wild_encounters.Name" xml:space="preserve"><value>Wild encounters</value></data>
+  <data name="Access.Capabilities.world.trainer_parties.Name" xml:space="preserve"><value>Trainer parties</value></data>
+  <data name="Access.Capabilities.world.items.Name" xml:space="preserve"><value>Ground items</value></data>
+  <data name="Access.Capabilities.fusion.preview_results.Name" xml:space="preserve"><value>Fusion previews</value></data>
+  <data name="Access.Capabilities.fusion.material_pairs.Name" xml:space="preserve"><value>Fusion material pairs</value></data>
+  <data name="Access.Capabilities.run.configuration.Name" xml:space="preserve"><value>Run configuration</value></data>
+  <data name="Access.Capabilities.run.seed.Name" xml:space="preserve"><value>Run seed</value></data>
+  <data name="Access.Capabilities.run.generator_manifests.Name" xml:space="preserve"><value>Generator manifests</value></data>
+  <data name="Access.Capabilities.tracker.protocol_history.Name" xml:space="preserve"><value>Protocol history</value></data>
+  <data name="Access.Capabilities.tracker.raw_state.Name" xml:space="preserve"><value>Raw tracker state</value></data>
+  <data name="Access.Capabilities.tracker.persisted_knowledge.Name" xml:space="preserve"><value>Persisted knowledge</value></data>
+  <data name="Debug.Inspector.NoAuthorizedPages" xml:space="preserve"><value>No diagnostic pages are authorized</value></data>
+  <data name="Debug.Inspector.NoAuthorizedPagesDescription" xml:space="preserve"><value>This access grant contains only area information. Use Lookup to inspect authorized active-run area details.</value></data>
+  <data name="Lookup.Search.SelectPokemonFromResults" xml:space="preserve"><value>Select the Pokemon from the current search results to open this capability-only view.</value></data>
 </root>

@@ -1,6 +1,6 @@
-# Installing Ironmon 0.7.3
+# Installing Ironmon 0.7.4
 
-Ironmon `0.7.3` targets Pokemon Infinite Fusion 2 version 6.8.0.
+Ironmon `0.7.4` targets Pokemon Infinite Fusion 2 version 6.8.0.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
 
@@ -8,7 +8,7 @@ official game's Git repository.
 
 1. Fully close Pokemon Infinite Fusion 2.
 2. Keep a backup of saves you care about.
-3. Extract `Ironmon-v0.7.3-early-run-tracker.zip` into the game's root directory—the
+3. Extract `Ironmon-v0.7.4-diagnostic-access.zip` into the game's root directory—the
    directory containing `InfiniteFusion2.exe`.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
    directory. The package installs Ruby files under
@@ -23,6 +23,30 @@ official game's Git repository.
    install and update the spritepack manually to keep sprites current.
 7. Start the game and select Ironmon when beginning a supported Hoenn run.
 
+## Activate diagnostic access
+
+The ordinary Release tracker can accept a maintainer-issued diagnostic-access
+token; users do not need a separate Debug tracker build.
+
+1. Open **Diagnostic Access** from the tracker's main navigation.
+2. Paste the complete token and select **Activate**, or load the supplied
+   `.ironmon-access` file.
+3. Review the displayed note, expiration, token and key identifiers, direct
+   grants, and included grants.
+4. Connect or keep using the game. The tracker updates the game-side grant
+   immediately without requiring a reconnect.
+
+Activating another valid token replaces the current token after a warning.
+**Remove access** deletes the locally stored token and immediately closes or
+clears protected views. An expired token is clearly marked Expired, grants no
+capabilities, and can be removed or replaced. Ironmon stores only one token in
+the current Windows user's local application data. The token, support note,
+signature, expiration, and signing-key material are never sent to the game.
+
+Only accept access files received through a channel you trust. A token grants
+exactly its listed diagnostic information; it does not run code and does not
+modify gameplay state.
+
 Existing non-Ironmon saves retain their normal behavior. Ironmon runs created
 before 0.6.0 retain native evolutions because they do not declare evolution
 generator metadata. Start a new run or use F7 to enable generated evolutions.
@@ -36,7 +60,8 @@ reproduce its assignments.
 Run `tools/Build-TrackerRelease.ps1` from PowerShell. It synchronizes `src` into
 `dist` and the adjacent local game installation, publishes the self-contained
 Windows x64 tracker, then creates the release ZIP and SHA-256 checksum in
-`release`.
+`release`. The player-package build rejects token files, private-key formats,
+the maintainer generator, and development scripts.
 
 ## Diagnostic log
 

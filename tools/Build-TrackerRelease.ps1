@@ -3,12 +3,24 @@ $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $distribution = Join-Path $projectRoot "dist"
 $releaseDirectory = Join-Path $projectRoot "release"
-$archiveName = "Ironmon-v0.7.3-early-run-tracker.zip"
+$archiveName = "Ironmon-v0.7.4-diagnostic-access.zip"
 $archive = Join-Path $releaseDirectory $archiveName
-$checksum = Join-Path $releaseDirectory "Ironmon-v0.7.3-early-run-tracker.sha256.txt"
+$checksum = Join-Path $releaseDirectory "Ironmon-v0.7.4-diagnostic-access.sha256.txt"
 
 & (Join-Path $PSScriptRoot "Build-Distribution.ps1")
 & (Join-Path $PSScriptRoot "Publish-Tracker.ps1")
+
+$forbiddenFiles = Get-ChildItem -LiteralPath $distribution -File -Recurse |
+  Where-Object {
+    $_.Name -match "AccessGenerator|private[-_ ]?key" -or
+    $_.Extension -in ".ironmon-access", ".key", ".p8", ".p12", ".pfx", ".pem" -or
+    $_.FullName -match "998_Ironmon_Development|maintainer-dist"
+  }
+if ($forbiddenFiles) {
+  $relativeForbiddenFiles = $forbiddenFiles.FullName |
+    ForEach-Object { $_.Substring($distribution.Length + 1) }
+  throw "Player distribution contains forbidden maintainer, token, key, or development files: $($relativeForbiddenFiles -join ', ')"
+}
 New-Item -ItemType Directory -Force -Path $releaseDirectory | Out-Null
 if (Test-Path -LiteralPath $archive) {
   Remove-Item -LiteralPath $archive -Force

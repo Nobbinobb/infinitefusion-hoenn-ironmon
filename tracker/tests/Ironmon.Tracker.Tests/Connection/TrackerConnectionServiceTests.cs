@@ -69,7 +69,7 @@ public sealed class TrackerConnectionServiceTests
         };
 
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(reconnectDiagnosticsRequest!.RequestId!, reconnectDiagnostics));
-        Assert.Equal("mixed", (await reconnectDiagnosticsTask).Configuration.WildPolicy);
+        Assert.Equal("mixed", (await reconnectDiagnosticsTask).Configuration!.WildPolicy);
 
         Task<DebugRunDiagnosticsSnapshot> rejectedDiagnosticsTask = service.Requests.GetDebugRunDiagnosticsAsync();
         TrackerMessage? rejectedDiagnosticsRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
@@ -590,7 +590,7 @@ public sealed class TrackerConnectionServiceTests
         };
 
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(diagnosticsRequest!.RequestId!, diagnosticsResponse, "run-1"));
-        Assert.Equal("mixed", (await diagnosticsTask).Configuration.WildPolicy);
+        Assert.Equal("mixed", (await diagnosticsTask).Configuration!.WildPolicy);
 
         Task<PokemonSearchResponsePayload> debugSearchTask = service.Requests.SearchDebugPokemonAsync("char");
         TrackerMessage? debugSearchRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));

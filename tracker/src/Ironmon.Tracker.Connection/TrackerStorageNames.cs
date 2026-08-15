@@ -21,6 +21,11 @@ public static class TrackerStorageNames
     public const string SettingsDirectory = "settings";
 
     /// <summary>
+    /// Gets the active diagnostic-access token filename.
+    /// </summary>
+    public const string DiagnosticAccessTokenFile = "diagnostic-access.ironmon-access";
+
+    /// <summary>
     /// Gets the favorite-Pokemon settings filename.
     /// </summary>
     public const string FavoritePokemonFile = "favorite-pokemon.json";

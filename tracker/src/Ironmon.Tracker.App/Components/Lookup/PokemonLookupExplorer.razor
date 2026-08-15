@@ -22,7 +22,7 @@
         <div class="lookup-results" aria-label="@Text["Lookup.Search.PokemonSearchResults"]">
             @foreach (PokemonSearchMatch match in _matches)
             {
-                <button type="button" disabled="@_loading" @onclick="() => NavigateToPokemonAsync(match.SpeciesId)">
+                <button type="button" disabled="@_loading" @onclick="() => NavigateToPokemonAsync(match)">
                     <strong>@match.SpeciesName</strong>
                     <span>@match.SpeciesId</span>
                 </button>

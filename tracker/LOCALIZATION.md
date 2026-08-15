@@ -52,6 +52,16 @@ Protocol identifiers, game-provided names and descriptions, CSS identifiers,
 persistence keys, and diagnostic payload fields are data rather than tracker
 interface copy and must not be translated.
 
+Diagnostic capability IDs such as `pokemon.current_player` and
+`world.wild_encounters` are stable protocol data and must remain unchanged.
+Their user-facing names, descriptions, lifecycle states, validation messages,
+and activation controls use `Access.*` tracker resources. The separate
+maintainer generator uses its own
+`tracker/tools/Ironmon.Tracker.AccessGenerator.App/Resources/Localization/GeneratorResources.resx`
+resource set; tracker and generator keys are not interchangeable. Preset names
+are localized templates only and do not change the independently selected
+capability claims.
+
 The static Blazor host page retains only the product title and its emergency
 interface-error recovery copy. That fallback is shown when the component
 runtime cannot render and therefore cannot access application resources. The

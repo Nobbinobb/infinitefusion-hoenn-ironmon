@@ -72,6 +72,18 @@ public partial class EvolutionCandidateList
     public bool DebugMode { get; set; }
 
     /// <summary>
+    /// Gets or sets the optional live source that securely supplies the represented species.
+    /// </summary>
+    [Parameter]
+    public DebugPokemonTarget? DebugTarget { get; set; }
+
+    /// <summary>
+    /// Gets or sets the enemy battler position when the live source is an enemy.
+    /// </summary>
+    [Parameter]
+    public int? DebugEnemyPosition { get; set; }
+
+    /// <summary>
     /// Gets or sets the connected game installation directory.
     /// </summary>
     [Parameter]
@@ -89,7 +101,7 @@ public partial class EvolutionCandidateList
     /// <returns>A task representing the page request.</returns>
     protected override async Task OnParametersSetAsync()
     {
-        string source = $"{SpeciesId}|{Side}|{DebugMode}|{Recipe?.RunId}";
+        string source = $"{SpeciesId}|{Side}|{DebugMode}|{DebugTarget}|{DebugEnemyPosition}|{Recipe?.RunId}";
         if (source == _observedSource)
             return;
 
@@ -147,7 +159,7 @@ public partial class EvolutionCandidateList
         try
         {
             EvolutionCandidateSearchResponsePayload response = DebugMode
-                ? await Connection.SearchDebugEvolutionCandidatesAsync(SpeciesId, Side, _appliedQuery, offset)
+                ? await Connection.SearchDebugEvolutionCandidatesAsync(SpeciesId, Side, _appliedQuery, offset, DebugTarget, DebugEnemyPosition)
                 : await Connection.SearchEvolutionCandidatesAsync(Recipe!, SpeciesId, Side, _appliedQuery, offset);
             _matches = response.Matches;
             _offset = offset;

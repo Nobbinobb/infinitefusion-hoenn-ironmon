@@ -27,7 +27,6 @@ module Ironmon
   end
 
   def self.tracker_debug_inspect_pokemon(payload)
-    tracker_validate_debug_context
     payload ||= {}
     section = payload["section"].to_s
     section = "overview" if section.empty?
@@ -35,6 +34,11 @@ module Ironmon
     if !valid_sections.include?(section)
       raise TrackerDebugError.new("invalid_section", "The requested Pokemon inspector section is invalid.")
     end
+    availability = tracker_debug_availability_capability(payload["target"])
+    tracker_validate_debug_context([availability])
+    tracker_validate_any_debug_context(
+      tracker_debug_information_capabilities(section)
+    )
     pokemon = tracker_debug_resolve_pokemon(payload)
     species = pokemon.species_data
     fusion = fusion_ability_species?(species)
@@ -63,7 +67,15 @@ module Ironmon
         "active_ability_slot" => tracker_debug_active_slot(pokemon),
         "active_ability_id" => tracker_debug_ability_id(ability),
         "active_ability_name" => tracker_debug_ability_name(ability)
-      }
+      },
+      "lookup" => tracker_pokemon_lookup_for_recipe(
+        {
+          "species_id" => tracker_species_id(pokemon),
+          "section" => section
+        },
+        tracker_debug_active_recipe,
+        tracker_debug_lookup_visibility
+      )
     }
 
     case section
@@ -91,73 +103,143 @@ module Ironmon
   end
 
   def self.tracker_debug_run_diagnostics
-    tracker_validate_debug_context
+    capabilities = [
+      "run.configuration", "run.seed", "run.generator_manifests",
+      "evolution.generator_details"
+    ]
+    tracker_validate_any_debug_context(capabilities)
     wild_mappings = $PokemonGlobal.ironmon_wild_species_map
     trainer_mappings = $PokemonGlobal.ironmon_trainer_species_map
-    return {
+    result = {
       "runtime" => {
         "game_version" => tracker_game_version,
         "ironmon_version" => VERSION,
         "protocol_version" => TRACKER_SCHEMA_VERSION,
         "run_id" => ensure_tracker_run_id,
-        "battle_id" => tracker_battle_id,
-        "run_seed" => $PokemonGlobal.ironmon_seed
-      },
-      "configuration" => configuration_snapshot,
-      "species_generator" => tracker_species_generator_recipe,
-      "ability_generator" => tracker_ability_generator_recipe,
-      "base_stat_generator" => tracker_base_stat_generator_recipe,
-      "evolution_generator" => tracker_evolution_generator_recipe,
-      "move_access_generator" => tracker_move_access_generator_recipe,
-      "player_fusion_generator" => tracker_player_fusion_generator_recipe,
-      "mappings" => {
+        "battle_id" => tracker_battle_id
+      }
+    }
+    if tracker_connection.diagnostic_capability?("run.seed")
+      result["runtime"]["run_seed"] = $PokemonGlobal.ironmon_seed
+    end
+    if tracker_connection.diagnostic_capability?("run.configuration")
+      result["configuration"] = configuration_snapshot
+    end
+    if tracker_connection.diagnostic_capability?("run.generator_manifests")
+      result["species_generator"] = tracker_species_generator_recipe
+      result["ability_generator"] = tracker_ability_generator_recipe
+      result["base_stat_generator"] = tracker_base_stat_generator_recipe
+      result["move_access_generator"] = tracker_move_access_generator_recipe
+      result["player_fusion_generator"] = tracker_player_fusion_generator_recipe
+      result["mappings"] = {
         "wild" => wild_mappings.is_a?(Hash) ? wild_mappings.length : 0,
         "trainer" => trainer_mappings.is_a?(Hash) ? trainer_mappings.length : 0
       }
-    }
+    end
+    if tracker_connection.diagnostic_capability?("evolution.generator_details")
+      result["evolution_generator"] = tracker_evolution_generator_recipe
+    end
+    return result
   end
 
   def self.tracker_debug_pokemon_search(payload)
-    tracker_validate_debug_context
+    tracker_validate_debug_context(["pokemon.all_active"])
     return tracker_pokemon_search_for_recipe(payload || {}, tracker_debug_active_recipe)
   end
 
   def self.tracker_debug_pokemon_lookup(payload)
-    tracker_validate_debug_context
-    return tracker_pokemon_lookup_for_recipe(payload || {}, tracker_debug_active_recipe)
+    section = (payload || {})["section"].to_s
+    tracker_validate_debug_context([
+      "pokemon.all_active", tracker_debug_information_capability(section)
+    ])
+    return tracker_pokemon_lookup_for_recipe(
+      payload || {}, tracker_debug_active_recipe,
+      tracker_debug_lookup_visibility
+    )
+  end
+
+  def self.tracker_debug_lookup_visibility
+    return {
+      :overview => tracker_connection.diagnostic_capability?(
+        "pokemon.overview"
+      ),
+      :wild => tracker_connection.diagnostic_capability?(
+        "world.wild_encounters"
+      ),
+      :trainer => tracker_connection.diagnostic_capability?(
+        "world.trainer_parties"
+      ),
+      :materials => tracker_connection.diagnostic_capability?(
+        "fusion.material_pairs"
+      ),
+      :evolution_generator => tracker_connection.diagnostic_capability?(
+        "evolution.generator_details"
+      ),
+      :evolution_results => tracker_connection.diagnostic_capability?(
+        "evolution.results"
+      )
+    }
   end
 
   def self.tracker_debug_evolution_candidate_search(payload)
-    tracker_validate_debug_context
+    tracker_validate_debug_context(["evolution.candidates"])
+    payload = tracker_debug_secure_species_payload(payload)
     return tracker_evolution_candidate_search_for_recipe(
       payload || {}, tracker_debug_active_recipe
     )
   end
 
   def self.tracker_debug_fusion_material_search(payload)
-    tracker_validate_debug_context
+    tracker_validate_debug_context(["fusion.material_pairs"])
+    payload = tracker_debug_secure_species_payload(payload)
     return tracker_fusion_material_search_for_recipe(
       payload || {}, tracker_debug_active_recipe
     )
   end
 
   def self.tracker_debug_wild_occurrence_search(payload)
-    tracker_validate_debug_context
+    tracker_validate_debug_context(["world.wild_encounters"])
+    payload = tracker_debug_secure_species_payload(payload)
     return tracker_occurrence_search_for_recipe(
       payload || {}, tracker_debug_active_recipe, :wild
     )
   end
 
   def self.tracker_debug_trainer_occurrence_search(payload)
-    tracker_validate_debug_context
+    tracker_validate_debug_context(["world.trainer_parties"])
+    payload = tracker_debug_secure_species_payload(payload)
     return tracker_occurrence_search_for_recipe(
       payload || {}, tracker_debug_active_recipe, :trainer
     )
   end
 
   def self.tracker_debug_fusion_preview(payload)
-    tracker_validate_debug_context
+    tracker_validate_debug_context(["fusion.preview_results"])
     return tracker_fusion_preview_for_recipe(payload || {}, tracker_debug_active_recipe)
+  end
+
+  def self.tracker_debug_secure_species_payload(payload)
+    result = (payload || {}).dup
+    if result["target"].to_s.empty?
+      tracker_validate_debug_context(["pokemon.all_active"])
+      return result
+    end
+
+    availability = tracker_debug_availability_capability(result["target"])
+    tracker_validate_debug_context([availability])
+    result["species_id"] = tracker_species_id(
+      tracker_debug_resolve_pokemon(result)
+    )
+    return result
+  end
+
+  def self.tracker_debug_availability_capability(target)
+    return "pokemon.current_player" if target.to_s == "player"
+    return "pokemon.current_enemies" if target.to_s == "enemy"
+    raise TrackerDebugError.new(
+      "invalid_target",
+      "Only the represented current player or current enemy may be inspected."
+    )
   end
 
   def self.tracker_debug_active_recipe
@@ -206,10 +288,11 @@ module Ironmon
     }
   end
 
-  def self.tracker_validate_debug_context
-    if $DEBUG != true
+  def self.tracker_validate_debug_context(capabilities)
+    if !tracker_connection.diagnostic_capabilities?(*capabilities)
       raise TrackerDebugError.new(
-        "debug_forbidden", "The game has not authorized tracker debug access."
+        "debug_forbidden",
+        "The tracker has not granted every required diagnostic capability."
       )
     end
     if !active? || !$PokemonGlobal
@@ -217,12 +300,44 @@ module Ironmon
         "ironmon_inactive", "Ironmon must be active for debug inspection."
       )
     end
-    if !current_ability_randomization?
+    return true
+  end
+
+  def self.tracker_validate_any_debug_context(capabilities)
+    if !tracker_connection.any_diagnostic_capability?(*capabilities)
       raise TrackerDebugError.new(
-        "generator_unavailable", ability_randomization_error_message
+        "debug_forbidden",
+        "The tracker has not granted access to any requested diagnostic section."
+      )
+    end
+    if !active? || !$PokemonGlobal
+      raise TrackerDebugError.new(
+        "ironmon_inactive", "Ironmon must be active for debug inspection."
       )
     end
     return true
+  end
+
+  def self.tracker_debug_information_capability(section)
+    return "pokemon.abilities" if section.to_s == "abilities"
+    return "pokemon.base_stats" if section.to_s == "stats"
+    return "pokemon.move_access" if section.to_s == "moves"
+    return "evolution.results" if section.to_s == "evolutions"
+    return "pokemon.overview"
+  end
+
+  def self.tracker_debug_information_capabilities(section)
+    if section.to_s == "overview" || section.to_s.empty?
+      return [
+        "pokemon.overview", "world.wild_encounters",
+        "world.trainer_parties", "fusion.material_pairs",
+        "fusion.preview_results"
+      ]
+    end
+    if section.to_s == "evolutions"
+      return ["evolution.results", "evolution.candidates"]
+    end
+    return [tracker_debug_information_capability(section)]
   end
 
   def self.tracker_debug_resolve_pokemon(payload)

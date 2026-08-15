@@ -20,17 +20,17 @@ public sealed class DebugRunDiagnosticsSnapshot
     /// <summary>
     /// Gets or initializes the active run configuration.
     /// </summary>
-    public required RunConfigurationPayload Configuration { get; init; }
+    public RunConfigurationPayload? Configuration { get; init; }
 
     /// <summary>
     /// Gets or initializes species-generator compatibility metadata.
     /// </summary>
-    public required SpeciesGeneratorRecipePayload SpeciesGenerator { get; init; }
+    public SpeciesGeneratorRecipePayload? SpeciesGenerator { get; init; }
 
     /// <summary>
     /// Gets or initializes ability-generator compatibility metadata.
     /// </summary>
-    public required AbilityGeneratorRecipePayload AbilityGenerator { get; init; }
+    public AbilityGeneratorRecipePayload? AbilityGenerator { get; init; }
 
     /// <summary>
     /// Gets or initializes base-stat-generator compatibility metadata when enabled.
@@ -50,12 +50,12 @@ public sealed class DebugRunDiagnosticsSnapshot
     /// <summary>
     /// Gets or initializes player-fusion-generator compatibility metadata.
     /// </summary>
-    public required PlayerFusionGeneratorRecipePayload PlayerFusionGenerator { get; init; }
+    public PlayerFusionGeneratorRecipePayload? PlayerFusionGenerator { get; init; }
 
     /// <summary>
     /// Gets or initializes persisted mapping counts.
     /// </summary>
-    public required DebugMappingDiagnosticsSnapshot Mappings { get; init; }
+    public DebugMappingDiagnosticsSnapshot? Mappings { get; init; }
 }
 
 /// <summary>

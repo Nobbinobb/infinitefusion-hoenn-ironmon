@@ -21,4 +21,9 @@ public sealed class PokemonSearchMatch
     /// Gets or initializes the localized species name.
     /// </summary>
     public required string SpeciesName { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether the match is a fusion species.
+    /// </summary>
+    public bool Fusion { get; init; }
 }

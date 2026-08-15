@@ -47,6 +47,18 @@ public partial class EvolutionCandidateLists
     public bool DebugMode { get; set; }
 
     /// <summary>
+    /// Gets or sets the optional live source that securely supplies the represented species.
+    /// </summary>
+    [Parameter]
+    public DebugPokemonTarget? DebugTarget { get; set; }
+
+    /// <summary>
+    /// Gets or sets the enemy battler position when the live source is an enemy.
+    /// </summary>
+    [Parameter]
+    public int? DebugEnemyPosition { get; set; }
+
+    /// <summary>
     /// Gets or sets the connected game installation directory.
     /// </summary>
     [Parameter]

@@ -47,6 +47,18 @@ public partial class PokemonLookupCard
     public bool DebugMode { get; set; }
 
     /// <summary>
+    /// Gets or sets the optional live source that owns the represented active-run Pokemon.
+    /// </summary>
+    [Parameter]
+    public DebugPokemonTarget? DebugTarget { get; set; }
+
+    /// <summary>
+    /// Gets or sets the enemy battler position when the live source is an enemy.
+    /// </summary>
+    [Parameter]
+    public int? DebugEnemyPosition { get; set; }
+
+    /// <summary>
     /// Gets or sets the connected game installation directory.
     /// </summary>
     [Parameter]
@@ -76,9 +88,11 @@ public partial class PokemonLookupCard
             _sections.Clear();
             _selectedAbility = null;
             _sectionError = null;
+            PokemonInformationPage incomingPage = (PokemonInformationPage)(int)Pokemon.Section;
+            _selectedPage = CanShowPage(incomingPage) ? incomingPage : GetFirstVisiblePage();
         }
 
-        _sections[PokemonInformationPage.Overview] = Pokemon;
+        _sections[(PokemonInformationPage)(int)Pokemon.Section] = Pokemon;
         string? key = GameRoot is null || Pokemon.Identity.SpritePath is null ? null : $"{GameRoot}|{Pokemon.Identity.SpritePath}";
         if (key != _spriteKey)
         {
@@ -86,7 +100,7 @@ public partial class PokemonLookupCard
             _spriteSource = LocalSpriteLoader.Load(GameRoot, Pokemon.Identity.SpritePath);
         }
 
-        if (speciesChanged && _selectedPage != PokemonInformationPage.Overview)
+        if (speciesChanged && !_sections.ContainsKey(_selectedPage))
             await LoadSectionAsync(_selectedPage);
     }
 
@@ -173,10 +187,20 @@ public partial class PokemonLookupCard
     /// <param name="page">The requested page.</param>
     private async Task SelectPageAsync(PokemonInformationPage page)
     {
+        if (!CanShowPage(page))
+            return;
+
         _selectedPage = page;
         _selectedAbility = null;
         _sectionError = null;
-        await Task.WhenAll(InformationPageSelected.InvokeAsync(page), LoadSectionAsync(page));
+        if (DebugMode && Inspector is not null)
+        {
+            await InformationPageSelected.InvokeAsync(page);
+        }
+        else
+        {
+            await Task.WhenAll(InformationPageSelected.InvokeAsync(page), LoadSectionAsync(page));
+        }
     }
 
     /// <summary>
@@ -186,7 +210,13 @@ public partial class PokemonLookupCard
     /// <returns>A task representing the request.</returns>
     private async Task LoadSectionAsync(PokemonInformationPage page)
     {
-        if (page == PokemonInformationPage.Overview || _sections.ContainsKey(page) || _loadingPage == page)
+        if (_sections.ContainsKey(page) || _loadingPage == page)
+            return;
+
+        if (DebugMode && page == PokemonInformationPage.Overview && !Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonOverview))
+            return;
+
+        if (DebugMode && page == PokemonInformationPage.Evolutions && !Connection.HasDiagnosticCapability(DiagnosticCapabilities.EvolutionResults))
             return;
 
         if (!DebugMode && Recipe is null)
@@ -222,6 +252,67 @@ public partial class PokemonLookupCard
     /// <returns>The page button CSS classes.</returns>
     private string GetPageClass(PokemonInformationPage page)
         => page == _selectedPage ? TrackerUiConstants.SelectedCssClass : string.Empty;
+
+    /// <summary>
+    /// Gets whether one shared information page has authorized content.
+    /// </summary>
+    /// <param name="page">The represented page.</param>
+    /// <returns>Whether the page should be visible.</returns>
+    private bool CanShowPage(PokemonInformationPage page)
+    {
+        if (!DebugMode)
+            return true;
+
+        return page switch
+        {
+            PokemonInformationPage.Overview => TrackerDiagnosticCapabilityRules.HasAnyOverviewSurface(Connection),
+            PokemonInformationPage.Evolutions => TrackerDiagnosticCapabilityRules.HasAnyEvolutionSurface(Connection),
+            _ => Connection.HasDiagnosticCapability(TrackerDiagnosticCapabilityRules.GetPokemonInformationCapability(page))
+        };
+    }
+
+    /// <summary>
+    /// Gets the first visible information page in stable UI order.
+    /// </summary>
+    /// <returns>The first visible page, or Overview when none is available.</returns>
+    private PokemonInformationPage GetFirstVisiblePage()
+        => Enum.GetValues<PokemonInformationPage>().FirstOrDefault(CanShowPage);
+
+    /// <summary>
+    /// Gets the localized label for one shared information page.
+    /// </summary>
+    /// <param name="page">The represented page.</param>
+    /// <returns>The localized page label.</returns>
+    private string GetPageText(PokemonInformationPage page)
+    {
+        return page switch
+        {
+            PokemonInformationPage.Overview => Text["Debug.Inspector.Overview"],
+            PokemonInformationPage.Abilities => Text["Debug.Inspector.Abilities"],
+            PokemonInformationPage.Stats => Text["Debug.Inspector.Stats"],
+            PokemonInformationPage.Moves => Text["Debug.Inspector.Moves"],
+            PokemonInformationPage.Evolutions => Text["Debug.Inspector.Evolutions"],
+            _ => throw new ArgumentOutOfRangeException(nameof(page), page, "The Pokemon information page is unsupported.")
+        };
+    }
+
+    /// <summary>
+    /// Gets whether exact generated evolution results are visible.
+    /// </summary>
+    private bool HasEvolutionResults
+        => !DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.EvolutionResults);
+
+    /// <summary>
+    /// Gets whether generated evolution candidate pools are visible.
+    /// </summary>
+    private bool HasEvolutionCandidates
+        => !DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.EvolutionCandidates);
+
+    /// <summary>
+    /// Gets whether evolution-generator metadata is visible.
+    /// </summary>
+    private bool HasEvolutionGeneratorDetails
+        => !DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.EvolutionGeneratorDetails);
 
     /// <summary>
     /// Gets live ability-slot diagnostics when available, otherwise the reconstructed lookup diagnostics.

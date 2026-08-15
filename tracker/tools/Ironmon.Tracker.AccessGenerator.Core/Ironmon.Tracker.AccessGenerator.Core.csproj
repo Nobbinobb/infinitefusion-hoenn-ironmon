@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Ironmon.Tracker.AccessGenerator</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.22.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Ironmon.Tracker.Access\Ironmon.Tracker.Access.csproj" />
+  </ItemGroup>
+</Project>

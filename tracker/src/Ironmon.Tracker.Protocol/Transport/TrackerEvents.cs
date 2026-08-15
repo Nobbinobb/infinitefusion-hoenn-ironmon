@@ -16,6 +16,11 @@ public static class TrackerEvents
     public const string TrackerConnected = "tracker_connected";
 
     /// <summary>
+    /// Gets the live tracker-to-game diagnostic-access replacement event.
+    /// </summary>
+    public const string DiagnosticAccessChanged = "diagnostic_access_changed";
+
+    /// <summary>
     /// Gets the new-run event.
     /// </summary>
     public const string RunStarted = "run_started";

@@ -17,6 +17,7 @@ public sealed class TrackerRequestClient
     private readonly ConcurrentDictionary<string, TrainerOccurrenceSearchResponsePayload> _trainerOccurrenceCache = new();
     private readonly ConcurrentDictionary<string, WildOccurrenceSearchResponsePayload> _wildOccurrenceCache = new();
     private readonly AreaDiscoveryStore _areaDiscoveries;
+    private readonly DiagnosticAccessService? _diagnosticAccess;
     private readonly TrackerConnectionOptions _options;
     private readonly TrackerRequestSession _session;
     private readonly TrackerConnectionState _state;
@@ -28,7 +29,8 @@ public sealed class TrackerRequestClient
     /// <param name="options">The tracker connection options.</param>
     /// <param name="state">The shared connection state.</param>
     /// <param name="areaDiscoveries">The tracker-owned area discovery store.</param>
-    internal TrackerRequestClient(TrackerRequestSession session, TrackerConnectionOptions options, TrackerConnectionState state, AreaDiscoveryStore areaDiscoveries)
+    /// <param name="diagnosticAccess">The current signed diagnostic access, when configured.</param>
+    internal TrackerRequestClient(TrackerRequestSession session, TrackerConnectionOptions options, TrackerConnectionState state, AreaDiscoveryStore areaDiscoveries, DiagnosticAccessService? diagnosticAccess = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(options);
@@ -38,12 +40,47 @@ public sealed class TrackerRequestClient
         _options = options;
         _state = state;
         _areaDiscoveries = areaDiscoveries;
+        _diagnosticAccess = diagnosticAccess;
     }
 
     /// <summary>
     /// Gets whether both the tracker launch mode and connected game authorize debug access.
     /// </summary>
     public bool DebugAuthorized => _options.DebugRequested && _state.Snapshot.Game?.DebugAvailable == true;
+
+    /// <summary>
+    /// Determines whether one named diagnostic capability is effective for the connected game.
+    /// </summary>
+    /// <param name="capability">The stable capability identifier.</param>
+    /// <returns>Whether legacy development access or a negotiated grant authorizes the capability.</returns>
+    public bool HasDiagnosticCapability(string capability)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(capability);
+        if (DebugAuthorized)
+            return true;
+
+        GameHandshakePayload? game = _state.Snapshot.Game;
+        DiagnosticAccessSnapshot? access = _diagnosticAccess?.Snapshot;
+        return game is not null
+            && access?.State != DiagnosticAccessState.DeveloperOverride
+            && game.SupportedDiagnosticCapabilities.Contains(capability, StringComparer.Ordinal)
+            && access?.HasCapability(capability) == true;
+    }
+
+    /// <summary>
+    /// Gets the token capabilities supported by one connected game in stable order.
+    /// </summary>
+    /// <param name="game">The connected game handshake.</param>
+    /// <returns>The negotiated capability identifiers.</returns>
+    internal IReadOnlyList<string> GetNegotiatedDiagnosticCapabilities(GameHandshakePayload game)
+    {
+        ArgumentNullException.ThrowIfNull(game);
+        if (_diagnosticAccess is null || (_diagnosticAccess.Snapshot.State == DiagnosticAccessState.DeveloperOverride && !(_options.DebugRequested && game.DebugAvailable)))
+            return [];
+
+        HashSet<string> supported = new(game.SupportedDiagnosticCapabilities, StringComparer.Ordinal);
+        return [.. _diagnosticAccess.Snapshot.EffectiveCapabilities.Where(supported.Contains).Order(StringComparer.Ordinal)];
+    }
 
     /// <summary>
     /// Updates tracker-owned settings in the connected game.
@@ -127,7 +164,8 @@ public sealed class TrackerRequestClient
         string runId = recipe?.RunId ?? GetConnectedRunId() ?? throw new InvalidOperationException("No Ironmon run is connected.");
         long revision = _areaDiscoveries.GetRevision(runId);
         string source = recipe is null ? "active" : "archive";
-        string cacheKey = $"{source}|{runId}|{revision}|{DebugAuthorized}|{category}|{areaId}";
+        bool diagnosticAccess = recipe is null && HasDiagnosticCapability(GetAreaCapability(category));
+        string cacheKey = $"{source}|{runId}|{revision}|{diagnosticAccess}|{category}|{areaId}";
         if (!forceRefresh && _areaDetailCache.TryGetValue(cacheKey, out AreaLookupDetailResponsePayload? cached))
             return cached;
 
@@ -143,7 +181,7 @@ public sealed class TrackerRequestClient
         }
 
         AreaLookupDetailResponsePayload response = WithTrackerRevision(runId, gameResponse);
-        _areaDetailCache[$"{source}|{runId}|{response.Revision}|{DebugAuthorized}|{category}|{areaId}"] = response;
+        _areaDetailCache[$"{source}|{runId}|{response.Revision}|{diagnosticAccess}|{category}|{areaId}"] = response;
         return response;
     }
 
@@ -324,7 +362,8 @@ public sealed class TrackerRequestClient
     public Task<DebugPokemonInspectorSnapshot> InspectPokemonAsync(DebugPokemonInspectionRequestPayload request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        EnsureDebugAuthorized();
+        EnsureDiagnosticCapabilities(GetAvailabilityCapability(request.Target));
+        EnsurePokemonInformationCapability(request.Section);
         return _session.SendAsync<DebugPokemonInspectionRequestPayload, DebugPokemonInspectorSnapshot>(TrackerCommands.DebugInspectPokemon, request, GetConnectedRunId(), cancellationToken);
     }
 
@@ -335,7 +374,7 @@ public sealed class TrackerRequestClient
     /// <returns>The authorized run diagnostics.</returns>
     public Task<DebugRunDiagnosticsSnapshot> GetDebugRunDiagnosticsAsync(CancellationToken cancellationToken = default)
     {
-        EnsureDebugAuthorized();
+        EnsureAnyDiagnosticCapability(DiagnosticCapabilities.RunConfiguration, DiagnosticCapabilities.RunSeed, DiagnosticCapabilities.RunGeneratorManifests, DiagnosticCapabilities.EvolutionGeneratorDetails);
         DebugRunDiagnosticsRequestPayload request = new();
         return _session.SendAsync<DebugRunDiagnosticsRequestPayload, DebugRunDiagnosticsSnapshot>(TrackerCommands.DebugRunDiagnostics, request, GetConnectedRunId(), cancellationToken);
     }
@@ -355,7 +394,7 @@ public sealed class TrackerRequestClient
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
         ArgumentOutOfRangeException.ThrowIfLessThan(limit, TrackerProtocol.MinimumSearchPageSize);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, TrackerProtocol.MaximumSearchPageSize);
-        EnsureDebugAuthorized();
+        EnsureDiagnosticCapabilities(DiagnosticCapabilities.PokemonAllActive);
         DebugPokemonSearchRequestPayload request = new() { Query = query.Trim(), Offset = offset, Limit = limit, NormalOnly = normalOnly };
         return _session.SendAsync<DebugPokemonSearchRequestPayload, PokemonSearchResponsePayload>(TrackerCommands.DebugPokemonSearch, request, GetConnectedRunId(), cancellationToken);
     }
@@ -370,7 +409,7 @@ public sealed class TrackerRequestClient
     public Task<PokemonLookupSnapshot> LookupDebugPokemonAsync(string speciesId, PokemonLookupSection section = PokemonLookupSection.Overview, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
-        EnsureDebugAuthorized();
+        EnsureDiagnosticCapabilities(DiagnosticCapabilities.PokemonAllActive, GetInformationCapability(section));
         DebugPokemonLookupRequestPayload request = new() { SpeciesId = speciesId, Section = section };
         return _session.SendAsync<DebugPokemonLookupRequestPayload, PokemonLookupSnapshot>(TrackerCommands.DebugPokemonLookup, request, GetConnectedRunId(), cancellationToken);
     }
@@ -382,14 +421,17 @@ public sealed class TrackerRequestClient
     /// <param name="side">The normal or component-specific candidate list.</param>
     /// <param name="query">The optional candidate name filter.</param>
     /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="target">The optional live source that securely supplies the represented species.</param>
+    /// <param name="enemyPosition">The enemy battler position when the live source is an enemy.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The requested candidate page.</returns>
-    public Task<EvolutionCandidateSearchResponsePayload> SearchDebugEvolutionCandidatesAsync(string speciesId, EvolutionCandidateSide side, string query, int offset = 0, CancellationToken cancellationToken = default)
+    public Task<EvolutionCandidateSearchResponsePayload> SearchDebugEvolutionCandidatesAsync(string speciesId, EvolutionCandidateSide side, string query, int offset = 0, DebugPokemonTarget? target = null, int? enemyPosition = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
-        EnsureDebugAuthorized();
-        DebugEvolutionCandidateSearchRequestPayload request = new() { SpeciesId = speciesId, Side = side, Query = query.Trim(), Offset = offset };
+        EnsureDebugPokemonSource(target);
+        EnsureDiagnosticCapabilities(DiagnosticCapabilities.EvolutionCandidates);
+        DebugEvolutionCandidateSearchRequestPayload request = new() { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Side = side, Query = query.Trim(), Offset = offset };
         return _session.SendAsync<DebugEvolutionCandidateSearchRequestPayload, EvolutionCandidateSearchResponsePayload>(TrackerCommands.DebugEvolutionCandidateSearch, request, GetConnectedRunId(), cancellationToken);
     }
 
@@ -398,14 +440,17 @@ public sealed class TrackerRequestClient
     /// </summary>
     /// <param name="speciesId">The fusion species identifier.</param>
     /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="target">The optional live source that securely supplies the represented species.</param>
+    /// <param name="enemyPosition">The enemy battler position when the live source is an enemy.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The requested material-pair page.</returns>
-    public Task<FusionMaterialSearchResponsePayload> SearchDebugFusionMaterialsAsync(string speciesId, int offset = 0, CancellationToken cancellationToken = default)
+    public Task<FusionMaterialSearchResponsePayload> SearchDebugFusionMaterialsAsync(string speciesId, int offset = 0, DebugPokemonTarget? target = null, int? enemyPosition = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
-        EnsureDebugAuthorized();
-        DebugFusionMaterialSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset };
+        EnsureDebugPokemonSource(target);
+        EnsureDiagnosticCapabilities(DiagnosticCapabilities.FusionMaterialPairs);
+        DebugFusionMaterialSearchRequestPayload request = new() { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset };
         return _session.SendAsync<DebugFusionMaterialSearchRequestPayload, FusionMaterialSearchResponsePayload>(TrackerCommands.DebugFusionMaterialSearch, request, GetConnectedRunId(), cancellationToken);
     }
 
@@ -414,14 +459,17 @@ public sealed class TrackerRequestClient
     /// </summary>
     /// <param name="speciesId">The generated species identifier.</param>
     /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="target">The optional live source that securely supplies the represented species.</param>
+    /// <param name="enemyPosition">The enemy battler position when the live source is an enemy.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The requested wild-occurrence page.</returns>
-    public Task<WildOccurrenceSearchResponsePayload> SearchDebugWildOccurrencesAsync(string speciesId, int offset = 0, CancellationToken cancellationToken = default)
+    public Task<WildOccurrenceSearchResponsePayload> SearchDebugWildOccurrencesAsync(string speciesId, int offset = 0, DebugPokemonTarget? target = null, int? enemyPosition = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
-        EnsureDebugAuthorized();
-        DebugWildOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset };
+        EnsureDebugPokemonSource(target);
+        EnsureDiagnosticCapabilities(DiagnosticCapabilities.WorldWildEncounters);
+        DebugWildOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset };
         return _session.SendAsync<DebugWildOccurrenceSearchRequestPayload, WildOccurrenceSearchResponsePayload>(TrackerCommands.DebugWildOccurrenceSearch, request, GetConnectedRunId(), cancellationToken);
     }
 
@@ -430,14 +478,17 @@ public sealed class TrackerRequestClient
     /// </summary>
     /// <param name="speciesId">The generated species identifier.</param>
     /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="target">The optional live source that securely supplies the represented species.</param>
+    /// <param name="enemyPosition">The enemy battler position when the live source is an enemy.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The requested trainer-occurrence page.</returns>
-    public Task<TrainerOccurrenceSearchResponsePayload> SearchDebugTrainerOccurrencesAsync(string speciesId, int offset = 0, CancellationToken cancellationToken = default)
+    public Task<TrainerOccurrenceSearchResponsePayload> SearchDebugTrainerOccurrencesAsync(string speciesId, int offset = 0, DebugPokemonTarget? target = null, int? enemyPosition = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
-        EnsureDebugAuthorized();
-        DebugTrainerOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset };
+        EnsureDebugPokemonSource(target);
+        EnsureDiagnosticCapabilities(DiagnosticCapabilities.WorldTrainerParties);
+        DebugTrainerOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset };
         return _session.SendAsync<DebugTrainerOccurrenceSearchRequestPayload, TrainerOccurrenceSearchResponsePayload>(TrackerCommands.DebugTrainerOccurrenceSearch, request, GetConnectedRunId(), cancellationToken);
     }
 
@@ -452,7 +503,7 @@ public sealed class TrackerRequestClient
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(firstSpeciesId);
         ArgumentException.ThrowIfNullOrWhiteSpace(secondSpeciesId);
-        EnsureDebugAuthorized();
+        EnsureDiagnosticCapabilities(DiagnosticCapabilities.FusionPreviewResults);
         DebugFusionPreviewRequestPayload request = new() { FirstSpeciesId = firstSpeciesId, SecondSpeciesId = secondSpeciesId };
         return _session.SendAsync<DebugFusionPreviewRequestPayload, FusionPreviewResponsePayload>(TrackerCommands.DebugFusionPreview, request, GetConnectedRunId(), cancellationToken);
     }
@@ -475,13 +526,110 @@ public sealed class TrackerRequestClient
     }
 
     /// <summary>
-    /// Rejects debug requests unless both sides of the handshake authorized access.
+    /// Rejects diagnostic requests unless every required named capability is effective.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown when debug access is not authorized.</exception>
-    private void EnsureDebugAuthorized()
+    /// <param name="capabilities">The capabilities required by the request.</param>
+    /// <exception cref="InvalidOperationException">Thrown when diagnostic access is not authorized.</exception>
+    private void EnsureDiagnosticCapabilities(params string[] capabilities)
     {
-        if (!DebugAuthorized)
-            throw new InvalidOperationException("Both the tracker launch mode and connected game must authorize debug access.");
+        if (capabilities.Any(capability => !HasDiagnosticCapability(capability)))
+            throw new InvalidOperationException("The connected game has not been granted every diagnostic capability required by this request.");
+    }
+
+    /// <summary>
+    /// Rejects a composite diagnostic request unless at least one supported section is effective.
+    /// </summary>
+    /// <param name="capabilities">The independently optional diagnostic sections.</param>
+    /// <exception cref="InvalidOperationException">Thrown when no requested diagnostic section is authorized.</exception>
+    private void EnsureAnyDiagnosticCapability(params string[] capabilities)
+    {
+        if (!capabilities.Any(HasDiagnosticCapability))
+            throw new InvalidOperationException("The connected game has not been granted access to any run diagnostic section.");
+    }
+
+    /// <summary>
+    /// Rejects an arbitrary species request without all-active access, or validates the selected live source.
+    /// </summary>
+    /// <param name="target">The optional live source that supplies the requested species.</param>
+    private void EnsureDebugPokemonSource(DebugPokemonTarget? target)
+    {
+        if (target is null)
+        {
+            EnsureDiagnosticCapabilities(DiagnosticCapabilities.PokemonAllActive);
+            return;
+        }
+
+        EnsureDiagnosticCapabilities(GetAvailabilityCapability(target.Value));
+    }
+
+    /// <summary>
+    /// Rejects an inspector section unless at least one independently rendered surface is authorized.
+    /// </summary>
+    /// <param name="section">The requested shared information section.</param>
+    private void EnsurePokemonInformationCapability(PokemonLookupSection section)
+    {
+        if (section == PokemonLookupSection.Overview)
+        {
+            EnsureAnyDiagnosticCapability(DiagnosticCapabilities.PokemonOverview, DiagnosticCapabilities.WorldWildEncounters, DiagnosticCapabilities.WorldTrainerParties, DiagnosticCapabilities.FusionMaterialPairs, DiagnosticCapabilities.FusionPreviewResults);
+            return;
+        }
+
+        if (section == PokemonLookupSection.Evolutions)
+        {
+            EnsureAnyDiagnosticCapability(DiagnosticCapabilities.EvolutionResults, DiagnosticCapabilities.EvolutionCandidates);
+            return;
+        }
+
+        EnsureDiagnosticCapabilities(GetInformationCapability(section));
+    }
+
+    /// <summary>
+    /// Gets the availability capability required by one live Pokemon target.
+    /// </summary>
+    /// <param name="target">The requested live target.</param>
+    /// <returns>The stable availability capability.</returns>
+    private static string GetAvailabilityCapability(DebugPokemonTarget target)
+    {
+        return target switch
+        {
+            DebugPokemonTarget.Player => DiagnosticCapabilities.PokemonCurrentPlayer,
+            DebugPokemonTarget.Enemy => DiagnosticCapabilities.PokemonCurrentEnemies,
+            _ => throw new ArgumentOutOfRangeException(nameof(target), target, "Only the represented current player or current enemy may be inspected.")
+        };
+    }
+
+    /// <summary>
+    /// Gets the information capability required by one Pokemon section.
+    /// </summary>
+    /// <param name="section">The requested information section.</param>
+    /// <returns>The stable information capability.</returns>
+    private static string GetInformationCapability(PokemonLookupSection section)
+    {
+        return section switch
+        {
+            PokemonLookupSection.Overview => DiagnosticCapabilities.PokemonOverview,
+            PokemonLookupSection.Abilities => DiagnosticCapabilities.PokemonAbilities,
+            PokemonLookupSection.Stats => DiagnosticCapabilities.PokemonBaseStats,
+            PokemonLookupSection.Moves => DiagnosticCapabilities.PokemonMoveAccess,
+            PokemonLookupSection.Evolutions => DiagnosticCapabilities.EvolutionResults,
+            _ => throw new ArgumentOutOfRangeException(nameof(section), section, "The Pokemon lookup section is unsupported.")
+        };
+    }
+
+    /// <summary>
+    /// Gets the active-run information capability associated with one area category.
+    /// </summary>
+    /// <param name="category">The area content category.</param>
+    /// <returns>The stable information capability.</returns>
+    private static string GetAreaCapability(AreaContentCategory category)
+    {
+        return category switch
+        {
+            AreaContentCategory.Trainer => DiagnosticCapabilities.WorldTrainerParties,
+            AreaContentCategory.Encounter => DiagnosticCapabilities.WorldWildEncounters,
+            AreaContentCategory.Item => DiagnosticCapabilities.WorldItems,
+            _ => throw new ArgumentOutOfRangeException(nameof(category), category, "The area content category is unsupported.")
+        };
     }
 
     /// <summary>

@@ -8,6 +8,7 @@ $distribution = Join-Path $projectRoot "dist\Data\Scripts\997_Ironmon"
 $distributionData = Join-Path $projectRoot "dist\Data\Ironmon"
 $distributionRoot = Join-Path $projectRoot "dist"
 $installationGuide = Join-Path $projectRoot "docs\guides\INSTALLATION.md"
+$releaseNotes = Join-Path $projectRoot "docs\releases\RELEASE_NOTES_0.7.4.md"
 $installation = Join-Path $gameRoot "Data\Scripts\997_Ironmon"
 $installationData = Join-Path $gameRoot "Data\Ironmon"
 
@@ -25,5 +26,6 @@ Copy-Item -Path (Join-Path $source "*.rb") -Destination $installation
 Copy-Item -LiteralPath $catalog -Destination (Join-Path $distributionData "area_catalog.dat")
 Copy-Item -LiteralPath $catalog -Destination (Join-Path $installationData "area_catalog.dat")
 Copy-Item -LiteralPath $installationGuide -Destination (Join-Path $distributionRoot "INSTALLATION.md")
+Copy-Item -LiteralPath $releaseNotes -Destination (Join-Path $distributionRoot "RELEASE_NOTES.md")
 
 Write-Output "Ironmon source and data copied to the distribution and local game."

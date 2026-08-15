@@ -23,6 +23,11 @@ public sealed class DebugPokemonInspectorSnapshot
     public required DebugPokemonIdentitySnapshot Identity { get; init; }
 
     /// <summary>
+    /// Gets or initializes the authorized species information for the resolved live Pokemon.
+    /// </summary>
+    public PokemonLookupSnapshot? Lookup { get; init; }
+
+    /// <summary>
     /// Gets or initializes live ability-slot diagnostics when requested.
     /// </summary>
     public DebugPokemonAbilitiesSnapshot? Abilities { get; init; }

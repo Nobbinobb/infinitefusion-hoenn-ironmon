@@ -13,6 +13,9 @@
                 <span class="@GetConnectionDotClass()" aria-hidden="true"></span>
                 <span>@GetConnectionText()</span>
             </div>
+            <button class="@GetAccessButtonClass()" type="button" aria-label="@Text["Access.Page.Open"]" title="@Text["Access.Page.Title"]" @onclick="ToggleAccess">
+                <span aria-hidden="true">&#128273;</span>
+            </button>
             <button class="@GetSettingsButtonClass()" type="button" aria-label="@Text["Settings.Page.OpenSettings"]" title="@Text["Settings.Page.Settings"]" @onclick="ToggleSettings">
                 <span aria-hidden="true">&#9881;</span>
             </button>
@@ -44,7 +47,7 @@
             <span class="tab-key">Ctrl+3</span>
             @Text["App.Shell.Lookup"]
         </button>
-        @if (TrackerConnection.DebugAuthorized)
+        @if (CanShowDebug)
         {
             <button class="@GetTabClass(TrackerView.Debug)"
                     type="button"
@@ -57,7 +60,11 @@
         }
     </nav>
 
-    @if (_settingsOpen)
+    @if (_accessOpen)
+    {
+        <DiagnosticAccessPage />
+    }
+    else if (_settingsOpen)
     {
         <TrackerSettingsPage AutoSelectStarter="@_autoSelectStarter" AutoSelectStarterChanged="HandleAutoSelectStarterChanged" MaximumStarterBaseStatTotal="@_maximumStarterBaseStatTotal" MaximumStarterBaseStatTotalChanged="HandleMaximumStarterBaseStatTotalChanged" FavoriteSpeciesIdsChanged="HandleFavoriteSpeciesIdsChanged" Status="@_settingsStatus" />
     }
@@ -92,7 +99,7 @@
         <span>@Text["App.Shell.LocalConnection"]</span>
         <span>
             <kbd>Ctrl+1</kbd> @Text["App.Shell.Player"]&nbsp;&nbsp;<kbd>Ctrl+2</kbd> @Text["App.Shell.Enemy"]&nbsp;&nbsp;<kbd>Ctrl+3</kbd> @Text["App.Shell.Lookup"]
-            @if (TrackerConnection.DebugAuthorized)
+            @if (CanShowDebug)
             {
                 <text>&nbsp;&nbsp;<kbd>Ctrl+4</kbd> @Text["App.Shell.Debug"]</text>
             }

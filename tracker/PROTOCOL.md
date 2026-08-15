@@ -1,6 +1,6 @@
 # Ironmon Tracker protocol v1
 
-This document records the implemented protocol through the Step 3.3 move-access
+This document records the implemented protocol through the 0.7.4 diagnostic-access
 inspection additions. Later parts extend the payload catalog without changing
 the common envelope or transport.
 
@@ -41,9 +41,10 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.0",
-    "ironmon_version": "0.7.3",
+    "ironmon_version": "0.7.4",
     "ironmon_active": false,
     "debug_available": true,
+    "supported_diagnostic_capabilities": ["pokemon.current_player", "run.seed"],
     "game_root": "C:/Games/InfiniteFusion2",
     "run_id": null,
     "battle_id": null
@@ -68,13 +69,22 @@ battle is active.
     "debug_requested": false,
     "auto_select_starter": false,
     "maximum_starter_base_stat_total": 525,
-    "favorite_species_ids": ["BULBASAUR:0"]
+    "favorite_species_ids": ["BULBASAUR:0"],
+    "diagnostic_capabilities": ["run.seed"]
   }
 }
 ```
 
-`debug_requested` records the `--debug` command-line request. It does not grant
-debug access; the game remains authoritative through `debug_available`.
+`supported_diagnostic_capabilities` is the bounded set of named information
+capabilities implemented by this game version. `diagnostic_capabilities` is
+the sorted intersection of that set and the tracker's current effective signed
+grant. The tracker never sends the token, signature, note, expiration, or key
+material to the game.
+
+`debug_requested` and `debug_available` remain as the 0.7.3 development
+compatibility pair. When both are true, the connection receives the local
+unrestricted developer override. Neither field is required for a valid named
+release-token grant.
 `auto_select_starter` supplies the tracker-owned persisted starter setting on
 every connection or reconnection.
 `maximum_starter_base_stat_total` is the optional inclusive generated-BST
@@ -466,7 +476,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.7.3",
+  "ironmon_version": "0.7.4",
   "configuration": {
     "schema_version": 2,
     "wild_policy": "mixed",
@@ -614,23 +624,50 @@ won run remains available for
 lookup while another Ironmon run is active. A recipe that itself declares an
 active or missing result remains rejected.
 
-## Authorized debug inspection
+## Authorized diagnostic inspection
 
-Debug requests require both authorization signals established during the
-handshake:
+Protected active-run requests use named capabilities. The tracker checks the
+negotiated grant before sending a request, and the game independently checks
+the same requirements before reading hidden runtime state. Failure returns
+`debug_forbidden` and no protected data.
 
-- the tracker must send `debug_requested: true`, which only occurs when it was
-  launched with `--debug`; and
-- the game must send `debug_available: true`, which currently requires its
-  development `$DEBUG` mode.
+The request requirements are:
 
-The tracker refuses to send debug requests unless both signals are present.
-The game independently enforces the same pair before resolving either command.
-Failure returns `debug_forbidden` and no inspector data.
+| Request | Required capabilities |
+| --- | --- |
+| current player inspection | `pokemon.current_player` plus an authorized surface on the selected page |
+| current enemy inspection | `pokemon.current_enemies` plus an authorized surface on the selected page |
+| active-run Pokemon search | `pokemon.all_active` |
+| active-run Pokemon lookup | `pokemon.all_active` plus the selected information capability |
+| evolution candidates | `evolution.candidates` plus either a represented current target or `pokemon.all_active` |
+| fusion material pairs | `fusion.material_pairs` plus either a represented current target or `pokemon.all_active` |
+| wild reverse occurrences | `world.wild_encounters` plus either a represented current target or `pokemon.all_active` |
+| trainer reverse occurrences | `world.trainer_parties` plus either a represented current target or `pokemon.all_active` |
+| fusion preview | `fusion.preview_results` |
 
-`debug_inspect_pokemon` accepts a target of `player`, `enemy`, or `party`.
-Enemy targets include `enemy_position`; party targets include the zero-based
-`party_index`. The game resolves the actual current Pokemon and returns:
+The selected exact Pokemon information capability is `pokemon.overview`,
+`pokemon.abilities`, `pokemon.base_stats`, `pokemon.move_access`, or
+`evolution.results`. Overview also accepts an independently authorized wild,
+trainer, material-pair, or preview surface, and Evolutions also accepts
+`evolution.candidates`; the game omits the exact Overview or evolution fields
+when only a tool surface is granted. The `pokemon.all_active` catalog grant
+implies both current-Pokemon availability grants before negotiation.
+
+Candidate, material, and reverse-occurrence requests optionally carry a
+`target` and `enemy_position`. When present, only `player` or `enemy` is valid,
+and the game resolves that live target and replaces the supplied `species_id`
+before lookup. Without a target, the request is arbitrary and therefore
+requires `pokemon.all_active` at both tracker and game boundaries.
+
+Active area detail uses `world.wild_encounters`, `world.trainer_parties`, or
+`world.items` for its selected category. Without that grant, ordinary
+discovery filtering remains in force. Completed-run reconstruction is
+unchanged.
+
+`debug_inspect_pokemon` accepts a target of `player` or `enemy`. Enemy targets
+include `enemy_position`. The game resolves the actual current Pokemon and
+returns a live inspector section together with the capability-filtered lookup
+section for that resolved species:
 
 - identity, nickname, level, gender, sprite, item, species, and form;
 - normal/fusion kind and displayed fusion components;
@@ -651,17 +688,46 @@ Arbitrary species inspection is not implemented by this request because the
 game's ordinary Pokemon constructor consumes random values. The debug contract
 will not use that mutating path merely to fabricate an inspection target.
 
-`debug_run_diagnostics` has an empty payload and returns the game and Ironmon
-versions, protocol version, run and battle IDs, seed, configuration policies,
-fusion-pool metadata, ability-generator metadata, base-stat generator metadata,
-move-access source metadata, and wild/trainer mapping counts.
+`debug_run_diagnostics` has an empty payload. Runtime version and identity
+context accompany any authorized group. `run.seed`, `run.configuration`,
+`run.generator_manifests`, and `evolution.generator_details` independently
+control the seed, configuration, non-evolution manifests and mapping counts,
+and evolution manifest. Omitted groups are not serialized by the game.
 
-The authorized active-run lookup uses `debug_pokemon_search`,
+Exact evolution targets and graph edges are serialized only with
+`evolution.results`. Candidate pages use their separate request and require
+only `evolution.candidates` plus the relevant Pokemon availability scope, so
+candidate-only and result-only access work independently.
+
+The authorized arbitrary active-run lookup uses `debug_pokemon_search`,
 `debug_pokemon_lookup`, and `debug_fusion_preview`. Their result contracts match
 the completed-run lookup equivalents, but their request payloads omit the
 completion recipe and the game resolves them from the currently loaded run.
-All three commands independently require the same dual debug authorization and
-are unavailable through the normal post-run API while a run remains active.
+These commands are unavailable through the normal post-run API while a run
+remains active.
+
+### Live grant replacement
+
+Activation, replacement, removal, and expiration send an uncorrelated
+`diagnostic_access_changed` event whose payload contains the complete new
+`diagnostic_capabilities` list. The game validates the list as a single bounded
+replacement and clears its previous grants before applying it. A non-array,
+empty identifier, identifier longer than 128 characters, unknown identifier,
+duplicate identifier, or list over 128 entries produces an empty grant. The
+event does not carry token metadata.
+
+### 0.7.3 compatibility
+
+- A 0.7.4 tracker connected to a 0.7.3 game receives no supported named
+  capabilities. Signed-token access is therefore unavailable, while the old
+  `debug_requested && debug_available` developer pair still works.
+- A 0.7.3 tracker connected to a 0.7.4 game omits
+  `diagnostic_capabilities`, which the game treats as an empty named grant. Its
+  legacy development pair still works.
+- A 0.7.4 Release tracker without a valid token sends an empty grant even when
+  the game implements named capabilities.
+- Unknown optional fields remain ignored, so ordinary tracking and completed-
+  run lookup retain the v1 compatibility policy.
 
 ## Milestone 5 attempt statistics
 

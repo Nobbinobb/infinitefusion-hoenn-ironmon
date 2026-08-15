@@ -31,6 +31,18 @@ public partial class DebugInspector : IDisposable
     private TrackerRequestClient Connection { get; set; } = null!;
 
     /// <summary>
+    /// Gets or initializes tracker-owned diagnostic access.
+    /// </summary>
+    [Inject]
+    private DiagnosticAccessService AccessService { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or initializes the shared connection state.
+    /// </summary>
+    [Inject]
+    private TrackerConnectionState ConnectionState { get; set; } = null!;
+
+    /// <summary>
     /// Gets or sets the initialized player Pokemon when available.
     /// </summary>
     [Parameter]
@@ -49,6 +61,16 @@ public partial class DebugInspector : IDisposable
     public string? GameRoot { get; set; }
 
     /// <summary>
+    /// Subscribes to capability and connection changes affecting visible diagnostic pages.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        _selectedPokemonPage = GetFirstAuthorizedPokemonPage();
+        AccessService.Changed += HandleAuthorizationChanged;
+        ConnectionState.Changed += HandleAuthorizationChanged;
+    }
+
+    /// <summary>
     /// Selects the initial available inspection target without overriding user selection.
     /// </summary>
     /// <returns>A task representing any inspection refresh required by new parameters.</returns>
@@ -56,11 +78,7 @@ public partial class DebugInspector : IDisposable
     {
         if (!_targetInitialized)
         {
-            _selectedTarget = Player is not null
-                ? DebugTargetIds.Player
-                : Enemies.Count > 0
-                    ? $"{DebugTargetIds.Enemy}{DebugTargetIds.Separator}{Enemies[0].Position}"
-                    : DebugTargetIds.Player;
+            _selectedTarget = GetFirstAvailableTarget();
             _targetInitialized = true;
             _observedPlayer = Player;
             _observedEnemies = Enemies;
@@ -106,28 +124,38 @@ public partial class DebugInspector : IDisposable
         string[] parts = _selectedTarget.Split(DebugTargetIds.Separator, DebugTargetIds.EnemySegmentCount);
         if (parts[0] == DebugTargetIds.Player)
         {
-            if (Player is not null)
+            if (Player is not null && Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentPlayer))
                 return false;
 
-            _selectedTarget = Enemies.Count > 0
-                ? $"{DebugTargetIds.Enemy}{DebugTargetIds.Separator}{Enemies[0].Position}"
-                : DebugTargetIds.Player;
+            _selectedTarget = GetFirstAvailableTarget();
 
             return true;
         }
 
-        bool enemyAvailable = parts[0] == DebugTargetIds.Enemy && parts.Length == DebugTargetIds.EnemySegmentCount && int.TryParse(parts[1], out int position)
+        bool enemyAvailable = Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentEnemies)
+            && parts[0] == DebugTargetIds.Enemy && parts.Length == DebugTargetIds.EnemySegmentCount && int.TryParse(parts[1], out int position)
             && Enemies.Any(enemy => enemy.Position == position);
 
         if (enemyAvailable)
             return false;
 
-        _selectedTarget = Player is not null
-            ? DebugTargetIds.Player
-            : Enemies.Count > 0
-                ? $"{DebugTargetIds.Enemy}{DebugTargetIds.Separator}{Enemies[0].Position}"
-                : DebugTargetIds.Player;
+        _selectedTarget = GetFirstAvailableTarget();
         return true;
+    }
+
+    /// <summary>
+    /// Gets the first live Pokemon target allowed by availability capabilities.
+    /// </summary>
+    /// <returns>The stable target selector value.</returns>
+    private string GetFirstAvailableTarget()
+    {
+        if (Player is not null && Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentPlayer))
+            return DebugTargetIds.Player;
+
+        if (Enemies.Count > 0 && Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentEnemies))
+            return $"{DebugTargetIds.Enemy}{DebugTargetIds.Separator}{Enemies[0].Position}";
+
+        return DebugTargetIds.Player;
     }
 
     /// <summary>
@@ -182,7 +210,7 @@ public partial class DebugInspector : IDisposable
     /// <returns>A task representing any required request.</returns>
     private async Task SelectPageAsync(DebugInspectorPage page)
     {
-        if (_loading)
+        if (_loading || !CanShowPage(page))
             return;
 
         _selectedPage = page;
@@ -238,7 +266,7 @@ public partial class DebugInspector : IDisposable
             DebugPokemonInspectorSnapshot pokemon = await Connection.InspectPokemonAsync(CreateInspectionRequest(), cancellation.Token);
             _pokemon = pokemon;
             if (refreshLookup)
-                _lookup = await Connection.LookupDebugPokemonAsync(pokemon.Identity.SpeciesId, cancellationToken: cancellation.Token);
+                _lookup = pokemon.Lookup ?? throw new TrackerProtocolException("The live Pokemon inspector response is missing its authorized lookup section.");
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -276,6 +304,9 @@ public partial class DebugInspector : IDisposable
     /// <returns>A task representing the refresh.</returns>
     private async Task SelectPokemonInformationPageAsync(PokemonInformationPage page)
     {
+        if (!CanShowPokemonInformationPage(page))
+            return;
+
         _selectedPokemonPage = page;
         if (_loading)
         {
@@ -283,7 +314,7 @@ public partial class DebugInspector : IDisposable
             return;
         }
 
-        await InspectSelectedAsync(preserveContent: true, refreshLookup: false);
+        await InspectSelectedAsync(preserveContent: true);
     }
 
     /// <summary>
@@ -332,9 +363,10 @@ public partial class DebugInspector : IDisposable
     {
         string[] parts = _selectedTarget.Split(DebugTargetIds.Separator, DebugTargetIds.EnemySegmentCount);
         if (parts[0] == DebugTargetIds.Player)
-            return Player is not null;
+            return Player is not null && Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentPlayer);
 
         return parts[0] == DebugTargetIds.Enemy
+            && Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentEnemies)
             && parts.Length == DebugTargetIds.EnemySegmentCount
             && int.TryParse(parts[1], out int position)
             && Enemies.Any(enemy => enemy.Position == position);
@@ -349,10 +381,113 @@ public partial class DebugInspector : IDisposable
         => page == _selectedPage ? TrackerUiConstants.SelectedCssClass : string.Empty;
 
     /// <summary>
+    /// Gets whether one primary diagnostic page is currently authorized.
+    /// </summary>
+    /// <param name="page">The represented diagnostic page.</param>
+    /// <returns>Whether the page may be shown.</returns>
+    private bool CanShowPage(DebugInspectorPage page)
+    {
+        return page switch
+        {
+            DebugInspectorPage.Pokemon => CanShowCurrentPokemon,
+            DebugInspectorPage.Lookup => TrackerDiagnosticCapabilityRules.CanUseActivePokemonLookup(Connection),
+            DebugInspectorPage.Diagnostics => TrackerDiagnosticCapabilityRules.HasAnyRunDiagnostics(Connection),
+            DebugInspectorPage.Protocol => TrackerDiagnosticCapabilityRules.HasAnyTrackerDiagnostics(AccessService.Snapshot),
+            _ => false
+        };
+    }
+
+    /// <summary>
+    /// Gets whether current-Pokemon inspection has both availability and information access.
+    /// </summary>
+    private bool CanShowCurrentPokemon
+        => TrackerDiagnosticCapabilityRules.HasAnyPokemonInformation(Connection)
+            && (Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentPlayer)
+                || Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentEnemies));
+
+    /// <summary>
+    /// Gets whether at least one primary diagnostic page is authorized.
+    /// </summary>
+    private bool HasAnyPage
+        => Enum.GetValues<DebugInspectorPage>().Any(CanShowPage);
+
+    /// <summary>
+    /// Gets whether one shared Pokemon information page is authorized.
+    /// </summary>
+    /// <param name="page">The represented Pokemon page.</param>
+    /// <returns>Whether the information capability is effective.</returns>
+    private bool CanShowPokemonInformationPage(PokemonInformationPage page)
+    {
+        return page switch
+        {
+            PokemonInformationPage.Overview => TrackerDiagnosticCapabilityRules.HasAnyOverviewSurface(Connection),
+            PokemonInformationPage.Evolutions => TrackerDiagnosticCapabilityRules.HasAnyEvolutionSurface(Connection),
+            _ => Connection.HasDiagnosticCapability(TrackerDiagnosticCapabilityRules.GetPokemonInformationCapability(page))
+        };
+    }
+
+    /// <summary>
+    /// Gets the live source represented by the selected target.
+    /// </summary>
+    private DebugPokemonTarget SelectedDebugTarget
+        => _selectedTarget.StartsWith(DebugTargetIds.Enemy, StringComparison.Ordinal) ? DebugPokemonTarget.Enemy : DebugPokemonTarget.Player;
+
+    /// <summary>
+    /// Gets the selected enemy battler position when the live source is an enemy.
+    /// </summary>
+    private int? SelectedDebugEnemyPosition
+    {
+        get
+        {
+            string[] parts = _selectedTarget.Split(DebugTargetIds.Separator, DebugTargetIds.EnemySegmentCount);
+            return parts[0] == DebugTargetIds.Enemy && parts.Length == DebugTargetIds.EnemySegmentCount && int.TryParse(parts[1], out int position) ? position : null;
+        }
+    }
+
+    /// <summary>
+    /// Gets the first authorized Pokemon information page in stable UI order.
+    /// </summary>
+    /// <returns>The first authorized page, or Overview when no page is available.</returns>
+    private PokemonInformationPage GetFirstAuthorizedPokemonPage()
+        => Enum.GetValues<PokemonInformationPage>().FirstOrDefault(CanShowPokemonInformationPage);
+
+    /// <summary>
+    /// Moves selection to the first currently authorized primary page.
+    /// </summary>
+    private void EnsureSelectedPageAuthorized()
+    {
+        if (CanShowPage(_selectedPage))
+            return;
+
+        _selectedPage = Enum.GetValues<DebugInspectorPage>().FirstOrDefault(CanShowPage);
+    }
+
+    /// <summary>
+    /// Clears protected values and recomputes page selection after access changes.
+    /// </summary>
+    /// <param name="sender">The changed access or connection service.</param>
+    /// <param name="args">The empty change arguments.</param>
+    private void HandleAuthorizationChanged(object? sender, EventArgs args)
+    {
+        _inspectionCancellation?.Cancel();
+        _pokemon = null;
+        _lookup = null;
+        _diagnostics = null;
+        _requestedLookupSpeciesId = null;
+        _error = null;
+        _selectedPokemonPage = GetFirstAuthorizedPokemonPage();
+        EnsureSelectedTargetAvailable();
+        EnsureSelectedPageAuthorized();
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
     /// Cancels an inspection request when the debug view is removed.
     /// </summary>
     public void Dispose()
     {
+        AccessService.Changed -= HandleAuthorizationChanged;
+        ConnectionState.Changed -= HandleAuthorizationChanged;
         _inspectionCancellation?.Cancel();
         _inspectionCancellation?.Dispose();
     }

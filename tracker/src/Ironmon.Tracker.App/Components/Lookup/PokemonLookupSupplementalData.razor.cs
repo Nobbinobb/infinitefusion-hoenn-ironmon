@@ -7,7 +7,7 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class PokemonLookupSupplementalData
 {
-    private PokemonLookupOverviewSnapshot? _observedOverview;
+    private string? _observedPokemonKey;
     private FusionMaterialSearchResponsePayload _fusionMaterials = new();
     private TrainerOccurrenceSearchResponsePayload _trainerOccurrences = new();
     private WildOccurrenceSearchResponsePayload _wildOccurrences = new();
@@ -31,7 +31,7 @@ public partial class PokemonLookupSupplementalData
     /// Gets the required overview section.
     /// </summary>
     private PokemonLookupOverviewSnapshot Overview
-        => Pokemon.Overview ?? throw new InvalidOperationException("The Overview lookup response is missing its section payload.");
+        => Pokemon.Overview ?? new PokemonLookupOverviewSnapshot();
 
     /// <summary>
     /// Gets or sets the reconstructed Pokemon information.
@@ -52,6 +52,18 @@ public partial class PokemonLookupSupplementalData
     public bool DebugMode { get; set; }
 
     /// <summary>
+    /// Gets or sets the optional live source that securely supplies the represented species.
+    /// </summary>
+    [Parameter]
+    public DebugPokemonTarget? DebugTarget { get; set; }
+
+    /// <summary>
+    /// Gets or sets the enemy battler position when the live source is an enemy.
+    /// </summary>
+    [Parameter]
+    public int? DebugEnemyPosition { get; set; }
+
+    /// <summary>
     /// Gets or sets the connected game installation directory.
     /// </summary>
     [Parameter]
@@ -66,21 +78,36 @@ public partial class PokemonLookupSupplementalData
     /// <summary>
     /// Resets fusion-material paging when a new Overview response is displayed.
     /// </summary>
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
-        if (ReferenceEquals(_observedOverview, Overview))
+        string key = $"{Pokemon.Identity.SpeciesId}|{Pokemon.Overview?.GetHashCode()}|{DebugMode}|{DebugTarget}|{DebugEnemyPosition}";
+        if (_observedPokemonKey == key)
             return;
 
-        _observedOverview = Overview;
-        _fusionMaterials = Overview.FusionMaterials;
-        _trainerOccurrences = Overview.TrainerOccurrences;
-        _wildOccurrences = Overview.WildOccurrences;
+        _observedPokemonKey = key;
+        _fusionMaterials = DebugMode ? new FusionMaterialSearchResponsePayload() : Overview.FusionMaterials;
+        _trainerOccurrences = DebugMode ? new TrainerOccurrenceSearchResponsePayload() : Overview.TrainerOccurrences;
+        _wildOccurrences = DebugMode ? new WildOccurrenceSearchResponsePayload() : Overview.WildOccurrences;
         _fusionMaterialOffset = 0;
         _trainerOccurrenceOffset = 0;
         _wildOccurrenceOffset = 0;
         _fusionMaterialError = null;
         _trainerOccurrenceError = null;
         _wildOccurrenceError = null;
+        if (!DebugMode)
+            return;
+
+        List<Task> loads = [];
+        if (Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldWildEncounters))
+            loads.Add(LoadWildOccurrencePageAsync(0));
+
+        if (Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldTrainerParties))
+            loads.Add(LoadTrainerOccurrencePageAsync(0));
+
+        if (Connection.HasDiagnosticCapability(DiagnosticCapabilities.FusionMaterialPairs) && Pokemon.Identity.Fusion)
+            loads.Add(LoadFusionMaterialPageAsync(0));
+
+        await Task.WhenAll(loads);
     }
 
     /// <summary>
@@ -98,7 +125,7 @@ public partial class PokemonLookupSupplementalData
         try
         {
             WildOccurrenceSearchResponsePayload response = DebugMode
-                ? await Connection.SearchDebugWildOccurrencesAsync(Pokemon.Identity.SpeciesId, offset)
+                ? await Connection.SearchDebugWildOccurrencesAsync(Pokemon.Identity.SpeciesId, offset, DebugTarget, DebugEnemyPosition)
                 : await Connection.SearchWildOccurrencesAsync(Recipe ?? throw new InvalidOperationException(Text["Lookup.Fusion.CompletedRunRecipeRequired"]), Pokemon.Identity.SpeciesId, offset);
             _wildOccurrences = response;
             _wildOccurrenceOffset = offset;
@@ -128,7 +155,7 @@ public partial class PokemonLookupSupplementalData
         try
         {
             TrainerOccurrenceSearchResponsePayload response = DebugMode
-                ? await Connection.SearchDebugTrainerOccurrencesAsync(Pokemon.Identity.SpeciesId, offset)
+                ? await Connection.SearchDebugTrainerOccurrencesAsync(Pokemon.Identity.SpeciesId, offset, DebugTarget, DebugEnemyPosition)
                 : await Connection.SearchTrainerOccurrencesAsync(Recipe ?? throw new InvalidOperationException(Text["Lookup.Fusion.CompletedRunRecipeRequired"]), Pokemon.Identity.SpeciesId, offset);
             _trainerOccurrences = response;
             _trainerOccurrenceOffset = offset;
@@ -200,7 +227,7 @@ public partial class PokemonLookupSupplementalData
         try
         {
             FusionMaterialSearchResponsePayload response = DebugMode
-                ? await Connection.SearchDebugFusionMaterialsAsync(Pokemon.Identity.SpeciesId, offset)
+                ? await Connection.SearchDebugFusionMaterialsAsync(Pokemon.Identity.SpeciesId, offset, DebugTarget, DebugEnemyPosition)
                 : await Connection.SearchFusionMaterialsAsync(Recipe ?? throw new InvalidOperationException(Text["Lookup.Fusion.CompletedRunRecipeRequired"]), Pokemon.Identity.SpeciesId, offset);
             _fusionMaterials = response;
             _fusionMaterialOffset = offset;

@@ -36,6 +36,12 @@ public partial class AreaLookupExplorer : IDisposable
     private AreaDiscoveryStore Discoveries { get; set; } = null!;
 
     /// <summary>
+    /// Gets or initializes tracker-owned diagnostic access.
+    /// </summary>
+    [Inject]
+    private DiagnosticAccessService AccessService { get; set; } = null!;
+
+    /// <summary>
     /// Gets or sets the archived recipe, or null for the active run.
     /// </summary>
     [Parameter]
@@ -63,7 +69,10 @@ public partial class AreaLookupExplorer : IDisposable
     /// Subscribes to tracker-owned discoveries received regardless of the visible page.
     /// </summary>
     protected override void OnInitialized()
-        => Discoveries.Changed += HandleDiscoveryChanged;
+    {
+        Discoveries.Changed += HandleDiscoveryChanged;
+        AccessService.Changed += HandleDiagnosticAccessChanged;
+    }
 
     /// <summary>
     /// Reloads compact summaries when the selected run changes.
@@ -209,6 +218,24 @@ public partial class AreaLookupExplorer : IDisposable
 
             StateHasChanged();
         });
+    }
+
+    /// <summary>
+    /// Removes cached active-run details immediately after diagnostic access changes.
+    /// </summary>
+    /// <param name="sender">The diagnostic-access service.</param>
+    /// <param name="args">The empty change arguments.</param>
+    private void HandleDiagnosticAccessChanged(object? sender, EventArgs args)
+    {
+        if (Recipe is not null)
+            return;
+
+        _details.Clear();
+        _detailErrors.Clear();
+        _encounterSpriteSources.Clear();
+        _trainerSpriteSources.Clear();
+        _expandedAreas.Clear();
+        _ = InvokeAsync(StateHasChanged);
     }
 
     /// <summary>
@@ -390,5 +417,8 @@ public partial class AreaLookupExplorer : IDisposable
     /// Removes tracker discovery subscriptions when the component is disposed.
     /// </summary>
     public void Dispose()
-        => Discoveries.Changed -= HandleDiscoveryChanged;
+    {
+        Discoveries.Changed -= HandleDiscoveryChanged;
+        AccessService.Changed -= HandleDiagnosticAccessChanged;
+    }
 }

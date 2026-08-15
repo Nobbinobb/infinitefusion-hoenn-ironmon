@@ -18,6 +18,16 @@ public sealed class DebugEvolutionCandidateSearchRequestPayload
     public required string SpeciesId { get; init; }
 
     /// <summary>
+    /// Gets or initializes the live source whose represented species must override <see cref="SpeciesId"/>.
+    /// </summary>
+    public DebugPokemonTarget? Target { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the enemy battler position when the live source is an enemy.
+    /// </summary>
+    public int? EnemyPosition { get; init; }
+
+    /// <summary>
     /// Gets or initializes the normal or fusion-component list being requested.
     /// </summary>
     public EvolutionCandidateSide Side { get; init; }

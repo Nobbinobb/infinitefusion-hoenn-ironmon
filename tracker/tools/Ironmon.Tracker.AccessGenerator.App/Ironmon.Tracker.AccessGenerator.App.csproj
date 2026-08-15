@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Ironmon.Tracker.AccessGenerator.App</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <EnableDefaultCssItems>false</EnableDefaultCssItems>
+    <ApplicationTitle>Ironmon Access Token Generator</ApplicationTitle>
+    <ApplicationId>com.ironmon.accesstokengenerator</ApplicationId>
+    <ApplicationDisplayVersion>0.7.4</ApplicationDisplayVersion>
+    <ApplicationVersion>704</ApplicationVersion>
+    <AssemblyName>Ironmon.AG</AssemblyName>
+    <Version>0.7.4</Version>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
+    <WindowsPackageType>None</WindowsPackageType>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MauiIcon Include="..\..\src\Ironmon.Tracker.App\Resources\AppIcon\appicon.svg" ForegroundFile="..\..\src\Ironmon.Tracker.App\Resources\AppIcon\appiconfg.svg" Color="#16131F" Link="Resources\AppIcon\appicon.svg" />
+    <MauiSplashScreen Include="..\..\src\Ironmon.Tracker.App\Resources\Splash\splash.svg" Color="#16131F" BaseSize="128,128" Link="Resources\Splash\splash.svg" />
+    <MauiFont Include="..\..\src\Ironmon.Tracker.App\Resources\Fonts\OpenSans-Regular.ttf" Link="Resources\Fonts\OpenSans-Regular.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Localization" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ironmon.Tracker.AccessGenerator.Core\Ironmon.Tracker.AccessGenerator.Core.csproj" />
+    <ProjectReference Include="..\..\src\Ironmon.Tracker.Access\Ironmon.Tracker.Access.csproj" />
+  </ItemGroup>
+</Project>

@@ -380,6 +380,189 @@ h1 {
     color: var(--accent-soft);
 }
 
+.diagnostic-access {
+    overflow: auto;
+}
+
+.access-state,
+.access-input,
+.access-grants,
+.access-unknown {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.65rem;
+    background: var(--surface-soft);
+}
+
+.access-state {
+    border-left: 0.24rem solid var(--muted);
+}
+
+.access-state.active {
+    border-left-color: #65d49a;
+}
+
+.access-state.problem {
+    border-left-color: var(--enemy-soft);
+}
+
+.access-state strong,
+.access-input label,
+.access-grants h3,
+.access-unknown h3 {
+    font-size: 0.78rem;
+}
+
+.access-state span,
+.access-warning,
+.access-unknown p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.66rem;
+    line-height: 1.45;
+}
+
+.access-input textarea {
+    width: 100%;
+    resize: vertical;
+    padding: 0.62rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 0.5rem;
+    color: var(--text);
+    background: var(--surface);
+    font: 0.66rem/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+    overflow-wrap: anywhere;
+}
+
+.access-input-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.55rem;
+}
+
+.access-file-button,
+.access-primary,
+.access-remove {
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 0.48rem;
+    color: var(--text);
+    background: var(--surface-raised);
+    font: inherit;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.access-file-button input {
+    display: none;
+}
+
+.access-primary {
+    border-color: var(--accent-soft);
+    color: #16131f;
+    background: var(--accent-soft);
+}
+
+.access-primary:disabled,
+.access-remove:disabled {
+    cursor: default;
+    opacity: 0.55;
+}
+
+.access-warning {
+    color: var(--warning);
+}
+
+.access-message {
+    margin: 0;
+    padding: 0.62rem 0.7rem;
+    border-radius: 0.5rem;
+    font-size: 0.68rem;
+}
+
+.access-message.success {
+    color: #8ae4b4;
+    background: rgb(101 212 154 / 10%);
+}
+
+.access-message.error {
+    color: var(--enemy-soft);
+    background: rgb(240 139 160 / 10%);
+}
+
+.access-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.42rem;
+    margin: 0;
+}
+
+.access-details > div {
+    display: grid;
+    gap: 0.18rem;
+    min-width: 0;
+    padding: 0.62rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--surface-soft);
+}
+
+.access-details dt {
+    color: var(--muted);
+    font-size: 0.62rem;
+}
+
+.access-details dd {
+    overflow-wrap: anywhere;
+    margin: 0;
+    color: var(--muted-strong);
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.access-grants h3,
+.access-unknown h3 {
+    margin: 0;
+}
+
+.access-capabilities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.access-capabilities span,
+.access-capabilities code {
+    padding: 0.28rem 0.45rem;
+    border: 1px solid rgb(183 164 255 / 30%);
+    border-radius: 999px;
+    color: var(--accent-soft);
+    background: rgb(183 164 255 / 8%);
+    font-size: 0.62rem;
+}
+
+.access-capabilities.included span {
+    color: var(--muted-strong);
+    border-color: var(--border-strong);
+    background: var(--surface-raised);
+}
+
+.access-capabilities.unknown code {
+    color: var(--warning);
+    border-color: rgb(226 170 79 / 30%);
+    background: rgb(226 170 79 / 8%);
+}
+
+.access-remove {
+    justify-self: start;
+    color: var(--enemy-soft);
+    border-color: rgb(240 139 160 / 35%);
+    background: transparent;
+}
+
 .starter-selection-heading {
     display: flex;
     align-items: end;

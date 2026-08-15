@@ -8,48 +8,70 @@
     </header>
 
     <nav class="debug-pages" aria-label="@Text["Debug.Inspector.DebugInspectorPages"]">
-        <button type="button" class="@GetPageClass(DebugInspectorPage.Pokemon)" @onclick="() => SelectPageAsync(DebugInspectorPage.Pokemon)">@Text["Debug.Inspector.Pokemon"]</button>
-        <button type="button" class="@GetPageClass(DebugInspectorPage.Lookup)" @onclick="() => SelectPageAsync(DebugInspectorPage.Lookup)">@Text["Debug.Inspector.Lookup"]</button>
-        <button type="button" class="@GetPageClass(DebugInspectorPage.Diagnostics)" @onclick="() => SelectPageAsync(DebugInspectorPage.Diagnostics)">@Text["Debug.Inspector.RunDiagnostics"]</button>
-        <button type="button" class="@GetPageClass(DebugInspectorPage.Protocol)" @onclick="() => SelectPageAsync(DebugInspectorPage.Protocol)">@Text["Debug.Inspector.Protocol"]</button>
+        @if (CanShowPage(DebugInspectorPage.Pokemon))
+        {
+            <button type="button" class="@GetPageClass(DebugInspectorPage.Pokemon)" @onclick="() => SelectPageAsync(DebugInspectorPage.Pokemon)">@Text["Debug.Inspector.Pokemon"]</button>
+        }
+        @if (CanShowPage(DebugInspectorPage.Lookup))
+        {
+            <button type="button" class="@GetPageClass(DebugInspectorPage.Lookup)" @onclick="() => SelectPageAsync(DebugInspectorPage.Lookup)">@Text["Debug.Inspector.Lookup"]</button>
+        }
+        @if (CanShowPage(DebugInspectorPage.Diagnostics))
+        {
+            <button type="button" class="@GetPageClass(DebugInspectorPage.Diagnostics)" @onclick="() => SelectPageAsync(DebugInspectorPage.Diagnostics)">@Text["Debug.Inspector.RunDiagnostics"]</button>
+        }
+        @if (CanShowPage(DebugInspectorPage.Protocol))
+        {
+            <button type="button" class="@GetPageClass(DebugInspectorPage.Protocol)" @onclick="() => SelectPageAsync(DebugInspectorPage.Protocol)">@Text["Debug.Inspector.Protocol"]</button>
+        }
     </nav>
 
-    @if (_selectedPage == DebugInspectorPage.Pokemon)
+    @if (!HasAnyPage)
+    {
+        <div class="lookup-empty">
+            <strong>@Text["Debug.Inspector.NoAuthorizedPages"]</strong>
+            <p>@Text["Debug.Inspector.NoAuthorizedPagesDescription"]</p>
+        </div>
+    }
+    else if (_selectedPage == DebugInspectorPage.Pokemon)
     {
         <div class="debug-target-controls">
             <label>
                 Inspect
                 <select value="@_selectedTarget" disabled="@(_loading || (Player is null && Enemies.Count == 0))" @onchange="SelectTarget" @onkeydown:stopPropagation="true">
-                    @if (Player is not null)
+                    @if (Player is not null && Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentPlayer))
                     {
                         <option value="@DebugTargetIds.Player">@Text["Debug.Inspector.Player"] · @Player.Nickname</option>
                     }
-                    @foreach (EnemyPokemonSnapshot enemy in Enemies)
+                    @if (Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentEnemies))
                     {
-                        <option value="@($"{DebugTargetIds.Enemy}{DebugTargetIds.Separator}{enemy.Position}")">@Text["Debug.Inspector.EnemyNumber", (enemy.Position / DebugTargetIds.EnemyPositionStride) + DebugTargetIds.DisplayPositionOffset] · @enemy.SpeciesName</option>
+                        @foreach (EnemyPokemonSnapshot enemy in Enemies)
+                        {
+                            <option value="@($"{DebugTargetIds.Enemy}{DebugTargetIds.Separator}{enemy.Position}")">@Text["Debug.Inspector.EnemyNumber", (enemy.Position / DebugTargetIds.EnemyPositionStride) + DebugTargetIds.DisplayPositionOffset] · @enemy.SpeciesName</option>
+                        }
                     }
                 </select>
             </label>
         </div>
     }
 
-    @if (_selectedPage == DebugInspectorPage.Lookup)
+    @if (HasAnyPage && _selectedPage == DebugInspectorPage.Lookup)
     {
         <DebugActiveRunLookup GameRoot="@GameRoot" InitialSpeciesId="@_requestedLookupSpeciesId" />
     }
-    else if (_selectedPage == DebugInspectorPage.Protocol)
+    else if (HasAnyPage && _selectedPage == DebugInspectorPage.Protocol)
     {
         <DebugProtocolDiagnostics />
     }
-    else if (_error is not null)
+    else if (HasAnyPage && _error is not null)
     {
         <p class="lookup-error" role="alert">@_error</p>
     }
-    else if (_loading && !_backgroundRefresh)
+    else if (HasAnyPage && _loading && !_backgroundRefresh)
     {
         <p class="lookup-message">@Text["Debug.Inspector.ReadingDebugData"]</p>
     }
-    else if (_selectedPage == DebugInspectorPage.Diagnostics)
+    else if (HasAnyPage && _selectedPage == DebugInspectorPage.Diagnostics)
     {
         @if (_diagnostics is not null)
         {
@@ -60,18 +82,20 @@
             <p class="lookup-message">@Text["Debug.Inspector.RunDiagnosticsNotLoaded"]</p>
         }
     }
-    else if (_pokemon is null || _lookup is null)
+    else if (HasAnyPage && (_pokemon is null || _lookup is null))
     {
         <div class="lookup-empty">
             <strong>@Text["Debug.Inspector.NoPokemonInspected"]</strong>
             <p>@Text["Debug.Inspector.SelectAvailablePokemon"]</p>
         </div>
     }
-    else
+    else if (HasAnyPage)
     {
         <PokemonLookupCard Pokemon="@_lookup"
                            Inspector="@_pokemon"
                            DebugMode="true"
+                           DebugTarget="@SelectedDebugTarget"
+                           DebugEnemyPosition="@SelectedDebugEnemyPosition"
                            GameRoot="@GameRoot"
                            InformationPageSelected="SelectPokemonInformationPageAsync"
                            PokemonSelected="OpenLookupAsync" />

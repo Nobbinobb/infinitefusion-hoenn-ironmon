@@ -34,9 +34,12 @@ locally on port `38521`; no browser or HTTP server is used.
   --project 'src\Ironmon.Tracker.App\Ironmon.Tracker.App.csproj'
 ```
 
-Debug builds request the development-only Debug tab automatically and still
-require a game runtime that reports debug access. Release builds additionally
-require the explicit tracker launch flag:
+Debug builds request the unrestricted local developer override automatically
+and still require a game runtime with the development helper enabled. The
+ordinary Release tracker instead exposes **Diagnostic Access**, where a signed
+token can be pasted or loaded from an `.ironmon-access` file. No special build
+or launch flag is required for token-based access. The legacy Release launch
+flag remains available only for the dual-sided local developer override:
 
 ```powershell
 & 'C:\Program Files\dotnet\dotnet.exe' run `
@@ -44,13 +47,23 @@ require the explicit tracker launch flag:
   -- --debug
 ```
 
+Each token grants named pages and information groups independently, with an
+optional expiration. All Active Pokemon includes and locks the Current Player
+and Current Enemies quick-access grants. Evolution Results and Evolution
+Candidates remain separate. Area-only access does not expose a Pokemon or raw
+diagnostic page. Activation, replacement, removal, and expiration update a
+connected game immediately, while the raw token and its metadata remain
+tracker-local.
+
 Debug Pokemon, Debug Lookup, and completed-run Lookup use the same tabbed
 Pokemon-information card: Overview, Abilities, Stats, Moves, and Evolutions.
 Debug Pokemon merges live player/enemy diagnostics into those shared pages.
 Overview wild locations, trainer locations, and fusion materials use bounded
 50-row pages so high-collision fusions cannot exceed the protocol frame.
 The Debug tab also includes tracker-owned raw protocol and state diagnostics.
-Complete diagnostic reports can be copied or exported to
+Protocol history, raw tracker state, and persisted knowledge are separately
+granted groups. Diagnostic reports contain only currently authorized groups
+and can be copied or exported to
 `%LocalAppData%\IronmonTracker\diagnostics\`.
 Protocol and connection failures are also captured automatically in
 `%LocalAppData%\IronmonTracker\diagnostics\latest-protocol-error.json`. The

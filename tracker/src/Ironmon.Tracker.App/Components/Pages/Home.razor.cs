@@ -14,6 +14,7 @@ public partial class Home : IDisposable
     private string? _selectedEnemyId;
     private string? _lastMoveMenuPokemonId;
     private bool _completedRunNavigationPending;
+    private bool _accessOpen;
     private bool _settingsOpen;
     private bool _autoSelectStarter;
     private int? _maximumStarterBaseStatTotal;
@@ -56,6 +57,12 @@ public partial class Home : IDisposable
     private TrackerConnectionOptions ConnectionOptions { get; set; } = null!;
 
     /// <summary>
+    /// Gets or initializes tracker-owned diagnostic access.
+    /// </summary>
+    [Inject]
+    private DiagnosticAccessService AccessService { get; set; } = null!;
+
+    /// <summary>
     /// Subscribes the tracker shell to connection and run-state changes.
     /// </summary>
     protected override void OnInitialized()
@@ -73,6 +80,7 @@ public partial class Home : IDisposable
         RunState.Changed += HandleRunChanged;
         CompletedRuns.SelectionRequested += HandleCompletedRunSelectionRequested;
         ShortcutService.ViewRequested += HandleGlobalViewRequested;
+        AccessService.Changed += HandleDiagnosticAccessChanged;
     }
 
     /// <summary>
@@ -81,10 +89,11 @@ public partial class Home : IDisposable
     /// <param name="view">The view selected by the user.</param>
     private void SelectView(TrackerView view)
     {
-        if (view == TrackerView.Debug && !TrackerConnection.DebugAuthorized)
+        if (view == TrackerView.Debug && !CanShowDebug)
             return;
 
         _completedRunNavigationPending = false;
+        _accessOpen = false;
         _settingsOpen = false;
         _selectedView = view;
     }
@@ -95,8 +104,30 @@ public partial class Home : IDisposable
     private void ToggleSettings()
     {
         _settingsOpen = !_settingsOpen;
+        _accessOpen = false;
         _settingsStatus = null;
     }
+
+    /// <summary>
+    /// Opens or closes the always-available diagnostic-access screen.
+    /// </summary>
+    private void ToggleAccess()
+    {
+        _accessOpen = !_accessOpen;
+        _settingsOpen = false;
+    }
+
+    /// <summary>
+    /// Gets whether the debug navigation entry currently has any local authorization path.
+    /// </summary>
+    private bool CanShowDebug => TrackerConnection.DebugAuthorized || AccessService.Snapshot.IsActive;
+
+    /// <summary>
+    /// Gets the visual classes for the diagnostic-access button.
+    /// </summary>
+    /// <returns>The access button CSS classes.</returns>
+    private string GetAccessButtonClass()
+        => _accessOpen ? "settings-button selected" : "settings-button";
 
     /// <summary>
     /// Gets the visual classes for the settings button.
@@ -209,7 +240,7 @@ public partial class Home : IDisposable
             TrackerKeyboardKeys.PlayerNumber => TrackerView.Player,
             TrackerKeyboardKeys.EnemyNumber => TrackerView.Enemy,
             TrackerKeyboardKeys.LookupNumber => TrackerView.Lookup,
-            TrackerKeyboardKeys.DebugNumber when TrackerConnection.DebugAuthorized => TrackerView.Debug,
+            TrackerKeyboardKeys.DebugNumber when CanShowDebug => TrackerView.Debug,
             _ => null
         };
 
@@ -243,7 +274,7 @@ public partial class Home : IDisposable
     /// </summary>
     /// <returns>The tab-container CSS classes.</returns>
     private string GetViewTabsClass()
-        => TrackerConnection.DebugAuthorized ? TrackerUiConstants.DebugViewTabsCssClass : TrackerUiConstants.ViewTabsCssClass;
+        => CanShowDebug ? TrackerUiConstants.DebugViewTabsCssClass : TrackerUiConstants.ViewTabsCssClass;
 
     /// <summary>
     /// Gets the concise connection state shown in the tracker header.
@@ -304,7 +335,7 @@ public partial class Home : IDisposable
     private void HandleConnectionChanged(object? sender, EventArgs args)
     {
         _connection = ConnectionState.Snapshot;
-        if (_selectedView == TrackerView.Debug && !TrackerConnection.DebugAuthorized)
+        if (_selectedView == TrackerView.Debug && !CanShowDebug)
             _selectedView = TrackerView.Player;
 
         _ = InvokeAsync(StateHasChanged);
@@ -332,6 +363,7 @@ public partial class Home : IDisposable
         if (starterSelectionAppeared)
         {
             _completedRunNavigationPending = false;
+            _accessOpen = false;
             _settingsOpen = false;
             _selectedView = TrackerView.Player;
         }
@@ -362,6 +394,19 @@ public partial class Home : IDisposable
     }
 
     /// <summary>
+    /// Recomputes navigation immediately after activation, replacement, removal, or expiration.
+    /// </summary>
+    /// <param name="sender">The diagnostic-access service raising the event.</param>
+    /// <param name="args">The empty change event arguments.</param>
+    private void HandleDiagnosticAccessChanged(object? sender, EventArgs args)
+    {
+        if (_selectedView == TrackerView.Debug && !CanShowDebug)
+            _selectedView = TrackerView.Player;
+
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
     /// Removes tracker-state subscriptions when the page is disposed.
     /// </summary>
     public void Dispose()
@@ -370,5 +415,6 @@ public partial class Home : IDisposable
         RunState.Changed -= HandleRunChanged;
         CompletedRuns.SelectionRequested -= HandleCompletedRunSelectionRequested;
         ShortcutService.ViewRequested -= HandleGlobalViewRequested;
+        AccessService.Changed -= HandleDiagnosticAccessChanged;
     }
 }

@@ -16,6 +16,10 @@ public static class MauiProgram
         builder.Services.AddLocalization(options => options.ResourcesPath = TrackerLocalizationConstants.ResourcesPath);
         builder.Services.AddMauiBlazorWebView();
         builder.Services.AddSingleton(CreateKnowledgeOptions());
+        builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddSingleton(static _ => TrackerDiagnosticAccessKeyCatalog.Create());
+        builder.Services.AddSingleton<DiagnosticAccessTokenValidator>();
+        builder.Services.AddSingleton(static services => new DiagnosticAccessService(services.GetRequiredService<TrackerKnowledgeOptions>(), services.GetRequiredService<DiagnosticAccessTokenValidator>(), IsDiagnosticAccessDeveloperOverride(), services.GetRequiredService<TimeProvider>()));
         builder.Services.AddSingleton<FavoritePokemonStore>();
         builder.Services.AddSingleton(static services => CreateConnectionOptions(services.GetRequiredService<FavoritePokemonStore>()));
         builder.Services.AddSingleton<TrackerDiagnosticsStore>();
@@ -95,5 +99,18 @@ public static class MauiProgram
     {
         string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         return new TrackerKnowledgeOptions(Path.Combine(localData, TrackerStorageNames.RootDirectory));
+    }
+
+    /// <summary>
+    /// Gets whether this local build grants every supported diagnostic capability without a token.
+    /// </summary>
+    /// <returns><see langword="true"/> only for Debug tracker builds.</returns>
+    private static bool IsDiagnosticAccessDeveloperOverride()
+    {
+#if DEBUG
+        return true;
+#else
+        return false;
+#endif
     }
 }

@@ -14,8 +14,8 @@ also suitable for saving as PDF.
 
 - [Installation](guides/INSTALLATION.md): install, update, and remove Ironmon.
 - [Configuration](guides/CONFIGURATION.md): run settings and reset behavior.
-- [Development mode](guides/DEVELOPMENT.md): local debug mode and tracker debug
-  authorization.
+- [Development and diagnostic access](guides/DEVELOPMENT.md): unrestricted
+  local development mode and capability-limited Release tracker access.
 
 ## Project history
 

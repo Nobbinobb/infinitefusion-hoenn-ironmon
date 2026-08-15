@@ -1,4 +1,4 @@
-@if (_wildOccurrences.Total > 0)
+@if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldWildEncounters)) && _wildOccurrences.Total > 0)
 {
     <section class="lookup-occurrences" aria-label="@Text["Lookup.Card.WildEncounterLocations"]">
         <header><p class="section-label">@Text["Lookup.Card.WildLocationsHeading"]</p><span>@Text["Lookup.Card.SlotCount", _wildOccurrences.Total]</span></header>
@@ -41,7 +41,7 @@
     </section>
 }
 
-@if (_trainerOccurrences.Total > 0)
+@if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldTrainerParties)) && _trainerOccurrences.Total > 0)
 {
     <section class="lookup-occurrences" aria-label="@Text["Lookup.Card.TrainerPartyLocations"]">
         <header><p class="section-label">@Text["Lookup.Card.TrainersHeading"]</p><span>@Text["Lookup.Card.SlotCount", _trainerOccurrences.Total]</span></header>
@@ -74,7 +74,7 @@
     </section>
 }
 
-@if (Overview.FusionBases.Count > 0)
+@if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonOverview)) && Overview.FusionBases.Count > 0)
 {
     <section class="lookup-relations" aria-label="@Text["Lookup.Card.DisplayedFusionComponents"]">
         <header><p class="section-label">@Text["Lookup.Card.DisplayedComponentsHeading"]</p></header>
@@ -87,7 +87,7 @@
     </section>
 }
 
-@if (Overview.ReverseFusion is not null)
+@if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonOverview)) && Overview.ReverseFusion is not null)
 {
     <section class="lookup-relations" aria-label="@Text["Lookup.Card.IronmonReverseFusion"]">
         <header><p class="section-label">@Text["Lookup.Card.IronmonReverseHeading"]</p></header>
@@ -97,7 +97,7 @@
     </section>
 }
 
-@if (_fusionMaterials.Total > 0)
+@if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.FusionMaterialPairs)) && _fusionMaterials.Total > 0)
 {
     <section class="lookup-relations" aria-label="@Text["Lookup.Card.IronmonFusionMaterials"]">
         <header><p class="section-label">@Text["Lookup.Card.FusionMaterialsHeading"]</p></header>
@@ -126,7 +126,7 @@
     </section>
 }
 
-@if (Overview.FusionBases.Count == 0)
+@if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.FusionPreviewResults)) && !Pokemon.Identity.Fusion)
 {
     <IronmonFusionSearch Pokemon="@Pokemon"
                          Recipe="@Recipe"
