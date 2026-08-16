@@ -555,8 +555,9 @@ When a run ends, the game persists its result in the save metadata and emits
   "fusion_tutor_source_fingerprint": "...",
   "item_generator": {
     "version": 1,
-    "rules_version": 2,
+    "rules_version": 3,
     "ground_pool_size": 580,
+    "ground_total_weight": 5253,
     "ground_pool_fingerprint": "...",
     "tm_pool_size": 124,
     "tm_pool_fingerprint": "...",
@@ -589,7 +590,10 @@ recipes atomically under
 the reconstructed lookup response.
 
 New recipes use `item_generator` to reconstruct physical-slot rewards from the
-run seed and the versioned pool manifest. `item_mappings` and `tm_mappings`
+run seed and the versioned pool manifest. Rules version 3 includes the
+exclusive category and integer weight of every ground result in the ground
+pool fingerprint; rules versions 1 and 2 remain uniform. TM gifts continue to
+select uniformly from their TM-only pool. `item_mappings` and `tm_mappings`
 remain optional compatibility fields for completed legacy attempts that used
 Infinite Fusion's runtime-RNG shuffle. Historical recipes with neither
 representation use already persisted area-entry details and leave unknown

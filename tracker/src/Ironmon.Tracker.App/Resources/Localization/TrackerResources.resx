@@ -606,6 +606,9 @@
   <data name="Debug.Run.GroundItemPool" xml:space="preserve">
     <value>Ground item pool</value>
   </data>
+  <data name="Debug.Run.GroundItemWeight" xml:space="preserve">
+    <value>Ground item tickets</value>
+  </data>
   <data name="Debug.Run.TmGiftPool" xml:space="preserve">
     <value>TM gift pool</value>
   </data>

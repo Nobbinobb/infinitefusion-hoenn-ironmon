@@ -247,6 +247,9 @@ public sealed class CompletedRunArchive
         ArgumentOutOfRangeException.ThrowIfLessThan(generator.Version, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(generator.RulesVersion, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(generator.GroundPoolSize, 1);
+        if (generator.RulesVersion >= 3)
+            ArgumentOutOfRangeException.ThrowIfLessThan(generator.GroundTotalWeight, 1);
+
         ArgumentException.ThrowIfNullOrWhiteSpace(generator.GroundPoolFingerprint);
         ArgumentOutOfRangeException.ThrowIfLessThan(generator.TmPoolSize, 1);
         ArgumentException.ThrowIfNullOrWhiteSpace(generator.TmPoolFingerprint);

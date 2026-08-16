@@ -30,6 +30,7 @@ module IronmonItemRandomizationAuditExporter
   end
 
   def self.row(file, values)
+    values += [""] * (10 - values.length)
     file.write(values.map { |value| csv_value(value) }.join(","))
     file.write("\n")
   end
@@ -91,6 +92,10 @@ module IronmonItemRandomizationAuditExporter
         Ironmon.item_result_banned?(item)
       raise "unsupported item #{item_id} entered the ground pool" if
         Ironmon.item_result_unsupported?(item)
+      category = Ironmon.item_result_category(item)
+      weight = Ironmon.item_result_weight(item)
+      raise "item #{item_id} has no weighted category" if category == :excluded
+      raise "item #{item_id} has an invalid weight" if weight < 1
     end
     tm_pool.each do |item_id|
       item = GameData::Item.get(item_id)
@@ -132,8 +137,16 @@ module IronmonItemRandomizationAuditExporter
       rows << ["special_ground_slot", slot[0], slot[1], true, "", "", "",
                "Ironmon-owned scripted reward"]
     end
+    randomizable_slots = rows.select do |row_data|
+      ["ground_slot", "special_ground_slot"].include?(row_data[0]) &&
+        row_data[3] == true
+    end.map { |row_data| row_data[1] }.uniq.length
+    category_summary = Ironmon.item_category_summary(rules)
+    total_weight = category_summary.values.sum do |category|
+      category[:total_weight]
+    end
     File.open(path, "wb") do |file|
-      file.write("record_type,identity,item_id,randomizable,stock_before,stock_after,empty_after,detail\n")
+      file.write("record_type,identity,item_id,randomizable,stock_before,stock_after,empty_after,detail,ground_category,ground_weight\n")
       row(file, ["summary", "schema", "", "", "", "", "",
                  Ironmon::ItemSlotGenerator::SCHEMA_VERSION])
       row(file, ["summary", "rules", "", "", "", "", "", rules])
@@ -147,8 +160,30 @@ module IronmonItemRandomizationAuditExporter
                  Ironmon.item_tm_pool_fingerprint(rules)])
       row(file, ["summary", "result_ban_fingerprint", "", "", "", "", "",
                  Ironmon.item_result_ban_fingerprint(rules)])
-      ground_pool.each { |item_id| row(file, ["ground_pool", "", item_id, "", "", "", "", ""]) }
-      tm_pool.each { |item_id| row(file, ["tm_pool", "", item_id, "", "", "", "", ""]) }
+      row(file, ["summary", "ground_total_weight", "", "", "", "", "",
+                 total_weight])
+      category_summary.sort_by { |category, _values| category.to_s }.
+        each do |category, values|
+          expected = randomizable_slots * values[:total_weight].to_f /
+            total_weight
+          detail = "items=#{values[:item_count]}; " +
+            "total_tickets=#{values[:total_weight]}; " +
+            "expected_slots=#{format('%.2f', expected)}"
+          row(file, ["category_summary", category, "", "", "", "", "",
+                     detail, category,
+                     Ironmon::ItemSlotGenerator::ITEM_CATEGORY_WEIGHTS[category]])
+        end
+      ground_pool.each do |item_id|
+        item = GameData::Item.get(item_id)
+        row(file, ["ground_pool", "", item_id, "", "", "", "", "",
+                   Ironmon.item_result_category(item, rules),
+                   Ironmon.item_result_weight(item, rules)])
+      end
+      tm_pool.each do |item_id|
+        row(file, ["tm_pool", "", item_id, "", "", "", "",
+                   "TM gifts select uniformly", :tm,
+                   Ironmon.item_result_weight(GameData::Item.get(item_id), rules)])
+      end
       excluded_items = []
       GameData::Item.each do |item|
         next if Ironmon.item_ground_pool_eligible?(item, rules)
@@ -156,15 +191,17 @@ module IronmonItemRandomizationAuditExporter
       end
       excluded_items.sort_by { |item| item.id.to_s }.each do |item|
         row(file, ["structural_exclusion", "", item.id, "", "", "", "",
-                   ground_exclusion_reason(item, rules)])
+                   ground_exclusion_reason(item, rules), :excluded, 0])
       end
       Ironmon.item_result_bans(rules).each do |item_id|
-        row(file, ["result_ban", rules, item_id, "", "", "", "", ""])
+        row(file, ["result_ban", rules, item_id, "", "", "", "", "",
+                   :banned, 0])
       end
       rows.each { |values| row(file, values) }
     end
     return {
       :ground_pool => ground_pool.length,
+      :ground_weight => total_weight,
       :tm_pool => tm_pool.length,
       :ground_slots => rows.select { |row_data| row_data[0] == "ground_slot" }.
         map { |row_data| row_data[1] }.uniq.length +

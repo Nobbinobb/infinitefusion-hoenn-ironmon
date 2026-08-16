@@ -21,12 +21,33 @@ pool, ordinary gifts remain protected, standard Poke Marts retain only their
 existing balls and Repel-family items, and trainer held items remain authored.
 Legacy attempts retain their saved base-game mappings.
 
-Current item pool rules version 2 removes all Mail, all Apricorns, Exp. Share,
-and all nine permanent HM tools in addition to the four version 1 bans. Bans
+Item pool rules version 2 removes all Mail, all Apricorns, Exp. Share, and all
+nine permanent HM tools in addition to the four version 1 bans. Bans
 apply to results, and a banned authored ground source randomizes away. This is
 why the Trick House pickup authored as Shears or Lantern no longer appears as
 either tool in a generated Lookup result. Converted HM rewards remain
 protected so field progression is unchanged.
+
+Current rules version 3 retains that 580-item roster and replaces equal
+per-item selection with deterministic integer tickets. The audited
+classification is exclusive:
+
+| Category | Items | Weight per item | Total tickets | Expected among 146 randomized slots |
+|---|---:|---:|---:|---:|
+| HP recovery | 15 | 32 | 480 | 13.34 |
+| Status and PP recovery | 26 | 20 | 520 | 14.45 |
+| General utility and treasure | 122 | 16 | 1,952 | 54.25 |
+| Evolution items | 21 | 16 | 336 | 9.34 |
+| Poke Balls | 41 | 12 | 492 | 13.67 |
+| TMs | 124 | 8 | 992 | 27.57 |
+| Battle consumables | 50 | 6 | 300 | 8.34 |
+| Held combat items | 181 | 1 | 181 | 5.03 |
+| **Total** | **580** |  | **5,253** | **146.00** |
+
+These expected values are audit projections, not quotas or guarantees. Every
+physical slot still rolls independently with replacement from the complete
+weighted pool. Existing rules version 1 and 2 attempts retain their original
+uniform selection.
 
 ## Registered item inventory
 
@@ -61,10 +82,12 @@ number of all possible item acquisitions; shops, NPC-only gifts, berry
 harvests, fishing rewards, mining, Mystery Gifts, and other direct Bag writes
 are separate paths.
 
-The current deterministic rules produce 580 eligible ground results and 124
-eligible TM results in the audited installation. Pool membership and exact
-ban rows are regenerated in `generated/ITEM_RANDOMIZATION_GENERATED.csv` by
-the release pipeline rather than maintained as hand-edited counts.
+The current deterministic rules produce 580 eligible ground results, 5,253
+ground-selection tickets, and 124 uniformly selected TM-gift results in the
+audited installation. Pool membership, category assignments, weights,
+projections, and exact ban rows are regenerated in
+`generated/ITEM_RANDOMIZATION_GENERATED.csv` by the release pipeline rather
+than maintained as hand-edited counts.
 
 ## Initialization and persistence
 
@@ -168,7 +191,8 @@ Ironmon addressed the audit findings with these rules:
 1. Generate ground rewards by stable physical slot from the Ironmon seed and a
    versioned, fingerprinted pool rather than by authored item identity.
 2. Keep full chaos for eligible ground items and non-HM TMs while applying the
-   explicit versioned result bans documented above.
+   explicit versioned result bans and per-item integer weights documented
+   above.
 3. Protect ordinary gifts; randomize non-HM TM gifts within the TM-only pool.
 4. Preserve each standard Poke Mart's authored order but filter it to existing
    balls and Repel-family items.

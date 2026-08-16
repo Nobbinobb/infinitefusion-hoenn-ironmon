@@ -619,6 +619,12 @@ module Ironmon
         "incompatible_item_pool", "The item pools no longer match this run."
       )
     end
+    if rules >= ItemSlotGenerator::WEIGHTED_POOL_RULES_VERSION &&
+       recipe["item_ground_total_weight"] != item_ground_total_weight(rules)
+      raise TrackerLookupError.new(
+        "incompatible_item_pool", "The item weights no longer match this run."
+      )
+    end
     return true
   end
 
@@ -684,6 +690,7 @@ module Ironmon
       "item_pool_rules_version" => items["rules_version"],
       "item_ground_pool_size" => items["ground_pool_size"],
       "item_ground_pool_fingerprint" => items["ground_pool_fingerprint"],
+      "item_ground_total_weight" => items["ground_total_weight"],
       "item_tm_pool_size" => items["tm_pool_size"],
       "item_tm_pool_fingerprint" => items["tm_pool_fingerprint"],
       "item_result_ban_fingerprint" => items["result_ban_fingerprint"],

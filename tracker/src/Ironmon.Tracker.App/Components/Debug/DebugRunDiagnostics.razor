@@ -54,6 +54,10 @@
                     <div><dt>@Text["Debug.Run.ItemSchema"]</dt><dd>@itemGenerator.Version</dd></div>
                     <div><dt>@Text["Debug.Run.ItemRules"]</dt><dd>@itemGenerator.RulesVersion</dd></div>
                     <div><dt>@Text["Debug.Run.GroundItemPool"]</dt><dd>@itemGenerator.GroundPoolSize</dd></div>
+                    @if (itemGenerator.GroundTotalWeight > 0)
+                    {
+                        <div><dt>@Text["Debug.Run.GroundItemWeight"]</dt><dd>@itemGenerator.GroundTotalWeight</dd></div>
+                    }
                     <div><dt>@Text["Debug.Run.TmGiftPool"]</dt><dd>@itemGenerator.TmPoolSize</dd></div>
                     <div><dt>@Text["Debug.Run.ShopPolicy"]</dt><dd>@itemGenerator.ShopPolicyVersion</dd></div>
                     <div class="wide"><dt>@Text["Debug.Run.ItemBans"]</dt><dd>@string.Join(", ", itemGenerator.ResultBans)</dd></div>

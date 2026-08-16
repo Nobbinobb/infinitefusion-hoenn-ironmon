@@ -29,6 +29,20 @@ module IronmonItemRandomizationRuntimeTests
       assert(!ground_pool.include?(:AIRMAIL), "Mail is excluded")
       assert(!ground_pool.include?(:REDAPRICORN), "Apricorns are excluded")
       assert(!ground_pool.include?(:EXPSHARE), "Exp. Share is excluded")
+      assert(Ironmon.item_result_category(GameData::Item.get(:POTION)) ==
+               :hp_recovery, "Potion is classified as HP recovery")
+      assert(Ironmon.item_result_category(GameData::Item.get(:ETHER)) ==
+               :status_pp_recovery, "Ether is classified as recovery")
+      assert(Ironmon.item_result_category(GameData::Item.get(:LEFTOVERS)) ==
+               :held_combat, "Leftovers is classified as held combat")
+      assert(Ironmon.item_result_category(GameData::Item.get(:TM01)) == :tm,
+             "TM01 is classified as a TM")
+      assert(Ironmon.item_result_weight(GameData::Item.get(:POTION)) == 32,
+             "Potion receives 32 tickets")
+      assert(Ironmon.item_result_weight(GameData::Item.get(:LEFTOVERS)) == 1,
+             "Leftovers receives one ticket")
+      assert(Ironmon.item_result_category(GameData::Item.get(:BURNDRIVE)) ==
+               :held_combat, "direct held effects are classified as combat")
       GameData::Item.each do |item|
         if item.is_mail? || item.is_apricorn?
           assert(Ironmon.item_result_banned?(item),
@@ -49,14 +63,14 @@ module IronmonItemRandomizationRuntimeTests
         assert(ground_pool.include?(item), "TM pool is part of the ground pool")
       end
 
-      generator = Ironmon::ItemSlotGenerator.new(
-        12_345, ground_pool, tm_pool
+      generator = Ironmon.build_item_slot_generator(
+        12_345, Ironmon::ItemSlotGenerator::POOL_RULES_VERSION
       )
       first = generator.ground_item("map:1|event:2")
       assert(first == generator.ground_item("map:1|event:2"),
              "a slot is deterministic")
-      reverse_generator = Ironmon::ItemSlotGenerator.new(
-        12_345, ground_pool, tm_pool
+      reverse_generator = Ironmon.build_item_slot_generator(
+        12_345, Ironmon::ItemSlotGenerator::POOL_RULES_VERSION
       )
       reverse_generator.ground_item("map:9|event:9")
       assert(first == reverse_generator.ground_item("map:1|event:2"),
@@ -66,11 +80,31 @@ module IronmonItemRandomizationRuntimeTests
       end
       assert(results.uniq.length > 1, "different slots can produce different items")
       second_seed_results = (1..100).map do |event_id|
-        Ironmon::ItemSlotGenerator.new(
-          54_321, ground_pool, tm_pool
+        Ironmon.build_item_slot_generator(
+          54_321, Ironmon::ItemSlotGenerator::POOL_RULES_VERSION
         ).ground_item("map:1|event:#{event_id}")
       end
       assert(results != second_seed_results, "a new seed rerolls item slots")
+      ticket_generator = Ironmon::ItemSlotGenerator.new(
+        9_876, [:LIGHT, :HEAVY], [:TM01], [1, 8]
+      )
+      ticket_results = (1..10_000).map do |event_id|
+        ticket_generator.ground_item("weighted:#{event_id}")
+      end
+      assert(ticket_results.count(:HEAVY) > ticket_results.count(:LIGHT) * 7,
+             "integer tickets increase deterministic selection frequency")
+      historical_generator = Ironmon.build_item_slot_generator(12_345, 2)
+      historical_slot = "map:4|event:7"
+      historical_hash = historical_generator.hash_value(
+        [Ironmon::ItemSlotGenerator::SCHEMA_VERSION, 12_345, "ground",
+         historical_slot].join("|")
+      )
+      assert(
+        historical_generator.ground_item(historical_slot) ==
+          Ironmon.item_ground_pool(2)[historical_hash %
+            Ironmon.item_ground_pool(2).length],
+        "rules version 2 retains uniform selection"
+      )
       begin
         generator.ground_item(nil)
         assert(false, "a missing slot identity must fail")
@@ -142,6 +176,9 @@ module IronmonItemRandomizationRuntimeTests
       recipe = Ironmon.item_generator_recipe
       assert(recipe["ground_pool_size"] == ground_pool.length,
              "recipe records the ground pool")
+      assert(recipe["ground_total_weight"] ==
+               Ironmon.item_ground_weights.sum,
+             "recipe records the ground ticket total")
       assert(recipe["tm_pool_size"] == tm_pool.length,
              "recipe records the TM pool")
       area = Ironmon.tracker_area_catalog.find do |candidate|

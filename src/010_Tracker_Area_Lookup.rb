@@ -483,9 +483,7 @@ module Ironmon
     generator = nil
     if item_generator.is_a?(Hash)
       rules = item_generator["rules_version"]
-      generator = ItemSlotGenerator.new(
-        recipe["seed"], item_ground_pool(rules), item_tm_pool(rules)
-      )
+      generator = build_item_slot_generator(recipe["seed"], rules)
     end
     return entry["authored_item_ids"].map do |item_id|
       replacement = hm_replacement_item(item_id) if

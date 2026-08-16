@@ -1479,6 +1479,10 @@ Status: **Implemented; awaiting review**
   and all nine permanent HM tools while structurally excluding other key
   items, HMs, and unsupported registrations. Authored HM-tool ground pickups
   randomize away, while converted HM rewards remain protected.
+- Added rules version 3 deterministic per-item integer weighting with one
+  exclusive category per eligible result. The release audit records all 580
+  assignments, their weights, 5,253 total tickets, and category projections;
+  historical rules version 1 and 2 runs retain uniform selection.
 - Filtered each standard Poke Mart's own inventory to its existing balls and
   Repel-family items without changing vending machines, order, or prices.
 - Added saved generator manifests, legacy mapping compatibility, tracker area

@@ -20,4 +20,6 @@ focused dataset regeneration.
 The release build also regenerates `ITEM_RANDOMIZATION_GENERATED.csv` through
 the bundled game runtime. Compatible item-data changes update the canonical
 audit automatically; malformed pools, forbidden results, or exporter failures
-stop the release.
+stop the release. The audit includes every eligible item's exclusive category
+and integer ground-selection weight, category ticket totals, and projected
+slot counts without turning those projections into generation quotas.

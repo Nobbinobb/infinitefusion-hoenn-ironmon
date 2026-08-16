@@ -51,13 +51,14 @@ Get-Content -LiteralPath "$resolvedAuditPath.summary" | ForEach-Object {
         $summary[$parts[0]] = [int]$parts[1]
     }
 }
-foreach ($key in "ground_pool", "tm_pool", "ground_slots", "tm_gifts", "marts") {
+foreach ($key in "ground_pool", "ground_weight", "tm_pool", "ground_slots", "tm_gifts", "marts") {
     if (-not $summary.ContainsKey($key)) {
         throw "The item randomization audit summary is missing '$key'."
     }
 }
-if ($summary.ground_pool -lt 1 -or $summary.tm_pool -lt 1) {
+if ($summary.ground_pool -lt 1 -or $summary.ground_weight -lt 1 -or
+    $summary.tm_pool -lt 1) {
     throw "The item randomization audit contains an empty result pool."
 }
 Remove-Item -LiteralPath "$resolvedAuditPath.progress", "$resolvedAuditPath.error", "$resolvedAuditPath.summary" -Force -ErrorAction SilentlyContinue
-Write-Output "Item audit generated: $($summary.ground_pool) ground results, $($summary.tm_pool) TM results, $($summary.ground_slots) ground slots, $($summary.tm_gifts) TM gifts, $($summary.marts) inline marts."
+Write-Output "Item audit generated: $($summary.ground_pool) ground results with $($summary.ground_weight) total weight, $($summary.tm_pool) TM results, $($summary.ground_slots) ground slots, $($summary.tm_gifts) TM gifts, $($summary.marts) inline marts."

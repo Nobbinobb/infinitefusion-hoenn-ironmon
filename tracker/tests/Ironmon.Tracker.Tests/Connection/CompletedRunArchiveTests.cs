@@ -37,6 +37,7 @@ public sealed class CompletedRunArchiveTests
         Assert.Equal("HYPERPOTION", stored.ItemMappings["POTION"]);
         Assert.Equal("TM02", stored.TmMappings["TM01"]);
         Assert.Equal(600, stored.ItemGenerator!.GroundPoolSize);
+        Assert.Equal(600, stored.ItemGenerator.GroundTotalWeight);
         Assert.Equal(["DNASPLICERS", "DYNAMITE"], stored.ItemGenerator.ResultBans);
         Assert.Equal("run-archive", archive.RequestedRunId);
         string recipePath = Path.Combine(root, "runs", "run-archive", "recipe.json");
@@ -136,6 +137,17 @@ public sealed class CompletedRunArchiveTests
     }
 
     /// <summary>
+    /// Verifies that weighted rules require a positive ticket total.
+    /// </summary>
+    [Fact]
+    public void StoreRejectsWeightedItemsWithoutTickets()
+    {
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => archive.Store(CreateRecipe("run-bad-item-weights", itemRulesVersion: 3, itemGroundTotalWeight: 0)));
+    }
+
+    /// <summary>
     /// Verifies that a run which did not enable optional generators remains valid.
     /// </summary>
     [Fact]
@@ -198,8 +210,9 @@ public sealed class CompletedRunArchiveTests
     /// <param name="includeEvolutionMetrics">Whether evolution metrics are included.</param>
     /// <param name="statisticsSchemaVersion">The authoritative statistics schema version.</param>
     /// <param name="itemRulesVersion">The item pool rules version.</param>
+    /// <param name="itemGroundTotalWeight">An optional ground-selection ticket total.</param>
     /// <returns>The recipe.</returns>
-    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, int moveMetricsSchemaVersion = MoveAccessMetricIdentifiers.SchemaVersion, bool includeMoveGenerator = true, bool includeMoveMetrics = true, bool includeEvolutionGenerator = true, bool includeEvolutionMetrics = true, int statisticsSchemaVersion = 1, int itemRulesVersion = 1) => new()
+    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, int moveMetricsSchemaVersion = MoveAccessMetricIdentifiers.SchemaVersion, bool includeMoveGenerator = true, bool includeMoveMetrics = true, bool includeEvolutionGenerator = true, bool includeEvolutionMetrics = true, int statisticsSchemaVersion = 1, int itemRulesVersion = 1, int? itemGroundTotalWeight = null) => new()
     {
         SchemaVersion = schemaVersion,
         RunId = runId,
@@ -219,6 +232,7 @@ public sealed class CompletedRunArchiveTests
             Version = 1,
             RulesVersion = itemRulesVersion,
             GroundPoolSize = 600,
+            GroundTotalWeight = itemGroundTotalWeight ?? (itemRulesVersion >= 3 ? 5253 : 600),
             GroundPoolFingerprint = "ground-items",
             TmPoolSize = 124,
             TmPoolFingerprint = "tm-items",

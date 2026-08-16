@@ -134,6 +134,11 @@ public sealed class ItemGeneratorRecipePayload
     public int GroundPoolSize { get; init; }
 
     /// <summary>
+    /// Gets or initializes the total ground-selection ticket weight.
+    /// </summary>
+    public int GroundTotalWeight { get; init; }
+
+    /// <summary>
     /// Gets or initializes the unified ground item pool fingerprint.
     /// </summary>
     public required string GroundPoolFingerprint { get; init; }
