@@ -13,8 +13,10 @@ $resolvedGameRoot = [IO.Path]::GetFullPath($GameRoot)
 $scriptLoaderPath = Join-Path $generationRoot "Script-Loader.rb"
 $diagnosticTestPath = Join-Path $projectRoot "tests\runtime\Diagnostic-Access.rb"
 $catchAssistanceTestPath = Join-Path $projectRoot "tests\runtime\Catch-Assistance.rb"
+$battleItemTestPath = Join-Path $projectRoot "tests\runtime\Battle-Items.rb"
 $diagnosticResultPath = Join-Path $projectRoot "runtime-diagnostic-access.tests"
 $catchAssistanceResultPath = Join-Path $projectRoot "runtime-catch-assistance.tests"
+$battleItemResultPath = Join-Path $projectRoot "runtime-battle-items.tests"
 $diagnosticErrorPath = Join-Path $projectRoot "runtime-diagnostic-access.error"
 
 . (Join-Path $generationRoot "GameRuntime-Tooling.ps1")
@@ -39,16 +41,23 @@ $catchAssistanceTestSource = [IO.File]::ReadAllText(
     $catchAssistanceTestPath,
     [Text.Encoding]::UTF8
 )
+$battleItemTestSource = [IO.File]::ReadAllText(
+    $battleItemTestPath,
+    [Text.Encoding]::UTF8
+)
 $rubyResultPath = $diagnosticResultPath.Replace('\', '/')
 $rubyCatchAssistanceResultPath = $catchAssistanceResultPath.Replace('\', '/')
+$rubyBattleItemResultPath = $battleItemResultPath.Replace('\', '/')
 $bootstrapSource = @(
     "begin"
     "`$ironmon_diagnostic_access_test_output_path = `"$rubyResultPath`""
     "`$ironmon_catch_assistance_test_output_path = `"$rubyCatchAssistanceResultPath`""
+    "`$ironmon_battle_item_test_output_path = `"$rubyBattleItemResultPath`""
     "Dir.chdir(`"$($resolvedGameRoot.Replace('\', '/'))`")"
     $scriptLoaderSource
     "IronmonScriptLoader.load_directory(`"Data/Scripts`", [/\A(?:998|999)/])"
     $catchAssistanceTestSource
+    $battleItemTestSource
     $diagnosticTestSource
     "exit! 0"
     "rescue Exception => error"
@@ -57,7 +66,7 @@ $bootstrapSource = @(
     "exit! 1"
     "end"
 ) -join "`n"
-Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $diagnosticErrorPath `
+Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $diagnosticErrorPath `
     -Force `
     -ErrorAction SilentlyContinue
 try {
@@ -79,11 +88,16 @@ try {
             "catch assistance runtime tests passed") {
         throw "The bundled runtime did not complete the catch assistance tests."
     }
+    if (-not (Test-Path -LiteralPath $battleItemResultPath) -or
+        (Get-Content -LiteralPath $battleItemResultPath -Raw).Trim() -ne
+            "battle item runtime tests passed") {
+        throw "The bundled runtime did not complete the battle item tests."
+    }
 }
 finally {
-    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $diagnosticErrorPath `
+    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $diagnosticErrorPath `
         -Force `
         -ErrorAction SilentlyContinue
 }
 
-Write-Output "Bundled-runtime area progress, diagnostic access, and catch assistance tests passed."
+Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, and battle item tests passed."

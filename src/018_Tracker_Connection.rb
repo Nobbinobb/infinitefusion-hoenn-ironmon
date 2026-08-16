@@ -50,6 +50,20 @@ module Ironmon
     :HYPERPOTION => 200,
     :ENERGYROOT => 200
   }
+  TRACKER_STATUS_ITEMS = [
+    :ANTIDOTE, :AWAKENING, :ASPEARBERRY, :BIGMALASADA, :BLUEFLUTE,
+    :BURNHEAL, :CASTELIACONE, :CHERIBERRY, :CHESTOBERRY, :FULLHEAL,
+    :HEALPOWDER, :ICEHEAL, :LAVACOOKIE, :LUMIOSEGALETTE, :OLDGATEAU,
+    :LUMBERRY, :PARALYZEHEAL, :PARLYZHEAL, :PECHABERRY, :PERSIMBERRY, :RAWSTBERRY,
+    :REDFLUTE, :SHALOURSABLE, :YELLOWFLUTE
+  ]
+  TRACKER_PP_RESTORE_ITEMS = [
+    :ELIXIR, :ETHER, :LEPPABERRY, :MAXELIXIR, :MAXETHER
+  ]
+  TRACKER_COMBAT_STAT_ITEM_PREFIXES = [
+    "DIREHIT", "GUARDSPEC", "XACCURACY", "XATTACK", "XDEFEND",
+    "XDEFENSE", "XSPATK", "XSPECIAL", "XSPDEF", "XSPEED"
+  ]
 
   def self.tracker_uptime_seconds
     return System.uptime.to_f / TRACKER_UPTIME_UNITS_PER_SECOND
@@ -424,6 +438,11 @@ module Ironmon
         queue_message(success_response(
           request_id, { "accepted" => accepted }, message["run_id"]
         ))
+      elsif message["command"] == "use_battle_item"
+        payload = Ironmon.request_tracker_battle_item(
+          message["payload"], message["battle_id"]
+        )
+        queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "favorite_pokemon_search"
         payload = message["payload"] || {}
         payload["normal_only"] = true
@@ -728,6 +747,8 @@ module Ironmon
     @tracker_enemy_move_signatures = {}
     @tracker_enemy_abilities = {}
     @tracker_next_enemy_state_at = 0.0
+    @tracker_pending_battle_item = nil
+    @tracker_battle_command = nil
     @tracker_starter_selection = nil
     tracker_connection.send_run_started
   end
@@ -751,6 +772,8 @@ module Ironmon
     @tracker_enemy_abilities = {}
     @tracker_next_enemy_state_at = 0.0
     @tracker_next_state_at = 0.0
+    @tracker_pending_battle_item = nil
+    @tracker_battle_command = nil
     tracker_connection.send_event("battle_started", tracker_battle_snapshot)
   end
 
@@ -765,6 +788,8 @@ module Ironmon
     @tracker_enemy_json = {}
     @tracker_enemy_move_signatures = {}
     @tracker_enemy_abilities = {}
+    @tracker_pending_battle_item = nil
+    @tracker_battle_command = nil
   end
 
   def self.tracker_player_sent_out(battler)
@@ -1215,7 +1240,132 @@ module Ironmon
       end
     end
     percentage = maximum_hp > 0 ? (potential_hp * 100.0 / maximum_hp).round(1) : 0.0
-    return { "item_count" => item_count, "potential_hp" => potential_hp, "percentage" => percentage }
+    return {
+      "item_count" => item_count,
+      "potential_hp" => potential_hp,
+      "percentage" => percentage,
+      "items" => tracker_battle_items(maximum_hp)
+    }
+  end
+
+  def self.tracker_battle_items(maximum_hp)
+    return [] if !$PokemonBag
+    items = []
+    $PokemonBag.pockets.each do |pocket|
+      next if !pocket
+      pocket.each do |entry|
+        item = GameData::Item.try_get(entry[0])
+        next if !item || item.battle_use <= 0 || entry[1].to_i <= 0
+        items.push({
+          "id" => item.id.to_s,
+          "name" => item.name,
+          "description" => item.description,
+          "quantity" => entry[1],
+          "category" => tracker_battle_item_category(item, maximum_hp),
+          "requires_move" => [2, 7].include?(item.battle_use)
+        })
+      end
+    end
+    return items.sort_by { |item| [item["category"], item["name"], item["id"]] }
+  end
+
+  def self.tracker_battle_item_category(item, maximum_hp)
+    return "healing" if tracker_item_healing(item.id, maximum_hp) > 0
+    return "pp_restore" if TRACKER_PP_RESTORE_ITEMS.include?(item.id)
+    return "status" if item.id == :RAGECANDYBAR &&
+      Settings::RAGE_CANDY_BAR_CURES_STATUS_PROBLEMS
+    return "status" if TRACKER_STATUS_ITEMS.include?(item.id)
+    item_id = item.id.to_s
+    return "combat_stat" if TRACKER_COMBAT_STAT_ITEM_PREFIXES.any? do |prefix|
+      item_id.start_with?(prefix)
+    end
+    return "other"
+  end
+
+  def self.begin_tracker_battle_command(
+    battle, battler_index, first_action, interrupt_result,
+    interruptible = true
+  )
+    return if battle != @tracker_battle
+    @tracker_battle_command = {
+      "battler_index" => battler_index,
+      "first_action" => first_action,
+      "interrupt_result" => interrupt_result,
+      "interrupt_depth" => interruptible ? 1 : 0
+    }
+  end
+
+  def self.end_tracker_battle_command
+    @tracker_battle_command = nil
+  end
+
+  def self.with_tracker_battle_item_interrupt
+    return yield if !@tracker_battle_command
+    @tracker_battle_command["interrupt_depth"] += 1
+    return yield
+  ensure
+    if @tracker_battle_command
+      @tracker_battle_command["interrupt_depth"] -= 1
+    end
+  end
+
+  def self.request_tracker_battle_item(payload, battle_id)
+    return tracker_battle_item_result(false, "No active battle is available.") if
+      !@tracker_battle_id || battle_id.to_s != @tracker_battle_id.to_s
+    return tracker_battle_item_result(false, "Choose an item while a battle action menu is open.") if
+      !@tracker_battle_command ||
+      @tracker_battle_command["interrupt_depth"] <= 0
+    return tracker_battle_item_result(false, "Another tracker item is already selected.") if
+      @tracker_pending_battle_item
+    item_id = (payload || {})["item_id"].to_s
+    item = GameData::Item.try_get(item_id.to_sym)
+    return tracker_battle_item_result(false, "That item is not available.") if
+      !item || item.battle_use <= 0 || !$PokemonBag || $PokemonBag.pbQuantity(item.id) <= 0
+    move_index = (payload || {})["move_index"]
+    if [2, 7].include?(item.battle_use)
+      moves = @tracker_player_pokemon ? @tracker_player_pokemon.moves : []
+      return tracker_battle_item_result(false, "Choose a move for that PP item.") if
+        !move_index.is_a?(Integer) || move_index < 0 || move_index >= moves.length
+    else
+      move_index = -1
+    end
+    target_position = (payload || {})["target_position"]
+    @tracker_pending_battle_item = {
+      "item" => item.id,
+      "move_index" => move_index,
+      "target_position" => target_position
+    }
+    return tracker_battle_item_result(true, "#{item.name} was selected for this turn.")
+  end
+
+  def self.tracker_battle_item_result(accepted, message)
+    return { "accepted" => accepted, "message" => message }
+  end
+
+  def self.tracker_battle_item_interrupt?
+    return !!(
+      @tracker_battle_command && @tracker_pending_battle_item &&
+      @tracker_battle_command["interrupt_depth"] > 0
+    )
+  end
+
+  def self.tracker_battle_item_menu_active?
+    return !!@tracker_battle_command
+  end
+
+  def self.tracker_battle_item_pending?
+    return !!@tracker_pending_battle_item
+  end
+
+  def self.tracker_battle_item_interrupt_result
+    return nil if !tracker_battle_item_interrupt?
+    return @tracker_battle_command["interrupt_result"]
+  end
+
+  def self.consume_tracker_battle_item
+    item = @tracker_pending_battle_item
+    @tracker_pending_battle_item = nil
+    return item
   end
 
   def self.tracker_item_healing(item, maximum_hp)
@@ -1268,9 +1418,79 @@ module Graphics
       Ironmon.update_tracker_connection
       Ironmon.update_tracker_player
       Ironmon.update_tracker_enemies
+      interrupt_result = Ironmon.tracker_battle_item_interrupt_result
+      throw :ironmon_tracker_battle_item, interrupt_result if !interrupt_result.nil?
     end
   end
 end
+
+module IronmonTrackerBattleSceneItemHooks
+  def pbCommandMenu(idxBattler, firstAction)
+    Ironmon.begin_tracker_battle_command(@battle, idxBattler, firstAction, 1)
+    return catch(:ironmon_tracker_battle_item) { super }
+  ensure
+    Ironmon.end_tracker_battle_command
+  end
+
+  def pbFightMenu(idxBattler, megaEvoPossible = false)
+    Ironmon.begin_tracker_battle_command(@battle, idxBattler, false, -1)
+    return catch(:ironmon_tracker_battle_item) { super }
+  ensure
+    Ironmon.end_tracker_battle_command
+  end
+
+  def pbItemMenu(idxBattler, firstAction)
+    Ironmon.begin_tracker_battle_command(
+      @battle, idxBattler, firstAction, -1, false
+    )
+    return super
+  ensure
+    Ironmon.end_tracker_battle_command
+  end
+
+  def pbChooseTarget(idxBattler, target_data, visibleSprites = nil)
+    return super if !Ironmon.tracker_battle_item_menu_active?
+    return catch(:ironmon_tracker_battle_item) do
+      Ironmon.with_tracker_battle_item_interrupt { super }
+    end
+  end
+end
+
+PokeBattle_Scene.prepend(IronmonTrackerBattleSceneItemHooks)
+
+module IronmonTrackerBagSceneItemHooks
+  def pbChooseItem
+    result = catch(:ironmon_tracker_battle_item) do
+      Ironmon.with_tracker_battle_item_interrupt { super }
+    end
+    return nil if Ironmon.tracker_battle_item_pending?
+    return result
+  end
+
+  def pbShowCommands(helptext, commands, index = 0)
+    return catch(:ironmon_tracker_battle_item) do
+      Ironmon.with_tracker_battle_item_interrupt { super }
+    end
+  end
+end
+
+PokemonBag_Scene.prepend(IronmonTrackerBagSceneItemHooks)
+
+module IronmonTrackerPartySceneItemHooks
+  def pbChoosePokemon(switching = false, initialsel = -1, canswitch = 0)
+    return catch(:ironmon_tracker_battle_item) do
+      Ironmon.with_tracker_battle_item_interrupt { super }
+    end
+  end
+
+  def pbShowCommands(helptext, commands, index = 0)
+    return catch(:ironmon_tracker_battle_item) do
+      Ironmon.with_tracker_battle_item_interrupt { super }
+    end
+  end
+end
+
+PokemonParty_Scene.prepend(IronmonTrackerPartySceneItemHooks)
 
 module IronmonTrackerBattleHooks
   def pbStartBattle
@@ -1309,6 +1529,49 @@ module IronmonTrackerBattleHooks
     battler = @battlers[idxBattler]
     Ironmon.tracker_player_move_menu_opened(battler) if battler && pbOwnedByPlayer?(idxBattler)
     return super
+  end
+
+  def pbPartyMenu(idxBattler)
+    Ironmon.begin_tracker_battle_command(self, idxBattler, false, -1, false)
+    return super
+  ensure
+    Ironmon.end_tracker_battle_command
+  end
+
+  def pbItemMenu(idxBattler, firstAction)
+    selection = Ironmon.consume_tracker_battle_item
+    return super if !selection
+    return false if !@internalBattle || !pbOwnedByPlayer?(idxBattler)
+    item = GameData::Item.try_get(selection["item"])
+    return false if !item || !$PokemonBag || $PokemonBag.pbQuantity(item.id) <= 0
+    battler = @battlers[idxBattler]
+    return false if !battler || battler.fainted?
+    use_type = item.battle_use
+    target_index = battler.pokemonIndex
+    target_battler = battler
+    target_pokemon = battler.pokemon
+    if [4, 9].include?(use_type)
+      requested_position = selection["target_position"]
+      target_battler = @battlers[requested_position] if requested_position.is_a?(Integer)
+      if !target_battler || target_battler.fainted? || !target_battler.opposes?(idxBattler)
+        target_battler = nil
+        eachOtherSideBattler(idxBattler) { |candidate| target_battler ||= candidate }
+      end
+      return false if !target_battler
+      target_index = target_battler.index
+      target_pokemon = target_battler.pokemon
+    elsif [5, 10].include?(use_type)
+      target_index = idxBattler
+    end
+    if [1, 2, 3, 6, 7, 8].include?(use_type)
+      return false if !pbCanUseItemOnPokemon?(item.id, target_pokemon, target_battler, @scene)
+    end
+    move_index = selection["move_index"] || -1
+    return false if !ItemHandlers.triggerCanUseInBattle(
+      item.id, target_pokemon, target_battler, move_index, firstAction,
+      self, @scene
+    )
+    return pbRegisterItem(idxBattler, item.id, target_index, move_index)
   end
 
   def pbShowAbilitySplash(battler, delay = false, logTrigger = true, abilityName = nil)

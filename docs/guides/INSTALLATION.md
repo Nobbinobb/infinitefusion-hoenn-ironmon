@@ -1,6 +1,6 @@
-# Installing Ironmon 0.7.5
+# Installing Ironmon 0.7.6
 
-Ironmon `0.7.5` targets Pokemon Infinite Fusion 2 version 6.8.0.
+Ironmon `0.7.6` targets Pokemon Infinite Fusion 2 version 6.8.0.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
 
@@ -8,7 +8,7 @@ official game's Git repository.
 
 1. Fully close Pokemon Infinite Fusion 2.
 2. Keep a backup of saves you care about.
-3. Extract `Ironmon-v0.7.5-type-coverage.zip` into the game's root directory—the
+3. Extract `Ironmon-v0.7.6-battle-items.zip` into the game's root directory—the
    directory containing `InfiniteFusion2.exe`.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
    directory. The package installs Ruby files under

@@ -1480,6 +1480,44 @@ Implementation evidence:
 - Two complete release pipeline runs produced the identical archive SHA-256
   `ac0e6c988cc6c7414ae423742f67cc684c527cda796034fd7dc1679e0044900a`.
 
+### Milestone 0.7.6: Tracker battle-item inventory
+
+Status: **Implemented; awaiting review**
+
+- Make the Player view's healing summary open a complete item inventory.
+- Group every carried battle-usable item into HP healing, PP restoration,
+  status recovery, combat-stat items, or a complete fallback category.
+- Show localized item names, descriptions, quantities, and explicit move
+  targets for single-move PP restoration.
+- Permit item selection from the tracker from the command, Fight, Bag, and
+  Pokémon selection layers without bypassing the game's native action, target,
+  usability, consumption, or effect paths.
+- Reject stale, duplicate, out-of-battle, and out-of-command-menu requests
+  without consuming an item.
+
+Acceptance criteria:
+
+- The existing HP-heal count and percentage remain unchanged on the Player
+  card and become the entry point to the categorized inventory.
+- All carried items with a nonzero native battle-use type appear exactly once.
+- PP items that target one move require a move choice; all-PP items do not.
+- A valid tracker selection consumes the player's normal battle action, while
+  invalid timing or targeting leaves both the action and bag unchanged.
+- Tracker protocol tests, bundled-runtime category tests, installed-script
+  validation, and the hidden normal startup smoke test pass.
+
+Implementation result: the player snapshot now carries categorized battle-item
+stacks in addition to the unchanged healing totals. The tracker presents five
+responsive category tabs and enables Use only during battle. The new correlated
+request is accepted only while a cancellable command, Fight, Bag, or Pokémon
+selection layer is open. The command menu enters Bag directly; every submenu
+cancels without choosing its highlighted entry, performs its native cleanup,
+and returns through the command loop before entering Bag. All paths register the
+item through the game's existing battle choice and handler flow. The game
+remains authoritative for item and target validity. All 168 tracker tests pass, the tracker builds with zero
+warnings, the bundled runtime verifies every category and guarded rejection,
+and the synchronized game passes a hidden startup smoke test.
+
 ## Working rule
 
 Only one selected improvement slice or milestone step should be implemented at

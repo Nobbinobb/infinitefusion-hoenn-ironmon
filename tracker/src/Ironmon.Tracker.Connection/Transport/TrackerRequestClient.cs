@@ -108,6 +108,24 @@ public sealed class TrackerRequestClient
     }
 
     /// <summary>
+    /// Requests one bag item as the active Pokemon's current battle action.
+    /// </summary>
+    /// <param name="request">The selected item, move, and optional opposing target.</param>
+    /// <param name="battleId">The active battle identifier.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The game's authoritative acceptance result.</returns>
+    public Task<BattleItemUseResponsePayload> UseBattleItemAsync(BattleItemUseRequestPayload request, string battleId, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.ItemId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(battleId);
+        if (request.MoveIndex is not null)
+            ArgumentOutOfRangeException.ThrowIfNegative(request.MoveIndex.Value);
+
+        return _session.SendAsync<BattleItemUseRequestPayload, BattleItemUseResponsePayload>(TrackerCommands.UseBattleItem, request, GetConnectedRunId(), cancellationToken, battleId);
+    }
+
+    /// <summary>
     /// Searches normal Pokemon in the connected game for Favorite Clause suggestions.
     /// </summary>
     /// <param name="query">The name fragment entered by the user.</param>

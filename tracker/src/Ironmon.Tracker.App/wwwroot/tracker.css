@@ -966,6 +966,7 @@ h1 {
 }
 
 .detail-strip > span,
+.healing-summary-button,
 .summary-row > span,
 .compact-disclosure > summary {
     padding: 0.32rem 0.48rem;
@@ -974,6 +975,24 @@ h1 {
     color: var(--muted);
     background: var(--surface-soft);
     font-size: 0.68rem;
+}
+
+.healing-summary-button {
+    border: 1px solid var(--border);
+    border-radius: 0.42rem;
+    color: var(--muted);
+    background: var(--surface-soft);
+    font: inherit;
+    font-size: 0.68rem;
+    cursor: pointer;
+}
+
+.healing-summary-button:hover:not(:disabled) {
+    border-color: var(--accent-soft);
+}
+
+.healing-summary-button:disabled {
+    cursor: default;
 }
 
 .detail-strip strong {
@@ -1284,6 +1303,139 @@ button.move-placeholder:hover {
     border-radius: 0.9rem;
     background: var(--surface-raised);
     box-shadow: 0 1rem 3rem rgb(0 0 0 / 45%);
+}
+
+.battle-item-panel {
+    width: min(100%, 42rem);
+}
+
+.battle-item-tabs {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.35rem;
+}
+
+.battle-item-tabs button {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.5rem 0.3rem;
+    border: 1px solid var(--border);
+    border-radius: 0.45rem;
+    color: var(--muted);
+    background: var(--surface-soft);
+    font: inherit;
+    font-size: 0.64rem;
+    cursor: pointer;
+}
+
+.battle-item-tabs button.selected {
+    border-color: var(--accent-soft);
+    color: var(--text);
+    background: rgb(155 125 255 / 14%);
+}
+
+.battle-item-tabs strong {
+    color: var(--muted-strong);
+}
+
+.battle-item-notice {
+    margin: 0;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 0.45rem;
+    color: var(--muted-strong);
+    background: var(--surface-soft);
+    font-size: 0.72rem;
+}
+
+.battle-item-list {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.battle-item-entry {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 0.55rem;
+    background: var(--surface-soft);
+}
+
+.battle-item-copy h3,
+.battle-item-copy p {
+    margin: 0;
+}
+
+.battle-item-copy h3 {
+    color: var(--text);
+    font-size: 0.8rem;
+}
+
+.battle-item-copy h3 span {
+    color: var(--accent-soft);
+    font-size: 0.68rem;
+}
+
+.battle-item-copy p {
+    margin-top: 0.22rem;
+    color: var(--muted);
+    font-size: 0.66rem;
+    line-height: 1.35;
+}
+
+.battle-item-use,
+.battle-item-moves button {
+    padding: 0.42rem 0.58rem;
+    border: 1px solid var(--accent-soft);
+    border-radius: 0.42rem;
+    color: var(--text);
+    background: rgb(155 125 255 / 14%);
+    font: inherit;
+    font-size: 0.68rem;
+    cursor: pointer;
+}
+
+.battle-item-use:disabled,
+.battle-item-moves button:disabled {
+    border-color: var(--border);
+    color: var(--muted);
+    background: transparent;
+    cursor: default;
+}
+
+.battle-item-moves {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.3rem;
+    min-width: 15rem;
+}
+
+.battle-item-moves button {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.45rem;
+}
+
+.battle-item-moves small {
+    color: var(--muted-strong);
+    white-space: nowrap;
+}
+
+@media (max-width: 46rem) {
+    .battle-item-tabs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .battle-item-entry {
+        grid-template-columns: 1fr;
+    }
+
+    .battle-item-moves {
+        min-width: 0;
+    }
 }
 
 .detail-panel-header,

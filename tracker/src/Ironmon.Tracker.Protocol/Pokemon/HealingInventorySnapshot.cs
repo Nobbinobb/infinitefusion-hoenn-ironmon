@@ -26,4 +26,9 @@ public sealed class HealingInventorySnapshot
     /// Gets or initializes the potential restoration as a percentage of maximum HP.
     /// </summary>
     public double Percentage { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the battle-usable items currently carried in the bag.
+    /// </summary>
+    public IReadOnlyList<BattleItemSnapshot> Items { get; init; } = [];
 }

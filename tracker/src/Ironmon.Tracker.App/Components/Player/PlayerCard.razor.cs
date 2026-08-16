@@ -11,6 +11,7 @@ public partial class PlayerCard
     private string? _spriteKey;
     private string? _spriteSource;
     private AbilitySnapshot? _selectedAbility;
+    private bool _itemsOpen;
 
     /// <summary>
     /// Gets or sets the active player Pokemon.
@@ -29,6 +30,24 @@ public partial class PlayerCard
     /// </summary>
     [Parameter]
     public IReadOnlyList<string>? TargetTypes { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the game currently has an active battle.
+    /// </summary>
+    [Parameter]
+    public bool InBattle { get; set; }
+
+    /// <summary>
+    /// Gets or sets the active battle identifier.
+    /// </summary>
+    [Parameter]
+    public string? BattleId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the selected opposing battler position for targeted items.
+    /// </summary>
+    [Parameter]
+    public int? TargetPosition { get; set; }
 
     /// <summary>
     /// Refreshes the local sprite when the active Pokemon or game changes.
@@ -178,4 +197,16 @@ public partial class PlayerCard
     /// </summary>
     private void CloseAbility()
         => _selectedAbility = null;
+
+    /// <summary>
+    /// Opens the complete battle-item inventory.
+    /// </summary>
+    private void OpenItems()
+        => _itemsOpen = true;
+
+    /// <summary>
+    /// Closes the complete battle-item inventory.
+    /// </summary>
+    private void CloseItems()
+        => _itemsOpen = false;
 }

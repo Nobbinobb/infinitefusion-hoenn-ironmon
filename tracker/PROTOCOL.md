@@ -1,6 +1,6 @@
 # Ironmon Tracker protocol v1
 
-This document records the implemented protocol through the 0.7.5 type-coverage
+This document records the implemented protocol through the 0.7.6 battle-item
 context additions. Later parts extend the payload catalog without changing the
 common envelope or transport.
 
@@ -41,7 +41,7 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.0",
-    "ironmon_version": "0.7.5",
+    "ironmon_version": "0.7.6",
     "ironmon_active": false,
     "debug_available": true,
     "supported_diagnostic_capabilities": ["pokemon.current_player", "run.seed"],
@@ -153,7 +153,35 @@ legal enemy snapshots and remains an empty array outside battle.
 `starter_selection` contains the active three-slot starter view while the bag
 scene is open, including only details that have been revealed in the game.
 
-An active 0.7.5 run also includes optional aggregate type-coverage context:
+The nested player `healing` object retains `item_count`, `potential_hp`, and
+`percentage`, and also includes an `items` array containing every carried item
+whose game data has a nonzero battle-use type. Each entry contains `id`, `name`,
+`description`, `quantity`, `category`, and `requires_move`. Category is one of
+`healing`, `pp_restore`, `status`, `combat_stat`, or `other`.
+
+The tracker selects an item with `use_battle_item`:
+
+```json
+{
+  "item_id": "MAXETHER",
+  "move_index": 2,
+  "target_position": 1
+}
+```
+
+`move_index` is required only for PP items. `target_position` identifies the
+selected opponent for opponent-targeted items and is otherwise ignored. The
+response contains `accepted` and a user-facing `message`. Acceptance means the
+game queued the native item choice. It is available from the main command menu,
+Fight move selection, native Bag item list and item-action prompt, and Pokémon
+party list and party-action prompt. A submenu request cancels that layer through
+its normal return value, performs its native cleanup without selecting the
+highlighted move, item, or party member, and then enters the same native Bag
+action path. Non-cancellable nested screens such as Summary reject the request
+until closed. The native battle checks, turn consumption, item consumption, and
+effect handlers remain authoritative.
+
+An active 0.7.6 run also includes optional aggregate type-coverage context:
 
 ```json
 {
@@ -497,7 +525,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.7.5",
+  "ironmon_version": "0.7.6",
   "configuration": {
     "schema_version": 2,
     "wild_policy": "mixed",

@@ -1397,4 +1397,18 @@
   <data name="Debug.Inspector.NoAuthorizedPages" xml:space="preserve"><value>No diagnostic pages are authorized</value></data>
   <data name="Debug.Inspector.NoAuthorizedPagesDescription" xml:space="preserve"><value>This access grant contains only area information. Use Lookup to inspect authorized active-run area details.</value></data>
   <data name="Lookup.Search.SelectPokemonFromResults" xml:space="preserve"><value>Select the Pokemon from the current search results to open this capability-only view.</value></data>
+  <data name="Player.Items.Inventory" xml:space="preserve"><value>Battle inventory</value></data>
+  <data name="Player.Items.Title" xml:space="preserve"><value>Use an item</value></data>
+  <data name="Player.Items.Close" xml:space="preserve"><value>Close battle inventory</value></data>
+  <data name="Player.Items.Categories" xml:space="preserve"><value>Battle item categories</value></data>
+  <data name="Player.Items.Healing" xml:space="preserve"><value>Heals</value></data>
+  <data name="Player.Items.PpRestore" xml:space="preserve"><value>PP heal</value></data>
+  <data name="Player.Items.Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Player.Items.CombatStat" xml:space="preserve"><value>Battle stats</value></data>
+  <data name="Player.Items.Other" xml:space="preserve"><value>Other</value></data>
+  <data name="Player.Items.BattleOnly" xml:space="preserve"><value>Items can be reviewed here at any time. Use becomes available while a cancellable battle action menu is open.</value></data>
+  <data name="Player.Items.EmptyCategory" xml:space="preserve"><value>No carried items are in this category.</value></data>
+  <data name="Player.Items.ChooseMove" xml:space="preserve"><value>Choose a move to restore</value></data>
+  <data name="Player.Items.Use" xml:space="preserve"><value>Use</value></data>
+  <data name="Player.Items.RequestFailed" xml:space="preserve"><value>The game did not receive the item selection. Return to the battle command menu and try again.</value></data>
 </root>

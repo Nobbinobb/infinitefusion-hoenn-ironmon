@@ -9,7 +9,7 @@ $distributionData = Join-Path $projectRoot "dist\Data\Ironmon"
 $distributionRoot = Join-Path $projectRoot "dist"
 $distributionReadme = Join-Path $projectRoot "packaging\README.md"
 $installationGuide = Join-Path $projectRoot "docs\guides\INSTALLATION.md"
-$releaseNotes = Join-Path $projectRoot "docs\releases\RELEASE_NOTES_0.7.5.md"
+$releaseNotes = Join-Path $projectRoot "docs\releases\RELEASE_NOTES_0.7.6.md"
 $installation = Join-Path $gameRoot "Data\Scripts\997_Ironmon"
 $installationData = Join-Path $gameRoot "Data\Ironmon"
 

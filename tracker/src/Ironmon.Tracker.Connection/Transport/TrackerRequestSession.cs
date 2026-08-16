@@ -89,10 +89,11 @@ internal sealed class TrackerRequestSession : IDisposable
     /// <param name="payload">The request payload.</param>
     /// <param name="runId">The run identifier when the request is scoped to a run.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <param name="battleId">The battle identifier when the request is scoped to an active battle.</param>
     /// <returns>The deserialized successful response.</returns>
     /// <exception cref="InvalidOperationException">Thrown when no game is connected.</exception>
     /// <exception cref="TrackerProtocolException">Thrown when the game rejects the request.</exception>
-    internal async Task<TResponse> SendAsync<TRequest, TResponse>(string command, TRequest payload, string? runId, CancellationToken cancellationToken)
+    internal async Task<TResponse> SendAsync<TRequest, TResponse>(string command, TRequest payload, string? runId, CancellationToken cancellationToken, string? battleId = null)
     {
         await _requestLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -108,7 +109,7 @@ internal sealed class TrackerRequestSession : IDisposable
 
             try
             {
-                TrackerMessage request = TrackerMessageFactory.CreateRequest(requestId, command, payload, runId);
+                TrackerMessage request = TrackerMessageFactory.CreateRequest(requestId, command, payload, runId, battleId);
                 await WriteAsync(writer, request, cancellationToken).ConfigureAwait(false);
                 TrackerMessage response = await completion.Task.WaitAsync(TimeSpan.FromSeconds(TrackerProtocol.RequestTimeoutSeconds), cancellationToken).ConfigureAwait(false);
                 if (response.Success != true)

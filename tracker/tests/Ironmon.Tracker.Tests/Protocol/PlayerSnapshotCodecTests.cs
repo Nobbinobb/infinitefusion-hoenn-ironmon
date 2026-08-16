@@ -31,6 +31,9 @@ public sealed class PlayerSnapshotCodecTests
         Assert.True(restored.Confused);
         Assert.Equal(2, restored.StatStages.Attack);
         Assert.Equal(-1, restored.StatStages.Speed);
+        BattleItemSnapshot item = Assert.Single(restored.Healing.Items);
+        Assert.Equal("Potion", item.Name);
+        Assert.Equal(BattleItemCategory.Healing, item.Category);
     }
 
     /// <summary>
@@ -111,7 +114,23 @@ public sealed class PlayerSnapshotCodecTests
             BaseStatTotal = 525,
             Nature = "Hardy",
             Moves = [move],
-            Healing = new HealingInventorySnapshot { ItemCount = 3, PotentialHp = 30, Percentage = 125 }
+            Healing = new HealingInventorySnapshot
+            {
+                ItemCount = 3,
+                PotentialHp = 30,
+                Percentage = 125,
+                Items =
+                [
+                    new BattleItemSnapshot
+                    {
+                        Id = "POTION",
+                        Name = "Potion",
+                        Description = "Restores HP.",
+                        Quantity = 3,
+                        Category = BattleItemCategory.Healing
+                    }
+                ]
+            }
         };
     }
 }

@@ -755,6 +755,17 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal("Espeon", playerState.Player?.SpeciesName);
         Assert.Equal(2, playerState.Player?.Healing.ItemCount);
 
+        BattleItemUseRequestPayload battleItem = new() { ItemId = "POTION", TargetPosition = 1 };
+        Task<BattleItemUseResponsePayload> battleItemTask = service.Requests.UseBattleItemAsync(battleItem, "battle-1");
+        TrackerMessage? battleItemRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(TrackerCommands.UseBattleItem, battleItemRequest?.Command);
+        Assert.Equal("run-2", battleItemRequest?.RunId);
+        Assert.Equal("battle-1", battleItemRequest?.BattleId);
+        BattleItemUseRequestPayload receivedBattleItem = TrackerJson.DeserializePayload<BattleItemUseRequestPayload>(battleItemRequest!.Payload);
+        Assert.Equal("POTION", receivedBattleItem.ItemId);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(battleItemRequest.RequestId!, new BattleItemUseResponsePayload { Accepted = true, Message = "Potion selected." }, "run-2", "battle-1"));
+        Assert.True((await battleItemTask).Accepted);
+
         PlayerMoveMenuOpenedPayload moveMenu = new() { PokemonId = "1234" };
         TrackerMessage moveMenuOpened = TrackerMessageFactory.CreateEvent("player_move_menu_opened", 6, moveMenu, "run-2", "battle-1");
         await writer.WriteAsync(moveMenuOpened);

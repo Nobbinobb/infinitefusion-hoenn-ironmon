@@ -74,7 +74,7 @@
 
     <div class="detail-strip placeholder-content" aria-label="@Text["Player.Card.PokemonConditionAndHealing"]">
         <span>@GetConditionText()</span>
-        <span>@Text["Player.Card.Heals"] <strong>@GetHealingText()</strong></span>
+        <button class="healing-summary-button" type="button" disabled="@(Player is null)" @onclick="OpenItems">@Text["Player.Card.Heals"] <strong>@GetHealingText()</strong></button>
         <span title="@GetNatureTooltip()">@Text["Player.Card.Nature"] <strong>@(Player?.Nature ?? "--")</strong></span>
     </div>
 
@@ -91,4 +91,14 @@
 @if (_selectedAbility is not null)
 {
     <AbilityDetailPanel Ability="@_selectedAbility" Closed="CloseAbility" />
+}
+
+@if (_itemsOpen && Player is not null)
+{
+    <BattleItemPanel Inventory="@Player.Healing"
+                     Moves="@Player.Moves"
+                     InBattle="@InBattle"
+                     BattleId="@BattleId"
+                     TargetPosition="@TargetPosition"
+                     Closed="CloseItems" />
 }

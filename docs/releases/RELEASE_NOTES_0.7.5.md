@@ -18,9 +18,9 @@ populations.
 
 ## Type coverage
 
-- Shows every standard attacking type. Types available from the current
-  Pokemon's Physical or Special moves use their type colors; other types remain
-  gray but can be selected for hypothetical coverage.
+- Shows every standard attacking type. Every selected type uses its type color,
+  while a separate marker identifies types available from the current Pokemon's
+  Physical or Special moves.
 - Groups the complete eligible defensive populations into 0x, 1/4x, 1/2x, 1x,
   2x, and 4x according to the best selected attacking type.
 - Shows only each bucket's current count and percentage, without a denominator.
@@ -39,6 +39,23 @@ populations.
   slot, future roster, or individual species identity.
 - A mismatched or older game disables only Type Coverage with a clear status;
   its other compatible tracker features remain available.
+
+## Catch assistance
+
+- Makes low native catch rates less punishing in ordinary Ironmon wild battles,
+  with a diminishing bonus as the native catch rate improves.
+- Scales the bonus with missing HP and reaches its full effect at half HP,
+  preserving the value of weakening a wild Pokemon without requiring players to
+  risk reducing it to critical health.
+- Leaves Safari encounters and explicit scripted catch-rate calculations
+  unchanged.
+- Shows the current ordinary Poke Ball success chance on the Enemy page during
+  wild battles, including HP, status, and caught-off-guard modifiers.
+
+## Tracker interface refinements
+
+- Keeps the diagnostic Access and Tools selector compact regardless of the
+  selected page or available diagnostic capabilities.
 
 ## Release data
 

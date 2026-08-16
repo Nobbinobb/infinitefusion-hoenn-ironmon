@@ -21,6 +21,11 @@ public static class TrackerCommands
     public const string ResetRun = "reset_run";
 
     /// <summary>
+    /// Gets the command that selects a bag item as the active battle action.
+    /// </summary>
+    public const string UseBattleItem = "use_battle_item";
+
+    /// <summary>
     /// Gets the connected-game normal-Pokemon search command used by Favorite Clause settings.
     /// </summary>
     public const string FavoritePokemonSearch = "favorite_pokemon_search";

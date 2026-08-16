@@ -73,7 +73,12 @@
         }
         else
         {
-            <PlayerCard Player="@_run.Player" GameRoot="@_connection.Game?.GameRoot" TargetTypes="@GetSelectedEnemy()?.Types" />
+            <PlayerCard Player="@_run.Player"
+                        GameRoot="@_connection.Game?.GameRoot"
+                        TargetTypes="@GetSelectedEnemy()?.Types"
+                        InBattle="@(_run.Battle is not null)"
+                        BattleId="@_run.Battle?.BattleId"
+                        TargetPosition="@GetSelectedEnemy()?.Position" />
         }
     }
     else if (_selectedView == TrackerView.Enemy)
