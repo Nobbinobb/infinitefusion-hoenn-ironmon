@@ -12,7 +12,12 @@
 
 ## Generation helpers
 
-`generation/` contains the two release-data entry points, their Ruby exporters,
+`generation/` contains the release-data entry points, their Ruby exporters,
 and the shared game-runtime and modular-script loading helpers. They are
 implementation details of the release pipeline but remain directly runnable for
 focused dataset regeneration.
+
+The release build also regenerates `ITEM_RANDOMIZATION_GENERATED.csv` through
+the bundled game runtime. Compatible item-data changes update the canonical
+audit automatically; malformed pools, forbidden results, or exporter failures
+stop the release.

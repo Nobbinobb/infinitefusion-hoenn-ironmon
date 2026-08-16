@@ -53,6 +53,11 @@ public sealed class DebugRunDiagnosticsSnapshot
     public PlayerFusionGeneratorRecipePayload? PlayerFusionGenerator { get; init; }
 
     /// <summary>
+    /// Gets or initializes deterministic item-slot generator metadata when enabled.
+    /// </summary>
+    public ItemGeneratorRecipePayload? ItemGenerator { get; init; }
+
+    /// <summary>
     /// Gets or initializes persisted mapping counts.
     /// </summary>
     public DebugMappingDiagnosticsSnapshot? Mappings { get; init; }

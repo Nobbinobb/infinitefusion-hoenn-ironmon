@@ -45,7 +45,16 @@ module Ironmon
   def self.grant_starter_encounter_item
     return false if !$PokemonGlobal
     return false if $PokemonGlobal.ironmon_starter_item_reward_applied
-    return false if !pbReceiveItem(:POTION, 1)
+    received = if item_randomization_active?
+                 slot = ItemSlotGenerator::SPECIAL_GROUND_SLOTS[
+                   :starter_rescue_reward
+                 ]
+                 reward = resolve_ground_reward(slot[1], slot[0])
+                 pbReceiveItem(reward, 1, "", nil, false)
+               else
+                 pbReceiveItem(:POTION, 1)
+               end
+    return false if !received
     $PokemonGlobal.ironmon_starter_item_reward_applied = true
     return true
   end

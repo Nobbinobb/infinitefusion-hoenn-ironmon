@@ -597,6 +597,33 @@
   <data name="Debug.Run.Legacy" xml:space="preserve">
     <value>Legacy</value>
   </data>
+  <data name="Debug.Run.ItemSchema" xml:space="preserve">
+    <value>Item schema</value>
+  </data>
+  <data name="Debug.Run.ItemRules" xml:space="preserve">
+    <value>Item pool rules</value>
+  </data>
+  <data name="Debug.Run.GroundItemPool" xml:space="preserve">
+    <value>Ground item pool</value>
+  </data>
+  <data name="Debug.Run.TmGiftPool" xml:space="preserve">
+    <value>TM gift pool</value>
+  </data>
+  <data name="Debug.Run.ShopPolicy" xml:space="preserve">
+    <value>Shop policy</value>
+  </data>
+  <data name="Debug.Run.ItemBans" xml:space="preserve">
+    <value>Item result bans</value>
+  </data>
+  <data name="Debug.Run.GroundItemFingerprint" xml:space="preserve">
+    <value>Ground item pool fingerprint</value>
+  </data>
+  <data name="Debug.Run.TmGiftFingerprint" xml:space="preserve">
+    <value>TM gift pool fingerprint</value>
+  </data>
+  <data name="Debug.Run.ItemBanFingerprint" xml:space="preserve">
+    <value>Item ban fingerprint</value>
+  </data>
   <data name="Debug.Run.None" xml:space="preserve">
     <value>None</value>
   </data>

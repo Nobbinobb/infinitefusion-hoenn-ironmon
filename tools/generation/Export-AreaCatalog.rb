@@ -143,12 +143,13 @@ module IronmonAreaCatalogExporter
         name.match?(/\AMeteorite\z/i)
       next if !item_ball && !hidden_named && !special_named
       item_ids = script.scan(/pbItemBall\(\s*:([A-Za-z0-9_]+)/).flatten
-      if item_ids.empty? && special_named
+      if item_ids.empty? && (hidden_named || special_named)
         symbols = script.scan(/:([A-Za-z][A-Za-z0-9_]*)/).flatten
         item_ids = symbols.select do |identifier|
           GameData::Item.try_get(identifier.to_sym)
         end
       end
+      next if item_ids.empty?
       item_ids.map!(&:upcase)
       item_ids.uniq!
       visible = event.pages.any? do |page|

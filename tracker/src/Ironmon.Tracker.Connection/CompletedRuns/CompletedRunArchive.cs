@@ -215,6 +215,9 @@ public sealed class CompletedRunArchive
         ArgumentOutOfRangeException.ThrowIfLessThan(recipe.PlayerFusionGenerator.PoolSize, 1);
         ArgumentException.ThrowIfNullOrWhiteSpace(recipe.PlayerFusionGenerator.PoolFingerprint);
 
+        if (recipe.ItemGenerator is not null)
+            ValidateItemGenerator(recipe.ItemGenerator);
+
         if (recipe.MoveAccessMetrics is not null)
         {
             if (recipe.MoveAccessGenerator is null)
@@ -233,6 +236,27 @@ public sealed class CompletedRunArchive
         if (recipe.Statistics is not null)
             ValidateStatistics(recipe.Statistics);
 
+    }
+
+    /// <summary>
+    /// Validates deterministic item-slot generator metadata.
+    /// </summary>
+    /// <param name="generator">The item generator metadata to validate.</param>
+    private static void ValidateItemGenerator(ItemGeneratorRecipePayload generator)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(generator.Version, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(generator.RulesVersion, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(generator.GroundPoolSize, 1);
+        ArgumentException.ThrowIfNullOrWhiteSpace(generator.GroundPoolFingerprint);
+        ArgumentOutOfRangeException.ThrowIfLessThan(generator.TmPoolSize, 1);
+        ArgumentException.ThrowIfNullOrWhiteSpace(generator.TmPoolFingerprint);
+        ArgumentException.ThrowIfNullOrWhiteSpace(generator.ResultBanFingerprint);
+        ArgumentOutOfRangeException.ThrowIfLessThan(generator.ShopPolicyVersion, 1);
+        if (generator.ResultBans.Any(string.IsNullOrWhiteSpace))
+            throw new ArgumentException("Item result bans must have identifiers.", nameof(generator));
+
+        if (generator.ResultBans.Distinct(StringComparer.Ordinal).Count() != generator.ResultBans.Count)
+            throw new ArgumentException("Item result bans must be unique.", nameof(generator));
     }
 
     /// <summary>

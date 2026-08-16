@@ -130,6 +130,7 @@ module Ironmon
       result["ability_generator"] = tracker_ability_generator_recipe
       result["base_stat_generator"] = tracker_base_stat_generator_recipe
       result["move_access_generator"] = tracker_move_access_generator_recipe
+      result["item_generator"] = item_generator_recipe
       result["player_fusion_generator"] = tracker_player_fusion_generator_recipe
       result["mappings"] = {
         "wild" => wild_mappings.is_a?(Hash) ? wild_mappings.length : 0,
@@ -282,6 +283,7 @@ module Ironmon
       "fusion_tutor_catalog_fingerprint" => $PokemonGlobal.ironmon_fusion_tutor_catalog_fingerprint,
       "fusion_tutor_source_fingerprint" => $PokemonGlobal.ironmon_fusion_tutor_source_fingerprint,
       "player_fusion_generator_version" => PlayerFusionMapper::SCHEMA_VERSION,
+      "item_generator" => item_generator_recipe,
       "species_pool_fingerprint" => tracker_species_pool_fingerprint,
       "ability_pool_fingerprint" => $PokemonGlobal.ironmon_ability_pool_fingerprint,
       "fusion_pool_fingerprint" => $PokemonGlobal.ironmon_custom_fusion_pool_fingerprint

@@ -203,6 +203,13 @@ module Ironmon
       "result" => attempt["result"],
       "configuration" => configuration_snapshot,
       "data_mode" => tracker_data_mode,
+      "item_generator" => item_generator_recipe,
+      "item_mappings" => tracker_item_mapping_recipe(
+        $PokemonGlobal.randomItemsHash
+      ),
+      "tm_mappings" => tracker_item_mapping_recipe(
+        $PokemonGlobal.randomTMsHash
+      ),
       "species_generator_version" =>
         $PokemonGlobal.ironmon_species_generator_version
     }
@@ -471,13 +478,24 @@ module Ironmon
   end
 
   def self.tracker_area_resolved_item_ids(entry, recipe)
+    item_generator = recipe["item_generator"]
+    slot_id = "map:#{entry["map_id"]}|event:#{entry["event_id"]}"
+    generator = nil
+    if item_generator.is_a?(Hash)
+      rules = item_generator["rules_version"]
+      generator = ItemSlotGenerator.new(
+        recipe["seed"], item_ground_pool(rules), item_tm_pool(rules)
+      )
+    end
     return entry["authored_item_ids"].map do |item_id|
       replacement = hm_replacement_item(item_id) if
         respond_to?(:hm_replacement_item)
       item = if replacement
                GameData::Item.get(replacement)
-             elsif recipe["active_run"] == true
-               pbGetRandomItem(item_id)
+             elsif generator
+               GameData::Item.get(
+                 resolve_ground_reward(item_id, slot_id, generator)
+               )
              else
                source = GameData::Item.get(item_id)
                mappings = source.is_TM? ? recipe["tm_mappings"] :

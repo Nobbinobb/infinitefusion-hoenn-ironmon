@@ -11,10 +11,12 @@ $areaCatalog = Join-Path $projectRoot "data\area_catalog.dat"
 $areaAudit = Join-Path $projectRoot "docs\audits\generated\AREA_CATALOG_GENERATED.csv"
 $coverageDataset = Join-Path $projectRoot "data\type_coverage.json"
 $coverageAudit = Join-Path $projectRoot "docs\audits\generated\TYPE_COVERAGE_GENERATED.csv"
+$itemAudit = Join-Path $projectRoot "docs\audits\generated\ITEM_RANDOMIZATION_GENERATED.csv"
 $generatedAreaCatalog = "$areaCatalog.release.tmp"
 $generatedAreaAudit = "$areaAudit.release.tmp"
 $generatedCoverageDataset = "$coverageDataset.release.tmp"
 $generatedCoverageAudit = "$coverageAudit.release.tmp"
+$generatedItemAudit = "$itemAudit.release.tmp"
 
 $generationStarted = [DateTime]::UtcNow.AddSeconds(-2)
 try {
@@ -26,7 +28,10 @@ try {
     -GameRoot $gameRoot `
     -OutputPath $generatedCoverageDataset `
     -AuditPath $generatedCoverageAudit
-  foreach ($generatedPath in $generatedAreaCatalog, $generatedAreaAudit, $generatedCoverageDataset, $generatedCoverageAudit) {
+  & (Join-Path $PSScriptRoot "generation\Generate-Item-Randomization-Audit.ps1") `
+    -GameRoot $gameRoot `
+    -AuditPath $generatedItemAudit
+  foreach ($generatedPath in $generatedAreaCatalog, $generatedAreaAudit, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit) {
     if (-not (Test-Path -LiteralPath $generatedPath) -or
         (Get-Item -LiteralPath $generatedPath).Length -eq 0) {
       throw "Release generation did not produce '$generatedPath'."
@@ -40,7 +45,8 @@ try {
     @{ Generated = $generatedAreaCatalog; Canonical = $areaCatalog },
     @{ Generated = $generatedAreaAudit; Canonical = $areaAudit },
     @{ Generated = $generatedCoverageDataset; Canonical = $coverageDataset },
-    @{ Generated = $generatedCoverageAudit; Canonical = $coverageAudit }
+    @{ Generated = $generatedCoverageAudit; Canonical = $coverageAudit },
+    @{ Generated = $generatedItemAudit; Canonical = $itemAudit }
   )) {
     $canonicalExists = Test-Path -LiteralPath $generatedFile.Canonical
     $contentChanged = -not $canonicalExists -or
@@ -51,7 +57,7 @@ try {
     }
   }
 } finally {
-  Remove-Item -LiteralPath $generatedAreaCatalog, $generatedAreaAudit, $generatedCoverageDataset, $generatedCoverageAudit `
+  Remove-Item -LiteralPath $generatedAreaCatalog, $generatedAreaAudit, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit `
     -Force `
     -ErrorAction SilentlyContinue
 }
@@ -90,9 +96,9 @@ if ($resourceHash -ne
 $forbiddenFiles = Get-ChildItem -LiteralPath $distribution -File -Recurse |
   Where-Object {
     $_.Name -match "AccessGenerator|private[-_ ]?key" -or
-    $_.Name -match "Generate-(?:Area-Catalog|Type-Coverage-Dataset)" -or
-    $_.Name -match "Export-(?:AreaCatalog|TypeCoverageDataset)" -or
-    $_.Name -match "(?:AREA_CATALOG|TYPE_COVERAGE)_GENERATED|GameRuntime-Tooling|Script-Loader" -or
+    $_.Name -match "Generate-(?:Area-Catalog|Type-Coverage-Dataset|Item-Randomization-Audit)" -or
+    $_.Name -match "Export-(?:AreaCatalog|TypeCoverageDataset|ItemRandomizationAudit)" -or
+    $_.Name -match "(?:AREA_CATALOG|TYPE_COVERAGE|ITEM_RANDOMIZATION)_GENERATED|GameRuntime-Tooling|Script-Loader" -or
     $_.Name -match "Test-GameRuntime|(?:Area-Progress|Diagnostic-Access)\.rb" -or
     $_.Name -match "\.(?:bootstrap|progress|summary|tests|tmp)$" -or
     $_.Extension -in ".ironmon-access", ".key", ".p8", ".p12", ".pfx", ".pem" -or

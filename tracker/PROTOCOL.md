@@ -553,6 +553,17 @@ When a run ends, the game persists its result in the save metadata and emits
   "tutor_source_fingerprint": "...",
   "fusion_tutor_catalog_fingerprint": "...",
   "fusion_tutor_source_fingerprint": "...",
+  "item_generator": {
+    "version": 1,
+    "rules_version": 2,
+    "ground_pool_size": 580,
+    "ground_pool_fingerprint": "...",
+    "tm_pool_size": 124,
+    "tm_pool_fingerprint": "...",
+    "result_bans": ["DNASPLICERS", "SUPERSPLICERS", "DNAREVERSER", "DYNAMITE", "AIRMAIL", "BLOOMMAIL", "BRICKMAIL", "BUBBLEMAIL", "FLAMEMAIL", "GRASSMAIL", "HEARTMAIL", "MOSAICMAIL", "SNOWMAIL", "SPACEMAIL", "STEELMAIL", "TUNNELMAIL", "BLACKAPRICORN", "BLUEAPRICORN", "GREENAPRICORN", "PINKAPRICORN", "REDAPRICORN", "WHITEAPRICORN", "YELLOWAPRICORN", "EXPSHARE", "MACHETE", "TELEPORTER", "SURFBOARD", "LEVER", "JETPACK", "PICKAXE", "SCUBAGEAR", "LANTERN", "CLIMBINGGEAR"],
+    "result_ban_fingerprint": "...",
+    "shop_policy_version": 1
+  },
   "item_mappings": {
     "POTION": "HYPERPOTION"
   },
@@ -577,11 +588,13 @@ recipes atomically under
 `%LocalAppData%/IronmonTracker/runs/<run-id>/recipe.json`. It never persists
 the reconstructed lookup response.
 
-`item_mappings` and `tm_mappings` preserve the exact mapped shuffles because
-Infinite Fusion generates them from runtime RNG rather than from the Ironmon
-run seed. Historical recipes which omit these fields use already persisted
-area-entry details and leave unknown archived item identities concealed rather
-than consulting the currently loaded run.
+New recipes use `item_generator` to reconstruct physical-slot rewards from the
+run seed and the versioned pool manifest. `item_mappings` and `tm_mappings`
+remain optional compatibility fields for completed legacy attempts that used
+Infinite Fusion's runtime-RNG shuffle. Historical recipes with neither
+representation use already persisted area-entry details and leave unknown
+archived item identities concealed rather than consulting the currently loaded
+run.
 
 New Step 3.3 runs include `move_access_metrics`. The game records only species,
 levels, party compatibility, acquisitions, and move uses that were actually

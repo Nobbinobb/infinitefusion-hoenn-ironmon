@@ -195,7 +195,10 @@ public sealed class TrackerRequestClient
         }
         else
         {
-            gameResponse = _areaDiscoveries.RestoreArchivedDetails(runId, gameResponse, recipe.ItemMappings.Count > 0 || recipe.TmMappings.Count > 0);
+            bool itemReconstructionAvailable = recipe.ItemGenerator is not null
+                || recipe.ItemMappings.Count > 0
+                || recipe.TmMappings.Count > 0;
+            gameResponse = _areaDiscoveries.RestoreArchivedDetails(runId, gameResponse, itemReconstructionAvailable);
         }
 
         AreaLookupDetailResponsePayload response = WithTrackerRevision(runId, gameResponse);

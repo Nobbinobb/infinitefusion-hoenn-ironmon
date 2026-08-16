@@ -197,8 +197,6 @@ trainer,area:73,Mauville City,73,trainer:73:TEAM_MAGMA_GRUNT_M:Vic,73,71,,,,,TEA
 item,area:73,Mauville City,73,item:73:20,73,20,36,15,false,standard_ground_item,REVIVE
 item,area:73,Mauville City,73,item:73:34,73,34,27,41,false,standard_ground_item,XSPEED
 item,area:73,Mauville City,73,item:73:68,73,68,2,36,false,standard_ground_item,TM48
-item,area:73,Mauville City,73,item:73:72,73,72,53,44,true,hidden_item,
-item,area:73,Mauville City,73,item:73:74,73,74,55,35,true,hidden_item,
 area,area:74,Route 117,74,,,,,,,,
 trainer,area:74,Route 117,74,trainer:74:TRIATHLETE_RUN_M:Dylan,74,13,,,,,TRIATHLETE_RUN_M:Dylan:0
 trainer,area:74,Route 117,74,trainer:74:TRIATHLETE_RUN_F:Melina,74,14,,,,,TRIATHLETE_RUN_F:Melina:0
@@ -221,8 +219,6 @@ item,area:76,Route 118,76,item:76:5,76,5,7,33,true,hidden_item,HEARTSCALE
 item,area:76,Route 118,76,item:76:6,76,6,33,28,true,hidden_item,IRON
 item,area:76,Route 118,76,item:76:7,76,7,68,16,false,standard_ground_item,HYPERPOTION
 item,area:76,Route 118,76,item:76:8,76,8,64,9,false,standard_ground_item,THUNDERSTONE
-item,area:76,Route 118,76,item:76:18,76,18,35,48,true,hidden_item,
-item,area:76,Route 118,76,item:76:19,76,19,22,47,true,hidden_item,
 area,area:77,Route 111 (South),77,,,,,,,,
 trainer,area:77,Route 111 (South),77,trainer:77:POKEFAN_M:Victor,77,5,,,,,POKEFAN_M:Victor:0
 trainer,area:77,Route 111 (South),77,trainer:77:LASS:Bianca,77,6,,,,,LASS:Bianca:0
@@ -270,8 +266,6 @@ item,area:97,Illusion Grove,97,item:97:50,97,50,32,47,false,standard_ground_item
 item,area:97,Illusion Grove,97,item:97:60,97,60,12,37,false,standard_ground_item,DNAREVERSERS
 area,area:99,Trick House,99,,,,,,,,
 item,area:99,Trick House,99,item:99:8,99,8,37,6,false,standard_ground_item,LANTERN|MACHETE
-item,area:99,Trick House,99,item:99:10,99,10,5,5,true,hidden_item,
-item,area:99,Trick House,99,item:99:12,99,12,12,7,true,hidden_item,
 area,area:101,Pokémon Day Care,101,,,,,,,,
 item,area:101,Pokémon Day Care,101,item:101:7,101,7,13,7,false,special_present,PRESENT
 area,area:102,Mauville Gym,102,,,,,,,,

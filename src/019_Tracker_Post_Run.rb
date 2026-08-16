@@ -55,6 +55,7 @@ module Ironmon
       "evolution_generator" => tracker_evolution_generator_recipe,
       "move_access_generator" => tracker_move_access_generator_recipe,
       "player_fusion_generator" => tracker_player_fusion_generator_recipe,
+      "item_generator" => item_generator_recipe,
       "item_mappings" => tracker_item_mapping_recipe(
         $PokemonGlobal.randomItemsHash
       ),
@@ -583,7 +584,42 @@ module Ironmon
     if recipe["fusion_pool_fingerprint"] != custom_fusion_pool_info[:fingerprint]
       raise TrackerLookupError.new("incompatible_fusion_pool", "The custom fusion pool no longer matches this run.")
     end
+    tracker_validate_item_recipe(recipe)
     return recipe
+  end
+
+  def self.tracker_validate_item_recipe(recipe)
+    version = recipe["item_generator_version"]
+    return true if !version
+    rules = recipe["item_pool_rules_version"]
+    if version != ItemSlotGenerator::SCHEMA_VERSION ||
+       !ItemSlotGenerator::RESULT_BANS_BY_RULES_VERSION.key?(rules)
+      raise TrackerLookupError.new(
+        "generator_unavailable", "The required item generator is unavailable."
+      )
+    end
+    expected = [
+      item_ground_pool(rules).length,
+      item_ground_pool_fingerprint(rules),
+      item_tm_pool(rules).length,
+      item_tm_pool_fingerprint(rules),
+      item_result_ban_fingerprint(rules),
+      ItemSlotGenerator::SHOP_POLICY_VERSION
+    ]
+    actual = [
+      recipe["item_ground_pool_size"],
+      recipe["item_ground_pool_fingerprint"],
+      recipe["item_tm_pool_size"],
+      recipe["item_tm_pool_fingerprint"],
+      recipe["item_result_ban_fingerprint"],
+      recipe["item_shop_policy_version"]
+    ]
+    if actual != expected
+      raise TrackerLookupError.new(
+        "incompatible_item_pool", "The item pools no longer match this run."
+      )
+    end
+    return true
   end
 
   def self.tracker_flatten_completed_recipe(recipe)
@@ -600,6 +636,7 @@ module Ironmon
     tutor = moves["tutor"] || {}
     fusion_tutor = moves["fusion_tutor"] || {}
     player_fusion = recipe["player_fusion_generator"] || {}
+    items = recipe["item_generator"] || {}
     return {
       "run_id" => recipe["run_id"],
       "seed" => recipe["seed"],
@@ -642,6 +679,15 @@ module Ironmon
       "fusion_tutor_source_fingerprint" => fusion_tutor["source_fingerprint"],
       "player_fusion_generator_version" => player_fusion["version"],
       "fusion_pool_fingerprint" => player_fusion["pool_fingerprint"],
+      "item_generator" => recipe["item_generator"],
+      "item_generator_version" => items["version"],
+      "item_pool_rules_version" => items["rules_version"],
+      "item_ground_pool_size" => items["ground_pool_size"],
+      "item_ground_pool_fingerprint" => items["ground_pool_fingerprint"],
+      "item_tm_pool_size" => items["tm_pool_size"],
+      "item_tm_pool_fingerprint" => items["tm_pool_fingerprint"],
+      "item_result_ban_fingerprint" => items["result_ban_fingerprint"],
+      "item_shop_policy_version" => items["shop_policy_version"],
       "item_mappings" => recipe["item_mappings"] || {},
       "tm_mappings" => recipe["tm_mappings"] || {},
       "move_access_metrics" => recipe["move_access_metrics"],

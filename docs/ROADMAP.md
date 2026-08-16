@@ -495,8 +495,9 @@ Implementation: **Complete**
 - Randomize level-up and level-0 evolution entries, Egg lists, TM
   compatibility, ordinary tutor offerings and compatibility, and specialized
   Fusion Move Tutor access.
-- Keep the existing mapped found and scripted TM-item shuffle, including Gym
-  Leader rewards, while HM items remain replaced by permanent field tools.
+- Use deterministic physical item slots: found ordinary items and TMs share the
+  full-chaos ground pool, while scripted TM gifts use the TM-only pool and HMs
+  remain replaced by permanent field tools.
 - Generate seeded, run-consistent move access on demand without persisting
   per-species mappings.
 - Combine standard fusion access from the generated channels of the displayed
@@ -1517,6 +1518,19 @@ item through the game's existing battle choice and handler flow. The game
 remains authoritative for item and target validity. All 168 tracker tests pass, the tracker builds with zero
 warnings, the bundled runtime verifies every category and guarded rejection,
 and the synchronized game passes a hidden startup smoke test.
+
+### Optional improvement: Repel duration overlay
+
+Status: **Implemented; awaiting review**
+
+- Show the native Repel counter in the upper-right corner of the overworld
+  during an active Ironmon run.
+- Update the displayed remaining-step count whenever the game changes it and
+  hide the overlay immediately when the effect expires.
+- Preserve the base game's step-consumption rules, include Fusion Repel
+  incense, and exclude the Poké Radar's temporary internal Repel.
+- Validate visibility, pluralization, expiration, mode isolation, and temporary
+  Repel handling in the bundled game runtime.
 
 ## Working rule
 

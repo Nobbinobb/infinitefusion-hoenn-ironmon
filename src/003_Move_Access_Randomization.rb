@@ -1734,16 +1734,6 @@ def pbDayCareGenerateEgg
   return ironmon_machine_original_daycare_generate_egg
 end
 
-alias ironmon_machine_original_get_mapped_random_item getMappedRandomItem
-def getMappedRandomItem(item)
-  if Ironmon.active? && item && item.is_TM? &&
-     $PokemonGlobal && $PokemonGlobal.randomTMsHash
-    mapped = $PokemonGlobal.randomTMsHash[item.id]
-    return GameData::Item.get(mapped) if mapped
-  end
-  return ironmon_machine_original_get_mapped_random_item(item)
-end
-
 Events.onMapCreate += proc do |_sender, event|
   map_id = event[0]
   map = event[1]

@@ -118,9 +118,9 @@ public sealed class AreaDiscoveryStore
     /// </summary>
     /// <param name="runId">The owning archived run identifier.</param>
     /// <param name="response">The game-reconstructed archived response.</param>
-    /// <param name="itemMappingsAvailable">Whether the archived recipe can reconstruct undisclosed randomized items.</param>
+    /// <param name="itemReconstructionAvailable">Whether the archived recipe can reconstruct undisclosed randomized items.</param>
     /// <returns>The response with persisted run-owned details restored.</returns>
-    public AreaLookupDetailResponsePayload RestoreArchivedDetails(string runId, AreaLookupDetailResponsePayload response, bool itemMappingsAvailable)
+    public AreaLookupDetailResponsePayload RestoreArchivedDetails(string runId, AreaLookupDetailResponsePayload response, bool itemReconstructionAvailable)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
         ArgumentNullException.ThrowIfNull(response);
@@ -134,7 +134,7 @@ public sealed class AreaDiscoveryStore
                 if (run.Items.TryGetValue(entry.EntryId, out AreaItemEntryPayload? persisted))
                     return persisted;
 
-                if (itemMappingsAvailable)
+                if (itemReconstructionAvailable)
                     return entry;
 
                 return new AreaItemEntryPayload

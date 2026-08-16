@@ -1466,3 +1466,26 @@ Status: **Implemented; awaiting review**
   warnings, the synchronized game and packaged tracker pass hidden startup
   smoke checks, and two complete releases reproduce SHA-256
   `ac0e6c988cc6c7414ae423742f67cc684c527cda796034fd7dc1679e0044900a`.
+
+## Deterministic item-slot randomization
+
+Status: **Implemented; awaiting review**
+
+- Added a versioned seed-derived physical-slot generator. Ground ordinary
+  items and found TMs use one full-chaos pool; scripted TM gifts use a TM-only
+  pool; ordinary gifts and trainer held items remain authored.
+- Added versioned result bans. Rules version 2 excludes DNA Splicers, Super
+  Splicers, DNA Reverser, Dynamite, all Mail and Apricorn items, Exp. Share,
+  and all nine permanent HM tools while structurally excluding other key
+  items, HMs, and unsupported registrations. Authored HM-tool ground pickups
+  randomize away, while converted HM rewards remain protected.
+- Filtered each standard Poke Mart's own inventory to its existing balls and
+  Repel-family items without changing vending machines, order, or prices.
+- Added saved generator manifests, legacy mapping compatibility, tracker area
+  reconstruction, completed-run protocol support, and generator diagnostics.
+- Added a bundled-runtime release audit which automatically updates canonical
+  pool, slot, gift, and Mart records on compatible game-data drift while unsafe
+  structural failures still stop the release.
+- Added a dedicated deterministic ground-pool slot for the post-rescue starter
+  reward and excluded six dialogue-only hidden-item decoys from Lookup so every
+  catalogued item row has a revealable identity.

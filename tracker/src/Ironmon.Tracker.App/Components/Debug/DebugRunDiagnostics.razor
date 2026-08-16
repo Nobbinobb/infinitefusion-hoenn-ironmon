@@ -23,7 +23,7 @@
         </section>
     }
 
-    @if (Diagnostics.SpeciesGenerator is not null || Diagnostics.EvolutionGenerator is not null)
+    @if (Diagnostics.SpeciesGenerator is not null || Diagnostics.EvolutionGenerator is not null || Diagnostics.ItemGenerator is not null)
     {
         <section class="debug-data-section">
             <p class="section-label">@Text["Debug.Run.GeneratorsAndPoolsHeading"]</p>
@@ -48,6 +48,22 @@
                 {
                     <div><dt>@Text["Debug.Run.EvolutionSchema"]</dt><dd>@evolutionGenerator.Version</dd></div>
                     <div class="wide"><dt>@Text["Debug.Run.EvolutionFingerprint"]</dt><dd>@evolutionGenerator.TargetFingerprint</dd></div>
+                }
+                @if (Diagnostics.ItemGenerator is { } itemGenerator)
+                {
+                    <div><dt>@Text["Debug.Run.ItemSchema"]</dt><dd>@itemGenerator.Version</dd></div>
+                    <div><dt>@Text["Debug.Run.ItemRules"]</dt><dd>@itemGenerator.RulesVersion</dd></div>
+                    <div><dt>@Text["Debug.Run.GroundItemPool"]</dt><dd>@itemGenerator.GroundPoolSize</dd></div>
+                    <div><dt>@Text["Debug.Run.TmGiftPool"]</dt><dd>@itemGenerator.TmPoolSize</dd></div>
+                    <div><dt>@Text["Debug.Run.ShopPolicy"]</dt><dd>@itemGenerator.ShopPolicyVersion</dd></div>
+                    <div class="wide"><dt>@Text["Debug.Run.ItemBans"]</dt><dd>@string.Join(", ", itemGenerator.ResultBans)</dd></div>
+                    <div class="wide"><dt>@Text["Debug.Run.GroundItemFingerprint"]</dt><dd>@itemGenerator.GroundPoolFingerprint</dd></div>
+                    <div class="wide"><dt>@Text["Debug.Run.TmGiftFingerprint"]</dt><dd>@itemGenerator.TmPoolFingerprint</dd></div>
+                    <div class="wide"><dt>@Text["Debug.Run.ItemBanFingerprint"]</dt><dd>@itemGenerator.ResultBanFingerprint</dd></div>
+                }
+                else
+                {
+                    <div><dt>@Text["Debug.Run.ItemSchema"]</dt><dd>@Text["Debug.Run.Legacy"]</dd></div>
                 }
             </dl>
         </section>

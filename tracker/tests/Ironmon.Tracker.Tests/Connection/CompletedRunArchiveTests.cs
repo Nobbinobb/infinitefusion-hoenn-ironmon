@@ -36,6 +36,8 @@ public sealed class CompletedRunArchiveTests
         Assert.Equal(14, stored.Statistics!.ItemsUsed);
         Assert.Equal("HYPERPOTION", stored.ItemMappings["POTION"]);
         Assert.Equal("TM02", stored.TmMappings["TM01"]);
+        Assert.Equal(600, stored.ItemGenerator!.GroundPoolSize);
+        Assert.Equal(["DNASPLICERS", "DYNAMITE"], stored.ItemGenerator.ResultBans);
         Assert.Equal("run-archive", archive.RequestedRunId);
         string recipePath = Path.Combine(root, "runs", "run-archive", "recipe.json");
         Assert.True(File.Exists(recipePath));
@@ -123,6 +125,17 @@ public sealed class CompletedRunArchiveTests
     }
 
     /// <summary>
+    /// Verifies that malformed item generator metadata is rejected explicitly.
+    /// </summary>
+    [Fact]
+    public void StoreRejectsMalformedItemGenerator()
+    {
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => archive.Store(CreateRecipe("run-bad-items", itemRulesVersion: 0)));
+    }
+
+    /// <summary>
     /// Verifies that a run which did not enable optional generators remains valid.
     /// </summary>
     [Fact]
@@ -184,8 +197,9 @@ public sealed class CompletedRunArchiveTests
     /// <param name="includeEvolutionGenerator">Whether the evolution generator manifest is included.</param>
     /// <param name="includeEvolutionMetrics">Whether evolution metrics are included.</param>
     /// <param name="statisticsSchemaVersion">The authoritative statistics schema version.</param>
+    /// <param name="itemRulesVersion">The item pool rules version.</param>
     /// <returns>The recipe.</returns>
-    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, int moveMetricsSchemaVersion = MoveAccessMetricIdentifiers.SchemaVersion, bool includeMoveGenerator = true, bool includeMoveMetrics = true, bool includeEvolutionGenerator = true, bool includeEvolutionMetrics = true, int statisticsSchemaVersion = 1) => new()
+    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, int moveMetricsSchemaVersion = MoveAccessMetricIdentifiers.SchemaVersion, bool includeMoveGenerator = true, bool includeMoveMetrics = true, bool includeEvolutionGenerator = true, bool includeEvolutionMetrics = true, int statisticsSchemaVersion = 1, int itemRulesVersion = 1) => new()
     {
         SchemaVersion = schemaVersion,
         RunId = runId,
@@ -200,6 +214,18 @@ public sealed class CompletedRunArchiveTests
         EvolutionGenerator = includeEvolutionGenerator ? CreateEvolutionGenerator() : null,
         MoveAccessGenerator = includeMoveGenerator ? CreateMoveGenerator() : null,
         PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 100, PoolFingerprint = "fusions" },
+        ItemGenerator = new ItemGeneratorRecipePayload
+        {
+            Version = 1,
+            RulesVersion = itemRulesVersion,
+            GroundPoolSize = 600,
+            GroundPoolFingerprint = "ground-items",
+            TmPoolSize = 124,
+            TmPoolFingerprint = "tm-items",
+            ResultBans = ["DNASPLICERS", "DYNAMITE"],
+            ResultBanFingerprint = "item-bans",
+            ShopPolicyVersion = 1
+        },
         ItemMappings = new Dictionary<string, string> { ["POTION"] = "HYPERPOTION" },
         TmMappings = new Dictionary<string, string> { ["TM01"] = "TM02" },
         Statistics = CreateStatistics(statisticsSchemaVersion),

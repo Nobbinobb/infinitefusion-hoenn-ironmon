@@ -36,6 +36,7 @@ module Ironmon
     @base_stat_randomization_error_message = nil
     @evolution_randomization_error_message = nil
     @move_access_randomization_error_message = nil
+    @item_randomization_error_message = nil
     return false if !prepare_custom_fusion_pool
 
     $PokemonGlobal.ironmon_mode = true
@@ -50,13 +51,14 @@ module Ironmon
     return false if !prepare_base_stat_randomization
     return false if !prepare_evolution_randomization
     return false if !prepare_move_access_randomization
+    return false if !prepare_item_randomization
     return false if !prepare_species_mappings
 
     $game_switches[SWITCH_RANDOMIZED_AT_LEAST_ONCE] = true
     $game_switches[SWITCH_RANDOMIZED_MODE_INTRO] = false
     $game_switches[SWITCH_RANDOM_WILD] = true
     $game_switches[SWITCH_RANDOM_TRAINERS] = true
-    $game_switches[SWITCH_RANDOM_ITEMS_GENERAL] = true
+    $game_switches[SWITCH_RANDOM_ITEMS_GENERAL] = false
     enforce_difficulty_settings
 
     $game_variables[VAR_RANDOMIZER_WILD_POKE_BST] = FULL_RANDOM_BST_RANGE
@@ -82,19 +84,16 @@ module Ironmon
     $game_switches[SWITCH_RANDOM_GYM_PERSIST_TEAMS] = true
     pbSet(VAR_CURRENT_GYM_TYPE, -1)
 
-    $game_switches[SWITCH_RANDOM_ITEMS] = true
-    $game_switches[SWITCH_RANDOM_FOUND_ITEMS] = true
-    $game_switches[SWITCH_RANDOM_GIVEN_ITEMS] = true
-    $game_switches[SWITCH_RANDOM_ITEMS_MAPPED] = true
+    $game_switches[SWITCH_RANDOM_ITEMS] = false
+    $game_switches[SWITCH_RANDOM_FOUND_ITEMS] = false
+    $game_switches[SWITCH_RANDOM_GIVEN_ITEMS] = false
+    $game_switches[SWITCH_RANDOM_ITEMS_MAPPED] = false
     $game_switches[SWITCH_RANDOM_ITEMS_DYNAMIC] = false
-    $game_switches[SWITCH_RANDOM_TMS] = true
-    $game_switches[SWITCH_RANDOM_FOUND_TMS] = true
-    $game_switches[SWITCH_RANDOM_GIVEN_TMS] = true
-    $game_switches[SWITCH_RANDOM_SHOP_ITEMS] = true
-    $game_switches[SWITCH_RANDOM_HELD_ITEMS] = true
-
-    pbShuffleItems
-    pbShuffleTMs
+    $game_switches[SWITCH_RANDOM_TMS] = false
+    $game_switches[SWITCH_RANDOM_FOUND_TMS] = false
+    $game_switches[SWITCH_RANDOM_GIVEN_TMS] = false
+    $game_switches[SWITCH_RANDOM_SHOP_ITEMS] = false
+    $game_switches[SWITCH_RANDOM_HELD_ITEMS] = false
     refresh_loaded_wild_encounter_table
     randomize_loaded_static_events
     return false if !begin_run_attempt($PokemonGlobal.ironmon_seed)

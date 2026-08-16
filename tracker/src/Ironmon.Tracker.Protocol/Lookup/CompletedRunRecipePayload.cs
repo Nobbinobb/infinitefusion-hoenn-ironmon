@@ -83,6 +83,11 @@ public sealed class CompletedRunRecipePayload
     public required PlayerFusionGeneratorRecipePayload PlayerFusionGenerator { get; init; }
 
     /// <summary>
+    /// Gets or initializes deterministic item-slot generator metadata when enabled.
+    /// </summary>
+    public ItemGeneratorRecipePayload? ItemGenerator { get; init; }
+
+    /// <summary>
     /// Gets or initializes the archived ordinary-item shuffle by source item identifier.
     /// </summary>
     public IReadOnlyDictionary<string, string> ItemMappings { get; init; } = new Dictionary<string, string>();
@@ -106,6 +111,57 @@ public sealed class CompletedRunRecipePayload
     /// Gets or initializes locally observed generated-evolution outcomes.
     /// </summary>
     public EvolutionMetricsPayload? EvolutionMetrics { get; init; }
+}
+
+/// <summary>
+/// Describes deterministic item-slot pools, bans, and shop policy.
+/// </summary>
+public sealed class ItemGeneratorRecipePayload
+{
+    /// <summary>
+    /// Gets or initializes the item generator schema version.
+    /// </summary>
+    public int Version { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the item pool rules version.
+    /// </summary>
+    public int RulesVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the unified ground item pool size.
+    /// </summary>
+    public int GroundPoolSize { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the unified ground item pool fingerprint.
+    /// </summary>
+    public required string GroundPoolFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the TM gift pool size.
+    /// </summary>
+    public int TmPoolSize { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the TM gift pool fingerprint.
+    /// </summary>
+    public required string TmPoolFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the ordered result-ban identifiers.
+    /// </summary>
+    public IReadOnlyList<string> ResultBans { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes the result-ban fingerprint.
+    /// </summary>
+    public required string ResultBanFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the standard Poké Mart filtering policy version.
+    /// </summary>
+    public int ShopPolicyVersion { get; init; }
 }
 
 /// <summary>

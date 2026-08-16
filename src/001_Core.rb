@@ -107,6 +107,14 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_run_ledger
   attr_accessor :ironmon_move_access_metrics
   attr_accessor :ironmon_evolution_metrics
+  attr_accessor :ironmon_item_generator_version
+  attr_accessor :ironmon_item_pool_rules_version
+  attr_accessor :ironmon_item_ground_pool_size
+  attr_accessor :ironmon_item_ground_pool_fingerprint
+  attr_accessor :ironmon_item_tm_pool_size
+  attr_accessor :ironmon_item_tm_pool_fingerprint
+  attr_accessor :ironmon_item_result_ban_fingerprint
+  attr_accessor :ironmon_item_shop_policy_version
   attr_accessor :ironmon_first_rival_heal_applied
   attr_accessor :ironmon_starter_item_reward_applied
 end

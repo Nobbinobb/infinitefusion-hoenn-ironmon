@@ -14,9 +14,13 @@ $scriptLoaderPath = Join-Path $generationRoot "Script-Loader.rb"
 $diagnosticTestPath = Join-Path $projectRoot "tests\runtime\Diagnostic-Access.rb"
 $catchAssistanceTestPath = Join-Path $projectRoot "tests\runtime\Catch-Assistance.rb"
 $battleItemTestPath = Join-Path $projectRoot "tests\runtime\Battle-Items.rb"
+$repelOverlayTestPath = Join-Path $projectRoot "tests\runtime\Repel-Overlay.rb"
+$itemRandomizationTestPath = Join-Path $projectRoot "tests\runtime\Item-Randomization.rb"
 $diagnosticResultPath = Join-Path $projectRoot "runtime-diagnostic-access.tests"
 $catchAssistanceResultPath = Join-Path $projectRoot "runtime-catch-assistance.tests"
 $battleItemResultPath = Join-Path $projectRoot "runtime-battle-items.tests"
+$repelOverlayResultPath = Join-Path $projectRoot "runtime-repel-overlay.tests"
+$itemRandomizationResultPath = Join-Path $projectRoot "runtime-item-randomization.tests"
 $diagnosticErrorPath = Join-Path $projectRoot "runtime-diagnostic-access.error"
 
 . (Join-Path $generationRoot "GameRuntime-Tooling.ps1")
@@ -45,19 +49,34 @@ $battleItemTestSource = [IO.File]::ReadAllText(
     $battleItemTestPath,
     [Text.Encoding]::UTF8
 )
+$repelOverlayTestSource = [IO.File]::ReadAllText(
+    $repelOverlayTestPath,
+    [Text.Encoding]::UTF8
+)
+$itemRandomizationTestSource = [IO.File]::ReadAllText(
+    $itemRandomizationTestPath,
+    [Text.Encoding]::UTF8
+)
 $rubyResultPath = $diagnosticResultPath.Replace('\', '/')
 $rubyCatchAssistanceResultPath = $catchAssistanceResultPath.Replace('\', '/')
 $rubyBattleItemResultPath = $battleItemResultPath.Replace('\', '/')
+$rubyRepelOverlayResultPath = $repelOverlayResultPath.Replace('\', '/')
+$rubyItemRandomizationResultPath = $itemRandomizationResultPath.Replace('\', '/')
 $bootstrapSource = @(
     "begin"
     "`$ironmon_diagnostic_access_test_output_path = `"$rubyResultPath`""
     "`$ironmon_catch_assistance_test_output_path = `"$rubyCatchAssistanceResultPath`""
     "`$ironmon_battle_item_test_output_path = `"$rubyBattleItemResultPath`""
+    "`$ironmon_repel_overlay_test_output_path = `"$rubyRepelOverlayResultPath`""
+    "`$ironmon_item_randomization_test_output_path = `"$rubyItemRandomizationResultPath`""
     "Dir.chdir(`"$($resolvedGameRoot.Replace('\', '/'))`")"
     $scriptLoaderSource
     "IronmonScriptLoader.load_directory(`"Data/Scripts`", [/\A(?:998|999)/])"
+    "GameData.load_all"
     $catchAssistanceTestSource
     $battleItemTestSource
+    $repelOverlayTestSource
+    $itemRandomizationTestSource
     $diagnosticTestSource
     "exit! 0"
     "rescue Exception => error"
@@ -66,7 +85,7 @@ $bootstrapSource = @(
     "exit! 1"
     "end"
 ) -join "`n"
-Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $diagnosticErrorPath `
+Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $diagnosticErrorPath `
     -Force `
     -ErrorAction SilentlyContinue
 try {
@@ -93,11 +112,21 @@ try {
             "battle item runtime tests passed") {
         throw "The bundled runtime did not complete the battle item tests."
     }
+    if (-not (Test-Path -LiteralPath $repelOverlayResultPath) -or
+        (Get-Content -LiteralPath $repelOverlayResultPath -Raw).Trim() -ne
+            "repel overlay runtime tests passed") {
+        throw "The bundled runtime did not complete the Repel overlay tests."
+    }
+    if (-not (Test-Path -LiteralPath $itemRandomizationResultPath) -or
+        (Get-Content -LiteralPath $itemRandomizationResultPath -Raw).Trim() -ne
+            "item randomization runtime tests passed") {
+        throw "The bundled runtime did not complete the item randomization tests."
+    }
 }
 finally {
-    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $diagnosticErrorPath `
+    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $diagnosticErrorPath `
         -Force `
         -ErrorAction SilentlyContinue
 }
 
-Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, and battle item tests passed."
+Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, battle item, Repel overlay, and item randomization tests passed."
