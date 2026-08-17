@@ -29,6 +29,10 @@
 
         @if (GetSelectedRecipe() is CompletedRunRecipePayload selectedRecipe)
         {
+            <SeedTokenExportPanel @key="@($"archive-seed-{selectedRecipe.RunId}")"
+                                  Recipe="selectedRecipe"
+                                  Title="@Text["Seeds.ArchiveExport.Title"]"
+                                  Description="@Text["Seeds.ArchiveExport.Description"]" />
             <AreaLookupExplorer @key="@($"archive-areas-{selectedRecipe.RunId}")" SourceKey="@($"archive:{selectedRecipe.RunId}")" RunId="@selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
             <RunStatistics @key="@($"statistics-{selectedRecipe.RunId}")" Statistics="@selectedRecipe.Statistics" />
             <PokemonLookupExplorer @key="selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />

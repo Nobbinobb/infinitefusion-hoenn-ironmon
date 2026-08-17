@@ -16,6 +16,7 @@ public partial class Home : IDisposable
     private string? _lastMoveMenuPokemonId;
     private bool _completedRunNavigationPending;
     private bool _accessOpen;
+    private bool _seedsOpen;
     private bool _settingsOpen;
     private bool _autoSelectStarter;
     private int? _maximumStarterBaseStatTotal;
@@ -93,6 +94,7 @@ public partial class Home : IDisposable
     {
         _completedRunNavigationPending = false;
         _accessOpen = false;
+        _seedsOpen = false;
         _settingsOpen = false;
         _selectedView = view;
     }
@@ -104,6 +106,7 @@ public partial class Home : IDisposable
     {
         _settingsOpen = !_settingsOpen;
         _accessOpen = false;
+        _seedsOpen = false;
         _settingsStatus = null;
     }
 
@@ -113,6 +116,17 @@ public partial class Home : IDisposable
     private void ToggleAccess()
     {
         _accessOpen = !_accessOpen;
+        _seedsOpen = false;
+        _settingsOpen = false;
+    }
+
+    /// <summary>
+    /// Opens or closes explicit seeded-run sharing.
+    /// </summary>
+    private void ToggleSeeds()
+    {
+        _seedsOpen = !_seedsOpen;
+        _accessOpen = false;
         _settingsOpen = false;
     }
 
@@ -127,6 +141,13 @@ public partial class Home : IDisposable
     /// <returns>The access button CSS classes.</returns>
     private string GetAccessButtonClass()
         => _accessOpen ? "settings-button selected" : "settings-button";
+
+    /// <summary>
+    /// Gets the visual classes for the seeded-run sharing button.
+    /// </summary>
+    /// <returns>The seeded-run button CSS classes.</returns>
+    private string GetSeedsButtonClass()
+        => _seedsOpen ? "settings-button selected" : "settings-button";
 
     /// <summary>
     /// Gets the visual classes for the settings button.
@@ -357,7 +378,7 @@ public partial class Home : IDisposable
         if (enemyAppeared)
             _completedRunNavigationPending = false;
 
-        if (starterSelectionAppeared && !_completedRunNavigationPending)
+        if (starterSelectionAppeared && !_completedRunNavigationPending && !_seedsOpen)
         {
             _completedRunNavigationPending = false;
             _accessOpen = false;
@@ -385,6 +406,9 @@ public partial class Home : IDisposable
     /// <param name="args">The change event arguments.</param>
     private void HandleCompletedRunSelectionRequested(object? sender, EventArgs args)
     {
+        if (_seedsOpen)
+            return;
+
         _completedRunNavigationPending = true;
         _accessOpen = false;
         _settingsOpen = false;

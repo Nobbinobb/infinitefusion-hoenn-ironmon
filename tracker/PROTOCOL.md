@@ -1,8 +1,8 @@
 # Ironmon Tracker protocol v1
 
-This document records the implemented protocol through the 0.7.6 battle-item
-context additions. Later parts extend the payload catalog without changing the
-common envelope or transport.
+This document records the implemented protocol through the 0.7.7 shareable
+seeded-run additions. Later parts extend the payload catalog without changing
+the common envelope or transport.
 
 ## Transport
 
@@ -41,7 +41,7 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.0",
-    "ironmon_version": "0.7.6",
+    "ironmon_version": "0.7.7",
     "ironmon_active": false,
     "debug_available": true,
     "supported_diagnostic_capabilities": ["pokemon.current_player", "run.seed"],
@@ -110,6 +110,66 @@ The foreground controller shortcut sends a `reset_run` request with an empty
 payload. The game responds with `accepted`, queues the request until a safe map
 scene boundary, and then opens the same confirmation flow as F7. Keyboard input
 is not synthesized by the tracker.
+
+### Explicit seeded-run export
+
+Seed tokens are never part of `current_state`, `run_started`, diagnostic
+snapshots, or automatically rendered active-run views. After the user chooses
+Create token, the tracker sends `export_seeded_run` with an empty payload and
+the active `run_id`. The game accepts only the matching active attempt with no
+pending reset or import, then returns `SeededRunExportPayload`: the shared
+reproduction recipe containing the seed, complete configuration, game and
+Ironmon versions, data mode, and generator compatibility manifests.
+
+The tracker calculates the canonical compatibility fingerprint and creates an
+`ironmon-seed+jwt` compact token with the public ordinary-tracker HS256
+integrity material. This material is deliberately separate from diagnostic
+access and is neither secret nor maintainer authority. A token is described as
+recognized tracker-generated data, never as an official challenge.
+
+The selected completed-run archive recipe implements the same reproduction
+contract, so the tracker can create an equivalent token locally without an
+`export_seeded_run` request or a game connection. Archive-only results,
+statistics, observations, and item-mapping fields are not token claims. Both
+active and archived export surfaces can copy the token with adjacent success
+feedback or save it as an `.ironmon-seed` UTF-8 text file.
+
+### Seeded-run import lifecycle
+
+The tracker sends `import_seeded_run` only for a token it has already decoded
+and normalized. Its payload contains exactly `token_id`, `seed`, `game_version`,
+`ironmon_version`, `data_mode`, `configuration`, and
+`compatibility_fingerprint`. The configuration contains exactly
+`schema_version`, `wild_policy`, `trainer_policy`, `unfusion_setting`, and
+`automatic_reset`.
+
+The game independently validates the complete payload, active run identity,
+version and data-mode boundary, configuration values, seed range, and lowercase
+SHA-256 compatibility fingerprint. The correlated response has the same
+`SeededRunImportStatusPayload` shape used by later status events:
+
+```json
+{
+  "token_id": "01K2SEEDTOKEN00000000000000",
+  "status": "accepted",
+  "message": "Seeded-run import was accepted for guarded queueing."
+}
+```
+
+An accepted response means that the checkpoint was readable and the request is
+eligible to queue; it does not mean the active attempt has been replaced. The
+game then emits `seeded_run_import_status` with `queued` after the correlated
+response. At the next safe map-scene boundary it snapshots the live save,
+stages abandonment in a copied ledger, loads the starter checkpoint, generates
+the imported seed and configuration, verifies the generated compatibility
+again, and saves the new attempt. Only after all those operations succeed does
+it publish the old `run_completed` event and the new `run_started` event,
+followed by a `started` status.
+
+Validation failures return `rejected` without queueing. A queued transaction
+that cannot load, generate, validate, or save emits `failed` against the source
+run and restores the live snapshot. Ordinary F7 reset remains a separate
+new-seed operation, and either transition rejects while the other is pending.
 
 ## Current-state recovery
 
@@ -181,7 +241,7 @@ action path. Non-cancellable nested screens such as Summary reject the request
 until closed. The native battle checks, turn consumption, item consumption, and
 effect handlers remain authoritative.
 
-An active 0.7.6 run also includes optional aggregate type-coverage context:
+An active 0.7.7 run also includes optional aggregate type-coverage context:
 
 ```json
 {
@@ -525,12 +585,13 @@ When a run ends, the game persists its result in the save metadata and emits
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.7.6",
+  "ironmon_version": "0.7.7",
   "configuration": {
-    "schema_version": 2,
+    "schema_version": 3,
     "wild_policy": "mixed",
     "trainer_policy": "mixed",
-    "unfusion_setting": "random_component"
+    "unfusion_setting": "random_component",
+    "automatic_reset": false
   },
   "data_mode": "classic",
   "species_generator_version": 2,

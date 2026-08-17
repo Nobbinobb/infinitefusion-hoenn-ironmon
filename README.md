@@ -24,11 +24,12 @@ and a fast reset to starter selection.
 - `tools/generation/` contains release-data generators and their runtime bridge.
 
 Milestone 6 is on hold while optional quality-of-life features are developed.
-Version `0.7.6` makes the Player view's healing summary open a categorized
-battle-item inventory and permits native item selection from the tracker while
-the game is waiting for a battle command. It retains type coverage, signed
-diagnostic access, early-run and area lookup, Favorite Clause, and randomization
-safeguards from the 0.7 series. See
+Version `0.7.7` adds explicitly shareable seeded runs. The tracker can create,
+copy, and save a seed token from the connected attempt or a selected archived
+run, then validate and transactionally import that token on a compatible
+installation. It retains battle-item control, type coverage, signed diagnostic
+access, early-run and area lookup, Favorite Clause, and randomization safeguards
+from the 0.7 series. See
 `docs/IRONMON_MECHANICS.html` for the complete behavior reference,
 `docs/ROADMAP.md` for cumulative scope, and `docs/guides/INSTALLATION.md` for
 installation steps.

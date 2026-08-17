@@ -1,6 +1,6 @@
-# Installing Ironmon 0.7.6
+# Installing Ironmon 0.7.7
 
-Ironmon `0.7.6` targets Pokemon Infinite Fusion 2 version 6.8.0.
+Ironmon `0.7.7` targets Pokemon Infinite Fusion 2 version 6.8.0.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
 
@@ -8,7 +8,7 @@ official game's Git repository.
 
 1. Fully close Pokemon Infinite Fusion 2.
 2. Keep a backup of saves you care about.
-3. Extract `Ironmon-v0.7.6-battle-items.zip` into the game's root directory—the
+3. Extract `Ironmon-v0.7.7-seeded-runs.zip` into the game's root directory—the
    directory containing `InfiniteFusion2.exe`.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
    directory. The package installs Ruby files under
@@ -55,16 +55,30 @@ Development saves using evolution rules version 1 or 2 migrate to rules version
 unchanged. Existing ability, base-stat, and move-access metadata continues to
 reproduce its assignments.
 
+## Share a seeded run
+
+Open **Seeded runs** with the chain-link button while an active attempt is
+connected, or select a completed attempt in **Archive**. Choose **Create
+token**, then copy it or save it as an `.ironmon-seed` file. Ordinary seed
+tokens identify tracker-generated data but are not maintainer-approved
+challenges.
+
+To import, connect an active Ironmon attempt, paste or load the complete token,
+validate it, and confirm the replacement. The game independently checks the
+version, configuration, data mode, and generator compatibility before it
+abandons the current attempt. Keep the game scripts and tracker from the same
+release together.
+
 ## Build the package from this repository
 
-Run `tools/Build-TrackerRelease.ps1` from PowerShell. It first regenerates and
-validates both `area_catalog.dat` and the aggregate type-coverage dataset in the
-adjacent Infinite Fusion bundled runtime. It then synchronizes `src` into
-`dist` and the local game installation, publishes the self-contained Windows
-x64 tracker, verifies both fresh datasets in the player output, and creates the
-release ZIP and SHA-256 checksum in `release`. Any failed or stale generation
-aborts the release. The player-package build rejects token and private-key
-files, maintainer or release-data generators, audits, and development scripts.
+Run `tools/Build-TrackerRelease.ps1` from PowerShell. It first runs the Release
+tracker tests and complete bundled-runtime suite, including seed-token and
+deterministic-import checks. It then regenerates and validates the release
+datasets, synchronizes `src`, publishes the self-contained Windows x64 tracker,
+verifies the player output, and creates the release ZIP and SHA-256 checksum in
+`release`. Any failed test, stale generation, or packaging violation aborts the
+release. The player-package build rejects token and private-key files,
+maintainer or release-data generators, audits, and development scripts.
 
 ## Diagnostic log
 

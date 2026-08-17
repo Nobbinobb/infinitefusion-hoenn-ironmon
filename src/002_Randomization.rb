@@ -30,7 +30,7 @@ module Ironmon
     $PokemonEncounters.setup($game_map.map_id)
   end
 
-  def self.apply_preset(context = :new_run)
+  def self.apply_preset(context = :new_run, seed_override = nil, start_tracker = true, expected_compatibility_fingerprint = nil)
     return if !$PokemonGlobal || !$game_switches || !$game_variables
     @ability_randomization_error_message = nil
     @base_stat_randomization_error_message = nil
@@ -41,7 +41,11 @@ module Ironmon
 
     $PokemonGlobal.ironmon_mode = true
     configuration
-    $PokemonGlobal.ironmon_seed = generate_run_seed
+    $PokemonGlobal.ironmon_seed = if seed_override.nil?
+                                    generate_run_seed
+                                  else
+                                    seed_override
+                                  end
     $PokemonGlobal.ironmon_gym_leader_teams = {}
     reset_pivot_state
     prepare_player_fusion_pairing
@@ -53,6 +57,13 @@ module Ironmon
     return false if !prepare_move_access_randomization
     return false if !prepare_item_randomization
     return false if !prepare_species_mappings
+    if expected_compatibility_fingerprint &&
+       tracker_compatibility_fingerprint != expected_compatibility_fingerprint
+      @seed_import_error_message = _INTL(
+        "This seed token is not compatible with the installed Ironmon data."
+      )
+      return false
+    end
 
     $game_switches[SWITCH_RANDOMIZED_AT_LEAST_ONCE] = true
     $game_switches[SWITCH_RANDOMIZED_MODE_INTRO] = false
@@ -97,7 +108,7 @@ module Ironmon
     refresh_loaded_wild_encounter_table
     randomize_loaded_static_events
     return false if !begin_run_attempt($PokemonGlobal.ironmon_seed)
-    start_tracker_run
+    start_tracker_run if start_tracker
     log_run_diagnostics(context)
     return true
   end

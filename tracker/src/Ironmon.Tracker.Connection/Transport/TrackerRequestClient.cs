@@ -23,6 +23,11 @@ public sealed class TrackerRequestClient
     private readonly TrackerConnectionState _state;
 
     /// <summary>
+    /// Occurs when the game reports a queued, started, or failed seeded-run import transition.
+    /// </summary>
+    public event Action<SeededRunImportStatusPayload>? SeededRunImportStatusChanged;
+
+    /// <summary>
     /// Initializes a request client for one connection service.
     /// </summary>
     /// <param name="session">The correlated request session.</param>
@@ -105,6 +110,39 @@ public sealed class TrackerRequestClient
     {
         Dictionary<string, object?> request = [];
         return _session.SendAsync<Dictionary<string, object?>, ResetRunResponsePayload>(TrackerCommands.ResetRun, request, GetConnectedRunId(), cancellationToken);
+    }
+
+    /// <summary>
+    /// Requests the active run's deterministic recipe after an explicit export action.
+    /// </summary>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>A task containing the active run's seed-token inputs.</returns>
+    public Task<SeededRunExportPayload> ExportSeededRunAsync(CancellationToken cancellationToken = default)
+    {
+        Dictionary<string, object?> request = [];
+        return _session.SendAsync<Dictionary<string, object?>, SeededRunExportPayload>(TrackerCommands.ExportSeededRun, request, GetConnectedRunId(), cancellationToken);
+    }
+
+    /// <summary>
+    /// Requests a transactional new run from signature-verified seeded-run inputs.
+    /// </summary>
+    /// <param name="request">The normalized token inputs confirmed by the player.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The game's initial accepted or rejected lifecycle status.</returns>
+    public Task<SeededRunImportStatusPayload> ImportSeededRunAsync(SeededRunImportRequestPayload request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return _session.SendAsync<SeededRunImportRequestPayload, SeededRunImportStatusPayload>(TrackerCommands.ImportSeededRun, request, GetConnectedRunId(), cancellationToken);
+    }
+
+    /// <summary>
+    /// Publishes one game-owned seeded-run import lifecycle transition.
+    /// </summary>
+    /// <param name="status">The validated transition.</param>
+    internal void PublishSeededRunImportStatus(SeededRunImportStatusPayload status)
+    {
+        ArgumentNullException.ThrowIfNull(status);
+        SeededRunImportStatusChanged?.Invoke(status);
     }
 
     /// <summary>

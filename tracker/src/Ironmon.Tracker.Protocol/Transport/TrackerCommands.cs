@@ -21,6 +21,16 @@ public static class TrackerCommands
     public const string ResetRun = "reset_run";
 
     /// <summary>
+    /// Requests the active run's explicit seeded-run export recipe.
+    /// </summary>
+    public const string ExportSeededRun = "export_seeded_run";
+
+    /// <summary>
+    /// Gets the transactional seeded-run import command.
+    /// </summary>
+    public const string ImportSeededRun = "import_seeded_run";
+
+    /// <summary>
     /// Gets the command that selects a bag item as the active battle action.
     /// </summary>
     public const string UseBattleItem = "use_battle_item";

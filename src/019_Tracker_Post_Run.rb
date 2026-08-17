@@ -2,6 +2,8 @@
 # Ironmon tracker deterministic post-run inspection
 #===============================================================================
 
+require "digest/sha2"
+
 module Ironmon
   TRACKER_SEARCH_LIMIT = 50
 
@@ -36,15 +38,35 @@ module Ironmon
     return nil
   end
 
-  def self.tracker_completed_run_recipe
+  def self.tracker_completed_run_recipe(result_override = nil)
     return nil if !active? || !$PokemonGlobal
-    result = $PokemonGlobal.ironmon_run_result
+    result = result_override || $PokemonGlobal.ironmon_run_result
     return nil if !result || result.to_s.empty?
-    return {
+    reproduction = tracker_run_reproduction_recipe
+    recipe = {
       "schema_version" => 1,
       "run_id" => ensure_tracker_run_id,
+      "seed" => reproduction.delete("seed"),
+      "result" => result.to_s
+    }
+    reproduction.each { |key, value| recipe[key] = value }
+    recipe.merge!({
+      "item_mappings" => tracker_item_mapping_recipe(
+        $PokemonGlobal.randomItemsHash
+      ),
+      "tm_mappings" => tracker_item_mapping_recipe(
+        $PokemonGlobal.randomTMsHash
+      ),
+      "statistics" => tracker_attempt_statistics(current_run_attempt),
+      "move_access_metrics" => move_access_metrics_snapshot,
+      "evolution_metrics" => evolution_metrics_snapshot
+    })
+    return recipe
+  end
+
+  def self.tracker_run_reproduction_recipe
+    return {
       "seed" => $PokemonGlobal.ironmon_seed || 0,
-      "result" => result.to_s,
       "game_version" => tracker_game_version,
       "ironmon_version" => VERSION,
       "configuration" => configuration_snapshot,
@@ -55,17 +77,48 @@ module Ironmon
       "evolution_generator" => tracker_evolution_generator_recipe,
       "move_access_generator" => tracker_move_access_generator_recipe,
       "player_fusion_generator" => tracker_player_fusion_generator_recipe,
-      "item_generator" => item_generator_recipe,
-      "item_mappings" => tracker_item_mapping_recipe(
-        $PokemonGlobal.randomItemsHash
-      ),
-      "tm_mappings" => tracker_item_mapping_recipe(
-        $PokemonGlobal.randomTMsHash
-      ),
-      "statistics" => tracker_attempt_statistics(current_run_attempt),
-      "move_access_metrics" => move_access_metrics_snapshot,
-      "evolution_metrics" => evolution_metrics_snapshot
+      "item_generator" => item_generator_recipe
     }
+  end
+
+  def self.tracker_compatibility_manifest(recipe = nil)
+    recipe ||= tracker_run_reproduction_recipe
+    manifest = {
+      "schema_version" => 1,
+      "game_version" => recipe["game_version"],
+      "ironmon_version" => recipe["ironmon_version"],
+      "data_mode" => recipe["data_mode"],
+      "species_generator" => recipe["species_generator"],
+      "ability_generator" => recipe["ability_generator"]
+    }
+    base_stats = recipe["base_stat_generator"]
+    evolutions = recipe["evolution_generator"]
+    moves = recipe["move_access_generator"]
+    items = recipe["item_generator"]
+    manifest["base_stat_generator"] = base_stats if base_stats
+    manifest["evolution_generator"] = evolutions if evolutions
+    manifest["move_access_generator"] = moves if moves
+    manifest["player_fusion_generator"] = recipe["player_fusion_generator"]
+    if items
+      manifest["item_generator"] = {
+        "version" => items["version"],
+        "rules_version" => items["rules_version"],
+        "ground_pool_size" => items["ground_pool_size"],
+        "ground_total_weight" => items["ground_total_weight"],
+        "ground_pool_fingerprint" => items["ground_pool_fingerprint"],
+        "tm_pool_size" => items["tm_pool_size"],
+        "tm_pool_fingerprint" => items["tm_pool_fingerprint"],
+        "result_bans" => items["result_bans"],
+        "result_ban_fingerprint" => items["result_ban_fingerprint"],
+        "shop_policy_version" => items["shop_policy_version"]
+      }
+    end
+    return manifest
+  end
+
+  def self.tracker_compatibility_fingerprint(recipe = nil)
+    json = tracker_json_generate(tracker_compatibility_manifest(recipe))
+    return Digest::SHA256.hexdigest(json)
   end
 
   def self.tracker_attempt_statistics(attempt)

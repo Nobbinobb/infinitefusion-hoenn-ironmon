@@ -4,11 +4,12 @@
 
 - `Build-Distribution.ps1` synchronizes canonical Ruby scripts and runtime data
   into the local game and the ignored player-distribution staging directory.
-- `Build-TrackerRelease.ps1` regenerates release data, publishes the tracker,
-  validates the player package, and creates the release archive and checksum.
+- `Build-TrackerRelease.ps1` runs tracker and bundled-runtime tests, regenerates
+  release data, publishes the tracker, validates the player package, and
+  creates the release archive and checksum.
 - `Publish-Tracker.ps1` publishes only the self-contained tracker application.
-- `Test-GameRuntime.ps1` runs the bundled-game area-progress and diagnostic
-  access runtime tests against the synchronized scripts.
+- `Test-GameRuntime.ps1` runs the complete bundled-game validation suite,
+  including deterministic seeded-run import, against synchronized scripts.
 
 ## Generation helpers
 

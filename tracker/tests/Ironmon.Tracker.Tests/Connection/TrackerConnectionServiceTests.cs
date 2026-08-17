@@ -218,6 +218,60 @@ public sealed class TrackerConnectionServiceTests
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(resetRequest!.RequestId!, new ResetRunResponsePayload { Accepted = true }, "run-1"));
         Assert.True((await resetTask).Accepted);
 
+        Task<SeededRunExportPayload> exportTask = service.Requests.ExportSeededRunAsync();
+        TrackerMessage? exportRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(TrackerCommands.ExportSeededRun, exportRequest?.Command);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(exportRequest!.RequestId!, CreateRecipe("run-1"), "run-1"));
+        SeededRunExportPayload exportedRun = await exportTask;
+        Assert.Equal(12345, exportedRun.Seed);
+        Assert.Equal("species", exportedRun.SpeciesGenerator.PoolFingerprint);
+
+        SeededRunImportRequestPayload importPayload = new()
+        {
+            TokenId = "seed-token-42",
+            Seed = 42,
+            GameVersion = "6.8.0",
+            IronmonVersion = "0.7.7",
+            DataMode = "classic",
+            Configuration = new RunConfigurationPayload
+            {
+                SchemaVersion = 3,
+                WildPolicy = "mixed",
+                TrainerPolicy = "normal_only",
+                UnfusionSetting = "player_choice",
+                AutomaticReset = false
+            },
+            CompatibilityFingerprint = new string('a', 64)
+        };
+
+        Task<SeededRunImportStatusPayload> importTask = service.Requests.ImportSeededRunAsync(importPayload);
+        TrackerMessage? importRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(TrackerCommands.ImportSeededRun, importRequest?.Command);
+        Assert.Equal(importPayload.TokenId, TrackerJson.DeserializePayload<SeededRunImportRequestPayload>(importRequest!.Payload).TokenId);
+        SeededRunImportStatusPayload acceptedImport = new()
+        {
+            TokenId = importPayload.TokenId,
+            Status = SeededRunImportStatus.Accepted,
+            Message = "Accepted."
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(importRequest.RequestId!, acceptedImport, "run-1"));
+        Assert.Equal(SeededRunImportStatus.Accepted, (await importTask).Status);
+
+        TaskCompletionSource<SeededRunImportStatusPayload> importStatusSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        service.Requests.SeededRunImportStatusChanged += status => importStatusSource.TrySetResult(status);
+        SeededRunImportStatusPayload queuedImport = new()
+        {
+            TokenId = importPayload.TokenId,
+            Status = SeededRunImportStatus.Queued,
+            Message = "Queued."
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.SeededRunImportStatus, 3, queuedImport, "run-1"));
+        SeededRunImportStatusPayload publishedImport = await importStatusSource.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(importPayload.TokenId, publishedImport.TokenId);
+        Assert.Equal(SeededRunImportStatus.Queued, publishedImport.Status);
+
         Task<PokemonSearchResponsePayload> favoriteSearchTask = service.Requests.SearchFavoritePokemonAsync("squirt");
         TrackerMessage? favoriteSearchRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
         Assert.Equal(TrackerCommands.FavoritePokemonSearch, favoriteSearchRequest?.Command);

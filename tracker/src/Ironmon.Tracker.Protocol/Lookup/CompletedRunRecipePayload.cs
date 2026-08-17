@@ -3,7 +3,7 @@ namespace Ironmon.Tracker.Protocol.Lookup;
 /// <summary>
 /// Carries the versioned deterministic inputs needed to reconstruct one completed run.
 /// </summary>
-public sealed class CompletedRunRecipePayload
+public sealed class CompletedRunRecipePayload : RunReproductionRecipePayload
 {
     /// <summary>
     /// Initializes an empty completed-run recipe for protocol serialization.
@@ -23,69 +23,9 @@ public sealed class CompletedRunRecipePayload
     public required string RunId { get; init; }
 
     /// <summary>
-    /// Gets or initializes the deterministic run seed.
-    /// </summary>
-    public long Seed { get; init; }
-
-    /// <summary>
     /// Gets or initializes the run result identifier.
     /// </summary>
     public required string Result { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the Infinite Fusion version.
-    /// </summary>
-    public required string GameVersion { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the Ironmon version.
-    /// </summary>
-    public required string IronmonVersion { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the typed run configuration.
-    /// </summary>
-    public required RunConfigurationPayload Configuration { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the classic, remix, or expert data mode.
-    /// </summary>
-    public string DataMode { get; init; } = "classic";
-
-    /// <summary>
-    /// Gets or initializes species-generator compatibility metadata.
-    /// </summary>
-    public required SpeciesGeneratorRecipePayload SpeciesGenerator { get; init; }
-
-    /// <summary>
-    /// Gets or initializes ability-generator compatibility metadata.
-    /// </summary>
-    public required AbilityGeneratorRecipePayload AbilityGenerator { get; init; }
-
-    /// <summary>
-    /// Gets or initializes base-stat-generator compatibility metadata when enabled.
-    /// </summary>
-    public BaseStatGeneratorRecipePayload? BaseStatGenerator { get; init; }
-
-    /// <summary>
-    /// Gets or initializes evolution-generator compatibility metadata when enabled.
-    /// </summary>
-    public EvolutionGeneratorRecipePayload? EvolutionGenerator { get; init; }
-
-    /// <summary>
-    /// Gets or initializes move-access-generator compatibility metadata when enabled.
-    /// </summary>
-    public MoveAccessGeneratorRecipePayload? MoveAccessGenerator { get; init; }
-
-    /// <summary>
-    /// Gets or initializes player-fusion-generator compatibility metadata.
-    /// </summary>
-    public required PlayerFusionGeneratorRecipePayload PlayerFusionGenerator { get; init; }
-
-    /// <summary>
-    /// Gets or initializes deterministic item-slot generator metadata when enabled.
-    /// </summary>
-    public ItemGeneratorRecipePayload? ItemGenerator { get; init; }
 
     /// <summary>
     /// Gets or initializes the archived ordinary-item shuffle by source item identifier.
@@ -193,6 +133,11 @@ public sealed class RunConfigurationPayload
     /// Gets or initializes the caught-fusion unfusion policy.
     /// </summary>
     public required string UnfusionSetting { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether a completed attempt resets automatically.
+    /// </summary>
+    public bool AutomaticReset { get; init; }
 }
 
 /// <summary>

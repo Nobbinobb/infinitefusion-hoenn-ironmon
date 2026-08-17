@@ -103,6 +103,7 @@ module Ironmon
 
   def self.finish_pending_reset
     return if !@reset_in_progress
+    return finish_seed_import if @seed_import_in_progress
     begin
       generated = apply_preset(:f7_reset)
       if !generated
@@ -143,7 +144,18 @@ module Ironmon
     return false if !@reset_notice
     notice = @reset_notice
     @reset_notice = nil
-    if notice == :automatic_success
+    if notice.is_a?(Hash) && notice[:type] == :seed_import_failed
+      pbMessage(_INTL(
+        "The seeded run could not be imported. The current attempt is still active. {1}",
+        notice[:message]
+      ))
+    elsif notice == :seed_import_success
+      number = current_attempt_number
+      pbMessage(_INTL(
+        "Ironmon attempt {1} was created from the shared seed. Choose your starter.",
+        number
+      ))
+    elsif notice == :automatic_success
       return true
     elsif notice == :generation_failed
       pbMessage(generation_error_message)
@@ -174,7 +186,7 @@ module Ironmon
   end
 
   def self.request_tracker_reset
-    return false if !active? || @reset_in_progress
+    return false if !active? || @reset_in_progress || @tracker_seed_import_pending
     @tracker_reset_requested = true
     return true
   end

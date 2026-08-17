@@ -5,9 +5,9 @@ catalog into both the local game installation and the ignored `dist` staging
 directory. Run it before testing game-script changes in Infinite Fusion.
 
 `tools/Test-GameRuntime.ps1` performs the automated bundled-runtime checks. It
-loads the synchronized ordinary scripts, validates area progress, and exercises
-diagnostic capability authorization without leaving development hooks in the
-game installation.
+loads the synchronized ordinary scripts, validates area progress, deterministic
+seeded-run import, and diagnostic capability authorization without leaving
+development hooks in the game installation.
 
 ## Tracker builds
 

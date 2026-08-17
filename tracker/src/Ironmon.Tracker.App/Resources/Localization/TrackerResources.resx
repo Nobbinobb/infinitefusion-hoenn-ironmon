@@ -1441,4 +1441,52 @@
   <data name="Player.Items.ChooseMove" xml:space="preserve"><value>Choose a move to restore</value></data>
   <data name="Player.Items.Use" xml:space="preserve"><value>Use</value></data>
   <data name="Player.Items.RequestFailed" xml:space="preserve"><value>The game did not receive the item selection. Return to the battle command menu and try again.</value></data>
+  <data name="Seeds.Page.Kicker" xml:space="preserve"><value>SHAREABLE RUNS</value></data>
+  <data name="Seeds.Page.Title" xml:space="preserve"><value>Seeded runs</value></data>
+  <data name="Seeds.Page.Open" xml:space="preserve"><value>Open seeded-run sharing</value></data>
+  <data name="Seeds.State.Available" xml:space="preserve"><value>Active run connected</value></data>
+  <data name="Seeds.State.AvailableDescription" xml:space="preserve"><value>You can explicitly export this run or validate a shared run before replacing it.</value></data>
+  <data name="Seeds.State.Unavailable" xml:space="preserve"><value>Seeded-run sharing unavailable</value></data>
+  <data name="Seeds.State.UnavailableDescription" xml:space="preserve"><value>Connect an active Ironmon run to export or import a seed token.</value></data>
+  <data name="Seeds.Export.Title" xml:space="preserve"><value>Export current run</value></data>
+  <data name="Seeds.Export.Description" xml:space="preserve"><value>Create a recognized tracker seed token containing this run's deterministic inputs. It is not an official or maintainer-approved challenge.</value></data>
+  <data name="Seeds.Export.Create" xml:space="preserve"><value>Create token</value></data>
+  <data name="Seeds.Export.TokenLabel" xml:space="preserve"><value>Exported seeded-run token</value></data>
+  <data name="Seeds.Export.Copy" xml:space="preserve"><value>Copy token</value></data>
+  <data name="Seeds.Export.Copied" xml:space="preserve"><value>Copied ✓</value></data>
+  <data name="Seeds.Export.Save" xml:space="preserve"><value>Save seed file</value></data>
+  <data name="Seeds.ArchiveExport.Title" xml:space="preserve"><value>Export archived run</value></data>
+  <data name="Seeds.ArchiveExport.Description" xml:space="preserve"><value>Create a shareable seed token from this completed run's archived deterministic recipe.</value></data>
+  <data name="Seeds.Import.Title" xml:space="preserve"><value>Import shared run</value></data>
+  <data name="Seeds.Import.Description" xml:space="preserve"><value>Paste a complete token or load an .ironmon-seed file. Validation does not change the current attempt.</value></data>
+  <data name="Seeds.Import.Placeholder" xml:space="preserve"><value>Paste the complete seeded-run token here</value></data>
+  <data name="Seeds.Import.LoadFile" xml:space="preserve"><value>Load token file</value></data>
+  <data name="Seeds.Import.Validate" xml:space="preserve"><value>Validate token</value></data>
+  <data name="Seeds.Confirm.Title" xml:space="preserve"><value>Confirm new attempt</value></data>
+  <data name="Seeds.Confirm.Warning" xml:space="preserve"><value>This will abandon the current attempt after the game successfully loads, generates, verifies, and saves the shared run. This action cannot be undone.</value></data>
+  <data name="Seeds.Confirm.Button" xml:space="preserve"><value>Abandon attempt and import</value></data>
+  <data name="Seeds.Details.Seed" xml:space="preserve"><value>Seed</value></data>
+  <data name="Seeds.Details.Mode" xml:space="preserve"><value>Data mode</value></data>
+  <data name="Seeds.Details.GameVersion" xml:space="preserve"><value>Game</value></data>
+  <data name="Seeds.Details.IronmonVersion" xml:space="preserve"><value>Ironmon</value></data>
+  <data name="Seeds.Messages.Exported" xml:space="preserve"><value>Seed token created explicitly. Copy it to share this randomized world.</value></data>
+  <data name="Seeds.Messages.Copied" xml:space="preserve"><value>Seed token copied.</value></data>
+  <data name="Seeds.Messages.Saved" xml:space="preserve"><value>Seed token saved as an .ironmon-seed file.</value></data>
+  <data name="Seeds.Messages.Validated" xml:space="preserve"><value>Recognized tracker seed token validated. The game will verify compatibility again before changing the run.</value></data>
+  <data name="Seeds.Status.Accepted" xml:space="preserve"><value>The game accepted the import request without replacing the current attempt.</value></data>
+  <data name="Seeds.Status.Queued" xml:space="preserve"><value>The shared run is queued for the next safe map boundary.</value></data>
+  <data name="Seeds.Status.Started" xml:space="preserve"><value>The shared seeded run was committed and has started.</value></data>
+  <data name="Seeds.Status.Rejected" xml:space="preserve"><value>The game rejected the import without changing the current attempt: {0}</value></data>
+  <data name="Seeds.Status.Failed" xml:space="preserve"><value>The import failed and the game attempted to restore the current attempt: {0}</value></data>
+  <data name="Seeds.Status.ConnectionLost" xml:space="preserve"><value>The game connection closed before the final import status arrived. Reconnect and verify the active attempt before trying again.</value></data>
+  <data name="Seeds.Errors.ExportFailed" xml:space="preserve"><value>The active run could not be exported. Check the connection and try again.</value></data>
+  <data name="Seeds.Errors.CopyFailed" xml:space="preserve"><value>The clipboard is unavailable. Select and copy the displayed token manually.</value></data>
+  <data name="Seeds.Errors.SaveFailed" xml:space="preserve"><value>The seeded-run token file could not be saved.</value></data>
+  <data name="Seeds.Errors.LoadFailed" xml:space="preserve"><value>The selected seeded-run token file could not be read.</value></data>
+  <data name="Seeds.Errors.ImportFailed" xml:space="preserve"><value>The game did not receive the import request. The current attempt was not changed.</value></data>
+  <data name="Seeds.Errors.Malformed" xml:space="preserve"><value>The seeded-run token is malformed.</value></data>
+  <data name="Seeds.Errors.UnknownKey" xml:space="preserve"><value>The seeded-run token uses an unsupported tracker key identity.</value></data>
+  <data name="Seeds.Errors.Unsupported" xml:space="preserve"><value>The token is not a supported Ironmon seeded-run token.</value></data>
+  <data name="Seeds.Errors.InvalidSignature" xml:space="preserve"><value>The seeded-run token signature is invalid.</value></data>
+  <data name="Seeds.Errors.InvalidClaims" xml:space="preserve"><value>The signed seeded-run inputs are invalid or unsupported.</value></data>
 </root>

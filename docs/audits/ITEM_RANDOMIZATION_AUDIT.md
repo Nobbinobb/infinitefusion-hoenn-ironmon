@@ -28,6 +28,15 @@ why the Trick House pickup authored as Shears or Lantern no longer appears as
 either tool in a generated Lookup result. Converted HM rewards remain
 protected so field progression is unchanged.
 
+| Introduced in rules | Ban group | Items | Count |
+|---:|---|---|---:|
+| 1 | Core exclusions | DNA Splicers, Super Splicers, DNA Reverser, Dynamite | 4 |
+| 2 | Mail | Air Mail, Bloom Mail, Brick Mail, Bubble Mail, Flame Mail, Grass Mail, Heart Mail, Mosaic Mail, Snow Mail, Space Mail, Steel Mail, Tunnel Mail | 12 |
+| 2 | Apricorns | Black Apricorn, Blue Apricorn, Green Apricorn, Pink Apricorn, Red Apricorn, White Apricorn, Yellow Apricorn | 7 |
+| 2 | Experience | Exp. Share | 1 |
+| 2 | Permanent HM tools | Shears, Teleporter, Surfboard, Lever, Jetpack, Pickaxe, Scuba Gear, Lantern, Climbing Gear | 9 |
+|  | **Total inherited by rules version 3** |  | **33** |
+
 Current rules version 3 retains that 580-item roster and replaces equal
 per-item selection with deterministic integer tickets. The audited
 classification is exclusive:

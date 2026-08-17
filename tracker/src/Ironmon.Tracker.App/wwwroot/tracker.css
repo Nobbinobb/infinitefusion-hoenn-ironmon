@@ -528,6 +528,78 @@ h1 {
     background: rgb(240 139 160 / 10%);
 }
 
+.seeded-run-page {
+    overflow: auto;
+}
+
+.seed-action-card,
+.seed-confirmation {
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.65rem;
+    background: var(--surface-soft);
+}
+
+.seed-action-card > div:first-child {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.seed-action-card strong,
+.seed-confirmation > strong {
+    font-size: 0.82rem;
+}
+
+.seed-action-card small {
+    color: var(--muted);
+    font-size: 0.66rem;
+    line-height: 1.45;
+}
+
+.seed-action-card textarea {
+    width: 100%;
+    resize: vertical;
+    padding: 0.62rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 0.5rem;
+    color: var(--text);
+    background: var(--surface);
+    font: 0.66rem/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+    overflow-wrap: anywhere;
+}
+
+.seed-export-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+
+.seed-copy-status {
+    margin: 0;
+    color: #8ae4b4;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.seed-destructive {
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--enemy-soft);
+    border-radius: 0.48rem;
+    color: #16131f;
+    background: var(--enemy-soft);
+    font: inherit;
+    font-size: 0.7rem;
+    font-weight: 750;
+    cursor: pointer;
+}
+
+.seed-destructive:disabled {
+    cursor: default;
+    opacity: 0.55;
+}
+
 .access-details {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

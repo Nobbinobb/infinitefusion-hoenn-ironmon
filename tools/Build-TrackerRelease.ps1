@@ -4,9 +4,9 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $gameRoot = Split-Path -Parent $projectRoot
 $distribution = Join-Path $projectRoot "dist"
 $releaseDirectory = Join-Path $projectRoot "release"
-$archiveName = "Ironmon-v0.7.6-battle-items.zip"
+$archiveName = "Ironmon-v0.7.7-seeded-runs.zip"
 $archive = Join-Path $releaseDirectory $archiveName
-$checksum = Join-Path $releaseDirectory "Ironmon-v0.7.6-battle-items.sha256.txt"
+$checksum = Join-Path $releaseDirectory "Ironmon-v0.7.7-seeded-runs.sha256.txt"
 $areaCatalog = Join-Path $projectRoot "data\area_catalog.dat"
 $areaAudit = Join-Path $projectRoot "docs\audits\generated\AREA_CATALOG_GENERATED.csv"
 $coverageDataset = Join-Path $projectRoot "data\type_coverage.json"
@@ -17,6 +17,15 @@ $generatedAreaAudit = "$areaAudit.release.tmp"
 $generatedCoverageDataset = "$coverageDataset.release.tmp"
 $generatedCoverageAudit = "$coverageAudit.release.tmp"
 $generatedItemAudit = "$itemAudit.release.tmp"
+
+& dotnet test (Join-Path $projectRoot "tracker\tests\Ironmon.Tracker.Tests\Ironmon.Tracker.Tests.csproj") `
+  --configuration Release `
+  --maxcpucount:1
+if ($LASTEXITCODE -ne 0) {
+  throw "Tracker tests failed."
+}
+
+& (Join-Path $PSScriptRoot "Test-GameRuntime.ps1") -GameRoot $gameRoot
 
 $generationStarted = [DateTime]::UtcNow.AddSeconds(-2)
 try {

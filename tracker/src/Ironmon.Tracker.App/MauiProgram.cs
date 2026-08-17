@@ -18,6 +18,8 @@ public static class MauiProgram
         builder.Services.AddSingleton(TrackerTypeCoverageDatasetCatalog.Load());
         builder.Services.AddSingleton(CreateKnowledgeOptions());
         builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddSingleton(static _ => new SeedTokenCodec(SeedTokenSharedKey.Material));
+        builder.Services.AddSingleton<SeedTokenFileSaver>();
         builder.Services.AddSingleton(static _ => TrackerDiagnosticAccessKeyCatalog.Create());
         builder.Services.AddSingleton<DiagnosticAccessTokenValidator>();
         builder.Services.AddSingleton(static services => new DiagnosticAccessService(services.GetRequiredService<TrackerKnowledgeOptions>(), services.GetRequiredService<DiagnosticAccessTokenValidator>(), IsDiagnosticAccessDeveloperOverride(), services.GetRequiredService<TimeProvider>()));

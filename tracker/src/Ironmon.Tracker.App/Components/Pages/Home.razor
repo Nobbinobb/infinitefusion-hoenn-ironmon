@@ -16,6 +16,9 @@
             <button class="@GetAccessButtonClass()" type="button" aria-label="@Text["Access.Page.Open"]" title="@Text["Access.Page.Title"]" @onclick="ToggleAccess">
                 <span aria-hidden="true">&#128273;</span>
             </button>
+            <button class="@GetSeedsButtonClass()" type="button" aria-label="@Text["Seeds.Page.Open"]" title="@Text["Seeds.Page.Title"]" @onclick="ToggleSeeds">
+                <span aria-hidden="true">&#128279;</span>
+            </button>
             <button class="@GetSettingsButtonClass()" type="button" aria-label="@Text["Settings.Page.OpenSettings"]" title="@Text["Settings.Page.Settings"]" @onclick="ToggleSettings">
                 <span aria-hidden="true">&#9881;</span>
             </button>
@@ -60,6 +63,10 @@
     @if (_accessOpen)
     {
         <DiagnosticToolsPage ToolsAvailable="@CanShowDiagnosticTools" Player="@_run.Player" Enemies="@_run.Enemies" GameRoot="@_connection.Game?.GameRoot" />
+    }
+    else if (_seedsOpen)
+    {
+        <SeededRunPage />
     }
     else if (_settingsOpen)
     {

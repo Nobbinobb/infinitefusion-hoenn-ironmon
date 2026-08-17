@@ -31,6 +31,11 @@ public static class TrackerEvents
     public const string RunCompleted = "run_completed";
 
     /// <summary>
+    /// Gets a queued, started, or failed seeded-run import lifecycle event.
+    /// </summary>
+    public const string SeededRunImportStatus = "seeded_run_import_status";
+
+    /// <summary>
     /// Gets the game-to-tracker area-discovery package event.
     /// </summary>
     public const string AreaDiscovery = "area_discovery";

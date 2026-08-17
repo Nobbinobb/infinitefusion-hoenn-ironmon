@@ -1532,6 +1532,268 @@ Status: **Implemented; awaiting review**
 - Validate visibility, pluralization, expiration, mode isolation, and temporary
   Repel handling in the bundled game runtime.
 
+### Milestone 0.7.7: Shareable seeded runs
+
+Status: **Implemented in 0.7.7**
+
+Add a tracker-owned export and import feature for a run token which reproduces
+the same randomized world on a compatible installation. Importing a token is a
+new-run operation: after explicit confirmation it abandons the active attempt,
+loads the starter checkpoint, and generates a new attempt from the token. The
+existing randomizers already derive their mappings from the run seed and
+versioned generator inputs, so this feature should reuse those generators
+rather than store or transmit every generated result.
+
+#### Step 0.7.7.1: Shared reproduction and compatibility contract
+
+Status: **Complete**
+
+- Extract the seeded inputs and generator manifests shared by completed-run
+  recipes and future seed tokens into one protocol contract without changing
+  the completed-recipe wire shape.
+- Define one canonical compatibility manifest and SHA-256 fingerprint covering
+  the game version, Ironmon version, data mode, and every enabled seeded
+  generator's versions, rules, pools, bans, and source fingerprints.
+- Exclude attempt-owned values such as the seed, configuration, run identity,
+  result, statistics, and observed analysis from the installation fingerprint.
+- Add tests proving stable output, sensitivity across every generator family,
+  and unchanged completed-recipe serialization.
+
+Implementation result: completed-run recipes now inherit their deterministic
+inputs from the shared reproduction contract. The tracker protocol calculates
+one lowercase SHA-256 compatibility fingerprint from an explicitly ordered
+canonical manifest, and focused tests protect its stability and boundary. No
+token, import command, reset behavior, or player-facing interface is included
+in this review slice. All 174 tracker tests pass in Debug and Release.
+
+#### Step 0.7.7.2: Seed-token JWS contract and codec
+
+Status: **Complete**
+
+- Define the minimal seeded-run claim set, dedicated token type, audience,
+  issuer, algorithm, key identity, size limits, and normalized validation
+  result.
+- Implement local export and strict import parsing with signature validation,
+  malformed-input handling, token-family isolation, and canonical round-trip
+  tests.
+- Keep ordinary seed-token signing material separate from diagnostic-access
+  keys and make its non-authoritative trust semantics explicit.
+
+Implementation result: a dedicated tracker seed-token library now exports and
+strictly validates `ironmon-seed+jwt` JWS Compact Serialization tokens using
+HS256, the `ironmon-tracker` issuer, the `ironmon-game` audience, and a distinct
+local seed-token key identity. The normalized signed claims contain only token
+identity and issue time, seed, complete configuration, game and Ironmon
+versions, data mode, and the shared compatibility fingerprint. Validation
+rejects malformed input, other token families, unsupported algorithms and key
+identities, invalid signatures, unknown claims, noncanonical fingerprints,
+out-of-range seeds, and invalid or extended configuration shapes. The shared
+HMAC material identifies locally generated seed tokens but is explicitly not
+maintainer authority. The completed-run configuration payload now retains its
+existing `automatic_reset` field instead of discarding it. No game command,
+reset behavior, embedded application key, or player-facing interface is part
+of this review slice. All 198 tracker tests pass in Debug and Release, and the
+complete tracker solution builds with zero warnings.
+
+#### Step 0.7.7.3: Transactional game import command
+
+Status: **Complete**
+
+- Add a dedicated correlated protocol command and accepted, queued, started,
+  rejected, and failed responses.
+- Independently validate normalized token inputs in the game and apply them at
+  the safe reset boundary without abandoning the active attempt on failure.
+- Load the starter checkpoint, install the imported seed and configuration
+  exactly once, and preserve the ordinary F7 new-seed behavior.
+
+Implementation result: the tracker protocol now exposes one correlated
+`import_seeded_run` command and a typed `seeded_run_import_status` event. The
+game independently rejects malformed shapes, stale run identities, unsupported
+configuration, version or data-mode mismatches, out-of-range seeds, and
+compatibility mismatches before queueing. An accepted request is applied only
+at a safe map boundary. The transaction snapshots the live save, stages the
+active attempt's abandonment in a copied ledger, loads the slot checkpoint,
+generates and verifies the imported world, and saves the new attempt before it
+publishes the old completion or starts the new tracker run. Generation, load,
+verification, and save failures restore the live snapshot and report failure
+against the source run. F7 remains the ordinary new-seed path and cannot race
+an import. Focused protocol and connection tests bring the tracker suite to 199
+passing tests, and the bundled game runtime covers the shared compatibility
+golden vector, nonmutating ledger staging, commit, rollback, status, and flag
+cleanup.
+
+#### Step 0.7.7.4: Tracker export and import interface
+
+Status: **Complete**
+
+- Add explicit token export plus paste/load import through a connected,
+  compatible game.
+- Require destructive confirmation and present validation, compatibility,
+  queueing, start, rejection, and failure states accurately.
+- Keep seed tokens out of automatically rendered protected active-run views.
+
+Implementation result: the tracker now has a dedicated seeded-run sharing
+screen which remains unavailable without a connected active Ironmon attempt.
+Create token explicitly requests the active reproduction recipe from the game;
+no token or reproduction payload is included in current-state, run-started, or
+protected diagnostic views. The tracker signs the result with stable public
+ordinary-token integrity material that is isolated from diagnostic-access keys
+and clearly described as non-authoritative. Import accepts pasted text or a
+bounded `.ironmon-seed` file, validates it locally, presents its seed and
+compatibility context, and exposes the destructive request only behind a
+second explicit confirmation. The screen remains open across the transactional
+run transition and distinguishes validation, accepted, queued, started,
+rejected, failed, clipboard, file, and connection outcomes. Protocol coverage
+proves explicit export correlation, and independent codec instances prove the
+shared ordinary-token material. All 201 tracker tests pass in Debug and
+Release, while bundled-runtime coverage verifies active-run export boundaries
+alongside transactional import. The shared export panel now confirms clipboard
+success beside the action, saves tokens through a native `.ironmon-seed` file
+picker, and creates tokens locally from the selected completed-run archive
+recipe without requiring the game connection. Archive-only outcome and
+observation fields remain outside the token contract.
+
+#### Step 0.7.7.5: Determinism, lifecycle, and release validation
+
+Status: **Complete**
+
+- Prove repeated imports reproduce representative results from every seeded
+  generator regardless of lookup or generation order.
+- Cover save/load, rollback, initial preset generation, F7, disclosure, and
+  compatibility failure behavior in tracker and bundled-runtime tests.
+- Update player documentation and release notes, then add token and
+  deterministic-import checks to the normal reproducible release pipeline.
+
+Validation sub-slice result: the bundled game runtime now performs two real
+seed-import preset generations against a controlled custom-fusion catalogue,
+queries representative starter, wild, trainer, ability, base-stat, move,
+normal-evolution, fusion-evolution, player-fusion, item, Gym, and progression
+results in opposite orders, and requires identical snapshots. A second seed
+must change generated content rather than only the exported recipe. This test
+also caught an older gameplay wrapper which had narrowed `apply_preset` to its
+pre-import signature; the wrapper now preserves the complete transactional
+import boundary. Existing save/load and F7 boundaries, transaction rollback,
+initial preset generation, active-run disclosure, and compatibility rejection
+are covered alongside the new tracker tests. Player, installation, mechanics,
+protocol, and release documentation describe the finished contract. The normal
+release pipeline now runs the Release tracker suite and complete bundled-runtime
+validation before it regenerates data, publishes the tracker, and creates the
+reproducible archive.
+
+#### Reproduction boundary
+
+An imported token should reproduce all content owned by Ironmon's seeded
+generators, including:
+
+- Starter results.
+- Wild and trainer species mappings.
+- Randomized abilities, base stats, move access, and evolutions.
+- Ground-item slots, found TM slots, and TM gifts.
+- Gym additions, player-fusion results, and other seed-derived helper content.
+
+The token should not promise an identical sequence of ordinary gameplay RNG.
+Damage rolls, critical hits, status chances, capture rolls, encounter timing,
+AI choices, and other play-session events remain outside the seeded-world
+contract. Making the entire gameplay RNG deterministic would be a separate and
+substantially larger feature.
+
+#### Token contract
+
+Use the tracker's existing JWT/JWS libraries and strict-validation approach,
+with a distinct seeded-run token type, audience, contract version, and claim
+set. Seed tokens must never be accepted as diagnostic-access tokens or vice
+versa. The claims should contain only the minimum inputs required to
+reconstruct and validate a run:
+
+- Token schema version.
+- Run seed.
+- Ironmon configuration snapshot.
+- Relevant game-data mode and generator/rules version information.
+- A compact compatibility fingerprint covering every required generator
+  manifest, source pool, and custom-fusion pool.
+- Token identity and, when applicable, issuer and signing-key identity.
+
+The initial contract should use JWS Compact Serialization and require fixed
+protected-header and payload identities such as a seeded-run `typ`, the
+`ironmon-tracker` issuer, the Ironmon game audience, an allowed algorithm, and
+a dedicated seed-token key ID. This lets the tracker identify its own token
+family and reject plain JSON, unrelated JWTs, diagnostic-access tokens, and
+manually damaged payloads before offering the destructive import action.
+
+Ordinary player sharing does not grant authority. Because every ordinary
+tracker must be able to export tokens locally, its signing material cannot be
+treated as a secret which proves that Ironmon maintainers approved the seed or
+configuration. The interface may describe a valid token as a recognized
+tracker-generated seed token, but must not call it an official or
+maintainer-approved challenge. Do not distribute or reuse the diagnostic-access
+private key. If official challenge provenance is later required, use a
+separately typed ES256 JWS signed by an explicitly trusted maintainer key. The
+token should not contain the generated mappings themselves.
+
+#### Import and lifecycle behavior
+
+- Paste or load the token through a dedicated tracker interface. Seed-token
+  import is unavailable without a connected compatible tracker and game.
+- Parse and validate the JWS structure and claims in the tracker, then ask for
+  explicit confirmation that the current attempt will be abandoned.
+- Send a new correlated seeded-run command containing the normalized token
+  information. Do not overload the ordinary `reset_run` request.
+- Have the game independently validate the seed range, configuration values,
+  local compatibility fingerprint, active-run state, checkpoint availability,
+  and safe transition state before changing run state.
+- Reject an incompatible installation with a clear explanation rather than
+  silently producing different results.
+- Queue an accepted request until the same safe map-scene boundary used by the
+  existing tracker reset. Load the starter checkpoint and prepare the imported
+  configuration before marking the current run abandoned.
+- Apply the imported seed and configuration transactionally and consume the
+  pending import exactly once after successful run setup. A validation or
+  checkpoint-load failure must leave the current attempt active.
+- Preserve the current F7 contract: resetting starts a newly randomized run.
+  Reproducing the imported run again requires importing its token again.
+- Make the token available at run creation and through an explicit export
+  action. Do not automatically expose it in protected active-run views because
+  a player with suitable external tooling could reconstruct hidden results.
+- Report separate accepted, queued, started, rejected, and failed states to the
+  tracker so it never claims that a run was abandoned before the game commits
+  the transition.
+
+#### Compatibility policy
+
+A numeric seed by itself is supported only as a developer convenience for the
+exact same Ironmon build, configuration, game data, and installed custom-fusion
+pool. The player-facing feature must use the complete token and validate the
+installation. Generator behavior which intentionally changes in a later
+release must change the relevant manifest or fingerprint so older tokens fail
+clearly instead of drifting silently.
+
+Completed-run recipes already carry much of the necessary seed, configuration,
+version, manifest, and fingerprint information. The implementation should
+factor the shared compatibility description so completed-run reconstruction
+and seeded-run tokens cannot disagree about what defines a reproducible run.
+
+#### Release and validation requirements
+
+- Add JWT/JWS encoder, decoder, token-type isolation, signature-policy,
+  malformed-input, and compatibility tests.
+- Add bundled-runtime tests proving that two imports of one token reproduce
+  representative results from every seeded generator regardless of generation
+  or lookup order.
+- Test save/load, failed import rollback, initial preset generation, and F7
+  behavior.
+- Add tracker tests for copy, paste, disclosure, and incompatible-token states.
+- Update the mechanics manual, configuration and installation guidance,
+  tracker protocol, and release notes when the feature is implemented.
+- Include all new token validation and deterministic-generator checks in the
+  normal release pipeline.
+
+Estimated scope: a numeric-seed-only prototype is approximately half to one
+focused development day but is too fragile for a player-facing release. A
+production-quality tracker feature with JWT/JWS handling, the transactional
+game command, compatibility validation, runtime tests, documentation, and
+release-pipeline coverage is approximately two to four focused development
+days.
+
 ## Working rule
 
 Only one selected improvement slice or milestone step should be implemented at

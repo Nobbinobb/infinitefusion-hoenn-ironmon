@@ -8,10 +8,10 @@
     <EnableDefaultCssItems>false</EnableDefaultCssItems>
     <ApplicationTitle>Ironmon Tracker</ApplicationTitle>
     <ApplicationId>com.ironmon.tracker</ApplicationId>
-    <ApplicationDisplayVersion>0.7.6</ApplicationDisplayVersion>
-    <ApplicationVersion>706</ApplicationVersion>
+    <ApplicationDisplayVersion>0.7.7</ApplicationDisplayVersion>
+    <ApplicationVersion>707</ApplicationVersion>
     <AssemblyName>Ironmon Tracker</AssemblyName>
-    <Version>0.7.6</Version>
+    <Version>0.7.7</Version>
     <NeutralLanguage>en-US</NeutralLanguage>
     <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
     <WindowsPackageType>None</WindowsPackageType>
@@ -41,5 +41,6 @@
     <ProjectReference Include="..\Ironmon.Tracker.Connection\Ironmon.Tracker.Connection.csproj" />
     <ProjectReference Include="..\Ironmon.Tracker.Core\Ironmon.Tracker.Core.csproj" />
     <ProjectReference Include="..\Ironmon.Tracker.Protocol\Ironmon.Tracker.Protocol.csproj" />
+    <ProjectReference Include="..\Ironmon.Tracker.Seeds\Ironmon.Tracker.Seeds.csproj" />
   </ItemGroup>
 </Project>

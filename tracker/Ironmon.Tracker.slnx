@@ -5,6 +5,7 @@
     <Project Path="src/Ironmon.Tracker.Connection/Ironmon.Tracker.Connection.csproj" />
     <Project Path="src/Ironmon.Tracker.Core/Ironmon.Tracker.Core.csproj" />
     <Project Path="src/Ironmon.Tracker.Protocol/Ironmon.Tracker.Protocol.csproj" />
+    <Project Path="src/Ironmon.Tracker.Seeds/Ironmon.Tracker.Seeds.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj" />

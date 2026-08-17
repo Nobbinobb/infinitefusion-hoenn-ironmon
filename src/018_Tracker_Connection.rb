@@ -148,9 +148,9 @@ module Ironmon
       queue_message(event_message("run_started", Ironmon.tracker_current_state))
     end
 
-    def send_event(event_name, payload)
+    def send_event(event_name, payload, run_id = nil, sequence = nil)
       return if @state != :connected
-      queue_message(event_message(event_name, payload))
+      queue_message(event_message(event_name, payload, run_id, sequence))
     end
 
     def connected?
@@ -263,14 +263,14 @@ module Ironmon
       return event_message("game_connected", payload)
     end
 
-    def event_message(event_name, payload)
+    def event_message(event_name, payload, run_id = nil, sequence = nil)
       return {
         "schema_version" => TRACKER_SCHEMA_VERSION,
         "type" => "event",
         "event" => event_name,
-        "run_id" => Ironmon.ensure_tracker_run_id,
+        "run_id" => run_id || Ironmon.ensure_tracker_run_id,
         "battle_id" => Ironmon.tracker_battle_id,
-        "sequence" => Ironmon.next_tracker_sequence,
+        "sequence" => sequence || Ironmon.next_tracker_sequence,
         "sent_at" => Ironmon.tracker_timestamp,
         "payload" => payload
       }
@@ -438,6 +438,21 @@ module Ironmon
         queue_message(success_response(
           request_id, { "accepted" => accepted }, message["run_id"]
         ))
+      elsif message["command"] == "export_seeded_run"
+        payload = Ironmon.tracker_seeded_run_export(message["run_id"])
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "import_seeded_run"
+        payload = Ironmon.request_tracker_seed_import(
+          message["payload"], message["run_id"]
+        )
+        queue_message(success_response(request_id, payload, message["run_id"]))
+        if payload["status"] == "accepted"
+          send_event("seeded_run_import_status", {
+            "token_id" => payload["token_id"],
+            "status" => "queued",
+            "message" => "Seeded run is waiting for a safe map boundary."
+          }, message["run_id"])
+        end
       elsif message["command"] == "use_battle_item"
         payload = Ironmon.request_tracker_battle_item(
           message["payload"], message["battle_id"]

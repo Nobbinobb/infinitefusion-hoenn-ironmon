@@ -118,8 +118,8 @@ end
 module Ironmon
   class << self
     alias ironmon_073_original_apply_preset apply_preset
-    def apply_preset(context = :new_run)
-      result = ironmon_073_original_apply_preset(context)
+    def apply_preset(context = :new_run, seed_override = nil, start_tracker = true, expected_compatibility_fingerprint = nil)
+      result = ironmon_073_original_apply_preset(context, seed_override, start_tracker, expected_compatibility_fingerprint)
       remove_default_pc_potion if result
       return result
     end

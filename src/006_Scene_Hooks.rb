@@ -13,6 +13,7 @@ class Scene_Map
   alias ironmon_original_update update
   def update
     return if Ironmon.show_pending_reset_notice
+    return if Ironmon.handle_seed_import
     return if Ironmon.handle_reset_hotkey
     if Ironmon.failed_run_locked? && pbMapInterpreterRunning?
       return ironmon_original_update
