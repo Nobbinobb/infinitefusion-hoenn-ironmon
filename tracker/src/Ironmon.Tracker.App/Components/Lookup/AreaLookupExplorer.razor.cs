@@ -8,14 +8,17 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class AreaLookupExplorer : IDisposable
 {
+    private const int _pageSize = 10;
     private static readonly AreaContentCategory[] Categories = [AreaContentCategory.Trainer, AreaContentCategory.Encounter, AreaContentCategory.Item];
     private readonly Dictionary<string, AreaLookupDetailResponsePayload> _details = [];
+    private readonly Dictionary<string, int> _detailPages = [];
     private readonly Dictionary<string, string> _detailErrors = [];
     private readonly Dictionary<string, string?> _encounterSpriteSources = [];
     private readonly Dictionary<string, string?> _trainerSpriteSources = [];
     private readonly HashSet<string> _expandedAreas = [];
     private readonly HashSet<string> _loadingDetails = [];
     private IReadOnlyList<AreaSummaryPayload> _areas = [];
+    private int _areaPage;
     private string? _enlargedSpriteLabel;
     private string? _enlargedSpriteSource;
     private AreaContentCategory _selectedCategory = AreaContentCategory.Trainer;
@@ -109,12 +112,15 @@ public partial class AreaLookupExplorer : IDisposable
             _observedSourceKey = SourceKey;
             _areas = [];
             _details.Clear();
+            _detailPages.Clear();
             _detailErrors.Clear();
             _encounterSpriteSources.Clear();
             _trainerSpriteSources.Clear();
         }
 
         _selectedCategory = desiredCategory;
+        _areaPage = 0;
+        _detailPages.Clear();
         _expandedAreas.Clear();
         _loadingDetails.Clear();
         await LoadSummariesAsync(true);
@@ -127,6 +133,8 @@ public partial class AreaLookupExplorer : IDisposable
     private async Task SelectCategory(AreaContentCategory category)
     {
         _selectedCategory = category;
+        _areaPage = 0;
+        _detailPages.Clear();
         _expandedAreas.Clear();
         await LoadSummariesAsync(true);
     }
@@ -166,6 +174,7 @@ public partial class AreaLookupExplorer : IDisposable
         {
             AreaLookupDetailResponsePayload response = await Connection.GetAreaDetailsAsync(areaId, _selectedCategory, Recipe, forceRefresh);
             _details[key] = response;
+            _detailPages[key] = Math.Min(_detailPages.GetValueOrDefault(key), GetMaximumPage(GetDetailEntryCount(response)));
             foreach (AreaEncounterEntryPayload encounter in response.Encounters.Where(encounter => encounter.DetailsRevealed))
                 _encounterSpriteSources[encounter.EntryId] = LocalSpriteLoader.Load(GameRoot, encounter.SpritePath);
 
@@ -201,6 +210,7 @@ public partial class AreaLookupExplorer : IDisposable
         {
             AreaLookupSummaryResponsePayload response = await Connection.GetAreaSummariesAsync(_selectedCategory, Recipe, forceRefresh);
             _areas = response.Areas;
+            _areaPage = Math.Min(_areaPage, GetMaximumPage(GetVisibleAreas().Count));
         }
         catch (Exception exception) when (IsExpectedRequestException(exception))
         {
@@ -244,6 +254,7 @@ public partial class AreaLookupExplorer : IDisposable
             return;
 
         _details.Clear();
+        _detailPages.Clear();
         _detailErrors.Clear();
         _encounterSpriteSources.Clear();
         _trainerSpriteSources.Clear();
@@ -255,8 +266,102 @@ public partial class AreaLookupExplorer : IDisposable
     /// Gets areas containing at least one entry in the selected category.
     /// </summary>
     /// <returns>The visible area summaries.</returns>
-    private IEnumerable<AreaSummaryPayload> GetVisibleAreas()
-        => _areas.Where(area => GetTotal(area) > 0);
+    private IReadOnlyList<AreaSummaryPayload> GetVisibleAreas()
+        => [.. _areas.Where(area => GetTotal(area) > 0)];
+
+    /// <summary>
+    /// Gets the current ten-area page.
+    /// </summary>
+    /// <param name="areas">All visible areas.</param>
+    /// <returns>The areas on the selected page.</returns>
+    private IReadOnlyList<AreaSummaryPayload> GetPagedAreas(IReadOnlyList<AreaSummaryPayload> areas)
+        => [.. areas.Skip(_areaPage * _pageSize).Take(_pageSize)];
+
+    /// <summary>
+    /// Gets the current ten-entry page for one expanded area.
+    /// </summary>
+    /// <typeparam name="T">The area-entry type.</typeparam>
+    /// <param name="areaId">The stable logical area identifier.</param>
+    /// <param name="entries">All entries in the selected category.</param>
+    /// <returns>The entries on the selected page.</returns>
+    private IReadOnlyList<T> GetPagedEntries<T>(string areaId, IReadOnlyList<T> entries)
+        => [.. entries.Skip(GetDetailPage(areaId) * _pageSize).Take(_pageSize)];
+
+    /// <summary>
+    /// Selects the previous area-summary page.
+    /// </summary>
+    private void PreviousAreaPage()
+        => _areaPage = Math.Max(0, _areaPage - 1);
+
+    /// <summary>
+    /// Selects the next area-summary page.
+    /// </summary>
+    /// <param name="areaCount">The total visible area count.</param>
+    private void NextAreaPage(int areaCount)
+        => _areaPage = Math.Min(GetMaximumPage(areaCount), _areaPage + 1);
+
+    /// <summary>
+    /// Selects the previous entry page for one expanded area.
+    /// </summary>
+    /// <param name="areaId">The stable logical area identifier.</param>
+    private void PreviousDetailPage(string areaId)
+    {
+        string key = GetDetailKey(areaId);
+        _detailPages[key] = Math.Max(0, _detailPages.GetValueOrDefault(key) - 1);
+    }
+
+    /// <summary>
+    /// Selects the next entry page for one expanded area.
+    /// </summary>
+    /// <param name="areaId">The stable logical area identifier.</param>
+    /// <param name="entryCount">The total entry count.</param>
+    private void NextDetailPage(string areaId, int entryCount)
+    {
+        string key = GetDetailKey(areaId);
+        _detailPages[key] = Math.Min(GetMaximumPage(entryCount), _detailPages.GetValueOrDefault(key) + 1);
+    }
+
+    /// <summary>
+    /// Gets the selected entry page for one expanded area.
+    /// </summary>
+    /// <param name="areaId">The stable logical area identifier.</param>
+    /// <returns>The zero-based page index.</returns>
+    private int GetDetailPage(string areaId)
+        => _detailPages.GetValueOrDefault(GetDetailKey(areaId));
+
+    /// <summary>
+    /// Gets the total number of entries represented by one detail response.
+    /// </summary>
+    /// <param name="detail">The selected area detail.</param>
+    /// <returns>The selected category's entry count.</returns>
+    private static int GetDetailEntryCount(AreaLookupDetailResponsePayload detail) => detail.Category switch
+    {
+        AreaContentCategory.Trainer => detail.Trainers.Count,
+        AreaContentCategory.Encounter => detail.Encounters.Count,
+        AreaContentCategory.Item => detail.Items.Count,
+        _ => 0
+    };
+
+    /// <summary>
+    /// Gets the last valid zero-based page for a result count.
+    /// </summary>
+    /// <param name="count">The total result count.</param>
+    /// <returns>The last valid page index.</returns>
+    private static int GetMaximumPage(int count)
+        => Math.Max(0, (count - 1) / _pageSize);
+
+    /// <summary>
+    /// Formats an inclusive result range for one page.
+    /// </summary>
+    /// <param name="page">The zero-based page index.</param>
+    /// <param name="count">The total result count.</param>
+    /// <returns>The visible range and total count.</returns>
+    private string GetPageRangeText(int page, int count)
+    {
+        int first = count == 0 ? 0 : (page * _pageSize) + 1;
+        int last = Math.Min(count, (page + 1) * _pageSize);
+        return Text["Lookup.Search.ResultRange", first, last, count];
+    }
 
     /// <summary>
     /// Gets the localized selected-category progress for one area.

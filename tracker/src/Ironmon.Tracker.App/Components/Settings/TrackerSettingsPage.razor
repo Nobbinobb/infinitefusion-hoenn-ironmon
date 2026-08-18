@@ -6,37 +6,50 @@
         </div>
     </header>
 
-    <label class="settings-option">
-        <span>
-            <strong>@Text["Settings.Starter.AutoSelectStarter"]</strong>
-            <small>@Text["Settings.Starter.AutoSelectDescription"]</small>
-        </span>
-        <input type="checkbox" checked="@AutoSelectStarter" @onchange="HandleAutoSelectChanged" />
-    </label>
+    <details class="settings-group">
+        <summary>
+            <span>
+                <strong>@Text["Settings.Starter.Group"]</strong>
+                <small>@Text["Settings.Starter.GroupDescription"]</small>
+            </span>
+        </summary>
+        <div class="settings-group-content">
+            <label class="settings-option">
+                <span>
+                    <strong>@Text["Settings.Starter.AutoSelectStarter"]</strong>
+                    <small>@Text["Settings.Starter.AutoSelectDescription"]</small>
+                </span>
+                <input type="checkbox" checked="@AutoSelectStarter" @onchange="HandleAutoSelectChanged" />
+            </label>
 
-    <label class="settings-number-option">
-        <span>
-            <strong>@Text["Settings.Starter.MaximumBst"]</strong>
-            <small>@Text["Settings.Starter.MaximumBstDescription"]</small>
-        </span>
-        <input type="number"
-               min="@StarterSelectionConstants.MinimumBaseStatTotal"
-               max="@StarterSelectionConstants.MaximumBaseStatTotal"
-               value="@MaximumStarterBaseStatTotal"
-               placeholder="@Text["Settings.Starter.MaximumBstPlaceholder"]"
-               @onchange="HandleMaximumBstChanged" />
-        @if (!string.IsNullOrWhiteSpace(_maximumBstError))
-        {
-            <small class="settings-validation">@_maximumBstError</small>
-        }
-    </label>
-
-    <section class="favorite-settings" aria-label="@Text["Settings.Favorites.FavoriteClause"]">
-        <div>
-            <strong>@Text["Settings.Favorites.FavoriteClause"]</strong>
-            <small>@Text["Settings.Favorites.Description"]</small>
+            <label class="settings-number-option">
+                <span>
+                    <strong>@Text["Settings.Starter.MaximumBst"]</strong>
+                    <small>@Text["Settings.Starter.MaximumBstDescription"]</small>
+                </span>
+                <input type="number"
+                       min="@StarterSelectionConstants.MinimumBaseStatTotal"
+                       max="@StarterSelectionConstants.MaximumBaseStatTotal"
+                       value="@MaximumStarterBaseStatTotal"
+                       placeholder="@Text["Settings.Starter.MaximumBstPlaceholder"]"
+                       @onchange="HandleMaximumBstChanged" />
+                @if (!string.IsNullOrWhiteSpace(_maximumBstError))
+                {
+                    <small class="settings-validation">@_maximumBstError</small>
+                }
+            </label>
         </div>
-        <input class="favorite-search" type="search" value="@_query" @oninput="HandleSearchInput" placeholder="@Text["Settings.Favorites.SearchPlaceholder"]" autocomplete="off" />
+    </details>
+
+    <details class="settings-group favorite-settings">
+        <summary>
+            <span>
+                <strong>@Text["Settings.Favorites.FavoriteClause"]</strong>
+                <small>@Text["Settings.Favorites.Description"]</small>
+            </span>
+        </summary>
+        <div class="settings-group-content">
+            <input class="favorite-search" type="search" value="@_query" @oninput="HandleSearchInput" placeholder="@Text["Settings.Favorites.SearchPlaceholder"]" autocomplete="off" />
 
         @if (_searching)
         {
@@ -59,35 +72,36 @@
             </div>
         }
 
-        <div class="favorite-list-heading">
-            <strong>@Text["Settings.Favorites.YourFavorites"]</strong>
-            <small>@Text["Settings.Favorites.Count", _favorites.Count]</small>
-        </div>
-        @if (_favorites.Count == 0)
-        {
-            <p class="favorite-empty">@Text["Settings.Favorites.Empty"]</p>
-        }
-        else
-        {
-            <div class="favorite-list">
-                @foreach (PokemonSearchMatch favorite in PagedFavorites)
-                {
-                    <div>
-                        <span>@favorite.SpeciesName</span>
-                        <button type="button" @onclick="() => RemoveFavoriteAsync(favorite.SpeciesId)">@Text["Settings.Favorites.Remove"]</button>
-                    </div>
-                }
+            <div class="favorite-list-heading">
+                <strong>@Text["Settings.Favorites.YourFavorites"]</strong>
+                <small>@Text["Settings.Favorites.Count", _favorites.Count]</small>
             </div>
-            @if (FavoritePageCount > 1)
+            @if (_favorites.Count == 0)
             {
-                <nav class="favorite-pager" aria-label="@Text["Settings.Favorites.Pages"]">
-                    <button type="button" disabled="@(_favoritePage == 0)" @onclick="PreviousFavoritePage">@Text["Settings.Favorites.Previous"]</button>
-                    <span>@Text["Settings.Favorites.Page", _favoritePage + 1, FavoritePageCount]</span>
-                    <button type="button" disabled="@(_favoritePage + 1 >= FavoritePageCount)" @onclick="NextFavoritePage">@Text["Settings.Favorites.Next"]</button>
-                </nav>
+                <p class="favorite-empty">@Text["Settings.Favorites.Empty"]</p>
             }
-        }
-    </section>
+            else
+            {
+                <div class="favorite-list">
+                    @foreach (PokemonSearchMatch favorite in PagedFavorites)
+                    {
+                        <div>
+                            <span>@favorite.SpeciesName</span>
+                            <button type="button" @onclick="() => RemoveFavoriteAsync(favorite.SpeciesId)">@Text["Settings.Favorites.Remove"]</button>
+                        </div>
+                    }
+                </div>
+                @if (FavoritePageCount > 1)
+                {
+                    <nav class="favorite-pager" aria-label="@Text["Settings.Favorites.Pages"]">
+                        <button type="button" disabled="@(_favoritePage == 0)" @onclick="PreviousFavoritePage">@Text["Settings.Favorites.Previous"]</button>
+                        <span>@Text["Settings.Favorites.Page", _favoritePage + 1, FavoritePageCount]</span>
+                        <button type="button" disabled="@(_favoritePage + 1 >= FavoritePageCount)" @onclick="NextFavoritePage">@Text["Settings.Favorites.Next"]</button>
+                    </nav>
+                }
+            }
+        </div>
+    </details>
 
     @if (!string.IsNullOrWhiteSpace(Status))
     {

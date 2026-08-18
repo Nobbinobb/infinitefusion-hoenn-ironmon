@@ -1,4 +1,4 @@
-@foreach ((string Name, int Stage) stage in GetVisibleStages())
+@foreach ((string Name, int Stage, bool UsesAccuracyFormula) stage in GetVisibleStages())
 {
-    <span class="battle-stat-chip" title="@BattleStatStageFormatter.FormatTooltip(stage.Stage)">@stage.Name@BattleStatStageFormatter.FormatSignedStage(stage.Stage)</span>
+    <span class="battle-stat-chip" title="@BattleStatStageFormatter.FormatTooltip(stage.Stage, stage.UsesAccuracyFormula)">@stage.Name@BattleStatStageFormatter.FormatSignedStage(stage.Stage)</span>
 }

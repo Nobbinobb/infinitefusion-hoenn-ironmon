@@ -6,34 +6,14 @@ namespace Ironmon.Tracker.App;
 internal static class TrackerApplicationConstants
 {
     /// <summary>
-    /// Gets the initial window width.
+    /// Gets the fixed tracker-window width.
     /// </summary>
-    internal const double DefaultWindowWidth = 500;
+    internal const double WindowWidth = 500;
 
     /// <summary>
-    /// Gets the initial window height.
+    /// Gets the fixed tracker-window height.
     /// </summary>
-    internal const double DefaultWindowHeight = 860;
-
-    /// <summary>
-    /// Gets the minimum supported window width.
-    /// </summary>
-    internal const double MinimumWindowWidth = 360;
-
-    /// <summary>
-    /// Gets the minimum supported window height.
-    /// </summary>
-    internal const double MinimumWindowHeight = 520;
-
-    /// <summary>
-    /// Gets the persisted window-width preference key.
-    /// </summary>
-    internal const string WindowWidthPreferenceKey = "tracker_window_width";
-
-    /// <summary>
-    /// Gets the persisted window-height preference key.
-    /// </summary>
-    internal const string WindowHeightPreferenceKey = "tracker_window_height";
+    internal const double WindowHeight = 840;
 
     /// <summary>
     /// Gets the persisted automatic starter-selection preference key.

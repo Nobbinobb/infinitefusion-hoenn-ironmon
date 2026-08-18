@@ -23,6 +23,11 @@ public sealed class RunStatisticsPayload
     public int AttemptNumber { get; init; }
 
     /// <summary>
+    /// Gets or initializes the owning save-slot identifier when recorded.
+    /// </summary>
+    public string? SaveSlot { get; init; }
+
+    /// <summary>
     /// Gets or initializes the deterministic run seed.
     /// </summary>
     public long Seed { get; init; }

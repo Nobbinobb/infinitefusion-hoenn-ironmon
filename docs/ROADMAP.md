@@ -1794,6 +1794,21 @@ game command, compatibility validation, runtime tests, documentation, and
 release-pipeline coverage is approximately two to four focused development
 days.
 
+### Milestone 0.7.8: Compact tracker interface
+
+Status: **Implemented in 0.7.8**
+
+- Fix the tracker window at 500 × 840 and simplify its header, navigation, and
+  footer for the compact desktop layout.
+- Align move power, remaining PP, and stage-adjusted accuracy while showing
+  STAB, effectiveness, PP thresholds, and Accuracy/Evasion battle stages.
+- Replace the long Archive stack with tabs, disclosures, ten-row area paging,
+  tabbed run statistics, and separately grouped save-slot attempt totals.
+- Collapse long Settings, Diagnostic Access, and Protocol JSON content by
+  default without adding disclosure arrows.
+- Keep existing 0.7 saves and archived recipes readable, and add only optional
+  protocol fields for Accuracy/Evasion stages and save-slot identity.
+
 ## Working rule
 
 Only one selected improvement slice or milestone step should be implemented at

@@ -69,6 +69,9 @@
   <data name="App.Shell.TrackerViewsLabel" xml:space="preserve">
     <value>Tracker views</value>
   </data>
+  <data name="App.Shell.ToolsLabel" xml:space="preserve">
+    <value>Tracker tools</value>
+  </data>
   <data name="App.Shell.UnknownState" xml:space="preserve">
     <value>Unknown state</value>
   </data>
@@ -153,6 +156,12 @@
   <data name="Common.Move.Accuracy" xml:space="preserve">
     <value>Accuracy</value>
   </data>
+  <data name="Common.Move.AccuracyHeader" xml:space="preserve">
+    <value>ACC</value>
+  </data>
+  <data name="Common.Move.AdjustedAccuracy" xml:space="preserve">
+    <value>Base {0}% · ACC {1} · target EVA {2}</value>
+  </data>
   <data name="Common.Move.AccuracyCompact" xml:space="preserve">
     <value>{0}% Acc</value>
   </data>
@@ -198,6 +207,9 @@
   <data name="Common.Move.Power" xml:space="preserve">
     <value>Power</value>
   </data>
+  <data name="Common.Move.PowerHeader" xml:space="preserve">
+    <value>POW</value>
+  </data>
   <data name="Common.Move.PowerCompact" xml:space="preserve">
     <value>{0} Pow</value>
   </data>
@@ -206,6 +218,15 @@
   </data>
   <data name="Common.Move.Status" xml:space="preserve">
     <value>Status</value>
+  </data>
+  <data name="Common.Move.Stab" xml:space="preserve">
+    <value>STAB</value>
+  </data>
+  <data name="Common.Move.StabDescription" xml:space="preserve">
+    <value>Same-type attack bonus</value>
+  </data>
+  <data name="Common.Move.PpHeader" xml:space="preserve">
+    <value>PP</value>
   </data>
   <data name="Common.Move.SuperEffectiveDouble" xml:space="preserve">
     <value>Super effective (2×)</value>
@@ -1090,6 +1111,8 @@
   <data name="Settings.Page.TrackerPreferences" xml:space="preserve"><value>TRACKER PREFERENCES</value></data>
   <data name="Settings.Starter.AutoSelectDescription" xml:space="preserve"><value>Reveal all three starters, block player input, then choose the Random Pick after two seconds.</value></data>
   <data name="Settings.Starter.AutoSelectStarter" xml:space="preserve"><value>Autoselect starter</value></data>
+  <data name="Settings.Starter.Group" xml:space="preserve"><value>Starter selection</value></data>
+  <data name="Settings.Starter.GroupDescription" xml:space="preserve"><value>Automatic selection and generated BST limit.</value></data>
   <data name="Settings.Starter.MaximumBst" xml:space="preserve"><value>Maximum starter BST</value></data>
   <data name="Settings.Starter.MaximumBstDescription" xml:space="preserve"><value>Optional inclusive ceiling for autoselect. Attempts with no eligible starter reset immediately and still count.</value></data>
   <data name="Settings.Starter.MaximumBstPlaceholder" xml:space="preserve"><value>No ceiling</value></data>
@@ -1248,6 +1271,10 @@
   <data name="Lookup.Generator.MoveHeading" xml:space="preserve"><value>MOVE GENERATOR</value></data>
   <data name="Lookup.Generator.EvolutionHeading" xml:space="preserve"><value>EVOLUTION GENERATOR</value></data>
   <data name="Lookup.Statistics.Heading" xml:space="preserve"><value>RUN STATISTICS</value></data>
+  <data name="Lookup.Statistics.Sections" xml:space="preserve"><value>Run statistic sections</value></data>
+  <data name="Lookup.Statistics.OverviewTab" xml:space="preserve"><value>Overview</value></data>
+  <data name="Lookup.Statistics.TrainersTab" xml:space="preserve"><value>Trainers</value></data>
+  <data name="Lookup.Statistics.ItemsTab" xml:space="preserve"><value>Items</value></data>
   <data name="Lookup.Statistics.UnavailableShort" xml:space="preserve"><value>Not recorded</value></data>
   <data name="Lookup.Statistics.Attempt" xml:space="preserve"><value>Attempt {0}</value></data>
   <data name="Lookup.Statistics.Unavailable" xml:space="preserve"><value>Statistics unavailable</value></data>
@@ -1294,6 +1321,8 @@
   <data name="Lookup.Areas.Title" xml:space="preserve"><value>Area progress</value></data>
   <data name="Lookup.Areas.Kicker" xml:space="preserve"><value>WORLD LOOKUP</value></data>
   <data name="Lookup.Areas.Categories" xml:space="preserve"><value>Area content categories</value></data>
+  <data name="Lookup.Areas.AreaPages" xml:space="preserve"><value>Area pages</value></data>
+  <data name="Lookup.Areas.EntryPages" xml:space="preserve"><value>{0} entry pages</value></data>
   <data name="Lookup.Areas.Trainers" xml:space="preserve"><value>Trainers</value></data>
   <data name="Lookup.Areas.Encounters" xml:space="preserve"><value>Encounters</value></data>
   <data name="Lookup.Areas.Items" xml:space="preserve"><value>Items</value></data>
@@ -1354,6 +1383,15 @@
   <data name="Archive.Kicker" xml:space="preserve"><value>COMPLETED RUNS</value></data>
   <data name="Archive.Title" xml:space="preserve"><value>Run archive</value></data>
   <data name="Archive.Run" xml:space="preserve"><value>Run</value></data>
+  <data name="Archive.Sections.Label" xml:space="preserve"><value>Archived run sections</value></data>
+  <data name="Archive.Sections.Summary" xml:space="preserve"><value>Summary</value></data>
+  <data name="Archive.Sections.Areas" xml:space="preserve"><value>Areas</value></data>
+  <data name="Archive.Sections.Pokemon" xml:space="preserve"><value>Pokémon</value></data>
+  <data name="Archive.Sections.Analysis" xml:space="preserve"><value>Analysis</value></data>
+  <data name="Archive.SaveSlots.Kicker" xml:space="preserve"><value>SAVE SLOTS</value></data>
+  <data name="Archive.SaveSlots.Title" xml:space="preserve"><value>Attempt history</value></data>
+  <data name="Archive.SaveSlots.Tabs" xml:space="preserve"><value>Save-slot attempt histories</value></data>
+  <data name="Archive.SaveSlots.LatestAttempt" xml:space="preserve"><value>Latest archived attempt: {0}</value></data>
   <data name="Archive.NoCompletedRun" xml:space="preserve"><value>No completed run yet</value></data>
   <data name="Archive.NoCompletedRunDescription" xml:space="preserve"><value>A lost, won, or abandoned Ironmon run will appear here.</value></data>
   <data name="Diagnostics.Page.Title" xml:space="preserve"><value>Diagnostic access and tools</value></data>

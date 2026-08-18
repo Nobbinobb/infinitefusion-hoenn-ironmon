@@ -43,6 +43,12 @@ public partial class EnemyCard : IDisposable
     public IReadOnlyList<string>? PlayerTypes { get; set; }
 
     /// <summary>
+    /// Gets or sets the player's current evasion stage.
+    /// </summary>
+    [Parameter]
+    public int PlayerEvasionStage { get; set; }
+
+    /// <summary>
     /// Gets or sets the connected game installation directory.
     /// </summary>
     [Parameter]

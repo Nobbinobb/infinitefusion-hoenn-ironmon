@@ -36,4 +36,14 @@ public sealed class BattleStatStagesSnapshot
     /// Gets or initializes the current Speed stage.
     /// </summary>
     public int Speed { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the current accuracy stage.
+    /// </summary>
+    public int Accuracy { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the current evasion stage.
+    /// </summary>
+    public int Evasion { get; init; }
 }

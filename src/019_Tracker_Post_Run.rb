@@ -134,6 +134,7 @@ module Ironmon
     return {
       "schema_version" => statistics["schema_version"],
       "attempt_number" => attempt["attempt_number"],
+      "save_slot" => ($Trainer ? $Trainer.save_slot : nil),
       "seed" => attempt["seed"],
       "result" => attempt["result"],
       "active_seconds" => attempt["active_seconds"],

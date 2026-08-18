@@ -24,6 +24,7 @@ public sealed class RunStatisticsPayloadTests
         {
             SchemaVersion = 1,
             AttemptNumber = 7,
+            SaveSlot = "File A",
             Seed = 12345,
             Result = "active",
             ActiveSeconds = 65.5,
@@ -55,9 +56,11 @@ public sealed class RunStatisticsPayloadTests
         GameCurrentStatePayload result = TrackerJson.DeserializePayload<GameCurrentStatePayload>(json);
 
         Assert.Equal(7, result.AttemptStatistics!.AttemptNumber);
+        Assert.Equal("File A", result.AttemptStatistics.SaveSlot);
         Assert.Equal(1, result.AttemptStatistics.ItemsBySource["Held"]["SITRUSBERRY"]);
         Assert.Equal("Pikachu", result.AttemptStatistics.TrainerSpeciesNames["PIKACHU"]);
         Assert.True(json.TryGetProperty("attempt_statistics", out _));
+        Assert.Equal("File A", json.GetProperty("attempt_statistics").GetProperty("save_slot").GetString());
     }
 
     /// <summary>

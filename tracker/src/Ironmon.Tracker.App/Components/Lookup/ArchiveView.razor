@@ -1,43 +1,72 @@
 <section class="pokemon-card lookup-view" role="tabpanel" aria-label="@Text["Archive.Title"]">
-    <header class="lookup-heading">
-        <div>
-            <p class="card-kicker">@Text["Archive.Kicker"]</p>
-            <h2>@Text["Archive.Title"]</h2>
-        </div>
-    </header>
+    <details class="archive-disclosure" open>
+        <summary>
+            <span>
+                <small>@Text["Archive.Kicker"]</small>
+                <strong>@Text["Archive.Title"]</strong>
+            </span>
+        </summary>
+        <div class="archive-disclosure-content">
+            @if (_recipes.Count == 0)
+            {
+                <div class="lookup-empty">
+                    <strong>@Text["Archive.NoCompletedRun"]</strong>
+                    <p>@Text["Archive.NoCompletedRunDescription"]</p>
+                </div>
+            }
+            else
+            {
+                <div class="lookup-controls">
+                    <label>
+                        @Text["Archive.Run"]
+                        <select value="@_selection.SelectedRunId" @onchange="SelectRun" @onkeydown:stopPropagation="true">
+                            @foreach (CompletedRunRecipePayload recipe in _recipes)
+                            {
+                                <option value="@recipe.RunId">@FormatRun(recipe)</option>
+                            }
+                        </select>
+                    </label>
+                </div>
 
-    @if (_recipes.Count == 0)
-    {
-        <div class="lookup-empty">
-            <strong>@Text["Archive.NoCompletedRun"]</strong>
-            <p>@Text["Archive.NoCompletedRunDescription"]</p>
-        </div>
-    }
-    else
-    {
-        <div class="lookup-controls">
-            <label>
-                @Text["Archive.Run"]
-                <select value="@_selection.SelectedRunId" @onchange="SelectRun" @onkeydown:stopPropagation="true">
-                    @foreach (CompletedRunRecipePayload recipe in _recipes)
-                    {
-                        <option value="@recipe.RunId">@FormatRun(recipe)</option>
-                    }
-                </select>
-            </label>
-        </div>
+                @if (GetSelectedRecipe() is CompletedRunRecipePayload selectedRecipe)
+                {
+                    <nav class="archive-tabs" role="tablist" aria-label="@Text["Archive.Sections.Label"]">
+                        @foreach (ArchiveSection section in Enum.GetValues<ArchiveSection>())
+                        {
+                            <button type="button"
+                                    class="@GetSectionTabClass(section)"
+                                    role="tab"
+                                    aria-selected="@(_selectedSection == section)"
+                                    @onclick="() => SelectSection(section)">
+                                @GetSectionName(section)
+                            </button>
+                        }
+                    </nav>
 
-        @if (GetSelectedRecipe() is CompletedRunRecipePayload selectedRecipe)
-        {
-            <SeedTokenExportPanel @key="@($"archive-seed-{selectedRecipe.RunId}")"
-                                  Recipe="selectedRecipe"
-                                  Title="@Text["Seeds.ArchiveExport.Title"]"
-                                  Description="@Text["Seeds.ArchiveExport.Description"]" />
-            <AreaLookupExplorer @key="@($"archive-areas-{selectedRecipe.RunId}")" SourceKey="@($"archive:{selectedRecipe.RunId}")" RunId="@selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
-            <RunStatistics @key="@($"statistics-{selectedRecipe.RunId}")" Statistics="@selectedRecipe.Statistics" />
-            <PokemonLookupExplorer @key="selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
-            <MoveAccessRunAnalysis @key="@($"metrics-{selectedRecipe.RunId}")" Metrics="@selectedRecipe.MoveAccessMetrics" />
-            <EvolutionRunAnalysis @key="@($"evolution-metrics-{selectedRecipe.RunId}")" Metrics="@selectedRecipe.EvolutionMetrics" />
-        }
-    }
+                    <div class="archive-tab-panel" role="tabpanel" hidden="@(_selectedSection != ArchiveSection.Summary)">
+                        <SeedTokenExportPanel @key="@($"archive-seed-{selectedRecipe.RunId}")"
+                                              Recipe="selectedRecipe"
+                                              Title="@Text["Seeds.ArchiveExport.Title"]"
+                                              Description="@Text["Seeds.ArchiveExport.Description"]" />
+                        <RunStatistics @key="@($"statistics-{selectedRecipe.RunId}")" Statistics="@selectedRecipe.Statistics" />
+                    </div>
+
+                    <div class="archive-tab-panel" role="tabpanel" hidden="@(_selectedSection != ArchiveSection.Areas)">
+                        <AreaLookupExplorer @key="@($"archive-areas-{selectedRecipe.RunId}")" SourceKey="@($"archive:{selectedRecipe.RunId}")" RunId="@selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
+                    </div>
+
+                    <div class="archive-tab-panel" role="tabpanel" hidden="@(_selectedSection != ArchiveSection.Pokemon)">
+                        <PokemonLookupExplorer @key="selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
+                    </div>
+
+                    <div class="archive-tab-panel" role="tabpanel" hidden="@(_selectedSection != ArchiveSection.Analysis)">
+                        <MoveAccessRunAnalysis @key="@($"metrics-{selectedRecipe.RunId}")" Metrics="@selectedRecipe.MoveAccessMetrics" />
+                        <EvolutionRunAnalysis @key="@($"evolution-metrics-{selectedRecipe.RunId}")" Metrics="@selectedRecipe.EvolutionMetrics" />
+                    </div>
+                }
+            }
+        </div>
+    </details>
+
+    <SaveSlotAttemptHistory Recipes="@_recipes" />
 </section>

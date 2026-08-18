@@ -1,21 +1,24 @@
 @using Ironmon.Tracker.Core
 
 <button class="move-placeholder live-move @MovePresentation.GetMoveTypeClass(Type)" type="button" @onclick="Selected">
-    <div>
-        <div class="move-name-line">
-            <MoveCategoryIcon Category="@Category" />
-            <strong>@Name</strong>
-            @if (Effectiveness is not null && Effectiveness != MoveEffectiveness.Neutral)
-            {
-                <span class="@MovePresentation.GetEffectivenessClass(Effectiveness.Value)"
-                      aria-label="@GetEffectivenessTitle(Effectiveness.Value)">
-                    @MovePresentation.GetEffectivenessSymbol(Effectiveness.Value)
-                </span>
-            }
-        </div>
+    <div class="move-name-line">
+        <MoveCategoryIcon Category="@Category" />
+        <strong>@Name</strong>
+        @if (Stab)
+        {
+            <span class="stab-badge" title="@Text["Common.Move.StabDescription"]">@Text["Common.Move.Stab"]</span>
+        }
+        @if (Effectiveness is not null && Effectiveness != MoveEffectiveness.Neutral)
+        {
+            <span class="@MovePresentation.GetEffectivenessClass(Effectiveness.Value)"
+                  aria-label="@GetEffectivenessTitle(Effectiveness.Value)">
+                @MovePresentation.GetEffectivenessSymbol(Effectiveness.Value)
+            </span>
+        }
     </div>
-    <div>
-        <span>@PpText</span>
-        <small>@FormatPower() · @FormatAccuracy()</small>
+    <div class="move-stats">
+        <span class="@GetPowerClass()">@FormatPower()</span>
+        <span class="@GetPpClass()" title="@GetPpTitle()">@PpText</span>
+        <span class="@GetAccuracyClass()" title="@GetAccuracyTitle()">@FormatAccuracy()</span>
     </div>
 </button>

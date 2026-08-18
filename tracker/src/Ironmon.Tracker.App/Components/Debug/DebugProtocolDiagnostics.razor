@@ -24,32 +24,32 @@
 
     @if (HasRawState)
     {
-        <section class="debug-raw-section">
-            <header class="debug-raw-heading">
+        <details class="debug-raw-section">
+            <summary class="debug-raw-heading">
                 <p class="section-label">@Text["Debug.Protocol.CurrentConnectionStateHeading"]</p>
-                <button type="button" @onclick="CopyConnectionAsync">@Text["Debug.Protocol.Copy"]</button>
-            </header>
+                <button type="button" @onclick="CopyConnectionAsync" @onclick:stopPropagation="true">@Text["Debug.Protocol.Copy"]</button>
+            </summary>
             <pre class="debug-raw-value">@_connectionJson</pre>
-        </section>
+        </details>
 
-        <section class="debug-raw-section">
-            <header class="debug-raw-heading">
+        <details class="debug-raw-section">
+            <summary class="debug-raw-heading">
                 <p class="section-label">@Text["Debug.Protocol.CurrentTrackerStateHeading"]</p>
-                <button type="button" @onclick="CopyRunStateAsync">@Text["Debug.Protocol.Copy"]</button>
-            </header>
+                <button type="button" @onclick="CopyRunStateAsync" @onclick:stopPropagation="true">@Text["Debug.Protocol.Copy"]</button>
+            </summary>
             <pre class="debug-raw-value">@_runStateJson</pre>
-        </section>
+        </details>
     }
 
     @if (HasPersistedKnowledge)
     {
-        <section class="debug-raw-section">
-            <header class="debug-raw-heading">
+        <details class="debug-raw-section">
+            <summary class="debug-raw-heading">
                 <p class="section-label">@Text["Debug.Protocol.PersistedKnowledgeHeading"]</p>
-                <button type="button" @onclick="CopyKnowledgeAsync">@Text["Debug.Protocol.Copy"]</button>
-            </header>
+                <button type="button" @onclick="CopyKnowledgeAsync" @onclick:stopPropagation="true">@Text["Debug.Protocol.Copy"]</button>
+            </summary>
             <pre class="debug-raw-value">@_knowledgeJson</pre>
-        </section>
+        </details>
     }
 
     @if (HasProtocolHistory)
@@ -65,16 +65,16 @@
             }
             @foreach (TrackerDiagnosticEntry entry in _entries.Reverse())
             {
-                <article class="debug-history-entry">
-                    <header class="debug-entry-heading">
+                <details class="debug-history-entry">
+                    <summary class="debug-entry-heading">
                         <div>
                             <p><strong>@entry.Name</strong></p>
                             <span class="debug-entry-meta">@entry.Direction · @entry.Timestamp.ToLocalTime().ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture)</span>
                         </div>
-                        <button type="button" @onclick="() => CopyEntryAsync(entry)">@Text["Debug.Protocol.Copy"]</button>
-                    </header>
+                        <button type="button" @onclick="() => CopyEntryAsync(entry)" @onclick:stopPropagation="true">@Text["Debug.Protocol.Copy"]</button>
+                    </summary>
                     <pre class="debug-raw-value">@entry.RawValue</pre>
-                </article>
+                </details>
             }
         </section>
     }

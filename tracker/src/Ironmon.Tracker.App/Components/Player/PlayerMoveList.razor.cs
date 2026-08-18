@@ -24,6 +24,12 @@ public partial class PlayerMoveList
     public IReadOnlyList<string>? TargetTypes { get; set; }
 
     /// <summary>
+    /// Gets or sets the selected target's current evasion stage.
+    /// </summary>
+    [Parameter]
+    public int TargetEvasionStage { get; set; }
+
+    /// <summary>
     /// Formats progress through the generated level-up learnset.
     /// </summary>
     /// <returns>The learned, maximum, and next-level display.</returns>

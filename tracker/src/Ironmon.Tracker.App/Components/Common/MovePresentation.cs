@@ -21,6 +21,42 @@ internal static class MovePresentation
     }
 
     /// <summary>
+    /// Gets whether a damaging move receives a same-type attack bonus from its user.
+    /// </summary>
+    /// <param name="moveType">The move type.</param>
+    /// <param name="category">The move damage category.</param>
+    /// <param name="userTypes">The legally visible types of the move user.</param>
+    /// <returns>Whether the move receives STAB.</returns>
+    public static bool HasStab(string moveType, MoveCategory category, IReadOnlyList<string>? userTypes)
+        => category != MoveCategory.Status && userTypes?.Contains(moveType, StringComparer.OrdinalIgnoreCase) == true;
+
+    /// <summary>
+    /// Calculates displayed move accuracy after the user's accuracy and target's evasion stages.
+    /// </summary>
+    /// <param name="baseAccuracy">The move's base accuracy.</param>
+    /// <param name="accuracyStage">The move user's accuracy stage.</param>
+    /// <param name="evasionStage">The target's evasion stage.</param>
+    /// <returns>The adjusted percentage, capped at 100.</returns>
+    public static int CalculateAdjustedAccuracy(int baseAccuracy, int accuracyStage, int evasionStage)
+    {
+        decimal accuracyPercent = decimal.Round(100m * GetAccuracyStageMultiplier(accuracyStage), 0, MidpointRounding.AwayFromZero);
+        decimal evasionPercent = decimal.Round(100m * GetAccuracyStageMultiplier(evasionStage), 0, MidpointRounding.AwayFromZero);
+        int adjustedAccuracy = decimal.ToInt32(decimal.Round(baseAccuracy * accuracyPercent / evasionPercent, 0, MidpointRounding.AwayFromZero));
+        return Math.Clamp(adjustedAccuracy, 1, 100);
+    }
+
+    /// <summary>
+    /// Gets the native accuracy-scale multiplier for one clamped battle stage.
+    /// </summary>
+    /// <param name="stage">The stage from minus six through plus six.</param>
+    /// <returns>The accuracy or evasion multiplier.</returns>
+    private static decimal GetAccuracyStageMultiplier(int stage)
+    {
+        int validated = Math.Clamp(stage, -6, 6);
+        return validated >= 0 ? (3m + validated) / 3m : 3m / (3m - validated);
+    }
+
+    /// <summary>
     /// Gets a move's type-specific CSS classes.
     /// </summary>
     /// <param name="type">The stable move type identifier.</param>
@@ -46,10 +82,10 @@ internal static class MovePresentation
     /// <returns>The arrow or immunity symbol.</returns>
     public static string GetEffectivenessSymbol(MoveEffectiveness effectiveness) => effectiveness switch
     {
-        MoveEffectiveness.Double => "↑",
-        MoveEffectiveness.Quadruple => "↑↑",
-        MoveEffectiveness.Half => "↓",
-        MoveEffectiveness.Quarter => "↓↓",
+        MoveEffectiveness.Double => "^",
+        MoveEffectiveness.Quadruple => "^^",
+        MoveEffectiveness.Half => "v",
+        MoveEffectiveness.Quarter => "vv",
         MoveEffectiveness.Immune => "×",
         _ => string.Empty
     };
@@ -61,8 +97,10 @@ internal static class MovePresentation
     /// <returns>The effectiveness CSS classes.</returns>
     public static string GetEffectivenessClass(MoveEffectiveness effectiveness) => effectiveness switch
     {
-        MoveEffectiveness.Double or MoveEffectiveness.Quadruple => "effectiveness increased",
-        MoveEffectiveness.Half or MoveEffectiveness.Quarter => "effectiveness decreased",
+        MoveEffectiveness.Double => "effectiveness increased single",
+        MoveEffectiveness.Quadruple => "effectiveness increased double",
+        MoveEffectiveness.Half => "effectiveness decreased single",
+        MoveEffectiveness.Quarter => "effectiveness decreased double",
         MoveEffectiveness.Immune => "effectiveness immune",
         _ => "effectiveness"
     };

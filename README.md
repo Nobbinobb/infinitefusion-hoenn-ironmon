@@ -24,11 +24,11 @@ and a fast reset to starter selection.
 - `tools/generation/` contains release-data generators and their runtime bridge.
 
 Milestone 6 is on hold while optional quality-of-life features are developed.
-Version `0.7.7` adds explicitly shareable seeded runs. The tracker can create,
-copy, and save a seed token from the connected attempt or a selected archived
-run, then validate and transactionally import that token on a compatible
-installation. It retains battle-item control, type coverage, signed diagnostic
-access, early-run and area lookup, Favorite Clause, and randomization safeguards
+Version `0.7.8` refreshes the tracker around its fixed 500 × 840 window with a
+compact header, aligned move information, tabbed Archive and run statistics,
+ten-row area paging, save-slot history, and collapsible settings and diagnostic
+content. It retains seeded-run sharing, battle-item control, type coverage,
+signed diagnostic access, Favorite Clause, and the randomization safeguards
 from the 0.7 series. See
 `docs/IRONMON_MECHANICS.html` for the complete behavior reference,
 `docs/ROADMAP.md` for cumulative scope, and `docs/guides/INSTALLATION.md` for

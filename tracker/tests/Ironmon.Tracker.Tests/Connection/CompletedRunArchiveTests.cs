@@ -256,6 +256,7 @@ public sealed class CompletedRunArchiveTests
     {
         SchemaVersion = schemaVersion,
         AttemptNumber = 4,
+        SaveSlot = "File A",
         Seed = 98765,
         Result = "lost",
         ActiveSeconds = 3723,

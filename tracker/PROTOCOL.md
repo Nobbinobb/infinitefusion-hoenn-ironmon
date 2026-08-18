@@ -1,8 +1,8 @@
 # Ironmon Tracker protocol v1
 
-This document records the implemented protocol through the 0.7.7 shareable
-seeded-run additions. Later parts extend the payload catalog without changing
-the common envelope or transport.
+This document records the implemented protocol through the 0.7.8 tracker UI
+and battle-stage additions. Later parts extend the payload catalog without
+changing the common envelope or transport.
 
 ## Transport
 
@@ -41,7 +41,7 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.0",
-    "ironmon_version": "0.7.7",
+    "ironmon_version": "0.7.8",
     "ironmon_active": false,
     "debug_available": true,
     "supported_diagnostic_capabilities": ["pokemon.current_player", "run.seed"],
@@ -241,7 +241,7 @@ action path. Non-cancellable nested screens such as Summary reject the request
 until closed. The native battle checks, turn consumption, item consumption, and
 effect handlers remain authoritative.
 
-An active 0.7.7 run also includes optional aggregate type-coverage context:
+An active 0.7.8 run also includes optional aggregate type-coverage context:
 
 ```json
 {
@@ -393,7 +393,9 @@ position alone never initializes the production player view.
     "defense": 0,
     "special_attack": 0,
     "special_defense": 0,
-    "speed": -1
+    "speed": -1,
+    "accuracy": -1,
+    "evasion": 0
   },
   "base_stat_total": 525,
   "nature": "Hardy",
@@ -428,7 +430,8 @@ Tracking continues outside battle after the first real send-out, so bag item
 changes update healing capacity before the next encounter.
 
 Power zero represents a status move. Accuracy zero represents the game's
-always-hit value.
+always-hit value. The tracker applies the move user's current `accuracy` stage
+and the selected target's `evasion` stage to the displayed move accuracy.
 
 ## Healing inventory
 
@@ -462,7 +465,9 @@ visible identity data changes.
     "defense": 1,
     "special_attack": 0,
     "special_defense": 0,
-    "speed": 0
+    "speed": 0,
+    "accuracy": 0,
+    "evasion": 1
   }
 }
 ```
@@ -585,7 +590,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.7.7",
+  "ironmon_version": "0.7.8",
   "configuration": {
     "schema_version": 3,
     "wild_policy": "mixed",
@@ -860,11 +865,12 @@ event does not carry token metadata.
 
 `current_state` and `run_started` optionally include `attempt_statistics`.
 Completed recipes optionally include the same versioned payload as
-`statistics`. Schema version 1 contains attempt number, seed, result, active
-seconds, per-save result totals, completed battles, highest player level,
-badges earned, actual and wasted item healing, item counts grouped by `Bag` or
-`Held`, trainer species frequencies with display names keyed by species
-identifier, and defeated-trainer BST aggregates.
+`statistics`. Schema version 1 contains attempt number, optional `save_slot`,
+seed, result, active seconds, per-save result totals, completed battles,
+highest player level, badges earned, actual and wasted item healing, item
+counts grouped by `Bag` or `Held`, trainer species frequencies with display
+names keyed by species identifier, and defeated-trainer BST aggregates. New
+0.7.8 snapshots include `save_slot`; older snapshots omit it and remain valid.
 
 Recipes archived before these fields existed remain valid. The tracker shows
 their statistics as unavailable rather than creating zero values. The game

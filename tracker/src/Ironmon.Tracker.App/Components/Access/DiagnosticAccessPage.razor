@@ -44,37 +44,41 @@
             <div><dt>@Text["Access.Details.KeyId"]</dt><dd><code>@_snapshot.Grant.KeyId</code></dd></div>
         </dl>
 
-        <section class="access-grants">
-            <h3>@Text["Access.Grants.Direct"]</h3>
-            <div class="access-capabilities">
-                @foreach (string capability in _snapshot.Grant.DirectCapabilities)
-                {
-                    <span>@GetCapabilityName(capability)</span>
-                }
-            </div>
-            @if (IncludedCapabilities.Count > 0)
-            {
-                <h3>@Text["Access.Grants.Included"]</h3>
-                <div class="access-capabilities included">
-                    @foreach (string capability in IncludedCapabilities)
+        <details class="access-grants">
+            <summary>@Text["Access.Grants.Direct"]</summary>
+            <div class="access-grants-content">
+                <div class="access-capabilities">
+                    @foreach (string capability in _snapshot.Grant.DirectCapabilities)
                     {
                         <span>@GetCapabilityName(capability)</span>
                     }
                 </div>
-            }
-        </section>
+                @if (IncludedCapabilities.Count > 0)
+                {
+                    <h3>@Text["Access.Grants.Included"]</h3>
+                    <div class="access-capabilities included">
+                        @foreach (string capability in IncludedCapabilities)
+                        {
+                            <span>@GetCapabilityName(capability)</span>
+                        }
+                    </div>
+                }
+            </div>
+        </details>
     }
     else if (_snapshot.State == DiagnosticAccessState.DeveloperOverride)
     {
-        <section class="access-grants">
-            <h3>@Text["Access.Grants.Developer"]</h3>
-            <div class="access-capabilities">
-                @foreach (string capability in _snapshot.EffectiveCapabilities)
-                {
-                    <span>@GetCapabilityName(capability)</span>
-                }
+        <details class="access-grants">
+            <summary>@Text["Access.Grants.Developer"]</summary>
+            <div class="access-grants-content">
+                <div class="access-capabilities">
+                    @foreach (string capability in _snapshot.EffectiveCapabilities)
+                    {
+                        <span>@GetCapabilityName(capability)</span>
+                    }
+                </div>
             </div>
-        </section>
+        </details>
     }
 
     @if (_snapshot.UnknownCapabilities.Count > 0)

@@ -39,8 +39,9 @@
     }
     else
     {
+        IReadOnlyList<AreaSummaryPayload> visibleAreas = GetVisibleAreas();
         <div class="area-groups" role="tabpanel">
-            @foreach (AreaSummaryPayload area in GetVisibleAreas())
+            @foreach (AreaSummaryPayload area in GetPagedAreas(visibleAreas))
             {
                 bool expanded = IsExpanded(area.AreaId);
                 <article class="area-group">
@@ -70,7 +71,7 @@
                                 {
                                     case AreaContentCategory.Trainer:
                                         <div class="area-entry-list">
-                                            @foreach (AreaTrainerEntryPayload trainer in detail.Trainers)
+                                            @foreach (AreaTrainerEntryPayload trainer in GetPagedEntries(area.AreaId, detail.Trainers))
                                             {
                                                 <article class="area-entry @(trainer.Defeated ? "completed" : null)">
                                                     <header>
@@ -127,7 +128,7 @@
                                         break;
                                     case AreaContentCategory.Encounter:
                                         <div class="area-entry-list">
-                                            @foreach (AreaEncounterEntryPayload encounter in detail.Encounters)
+                                            @foreach (AreaEncounterEntryPayload encounter in GetPagedEntries(area.AreaId, detail.Encounters))
                                             {
                                                 <article class="area-entry area-encounter-entry @(encounter.Encountered ? "completed" : null)">
                                                     <header>
@@ -163,7 +164,7 @@
                                         break;
                                     case AreaContentCategory.Item:
                                         <div class="area-entry-list">
-                                            @foreach (AreaItemEntryPayload item in detail.Items)
+                                            @foreach (AreaItemEntryPayload item in GetPagedEntries(area.AreaId, detail.Items))
                                             {
                                                 <article class="area-entry @(item.Collected ? "completed" : null)">
                                                     <header>
@@ -184,12 +185,30 @@
                                         </div>
                                         break;
                                 }
+                                int detailEntryCount = GetDetailEntryCount(detail);
+                                @if (detailEntryCount > _pageSize)
+                                {
+                                    int detailPage = GetDetailPage(area.AreaId);
+                                    <nav class="lookup-pager area-entry-pager" aria-label="@Text["Lookup.Areas.EntryPages", area.Name]">
+                                        <button type="button" disabled="@(detailPage == 0)" @onclick="() => PreviousDetailPage(area.AreaId)">@Text["Lookup.Search.Previous"]</button>
+                                        <span>@GetPageRangeText(detailPage, detailEntryCount)</span>
+                                        <button type="button" disabled="@(detailPage >= GetMaximumPage(detailEntryCount))" @onclick="() => NextDetailPage(area.AreaId, detailEntryCount)">@Text["Lookup.Search.Next"]</button>
+                                    </nav>
+                                }
                             }
                         </div>
                     }
                 </article>
             }
         </div>
+        @if (visibleAreas.Count > _pageSize)
+        {
+            <nav class="lookup-pager area-summary-pager" aria-label="@Text["Lookup.Areas.AreaPages"]">
+                <button type="button" disabled="@(_areaPage == 0)" @onclick="PreviousAreaPage">@Text["Lookup.Search.Previous"]</button>
+                <span>@GetPageRangeText(_areaPage, visibleAreas.Count)</span>
+                <button type="button" disabled="@(_areaPage >= GetMaximumPage(visibleAreas.Count))" @onclick="() => NextAreaPage(visibleAreas.Count)">@Text["Lookup.Search.Next"]</button>
+            </nav>
+        }
     }
 
     @if (_enlargedSpriteSource is not null && _enlargedSpriteLabel is not null)

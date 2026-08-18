@@ -31,6 +31,8 @@ public sealed class PlayerSnapshotCodecTests
         Assert.True(restored.Confused);
         Assert.Equal(2, restored.StatStages.Attack);
         Assert.Equal(-1, restored.StatStages.Speed);
+        Assert.Equal(-2, restored.StatStages.Accuracy);
+        Assert.Equal(1, restored.StatStages.Evasion);
         BattleItemSnapshot item = Assert.Single(restored.Healing.Items);
         Assert.Equal("Potion", item.Name);
         Assert.Equal(BattleItemCategory.Healing, item.Category);
@@ -110,7 +112,7 @@ public sealed class PlayerSnapshotCodecTests
             SpecialAttack = 21,
             SpecialDefense = 18,
             Speed = 15,
-            StatStages = new BattleStatStagesSnapshot { Attack = 2, Speed = -1 },
+            StatStages = new BattleStatStagesSnapshot { Attack = 2, Speed = -1, Accuracy = -2, Evasion = 1 },
             BaseStatTotal = 525,
             Nature = "Hardy",
             Moves = [move],

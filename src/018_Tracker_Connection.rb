@@ -1099,7 +1099,9 @@ module Ironmon
       "defense" => stages[:DEFENSE].to_i,
       "special_attack" => stages[:SPECIAL_ATTACK].to_i,
       "special_defense" => stages[:SPECIAL_DEFENSE].to_i,
-      "speed" => stages[:SPEED].to_i
+      "speed" => stages[:SPEED].to_i,
+      "accuracy" => stages[:ACCURACY].to_i,
+      "evasion" => stages[:EVASION].to_i
     }
   end
 

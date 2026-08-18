@@ -29,38 +29,48 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Creates the compact resizable tracker window.
+    /// Creates the compact fixed-size tracker window.
     /// </summary>
     /// <param name="activationState">The platform activation state when available.</param>
     /// <returns>The configured tracker window.</returns>
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        double width = GetWindowDimension(TrackerApplicationConstants.WindowWidthPreferenceKey, TrackerApplicationConstants.DefaultWindowWidth, TrackerApplicationConstants.MinimumWindowWidth);
-        double height = GetWindowDimension(TrackerApplicationConstants.WindowHeightPreferenceKey, TrackerApplicationConstants.DefaultWindowHeight, TrackerApplicationConstants.MinimumWindowHeight);
         Page page = WebView2Runtime.IsAvailable() ? new MainPage() : new WebView2MissingPage(_text);
         Window window = new(page)
         {
             Title = _text["App.Native.AppTitle"],
-            Width = width,
-            Height = height,
-            MinimumWidth = TrackerApplicationConstants.MinimumWindowWidth,
-            MinimumHeight = TrackerApplicationConstants.MinimumWindowHeight
+            Width = TrackerApplicationConstants.WindowWidth,
+            Height = TrackerApplicationConstants.WindowHeight,
+            MinimumWidth = TrackerApplicationConstants.WindowWidth,
+            MinimumHeight = TrackerApplicationConstants.WindowHeight,
+            MaximumWidth = TrackerApplicationConstants.WindowWidth,
+            MaximumHeight = TrackerApplicationConstants.WindowHeight
         };
+        window.HandlerChanged += HandleWindowHandlerChanged;
         window.Destroying += HandleWindowDestroying;
         return window;
     }
 
     /// <summary>
-    /// Gets a valid persisted window dimension or its first-run default.
+    /// Disables native resizing and maximizing once the Windows window is available.
     /// </summary>
-    /// <param name="preferenceKey">The persisted dimension key.</param>
-    /// <param name="defaultValue">The first-run dimension.</param>
-    /// <param name="minimumValue">The minimum supported dimension.</param>
-    /// <returns>The validated window dimension.</returns>
-    private static double GetWindowDimension(string preferenceKey, double defaultValue, double minimumValue)
+    /// <param name="sender">The tracker window whose native handler changed.</param>
+    /// <param name="args">The handler-change event arguments.</param>
+    private static void HandleWindowHandlerChanged(object? sender, EventArgs args)
     {
-        double value = Preferences.Default.Get(preferenceKey, defaultValue);
-        return double.IsFinite(value) && value >= minimumValue ? value : defaultValue;
+        if (sender is not Window window || window.Handler?.PlatformView is not Microsoft.UI.Xaml.Window platformWindow)
+            return;
+
+        IntPtr windowHandle = Microsoft.Maui.Platform.WindowExtensions.GetWindowHandle(platformWindow);
+        Microsoft.UI.WindowId windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(windowHandle);
+        Microsoft.UI.Windowing.AppWindow appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
+        if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
+        {
+            presenter.IsMaximizable = false;
+            presenter.IsResizable = false;
+        }
+
+        window.HandlerChanged -= HandleWindowHandlerChanged;
     }
 
     /// <summary>
@@ -70,23 +80,7 @@ public partial class App : Application
     /// <param name="args">The window destruction event arguments.</param>
     private async void HandleWindowDestroying(object? sender, EventArgs args)
     {
-        if (sender is Window window)
-            SaveWindowSize(window);
-
         await _shortcutService.StopAsync();
         await _connectionService.StopAsync();
-    }
-
-    /// <summary>
-    /// Saves a valid tracker window size for the next application launch.
-    /// </summary>
-    /// <param name="window">The tracker window being closed.</param>
-    private static void SaveWindowSize(Window window)
-    {
-        if (double.IsFinite(window.Width) && window.Width >= window.MinimumWidth)
-            Preferences.Default.Set(TrackerApplicationConstants.WindowWidthPreferenceKey, window.Width);
-
-        if (double.IsFinite(window.Height) && window.Height >= window.MinimumHeight)
-            Preferences.Default.Set(TrackerApplicationConstants.WindowHeightPreferenceKey, window.Height);
     }
 }

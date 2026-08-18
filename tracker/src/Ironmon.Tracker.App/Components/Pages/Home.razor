@@ -4,23 +4,19 @@
 
 <main class="tracker-shell" tabindex="0" @onkeydown="HandleKeyDown">
     <header class="tracker-header">
-        <div>
-            <p class="eyebrow">@Text["App.Shell.HomeEyebrow"]</p>
-            <h1>@Text["App.Shell.HomeHeading"]</h1>
+        <div class="connection-state" role="status" title="@GetConnectionDetail()">
+            <span class="@GetConnectionDotClass()" aria-hidden="true"></span>
+            <span>@GetConnectionText()</span>
         </div>
-        <div class="header-actions">
-            <div class="connection-state" role="status" title="@GetConnectionDetail()">
-                <span class="@GetConnectionDotClass()" aria-hidden="true"></span>
-                <span>@GetConnectionText()</span>
-            </div>
-            <button class="@GetAccessButtonClass()" type="button" aria-label="@Text["Access.Page.Open"]" title="@Text["Access.Page.Title"]" @onclick="ToggleAccess">
-                <span aria-hidden="true">&#128273;</span>
+        <div class="header-actions" role="group" aria-label="@Text["App.Shell.ToolsLabel"]">
+            <button class="@GetAccessButtonClass()" type="button" aria-label="@Text["Access.Page.Open"]" aria-pressed="@_accessOpen" title="@Text["Access.Page.Title"]" @onclick="ToggleAccess">
+                <span class="header-action-icon" aria-hidden="true">&#xE192;</span>
             </button>
-            <button class="@GetSeedsButtonClass()" type="button" aria-label="@Text["Seeds.Page.Open"]" title="@Text["Seeds.Page.Title"]" @onclick="ToggleSeeds">
-                <span aria-hidden="true">&#128279;</span>
+            <button class="@GetSeedsButtonClass()" type="button" aria-label="@Text["Seeds.Page.Open"]" aria-pressed="@_seedsOpen" title="@Text["Seeds.Page.Title"]" @onclick="ToggleSeeds">
+                <span class="header-action-icon" aria-hidden="true">&#xE71B;</span>
             </button>
-            <button class="@GetSettingsButtonClass()" type="button" aria-label="@Text["Settings.Page.OpenSettings"]" title="@Text["Settings.Page.Settings"]" @onclick="ToggleSettings">
-                <span aria-hidden="true">&#9881;</span>
+            <button class="@GetSettingsButtonClass()" type="button" aria-label="@Text["Settings.Page.OpenSettings"]" aria-pressed="@_settingsOpen" title="@Text["Settings.Page.Settings"]" @onclick="ToggleSettings">
+                <span class="header-action-icon" aria-hidden="true">&#xE713;</span>
             </button>
         </div>
     </header>
@@ -29,33 +25,37 @@
         <button class="@GetTabClass(TrackerView.Player)"
                 type="button"
                 role="tab"
+                title="Ctrl+1"
                 aria-selected="@(_selectedView == TrackerView.Player)"
                 @onclick="() => SelectView(TrackerView.Player)">
-            <span class="tab-key">Ctrl+1</span>
+            <span class="tab-key" aria-hidden="true">1</span>
             @Text["App.Shell.Player"]
         </button>
         <button class="@GetTabClass(TrackerView.Enemy)"
                 type="button"
                 role="tab"
+                title="Ctrl+2"
                 aria-selected="@(_selectedView == TrackerView.Enemy)"
                 @onclick="() => SelectView(TrackerView.Enemy)">
-            <span class="tab-key">Ctrl+2</span>
+            <span class="tab-key" aria-hidden="true">2</span>
             @Text["App.Shell.Enemy"]
         </button>
         <button class="@GetTabClass(TrackerView.Lookup)"
                 type="button"
                 role="tab"
+                title="Ctrl+3"
                 aria-selected="@(_selectedView == TrackerView.Lookup)"
                 @onclick="() => SelectView(TrackerView.Lookup)">
-            <span class="tab-key">Ctrl+3</span>
+            <span class="tab-key" aria-hidden="true">3</span>
             @Text["App.Shell.Lookup"]
         </button>
         <button class="@GetTabClass(TrackerView.Archive)"
                 type="button"
                 role="tab"
+                title="Ctrl+4"
                 aria-selected="@(_selectedView == TrackerView.Archive)"
                 @onclick="() => SelectView(TrackerView.Archive)">
-            <span class="tab-key">Ctrl+4</span>
+            <span class="tab-key" aria-hidden="true">4</span>
             @Text["App.Shell.Archive"]
         </button>
     </nav>
@@ -83,6 +83,7 @@
             <PlayerCard Player="@_run.Player"
                         GameRoot="@_connection.Game?.GameRoot"
                         TargetTypes="@GetSelectedEnemy()?.Types"
+                        TargetEvasionStage="@(GetSelectedEnemy()?.StatStages.Evasion ?? 0)"
                         InBattle="@(_run.Battle is not null)"
                         BattleId="@_run.Battle?.BattleId"
                         TargetPosition="@GetSelectedEnemy()?.Position" />
@@ -92,6 +93,7 @@
     {
         <EnemyCard Enemies="@_run.Enemies"
                    PlayerTypes="@_run.Player?.Types"
+                   PlayerEvasionStage="@(_run.Player?.StatStages.Evasion ?? 0)"
                    GameRoot="@_connection.Game?.GameRoot"
                    @bind-SelectedEnemyId="_selectedEnemyId" />
     }
@@ -104,10 +106,4 @@
         <ArchiveView GameRoot="@_connection.Game?.GameRoot" />
     }
 
-    <footer class="tracker-footer">
-        <span>@Text["App.Shell.LocalConnection"]</span>
-        <span>
-            <kbd>Ctrl+1</kbd> @Text["App.Shell.Player"]&nbsp;&nbsp;<kbd>Ctrl+2</kbd> @Text["App.Shell.Enemy"]&nbsp;&nbsp;<kbd>Ctrl+3</kbd> @Text["App.Shell.Lookup"]&nbsp;&nbsp;<kbd>Ctrl+4</kbd> @Text["App.Shell.Archive"]
-        </span>
-    </footer>
 </main>

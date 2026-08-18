@@ -16,19 +16,21 @@ public partial class BattleStatStageChips
     /// <summary>
     /// Gets the nonzero stages in tracker display order.
     /// </summary>
-    /// <returns>The visible stat labels and stages.</returns>
-    private IReadOnlyList<(string Name, int Stage)> GetVisibleStages()
+    /// <returns>The visible stat labels, stages, and multiplier rules.</returns>
+    private IReadOnlyList<(string Name, int Stage, bool UsesAccuracyFormula)> GetVisibleStages()
     {
         if (Stages is null)
             return [];
 
-        (string Name, int Stage)[] stages =
+        (string Name, int Stage, bool UsesAccuracyFormula)[] stages =
         [
-            ("SPE", Stages.Speed),
-            ("ATK", Stages.Attack),
-            ("SPA", Stages.SpecialAttack),
-            ("DEF", Stages.Defense),
-            ("SPD", Stages.SpecialDefense)
+            ("SPE", Stages.Speed, false),
+            ("ATK", Stages.Attack, false),
+            ("SPA", Stages.SpecialAttack, false),
+            ("DEF", Stages.Defense, false),
+            ("SPD", Stages.SpecialDefense, false),
+            ("ACC", Stages.Accuracy, true),
+            ("EVA", Stages.Evasion, true)
         ];
 
         return [.. stages.Where(stage => stage.Stage != 0)];

@@ -270,6 +270,9 @@ public sealed class CompletedRunArchive
     {
         ArgumentOutOfRangeException.ThrowIfNotEqual(statistics.SchemaVersion, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(statistics.AttemptNumber, 1);
+        if (statistics.SaveSlot is not null)
+            ArgumentException.ThrowIfNullOrWhiteSpace(statistics.SaveSlot);
+
         ArgumentException.ThrowIfNullOrWhiteSpace(statistics.Result);
         ArgumentOutOfRangeException.ThrowIfNegative(statistics.ActiveSeconds);
         ArgumentOutOfRangeException.ThrowIfNegative(statistics.AttemptsStarted);

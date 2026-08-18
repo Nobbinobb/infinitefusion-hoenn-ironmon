@@ -8,11 +8,41 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class RunStatistics
 {
+    private RunStatisticsSection _selectedSection = RunStatisticsSection.Overview;
+
     /// <summary>
     /// Gets or sets the statistics to display.
     /// </summary>
     [Parameter]
     public RunStatisticsPayload? Statistics { get; set; }
+
+    /// <summary>
+    /// Selects one run-statistics section.
+    /// </summary>
+    /// <param name="section">The selected section.</param>
+    private void SelectSection(RunStatisticsSection section)
+        => _selectedSection = section;
+
+    /// <summary>
+    /// Gets the localized name of one run-statistics section.
+    /// </summary>
+    /// <param name="section">The section to name.</param>
+    /// <returns>The localized section name.</returns>
+    private string GetSectionName(RunStatisticsSection section) => section switch
+    {
+        RunStatisticsSection.Overview => Text["Lookup.Statistics.OverviewTab"],
+        RunStatisticsSection.Trainers => Text["Lookup.Statistics.TrainersTab"],
+        RunStatisticsSection.Items => Text["Lookup.Statistics.ItemsTab"],
+        _ => string.Empty
+    };
+
+    /// <summary>
+    /// Gets the visual classes for one statistics tab.
+    /// </summary>
+    /// <param name="section">The represented section.</param>
+    /// <returns>The tab classes.</returns>
+    private string GetSectionTabClass(RunStatisticsSection section)
+        => section == _selectedSection ? "statistics-tab selected" : "statistics-tab";
 
     /// <summary>
     /// Formats accumulated active play time without fractional seconds.

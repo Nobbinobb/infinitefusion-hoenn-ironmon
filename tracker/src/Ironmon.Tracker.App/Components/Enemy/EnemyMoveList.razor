@@ -1,5 +1,12 @@
 <div class="move-list" aria-label="@Text["Enemy.Moves.DiscoveredEnemyMoves"]">
-    <p class="section-label">@Text["Enemy.Moves.DiscoveredMovesHeading"]</p>
+    <div class="move-table-heading">
+        <div class="move-table-title">
+            <p class="section-label">@Text["Enemy.Moves.DiscoveredMovesHeading"]</p>
+        </div>
+        <span>@Text["Common.Move.PowerHeader"]</span>
+        <span>@Text["Common.Move.PpHeader"]</span>
+        <span>@Text["Common.Move.AccuracyHeader"]</span>
+    </div>
     @foreach (int slot in _moveSlots)
     {
         ObservedMoveSnapshot? move = GetMoves().ElementAtOrDefault(slot - 1);
@@ -12,10 +19,15 @@
             <MoveRow Name="@move.Name"
                      Type="@move.Type"
                      Category="@move.Category"
+                     Stab="@MovePresentation.HasStab(move.Type, move.Category, Enemy?.Types)"
                      Effectiveness="@MovePresentation.CalculateEffectiveness(move.Type, move.Category, PlayerTypes)"
-                     PpText="@FormatObservedPp(move)"
+                     PpText="@FormatObservedCurrentPp(move)"
+                     CurrentPp="@move.PpAfterUse"
+                     TotalPp="@move.TotalPp"
                      Power="@move.Power"
                      Accuracy="@move.Accuracy"
+                     AccuracyStage="@(Enemy?.StatStages.Accuracy ?? 0)"
+                     TargetEvasionStage="@PlayerEvasionStage"
                      Selected="() => SelectMove(move)" />
         }
     }

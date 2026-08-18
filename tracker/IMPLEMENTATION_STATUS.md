@@ -1493,3 +1493,19 @@ Status: **Implemented; awaiting review**
 - Added a dedicated deterministic ground-pool slot for the post-rescue starter
   reward and excluded six dialogue-only hidden-item decoys from Lookup so every
   catalogued item row has a revealable identity.
+## Ironmon 0.7.8 compact tracker interface
+
+Status: **Implemented and released**
+
+- Fixed the tracker at 500 × 840, simplified the header and navigation, and
+  removed the redundant footer and resize affordance.
+- Reworked live move rows into aligned power, PP, and accuracy columns with
+  STAB, effectiveness, threshold coloring, current/max PP tooltips, and live
+  Accuracy/Evasion stage adjustment.
+- Reorganized Archive into top-level Run archive and Save slots disclosures,
+  four content tabs, ten-row area paging, and three run-statistics tabs.
+- Added optional save-slot identity to authoritative statistics snapshots and
+  grouped the newest cumulative totals for every identified slot.
+- Collapsed long settings, access grants, and protocol JSON content by default
+  and standardized arrow-free disclosure headers.
+- All 201 tracker tests and the complete bundled-runtime release suite pass.

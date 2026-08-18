@@ -33,10 +33,28 @@ public partial class MoveRow
     public MoveEffectiveness? Effectiveness { get; set; }
 
     /// <summary>
+    /// Gets or sets whether the move receives a same-type attack bonus.
+    /// </summary>
+    [Parameter]
+    public bool Stab { get; set; }
+
+    /// <summary>
     /// Gets or sets the formatted PP display.
     /// </summary>
     [Parameter]
     public required string PpText { get; set; }
+
+    /// <summary>
+    /// Gets or sets the known remaining PP, or null when it has not been observed.
+    /// </summary>
+    [Parameter]
+    public int? CurrentPp { get; set; }
+
+    /// <summary>
+    /// Gets or sets the move's total PP.
+    /// </summary>
+    [Parameter]
+    public int TotalPp { get; set; }
 
     /// <summary>
     /// Gets or sets base move power.
@@ -51,24 +69,105 @@ public partial class MoveRow
     public int Accuracy { get; set; }
 
     /// <summary>
+    /// Gets or sets the move user's current accuracy stage.
+    /// </summary>
+    [Parameter]
+    public int AccuracyStage { get; set; }
+
+    /// <summary>
+    /// Gets or sets the target's current evasion stage.
+    /// </summary>
+    [Parameter]
+    public int TargetEvasionStage { get; set; }
+
+    /// <summary>
     /// Gets or sets the callback raised when the move is selected.
     /// </summary>
     [Parameter]
     public EventCallback Selected { get; set; }
 
     /// <summary>
-    /// Formats the move power with its localized compact label.
+    /// Formats the move power for its labeled column.
     /// </summary>
-    /// <returns>The compact move-power display.</returns>
+    /// <returns>The move-power value.</returns>
     private string FormatPower()
-        => Power == MoveDataConstants.NoBasePower ? Text["Common.Move.NoPowerCompact"] : Text["Common.Move.PowerCompact", Power];
+        => Power == MoveDataConstants.NoBasePower ? "—" : Power.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
-    /// Formats move accuracy with its localized compact label.
+    /// Formats move accuracy for its labeled column.
     /// </summary>
-    /// <returns>The compact accuracy display.</returns>
+    /// <returns>The move-accuracy value.</returns>
     private string FormatAccuracy()
-        => Accuracy == MoveDataConstants.AlwaysHitsAccuracy ? Text["Common.Move.AlwaysAccuracyCompact"] : Text["Common.Move.AccuracyCompact", Accuracy.ToString(CultureInfo.InvariantCulture)];
+    {
+        return Accuracy == MoveDataConstants.AlwaysHitsAccuracy
+            ? "—"
+            : MovePresentation.CalculateAdjustedAccuracy(Accuracy, AccuracyStage, TargetEvasionStage).ToString(CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Gets the visual class for power based on visible type effectiveness.
+    /// </summary>
+    /// <returns>The move-power CSS classes.</returns>
+    private string GetPowerClass() => Effectiveness switch
+    {
+        MoveEffectiveness.Double or MoveEffectiveness.Quadruple => "move-power increased",
+        MoveEffectiveness.Half or MoveEffectiveness.Quarter or MoveEffectiveness.Immune => "move-power decreased",
+        _ => "move-power"
+    };
+
+    /// <summary>
+    /// Gets the visual class for the remaining PP threshold.
+    /// </summary>
+    /// <returns>The move-PP CSS classes.</returns>
+    private string GetPpClass()
+    {
+        if (CurrentPp is null || TotalPp <= 0)
+            return "move-pp";
+
+        if (CurrentPp.Value * 100 < TotalPp * 30)
+            return "move-pp critical";
+
+        return CurrentPp.Value * 100 < TotalPp * 60 ? "move-pp low" : "move-pp";
+    }
+
+    /// <summary>
+    /// Gets the current-and-maximum PP tooltip for the compact value.
+    /// </summary>
+    /// <returns>The current and maximum PP display.</returns>
+    private string GetPpTitle()
+        => $"{CurrentPp?.ToString(CultureInfo.InvariantCulture) ?? "--"} / {TotalPp.ToString(CultureInfo.InvariantCulture)}";
+
+    /// <summary>
+    /// Gets the visual class for an accuracy-stage adjustment.
+    /// </summary>
+    /// <returns>The move-accuracy CSS classes.</returns>
+    private string GetAccuracyClass()
+    {
+        if (Accuracy == MoveDataConstants.AlwaysHitsAccuracy)
+            return "move-accuracy";
+
+        int effectiveStage = Math.Clamp(AccuracyStage - TargetEvasionStage, -6, 6);
+        return effectiveStage switch
+        {
+            > 0 => "move-accuracy increased",
+            < 0 => "move-accuracy decreased",
+            _ => "move-accuracy"
+        };
+    }
+
+    /// <summary>
+    /// Gets detail explaining the displayed accuracy adjustment.
+    /// </summary>
+    /// <returns>The base accuracy and relevant battle stages.</returns>
+    private string GetAccuracyTitle()
+    {
+        if (Accuracy == MoveDataConstants.AlwaysHitsAccuracy)
+            return Text["Common.Move.Always"];
+
+        string accuracyStage = BattleStatStageFormatter.FormatSignedStage(AccuracyStage);
+        string evasionStage = BattleStatStageFormatter.FormatSignedStage(TargetEvasionStage);
+        return Text["Common.Move.AdjustedAccuracy", Accuracy, string.IsNullOrEmpty(accuracyStage) ? "0" : accuracyStage, string.IsNullOrEmpty(evasionStage) ? "0" : evasionStage];
+    }
 
     /// <summary>
     /// Gets localized accessible detail for an effectiveness symbol.

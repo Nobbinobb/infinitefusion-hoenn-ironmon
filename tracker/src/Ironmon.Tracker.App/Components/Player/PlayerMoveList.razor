@@ -1,7 +1,12 @@
 <div class="move-list" aria-label="@Text["Player.Moves.CurrentPokemonMoves"]">
-    <div class="section-heading">
-        <p class="section-label">@Text["Player.Moves.MovesHeading"]</p>
-        <span>@FormatLearnsetProgress()</span>
+    <div class="move-table-heading">
+        <div class="move-table-title">
+            <p class="section-label">@Text["Player.Moves.MovesHeading"]</p>
+            <span>@FormatLearnsetProgress()</span>
+        </div>
+        <span>@Text["Common.Move.PowerHeader"]</span>
+        <span>@Text["Common.Move.PpHeader"]</span>
+        <span>@Text["Common.Move.AccuracyHeader"]</span>
     </div>
     @foreach (int slot in _moveSlots)
     {
@@ -18,10 +23,15 @@
             <MoveRow Name="@move.Name"
                      Type="@move.Type"
                      Category="@move.Category"
+                     Stab="@MovePresentation.HasStab(move.Type, move.Category, Player?.Types)"
                      Effectiveness="@MovePresentation.CalculateEffectiveness(move.Type, move.Category, TargetTypes)"
-                     PpText="@($"{move.CurrentPp} / {move.TotalPp} PP")"
+                     PpText="@($"{move.CurrentPp}")"
+                     CurrentPp="@move.CurrentPp"
+                     TotalPp="@move.TotalPp"
                      Power="@move.Power"
                      Accuracy="@move.Accuracy"
+                     AccuracyStage="@(Player?.StatStages.Accuracy ?? 0)"
+                     TargetEvasionStage="@TargetEvasionStage"
                      Selected="() => SelectMove(move)" />
         }
     }

@@ -32,6 +32,12 @@ public partial class PlayerCard
     public IReadOnlyList<string>? TargetTypes { get; set; }
 
     /// <summary>
+    /// Gets or sets the selected target's current evasion stage.
+    /// </summary>
+    [Parameter]
+    public int TargetEvasionStage { get; set; }
+
+    /// <summary>
     /// Gets or sets whether the game currently has an active battle.
     /// </summary>
     [Parameter]

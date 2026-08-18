@@ -9,6 +9,7 @@ public partial class ArchiveView : IDisposable
 {
     private readonly ArchiveRunSelectionState _selection = new();
     private IReadOnlyList<CompletedRunRecipePayload> _recipes = [];
+    private ArchiveSection _selectedSection = ArchiveSection.Summary;
 
     /// <summary>
     /// Gets or initializes the completed-run recipe archive.
@@ -53,6 +54,35 @@ public partial class ArchiveView : IDisposable
     /// <returns>The concise run label.</returns>
     private string FormatRun(CompletedRunRecipePayload recipe)
         => Text["Lookup.Runs.CompletedRunOption", recipe.Result, recipe.Seed];
+
+    /// <summary>
+    /// Selects one completed-run Archive section.
+    /// </summary>
+    /// <param name="section">The selected section.</param>
+    private void SelectSection(ArchiveSection section)
+        => _selectedSection = section;
+
+    /// <summary>
+    /// Gets the localized name of one Archive section.
+    /// </summary>
+    /// <param name="section">The section to name.</param>
+    /// <returns>The localized section name.</returns>
+    private string GetSectionName(ArchiveSection section) => section switch
+    {
+        ArchiveSection.Summary => Text["Archive.Sections.Summary"],
+        ArchiveSection.Areas => Text["Archive.Sections.Areas"],
+        ArchiveSection.Pokemon => Text["Archive.Sections.Pokemon"],
+        ArchiveSection.Analysis => Text["Archive.Sections.Analysis"],
+        _ => string.Empty
+    };
+
+    /// <summary>
+    /// Gets the visual classes for one Archive tab.
+    /// </summary>
+    /// <param name="section">The represented section.</param>
+    /// <returns>The tab classes.</returns>
+    private string GetSectionTabClass(ArchiveSection section)
+        => section == _selectedSection ? "archive-tab selected" : "archive-tab";
 
     /// <summary>
     /// Reloads recipes while retaining a still-valid selection.

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using System.Globalization;
 
 namespace Ironmon.Tracker.App.Components.Enemy;
 
@@ -29,6 +30,12 @@ public partial class EnemyMoveList
     public IReadOnlyList<string>? PlayerTypes { get; set; }
 
     /// <summary>
+    /// Gets or sets the player's current evasion stage.
+    /// </summary>
+    [Parameter]
+    public int PlayerEvasionStage { get; set; }
+
+    /// <summary>
     /// Gets remembered moves applicable to the selected enemy's visible level.
     /// </summary>
     /// <returns>The selected enemy's remembered moves.</returns>
@@ -41,7 +48,15 @@ public partial class EnemyMoveList
     /// <param name="move">The remembered move.</param>
     /// <returns>The observed PP text.</returns>
     private static string FormatObservedPp(ObservedMoveSnapshot move)
-        => move.PpAfterUse is null ? $"-- / {move.TotalPp} PP" : $"{move.PpAfterUse} / {move.TotalPp} PP";
+        => move.PpAfterUse is null ? $"-- / {move.TotalPp}" : $"{move.PpAfterUse} / {move.TotalPp}";
+
+    /// <summary>
+    /// Formats observed remaining PP for the compact move row.
+    /// </summary>
+    /// <param name="move">The remembered move.</param>
+    /// <returns>The observed remaining PP, or a placeholder when unknown.</returns>
+    private static string FormatObservedCurrentPp(ObservedMoveSnapshot move)
+        => move.PpAfterUse?.ToString(CultureInfo.InvariantCulture) ?? "--";
 
     /// <summary>
     /// Opens full information for one remembered move.
