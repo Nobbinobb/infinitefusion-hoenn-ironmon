@@ -13,9 +13,6 @@ module Ironmon
     PREFERRED_MINIMUM_PERCENT = 90
     PREFERRED_MAXIMUM_PERCENT = 115
     NAMESPACE = "player_fusion"
-    FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
-    FNV_PRIME = 1_099_511_628_211
-    FNV_MASK = 0xFFFFFFFFFFFFFFFF
     MATERIAL_ID_BITS = 10
     MATERIAL_ID_MASK = (1 << MATERIAL_ID_BITS) - 1
 
@@ -184,25 +181,20 @@ module Ironmon
     end
 
     def deterministic_value(*parts)
-      value = FNV_OFFSET_BASIS
-      input = [@schema_version, @seed, NAMESPACE, *parts].join("|")
-      input.each_byte do |byte|
-        value ^= byte
-        value = (value * FNV_PRIME) & FNV_MASK
-      end
-      return value
+      return Ironmon.fnv1a_64_joined(
+        [@schema_version, @seed, NAMESPACE, *parts]
+      )
     end
 
     def deterministic_result_value(first_id, second_id)
       if !@result_hash_prefix
         prefix = [@schema_version, @seed, NAMESPACE, "result", ""].join("|")
         @result_hash_prefix = update_deterministic_hash(
-          FNV_OFFSET_BASIS, prefix
+          Ironmon::FNV1A_64_OFFSET_BASIS, prefix
         )
       end
       value = update_deterministic_hash(@result_hash_prefix, first_id.to_s)
-      value ^= "|".ord
-      value = (value * FNV_PRIME) & FNV_MASK
+      value = update_deterministic_hash(value, "|")
       return update_deterministic_hash(value, second_id.to_s)
     end
 
@@ -300,11 +292,7 @@ module Ironmon
     end
 
     def update_deterministic_hash(value, input)
-      input.each_byte do |byte|
-        value ^= byte
-        value = (value * FNV_PRIME) & FNV_MASK
-      end
-      return value
+      return Ironmon.fnv1a_64(input, value)
     end
 
     def paired_result_id(species_id)
@@ -377,12 +365,12 @@ module Ironmon
     def deterministic_shuffle(source, attempt)
       shuffled = source.dup
       state = deterministic_value("pairing", attempt)
-      state = FNV_OFFSET_BASIS if state == 0
+      state = Ironmon::FNV1A_64_OFFSET_BASIS if state == 0
       (shuffled.length - 1).downto(1) do |index|
-        state ^= (state << 13) & FNV_MASK
+        state ^= (state << 13) & Ironmon::FNV1A_64_MASK
         state ^= state >> 7
-        state ^= (state << 17) & FNV_MASK
-        state &= FNV_MASK
+        state ^= (state << 17) & Ironmon::FNV1A_64_MASK
+        state &= Ironmon::FNV1A_64_MASK
         swap_index = state % (index + 1)
         shuffled[index], shuffled[swap_index] =
           shuffled[swap_index], shuffled[index]

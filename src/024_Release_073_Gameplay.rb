@@ -186,12 +186,7 @@ class Interpreter
   end
 end
 
-module Graphics
-  class << self
-    alias ironmon_073_original_update update
-    def update
-      ironmon_073_original_update
-      Ironmon.finish_queued_starter_bst_reset
-    end
-  end
-end
+Ironmon.register_graphics_update_hook(
+  :starter_bst_reset,
+  proc { Ironmon.finish_queued_starter_bst_reset }
+)

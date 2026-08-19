@@ -3,10 +3,6 @@
 #===============================================================================
 
 module Ironmon
-  EVOLUTION_CONFLICT_FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
-  EVOLUTION_CONFLICT_FNV_PRIME = 1_099_511_628_211
-  EVOLUTION_CONFLICT_FNV_MASK = 0xFFFFFFFFFFFFFFFF
-
   def self.normal_evolution_runtime_species?(species_data)
     return false if !species_data
     return false if species_data.is_a?(GameData::FusedSpecies)
@@ -150,23 +146,12 @@ module Ironmon
   end
 
   def self.evolution_conflict_value(*parts)
-    value = EVOLUTION_CONFLICT_FNV_OFFSET_BASIS
     values = [
       NormalEvolutionGenerator::SCHEMA_VERSION,
       NormalEvolutionGenerator::RULES_VERSION, "evolution_conflict",
       *parts
     ]
-    values.each do |entry|
-      entry.to_s.each_byte do |byte|
-        value ^= byte
-        value = (value * EVOLUTION_CONFLICT_FNV_PRIME) &
-          EVOLUTION_CONFLICT_FNV_MASK
-      end
-      value ^= 0
-      value = (value * EVOLUTION_CONFLICT_FNV_PRIME) &
-        EVOLUTION_CONFLICT_FNV_MASK
-    end
-    return value
+    return fnv1a_64_entries(values)
   end
 
   def self.pending_generated_evolutions

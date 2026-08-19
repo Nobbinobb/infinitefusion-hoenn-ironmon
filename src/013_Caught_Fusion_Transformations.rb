@@ -7,9 +7,6 @@ module Ironmon
 
   CAUGHT_UNFUSION_SCHEMA_VERSION = 1
   CAUGHT_UNFUSION_NAMESPACE = "caught_unfusion_component"
-  CAUGHT_UNFUSION_FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
-  CAUGHT_UNFUSION_FNV_PRIME = 1_099_511_628_211
-  CAUGHT_UNFUSION_FNV_MASK = 0xFFFFFFFFFFFFFFFF
 
   FUSION_ITEM_IDS = [
     :DNASPLICERS,
@@ -93,20 +90,14 @@ module Ironmon
 
   def self.deterministic_unfusion_component_index(acquisition_id, components)
     component_ids = components.map { |component| component[:species_id] }.sort
-    input = [
+    value = fnv1a_64_joined([
       CAUGHT_UNFUSION_SCHEMA_VERSION,
       $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0,
       CAUGHT_UNFUSION_NAMESPACE,
       acquisition_id.to_s,
       component_ids[0],
       component_ids[1]
-    ].join("|")
-    value = CAUGHT_UNFUSION_FNV_OFFSET_BASIS
-    input.each_byte do |byte|
-      value ^= byte
-      value = (value * CAUGHT_UNFUSION_FNV_PRIME) &
-        CAUGHT_UNFUSION_FNV_MASK
-    end
+    ])
     return value % components.length
   end
 

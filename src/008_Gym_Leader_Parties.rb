@@ -19,10 +19,6 @@ module Ironmon
     ].freeze
   }.freeze
 
-  GYM_FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
-  GYM_FNV_PRIME = 1_099_511_628_211
-  GYM_FNV_MASK = 0xFFFFFFFFFFFFFFFF
-
   def self.gym_leader_types
     version = if defined?(Settings::GAME_VERSION_NUMBER)
                 Settings::GAME_VERSION_NUMBER
@@ -61,18 +57,9 @@ module Ironmon
   end
 
   def self.gym_leader_source_species_for(seed, trainer_type, name, slot)
-    value = GYM_FNV_OFFSET_BASIS
-    input = [
-      GYM_LEADER_SCHEMA_VERSION,
-      seed,
-      trainer_type,
-      name,
-      slot
-    ].join("|")
-    input.each_byte do |byte|
-      value ^= byte
-      value = (value * GYM_FNV_PRIME) & GYM_FNV_MASK
-    end
+    value = fnv1a_64_joined([
+      GYM_LEADER_SCHEMA_VERSION, seed, trainer_type, name, slot
+    ])
     return 1 + (value % NB_POKEMON)
   end
 

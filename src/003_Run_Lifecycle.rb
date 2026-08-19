@@ -90,6 +90,75 @@ module Ironmon
     return Marshal.load(Marshal.dump(run_ledger))
   end
 
+  def self.stage_run_ledger_completion(snapshot, result, completed_recipe = nil)
+    result_name = result.to_s
+    raise "the run result is invalid" if
+      !RUN_COMPLETED_RESULTS.include?(result_name)
+    ledger = Marshal.load(Marshal.dump(snapshot))
+    attempt = ledger["current_attempt"]
+    raise "the active attempt ledger is unavailable" if
+      !attempt || attempt["result"] != "active"
+    attempt["result"] = result_name
+    ledger["attempts_#{result_name}"] += 1
+    ledger["last_completed_attempt"] = Marshal.load(Marshal.dump(attempt))
+    if completed_recipe
+      recipe = Marshal.load(Marshal.dump(completed_recipe))
+      statistics = recipe["statistics"]
+      if statistics.is_a?(Hash)
+        statistics["result"] = result_name
+        statistics["active_seconds"] = attempt["active_seconds"]
+        RUN_COMPLETED_RESULTS.each do |completed_result|
+          key = "attempts_#{completed_result}"
+          statistics[key] = ledger[key]
+        end
+      end
+      ledger["last_completed_recipe"] = recipe
+    end
+    return ledger
+  end
+
+  def self.stage_run_completion(result)
+    result_name = result.to_s
+    raise "the run result is invalid" if
+      !RUN_COMPLETED_RESULTS.include?(result_name)
+    attempt = current_run_attempt
+    if !attempt || attempt["result"] != "active"
+      return {
+        "completed" => false,
+        "ledger_snapshot" => run_ledger_snapshot,
+        "completed_recipe" => nil,
+        "source_run_id" => attempt ? attempt["run_id"] : nil,
+        "source_sequence" => if $PokemonGlobal
+                               $PokemonGlobal.ironmon_tracker_sequence || 0
+                             else
+                               0
+                             end
+      }
+    end
+
+    tick_active_run_duration
+    finalize_attempt_statistics if respond_to?(:finalize_attempt_statistics)
+    recipe = if respond_to?(:tracker_completed_run_recipe)
+               tracker_completed_run_recipe(result_name.to_sym)
+             else
+               nil
+             end
+    ledger = stage_run_ledger_completion(
+      run_ledger_snapshot, result_name, recipe
+    )
+    return {
+      "completed" => true,
+      "ledger_snapshot" => ledger,
+      "completed_recipe" => ledger["last_completed_recipe"],
+      "source_run_id" => attempt["run_id"],
+      "source_sequence" => if $PokemonGlobal
+                             $PokemonGlobal.ironmon_tracker_sequence || 0
+                           else
+                             0
+                           end
+    }
+  end
+
   def self.restore_run_ledger(snapshot)
     return if !$PokemonGlobal
     $PokemonGlobal.ironmon_run_ledger = normalize_run_ledger(snapshot)
@@ -226,30 +295,20 @@ module Ironmon
   end
 end
 
-module Game
-  class << self
-    alias ironmon_run_lifecycle_original_save save
-    def save(slot = nil, auto = false, safe: false)
-      Ironmon.tick_active_run_duration
-      return ironmon_run_lifecycle_original_save(slot, auto, safe: safe)
-    end
+Ironmon.register_game_save_hook(
+  :run_lifecycle,
+  proc { |_slot, _auto, _safe| Ironmon.tick_active_run_duration }
+)
 
-    alias ironmon_run_lifecycle_original_load load
-    def load(save_data)
-      result = ironmon_run_lifecycle_original_load(save_data)
-      Ironmon.run_ledger if $PokemonGlobal
-      Ironmon.resume_run_duration
-      return result
-    end
+Ironmon.register_game_load_hook(
+  :run_lifecycle, nil,
+  proc do |_save_data, _result|
+    Ironmon.run_ledger if $PokemonGlobal
+    Ironmon.resume_run_duration
   end
-end
+)
 
-module Graphics
-  class << self
-    alias ironmon_run_lifecycle_original_update update
-    def update
-      ironmon_run_lifecycle_original_update
-      Ironmon.tick_active_run_duration
-    end
-  end
-end
+Ironmon.register_graphics_update_hook(
+  :run_lifecycle,
+  proc { Ironmon.tick_active_run_duration }
+)

@@ -104,16 +104,10 @@ module Ironmon
   end
 
   def self.progression_random_value(context, pool_index)
-    value = PlayerFusionMapper::FNV_OFFSET_BASIS
     seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0
-    input = [seed, PROGRESSION_POKEMON_NAMESPACE,
-             context.inspect, pool_index].join("|")
-    input.each_byte do |byte|
-      value ^= byte
-      value = (value * PlayerFusionMapper::FNV_PRIME) &
-              PlayerFusionMapper::FNV_MASK
-    end
-    return value
+    return fnv1a_64_joined([
+      seed, PROGRESSION_POKEMON_NAMESPACE, context.inspect, pool_index
+    ])
   end
 end
 

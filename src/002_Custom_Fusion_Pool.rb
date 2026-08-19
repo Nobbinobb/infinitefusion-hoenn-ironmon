@@ -3,23 +3,8 @@
 #===============================================================================
 
 module Ironmon
-  SPECIES_POOL_FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
-  SPECIES_POOL_FNV_PRIME = 1_099_511_628_211
-  SPECIES_POOL_FNV_MASK = 0xFFFFFFFFFFFFFFFF
-
   def self.species_pool_fingerprint(species_pool)
-    hash_value = SPECIES_POOL_FNV_OFFSET_BASIS
-    species_pool.each do |species|
-      species.to_s.each_byte do |byte|
-        hash_value ^= byte
-        hash_value = (hash_value * SPECIES_POOL_FNV_PRIME) &
-          SPECIES_POOL_FNV_MASK
-      end
-      hash_value ^= 0
-      hash_value = (hash_value * SPECIES_POOL_FNV_PRIME) &
-        SPECIES_POOL_FNV_MASK
-    end
-    return sprintf("%016x", hash_value)
+    return fnv1a_64_fingerprint(species_pool)
   end
 
   class CustomFusionPoolError < StandardError; end
@@ -219,9 +204,11 @@ module Ironmon
   def self.record_custom_fusion_pool_metadata
     return if !$PokemonGlobal
     info = custom_fusion_pool_info
-    $PokemonGlobal.ironmon_custom_fusion_pool_version = info[:schema_version]
-    $PokemonGlobal.ironmon_custom_fusion_pool_size = info[:size]
-    $PokemonGlobal.ironmon_custom_fusion_pool_fingerprint = info[:fingerprint]
+    record_generator_metadata({
+      :ironmon_custom_fusion_pool_version => info[:schema_version],
+      :ironmon_custom_fusion_pool_size => info[:size],
+      :ironmon_custom_fusion_pool_fingerprint => info[:fingerprint]
+    })
   end
 
   def self.reset_custom_fusion_pool_cache

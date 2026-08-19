@@ -119,7 +119,7 @@ module IronmonDiagnosticAccessRuntimeTests
       )
     end
     assert(
-      connection.send(:pokemon_information_capabilities, "evolutions") ==
+      Ironmon.tracker_information_diagnostic_capabilities("evolutions") ==
         ["evolution.results", "evolution.candidates"],
       "split evolution surfaces"
     )

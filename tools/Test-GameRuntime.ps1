@@ -17,12 +17,24 @@ $battleItemTestPath = Join-Path $projectRoot "tests\runtime\Battle-Items.rb"
 $repelOverlayTestPath = Join-Path $projectRoot "tests\runtime\Repel-Overlay.rb"
 $itemRandomizationTestPath = Join-Path $projectRoot "tests\runtime\Item-Randomization.rb"
 $seededRunImportTestPath = Join-Path $projectRoot "tests\runtime\Seeded-Run-Import.rb"
+$runTransitionTestPath = Join-Path $projectRoot "tests\runtime\Run-Transitions.rb"
+$runtimeHookTestPath = Join-Path $projectRoot "tests\runtime\Runtime-Hooks.rb"
+$deterministicHashingTestPath = Join-Path $projectRoot "tests\runtime\Deterministic-Hashing.rb"
+$generatorMetadataTestPath = Join-Path $projectRoot "tests\runtime\Generator-Metadata.rb"
+$moveAccessStructureTestPath = Join-Path $projectRoot "tests\runtime\Move-Access-Structure.rb"
+$trackerStructureTestPath = Join-Path $projectRoot "tests\runtime\Tracker-Structure.rb"
 $diagnosticResultPath = Join-Path $projectRoot "runtime-diagnostic-access.tests"
 $catchAssistanceResultPath = Join-Path $projectRoot "runtime-catch-assistance.tests"
 $battleItemResultPath = Join-Path $projectRoot "runtime-battle-items.tests"
 $repelOverlayResultPath = Join-Path $projectRoot "runtime-repel-overlay.tests"
 $itemRandomizationResultPath = Join-Path $projectRoot "runtime-item-randomization.tests"
 $seededRunImportResultPath = Join-Path $projectRoot "runtime-seeded-run-import.tests"
+$runTransitionResultPath = Join-Path $projectRoot "runtime-run-transitions.tests"
+$runtimeHookResultPath = Join-Path $projectRoot "runtime-hooks.tests"
+$deterministicHashingResultPath = Join-Path $projectRoot "runtime-deterministic-hashing.tests"
+$generatorMetadataResultPath = Join-Path $projectRoot "runtime-generator-metadata.tests"
+$moveAccessStructureResultPath = Join-Path $projectRoot "runtime-move-access-structure.tests"
+$trackerStructureResultPath = Join-Path $projectRoot "runtime-tracker-structure.tests"
 $diagnosticErrorPath = Join-Path $projectRoot "runtime-diagnostic-access.error"
 
 . (Join-Path $generationRoot "GameRuntime-Tooling.ps1")
@@ -63,12 +75,42 @@ $seededRunImportTestSource = [IO.File]::ReadAllText(
     $seededRunImportTestPath,
     [Text.Encoding]::UTF8
 )
+$runTransitionTestSource = [IO.File]::ReadAllText(
+    $runTransitionTestPath,
+    [Text.Encoding]::UTF8
+)
+$runtimeHookTestSource = [IO.File]::ReadAllText(
+    $runtimeHookTestPath,
+    [Text.Encoding]::UTF8
+)
+$deterministicHashingTestSource = [IO.File]::ReadAllText(
+    $deterministicHashingTestPath,
+    [Text.Encoding]::UTF8
+)
+$generatorMetadataTestSource = [IO.File]::ReadAllText(
+    $generatorMetadataTestPath,
+    [Text.Encoding]::UTF8
+)
+$moveAccessStructureTestSource = [IO.File]::ReadAllText(
+    $moveAccessStructureTestPath,
+    [Text.Encoding]::UTF8
+)
+$trackerStructureTestSource = [IO.File]::ReadAllText(
+    $trackerStructureTestPath,
+    [Text.Encoding]::UTF8
+)
 $rubyResultPath = $diagnosticResultPath.Replace('\', '/')
 $rubyCatchAssistanceResultPath = $catchAssistanceResultPath.Replace('\', '/')
 $rubyBattleItemResultPath = $battleItemResultPath.Replace('\', '/')
 $rubyRepelOverlayResultPath = $repelOverlayResultPath.Replace('\', '/')
 $rubyItemRandomizationResultPath = $itemRandomizationResultPath.Replace('\', '/')
 $rubySeededRunImportResultPath = $seededRunImportResultPath.Replace('\', '/')
+$rubyRunTransitionResultPath = $runTransitionResultPath.Replace('\', '/')
+$rubyRuntimeHookResultPath = $runtimeHookResultPath.Replace('\', '/')
+$rubyDeterministicHashingResultPath = $deterministicHashingResultPath.Replace('\', '/')
+$rubyGeneratorMetadataResultPath = $generatorMetadataResultPath.Replace('\', '/')
+$rubyMoveAccessStructureResultPath = $moveAccessStructureResultPath.Replace('\', '/')
+$rubyTrackerStructureResultPath = $trackerStructureResultPath.Replace('\', '/')
 $bootstrapSource = @(
     "begin"
     "`$ironmon_diagnostic_access_test_output_path = `"$rubyResultPath`""
@@ -77,6 +119,12 @@ $bootstrapSource = @(
     "`$ironmon_repel_overlay_test_output_path = `"$rubyRepelOverlayResultPath`""
     "`$ironmon_item_randomization_test_output_path = `"$rubyItemRandomizationResultPath`""
     "`$ironmon_seeded_run_import_test_output_path = `"$rubySeededRunImportResultPath`""
+    "`$ironmon_run_transition_test_output_path = `"$rubyRunTransitionResultPath`""
+    "`$ironmon_runtime_hook_test_output_path = `"$rubyRuntimeHookResultPath`""
+    "`$ironmon_deterministic_hashing_test_output_path = `"$rubyDeterministicHashingResultPath`""
+    "`$ironmon_generator_metadata_test_output_path = `"$rubyGeneratorMetadataResultPath`""
+    "`$ironmon_move_access_structure_test_output_path = `"$rubyMoveAccessStructureResultPath`""
+    "`$ironmon_tracker_structure_test_output_path = `"$rubyTrackerStructureResultPath`""
     "Dir.chdir(`"$($resolvedGameRoot.Replace('\', '/'))`")"
     $scriptLoaderSource
     "IronmonScriptLoader.load_directory(`"Data/Scripts`", [/\A(?:998|999)/])"
@@ -86,6 +134,12 @@ $bootstrapSource = @(
     $repelOverlayTestSource
     $itemRandomizationTestSource
     $seededRunImportTestSource
+    $runTransitionTestSource
+    $runtimeHookTestSource
+    $deterministicHashingTestSource
+    $generatorMetadataTestSource
+    $moveAccessStructureTestSource
+    $trackerStructureTestSource
     $diagnosticTestSource
     "exit! 0"
     "rescue Exception => error"
@@ -94,7 +148,7 @@ $bootstrapSource = @(
     "exit! 1"
     "end"
 ) -join "`n"
-Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $diagnosticErrorPath `
+Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
     -Force `
     -ErrorAction SilentlyContinue
 try {
@@ -136,11 +190,41 @@ try {
             "seeded-run import runtime tests passed") {
         throw "The bundled runtime did not complete the seeded-run import tests."
     }
+    if (-not (Test-Path -LiteralPath $runTransitionResultPath) -or
+        (Get-Content -LiteralPath $runTransitionResultPath -Raw).Trim() -ne
+            "run-transition runtime tests passed") {
+        throw "The bundled runtime did not complete the run-transition tests."
+    }
+    if (-not (Test-Path -LiteralPath $runtimeHookResultPath) -or
+        (Get-Content -LiteralPath $runtimeHookResultPath -Raw).Trim() -ne
+            "runtime-hook tests passed") {
+        throw "The bundled runtime did not complete the runtime-hook tests."
+    }
+    if (-not (Test-Path -LiteralPath $deterministicHashingResultPath) -or
+        (Get-Content -LiteralPath $deterministicHashingResultPath -Raw).Trim() -ne
+            "deterministic-hashing tests passed") {
+        throw "The bundled runtime did not complete the deterministic-hashing tests."
+    }
+    if (-not (Test-Path -LiteralPath $generatorMetadataResultPath) -or
+        (Get-Content -LiteralPath $generatorMetadataResultPath -Raw).Trim() -ne
+            "generator-metadata tests passed") {
+        throw "The bundled runtime did not complete the generator-metadata tests."
+    }
+    if (-not (Test-Path -LiteralPath $moveAccessStructureResultPath) -or
+        (Get-Content -LiteralPath $moveAccessStructureResultPath -Raw).Trim() -ne
+            "move-access structure tests passed") {
+        throw "The bundled runtime did not complete the move-access structure tests."
+    }
+    if (-not (Test-Path -LiteralPath $trackerStructureResultPath) -or
+        (Get-Content -LiteralPath $trackerStructureResultPath -Raw).Trim() -ne
+            "tracker structure tests passed") {
+        throw "The bundled runtime did not complete the tracker structure tests."
+    }
 }
 finally {
-    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $diagnosticErrorPath `
+    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
         -Force `
         -ErrorAction SilentlyContinue
 }
 
-Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, battle item, Repel overlay, item randomization, and seeded-run import tests passed."
+Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, battle item, Repel overlay, item randomization, seeded-run import, run-transition, runtime-hook, deterministic-hashing, generator-metadata, move-access structure, and tracker structure tests passed."

@@ -193,14 +193,10 @@ module Ironmon
   end
 end
 
-module Game
-  class << self
-    alias ironmon_diagnostics_original_load load
-    def load(save_data)
-      result = ironmon_diagnostics_original_load(save_data)
-      return result if Ironmon.checkpoint_reset_loading?
-      Ironmon.log_run_diagnostics(:load) if Ironmon.active?
-      return result
-    end
+Ironmon.register_game_load_hook(
+  :diagnostics, nil,
+  proc do |_save_data, _result|
+    next if Ironmon.checkpoint_reset_loading?
+    Ironmon.log_run_diagnostics(:load) if Ironmon.active?
   end
-end
+)

@@ -161,24 +161,16 @@ module Ironmon
     return false if !pending || @reset_in_progress
     rollback_data = Marshal.load(Marshal.dump(SaveData.compile_save_hash))
     begin
-      tick_active_run_duration
-      finalize_attempt_statistics if respond_to?(:finalize_attempt_statistics)
-      completed_recipe = tracker_completed_run_recipe(:abandoned)
-      if completed_recipe && completed_recipe["statistics"]
-        completed_recipe["statistics"]["result"] = "abandoned"
-      end
-      ledger_snapshot = stage_seed_import_ledger(
-        run_ledger_snapshot, completed_recipe
-      )
+      completion = stage_run_completion(:abandoned)
+      raise "the active attempt ledger is unavailable" if
+        !completion["completed"]
+      completed_recipe = completion["completed_recipe"]
+      ledger_snapshot = completion["ledger_snapshot"]
       @seed_import_transaction = pending.merge({
         "rollback_data" => rollback_data,
         "completed_recipe" => completed_recipe,
         "ledger_snapshot" => ledger_snapshot,
-        "source_sequence" => if $PokemonGlobal
-                               $PokemonGlobal.ironmon_tracker_sequence || 0
-                             else
-                               0
-                             end,
+        "source_sequence" => completion["source_sequence"],
         "save_slot" => ($Trainer ? $Trainer.save_slot : nil)
       })
       @tracker_seed_import_pending = nil
@@ -210,17 +202,9 @@ module Ironmon
   end
 
   def self.stage_seed_import_ledger(snapshot, completed_recipe)
-    ledger = Marshal.load(Marshal.dump(snapshot))
-    attempt = ledger["current_attempt"]
-    raise "the active attempt ledger is unavailable" if
-      !attempt || attempt["result"] != "active"
-    attempt["result"] = "abandoned"
-    ledger["attempts_abandoned"] += 1
-    ledger["last_completed_attempt"] = Marshal.load(Marshal.dump(attempt))
-    ledger["last_completed_recipe"] = Marshal.load(
-      Marshal.dump(completed_recipe)
-    ) if completed_recipe
-    return ledger
+    return stage_run_ledger_completion(
+      snapshot, :abandoned, completed_recipe
+    )
   end
 
   def self.finish_seed_import
@@ -255,23 +239,7 @@ module Ironmon
       @reset_notice = :seed_import_success
       return true
     rescue Exception => e
-      rollback_error = rollback_seed_import(transaction["rollback_data"])
-      message = if rollback_error
-                  "Seeded-run import failed, and restoring the active attempt " +
-                    "also failed: #{e.message}; rollback: #{rollback_error}"
-                else
-                  "Seeded-run import failed without replacing the active " +
-                    "attempt: #{e.message}"
-                end
-      send_seed_import_status(
-        transaction["token_id"], "failed", message,
-        transaction["source_run_id"]
-      )
-      @reset_notice = {
-        :type => :seed_import_failed,
-        :message => e.message.to_s
-      }
-      return false
+      return fail_seed_import_transaction(e)
     ensure
       @seed_import_transaction = nil
       @seed_import_in_progress = false
@@ -281,11 +249,39 @@ module Ironmon
   end
 
   def self.rollback_seed_import(save_data)
-    SaveData.mark_values_as_unloaded
-    with_checkpoint_reset_load { Game.load(save_data) }
-    return nil
-  rescue Exception => e
-    return e.message.to_s
+    return restore_live_save_snapshot(save_data)
+  end
+
+  def self.fail_seed_import_transaction(error)
+    transaction = @seed_import_transaction
+    rollback_error = if transaction
+                       rollback_seed_import(transaction["rollback_data"])
+                     else
+                       "the seeded-run transaction is unavailable"
+                     end
+    if transaction
+      message = if rollback_error
+                  "Seeded-run import failed, and restoring the active attempt " +
+                    "also failed: #{error.message}; rollback: #{rollback_error}"
+                else
+                  "Seeded-run import failed without replacing the active " +
+                    "attempt: #{error.message}"
+                end
+      send_seed_import_status(
+        transaction["token_id"], "failed", message,
+        transaction["source_run_id"]
+      )
+    end
+    @reset_notice = {
+      :type => :seed_import_failed,
+      :message => error.message.to_s,
+      :rollback_error => rollback_error
+    }
+    @seed_import_transaction = nil
+    @seed_import_in_progress = false
+    @reset_save_slot = nil
+    @reset_in_progress = false
+    return false
   end
 
   def self.send_seed_import_status(token_id, status, message, run_id = nil)

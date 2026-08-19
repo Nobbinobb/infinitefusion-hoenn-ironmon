@@ -1,8 +1,20 @@
 #===============================================================================
-# Ironmon proof-of-concept randomization preset
+# Ironmon deterministic randomization preset
 #===============================================================================
 
 module Ironmon
+  PRESET_TRANSACTION_ERROR_VARIABLES = [
+    :@preset_generation_error_message,
+    :@custom_fusion_pool_error_message,
+    :@ability_randomization_error_message,
+    :@base_stat_randomization_error_message,
+    :@evolution_randomization_error_message,
+    :@move_access_randomization_error_message,
+    :@item_randomization_error_message,
+    :@species_generation_error_message,
+    :@seed_import_error_message
+  ].freeze
+
   # The starting map is constructed before its mode is selected. Refresh any
   # static encounters that were therefore created before Ironmon became active.
   def self.randomize_loaded_static_events
@@ -30,14 +42,89 @@ module Ironmon
     $PokemonEncounters.setup($game_map.map_id)
   end
 
+  def self.preset_transaction_snapshot
+    runtime_state = {}
+    instance_variables.each do |name|
+      runtime_state[name] = instance_variable_get(name)
+    end
+    return {
+      :pokemon_global => [$PokemonGlobal, Marshal.dump($PokemonGlobal)],
+      :game_switches => [$game_switches, Marshal.dump($game_switches)],
+      :game_variables => [$game_variables, Marshal.dump($game_variables)],
+      :trainer => [$Trainer, Marshal.dump($Trainer)],
+      :pokemon_system => [$PokemonSystem, Marshal.dump($PokemonSystem)],
+      :runtime_state => runtime_state
+    }
+  end
+
+  def self.preset_transaction_error_state
+    result = {}
+    PRESET_TRANSACTION_ERROR_VARIABLES.each do |name|
+      result[name] = instance_variable_get(name) if
+        instance_variable_defined?(name)
+    end
+    return result
+  end
+
+  def self.restore_preset_object(entry)
+    target = entry[0]
+    restored = Marshal.load(entry[1])
+    return restored if !target
+    if target.is_a?(Array) || target.is_a?(Hash)
+      target.replace(restored)
+      return target
+    end
+    (target.instance_variables - restored.instance_variables).each do |name|
+      target.remove_instance_variable(name)
+    end
+    restored.instance_variables.each do |name|
+      target.instance_variable_set(
+        name, restored.instance_variable_get(name)
+      )
+    end
+    return target
+  end
+
+  def self.restore_preset_transaction(snapshot, error_state)
+    $PokemonGlobal = restore_preset_object(snapshot[:pokemon_global])
+    $game_switches = restore_preset_object(snapshot[:game_switches])
+    $game_variables = restore_preset_object(snapshot[:game_variables])
+    $Trainer = restore_preset_object(snapshot[:trainer])
+    $PokemonSystem = restore_preset_object(snapshot[:pokemon_system])
+    runtime_state = snapshot[:runtime_state]
+    (instance_variables - runtime_state.keys).each do |name|
+      remove_instance_variable(name)
+    end
+    runtime_state.each do |name, value|
+      instance_variable_set(name, value)
+    end
+    PRESET_TRANSACTION_ERROR_VARIABLES.each do |name|
+      remove_instance_variable(name) if instance_variable_defined?(name)
+    end
+    error_state.each do |name, value|
+      instance_variable_set(name, value)
+    end
+    return false
+  end
+
+  def self.rollback_preset_transaction(snapshot)
+    errors = preset_transaction_error_state
+    return restore_preset_transaction(snapshot, errors)
+  end
+
   def self.apply_preset(context = :new_run, seed_override = nil, start_tracker = true, expected_compatibility_fingerprint = nil)
-    return if !$PokemonGlobal || !$game_switches || !$game_variables
+    return false if !$PokemonGlobal || !$game_switches || !$game_variables
+    transaction = preset_transaction_snapshot
+    @preset_generation_error_message = nil
     @ability_randomization_error_message = nil
     @base_stat_randomization_error_message = nil
     @evolution_randomization_error_message = nil
     @move_access_randomization_error_message = nil
     @item_randomization_error_message = nil
-    return false if !prepare_custom_fusion_pool
+    @species_generation_error_message = nil
+    @seed_import_error_message = nil if context == :seed_import
+    return rollback_preset_transaction(transaction) if
+      !prepare_custom_fusion_pool
 
     $PokemonGlobal.ironmon_mode = true
     configuration
@@ -51,18 +138,24 @@ module Ironmon
     prepare_player_fusion_pairing
     ensure_checkpoint_id
     record_custom_fusion_pool_metadata
-    return false if !prepare_ability_randomization
-    return false if !prepare_base_stat_randomization
-    return false if !prepare_evolution_randomization
-    return false if !prepare_move_access_randomization
-    return false if !prepare_item_randomization
-    return false if !prepare_species_mappings
+    return rollback_preset_transaction(transaction) if
+      !prepare_ability_randomization
+    return rollback_preset_transaction(transaction) if
+      !prepare_base_stat_randomization
+    return rollback_preset_transaction(transaction) if
+      !prepare_evolution_randomization
+    return rollback_preset_transaction(transaction) if
+      !prepare_move_access_randomization
+    return rollback_preset_transaction(transaction) if
+      !prepare_item_randomization
+    return rollback_preset_transaction(transaction) if
+      !prepare_species_mappings
     if expected_compatibility_fingerprint &&
        tracker_compatibility_fingerprint != expected_compatibility_fingerprint
       @seed_import_error_message = _INTL(
         "This seed token is not compatible with the installed Ironmon data."
       )
-      return false
+      return rollback_preset_transaction(transaction)
     end
 
     $game_switches[SWITCH_RANDOMIZED_AT_LEAST_ONCE] = true
@@ -105,9 +198,18 @@ module Ironmon
     $game_switches[SWITCH_RANDOM_GIVEN_TMS] = false
     $game_switches[SWITCH_RANDOM_SHOP_ITEMS] = false
     $game_switches[SWITCH_RANDOM_HELD_ITEMS] = false
+    return rollback_preset_transaction(transaction) if
+      !begin_run_attempt($PokemonGlobal.ironmon_seed)
+  rescue Exception => e
+    @preset_generation_error_message = _INTL(
+      "Ironmon could not apply its randomization preset: {1}", e.message
+    )
+    echoln @preset_generation_error_message
+    return rollback_preset_transaction(transaction) if transaction
+    return false
+  else
     refresh_loaded_wild_encounter_table
     randomize_loaded_static_events
-    return false if !begin_run_attempt($PokemonGlobal.ironmon_seed)
     start_tracker_run if start_tracker
     log_run_diagnostics(context)
     return true

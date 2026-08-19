@@ -13,6 +13,7 @@ module Ironmon
   @reset_in_progress = false
   @static_refresh_pending = false
   @reset_save_slot = nil
+  @reset_transaction = nil
   @reset_notice = nil
   @seed_to_avoid = nil
 

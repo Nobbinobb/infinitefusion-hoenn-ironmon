@@ -171,14 +171,10 @@ Events.onStartBattle += proc do |_sender, _event_args|
   Ironmon.enforce_difficulty_settings if Ironmon.active?
 end
 
-module Game
-  class << self
-    alias ironmon_difficulty_original_load load
-    def load(save_data)
-      result = ironmon_difficulty_original_load(save_data)
-      return result if Ironmon.checkpoint_reset_loading?
-      Ironmon.enforce_difficulty_settings if Ironmon.active?
-      return result
-    end
+Ironmon.register_game_load_hook(
+  :difficulty_enforcement, nil,
+  proc do |_save_data, _result|
+    next if Ironmon.checkpoint_reset_loading?
+    Ironmon.enforce_difficulty_settings if Ironmon.active?
   end
-end
+)

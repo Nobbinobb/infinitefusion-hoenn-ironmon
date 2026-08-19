@@ -10,10 +10,6 @@ module Ironmon
     PREFERRED_MAXIMUM_PERCENT = 115
     INTERMEDIATE_WEIGHT_FOR_INTERMEDIATE_REFERENCE = 60
     INTERMEDIATE_WEIGHT_FOR_TERMINAL_REFERENCE = 40
-    FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
-    FNV_PRIME = 1_099_511_628_211
-    FNV_MASK = 0xFFFFFFFFFFFFFFFF
-
     attr_reader :seed
     attr_reader :catalog
     attr_reader :target_pool_info
@@ -42,7 +38,7 @@ module Ironmon
       @branches_by_fusion = {}
       @candidate_targets_by_fusion = {}
       @deterministic_base_value = hash_entries(
-        FNV_OFFSET_BASIS,
+        Ironmon::FNV1A_64_OFFSET_BASIS,
         [
           SCHEMA_VERSION, RULES_VERSION, @seed, "fusion_evolution",
           catalog.source_fingerprint, catalog.taxonomy_fingerprint,
@@ -623,15 +619,7 @@ module Ironmon
     end
 
     def hash_entries(value, entries)
-      entries.each do |entry|
-        entry.to_s.each_byte do |byte|
-          value ^= byte
-          value = (value * FNV_PRIME) & FNV_MASK
-        end
-        value ^= 0
-        value = (value * FNV_PRIME) & FNV_MASK
-      end
-      return value
+      return Ironmon.fnv1a_64_entries(entries, value)
     end
 
     def deep_freeze(value)

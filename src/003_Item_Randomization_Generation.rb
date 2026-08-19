@@ -10,10 +10,6 @@ module Ironmon
     POOL_RULES_VERSION = 3
     WEIGHTED_POOL_RULES_VERSION = 3
     SHOP_POLICY_VERSION = 1
-    FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
-    FNV_PRIME = 1_099_511_628_211
-    FNV_MASK = 0xFFFFFFFFFFFFFFFF
-
     UNSUPPORTED_RESULTS = [
       :COVERFOSSIL, :PLUMEFOSSIL, :ACCURACYUP, :DAMAGEUP, :ANCIENTSTONE,
       :ODDKEYSTONE_FULL, :DEVOLUTIONSPRAY, :INVISIBALL, :DEBUGCANDY
@@ -128,12 +124,7 @@ module Ironmon
     end
 
     def hash_value(value)
-      hash = FNV_OFFSET_BASIS
-      value.each_byte do |byte|
-        hash ^= byte
-        hash = (hash * FNV_PRIME) & FNV_MASK
-      end
-      return hash
+      return Ironmon.fnv1a_64(value)
     end
   end
 
@@ -283,18 +274,7 @@ module Ironmon
   end
 
   def self.item_fingerprint(entries)
-    value = ItemSlotGenerator::FNV_OFFSET_BASIS
-    entries.each do |entry|
-      entry.to_s.each_byte do |byte|
-        value ^= byte
-        value = (value * ItemSlotGenerator::FNV_PRIME) &
-          ItemSlotGenerator::FNV_MASK
-      end
-      value ^= 0
-      value = (value * ItemSlotGenerator::FNV_PRIME) &
-        ItemSlotGenerator::FNV_MASK
-    end
-    return sprintf("%016x", value)
+    return fnv1a_64_fingerprint(entries)
   end
 
   def self.item_ground_pool_fingerprint(rules_version = ItemSlotGenerator::POOL_RULES_VERSION)
@@ -319,186 +299,4 @@ module Ironmon
     return item_fingerprint([rules_version, "result_bans"] + item_result_bans(rules_version))
   end
 
-  def self.prepare_item_randomization
-    raise ItemRandomizationError, "run metadata is unavailable" if !$PokemonGlobal
-    rules = ItemSlotGenerator::POOL_RULES_VERSION
-    ground_pool = item_ground_pool(rules)
-    tm_pool = item_tm_pool(rules)
-    $PokemonGlobal.ironmon_item_generator_version =
-      ItemSlotGenerator::SCHEMA_VERSION
-    $PokemonGlobal.ironmon_item_pool_rules_version = rules
-    $PokemonGlobal.ironmon_item_ground_pool_size = ground_pool.length
-    $PokemonGlobal.ironmon_item_ground_pool_fingerprint =
-      item_ground_pool_fingerprint(rules)
-    $PokemonGlobal.ironmon_item_tm_pool_size = tm_pool.length
-    $PokemonGlobal.ironmon_item_tm_pool_fingerprint =
-      item_tm_pool_fingerprint(rules)
-    $PokemonGlobal.ironmon_item_result_ban_fingerprint =
-      item_result_ban_fingerprint(rules)
-    $PokemonGlobal.ironmon_item_shop_policy_version =
-      ItemSlotGenerator::SHOP_POLICY_VERSION
-    $PokemonGlobal.randomItemsHash = {} if
-      $PokemonGlobal.respond_to?(:randomItemsHash=)
-    $PokemonGlobal.randomTMsHash = {} if
-      $PokemonGlobal.respond_to?(:randomTMsHash=)
-    disable_base_item_randomization
-    reset_item_generator_cache
-    item_slot_generator
-    @item_randomization_ready = true
-    @item_randomization_error_message = nil
-    return true
-  rescue Exception => e
-    @item_randomization_ready = false
-    @item_randomization_error_message = _INTL(
-      "Ironmon could not prepare item randomization: {1}", e.message
-    )
-    echoln @item_randomization_error_message
-    return false
-  end
-
-  def self.current_item_randomization?
-    return false if !$PokemonGlobal
-    rules = $PokemonGlobal.ironmon_item_pool_rules_version
-    return false if $PokemonGlobal.ironmon_item_generator_version !=
-      ItemSlotGenerator::SCHEMA_VERSION
-    return false if
-      !ItemSlotGenerator::RESULT_BANS_BY_RULES_VERSION.key?(rules)
-    return false if $PokemonGlobal.ironmon_item_ground_pool_size !=
-      item_ground_pool(rules).length
-    return false if $PokemonGlobal.ironmon_item_ground_pool_fingerprint !=
-      item_ground_pool_fingerprint(rules)
-    return false if $PokemonGlobal.ironmon_item_tm_pool_size !=
-      item_tm_pool(rules).length
-    return false if $PokemonGlobal.ironmon_item_tm_pool_fingerprint !=
-      item_tm_pool_fingerprint(rules)
-    return false if $PokemonGlobal.ironmon_item_result_ban_fingerprint !=
-      item_result_ban_fingerprint(rules)
-    return false if $PokemonGlobal.ironmon_item_shop_policy_version !=
-      ItemSlotGenerator::SHOP_POLICY_VERSION
-    return true
-  rescue Exception
-    return false
-  end
-
-  def self.legacy_item_randomization?
-    return false if !$PokemonGlobal
-    return false if $PokemonGlobal.ironmon_item_generator_version
-    item_map = $PokemonGlobal.randomItemsHash
-    tm_map = $PokemonGlobal.randomTMsHash
-    return (item_map.is_a?(Hash) && !item_map.empty?) ||
-      (tm_map.is_a?(Hash) && !tm_map.empty?)
-  end
-
-  def self.ensure_item_randomization
-    @item_randomization_ready = false
-    return false if !$PokemonGlobal
-    if legacy_item_randomization?
-      reset_item_generator_cache
-      return true
-    end
-    if !$PokemonGlobal.ironmon_item_generator_version
-      disable_base_item_randomization
-      reset_item_generator_cache
-      return true
-    end
-    if !current_item_randomization?
-      raise ItemRandomizationError,
-            "the saved item generator or item pools are incompatible"
-    end
-    reset_item_generator_cache
-    item_slot_generator
-    disable_base_item_randomization
-    @item_randomization_ready = true
-    return true
-  end
-
-  def self.item_randomization_active?
-    return active? && @item_randomization_ready == true
-  end
-
-  def self.item_slot_generator
-    seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0
-    rules = if $PokemonGlobal
-              $PokemonGlobal.ironmon_item_pool_rules_version
-            else
-              ItemSlotGenerator::POOL_RULES_VERSION
-            end
-    rules ||= ItemSlotGenerator::POOL_RULES_VERSION
-    if !@item_slot_generator || @item_slot_generator_seed != seed ||
-       @item_slot_generator_rules != rules
-      @item_slot_generator_seed = seed
-      @item_slot_generator_rules = rules
-      @item_slot_generator = build_item_slot_generator(seed, rules)
-    end
-    return @item_slot_generator
-  end
-
-  def self.build_item_slot_generator(seed, rules)
-    return ItemSlotGenerator.new(
-      seed, item_ground_pool(rules), item_tm_pool(rules),
-      item_ground_weights(rules)
-    )
-  end
-
-  def self.reset_item_generator_cache
-    @item_slot_generator = nil
-    @item_slot_generator_seed = nil
-    @item_slot_generator_rules = nil
-  end
-
-  def self.suspend_item_randomization
-    @item_randomization_ready = false
-    reset_item_generator_cache
-  end
-
-  def self.item_randomization_error_message
-    return @item_randomization_error_message ||
-      _INTL("Ironmon could not prepare item randomization.")
-  end
-
-  def self.disable_base_item_randomization
-    return if !$game_switches
-    [
-      SWITCH_RANDOM_ITEMS_GENERAL, SWITCH_RANDOM_ITEMS,
-      SWITCH_RANDOM_FOUND_ITEMS, SWITCH_RANDOM_GIVEN_ITEMS,
-      SWITCH_RANDOM_ITEMS_MAPPED, SWITCH_RANDOM_ITEMS_DYNAMIC,
-      SWITCH_RANDOM_TMS, SWITCH_RANDOM_FOUND_TMS, SWITCH_RANDOM_GIVEN_TMS,
-      SWITCH_RANDOM_SHOP_ITEMS, SWITCH_RANDOM_HELD_ITEMS
-    ].each { |switch_id| $game_switches[switch_id] = false }
-  end
-
-  def self.item_generator_recipe
-    return nil if !$PokemonGlobal ||
-      !$PokemonGlobal.ironmon_item_generator_version
-    rules = $PokemonGlobal.ironmon_item_pool_rules_version
-    return {
-      "version" => $PokemonGlobal.ironmon_item_generator_version,
-      "rules_version" => rules,
-      "ground_pool_size" => $PokemonGlobal.ironmon_item_ground_pool_size,
-      "ground_pool_fingerprint" =>
-        $PokemonGlobal.ironmon_item_ground_pool_fingerprint,
-      "ground_total_weight" => item_ground_total_weight(rules),
-      "tm_pool_size" => $PokemonGlobal.ironmon_item_tm_pool_size,
-      "tm_pool_fingerprint" =>
-        $PokemonGlobal.ironmon_item_tm_pool_fingerprint,
-      "result_bans" => item_result_bans(rules).map { |item| item.to_s },
-      "result_ban_fingerprint" =>
-        $PokemonGlobal.ironmon_item_result_ban_fingerprint,
-      "shop_policy_version" =>
-        $PokemonGlobal.ironmon_item_shop_policy_version
-    }
-  end
-end
-
-module Game
-  class << self
-    alias ironmon_item_original_load load
-    def load(save_data)
-      Ironmon.suspend_item_randomization
-      result = ironmon_item_original_load(save_data)
-      return result if Ironmon.checkpoint_reset_loading?
-      Ironmon.ensure_item_randomization if Ironmon.active?
-      return result
-    end
-  end
 end

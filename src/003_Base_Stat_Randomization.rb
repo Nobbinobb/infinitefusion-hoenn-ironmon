@@ -17,10 +17,6 @@ module Ironmon
     HEAD_DOMINANT_STATS = [
       :HP, :SPECIAL_ATTACK, :SPECIAL_DEFENSE
     ].freeze
-    FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
-    FNV_PRIME = 1_099_511_628_211
-    FNV_MASK = 0xFFFFFFFFFFFFFFFF
-
     attr_reader :source_fingerprint
 
     def initialize(seed, source_fingerprint)
@@ -138,13 +134,9 @@ module Ironmon
     end
 
     def deterministic_value(*parts)
-      value = FNV_OFFSET_BASIS
-      input = [SCHEMA_VERSION, @seed, "base_stats", *parts].join("|")
-      input.each_byte do |byte|
-        value ^= byte
-        value = (value * FNV_PRIME) & FNV_MASK
-      end
-      return value
+      return Ironmon.fnv1a_64_joined(
+        [SCHEMA_VERSION, @seed, "base_stats", *parts]
+      )
     end
   end
 
@@ -248,7 +240,6 @@ module Ironmon
 
   def self.base_stat_source_fingerprint
     return @base_stat_source_fingerprint if @base_stat_source_fingerprint
-    value = BaseStatGenerator::FNV_OFFSET_BASIS
     entries = [BaseStatGenerator::RULES_VERSION,
                BaseStatGenerator::MINIMUM_STAT,
                BaseStatGenerator::MAXIMUM_STAT]
@@ -256,17 +247,7 @@ module Ironmon
       entries << identity
       BaseStatGenerator::STAT_ORDER.each { |stat| entries << stats[stat] }
     end
-    entries.each do |entry|
-      entry.to_s.each_byte do |byte|
-        value ^= byte
-        value = (value * BaseStatGenerator::FNV_PRIME) &
-          BaseStatGenerator::FNV_MASK
-      end
-      value ^= 0
-      value = (value * BaseStatGenerator::FNV_PRIME) &
-        BaseStatGenerator::FNV_MASK
-    end
-    @base_stat_source_fingerprint = sprintf("%016x", value)
+    @base_stat_source_fingerprint = fnv1a_64_fingerprint(entries)
     return @base_stat_source_fingerprint
   end
 
@@ -281,136 +262,4 @@ module Ironmon
     return true
   end
 
-  def self.prepare_base_stat_randomization
-    @base_stat_randomization_ready = false
-    raise BaseStatRandomizationError, "run metadata is unavailable" if
-      !$PokemonGlobal
-    validate_base_stat_sources
-    $PokemonGlobal.ironmon_base_stat_generator_version =
-      BaseStatGenerator::SCHEMA_VERSION
-    $PokemonGlobal.ironmon_base_stat_source_fingerprint =
-      base_stat_source_fingerprint
-    reset_base_stat_generator_cache
-    base_stat_generator
-    @base_stat_randomization_ready = true
-    @base_stat_randomization_error_message = nil
-    return true
-  rescue BaseStatRandomizationError => e
-    @base_stat_randomization_error_message = _INTL(
-      "Ironmon could not prepare base-stat randomization: {1}", e.message
-    )
-    echoln @base_stat_randomization_error_message
-    return false
-  rescue Exception => e
-    @base_stat_randomization_error_message = _INTL(
-      "Ironmon could not prepare base-stat randomization because of an unexpected error: {1}",
-      e.message
-    )
-    echoln @base_stat_randomization_error_message
-    return false
-  end
-
-  def self.current_base_stat_randomization?
-    return false if !$PokemonGlobal
-    return false if $PokemonGlobal.ironmon_base_stat_generator_version !=
-      BaseStatGenerator::SCHEMA_VERSION
-    return false if $PokemonGlobal.ironmon_base_stat_source_fingerprint !=
-      base_stat_source_fingerprint
-    return true
-  rescue Exception
-    return false
-  end
-
-  def self.ensure_base_stat_randomization
-    @base_stat_randomization_ready = false
-    return false if !$PokemonGlobal
-    version = $PokemonGlobal.ironmon_base_stat_generator_version
-    fingerprint = $PokemonGlobal.ironmon_base_stat_source_fingerprint
-    if !version && !fingerprint
-      reset_base_stat_generator_cache
-      echoln "Ironmon retained original base stats for a pre-Step-3.2 run."
-      return true
-    end
-    if !current_base_stat_randomization?
-      raise BaseStatRandomizationError,
-            "the saved base-stat generator or source data is incompatible"
-    end
-    reset_base_stat_generator_cache
-    base_stat_generator
-    @base_stat_randomization_ready = true
-    return true
-  end
-
-  def self.base_stat_randomization_active?
-    return false if !$PokemonGlobal
-    return false if $PokemonGlobal.ironmon_mode != true
-    return @base_stat_randomization_ready == true
-  end
-
-  def self.base_stat_generator
-    seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0
-    if !@base_stat_generator || @base_stat_generator_seed != seed
-      @base_stat_generator_seed = seed
-      @base_stat_generator = BaseStatGenerator.new(
-        seed, base_stat_source_fingerprint
-      )
-    end
-    return @base_stat_generator
-  end
-
-  def self.base_stat_generator_for(seed, fingerprint)
-    if fingerprint != base_stat_source_fingerprint
-      raise BaseStatRandomizationError,
-            "the requested base-stat source data is incompatible"
-    end
-    return BaseStatGenerator.new(seed, fingerprint)
-  end
-
-  def self.reset_base_stat_generator_cache
-    @base_stat_generator = nil
-    @base_stat_generator_seed = nil
-  end
-
-  def self.suspend_base_stat_randomization
-    @base_stat_randomization_ready = false
-    reset_base_stat_generator_cache
-  end
-
-  def self.base_stat_randomization_error_message
-    return @base_stat_randomization_error_message ||
-      _INTL("Ironmon could not prepare base-stat randomization.")
-  end
-end
-
-class GameData::Species
-  alias ironmon_unrandomized_base_stats base_stats
-
-  def base_stats
-    return ironmon_unrandomized_base_stats if
-      !Ironmon.base_stat_randomization_active?
-    return Ironmon.generated_base_stats_for(self)
-  end
-end
-
-class Pokemon
-  alias ironmon_base_stat_original_baseStats baseStats
-
-  def baseStats
-    return ironmon_base_stat_original_baseStats if
-      !Ironmon.base_stat_randomization_active?
-    return Ironmon.generated_base_stats_for_pokemon(self)
-  end
-end
-
-module Game
-  class << self
-    alias ironmon_base_stat_original_load load
-    def load(save_data)
-      Ironmon.suspend_base_stat_randomization
-      result = ironmon_base_stat_original_load(save_data)
-      return result if Ironmon.checkpoint_reset_loading?
-      Ironmon.ensure_base_stat_randomization if Ironmon.active?
-      return result
-    end
-  end
 end

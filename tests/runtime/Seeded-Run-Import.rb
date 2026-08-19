@@ -1,5 +1,7 @@
 module IronmonSeededRunImportRuntimeTests
   OUTPUT_PATH = $ironmon_seeded_run_import_test_output_path.to_s
+  EXPECTED_WORLD_SNAPSHOT_SHA256 =
+    "fc7cf5156e932aebea1f8356bd3c384192c3ed2dfff87c305ceb99702bdb416b"
 
   def self.assert(condition, message)
     raise "Seeded-run import runtime test failed: #{message}" if !condition
@@ -156,6 +158,24 @@ module IronmonSeededRunImportRuntimeTests
     }
   end
 
+  def self.custom_fusion_pool_fixture
+    pool = (1..20).flat_map do |body|
+      (1..20).map { |head| "B#{body}H#{head}".to_sym }
+    end.freeze
+    service = Object.new
+    service.define_singleton_method(:pool) { pool }
+    service.define_singleton_method(:info) do
+      {
+        :schema_version => Ironmon::CustomFusionPool::SCHEMA_VERSION,
+        :size => pool.length,
+        :fingerprint => Ironmon.species_pool_fingerprint(pool),
+        :source_entries => pool.length,
+        :rejected_entries => 0
+      }
+    end
+    return service
+  end
+
   def self.test_transaction(generation_result)
     with_transaction_stubs(generation_result) do
       transaction = transaction_fixture
@@ -264,20 +284,7 @@ module IronmonSeededRunImportRuntimeTests
       $PokemonGlobal = PokemonGlobalMetadata.new
       $game_switches = []
       $game_variables = []
-      pool = (1..20).flat_map do |body|
-        (1..20).map { |head| "B#{body}H#{head}".to_sym }
-      end.freeze
-      pool_service = Object.new
-      pool_service.define_singleton_method(:pool) { pool }
-      pool_service.define_singleton_method(:info) do
-        {
-          :schema_version => Ironmon::CustomFusionPool::SCHEMA_VERSION,
-          :size => pool.length,
-          :fingerprint => Ironmon.species_pool_fingerprint(pool),
-          :source_entries => pool.length,
-          :rejected_entries => 0
-        }
-      end
+      pool_service = custom_fusion_pool_fixture
       Ironmon.instance_variable_set(
         :@custom_fusion_pool_service, pool_service
       )
@@ -404,6 +411,119 @@ module IronmonSeededRunImportRuntimeTests
         second_seed.reject { |key, _value| key == :recipe },
       "a different imported seed changes the generated world"
     )
+    digest = Digest::SHA256.hexdigest(Marshal.dump(forward))
+    assert(
+      digest == EXPECTED_WORLD_SNAPSHOT_SHA256,
+      "the deterministic world matches the refactor baseline: #{digest}"
+    )
+  end
+
+  def self.test_preset_failure_rollback
+    singleton = class << Ironmon; self; end
+    original_global = $PokemonGlobal
+    original_switches = $game_switches
+    original_variables = $game_variables
+    original_pool_service = Ironmon.instance_variable_get(
+      :@custom_fusion_pool_service
+    )
+    singleton.send(
+      :alias_method, :preset_test_original_prepare_base_stat_randomization,
+      :prepare_base_stat_randomization
+    )
+    begin
+      $PokemonGlobal = PokemonGlobalMetadata.new
+      $PokemonGlobal.ironmon_mode = false
+      $PokemonGlobal.ironmon_seed = 246_810
+      $game_switches = []
+      $game_variables = []
+      $game_switches[15] = true
+      $game_variables[16] = "preserved"
+      pool_service = custom_fusion_pool_fixture
+      Ironmon.instance_variable_set(
+        :@custom_fusion_pool_service, pool_service
+      )
+      Ironmon.configuration = transaction_fixture["configuration"]
+      transaction_global = $PokemonGlobal
+      transaction_switches = $game_switches
+      transaction_variables = $game_variables
+      global_before = {}
+      $PokemonGlobal.instance_variables.each do |name|
+        next if !name.to_s.start_with?("@ironmon_")
+        global_before[name] = Marshal.dump(
+          $PokemonGlobal.instance_variable_get(name)
+        )
+      end
+      switches_before = Marshal.dump($game_switches)
+      variables_before = Marshal.dump($game_variables)
+      singleton.send(:define_method, :prepare_base_stat_randomization) do
+        @base_stat_randomization_error_message =
+          "injected base-stat preparation failure"
+        @preset_test_leaked_state = true
+        false
+      end
+
+      result = Ironmon.apply_preset(:new_run, 135_791, false)
+      assert(!result, "preset preparation failure is reported")
+      assert(
+        $PokemonGlobal.equal?(transaction_global) &&
+          $game_switches.equal?(transaction_switches) &&
+          $game_variables.equal?(transaction_variables),
+        "preset failure preserves restored object identities"
+      )
+      global_after = {}
+      $PokemonGlobal.instance_variables.each do |name|
+        next if !name.to_s.start_with?("@ironmon_")
+        global_after[name] = Marshal.dump(
+          $PokemonGlobal.instance_variable_get(name)
+        )
+      end
+      changed_global_fields = (global_before.keys + global_after.keys).uniq.select do |name|
+        global_before[name] != global_after[name]
+      end
+      assert(
+        changed_global_fields.empty?,
+        "preset failure restores persistent global state: " +
+          changed_global_fields.inspect
+      )
+      assert(
+        Marshal.dump($game_switches) == switches_before,
+        "preset failure restores game switches"
+      )
+      assert(
+        Marshal.dump($game_variables) == variables_before,
+        "preset failure restores game variables"
+      )
+      assert(
+        !Ironmon.instance_variable_defined?(:@preset_test_leaked_state),
+        "preset failure removes transient runtime state"
+      )
+      assert(
+        Ironmon.generation_error_message ==
+          "injected base-stat preparation failure",
+        "preset failure retains its actionable error"
+      )
+    ensure
+      singleton.send(
+        :alias_method, :prepare_base_stat_randomization,
+        :preset_test_original_prepare_base_stat_randomization
+      )
+      singleton.send(
+        :remove_method, :preset_test_original_prepare_base_stat_randomization
+      )
+      Ironmon.suspend_ability_randomization
+      Ironmon.suspend_base_stat_randomization
+      Ironmon.suspend_evolution_randomization
+      Ironmon.suspend_move_access_randomization
+      Ironmon.suspend_item_randomization
+      Ironmon.reset_species_generator_cache
+      Ironmon.reset_player_fusion_mapper_cache
+      Ironmon.instance_variable_set(
+        :@custom_fusion_pool_service, original_pool_service
+      )
+      $PokemonGlobal = original_global
+      $game_switches = original_switches
+      $game_variables = original_variables
+    end
   end
 
   def self.run
@@ -429,6 +549,7 @@ module IronmonSeededRunImportRuntimeTests
     test_strict_request_shapes
     test_transaction(true)
     test_transaction(false)
+    test_preset_failure_rollback
     test_repeated_import_determinism
     File.binwrite(OUTPUT_PATH, "seeded-run import runtime tests passed\n")
   rescue Exception => exception

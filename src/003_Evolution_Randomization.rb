@@ -10,10 +10,6 @@ module Ironmon
     RULES_VERSION = 3
     FIRST_STAGE_FALLBACK_LEVEL = 25
     INTERMEDIATE_FALLBACK_LEVEL = 35
-    FNV_OFFSET_BASIS = 14_695_981_039_346_656_037
-    FNV_PRIME = 1_099_511_628_211
-    FNV_MASK = 0xFFFFFFFFFFFFFFFF
-
     PRESERVED_METHODS = [
       :Level, :LevelMale, :LevelFemale, :LevelDay, :LevelNight,
       :LevelMorning, :LevelAfternoon, :LevelEvening, :LevelNoWeather,
@@ -745,16 +741,9 @@ module Ironmon
     end
 
     def fingerprint(values)
-      value = FNV_OFFSET_BASIS
-      values.each do |entry|
-        canonical_value(entry).each_byte do |byte|
-          value ^= byte
-          value = (value * FNV_PRIME) & FNV_MASK
-        end
-        value ^= 0
-        value = (value * FNV_PRIME) & FNV_MASK
+      return Ironmon.fnv1a_64_fingerprint(values) do |entry|
+        canonical_value(entry)
       end
-      return sprintf("%016x", value)
     end
 
     def freeze_catalogs

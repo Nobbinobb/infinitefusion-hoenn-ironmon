@@ -104,29 +104,80 @@ module Ironmon
   def self.finish_pending_reset
     return if !@reset_in_progress
     return finish_seed_import if @seed_import_in_progress
+    transaction = @reset_transaction
     begin
-      generated = apply_preset(:f7_reset)
-      if !generated
-        @reset_notice = :generation_failed
-      elsif @reset_save_slot
-        $Trainer.save_slot = @reset_save_slot
-        saved = Game.save(@reset_save_slot)
-        @reset_notice = if !saved
-                          :save_failed
-                        elsif @automatic_reset_in_progress
-                          :automatic_success
-                        else
-                          :success
-                        end
-      else
-        @reset_notice = @automatic_reset_in_progress ?
-          :automatic_success : :success
+      raise "the reset transaction is unavailable" if !transaction
+      generated = apply_preset(:f7_reset, nil, false)
+      raise generation_error_message if !generated
+      save_slot = transaction["save_slot"]
+      if save_slot
+        $Trainer.save_slot = save_slot
+        raise "the new attempt could not be saved" if !Game.save(save_slot)
       end
+      @reset_notice = transaction["automatic"] ? :automatic_success : :success
+      complete_reset_tracker_transition(transaction)
+      return true
+    rescue Exception => e
+      return fail_checkpoint_reset_transaction(e)
     ensure
       @reset_save_slot = nil
+      @reset_transaction = nil
       @reset_in_progress = false
-      @automatic_reset_in_progress = false
     end
+  end
+
+  def self.complete_reset_tracker_transition(transaction)
+    recipe = transaction["completed_recipe"]
+    if recipe
+      begin
+        tracker_connection.send_event(
+          "run_completed", recipe, transaction["source_run_id"],
+          transaction["source_sequence"] + 1
+        )
+      rescue Exception => e
+        echoln "Ironmon reset completion could not be published: #{e.message}"
+      end
+    end
+    begin
+      start_tracker_run
+    rescue Exception => e
+      echoln "Ironmon reset tracker start failed safely: #{e.message}"
+    end
+  end
+
+  def self.restore_live_save_snapshot(save_data)
+    SaveData.mark_values_as_unloaded
+    Game.load(save_data)
+    return nil
+  rescue Exception => e
+    return e.message.to_s
+  end
+
+  def self.fail_checkpoint_reset_transaction(error)
+    transaction = @reset_transaction
+    rollback_error = if transaction
+                       @seed_to_avoid = transaction["seed_to_avoid"]
+                       restore_live_save_snapshot(transaction["rollback_data"])
+                     else
+                       "the reset transaction is unavailable"
+                     end
+    @reset_notice = {
+      :type => :reset_failed,
+      :message => error.message.to_s,
+      :rollback_error => rollback_error
+    }
+    return false
+  end
+
+  def self.fail_pending_reset(error)
+    if @seed_import_in_progress && respond_to?(:fail_seed_import_transaction)
+      return fail_seed_import_transaction(error)
+    end
+    return fail_checkpoint_reset_transaction(error)
+  ensure
+    @reset_save_slot = nil
+    @reset_transaction = nil if !@seed_import_in_progress
+    @reset_in_progress = false
   end
 
   def self.with_checkpoint_reset_load
@@ -145,10 +196,31 @@ module Ironmon
     notice = @reset_notice
     @reset_notice = nil
     if notice.is_a?(Hash) && notice[:type] == :seed_import_failed
-      pbMessage(_INTL(
-        "The seeded run could not be imported. The current attempt is still active. {1}",
-        notice[:message]
-      ))
+      message = if notice[:rollback_error]
+                  _INTL(
+                    "The seeded run could not be imported, and restoring the current attempt also failed. {1} Rollback: {2}",
+                    notice[:message], notice[:rollback_error]
+                  )
+                else
+                  _INTL(
+                    "The seeded run could not be imported. The current attempt is still active. {1}",
+                    notice[:message]
+                  )
+                end
+      pbMessage(message)
+    elsif notice.is_a?(Hash) && notice[:type] == :reset_failed
+      message = if notice[:rollback_error]
+                  _INTL(
+                    "The Ironmon reset failed, and restoring the previous attempt also failed. {1} Rollback: {2}",
+                    notice[:message], notice[:rollback_error]
+                  )
+                else
+                  _INTL(
+                    "The Ironmon reset failed. The previous attempt was restored. {1}",
+                    notice[:message]
+                  )
+                end
+      pbMessage(message)
     elsif notice == :seed_import_success
       number = current_attempt_number
       pbMessage(_INTL(
@@ -157,10 +229,6 @@ module Ironmon
       ))
     elsif notice == :automatic_success
       return true
-    elsif notice == :generation_failed
-      pbMessage(generation_error_message)
-    elsif notice == :save_failed
-      pbMessage(_INTL("The run restarted, but the save slot could not be updated. Please save manually."))
     else
       number = current_attempt_number
       pbMessage(_INTL("Ironmon attempt {1} has been generated. Choose your starter.", number))
@@ -208,34 +276,61 @@ module Ironmon
       return false
     end
 
-    configuration_snapshot = Ironmon.configuration_snapshot
-    Ironmon.complete_run(:abandoned)
-    ledger_snapshot = Ironmon.run_ledger_snapshot
-    remember_current_seed_for_reset
-    @reset_in_progress = true
-    @automatic_reset_in_progress = automatic
-    @reset_save_slot = $Trainer.save_slot
-    $scene = IronmonCheckpointLoadScene.new(
-      checkpoint_data, configuration_snapshot, ledger_snapshot
-    )
-    return true
-  end
-end
-
-module Game
-  class << self
-    alias ironmon_checkpoint_original_save save
-    def save(slot = nil, auto = false, safe: false)
-      previous_slot = $Trainer ? $Trainer.save_slot : nil
-      result = ironmon_checkpoint_original_save(slot, auto, safe: safe)
-      if result && !auto && Ironmon.active?
-        saved_slot = $Trainer ? $Trainer.save_slot : slot
-        Ironmon.migrate_checkpoint_to_slot(saved_slot, previous_slot)
-      end
-      return result
+    rollback_data = Marshal.load(Marshal.dump(SaveData.compile_save_hash))
+    seed_to_avoid = @seed_to_avoid
+    begin
+      completion = stage_run_completion(:abandoned)
+      configuration_snapshot = Ironmon.configuration_snapshot
+      remember_current_seed_for_reset
+      @reset_transaction = {
+        "rollback_data" => rollback_data,
+        "completed_recipe" => completion["completed_recipe"],
+        "source_run_id" => completion["source_run_id"],
+        "source_sequence" => completion["source_sequence"],
+        "save_slot" => slot,
+        "automatic" => automatic,
+        "seed_to_avoid" => seed_to_avoid
+      }
+      @reset_in_progress = true
+      @reset_save_slot = slot
+      $scene = IronmonCheckpointLoadScene.new(
+        checkpoint_data, configuration_snapshot,
+        completion["ledger_snapshot"]
+      )
+      return true
+    rescue Exception => e
+      @seed_to_avoid = seed_to_avoid
+      rollback_error = restore_live_save_snapshot(rollback_data)
+      message = if rollback_error
+                  _INTL(
+                    "The Ironmon reset could not start, and restoring the previous attempt also failed. {1} Rollback: {2}",
+                    e.message, rollback_error
+                  )
+                else
+                  _INTL(
+                    "The Ironmon reset could not start. The previous attempt was restored. {1}",
+                    e.message
+                  )
+                end
+      pbMessage(message)
+      @reset_transaction = nil
+      @reset_save_slot = nil
+      @reset_in_progress = false
+      return false
     end
   end
 end
+
+Ironmon.register_game_save_hook(
+  :checkpoint,
+  proc { |_slot, _auto, _safe| $Trainer ? $Trainer.save_slot : nil },
+  proc do |slot, auto, _safe, result, previous_slot|
+    if result && !auto && Ironmon.active?
+      saved_slot = $Trainer ? $Trainer.save_slot : slot
+      Ironmon.migrate_checkpoint_to_slot(saved_slot, previous_slot)
+    end
+  end
+)
 
 class IronmonCheckpointLoadScene
   def initialize(save_data, configuration_snapshot, ledger_snapshot)
@@ -245,9 +340,13 @@ class IronmonCheckpointLoadScene
   end
 
   def main
-    SaveData.mark_values_as_unloaded
-    Ironmon.with_checkpoint_reset_load { Game.load(@save_data) }
-    Ironmon.configuration = @configuration_snapshot
-    Ironmon.restore_run_ledger(@ledger_snapshot)
+    begin
+      SaveData.mark_values_as_unloaded
+      Ironmon.with_checkpoint_reset_load { Game.load(@save_data) }
+      Ironmon.configuration = @configuration_snapshot
+      Ironmon.restore_run_ledger(@ledger_snapshot)
+    rescue Exception => e
+      Ironmon.fail_pending_reset(e)
+    end
   end
 end
