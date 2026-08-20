@@ -16,11 +16,13 @@ $resolvedProjectRoot = [IO.Path]::GetFullPath($projectRoot)
 $resolvedOutputPath = [IO.Path]::GetFullPath($OutputPath)
 $resolvedAuditPath = [IO.Path]::GetFullPath($AuditPath)
 $resolvedSourcePath = [IO.Path]::GetFullPath((Join-Path $projectRoot "src"))
+$resolvedSourceManifestPath = [IO.Path]::GetFullPath((Join-Path $resolvedSourcePath "load_order.json"))
 $loaderSourcePath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "Script-Loader.rb"))
 $exporterSource = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "Export-TypeCoverageDataset.rb"))
 Assert-PathWithinDirectory -Path $resolvedOutputPath -Directory $resolvedProjectRoot
 Assert-PathWithinDirectory -Path $resolvedAuditPath -Directory $resolvedProjectRoot
 Assert-PathWithinDirectory -Path $resolvedSourcePath -Directory $resolvedGameRoot
+Assert-PathWithinDirectory -Path $resolvedSourceManifestPath -Directory $resolvedSourcePath
 Assert-PathWithinDirectory -Path $loaderSourcePath -Directory $resolvedGameRoot
 Assert-PathWithinDirectory -Path $exporterSource -Directory $resolvedGameRoot
 if (-not (Test-Path -LiteralPath $loaderSourcePath)) {
@@ -29,15 +31,19 @@ if (-not (Test-Path -LiteralPath $loaderSourcePath)) {
 if (-not (Test-Path -LiteralPath $exporterSource)) {
     throw "The type coverage exporter was not found at '$exporterSource'."
 }
+if (-not (Test-Path -LiteralPath $resolvedSourceManifestPath)) {
+    throw "The Ironmon Ruby source manifest was not found at '$resolvedSourceManifestPath'."
+}
 
 $rubyOutputPath = $resolvedOutputPath.Replace('\', '/')
 $rubyAuditPath = $resolvedAuditPath.Replace('\', '/')
 $rubyGameRoot = $resolvedGameRoot.Replace('\', '/')
 $rubySourcePath = $resolvedSourcePath.Replace('\', '/')
+$rubySourceManifestPath = $resolvedSourceManifestPath.Replace('\', '/')
 $bootstrapMarker = "$rubyOutputPath.bootstrap"
 $loaderCode = [IO.File]::ReadAllText($loaderSourcePath, [Text.Encoding]::UTF8)
 $exporterCode = [IO.File]::ReadAllText($exporterSource, [Text.Encoding]::UTF8)
-$bootstrapSource = "File.binwrite(`"$bootstrapMarker`", `"bootstrap loaded\n`")`n`$ironmon_type_coverage_output_path = `"$rubyOutputPath`"`n`$ironmon_type_coverage_audit_path = `"$rubyAuditPath`"`n`$ironmon_type_coverage_game_root = `"$rubyGameRoot`"`n`$ironmon_type_coverage_source_path = `"$rubySourcePath`"`n$loaderCode`n$exporterCode"
+$bootstrapSource = "File.binwrite(`"$bootstrapMarker`", `"bootstrap loaded\n`")`n`$ironmon_type_coverage_output_path = `"$rubyOutputPath`"`n`$ironmon_type_coverage_audit_path = `"$rubyAuditPath`"`n`$ironmon_type_coverage_game_root = `"$rubyGameRoot`"`n`$ironmon_type_coverage_source_path = `"$rubySourcePath`"`n`$ironmon_type_coverage_source_manifest_path = `"$rubySourceManifestPath`"`n$loaderCode`n$exporterCode"
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $resolvedOutputPath) | Out-Null
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $resolvedAuditPath) | Out-Null

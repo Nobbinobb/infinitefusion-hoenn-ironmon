@@ -172,14 +172,16 @@ output_path = $ironmon_type_coverage_output_path.to_s
 audit_path = $ironmon_type_coverage_audit_path.to_s
 game_root = $ironmon_type_coverage_game_root.to_s
 source_path = $ironmon_type_coverage_source_path.to_s
-exit! 0 if output_path.empty? || game_root.empty? || source_path.empty?
+source_manifest_path = $ironmon_type_coverage_source_manifest_path.to_s
+exit! 0 if output_path.empty? || game_root.empty? || source_path.empty? ||
+  source_manifest_path.empty?
 begin
   Dir.chdir(game_root)
   File.binwrite("#{output_path}.progress", "exporter loaded\n")
   IronmonScriptLoader.load_directory(
     "Data/Scripts", [/\A(?:997|998|999)/]
   )
-  IronmonScriptLoader.load_directory(source_path)
+  IronmonScriptLoader.load_manifest(source_path, source_manifest_path)
   File.open("#{output_path}.progress", "ab") do |file|
     file.write("game and Ironmon scripts loaded\n")
   end

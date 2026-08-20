@@ -214,17 +214,21 @@ end
 
 output_path = $ironmon_item_audit_output_path.to_s
 game_root = $ironmon_item_audit_game_root.to_s
+hashing_path = $ironmon_deterministic_hashing_source_path.to_s
 generator_path = $ironmon_item_generator_source_path.to_s
-exit! 0 if output_path.empty? || game_root.empty? || generator_path.empty?
+hook_path = $ironmon_item_hook_source_path.to_s
+exit! 0 if output_path.empty? || game_root.empty? || hashing_path.empty? ||
+  generator_path.empty? || hook_path.empty?
 begin
   Dir.chdir(game_root)
   File.binwrite("#{output_path}.progress", "exporter loaded\n")
   IronmonScriptLoader.load_directory("Data/Scripts", [/\A(?:997|998|999)/])
   GameData.load_all
   Object.const_set(:Ironmon, Module.new) if !defined?(Ironmon)
+  hashing_source = File.open(hashing_path, "rb") { |file| file.read }
+  eval(hashing_source, TOPLEVEL_BINDING, hashing_path)
   generator_source = File.open(generator_path, "rb") { |file| file.read }
   eval(generator_source, TOPLEVEL_BINDING, generator_path)
-  hook_path = File.join(File.dirname(generator_path), "004_Item_Randomization_Hooks.rb")
   hook_source = File.open(hook_path, "rb") { |file| file.read }
   eval(hook_source, TOPLEVEL_BINDING, hook_path)
   summary = IronmonItemRandomizationAuditExporter.run(output_path)

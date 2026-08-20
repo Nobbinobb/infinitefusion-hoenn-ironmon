@@ -220,8 +220,8 @@ Ironmon addressed the audit findings with these rules:
 - Standard shop substitution: `Data/Scripts/016_UI/020_UI_PokeMart.rb`
 - Trainer-held assignment: `Data/Scripts/010_Data/002_PBS data/013_Trainer.rb`
 - Item classification: `Data/Scripts/010_Data/002_PBS data/006_Item.rb`
-- Ironmon preset: `Ironmon/src/002_Randomization.rb`
-- Ironmon deterministic item generator: `Ironmon/src/003_Item_Randomization_Generation.rb`
-- Ironmon item hooks: `Ironmon/src/004_Item_Randomization_Hooks.rb`
-- Ironmon HM protection: `Ironmon/src/017_HM_Tools.rb`
-- Ironmon completed-run item-map archival: `Ironmon/src/019_Tracker_Post_Run.rb`
+- Ironmon preset: `Ironmon/src/run/Preset.rb`
+- Ironmon deterministic item generator: `Ironmon/src/randomization/items/Generator.rb`
+- Ironmon item hooks: `Ironmon/src/randomization/items/Runtime_Integration.rb`
+- Ironmon HM protection: `Ironmon/src/progression/HM_Tools.rb`
+- Ironmon completed-run item-map archival: `Ironmon/src/tracker/post_run/Recipes.rb`

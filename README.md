@@ -6,7 +6,8 @@ and a fast reset to starter selection.
 
 ## Project layout
 
-- `src/` contains the canonical Ruby source.
+- `src/` groups the canonical Ruby source by subsystem; `src/load_order.json`
+  maps each source file to its flat, numbered runtime filename.
 - `docs/IRONMON_MECHANICS.html` is the complete public mechanics manual.
 - `docs/README.md` is the compact documentation index.
 - `docs/ROADMAP.md` tracks milestone scope and status.
@@ -17,8 +18,8 @@ and a fast reset to starter selection.
 - `tracker/` contains the tracker, access-token generator, and their tests.
 - `tests/runtime/` contains bundled-game runtime validation.
 - `dist/` and `release/` are ignored generated output directories.
-- `tools/Build-Distribution.ps1` synchronizes the source into `dist/` and the
-  local game installation.
+- `tools/Build-Distribution.ps1` validates the Ruby manifest and synchronizes
+  flat, load-ordered scripts into `dist/` and the local game installation.
 - `tools/Build-TrackerRelease.ps1` publishes the self-contained Windows tracker
   and creates the combined copy-ready ZIP and SHA-256 checksum in `release/`.
 - `tools/generation/` contains release-data generators and their runtime bridge.

@@ -10,12 +10,36 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "GameRuntime-Tooling.ps1")
 
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$sourceRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot "src"))
+$sourceManifestPath = Join-Path $sourceRoot "load_order.json"
+$sourceManifest = @(Get-Content -LiteralPath $sourceManifestPath -Raw | ConvertFrom-Json)
 $resolvedGameRoot = [IO.Path]::GetFullPath($GameRoot)
 $resolvedAuditPath = [IO.Path]::GetFullPath($AuditPath)
 $loaderPath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "Script-Loader.rb"))
 $exporterPath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "Export-ItemRandomizationAudit.rb"))
-$generatorPath = [IO.Path]::GetFullPath((Join-Path $projectRoot "src\003_Item_Randomization_Generation.rb"))
-foreach ($requiredPath in $loaderPath, $exporterPath, $generatorPath) {
+$generatorEntry = @($sourceManifest | Where-Object {
+    $_.output -eq "003_Item_Randomization_Generation.rb"
+})
+$hashingEntry = @($sourceManifest | Where-Object {
+    $_.output -eq "001_Deterministic_Hashing.rb"
+})
+$hookEntry = @($sourceManifest | Where-Object {
+    $_.output -eq "004_Item_Randomization_Hooks.rb"
+})
+if ($generatorEntry.Count -ne 1 -or $hashingEntry.Count -ne 1 -or
+    $hookEntry.Count -ne 1) {
+    throw "The item audit sources are missing or duplicated in the Ruby manifest."
+}
+$hashingPath = [IO.Path]::GetFullPath((
+    Join-Path $sourceRoot $hashingEntry[0].source
+))
+$generatorPath = [IO.Path]::GetFullPath((
+    Join-Path $sourceRoot $generatorEntry[0].source
+))
+$hookPath = [IO.Path]::GetFullPath((
+    Join-Path $sourceRoot $hookEntry[0].source
+))
+foreach ($requiredPath in $loaderPath, $exporterPath, $hashingPath, $generatorPath, $hookPath) {
     if (-not (Test-Path -LiteralPath $requiredPath)) {
         throw "The item audit dependency was not found at '$requiredPath'."
     }
@@ -23,10 +47,12 @@ foreach ($requiredPath in $loaderPath, $exporterPath, $generatorPath) {
 
 $rubyOutput = $resolvedAuditPath.Replace('\', '/')
 $rubyGameRoot = $resolvedGameRoot.Replace('\', '/')
+$rubyHashing = $hashingPath.Replace('\', '/')
 $rubyGenerator = $generatorPath.Replace('\', '/')
+$rubyHook = $hookPath.Replace('\', '/')
 $loaderSource = [IO.File]::ReadAllText($loaderPath, [Text.Encoding]::UTF8)
 $exporterSource = [IO.File]::ReadAllText($exporterPath, [Text.Encoding]::UTF8)
-$bootstrapSource = "`$ironmon_item_audit_output_path = `"$rubyOutput`"`n`$ironmon_item_audit_game_root = `"$rubyGameRoot`"`n`$ironmon_item_generator_source_path = `"$rubyGenerator`"`n$loaderSource`n$exporterSource"
+$bootstrapSource = "`$ironmon_item_audit_output_path = `"$rubyOutput`"`n`$ironmon_item_audit_game_root = `"$rubyGameRoot`"`n`$ironmon_deterministic_hashing_source_path = `"$rubyHashing`"`n`$ironmon_item_generator_source_path = `"$rubyGenerator`"`n`$ironmon_item_hook_source_path = `"$rubyHook`"`n$loaderSource`n$exporterSource"
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $resolvedAuditPath) | Out-Null
 Remove-Item -LiteralPath "$resolvedAuditPath.progress", "$resolvedAuditPath.error", "$resolvedAuditPath.summary" -Force -ErrorAction SilentlyContinue
 
