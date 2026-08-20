@@ -57,9 +57,7 @@ module Ironmon
       "tm_mappings" => tracker_item_mapping_recipe(
         $PokemonGlobal.randomTMsHash
       ),
-      "statistics" => tracker_attempt_statistics(current_run_attempt),
-      "move_access_metrics" => move_access_metrics_snapshot,
-      "evolution_metrics" => evolution_metrics_snapshot
+      "statistics" => tracker_attempt_statistics(current_run_attempt)
     })
     return recipe
   end

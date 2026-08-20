@@ -96,8 +96,6 @@ module Ironmon
       :activation_context => context,
       :forced => forced
     }
-    record_generated_evolution_offer(pokemon, pending, selected[:branch]) if
-      respond_to?(:record_generated_evolution_offer)
     pending_generated_evolutions[pokemon.object_id] = pending
     return pending[:target_id]
   end
@@ -214,8 +212,6 @@ module Ironmon
         )
       end
       apply_generated_shedinja_duplicate(pokemon, pending, target.id)
-      record_generated_evolution_outcome(pending, "completed") if
-        respond_to?(:record_generated_evolution_outcome)
       experience = generated_evolution_experience_state(pokemon)
       committed_generated_evolutions[pokemon.object_id] = {
         :pokemon => pokemon,
@@ -254,8 +250,6 @@ module Ironmon
     GameData::Evolution.get(:Shedinja).call_after_evolution(
       pokemon, duplicate[:target_id], method[:parameter], evolved_species
     )
-    record_generated_evolution_duplicate(pending, duplicate) if
-      respond_to?(:record_generated_evolution_duplicate)
     return true
   end
 

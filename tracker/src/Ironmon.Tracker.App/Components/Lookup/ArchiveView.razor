@@ -59,10 +59,6 @@
                         <PokemonLookupExplorer @key="selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
                     </div>
 
-                    <div class="archive-tab-panel" role="tabpanel" hidden="@(_selectedSection != ArchiveSection.Analysis)">
-                        <MoveAccessRunAnalysis @key="@($"metrics-{selectedRecipe.RunId}")" Metrics="@selectedRecipe.MoveAccessMetrics" />
-                        <EvolutionRunAnalysis @key="@($"evolution-metrics-{selectedRecipe.RunId}")" Metrics="@selectedRecipe.EvolutionMetrics" />
-                    </div>
                 }
             }
         </div>

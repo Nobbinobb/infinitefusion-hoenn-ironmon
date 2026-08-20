@@ -180,14 +180,8 @@ PokeBattle_Battle.prepend(IronmonTrackerBattleHooks)
 module IronmonTrackerBattlerHooks
   def pbUseMove(choice, special_usage = false)
     result = super
-    if !@lastMoveFailed && @lastMoveUsed
-      if @index.odd? && !special_usage
-        Ironmon.tracker_enemy_move_if_changed(self)
-      end
-      Ironmon.record_move_access_use(
-        @pokemon, @lastMoveUsed, @index.even? ? "player" : "enemy",
-        special_usage
-      ) if Ironmon.respond_to?(:record_move_access_use)
+    if !@lastMoveFailed && @lastMoveUsed && @index.odd? && !special_usage
+      Ironmon.tracker_enemy_move_if_changed(self)
     end
     return result
   end

@@ -18,10 +18,5 @@ internal enum ArchiveSection
     /// <summary>
     /// Completed-run Pokemon lookup.
     /// </summary>
-    Pokemon = 2,
-
-    /// <summary>
-    /// Move-access and evolution analysis.
-    /// </summary>
-    Analysis = 3
+    Pokemon = 2
 }

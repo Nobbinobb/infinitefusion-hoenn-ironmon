@@ -27,8 +27,6 @@ module Ironmon
     $PokemonGlobal.ironmon_tracker_sequence = 0
     $PokemonGlobal.ironmon_run_result = nil
     tracker_connection.reset_area_discoveries
-    reset_move_access_metrics if respond_to?(:reset_move_access_metrics)
-    reset_evolution_metrics if respond_to?(:reset_evolution_metrics)
     @tracker_battle = nil
     @tracker_battle_id = nil
     @tracker_player_battler = nil
@@ -91,8 +89,6 @@ module Ironmon
       respond_to?(:register_statistics_battler_item)
     @tracker_player_battler = battler
     @tracker_player_pokemon = battler.pokemon
-    record_move_access_encounter(battler.pokemon, battler.level, "player") if
-      respond_to?(:record_move_access_encounter)
     @tracker_move_menu_pokemon_id = nil
     snapshot = tracker_player_snapshot
     @tracker_player_json = tracker_json_generate(snapshot)
@@ -148,8 +144,6 @@ module Ironmon
     current = @tracker_enemy_battlers[battler.index]
     return if current && current.pokemon.equal?(battler.pokemon)
     @tracker_enemy_battlers[battler.index] = battler
-    record_move_access_encounter(battler.pokemon, battler.level, "enemy") if
-      respond_to?(:record_move_access_encounter)
     @tracker_enemy_move_signatures.delete(battler.index)
     @tracker_enemy_abilities.delete(battler.index)
     snapshot = tracker_enemy_snapshot(battler)

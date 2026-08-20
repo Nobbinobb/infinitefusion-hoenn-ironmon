@@ -489,9 +489,7 @@ module Ironmon
       "item_result_ban_fingerprint" => items["result_ban_fingerprint"],
       "item_shop_policy_version" => items["shop_policy_version"],
       "item_mappings" => recipe["item_mappings"] || {},
-      "tm_mappings" => recipe["tm_mappings"] || {},
-      "move_access_metrics" => recipe["move_access_metrics"],
-      "evolution_metrics" => recipe["evolution_metrics"]
+      "tm_mappings" => recipe["tm_mappings"] || {}
     }
   end
 end

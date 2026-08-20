@@ -218,21 +218,6 @@ public sealed class CompletedRunArchive
         if (recipe.ItemGenerator is not null)
             ValidateItemGenerator(recipe.ItemGenerator);
 
-        if (recipe.MoveAccessMetrics is not null)
-        {
-            if (recipe.MoveAccessGenerator is null)
-                throw new ArgumentException("Move-access metrics require move-access generator metadata.", nameof(recipe));
-
-            ArgumentOutOfRangeException.ThrowIfNotEqual(recipe.MoveAccessMetrics.SchemaVersion, MoveAccessMetricIdentifiers.SchemaVersion);
-        }
-
-        if (recipe.EvolutionMetrics is not null)
-        {
-            ArgumentOutOfRangeException.ThrowIfNotEqual(recipe.EvolutionMetrics.SchemaVersion, EvolutionMetricIdentifiers.SchemaVersion);
-            if (recipe.EvolutionGenerator is null)
-                throw new ArgumentException("Evolution metrics require evolution generator metadata.", nameof(recipe));
-        }
-
         if (recipe.Statistics is not null)
             ValidateStatistics(recipe.Statistics);
 

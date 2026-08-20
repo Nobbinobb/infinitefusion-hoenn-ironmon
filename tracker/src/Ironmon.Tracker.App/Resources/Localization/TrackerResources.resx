@@ -843,66 +843,6 @@
   <data name="Lookup.Graph.EvolutionGraphHeading" xml:space="preserve">
     <value>EVOLUTION GRAPH</value>
   </data>
-  <data name="Lookup.EvolutionAnalysis.Bst" xml:space="preserve">
-    <value>BST</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.Cancelled" xml:space="preserve">
-    <value>Cancelled</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.Completed" xml:space="preserve">
-    <value>Completed</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.Context" xml:space="preserve">
-    <value>Level {0} · {1}</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.Duplicates" xml:space="preserve">
-    <value>Duplicates</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.DuplicateTarget" xml:space="preserve">
-    <value>Duplicate: {0}</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.Evolution" xml:space="preserve">
-    <value>Evolution</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.Forced" xml:space="preserve">
-    <value>Forced</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.Fusion" xml:space="preserve">
-    <value>Fusion</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.FusionContext" xml:space="preserve">
-    <value>Level {0} · Fusion {1}</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.MethodParameter" xml:space="preserve">
-    <value>{0}: {1}</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.NoneRecorded" xml:space="preserve">
-    <value>No generated evolutions were offered during this run.</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.Observed" xml:space="preserve">
-    <value>Observed evolutions</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.Offered" xml:space="preserve">
-    <value>Offered</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.Offers" xml:space="preserve">
-    <value>Offers</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.Outcome" xml:space="preserve">
-    <value>Outcome</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.Title" xml:space="preserve">
-    <value>EVOLUTION ANALYSIS</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.Trigger" xml:space="preserve">
-    <value>Trigger</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.Unavailable" xml:space="preserve">
-    <value>Evolution metrics unavailable</value>
-  </data>
-  <data name="Lookup.EvolutionAnalysis.UnavailableDescription" xml:space="preserve">
-    <value>This run predates generated-evolution metrics.</value>
-  </data>
   <data name="Lookup.Card.EvolutionTargetsHeading" xml:space="preserve">
     <value>EVOLUTION TARGETS</value>
   </data>
@@ -1210,64 +1150,6 @@
   <data name="Lookup.Runs.Run" xml:space="preserve">
     <value>Run</value>
   </data>
-  <data name="Lookup.Analysis.Title" xml:space="preserve">
-    <value>Move-access run analysis</value>
-  </data>
-  <data name="Lookup.Analysis.CompletedRunOnly" xml:space="preserve">
-    <value>Available only after the run ends</value>
-  </data>
-  <data name="Lookup.Analysis.Unavailable" xml:space="preserve">
-    <value>No move-access metrics are available</value>
-  </data>
-  <data name="Lookup.Analysis.UnavailableDescription" xml:space="preserve">
-    <value>This run predates local move-access metric recording.</value>
-  </data>
-  <data name="Lookup.Analysis.Encounters" xml:space="preserve"><value>Encounters</value></data>
-  <data name="Lookup.Analysis.MachinesObtained" xml:space="preserve"><value>Machines obtained</value></data>
-  <data name="Lookup.Analysis.TutorVisits" xml:space="preserve"><value>Tutor visits</value></data>
-  <data name="Lookup.Analysis.MoveAcquisitions" xml:space="preserve"><value>Move acquisitions</value></data>
-  <data name="Lookup.Analysis.MoveUses" xml:space="preserve"><value>Moves used</value></data>
-  <data name="Lookup.Analysis.EncounteredAccess" xml:space="preserve"><value>Encountered move access</value></data>
-  <data name="Lookup.Analysis.NoEncounterData" xml:space="preserve"><value>No encountered Pokemon were recorded.</value></data>
-  <data name="Lookup.Analysis.EncounterContext" xml:space="preserve"><value>Lv. {0} · {1} · encountered {2} time(s)</value></data>
-  <data name="Lookup.Analysis.Fusion" xml:space="preserve"><value>Fusion</value></data>
-  <data name="Lookup.Analysis.UniqueMoves" xml:space="preserve"><value>{0} unique moves</value></data>
-  <data name="Lookup.Analysis.CrossChannelOverlap" xml:space="preserve"><value>{0} cross-channel overlaps</value></data>
-  <data name="Lookup.Analysis.EarliestDamage" xml:space="preserve"><value>Earliest damaging move: Lv. {0}</value></data>
-  <data name="Lookup.Analysis.NoDamagingMove" xml:space="preserve"><value>No damaging learnset move</value></data>
-  <data name="Lookup.Analysis.LevelOneGuarantee" xml:space="preserve"><value>Lv. 1: {0} entries, {1} damaging in starting four</value></data>
-  <data name="Lookup.Analysis.TutorMismatch" xml:space="preserve"><value>Tutor: {0} abstract / {1} supported</value></data>
-  <data name="Lookup.Analysis.Channel" xml:space="preserve"><value>Channel</value></data>
-  <data name="Lookup.Analysis.Entries" xml:space="preserve"><value>Entries</value></data>
-  <data name="Lookup.Analysis.Unique" xml:space="preserve"><value>Unique</value></data>
-  <data name="Lookup.Analysis.ComponentEntries" xml:space="preserve"><value>Component entries</value></data>
-  <data name="Lookup.Analysis.DuplicatesRemoved" xml:space="preserve"><value>Duplicates removed</value></data>
-  <data name="Lookup.Analysis.FusionGrowth" xml:space="preserve"><value>Growth vs. larger component</value></data>
-  <data name="Lookup.Analysis.InitialFour" xml:space="preserve"><value>Initial four: </value></data>
-  <data name="Lookup.Analysis.Interactions" xml:space="preserve"><value>Machines and tutors</value></data>
-  <data name="Lookup.Analysis.NoneRecorded" xml:space="preserve"><value>None recorded</value></data>
-  <data name="Lookup.Analysis.MachineCompatibility" xml:space="preserve"><value>{0} of {1} party members compatible · {2}</value></data>
-  <data name="Lookup.Analysis.TutorCompatibility" xml:space="preserve"><value>{0} compatible party member(s) · {1}</value></data>
-  <data name="Lookup.Analysis.AcquisitionsAndUses" xml:space="preserve"><value>Acquisitions and actual use</value></data>
-  <data name="Lookup.Analysis.AcquisitionContext" xml:space="preserve"><value>Lv. {0} · {1}</value></data>
-  <data name="Lookup.Analysis.UseContext" xml:space="preserve"><value>{0} use(s) · {1} · {2}</value></data>
-  <data name="Lookup.Analysis.Copied" xml:space="preserve"><value>copied effect</value></data>
-  <data name="Lookup.Analysis.Direct" xml:space="preserve"><value>direct</value></data>
-  <data name="Lookup.Analysis.Player" xml:space="preserve"><value>player</value></data>
-  <data name="Lookup.Analysis.Enemy" xml:space="preserve"><value>enemy</value></data>
-  <data name="Lookup.Analysis.Learnset" xml:space="preserve"><value>Learnset</value></data>
-  <data name="Lookup.Analysis.Egg" xml:space="preserve"><value>Egg</value></data>
-  <data name="Lookup.Analysis.Machine" xml:space="preserve"><value>TM / TR</value></data>
-  <data name="Lookup.Analysis.Tutor" xml:space="preserve"><value>Tutor</value></data>
-  <data name="Lookup.Analysis.NothingTaught" xml:space="preserve"><value>nothing taught</value></data>
-  <data name="Lookup.Analysis.TaughtPokemon" xml:space="preserve"><value>taught to {0}</value></data>
-  <data name="Lookup.Analysis.Source.found" xml:space="preserve"><value>found</value></data>
-  <data name="Lookup.Analysis.Source.script" xml:space="preserve"><value>scripted reward</value></data>
-  <data name="Lookup.Analysis.Source.tm" xml:space="preserve"><value>TM / TR</value></data>
-  <data name="Lookup.Analysis.Source.tutor" xml:space="preserve"><value>tutor</value></data>
-  <data name="Lookup.Analysis.Source.egg" xml:space="preserve"><value>Egg move</value></data>
-  <data name="Lookup.Analysis.Source.level_up" xml:space="preserve"><value>level-up</value></data>
-  <data name="Lookup.Analysis.Source.copy_effect" xml:space="preserve"><value>copy effect</value></data>
   <data name="Lookup.Generator.MoveHeading" xml:space="preserve"><value>MOVE GENERATOR</value></data>
   <data name="Lookup.Generator.EvolutionHeading" xml:space="preserve"><value>EVOLUTION GENERATOR</value></data>
   <data name="Lookup.Statistics.Heading" xml:space="preserve"><value>RUN STATISTICS</value></data>
@@ -1387,7 +1269,6 @@
   <data name="Archive.Sections.Summary" xml:space="preserve"><value>Summary</value></data>
   <data name="Archive.Sections.Areas" xml:space="preserve"><value>Areas</value></data>
   <data name="Archive.Sections.Pokemon" xml:space="preserve"><value>Pokémon</value></data>
-  <data name="Archive.Sections.Analysis" xml:space="preserve"><value>Analysis</value></data>
   <data name="Archive.SaveSlots.Kicker" xml:space="preserve"><value>SAVE SLOTS</value></data>
   <data name="Archive.SaveSlots.Title" xml:space="preserve"><value>Attempt history</value></data>
   <data name="Archive.SaveSlots.Tabs" xml:space="preserve"><value>Save-slot attempt histories</value></data>

@@ -637,14 +637,6 @@ When a run ends, the game persists its result in the save metadata and emits
   "tm_mappings": {
     "TM01": "TM02"
   },
-  "move_access_metrics": {
-    "schema_version": 1,
-    "encounters": [],
-    "machine_acquisitions": [],
-    "tutor_visits": [],
-    "move_acquisitions": [],
-    "move_uses": []
-  },
   "fusion_pool_fingerprint": "..."
 }
 ```
@@ -665,14 +657,6 @@ Infinite Fusion's runtime-RNG shuffle. Historical recipes with neither
 representation use already persisted area-entry details and leave unknown
 archived item identities concealed rather than consulting the currently loaded
 run.
-
-New Step 3.3 runs include `move_access_metrics`. The game records only species,
-levels, party compatibility, acquisitions, and move uses that were actually
-encountered or observed. It reconstructs channel totals, overlap, the effective
-initial four, tutor mismatch, and fusion-union growth when the run ends. The
-tracker archives that completed snapshot with the recipe and does not expose it
-through active-run views. Recipes created before metric schema 1 omit the field
-and remain valid.
 
 ## Deterministic post-run lookup
 

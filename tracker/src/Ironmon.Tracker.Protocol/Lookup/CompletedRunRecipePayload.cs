@@ -41,16 +41,6 @@ public sealed class CompletedRunRecipePayload : RunReproductionRecipePayload
     /// Gets or initializes authoritative attempt statistics when the recipe provides them.
     /// </summary>
     public RunStatisticsPayload? Statistics { get; init; }
-
-    /// <summary>
-    /// Gets or initializes locally observed move-access iteration data.
-    /// </summary>
-    public MoveAccessMetricsPayload? MoveAccessMetrics { get; init; }
-
-    /// <summary>
-    /// Gets or initializes locally observed generated-evolution outcomes.
-    /// </summary>
-    public EvolutionMetricsPayload? EvolutionMetrics { get; init; }
 }
 
 /// <summary>

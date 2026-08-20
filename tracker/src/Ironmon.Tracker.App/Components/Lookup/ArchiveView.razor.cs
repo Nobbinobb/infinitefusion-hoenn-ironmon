@@ -72,7 +72,6 @@ public partial class ArchiveView : IDisposable
         ArchiveSection.Summary => Text["Archive.Sections.Summary"],
         ArchiveSection.Areas => Text["Archive.Sections.Areas"],
         ArchiveSection.Pokemon => Text["Archive.Sections.Pokemon"],
-        ArchiveSection.Analysis => Text["Archive.Sections.Analysis"],
         _ => string.Empty
     };
 

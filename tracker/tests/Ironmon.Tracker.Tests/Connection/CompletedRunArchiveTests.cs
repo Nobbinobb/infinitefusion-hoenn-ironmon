@@ -30,9 +30,6 @@ public sealed class CompletedRunArchiveTests
         Assert.Equal("fusion-tutor-source", stored.MoveAccessGenerator.FusionTutor.SourceFingerprint);
         Assert.Equal(1, stored.EvolutionGenerator!.Version);
         Assert.Equal("fusion-evolution-targets", stored.EvolutionGenerator.Fusion.TargetPool.Fingerprint);
-        Assert.Equal(4, Assert.Single(stored.MoveAccessMetrics!.Encounters).LevelOneMoveCount);
-        Assert.Equal("TACKLE", Assert.Single(stored.MoveAccessMetrics.MoveUses).MoveId);
-        Assert.Equal(EvolutionMetricIdentifiers.CompletedOutcome, Assert.Single(stored.EvolutionMetrics!.Events).Outcome);
         Assert.Equal(14, stored.Statistics!.ItemsUsed);
         Assert.Equal("HYPERPOTION", stored.ItemMappings["POTION"]);
         Assert.Equal("TM02", stored.TmMappings["TM01"]);
@@ -43,6 +40,24 @@ public sealed class CompletedRunArchiveTests
         string recipePath = Path.Combine(root, "runs", "run-archive", "recipe.json");
         Assert.True(File.Exists(recipePath));
         Assert.DoesNotContain("lookup", File.ReadAllText(recipePath), StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Verifies that recipes archived before analysis removal remain readable.
+    /// </summary>
+    [Fact]
+    public void LoadIgnoresRemovedAnalysisFields()
+    {
+        string root = CreateRoot();
+        string runDirectory = Path.Combine(root, "runs", "run-old-analysis");
+        Directory.CreateDirectory(runDirectory);
+        string json = JsonSerializer.Serialize(CreateRecipe("run-old-analysis"), TrackerJson.Options);
+        string oldAnalysis = ",\"move_access_metrics\":{\"schema_version\":1},\"evolution_metrics\":{\"schema_version\":1}";
+        File.WriteAllText(Path.Combine(runDirectory, "recipe.json"), json.Insert(json.Length - 1, oldAnalysis));
+
+        CompletedRunRecipePayload stored = Assert.Single(new CompletedRunArchive(new TrackerKnowledgeOptions(root)).Recipes);
+
+        Assert.Equal("run-old-analysis", stored.RunId);
     }
 
     /// <summary>
@@ -73,45 +88,6 @@ public sealed class CompletedRunArchiveTests
         CompletedRunRecipePayload recipe = CreateRecipe("run-bad-statistics", statisticsSchemaVersion: 99);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => archive.Store(recipe));
-    }
-
-    /// <summary>
-    /// Verifies that move metrics cannot be persisted without their generator manifest.
-    /// </summary>
-    [Fact]
-    public void StoreRejectsMoveMetricsWithoutGenerator()
-    {
-        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
-        CompletedRunRecipePayload recipe = CreateRecipe("run-orphaned-moves", includeMoveGenerator: false, includeMoveMetrics: true);
-
-        ArgumentException exception = Assert.Throws<ArgumentException>(() => archive.Store(recipe));
-
-        Assert.Contains("Move-access metrics", exception.Message, StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// Verifies that an unsupported local metrics schema is rejected explicitly.
-    /// </summary>
-    [Fact]
-    public void StoreRejectsUnsupportedMoveAccessMetricsSchema()
-    {
-        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => archive.Store(CreateRecipe("run-bad-metrics", moveMetricsSchemaVersion: 99)));
-    }
-
-    /// <summary>
-    /// Verifies that evolution metrics cannot be persisted without their generator manifest.
-    /// </summary>
-    [Fact]
-    public void StoreRejectsEvolutionMetricsWithoutGenerator()
-    {
-        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
-        CompletedRunRecipePayload recipe = CreateRecipe("run-orphaned-evolutions", includeEvolutionGenerator: false, includeEvolutionMetrics: true);
-
-        ArgumentException exception = Assert.Throws<ArgumentException>(() => archive.Store(recipe));
-
-        Assert.Contains("Evolution metrics", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -155,7 +131,7 @@ public sealed class CompletedRunArchiveTests
     {
         CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
 
-        archive.Store(CreateRecipe("run-minimal", includeMoveGenerator: false, includeMoveMetrics: false, includeEvolutionGenerator: false, includeEvolutionMetrics: false));
+        archive.Store(CreateRecipe("run-minimal", includeMoveGenerator: false, includeEvolutionGenerator: false));
 
         CompletedRunRecipePayload stored = Assert.Single(archive.Recipes);
         Assert.Null(stored.MoveAccessGenerator);
@@ -203,16 +179,13 @@ public sealed class CompletedRunArchiveTests
     /// </summary>
     /// <param name="runId">The stable test run identifier.</param>
     /// <param name="schemaVersion">The recipe schema version.</param>
-    /// <param name="moveMetricsSchemaVersion">The move metrics schema version.</param>
     /// <param name="includeMoveGenerator">Whether the move generator manifest is included.</param>
-    /// <param name="includeMoveMetrics">Whether move metrics are included.</param>
     /// <param name="includeEvolutionGenerator">Whether the evolution generator manifest is included.</param>
-    /// <param name="includeEvolutionMetrics">Whether evolution metrics are included.</param>
     /// <param name="statisticsSchemaVersion">The authoritative statistics schema version.</param>
     /// <param name="itemRulesVersion">The item pool rules version.</param>
     /// <param name="itemGroundTotalWeight">An optional ground-selection ticket total.</param>
     /// <returns>The recipe.</returns>
-    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, int moveMetricsSchemaVersion = MoveAccessMetricIdentifiers.SchemaVersion, bool includeMoveGenerator = true, bool includeMoveMetrics = true, bool includeEvolutionGenerator = true, bool includeEvolutionMetrics = true, int statisticsSchemaVersion = 1, int itemRulesVersion = 1, int? itemGroundTotalWeight = null) => new()
+    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, bool includeMoveGenerator = true, bool includeEvolutionGenerator = true, int statisticsSchemaVersion = 1, int itemRulesVersion = 1, int? itemGroundTotalWeight = null) => new()
     {
         SchemaVersion = schemaVersion,
         RunId = runId,
@@ -242,9 +215,7 @@ public sealed class CompletedRunArchiveTests
         },
         ItemMappings = new Dictionary<string, string> { ["POTION"] = "HYPERPOTION" },
         TmMappings = new Dictionary<string, string> { ["TM01"] = "TM02" },
-        Statistics = CreateStatistics(statisticsSchemaVersion),
-        MoveAccessMetrics = includeMoveMetrics ? CreateMoveMetrics(moveMetricsSchemaVersion) : null,
-        EvolutionMetrics = includeEvolutionMetrics ? CreateEvolutionMetrics() : null
+        Statistics = CreateStatistics(statisticsSchemaVersion)
     };
 
     /// <summary>
@@ -325,69 +296,4 @@ public sealed class CompletedRunArchiveTests
         FusionTutor = new TutorSourceRecipePayload { CatalogFingerprint = "fusion-tutor-catalog", SourceFingerprint = "fusion-tutor-source" }
     };
 
-    /// <summary>
-    /// Creates move-access metrics.
-    /// </summary>
-    /// <param name="schemaVersion">The metrics schema version.</param>
-    /// <returns>The metrics.</returns>
-    private static MoveAccessMetricsPayload CreateMoveMetrics(int schemaVersion) => new()
-    {
-        SchemaVersion = schemaVersion,
-        Encounters =
-        [
-            new MoveAccessEncounterMetricPayload
-            {
-                SpeciesId = "BULBASAUR",
-                SpeciesName = "Bulbasaur",
-                Level = 5,
-                Side = MoveAccessMetricIdentifiers.PlayerSide,
-                EncounterCount = 1,
-                LevelOneMoveCount = 4,
-                LevelOneDamagingMoveCount = 1,
-                LevelOneGuaranteeSatisfied = true
-            }
-        ],
-        MoveUses =
-        [
-            new MoveUseMetricPayload
-            {
-                Side = MoveAccessMetricIdentifiers.PlayerSide,
-                SpeciesId = "BULBASAUR",
-                SpeciesName = "Bulbasaur",
-                MoveId = "TACKLE",
-                MoveName = "Tackle",
-                Count = 2
-            }
-        ]
-    };
-
-    /// <summary>
-    /// Creates evolution metrics.
-    /// </summary>
-    /// <returns>The metrics.</returns>
-    private static EvolutionMetricsPayload CreateEvolutionMetrics() => new()
-    {
-        SchemaVersion = EvolutionMetricIdentifiers.SchemaVersion,
-        Events =
-        [
-            new EvolutionMetricPayload
-            {
-                EventId = 1,
-                PokemonId = "123",
-                SourceKind = "normal",
-                SourceSpeciesId = "BULBASAUR",
-                SourceSpeciesName = "Bulbasaur",
-                TargetSpeciesId = "IVYSAUR",
-                TargetSpeciesName = "Ivysaur",
-                Level = 16,
-                ActivationContext = "level_up",
-                EffectiveMethod = "Level",
-                EffectiveParameter = "16",
-                SourceBst = 318,
-                ReferenceBst = 405,
-                TargetBst = 405,
-                Outcome = EvolutionMetricIdentifiers.CompletedOutcome
-            }
-        ]
-    };
 }

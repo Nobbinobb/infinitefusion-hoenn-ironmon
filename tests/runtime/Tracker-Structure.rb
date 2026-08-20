@@ -141,16 +141,6 @@ module IronmonTrackerStructureRuntimeTests
       "020_Tracker_Debug_3_Pokemon_Snapshots.rb",
       "diagnostic Pokemon snapshots"
     )
-    assert_source(
-      Ironmon.method(:record_move_access_use),
-      "021_Tracker_Move_Access_Metrics.rb",
-      "move-access metric aggregation"
-    )
-    assert_source(
-      Object.instance_method(:pbRelearnEggMoveScreen),
-      "021_Tracker_Move_Access_Metrics_Runtime_Integration.rb",
-      "move-access metric engine integration"
-    )
     File.binwrite(OUTPUT_PATH, "tracker structure tests passed\n")
   rescue Exception => exception
     File.binwrite(
