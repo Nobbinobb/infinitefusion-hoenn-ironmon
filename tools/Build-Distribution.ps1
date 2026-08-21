@@ -14,7 +14,13 @@ $releaseNotes = Join-Path $projectRoot "docs\releases\RELEASE_NOTES_0.7.8.md"
 $installation = Join-Path $gameRoot "Data\Scripts\997_Ironmon"
 $installationData = Join-Path $gameRoot "Data\Ironmon"
 
-$manifest = @(Get-Content -LiteralPath $sourceManifest -Raw | ConvertFrom-Json)
+$manifestDocument = Get-Content -LiteralPath $sourceManifest -Raw |
+    ConvertFrom-Json
+$manifest = @(
+    foreach ($entry in $manifestDocument) {
+        $entry
+    }
+)
 if ($manifest.Count -eq 0) {
     throw "The Ironmon Ruby source manifest is empty."
 }

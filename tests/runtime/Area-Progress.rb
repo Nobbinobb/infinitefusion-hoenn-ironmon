@@ -165,7 +165,14 @@ module IronmonAreaProgressRuntimeTests
       ]] = true
       trainer_summary = Ironmon.tracker_area_lookup_summary(
         { "category" => "trainer" }, "runtime-test"
-      )["areas"].find { |entry| entry["area_id"] == area["area_id"] }
+      )["areas"]
+      assert(
+        trainer_summary.first["area_id"] == area["area_id"],
+        "active summary places the current area first"
+      )
+      trainer_summary = trainer_summary.find do |entry|
+        entry["area_id"] == area["area_id"]
+      end
       item_summary = Ironmon.tracker_area_lookup_summary(
         { "category" => "item" }, "runtime-test"
       )["areas"].find { |entry| entry["area_id"] == area["area_id"] }

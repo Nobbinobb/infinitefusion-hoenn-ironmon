@@ -173,6 +173,14 @@ module Ironmon
         branches, plans_by_branch, selected, 0
       )
       if !assignment
+        plans_by_branch = upward_expansion_plans(
+          species, branches, source_bst, source_families
+        )
+        assignment = find_upward_expansion_assignment(
+          branches, plans_by_branch
+        )
+      end
+      if !assignment
         raise EvolutionRandomizationError,
               "#{species.id} has no complete valid fusion evolution assignment"
       end
@@ -184,6 +192,150 @@ module Ironmon
           species, branch, target, plan, plan_index, source_bst
         )
       end
+    end
+
+    def upward_expansion_plans(species, branches, source_bst, source_families)
+      result = {}
+      branches.each do |branch|
+        result[branch[:identity]] = [upward_expansion_plan(
+          species, branch, source_bst, source_families
+        )]
+      end
+      return result
+    end
+
+    def find_upward_expansion_assignment(branches, plans_by_branch)
+      (0..branches.length).each do |expansion_count|
+        subsets = branches.combination(expansion_count).to_a
+        subsets.sort_by! do |subset|
+          upward_expansion_subset_priority(subset, plans_by_branch)
+        end
+        subsets.each do |subset|
+          expanded = {}
+          subset.each { |branch| expanded[branch[:identity]] = true }
+          filtered_plans = {}
+          valid = true
+          branches.each do |branch|
+            plan = plans_by_branch[branch[:identity]][0]
+            candidates = plan[:candidates].select do |target|
+              metadata = plan[:candidate_metadata][target[:identity]]
+              !metadata[:upward_expansion] || expanded[branch[:identity]]
+            end
+            if candidates.empty?
+              valid = false
+              break
+            end
+            filtered_plans[branch[:identity]] = [
+              plan.merge(:candidates => candidates)
+            ]
+          end
+          next if !valid
+          assignment = find_plan_assignment(
+            branches, filtered_plans, {}, 0
+          )
+          return assignment if assignment
+        end
+      end
+      return nil
+    end
+
+    def upward_expansion_subset_priority(subset, plans_by_branch)
+      distance = subset.inject(0) do |sum, branch|
+        plan = plans_by_branch[branch[:identity]][0]
+        upward = plan[:candidates].select do |target|
+          plan[:candidate_metadata][target[:identity]][:upward_expansion]
+        end
+        minimum = upward.map do |target|
+          target_bst(target) - plan[:upward_expansion_floor]
+        end.min
+        sum + (minimum || Ironmon::FNV1A_64_MASK)
+      end
+      return [distance, subset.map { |branch| branch[:identity] }]
+    end
+
+    def upward_expansion_plan(species, branch, source_bst, source_families)
+      component_taxonomy = taxonomy_for(branch[:component])
+      reference_bst = natural_reference_bst(species, branch)
+      hard_candidates = hard_candidates_for(
+        species, component_taxonomy[:role], source_bst, source_families,
+        @catalog.required_target_types(
+          branch[:component], branch[:component_branch]
+        )
+      )
+      minimum = [
+        divide_round_up(reference_bst * PREFERRED_MINIMUM_PERCENT, 100),
+        source_bst + 1
+      ].max
+      maximum = (reference_bst * PREFERRED_MAXIMUM_PERCENT) / 100
+      preferred = candidates_in_bst_range(
+        hard_candidates, minimum, maximum
+      )
+      standard = []
+      metadata = {}
+      if preferred.empty?
+        closest = closest_bst_candidates(hard_candidates, reference_bst)
+        standard = deterministic_candidate_order(
+          closest,
+          deterministic_state("candidate", branch[:identity], :fallback)
+        )
+        standard.each do |target|
+          metadata[target[:identity]] = {
+            :fallback => true, :upward_expansion => false
+          }
+        end
+      else
+        available = allowed_buckets(component_taxonomy[:role]).select do |bucket|
+          preferred.any? { |target| target[:bucket] == bucket }
+        end
+        ordered_buckets(branch[:component_branch], available).each do |bucket|
+          candidates = preferred.select { |target| target[:bucket] == bucket }
+          ordered = deterministic_candidate_order(
+            candidates,
+            deterministic_state("candidate", branch[:identity], bucket)
+          )
+          ordered.each do |target|
+            metadata[target[:identity]] = {
+              :fallback => false, :upward_expansion => false
+            }
+          end
+          standard.concat(ordered)
+        end
+      end
+      expansion_floor = maximum
+      if !standard.empty?
+        expansion_floor = [
+          expansion_floor,
+          standard.map { |target| target_bst(target) }.max
+        ].max
+      end
+      upward = hard_candidates.select do |target|
+        target_bst(target) > expansion_floor
+      end
+      upward.sort_by! do |target|
+        [
+          target_bst(target),
+          deterministic_value(
+            "upward_expansion", branch[:identity], target[:identity]
+          ),
+          target[:identity]
+        ]
+      end
+      upward.each do |target|
+        metadata[target[:identity]] = {
+          :fallback => true, :upward_expansion => true
+        }
+      end
+      return {
+        :bucket => :upward_expansion,
+        :candidates => (standard + upward).uniq,
+        :fallback => true,
+        :assignment_rescue => true,
+        :candidate_metadata => metadata,
+        :upward_expansion_floor => expansion_floor,
+        :preferred_minimum => minimum,
+        :preferred_maximum => maximum,
+        :reference_bst => reference_bst
+      }
     end
 
     def candidate_plans(species, branch, source_bst, source_families, assignment_size)
@@ -276,6 +428,15 @@ module Ironmon
         end
       end
       return ranked.map { |entry| entry[2] }
+    end
+
+    def deterministic_candidate_order(candidates, priority)
+      return candidates.sort_by do |target|
+        [
+          deterministic_value_from(priority, target[:identity]),
+          target[:identity]
+        ]
+      end
     end
 
     def find_plan_assignment(branches, plans_by_branch, selected, index)
@@ -511,7 +672,14 @@ module Ironmon
 
     def build_generated_branch(species, branch, target, plan, plan_index, source_bst)
       component_branch = branch[:component_branch]
-      return {
+      candidate_metadata = if plan[:candidate_metadata]
+                             plan[:candidate_metadata][target[:identity]]
+                           end
+      fallback = candidate_metadata ?
+        candidate_metadata[:fallback] : plan[:fallback]
+      upward_expansion = candidate_metadata ?
+        candidate_metadata[:upward_expansion] : false
+      result = {
         :identity => branch[:identity],
         :source => species.id.to_s,
         :component_side => branch[:side],
@@ -525,11 +693,17 @@ module Ironmon
         :target_bst => target_bst(target),
         :preferred_minimum => plan[:preferred_minimum],
         :preferred_maximum => plan[:preferred_maximum],
-        :bucket => plan[:bucket],
-        :fallback => plan[:fallback],
-        :bucket_reassigned => plan_index > 0,
+        :bucket => plan[:assignment_rescue] ? target[:bucket] : plan[:bucket],
+        :fallback => fallback,
+        :bucket_reassigned => plan[:assignment_rescue] == true ||
+          plan_index > 0,
         :effective_methods => component_branch[:effective_methods]
       }
+      if upward_expansion
+        result[:upward_expansion] = true
+        result[:upward_expansion_floor] = plan[:upward_expansion_floor]
+      end
+      return result
     end
 
     def validate_generated_branch(species, branch)
@@ -568,7 +742,14 @@ module Ironmon
         raise EvolutionRandomizationError,
               "#{branch[:identity]} escaped its fusion BST range"
       end
-      validate_closest_fallback(species, branch) if branch[:fallback]
+      if branch[:upward_expansion]
+        if branch[:target_bst] <= branch[:upward_expansion_floor]
+          raise EvolutionRandomizationError,
+                "#{branch[:identity]} did not expand upward"
+        end
+      elsif branch[:fallback]
+        validate_closest_fallback(species, branch)
+      end
       return true
     end
 

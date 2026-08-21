@@ -12,7 +12,13 @@ $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $sourceRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot "src"))
 $sourceManifestPath = Join-Path $sourceRoot "load_order.json"
-$sourceManifest = @(Get-Content -LiteralPath $sourceManifestPath -Raw | ConvertFrom-Json)
+$sourceManifestDocument = Get-Content -LiteralPath $sourceManifestPath -Raw |
+    ConvertFrom-Json
+$sourceManifest = @(
+    foreach ($entry in $sourceManifestDocument) {
+        $entry
+    }
+)
 $resolvedGameRoot = [IO.Path]::GetFullPath($GameRoot)
 $resolvedAuditPath = [IO.Path]::GetFullPath($AuditPath)
 $loaderPath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "Script-Loader.rb"))

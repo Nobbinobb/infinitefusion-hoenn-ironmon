@@ -4,3 +4,4 @@ tracker/**/bin/
 tracker/**/obj/
 dist/
 release/
+simulation-results/

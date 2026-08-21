@@ -21,6 +21,7 @@ $runTransitionTestPath = Join-Path $projectRoot "tests\runtime\Run-Transitions.r
 $runtimeHookTestPath = Join-Path $projectRoot "tests\runtime\Runtime-Hooks.rb"
 $deterministicHashingTestPath = Join-Path $projectRoot "tests\runtime\Deterministic-Hashing.rb"
 $generatorMetadataTestPath = Join-Path $projectRoot "tests\runtime\Generator-Metadata.rb"
+$evolutionUpwardExpansionTestPath = Join-Path $projectRoot "tests\runtime\Evolution-Upward-Expansion.rb"
 $moveAccessStructureTestPath = Join-Path $projectRoot "tests\runtime\Move-Access-Structure.rb"
 $trackerStructureTestPath = Join-Path $projectRoot "tests\runtime\Tracker-Structure.rb"
 $diagnosticResultPath = Join-Path $projectRoot "runtime-diagnostic-access.tests"
@@ -33,6 +34,7 @@ $runTransitionResultPath = Join-Path $projectRoot "runtime-run-transitions.tests
 $runtimeHookResultPath = Join-Path $projectRoot "runtime-hooks.tests"
 $deterministicHashingResultPath = Join-Path $projectRoot "runtime-deterministic-hashing.tests"
 $generatorMetadataResultPath = Join-Path $projectRoot "runtime-generator-metadata.tests"
+$evolutionUpwardExpansionResultPath = Join-Path $projectRoot "runtime-evolution-upward-expansion.tests"
 $moveAccessStructureResultPath = Join-Path $projectRoot "runtime-move-access-structure.tests"
 $trackerStructureResultPath = Join-Path $projectRoot "runtime-tracker-structure.tests"
 $diagnosticErrorPath = Join-Path $projectRoot "runtime-diagnostic-access.error"
@@ -91,6 +93,10 @@ $generatorMetadataTestSource = [IO.File]::ReadAllText(
     $generatorMetadataTestPath,
     [Text.Encoding]::UTF8
 )
+$evolutionUpwardExpansionTestSource = [IO.File]::ReadAllText(
+    $evolutionUpwardExpansionTestPath,
+    [Text.Encoding]::UTF8
+)
 $moveAccessStructureTestSource = [IO.File]::ReadAllText(
     $moveAccessStructureTestPath,
     [Text.Encoding]::UTF8
@@ -109,6 +115,7 @@ $rubyRunTransitionResultPath = $runTransitionResultPath.Replace('\', '/')
 $rubyRuntimeHookResultPath = $runtimeHookResultPath.Replace('\', '/')
 $rubyDeterministicHashingResultPath = $deterministicHashingResultPath.Replace('\', '/')
 $rubyGeneratorMetadataResultPath = $generatorMetadataResultPath.Replace('\', '/')
+$rubyEvolutionUpwardExpansionResultPath = $evolutionUpwardExpansionResultPath.Replace('\', '/')
 $rubyMoveAccessStructureResultPath = $moveAccessStructureResultPath.Replace('\', '/')
 $rubyTrackerStructureResultPath = $trackerStructureResultPath.Replace('\', '/')
 $bootstrapSource = @(
@@ -123,6 +130,7 @@ $bootstrapSource = @(
     "`$ironmon_runtime_hook_test_output_path = `"$rubyRuntimeHookResultPath`""
     "`$ironmon_deterministic_hashing_test_output_path = `"$rubyDeterministicHashingResultPath`""
     "`$ironmon_generator_metadata_test_output_path = `"$rubyGeneratorMetadataResultPath`""
+    "`$ironmon_evolution_upward_expansion_test_output_path = `"$rubyEvolutionUpwardExpansionResultPath`""
     "`$ironmon_move_access_structure_test_output_path = `"$rubyMoveAccessStructureResultPath`""
     "`$ironmon_tracker_structure_test_output_path = `"$rubyTrackerStructureResultPath`""
     "Dir.chdir(`"$($resolvedGameRoot.Replace('\', '/'))`")"
@@ -138,6 +146,7 @@ $bootstrapSource = @(
     $runtimeHookTestSource
     $deterministicHashingTestSource
     $generatorMetadataTestSource
+    $evolutionUpwardExpansionTestSource
     $moveAccessStructureTestSource
     $trackerStructureTestSource
     $diagnosticTestSource
@@ -148,7 +157,7 @@ $bootstrapSource = @(
     "exit! 1"
     "end"
 ) -join "`n"
-Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
+Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
     -Force `
     -ErrorAction SilentlyContinue
 try {
@@ -210,6 +219,11 @@ try {
             "generator-metadata tests passed") {
         throw "The bundled runtime did not complete the generator-metadata tests."
     }
+    if (-not (Test-Path -LiteralPath $evolutionUpwardExpansionResultPath) -or
+        (Get-Content -LiteralPath $evolutionUpwardExpansionResultPath -Raw).Trim() -ne
+            "evolution upward-expansion tests passed") {
+        throw "The bundled runtime did not complete the evolution upward-expansion tests."
+    }
     if (-not (Test-Path -LiteralPath $moveAccessStructureResultPath) -or
         (Get-Content -LiteralPath $moveAccessStructureResultPath -Raw).Trim() -ne
             "move-access structure tests passed") {
@@ -222,9 +236,9 @@ try {
     }
 }
 finally {
-    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
+    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
         -Force `
         -ErrorAction SilentlyContinue
 }
 
-Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, battle item, Repel overlay, item randomization, seeded-run import, run-transition, runtime-hook, deterministic-hashing, generator-metadata, move-access structure, and tracker structure tests passed."
+Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, battle item, Repel overlay, item randomization, seeded-run import, run-transition, runtime-hook, deterministic-hashing, generator-metadata, evolution upward-expansion, move-access structure, and tracker structure tests passed."

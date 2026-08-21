@@ -11,7 +11,15 @@ module Ironmon
         "invalid_area_category", "The selected area category is invalid."
       )
     end
-    areas = tracker_area_catalog.map do |area|
+    catalog_areas = tracker_area_catalog
+    if !archived && $game_map
+      current_map_id = $game_map.map_id.to_i
+      current_areas, other_areas = catalog_areas.partition do |area|
+        area["map_ids"].include?(current_map_id)
+      end
+      catalog_areas = current_areas + other_areas
+    end
+    areas = catalog_areas.map do |area|
       encounter_entries = tracker_area_encounter_metadata(area, recipe)
       trainer_defeated = if category == "trainer" && !archived
                            area["trainers"].count do |entry|

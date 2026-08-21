@@ -123,11 +123,13 @@ function Invoke-IronmonGameRuntime {
         [Parameter(Mandatory)]
         [string]$RubySource,
         [Parameter(Mandatory)]
-        [ValidateRange(1, 600)]
+        [ValidateRange(1, 86400)]
         [int]$TimeoutSeconds,
         [Parameter(Mandatory)]
         [string]$OperationName,
         [string]$ErrorReportPath,
+        [string]$ProgressPath,
+        [string]$ProgressActivity = "Bundled-runtime operation",
         [switch]$ShowGameWindow
     )
 
@@ -175,10 +177,67 @@ function Invoke-IronmonGameRuntime {
             $startArguments.WindowStyle = "Hidden"
         }
         $gameProcess = Start-Process @startArguments
-        if (-not $gameProcess.WaitForExit($TimeoutSeconds * 1000)) {
-            Stop-Process -Id $gameProcess.Id
-            $gameProcess.WaitForExit()
-            throw "The game runtime did not finish $OperationName within $TimeoutSeconds seconds."
+        $runtimeTimer = [Diagnostics.Stopwatch]::StartNew()
+        $lastProgressText = $null
+        while (-not $gameProcess.WaitForExit(250)) {
+            if ($runtimeTimer.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
+                Stop-Process -Id $gameProcess.Id
+                $gameProcess.WaitForExit()
+                throw "The game runtime did not finish $OperationName within $TimeoutSeconds seconds."
+            }
+            if ($ProgressPath -and (Test-Path -LiteralPath $ProgressPath)) {
+                try {
+                    $progressValues = @{}
+                    Get-Content -LiteralPath $ProgressPath | ForEach-Object {
+                        $parts = $_ -split '=', 2
+                        if ($parts.Count -eq 2) {
+                            $progressValues[$parts[0]] = $parts[1]
+                        }
+                    }
+                    $workCompleted = 0
+                    $workTotal = 0
+                    if ([int]::TryParse(
+                        $progressValues.work_completed,
+                        [ref]$workCompleted
+                    ) -and [int]::TryParse(
+                        $progressValues.work_total,
+                        [ref]$workTotal
+                    ) -and $workTotal -gt 0) {
+                        $percent = [Math]::Min(
+                            100,
+                            [Math]::Floor(100 * $workCompleted / $workTotal)
+                        )
+                        $seedStatus = if ($progressValues.seed) {
+                            "Seed $($progressValues.seed)"
+                        }
+                        else {
+                            "Preparing"
+                        }
+                        $phaseStatus = if ($progressValues.phase) {
+                            ": $($progressValues.phase)"
+                        }
+                        else {
+                            ""
+                        }
+                        $progressText = "$seedStatus$phaseStatus ($percent%)"
+                        if ($progressText -ne $lastProgressText) {
+                            Write-Progress `
+                                -Activity $ProgressActivity `
+                                -Status $progressText `
+                                -PercentComplete $percent
+                            $lastProgressText = $progressText
+                        }
+                    }
+                }
+                catch {
+                    # The runtime can replace the progress file between reads.
+                }
+            }
+        }
+        $gameProcess.WaitForExit()
+        $runtimeTimer.Stop()
+        if ($ProgressPath) {
+            Write-Progress -Activity $ProgressActivity -Completed
         }
         if ($gameProcess.ExitCode -ne 0) {
             $detail = if ($ErrorReportPath -and (Test-Path -LiteralPath $ErrorReportPath)) {
@@ -191,6 +250,9 @@ function Invoke-IronmonGameRuntime {
         }
     }
     finally {
+        if ($ProgressPath) {
+            Write-Progress -Activity $ProgressActivity -Completed
+        }
         if ($gameProcess -and -not $gameProcess.HasExited) {
             Stop-Process -Id $gameProcess.Id
             $gameProcess.WaitForExit()
