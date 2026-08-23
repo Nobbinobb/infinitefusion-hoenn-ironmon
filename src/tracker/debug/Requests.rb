@@ -19,6 +19,15 @@ module Ironmon
     )
   end
 
+  def self.tracker_debug_obtainability(payload)
+    tracker_validate_debug_context(
+      TRACKER_OBTAINABILITY_DIAGNOSTIC_CAPABILITIES
+    )
+    return tracker_obtainability_for_recipe(
+      payload || {}, tracker_debug_active_recipe
+    )
+  end
+
   def self.tracker_debug_lookup_visibility
     return {
       :overview => tracker_connection.diagnostic_capability?(
@@ -38,6 +47,9 @@ module Ironmon
       ),
       :evolution_results => tracker_connection.diagnostic_capability?(
         "evolution.results"
+      ),
+      :obtainability => tracker_connection.diagnostic_capabilities?(
+        *TRACKER_OBTAINABILITY_DIAGNOSTIC_CAPABILITIES
       )
     }
   end

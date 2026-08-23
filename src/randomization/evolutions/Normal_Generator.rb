@@ -39,6 +39,9 @@ module Ironmon
         branches.sort_by! { |branch| branch[:identity] }
       end
       @graph = nil
+      @graph_complete = false
+      @graph_sources = @branches_by_source.keys.sort.freeze
+      @graph_source_index = 0
       @graph_fingerprint = nil
       @deterministic_base_value = hash_entries(
         Ironmon::FNV1A_64_OFFSET_BASIS,
@@ -53,14 +56,35 @@ module Ironmon
     end
 
     def graph
-      return @graph if @graph
-      generated = {}
-      @branches_by_source.keys.sort.each do |source|
-        generated[source] = generate_source(source)
-      end
-      validate_graph(generated)
-      @graph = deep_freeze(generated)
+      return @graph if graph_complete?
+      advance_graph(@graph_sources.length) until graph_complete?
       return @graph
+    end
+
+    def graph_complete?
+      return @graph_complete == true
+    end
+
+    def advance_graph(source_budget = 1)
+      return true if graph_complete?
+      @graph ||= {} if @graph_source_index > 0
+      generated = @graph || {}
+      budget = [source_budget.to_i, 1].max
+      processed = 0
+      while @graph_source_index < @graph_sources.length && processed < budget
+        source = @graph_sources[@graph_source_index]
+        generated[source] = generate_source(source)
+        @graph_source_index += 1
+        processed += 1
+      end
+      if @graph_source_index >= @graph_sources.length
+        validate_graph(generated)
+        @graph = deep_freeze(generated)
+        @graph_complete = true
+      else
+        @graph = generated
+      end
+      return graph_complete?
     end
 
     def branches_for(source)

@@ -2,6 +2,8 @@ $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $gameRoot = Split-Path -Parent $projectRoot
+. (Join-Path $PSScriptRoot "generation\GameRuntime-Tooling.ps1")
+Restore-IronmonGameRuntimeArchive -GameRoot $gameRoot | Out-Null
 $sourceRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot "src"))
 $sourceManifest = Join-Path $sourceRoot "load_order.json"
 $catalog = Join-Path $projectRoot "data\area_catalog.dat"

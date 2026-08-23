@@ -59,10 +59,15 @@ public partial class EvolutionGraph
         _nodeLookup.Clear();
         _nodePageIndexes.Clear();
         _rangeLabels.Clear();
+        _rangeTitles.Clear();
         foreach (int level in orderedLevels)
         {
             EvolutionTargetSnapshot[] levelNodes = [.. _orderedNodes.Where(node => node.StageLevel == level)];
-            IReadOnlyList<IReadOnlyList<EvolutionTargetSnapshot>> pages = [.. levelNodes.Chunk(nodesPerRow).Select(page => (IReadOnlyList<EvolutionTargetSnapshot>)page)];
+            IEnumerable<EvolutionTargetSnapshot[]> pageGroups = ReachabilityViewActive
+                ? levelNodes.Where(node => IsReachable(node.SpeciesId)).Chunk(nodesPerRow)
+                    .Concat(levelNodes.Where(node => !IsReachable(node.SpeciesId)).Chunk(nodesPerRow))
+                : levelNodes.Chunk(nodesPerRow);
+            IReadOnlyList<IReadOnlyList<EvolutionTargetSnapshot>> pages = [.. pageGroups.Select(page => (IReadOnlyList<EvolutionTargetSnapshot>)page)];
             _levelPages[level] = pages;
             (int Minimum, int Maximum)[] ranges = [.. pages.Select(page => (page.Min(node => node.BaseStatTotal), page.Max(node => node.BaseStatTotal)))];
             Dictionary<(int Minimum, int Maximum), int> duplicateTotals = ranges.GroupBy(range => range).ToDictionary(group => group.Key, group => group.Count());
@@ -85,7 +90,15 @@ public partial class EvolutionGraph
                     label = Text["Lookup.Graph.DuplicateBstRange", label, duplicateIndex, duplicateCount];
                 }
 
+                string title = label;
+                if (ReachabilityViewActive && pages[pageIndex].All(node => !IsReachable(node.SpeciesId)))
+                {
+                    title = Text["Lookup.Graph.UnavailableBstRangeTitle", label];
+                    label = Text["Lookup.Graph.UnavailableBstRange", label];
+                }
+
                 _rangeLabels[(level, pageIndex)] = label;
+                _rangeTitles[(level, pageIndex)] = title;
             }
         }
 
@@ -311,7 +324,8 @@ public partial class EvolutionGraph
             bool hiddenIsSource = !sourceVisible;
             (string VisibleSpeciesId, int HiddenLevel, int HiddenPageIndex, bool HiddenIsSource) key = (visibleSpeciesId, hiddenNode.StageLevel, hiddenPageIndex, hiddenIsSource);
             (int count, bool active) = portalConnections.GetValueOrDefault(key);
-            portalConnections[key] = (count + 1, active || IsActive(edge));
+            bool reachable = IsReachable(edge.SourceSpeciesId) && IsReachable(edge.TargetSpeciesId);
+            portalConnections[key] = (count + 1, active || (reachable && IsActive(edge)));
             (int Level, int PageIndex) portalKey = (hiddenNode.StageLevel, hiddenPageIndex);
             _portalCounts[portalKey] = _portalCounts.GetValueOrDefault(portalKey) + 1;
         }

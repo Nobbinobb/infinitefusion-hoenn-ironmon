@@ -1,11 +1,30 @@
 module IronmonScriptLoader
-  IGNORED_ENTRIES = [".", "..", ".git", ".idea", ".gitignore"].freeze
+  IGNORED_ENTRIES = [
+    ".", "..", ".DS_Store", ".git", ".idea", ".gitignore"
+  ].freeze
+
+  def self.configure_game_id
+    return if defined?(Settings) && Settings.const_defined?(:GAME_ID, false)
+    title_line = File.open("Game.ini", "rb") do |file|
+      file.each_line.find { |line| line.start_with?("Title=") }
+    end
+    title = title_line && title_line.split("=", 2)[1].to_s.strip.downcase
+    game_id = case title
+              when "infinitefusion-hoenn" then :IF_HOENN
+              when "infinitefusion" then :IF_KANTO
+              else
+                raise "unsupported Infinite Fusion game title: #{title.inspect}"
+              end
+    Object.const_set(:Settings, Module.new) unless defined?(Settings)
+    Settings.const_set(:GAME_ID, game_id)
+  end
 
   def self.load_directory(path, excluded_root_patterns = [], root = true)
     entries = Dir.entries(path) - IGNORED_ENTRIES
     files, folders = entries.partition do |entry|
       !File.directory?(File.join(path, entry))
     end
+    files.select! { |file_name| File.extname(file_name).downcase == ".rb" }
     files.sort.each do |file_name|
       path_name = File.join(path, file_name)
       code = File.open(path_name, "rb") { |file| file.read }
@@ -41,3 +60,5 @@ module IronmonScriptLoader
     end
   end
 end
+
+IronmonScriptLoader.configure_game_id

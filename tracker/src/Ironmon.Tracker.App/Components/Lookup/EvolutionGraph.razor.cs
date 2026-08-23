@@ -37,6 +37,7 @@ public partial class EvolutionGraph : IAsyncDisposable
     private readonly Dictionary<string, (double X, double Y)> _positions = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<(int Level, int PageIndex), (double X, double Y)> _rangePositions = [];
     private readonly Dictionary<(int Level, int PageIndex), string> _rangeLabels = [];
+    private readonly Dictionary<(int Level, int PageIndex), string> _rangeTitles = [];
     private ElementReference _canvas;
     private ElementReference _viewport;
     private IReadOnlyList<(int Level, int PageIndex, double X, double Y)> _expandedRangeLabels = [];
@@ -129,6 +130,18 @@ public partial class EvolutionGraph : IAsyncDisposable
     public bool CompactRows { get; set; }
 
     /// <summary>
+    /// Gets or sets whether nodes should be grouped and styled by executable evolution reachability.
+    /// </summary>
+    [Parameter]
+    public bool ReachabilityViewActive { get; set; }
+
+    /// <summary>
+    /// Gets or sets the stable identifiers participating in executable evolution relationships in the current graph view.
+    /// </summary>
+    [Parameter]
+    public IReadOnlySet<string> ReachableSpeciesIds { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
     /// Gets or sets the callback invoked when the number of rendered graph nodes changes.
     /// </summary>
     [Parameter]
@@ -201,6 +214,14 @@ public partial class EvolutionGraph : IAsyncDisposable
         => speciesId.Equals(FocusedSpeciesId ?? Current.SpeciesId, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
+    /// Gets whether one node should use the normal evolution-reachable treatment.
+    /// </summary>
+    /// <param name="speciesId">The stable species identifier.</param>
+    /// <returns>Whether the reachability view is disabled or the species participates in an executable evolution relationship.</returns>
+    private bool IsReachable(string speciesId)
+        => !ReachabilityViewActive || ReachableSpeciesIds.Contains(speciesId);
+
+    /// <summary>
     /// Gets whether one relationship belongs to the focused branch.
     /// </summary>
     /// <param name="edge">The graph relationship.</param>
@@ -214,7 +235,7 @@ public partial class EvolutionGraph : IAsyncDisposable
     /// <param name="edge">The graph relationship.</param>
     /// <returns>Whether the label belongs to the selected branch.</returns>
     private bool ShouldShowLabel(EvolutionGraphEdge edge)
-        => IsActive(edge);
+        => IsActive(edge) && IsReachable(edge.SourceSpeciesId) && IsReachable(edge.TargetSpeciesId);
 
     /// <summary>
     /// Gets the positioned style for one node.
@@ -255,6 +276,15 @@ public partial class EvolutionGraph : IAsyncDisposable
         => _rangeLabels[(level, pageIndex)];
 
     /// <summary>
+    /// Gets the descriptive tooltip for one stable BST-ordered range.
+    /// </summary>
+    /// <param name="level">The logical graph level.</param>
+    /// <param name="pageIndex">The zero-based range index.</param>
+    /// <returns>The localized range description.</returns>
+    private string GetRangeTitle(int level, int pageIndex)
+        => _rangeTitles[(level, pageIndex)];
+
+    /// <summary>
     /// Gets whether one compact BST range is displayed.
     /// </summary>
     /// <param name="level">The logical graph level.</param>
@@ -262,6 +292,15 @@ public partial class EvolutionGraph : IAsyncDisposable
     /// <returns>Whether the range is active.</returns>
     private bool IsRangeActive(int level, int pageIndex)
         => _activePageIndexes.TryGetValue(level, out int activePageIndex) && activePageIndex == pageIndex;
+
+    /// <summary>
+    /// Gets whether one BST range contains evolution-reachable nodes or reachability grouping is disabled.
+    /// </summary>
+    /// <param name="level">The logical graph level.</param>
+    /// <param name="pageIndex">The zero-based range index.</param>
+    /// <returns>Whether the range uses the normal reachable treatment.</returns>
+    private bool IsRangeReachable(int level, int pageIndex)
+        => !ReachabilityViewActive || _levelPages[level][pageIndex].Any(node => IsReachable(node.SpeciesId));
 
     /// <summary>
     /// Gets whether one BST range contains the graph's focused Pokemon.

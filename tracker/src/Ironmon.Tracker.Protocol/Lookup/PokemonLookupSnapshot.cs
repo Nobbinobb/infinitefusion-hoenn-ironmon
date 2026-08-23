@@ -79,6 +79,11 @@ public sealed class PokemonLookupIdentitySnapshot
     /// Gets or initializes whether the species is a fusion.
     /// </summary>
     public bool Fusion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the represented Pokemon's run-specific obtainability proof state.
+    /// </summary>
+    public PokemonObtainabilitySnapshot Obtainability { get; init; } = new();
 }
 
 /// <summary>

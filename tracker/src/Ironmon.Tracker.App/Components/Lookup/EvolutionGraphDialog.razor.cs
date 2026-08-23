@@ -7,15 +7,36 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class EvolutionGraphDialog : IAsyncDisposable
 {
+    private const string _authoredSourcesPhase = "authored_sources";
+    private const string _completePhase = "complete";
+    private const string _fusionEvolutionsPhase = "fusion_evolutions";
+    private const string _playerFusionsPhase = "player_fusions";
+    private const string _requestedEvolutionsPhase = "requested_evolutions";
+    private const string _rubyFallbackMappingMode = "ruby_fallback";
+    private const string _trackerWorkerMappingMode = "tracker_worker";
+    private const string _waitingForTrackerMappingMode = "waiting_for_tracker";
+
+    private enum ReachabilityDisplayMode
+    {
+        All = 0,
+        Grouped = 1,
+        ReachableOnly = 2
+    }
+
     private readonly Dictionary<string, EvolutionGraphEdge> _edges = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _classifiedEvolutionEdgeKeys = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _executableEvolutionEdgeKeys = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _expandedNodes = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, HashSet<string>> _neighbors = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, EvolutionTargetSnapshot> _nodes = new(StringComparer.OrdinalIgnoreCase);
     private CancellationTokenSource? _loadCancellation;
+    private CancellationTokenSource? _obtainabilityCancellation;
     private string? _error;
     private string? _expansionOriginSpeciesId;
     private string? _focusedSpeciesId;
     private string? _observedSource;
+    private string? _obtainabilityError;
+    private PokemonObtainabilityResponsePayload? _obtainabilityProgress;
     private int _displayedNodeCount;
     private int _expansionDepth;
     private int _nodesPerRow;
@@ -25,6 +46,9 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
     private bool _firstPageLoaded;
     private bool _loading;
     private bool _maximized;
+    private bool _obtainabilityLoading;
+    private bool _obtainabilityPrewarmPending;
+    private ReachabilityDisplayMode _reachabilityMode;
     private bool _showAllLoaded;
 
     /// <summary>
@@ -75,6 +99,83 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
     private string RowModeToggleIcon => _compactRows ? "☷" : "▤";
 
     /// <summary>
+    /// Gets the accessible label for the obtainability filter control.
+    /// </summary>
+    private string ReachabilityToggleLabel => _reachabilityMode switch
+    {
+        ReachabilityDisplayMode.All => Text["Lookup.Graph.ShowAvailabilityRows"],
+        ReachabilityDisplayMode.Grouped => Text["Lookup.Graph.ShowOnlyObtainable"],
+        _ => Text["Lookup.Graph.ShowAllPossible"]
+    };
+
+    /// <summary>
+    /// Gets the icon for the obtainability filter control.
+    /// </summary>
+    private string ReachabilityToggleIcon
+    {
+        get
+        {
+            return _obtainabilityLoading
+                ? "…"
+                : _reachabilityMode switch
+                {
+                    ReachabilityDisplayMode.All => "◇",
+                    ReachabilityDisplayMode.Grouped => "◐",
+                    _ => "✓"
+                };
+        }
+    }
+
+    /// <summary>
+    /// Gets whether either availability presentation is active.
+    /// </summary>
+    private bool ReachabilityModeActive => _reachabilityMode != ReachabilityDisplayMode.All;
+
+    /// <summary>
+    /// Gets whether unavailable evolutions should remain visible in separate rows.
+    /// </summary>
+    private bool GroupedReachabilityMode => _reachabilityMode == ReachabilityDisplayMode.Grouped;
+
+    /// <summary>
+    /// Gets whether unavailable evolutions should be removed from the graph.
+    /// </summary>
+    private bool ReachableOnlyMode => _reachabilityMode == ReachabilityDisplayMode.ReachableOnly;
+
+    /// <summary>
+    /// Gets whether the completed result classified every relationship currently loaded by the graph.
+    /// </summary>
+    private bool ObtainabilityCoversCurrentGraph => _obtainabilityProgress?.Complete == true && _edges.Keys.All(_classifiedEvolutionEdgeKeys.Contains);
+
+    /// <summary>
+    /// Gets the user-facing current calculation phase.
+    /// </summary>
+    private string ObtainabilityPhaseLabel => _obtainabilityProgress?.Phase switch
+    {
+        _playerFusionsPhase => Text["Lookup.Obtainability.Phase.PlayerFusions"],
+        _requestedEvolutionsPhase => Text["Lookup.Obtainability.Phase.GraphEvolutions"],
+        _fusionEvolutionsPhase => Text["Lookup.Obtainability.Phase.FullEvolutionChain"],
+        _authoredSourcesPhase => Text["Lookup.Obtainability.Phase.AuthoredSources"],
+        _completePhase => Text["Lookup.Obtainability.Phase.Complete"],
+        _ => Text["Lookup.Obtainability.Phase.Preparing"]
+    };
+
+    /// <summary>
+    /// Gets the user-facing material-mapping implementation.
+    /// </summary>
+    private string FusionMappingModeLabel => _obtainabilityProgress?.FusionMappingMode switch
+    {
+        _trackerWorkerMappingMode => Text["Lookup.Obtainability.Mapping.TrackerWorker"],
+        _rubyFallbackMappingMode => Text["Lookup.Obtainability.Mapping.RubyFallback"],
+        _waitingForTrackerMappingMode => Text["Lookup.Obtainability.Mapping.WaitingForTracker"],
+        _ => Text["Lookup.Obtainability.Mapping.Preparing"]
+    };
+
+    /// <summary>
+    /// Gets the species participating in executable relationships inside the currently visible graph scope.
+    /// </summary>
+    private IReadOnlySet<string> EvolutionReachableSpeciesIds => GetEvolutionReachableSpeciesIds(GetVisibleSpeciesIds());
+
+    /// <summary>
     /// Gets the graph nodes visible in the selected canvas scope.
     /// </summary>
     private IReadOnlyList<EvolutionTargetSnapshot> GraphNodes
@@ -82,6 +183,9 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
         get
         {
             HashSet<string> visible = GetVisibleSpeciesIds();
+            if (ReachableOnlyMode)
+                visible.IntersectWith(GetEvolutionReachableSpeciesIds(visible));
+
             return [.. _nodes.Values.Where(node => visible.Contains(node.SpeciesId))];
         }
     }
@@ -94,7 +198,10 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
         get
         {
             HashSet<string> visible = GetVisibleSpeciesIds();
-            return [.. _edges.Values.Where(edge => visible.Contains(edge.SourceSpeciesId) && visible.Contains(edge.TargetSpeciesId))];
+            return [.. _edges.Values.Where(edge =>
+                visible.Contains(edge.SourceSpeciesId)
+                && visible.Contains(edge.TargetSpeciesId)
+                && (!ReachabilityModeActive || _executableEvolutionEdgeKeys.Contains(edge.Key)))];
         }
     }
 
@@ -186,6 +293,21 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
     }
 
     /// <summary>
+    /// Starts prioritized obtainability work only after the ordinary graph has rendered once.
+    /// </summary>
+    /// <param name="firstRender">Whether this is the component's first render.</param>
+    /// <returns>A completed render task.</returns>
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_obtainabilityPrewarmPending || _disposed)
+            return Task.CompletedTask;
+
+        _obtainabilityPrewarmPending = false;
+        _ = LoadObtainabilityAsync(null);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
     /// Loads a fresh bounded graph neighborhood around the original Pokemon.
     /// </summary>
     /// <returns>A task representing the progressive lookup.</returns>
@@ -197,6 +319,13 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
         _expandedNodes.Clear();
         _neighbors.Clear();
         _error = null;
+        _obtainabilityError = null;
+        _obtainabilityProgress = null;
+        _classifiedEvolutionEdgeKeys.Clear();
+        _executableEvolutionEdgeKeys.Clear();
+        _reachabilityMode = ReachabilityDisplayMode.All;
+        _obtainabilityLoading = false;
+        _obtainabilityPrewarmPending = false;
         _displayedNodeCount = 0;
         _firstPageLoaded = false;
         _showAllLoaded = false;
@@ -209,6 +338,7 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
         AddNode(Current);
         AddOutgoingRelationships(Current.SpeciesId, Targets, HeadTargets, BodyTargets);
         await StartNeighborhoodExpansionAsync(SpeciesId);
+        _obtainabilityPrewarmPending = DebugMode || Recipe is not null;
     }
 
     /// <summary>
@@ -221,7 +351,7 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
         if (!NeedsExpansion(originSpeciesId))
             return;
 
-        CancelLoading();
+        _loadCancellation?.Cancel();
         _error = null;
         _expansionOriginSpeciesId = originSpeciesId;
         _loading = true;
@@ -254,6 +384,9 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
                 cancellation.Dispose();
             }
         }
+
+        if (!_disposed && ReachabilityModeActive && !ObtainabilityCoversCurrentGraph)
+            await LoadObtainabilityAsync(_reachabilityMode);
     }
 
     /// <summary>
@@ -514,6 +647,137 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
     }
 
     /// <summary>
+    /// Advances through the original, reachability-grouped, and evolution-reachable-only graph views, progressively finishing the shared run calculation when needed.
+    /// </summary>
+    /// <returns>A task representing any required bounded requests.</returns>
+    private async Task ToggleReachabilityFilterAsync()
+    {
+        if (_reachabilityMode == ReachabilityDisplayMode.Grouped)
+        {
+            if (ObtainabilityCoversCurrentGraph)
+            {
+                _reachabilityMode = ReachabilityDisplayMode.ReachableOnly;
+                _viewportRevision++;
+            }
+            else
+            {
+                await LoadObtainabilityAsync(ReachabilityDisplayMode.ReachableOnly);
+            }
+
+            return;
+        }
+
+        if (_reachabilityMode == ReachabilityDisplayMode.ReachableOnly)
+        {
+            _reachabilityMode = ReachabilityDisplayMode.All;
+            _viewportRevision++;
+            return;
+        }
+
+        if (_obtainabilityLoading || (!DebugMode && Recipe is null))
+            return;
+
+        if (ObtainabilityCoversCurrentGraph)
+        {
+            _reachabilityMode = ReachabilityDisplayMode.Grouped;
+            _viewportRevision++;
+            return;
+        }
+
+        await LoadObtainabilityAsync(ReachabilityDisplayMode.Grouped);
+    }
+
+    /// <summary>
+    /// Renews foreground priority while loading the shared calculation and optionally activates one availability view when complete.
+    /// </summary>
+    /// <param name="completedMode">The availability view to activate after a current complete result, or null to retain the current view.</param>
+    /// <returns>A task representing the progressive snapshots.</returns>
+    private async Task LoadObtainabilityAsync(ReachabilityDisplayMode? completedMode)
+    {
+        if (_obtainabilityLoading || (!DebugMode && Recipe is null))
+            return;
+
+        _obtainabilityLoading = true;
+        _obtainabilityError = null;
+        CancellationTokenSource cancellation = new();
+        _obtainabilityCancellation = cancellation;
+        try
+        {
+            while (true)
+            {
+                IReadOnlyList<string> graphEvolutionEdgeKeys = [.. _edges.Keys];
+                PokemonObtainabilityResponsePayload response = DebugMode
+                    ? await Connection.AdvanceDebugPokemonObtainabilityAsync(evolutionEdgeKeys: graphEvolutionEdgeKeys, foreground: true, cancellationToken: cancellation.Token)
+                    : await Connection.AdvancePokemonObtainabilityAsync(Recipe!, evolutionEdgeKeys: graphEvolutionEdgeKeys, foreground: true, cancellationToken: cancellation.Token);
+
+                if (!ReferenceEquals(_obtainabilityCancellation, cancellation))
+                    return;
+
+                if (response.ObtainableEvolutionEdgeKeys.Any(key => !graphEvolutionEdgeKeys.Contains(key, StringComparer.OrdinalIgnoreCase)))
+                    throw new TrackerProtocolException("The obtainability response returned an evolution connection that the graph did not request.");
+
+                _obtainabilityProgress = response;
+                _classifiedEvolutionEdgeKeys.Clear();
+                _classifiedEvolutionEdgeKeys.UnionWith(graphEvolutionEdgeKeys);
+                _executableEvolutionEdgeKeys.Clear();
+                _executableEvolutionEdgeKeys.UnionWith(response.ObtainableEvolutionEdgeKeys);
+                await InvokeAsync(StateHasChanged);
+                if (response.Complete && ObtainabilityCoversCurrentGraph)
+                    break;
+
+                if (!response.Complete)
+                    await Task.Delay(50, cancellation.Token);
+            }
+
+            if (completedMode is not null)
+            {
+                _reachabilityMode = completedMode.Value;
+                _viewportRevision++;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
+        {
+            _obtainabilityError = exception.Message;
+        }
+        finally
+        {
+            bool ownsLoadingState = ReferenceEquals(_obtainabilityCancellation, cancellation);
+            if (ownsLoadingState)
+            {
+                _obtainabilityCancellation = null;
+                _obtainabilityLoading = false;
+            }
+
+            cancellation.Dispose();
+            if (ownsLoadingState && !_disposed)
+                await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    /// <summary>
+    /// Builds the graph-specific node set from executable evolution relationships inside one visible scope.
+    /// </summary>
+    /// <param name="visibleSpeciesIds">The species currently included by the graph scope.</param>
+    /// <returns>The visible species participating in at least one executable relationship.</returns>
+    private HashSet<string> GetEvolutionReachableSpeciesIds(IReadOnlySet<string> visibleSpeciesIds)
+    {
+        HashSet<string> reachableSpeciesIds = new(StringComparer.OrdinalIgnoreCase);
+        foreach (EvolutionGraphEdge edge in _edges.Values)
+        {
+            if (!_executableEvolutionEdgeKeys.Contains(edge.Key) || !visibleSpeciesIds.Contains(edge.SourceSpeciesId) || !visibleSpeciesIds.Contains(edge.TargetSpeciesId))
+                continue;
+
+            reachableSpeciesIds.Add(edge.SourceSpeciesId);
+            reachableSpeciesIds.Add(edge.TargetSpeciesId);
+        }
+
+        return reachableSpeciesIds;
+    }
+
+    /// <summary>
     /// Updates the status count after compact range selection changes rendered nodes.
     /// </summary>
     /// <param name="count">The number of graph nodes currently rendered.</param>
@@ -627,7 +891,10 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
     /// Cancels the active progressive request, if any.
     /// </summary>
     private void CancelLoading()
-        => _loadCancellation?.Cancel();
+    {
+        _loadCancellation?.Cancel();
+        _obtainabilityCancellation?.Cancel();
+    }
 
     /// <summary>
     /// Restores the compact tracker window when this dialog expanded it.

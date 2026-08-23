@@ -253,6 +253,7 @@ module Ironmon
   end
 
   def self.tracker_normal_evolution_generator(recipe)
+    return evolution_generator if tracker_loaded_recipe?(recipe)
     @tracker_evolution_generators ||= {}
     key = [
       recipe["seed"], recipe["evolution_source_fingerprint"],
@@ -277,6 +278,7 @@ module Ironmon
   end
 
   def self.tracker_fusion_evolution_generator(recipe)
+    return fusion_evolution_generator if tracker_loaded_recipe?(recipe)
     @tracker_fusion_evolution_generators ||= {}
     key = [
       recipe["seed"], recipe["evolution_source_fingerprint"],

@@ -211,7 +211,17 @@ module Ironmon
         "species_name" => species.name,
         "sprite_path" => tracker_lookup_sprite_path(species),
         "types" => species.types.map { |type| type.to_s },
-        "fusion" => !normal_ability_species?(species)
+        "fusion" => !normal_ability_species?(species),
+        "obtainability" => if !visibility || visibility[:obtainability]
+                             tracker_obtainability_snapshot(species, recipe)
+                           else
+                             {
+                               "status" => "unknown",
+                               "reason" => "Run obtainability access is not authorized.",
+                               "path" => [],
+                               "required_items" => {}
+                             }
+                           end
       }
     }
 

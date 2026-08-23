@@ -5,6 +5,7 @@
 class Scene_Map
   alias ironmon_original_create_spritesets createSpritesets
   def createSpritesets
+    Ironmon.pause_tracker_obtainability_for_map
     ironmon_original_create_spritesets
     Ironmon.finish_pending_reset
     Ironmon.refresh_pending_static_events
@@ -27,7 +28,9 @@ class Scene_Map
         return
       end
     end
-    ironmon_original_update
+    result = ironmon_original_update
+    Ironmon.mark_tracker_obtainability_map_ready(self)
+    return result
   end
 end
 

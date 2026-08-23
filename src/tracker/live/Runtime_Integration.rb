@@ -13,6 +13,7 @@ Ironmon.register_graphics_update_hook(
     Ironmon.update_tracker_connection
     Ironmon.update_tracker_player
     Ironmon.update_tracker_enemies
+    Ironmon.update_tracker_obtainability
     interrupt_result = Ironmon.tracker_battle_item_interrupt_result
     throw :ironmon_tracker_battle_item, interrupt_result if
       !interrupt_result.nil?

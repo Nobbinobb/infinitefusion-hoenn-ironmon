@@ -1,3 +1,5 @@
+using Ironmon.Tracker.Connection.Obtainability;
+
 namespace Ironmon.Tracker.Connection.Transport;
 
 /// <summary>
@@ -10,9 +12,11 @@ public sealed class TrackerRequestClient
     private readonly TrackerResponseCache _cache = new();
     private readonly TrackerCompletedRunRequestClient _completedRunRequests;
     private readonly TrackerDiagnosticRequestClient _diagnosticRequests;
+    private readonly SemaphoreSlim _obtainabilityRequestGate = new(1, 1);
     private readonly TrackerConnectionOptions _options;
     private readonly TrackerRequestSession _session;
     private readonly TrackerConnectionState _state;
+    private readonly PlayerFusionMappingCoordinator _fusionMappings = new();
 
     /// <summary>
     /// Occurs when the game reports a queued, started, or failed seeded-run import transition.
@@ -38,8 +42,8 @@ public sealed class TrackerRequestClient
         _state = state;
         _authorization = new TrackerDiagnosticAuthorizer(options, state, diagnosticAccess);
         _areaRequests = new TrackerAreaRequestClient(session, areaDiscoveries, _authorization, _cache);
-        _completedRunRequests = new TrackerCompletedRunRequestClient(session, _cache);
-        _diagnosticRequests = new TrackerDiagnosticRequestClient(session, _authorization);
+        _completedRunRequests = new TrackerCompletedRunRequestClient(session, _cache, _fusionMappings);
+        _diagnosticRequests = new TrackerDiagnosticRequestClient(session, _authorization, _fusionMappings);
     }
 
     /// <summary>
@@ -203,6 +207,51 @@ public sealed class TrackerRequestClient
     /// <returns>The reconstructed Pokémon information.</returns>
     public Task<PokemonLookupSnapshot> LookupPokemonAsync(CompletedRunRecipePayload recipe, string speciesId, PokemonLookupSection section = PokemonLookupSection.Overview, CancellationToken cancellationToken = default)
         => _completedRunRequests.LookupPokemonAsync(recipe, speciesId, section, cancellationToken);
+
+    /// <summary>
+    /// Advances and reads the shared run-specific Pokemon obtainability calculation.
+    /// </summary>
+    /// <param name="recipe">The completed-run reconstruction recipe.</param>
+    /// <param name="speciesId">The optional target whose witness should be returned.</param>
+    /// <param name="speciesIds">The bounded identifiers whose proven membership should be returned.</param>
+    /// <param name="evolutionEdgeKeys">The bounded evolution connections whose possible membership should be returned.</param>
+    /// <param name="foreground">Whether the game should temporarily prioritize this run's calculation.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The current calculation progress and proven species set.</returns>
+    public async Task<PokemonObtainabilityResponsePayload> AdvancePokemonObtainabilityAsync(CompletedRunRecipePayload recipe, string? speciesId = null, IReadOnlyList<string>? speciesIds = null, IReadOnlyList<string>? evolutionEdgeKeys = null, bool foreground = false, CancellationToken cancellationToken = default)
+    {
+        await _obtainabilityRequestGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await _completedRunRequests.AdvanceObtainabilityAsync(recipe, speciesId, speciesIds, evolutionEdgeKeys, foreground, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _obtainabilityRequestGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Advances and reads the authorized active run's shared Pokemon obtainability calculation.
+    /// </summary>
+    /// <param name="speciesId">The optional target whose witness should be returned.</param>
+    /// <param name="speciesIds">The bounded identifiers whose proven membership should be returned.</param>
+    /// <param name="evolutionEdgeKeys">The bounded evolution connections whose possible membership should be returned.</param>
+    /// <param name="foreground">Whether the game should temporarily prioritize this run's calculation.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The current calculation progress and proven species set.</returns>
+    public async Task<PokemonObtainabilityResponsePayload> AdvanceDebugPokemonObtainabilityAsync(string? speciesId = null, IReadOnlyList<string>? speciesIds = null, IReadOnlyList<string>? evolutionEdgeKeys = null, bool foreground = false, CancellationToken cancellationToken = default)
+    {
+        await _obtainabilityRequestGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await _diagnosticRequests.AdvanceObtainabilityAsync(speciesId, speciesIds, evolutionEdgeKeys, foreground, GetConnectedRunId(), cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _obtainabilityRequestGate.Release();
+        }
+    }
 
     /// <summary>
     /// Requests one filtered page of valid evolution candidates for a completed run.

@@ -67,15 +67,35 @@ module Ironmon
   end
 
   def self.custom_fusion_species?(species)
-    species_data = GameData::Species.try_get(species)
-    return false if !species_data
-    if !@custom_fusion_species_index
-      @custom_fusion_species_index = {}
-      custom_fusion_pool.each do |custom_species|
-        @custom_fusion_species_index[custom_species] = true
-      end
+    identity = fusion_species_identity(species)
+    return false if !identity
+    return custom_fusion_pool_service.include_identity?(identity)
+  end
+
+  def self.fusion_species_identity(species)
+    return species.id if species.is_a?(GameData::FusedSpecies)
+    return nil if species.is_a?(GameData::Species)
+    value = species.respond_to?(:id) ? species.id : species
+    if value.is_a?(Integer)
+      return nil if value <= NB_POKEMON ||
+        value >= Settings::ZAPMOLCUNO_NB
+      body = getBodyID(value)
+      head = getHeadID(value, body)
+      return nil if body < 1 || body > NB_POKEMON ||
+        head < 1 || head > NB_POKEMON
+      return "B#{body}H#{head}".to_sym
     end
-    return @custom_fusion_species_index[species_data.id] == true
+    match = value.to_s.match(/\AB(\d+)H(\d+)\z/)
+    if match
+      body = match[1].to_i
+      head = match[2].to_i
+      return nil if body < 1 || body > NB_POKEMON ||
+        head < 1 || head > NB_POKEMON
+      return "B#{body}H#{head}".to_sym
+    end
+    species_data = GameData::Species.try_get(value)
+    return species_data.id if species_data.is_a?(GameData::FusedSpecies)
+    return nil
   end
 
   def self.wild_species_allowed?(species)

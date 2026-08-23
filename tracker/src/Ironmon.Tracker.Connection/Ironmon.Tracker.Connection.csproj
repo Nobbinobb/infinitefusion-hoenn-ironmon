@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <EmbeddedResource Include="..\..\..\data\player_fusion_worker_catalog.json" LogicalName="Ironmon.Tracker.Connection.Resources.player_fusion_worker_catalog.json" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Ironmon.Tracker.Access\Ironmon.Tracker.Access.csproj" />
     <ProjectReference Include="..\Ironmon.Tracker.Core\Ironmon.Tracker.Core.csproj" />
     <ProjectReference Include="..\Ironmon.Tracker.Protocol\Ironmon.Tracker.Protocol.csproj" />

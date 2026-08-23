@@ -171,6 +171,11 @@ module Ironmon
       elsif message["command"] == "pokemon_lookup"
         payload = Ironmon.tracker_pokemon_lookup(message["payload"], message["run_id"])
         queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "pokemon_obtainability"
+        payload = Ironmon.tracker_obtainability(
+          message["payload"], message["run_id"]
+        )
+        queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "evolution_candidate_search"
         payload = Ironmon.tracker_evolution_candidate_search(
           message["payload"], message["run_id"]
@@ -229,6 +234,12 @@ module Ironmon
           Ironmon.tracker_information_diagnostic_capability(section)
         ])
         payload = Ironmon.tracker_debug_pokemon_lookup(message["payload"])
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "debug_pokemon_obtainability"
+        require_diagnostic_capabilities(
+          Ironmon::TRACKER_OBTAINABILITY_DIAGNOSTIC_CAPABILITIES
+        )
+        payload = Ironmon.tracker_debug_obtainability(message["payload"])
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "debug_evolution_candidate_search"
         require_diagnostic_capabilities([

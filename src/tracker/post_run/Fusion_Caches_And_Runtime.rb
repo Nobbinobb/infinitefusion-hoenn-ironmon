@@ -45,6 +45,38 @@ module Ironmon
     return tracker_fusion_mappers[run_id]
   end
 
+  def self.tracker_obtainability_fusion_mapper(recipe, work_checkpoint = nil)
+    stat_generator = if tracker_loaded_recipe?(recipe)
+                       base_stat_generator
+                     else
+                       base_stat_generator_for(
+                         recipe["seed"], recipe["base_stat_source_fingerprint"]
+                       )
+                     end
+    return PlayerFusionMapper.new(
+      recipe["seed"], custom_fusion_pool, {}, {},
+      stat_generator,
+      recipe["player_fusion_generator_version"], work_checkpoint, true
+    )
+  end
+
+  def self.tracker_obtainability_fusion_evolution_generator(
+    recipe, work_checkpoint = nil
+  )
+    stat_generator = if tracker_loaded_recipe?(recipe)
+                       base_stat_generator
+                     else
+                       base_stat_generator_for(
+                         recipe["seed"],
+                         recipe["evolution_base_stat_source_fingerprint"]
+                       )
+                     end
+    return FusionEvolutionGenerator.new(
+      recipe["seed"], evolution_catalog, custom_fusion_pool,
+      custom_fusion_pool_info, stat_generator, work_checkpoint
+    )
+  end
+
   def self.tracker_lookup_normal_species(species_id)
     species_key = species_id.to_s.split(":", 2)[0]
     species = GameData::Species.try_get(species_key.to_sym)
@@ -116,6 +148,8 @@ module Ironmon
     @tracker_evolution_generators = nil
     @tracker_fusion_evolution_generators = nil
     @tracker_trainer_location_index = nil
+    @tracker_obtainability_services = nil
+    @tracker_obtainability_ready_scene = nil
   end
 end
 

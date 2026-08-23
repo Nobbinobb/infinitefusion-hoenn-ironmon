@@ -1,0 +1,1469 @@
+record_type,identity,value_1,value_2,value_3,value_4,value_5,value_6,value_7,detail
+summary,authored_required_item_gift_calls,11,,,,,,,
+summary,encounter_slots,729,,,,,,,
+summary,event_acquisition_calls,48,,,,,,,
+summary,event_resource_calls,283,,,,,,,
+summary,evolution_item_branches,62,,,,,,,
+summary,evolution_item_methods,3,,,,,,,
+summary,prototype_adapters,18,,,,,,,
+summary,randomizable_item_slots,140,,,,,,,
+summary,required_evolution_items,25,,,,,,,
+summary,runtime_hooks,23,,,,,,,
+summary,schema_version,1,,,,,,,
+summary,source_acquisition_calls,33,,,,,,,
+summary,source_resource_calls,78,,,,,,,
+summary,starter_slots,3,,,,,,,
+runtime_hook,Object.pbWildBattle,method,024_Release_073_Gameplay.rb,108,,,,,
+runtime_hook,Object.pbWildBattleSpecific,method,004_Encounter_Hooks_2_Wild_Battles.rb,26,,,,,
+runtime_hook,Object.pbDoubleWildBattle,method,022_Area_Progress_Runtime_Integration.rb,94,,,,,
+runtime_hook,Object.pbTripleWildBattle,method,022_Area_Progress_Runtime_Integration.rb,103,,,,,
+runtime_hook,Object.getRandomizedTo,method,004_Encounter_Hooks_3_Gifts_And_Starters.rb,6,,,,,
+runtime_hook,Object.tryRandomizeGiftPokemon,method,004_Encounter_Hooks_3_Gifts_And_Starters.rb,18,,,,,
+runtime_hook,Object.pbReceiveMysteryGift,method,004_Encounter_Hooks_3_Gifts_And_Starters.rb,38,,,,,
+runtime_hook,Object.obtainRandomizedStarter,method,004_Encounter_Hooks_3_Gifts_And_Starters.rb,52,,,,,
+runtime_hook,Object.promptCaughtPokemonAction,method,010_Pivot_Acquisition_1_Runtime_Integration.rb,6,,,,,
+runtime_hook,Object.pbStorePokemon,method,010_Pivot_Acquisition_1_Runtime_Integration.rb,17,,,,,
+runtime_hook,Object.pbAddPokemon,method,010_Pivot_Acquisition_1_Runtime_Integration.rb,29,,,,,
+runtime_hook,Object.pbAddPokemonSilent,method,010_Pivot_Acquisition_1_Runtime_Integration.rb,48,,,,,
+runtime_hook,Object.pbAddToParty,method,010_Pivot_Acquisition_1_Runtime_Integration.rb,39,,,,,
+runtime_hook,Object.pbAddToPartySilent,method,010_Pivot_Acquisition_1_Runtime_Integration.rb,73,,,,,
+runtime_hook,Object.pbAddRentalPokemon,method,010_Pivot_Acquisition_1_Runtime_Integration.rb,95,,,,,
+runtime_hook,Object.pbGenerateEgg,method,010_Pivot_Acquisition_1_Runtime_Integration.rb,103,,,,,
+runtime_hook,Object.pbAddEgg,method,010_Pivot_Acquisition_1_Runtime_Integration.rb,112,,,,,
+runtime_hook,Object.pbGenEgg,method,010_Pivot_Acquisition_1_Runtime_Integration.rb,116,,,,,
+runtime_hook,Object.pbStartTrade,method,010_Pivot_Acquisition_1_Runtime_Integration.rb,121,,,,,
+runtime_hook,PokemonStorage.pbStoreCaught,instance_method,010_Pivot_Acquisition_2_Storage_Integration.rb,29,,,,,
+runtime_hook,PokeBattle_RealBattlePeer.pbStorePokemon,instance_method,010_Pivot_Acquisition_2_Storage_Integration.rb,43,,,,,
+runtime_hook,Object.pbHatch,method,015_Pivot_Integration.rb,22,,,,,
+runtime_hook,PokemonEvolutionScene.pbDuplicatePokemon,method,015_Pivot_Integration.rb,41,,,,,
+prototype_adapter,npcTrade,scripted_acquisition_candidate,conditions remain path-unproven,,,,,,
+prototype_adapter,pbAddEgg,scripted_acquisition_candidate,conditions remain path-unproven,,,,,,
+prototype_adapter,pbAddPokemon,scripted_acquisition_candidate,conditions remain path-unproven,,,,,,
+prototype_adapter,pbAddPokemonSilent,scripted_acquisition_candidate,conditions remain path-unproven,,,,,,
+prototype_adapter,pbAddToParty,scripted_acquisition_candidate,conditions remain path-unproven,,,,,,
+prototype_adapter,pbAddToPartySilent,scripted_acquisition_candidate,conditions remain path-unproven,,,,,,
+prototype_adapter,pbDoubleWildBattle,scripted_acquisition_candidate,conditions remain path-unproven,,,,,,
+prototype_adapter,pbGenEgg,scripted_acquisition_candidate,conditions remain path-unproven,,,,,,
+prototype_adapter,pbGenerateEgg,scripted_acquisition_candidate,conditions remain path-unproven,,,,,,
+prototype_adapter,pbStartTrade,scripted_acquisition_candidate,conditions remain path-unproven,,,,,,
+prototype_adapter,pbTripleWildBattle,scripted_acquisition_candidate,conditions remain path-unproven,,,,,,
+prototype_adapter,pbWildBattle,scripted_acquisition_candidate,conditions remain path-unproven,,,,,,
+prototype_adapter,pbAddForeignPokemon,deferred_acquisition_source,result remains unknown rather than impossible,,,,,,
+prototype_adapter,pbWildBattleSpecific,deferred_acquisition_source,result remains unknown rather than impossible,,,,,,
+prototype_adapter,pbItemBall,resource_inventory,unresolved categories prevent a false impossible result,,,,,,
+prototype_adapter,pbPokemonMart,resource_inventory,unresolved categories prevent a false impossible result,,,,,,
+prototype_adapter,pbReceiveItem,resource_inventory,unresolved categories prevent a false impossible result,,,,,,
+prototype_adapter,pbStoreItem,resource_inventory,unresolved categories prevent a false impossible result,,,,,,
+acquisition_call,map:5|event:2|page:1,pbWildBattle,wild_encounter,":B502H504,2,1,false,true)",,,,,
+acquisition_call,map:5|event:2|page:2,pbWildBattle,wild_encounter,":B502H504,2,1,false,true)",,,,,
+acquisition_call,map:18|event:5|page:1,pbAddPokemon,permanent_candidate,"starter,5,true,true)",,,,,
+acquisition_call,map:30|event:27|page:1,pbWildBattle,wild_encounter,":SHROOMISH,7)",,,,,
+acquisition_call,map:30|event:22|page:1,pbWildBattle,wild_encounter,":SHROOMISH,7)",,,,,
+acquisition_call,map:30|event:17|page:1,pbWildBattle,wild_encounter,":SHROOMISH,7)",,,,,
+acquisition_call,map:30|event:28|page:1,pbWildBattle,wild_encounter,":SHROOMISH,7)",,,,,
+acquisition_call,map:30|event:23|page:1,pbWildBattle,wild_encounter,":SHROOMISH,7)",,,,,
+acquisition_call,map:30|event:29|page:1,pbWildBattle,wild_encounter,":SHROOMISH,7)",,,,,
+acquisition_call,map:30|event:24|page:1,pbWildBattle,wild_encounter,":SHROOMISH,7)",,,,,
+acquisition_call,map:30|event:25|page:1,pbWildBattle,wild_encounter,":SHROOMISH,7)",,,,,
+acquisition_call,map:30|event:20|page:1,pbWildBattle,wild_encounter,":SHROOMISH,7)",,,,,
+acquisition_call,map:30|event:26|page:1,pbWildBattle,wild_encounter,":SHROOMISH,7)",,,,,
+acquisition_call,map:30|event:21|page:1,pbWildBattle,wild_encounter,":SHROOMISH,7)",,,,,
+acquisition_call,map:31|event:46|page:1,pbGenerateEgg,egg_candidate,:TORCHIC),,,,,
+acquisition_call,map:38|event:56|page:1,pbWildBattle,wild_encounter,"fusionOf(:QWILFISH,:WAILORD),23,1,false)",,,,,
+acquisition_call,map:38|event:48|page:1,pbGenerateEgg,egg_candidate,:SHELLOS_E),,,,,
+acquisition_call,map:38|event:48|page:2,pbGenerateEgg,egg_candidate,:SHELLOS_W),,,,,
+acquisition_call,map:39|event:39|page:2,pbAddPokemon,permanent_candidate,":CARVANHA,15)",,,,,
+acquisition_call,map:39|event:68|page:1,pbAddPokemon,permanent_candidate,":SPHEAL,15)",,,,,
+acquisition_call,map:42|event:5|page:1,pbAddPokemon,permanent_candidate,":UMBREON,20)",,,,,
+acquisition_call,map:42|event:4|page:1,pbAddPokemon,permanent_candidate,":ESPEON,20)",,,,,
+acquisition_call,map:47|event:29|page:1,pbTripleWildBattle,wild_encounter,":TRUBBISH,8,:B52H434,11,:TRUBBISH,9)",,,,,
+acquisition_call,map:47|event:31|page:1,pbTripleWildBattle,wild_encounter,":TRUBBISH,8,:B52H434,11,:TRUBBISH,9)",,,,,
+acquisition_call,map:48|event:87|page:2,pbAddPokemon,permanent_candidate,"pbGet(VAR_FOSSIL),1)",,,,,
+acquisition_call,map:48|event:87|page:2,pbAddToParty,permanent_candidate,"pbGet(VAR_FOSSIL),1)",,,,,
+acquisition_call,map:62|event:10|page:1,pbGenerateEgg,egg_candidate,:TREECKO),,,,,
+acquisition_call,map:63|event:23|page:1,pbAddPokemon,permanent_candidate,:SUNKERN),,,,,
+acquisition_call,map:65|event:5|page:1,pbWildBattle,wild_encounter,":MINIOR_M,pbGet(2))",,,,,
+acquisition_call,map:65|event:22|page:1,pbWildBattle,wild_encounter,":MINIOR_M,pbGet(2))",,,,,
+acquisition_call,map:65|event:34|page:1,pbGenerateEgg,egg_candidate,:MUDKIP),,,,,
+acquisition_call,map:65|event:21|page:1,pbWildBattle,wild_encounter,":MINIOR_M,pbGet(2))",,,,,
+acquisition_call,map:68|event:23|page:1,npcTrade,trade_candidate,":RIOLU,""Kai"",""Phil"",",,,,,
+acquisition_call,map:76|event:16|page:2,pbGenerateEgg,egg_candidate,:SHELLOS_E),,,,,
+acquisition_call,map:76|event:16|page:3,pbGenerateEgg,egg_candidate,:SHELLOS_W),,,,,
+acquisition_call,map:76|event:17|page:2,pbGenerateEgg,egg_candidate,:SHELLOS_E),,,,,
+acquisition_call,map:76|event:17|page:3,pbGenerateEgg,egg_candidate,:SHELLOS_W),,,,,
+acquisition_call,map:77|event:30|page:1,pbGenerateEgg,egg_candidate,:SPOINK),,,,,
+acquisition_call,map:87|event:29|page:1,npcTrade,trade_candidate,":CLAMPERL,""Pebble"",",,,,,
+acquisition_call,map:98|event:1|page:1,pbWildBattle,wild_encounter,"pbGet(5),pbGet(4),1,true,false)",,,,,
+acquisition_call,map:98|event:2|page:1,pbWildBattle,wild_encounter,"pbGet(5),pbGet(4),1,true,false)",,,,,
+acquisition_call,map:98|event:3|page:1,pbWildBattle,wild_encounter,"pbGet(5),pbGet(4),1,true,false)",,,,,
+acquisition_call,map:109|event:21|page:2,pbWildBattle,wild_encounter,"fusionOf(:MAGCARGO,:GRAVELER),23,1,false)",,,,,
+acquisition_call,map:111|event:21|page:2,pbWildBattle,wild_encounter,"fusionOf(:MAGCARGO,:GRAVELER),23,1,false)",,,,,
+acquisition_call,common_event:9,pbWildBattle,wild_encounter,":PARAS,4)",,,,,
+acquisition_call,common_event:39,pbGenerateEgg,egg_candidate,pbGet(3)),,,,,
+acquisition_call,common_event:79,pbWildBattle,wild_encounter,":SANDYGAST,10)",,,,,
+acquisition_call,common_event:104,pbWildBattle,wild_encounter,":PUMPKABOO,pbGet(2))",,,,,
+acquisition_source_call,012_Overworld/001_Overworld.rb:276,pbDoubleWildBattle,wild_encounter,"pbDoubleWildBattle(encounter[0], encounter[1], encounter2[0], encounter2[1])",,,,,
+acquisition_source_call,012_Overworld/001_Overworld.rb:278,pbWildBattle,wild_encounter,"pbWildBattle(encounter[0], encounter[1])",,,,,
+acquisition_source_call,012_Overworld/002_Battle triggering/003_Overworld_WildEncounters.rb:503,pbDoubleWildBattle,wild_encounter,"pbDoubleWildBattle(encounter1[0], encounter1[1], encounter2[0], encounter2[1])",,,,,
+acquisition_source_call,012_Overworld/002_Battle triggering/003_Overworld_WildEncounters.rb:505,pbWildBattle,wild_encounter,"pbWildBattle(encounter1[0], encounter1[1])",,,,,
+acquisition_source_call,012_Overworld/004_Overworld_FieldMoves.rb:1003,pbWildBattle,wild_encounter,"pbWildBattle(:TRUBBISH, 10)",,,,,
+acquisition_source_call,012_Overworld/007_Overworld_DayCare.rb:82,pbAddPokemonSilent,permanent_candidate,pbAddPokemonSilent(pokemon),,,,,
+acquisition_source_call,016_UI/019_UI_PC.rb:246,pbAddPokemonSilent,permanent_candidate,"pbAddPokemonSilent(:PORYGON,1)",,,,,
+acquisition_source_call,016_UI/023_UI_MysteryGift.rb:512,pbAddPokemonSilent,permanent_candidate,if pbAddPokemonSilent(gift[2]),,,,,
+acquisition_source_call,019_Utilities/002_Utilities_Pokemon.rb:68,pbAddPokemon,permanent_candidate,"pbAddPokemon(pokemon,level)",,,,,
+acquisition_source_call,019_Utilities/002_Utilities_Pokemon.rb:152,pbGenerateEgg,egg_candidate,pbGenerateEgg(species),,,,,
+acquisition_source_call,052_InfiniteFusion/Fusion/Fusing_Unfusing/Unfusing.rb:110,pbAddPokemonSilent,permanent_candidate,pbAddPokemonSilent(head_pokemon),,,,,
+acquisition_source_call,052_InfiniteFusion/Fusion/Fusing_Unfusing/Unfusing.rb:111,pbAddPokemonSilent,permanent_candidate,pbAddPokemonSilent(body_pokemon),,,,,
+acquisition_source_call,052_InfiniteFusion/Fusion/Fusing_Unfusing/Unfusing.rb:130,pbAddPokemon,permanent_candidate,pbAddPokemon(head_pokemon),,,,,
+acquisition_source_call,052_InfiniteFusion/Fusion/Fusing_Unfusing/Unfusing.rb:138,pbAddPokemon,permanent_candidate,pbAddPokemon(body_pokemon),,,,,
+acquisition_source_call,052_InfiniteFusion/Fusion/Fusing_Unfusing/Unfusing.rb:153,pbAddPokemonSilent,permanent_candidate,pbAddPokemonSilent(pokemonKeptInParty),,,,,
+acquisition_source_call,052_InfiniteFusion/Fusion/Fusing_Unfusing/Unfusing.rb:154,pbAddPokemonSilent,permanent_candidate,pbAddPokemonSilent(pokemonSentToPC),,,,,
+acquisition_source_call,052_InfiniteFusion/Gameplay/0_Utilities/MenuUtils.rb:224,pbAddPokemonSilent,permanent_candidate,pbAddPokemonSilent(caughtPokemon),,,,,
+acquisition_source_call,052_InfiniteFusion/Gameplay/GameplayUtils.rb:24,pbStartTrade,trade_candidate,"pbStartTrade(chosen_position, npcPokemon_species, nickname, trainerName, 0)",,,,,
+acquisition_source_call,052_InfiniteFusion/Gameplay/Items/New HMs.rb:21,pbWildBattle,wild_encounter,"pbWildBattle(:GEODUDE,level)",,,,,
+acquisition_source_call,052_InfiniteFusion/Gameplay/Items/New Items effects.rb:500,pbWildBattle,wild_encounter,"pbWildBattle(:SPIRITOMB, 27)",,,,,
+acquisition_source_call,052_InfiniteFusion/Gameplay/Items/New Items effects.rb:1929,pbAddPokemonSilent,permanent_candidate,"Kernel.pbAddPokemonSilent(poke2, poke2.level)",,,,,
+acquisition_source_call,052_InfiniteFusion/Gameplay/Overworld/Events/OverworldEventUtils.rb:494,pbGenerateEgg,egg_candidate,pbGenerateEgg(pokemon),,,,,
+acquisition_source_call,052_InfiniteFusion/Gameplay/Overworld/OverworldEncounters.rb:7,pbWildBattle,wild_encounter,"pbWildBattle(:FOMANTIS, 10)",,,,,
+acquisition_source_call,052_InfiniteFusion/Gameplay/Overworld/OverworldEncounters.rb:34,pbWildBattle,wild_encounter,"pbWildBattle(:FOMANTIS, 4)",,,,,
+acquisition_source_call,052_InfiniteFusion/Gameplay/Overworld/OverworldEncounters.rb:46,pbWildBattle,wild_encounter,"pbWildBattle(:FOMANTIS, 10)",,,,,
+acquisition_source_call,052_InfiniteFusion/Gameplay/Overworld/OverworldEncounters.rb:143,pbWildBattle,wild_encounter,"pbWildBattle(pokemon, level)",,,,,
+acquisition_source_call,052_InfiniteFusion/Gameplay/WonderTrade/Wondertrade.rb:121,pbStartTrade,trade_candidate,"newpoke = pbStartTrade(pbGet(1), species, pname, tname, 0, true) # Starts the trade",,,,,
+acquisition_source_call,053_PIF_Hoenn/HoennGameplayUtils.rb:4,pbAddPokemonSilent,permanent_candidate,pbAddPokemonSilent(selected_starter),,,,,
+acquisition_source_call,053_PIF_Hoenn/HoennGameplayUtils.rb:11,pbAddPokemonSilent,permanent_candidate,pbAddPokemonSilent(selected_starter),,,,,
+acquisition_source_call,053_PIF_Hoenn/OverworldPokemon/OverworldPokemonBehavior.rb:64,pbWildBattleSpecific,wild_encounter,"pbWildBattleSpecific(Pokemon.new(fusion_species, fusion_level))",,,,,
+acquisition_source_call,053_PIF_Hoenn/OverworldPokemon/OverworldPokemonBehavior.rb:75,pbWildBattleSpecific,wild_encounter,pbWildBattleSpecific(battler),,,,,
+acquisition_source_call,053_PIF_Hoenn/OverworldPokemon/OverworldPokemonBehavior.rb:79,pbWildBattleSpecific,wild_encounter,pbWildBattleSpecific(battler),,,,,
+acquisition_source_call,053_PIF_Hoenn/TrainerRematches/TrainerRematch_Trade.rb:229,pbStartTrade,trade_candidate,"pbStartTrade(chosen_index, offered_pokemon, offered_pokemon.name, trainer.trainerName, 0)",,,,,
+resource_call,map:6|event:66|page:1,pbPokemonMart,filtered_standard_mart,pbGet(1022)),,,,,
+resource_call,map:6|event:66|page:2,pbPokemonMart,filtered_standard_mart,pbGet(1022)),,,,,
+resource_call,map:6|event:67|page:1,pbPokemonMart,filtered_standard_mart,pbGet(1023)),,,,,
+resource_call,map:6|event:67|page:2,pbPokemonMart,filtered_standard_mart,pbGet(1023)),,,,,
+resource_call,map:6|event:98|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:SUPERPOTION),,,,,
+resource_call,map:6|event:73|page:1,pbPokemonMart,filtered_standard_mart,[pbGet(1018)]),,,,,
+resource_call,map:6|event:73|page:2,pbPokemonMart,filtered_standard_mart,[pbGet(1018)]),,,,,
+resource_call,map:6|event:64|page:1,pbPokemonMart,filtered_standard_mart,[,,,,,
+resource_call,map:6|event:65|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:SOOTHEBELL),,,,,
+resource_call,map:7|event:16|page:5,pbReceiveItem,authored_gift_or_randomized_tm_gift,":ORANBERRY,3)",,,,,
+resource_call,map:7|event:16|page:5,pbReceiveItem,authored_gift_or_randomized_tm_gift,":CHERIBERRY,3)",,,,,
+resource_call,map:7|event:16|page:5,pbReceiveItem,authored_gift_or_randomized_tm_gift,":SITRUSBERRY,4)",,,,,
+resource_call,map:7|event:36|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:RARECANDY),,,,,
+resource_call,map:8|event:17|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:DNASPLICERS),,,,,
+resource_call,map:10|event:19|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:POTION),,,,,
+resource_call,map:11|event:27|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:GUARDSPEC),,,,,
+resource_call,map:11|event:25|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PPUP),,,,,
+resource_call,map:11|event:21|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:DNASPLICERS),,,,,
+resource_call,map:12|event:16|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,:FIELDSLEEPINGBAG),,,,,
+resource_call,map:12|event:33|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:ANTIDOTE),,,,,
+resource_call,map:12|event:30|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:DNASPLICERS),,,,,
+resource_call,map:12|event:31|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:POTION),,,,,
+resource_call,map:12|event:32|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:HEARTSCALE),,,,,
+resource_call,map:13|event:97|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRESENT),,,,,
+resource_call,map:13|event:98|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRESENT),,,,,
+resource_call,map:18|event:24|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRESENT),,,,,
+resource_call,map:18|event:20|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,":POKEBALL,5)",,,,,
+resource_call,map:20|event:5|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,:SITRUSBERRY),,,,,
+resource_call,map:20|event:33|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PPUP),,,,,
+resource_call,map:20|event:6|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:SUPERPOTION),,,,,
+resource_call,map:20|event:29|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PPUP),,,,,
+resource_call,map:20|event:7|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:WHITEHERB),,,,,
+resource_call,map:20|event:2|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:XACCURACY),,,,,
+resource_call,map:20|event:8|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:TM49),,,,,
+resource_call,map:20|event:30|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:TM32) #Double team,,,,,
+resource_call,map:20|event:36|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,":SUPERPOTION,3)",,,,,
+resource_call,map:20|event:4|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:POKEBALL),,,,,
+resource_call,map:20|event:10|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:CHESTOBERRY),,,,,
+resource_call,map:24|event:25|page:1,pbPokemonMart,filtered_standard_mart,it),,,,,
+resource_call,map:27|event:17|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRESENT),,,,,
+resource_call,map:27|event:9|page:3,pbReceiveItem,authored_gift_or_randomized_tm_gift,:HARDSTONE),,,,,
+resource_call,map:27|event:10|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,":POKEBALL,5)",,,,,
+resource_call,map:28|event:1|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,PBItems::HM04),,,,,
+resource_call,map:28|event:7|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,:DEVONPARTS),,,,,
+resource_call,map:28|event:2|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,PBItems::HM04),,,,,
+resource_call,map:28|event:3|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:POKEBALL),,,,,
+resource_call,map:28|event:20|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:TINYMUSHROOM),,,,,
+resource_call,map:28|event:4|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:MAXETHER),,,,,
+resource_call,map:30|event:27|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MUSHROOMSPORES),,,,,
+resource_call,map:30|event:44|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:MIRACLESEED),,,,,
+resource_call,map:30|event:22|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MUSHROOMSPORES),,,,,
+resource_call,map:30|event:17|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MUSHROOMSPORES),,,,,
+resource_call,map:30|event:28|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MUSHROOMSPORES),,,,,
+resource_call,map:30|event:23|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MUSHROOMSPORES),,,,,
+resource_call,map:30|event:34|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PARLYZHEAL),,,,,
+resource_call,map:30|event:1|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,:GREATBALL),,,,,
+resource_call,map:30|event:40|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:TINYMUSHROOM),,,,,
+resource_call,map:30|event:29|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MUSHROOMSPORES),,,,,
+resource_call,map:30|event:24|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MUSHROOMSPORES),,,,,
+resource_call,map:30|event:35|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,":REPEL,2)",,,,,
+resource_call,map:30|event:25|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MUSHROOMSPORES),,,,,
+resource_call,map:30|event:36|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:POTION),,,,,
+resource_call,map:30|event:42|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:DNASPLICERS),,,,,
+resource_call,map:30|event:20|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MUSHROOMSPORES),,,,,
+resource_call,map:30|event:31|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:DNASPLICERS),,,,,
+resource_call,map:30|event:26|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MUSHROOMSPORES),,,,,
+resource_call,map:30|event:43|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:TINYMUSHROOM),,,,,
+resource_call,map:30|event:21|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MUSHROOMSPORES),,,,,
+resource_call,map:31|event:16|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:SUPERPOTION),,,,,
+resource_call,map:31|event:33|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MOONSTONE),,,,,
+resource_call,map:31|event:17|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:REPEL),,,,,
+resource_call,map:31|event:12|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:XSPATK),,,,,
+resource_call,map:31|event:34|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:NUGGET),,,,,
+resource_call,map:31|event:45|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:AWAKENING),,,,,
+resource_call,map:31|event:13|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:BLACKGLASSES),,,,,
+resource_call,map:31|event:14|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:POTION),,,,,
+resource_call,map:31|event:15|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:ETHER),,,,,
+resource_call,map:31|event:43|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:WISEGLASSES),,,,,
+resource_call,map:31|event:32|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:ANTIDOTE),,,,,
+resource_call,map:32|event:5|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:ESCAPEROPE),,,,,
+resource_call,map:32|event:4|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:HM09),,,,,
+resource_call,map:34|event:66|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:POKEBALL),,,,,
+resource_call,map:35|event:5|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:EVERSTONE),,,,,
+resource_call,map:35|event:6|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:EVERSTONE),,,,,
+resource_call,map:35|event:12|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:TM65) #SHADOWCLAW,,,,,
+resource_call,map:35|event:3|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:REPEL),,,,,
+resource_call,map:35|event:4|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:RARECANDY),,,,,
+resource_call,map:36|event:3|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:TM118),,,,,
+resource_call,map:38|event:33|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:STARPIECE),,,,,
+resource_call,map:38|event:34|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PEARL),,,,,
+resource_call,map:38|event:35|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:HEARTSCALE),,,,,
+resource_call,map:38|event:36|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:HEARTSCALE),,,,,
+resource_call,map:38|event:31|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:AQUAUNIFORM),,,,,
+resource_call,map:38|event:64|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRESENT),,,,,
+resource_call,map:38|event:37|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:HEARTSCALE),,,,,
+resource_call,map:38|event:32|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:RARECANDY),,,,,
+resource_call,map:39|event:47|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:ETHER),,,,,
+resource_call,map:39|event:48|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:HEARTSCALE),,,,,
+resource_call,map:39|event:39|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,":DNASPLICERS,3)",,,,,
+resource_call,map:39|event:49|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PEARL),,,,,
+resource_call,map:39|event:78|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:SPRAYCAN),,,,,
+resource_call,map:39|event:50|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:REVIVE),,,,,
+resource_call,map:39|event:41|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PPUP),,,,,
+resource_call,map:39|event:42|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:SUPERPOTION),,,,,
+resource_call,map:39|event:43|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:LEMONADE),,,,,
+resource_call,map:39|event:5|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,:SUNSTONE),,,,,
+resource_call,map:39|event:53|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:MAXREVIVE),,,,,
+resource_call,map:39|event:44|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:GREATBALL),,,,,
+resource_call,map:39|event:26|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,:SOFTSAND),,,,,
+resource_call,map:39|event:45|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:HEARTSCALE),,,,,
+resource_call,map:39|event:46|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:REVIVE),,,,,
+resource_call,map:47|event:20|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:AWAKENING),,,,,
+resource_call,map:47|event:50|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:DNASPLICERS),,,,,
+resource_call,map:47|event:32|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,:PEARLSTRING),,,,,
+resource_call,map:47|event:51|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:FUSIONREPEL),,,,,
+resource_call,map:47|event:91|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:GREATBALL),,,,,
+resource_call,map:47|event:54|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:STARDUST),,,,,
+resource_call,map:48|event:77|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:FLOATSTONE),,,,,
+resource_call,map:48|event:79|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:EXPALL),,,,,
+resource_call,map:48|event:79|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:LETTER),,,,,
+resource_call,map:48|event:45|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:HM01),,,,,
+resource_call,map:48|event:27|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:PREMIERBALL),,,,,
+resource_call,map:48|event:30|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,:RARECANDY),,,,,
+resource_call,map:48|event:89|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,:NUGGET),,,,,
+resource_call,map:48|event:71|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:QUICKCLAW),,,,,
+resource_call,map:48|event:72|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:TM94),,,,,
+resource_call,map:48|event:72|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:STARDUST),,,,,
+resource_call,map:49|event:23|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:HEARTSCALE),,,,,
+resource_call,map:49|event:25|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:STARDUST),,,,,
+resource_call,map:49|event:26|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:DNASPLICERS),,,,,
+resource_call,map:49|event:21|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:SUPERPOTION),,,,,
+resource_call,map:58|event:5|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRESENT),,,,,
+resource_call,map:59|event:9|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,":ORANBERRY,2)",,,,,
+resource_call,map:61|event:5|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,":POKEBALL,5)",,,,,
+resource_call,map:61|event:5|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,":POKEBALL,5)",,,,,
+resource_call,map:61|event:6|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,":POKEBALL,5)",,,,,
+resource_call,map:61|event:12|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRESENT),,,,,
+resource_call,map:62|event:5|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:LEAFSTONE),,,,,
+resource_call,map:63|event:5|page:3,pbReceiveItem,authored_gift_or_randomized_tm_gift,:REDNECTAR),,,,,
+resource_call,map:63|event:5|page:3,pbReceiveItem,authored_gift_or_randomized_tm_gift,:YELLOWNECTAR),,,,,
+resource_call,map:63|event:5|page:3,pbReceiveItem,authored_gift_or_randomized_tm_gift,:PINKNECTAR),,,,,
+resource_call,map:63|event:5|page:3,pbReceiveItem,authored_gift_or_randomized_tm_gift,:BLUENECTAR),,,,,
+resource_call,map:63|event:5|page:4,pbPokemonMart,filtered_standard_mart,stock),,,,,
+resource_call,map:63|event:22|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:WAILMERPAIL),,,,,
+resource_call,map:63|event:22|page:2,pbPokemonMart,filtered_standard_mart,[:STABLEMULCH]),,,,,
+resource_call,map:65|event:5|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:COMETSHARD),,,,,
+resource_call,map:65|event:16|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:GREATBALL),,,,,
+resource_call,map:65|event:22|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:COMETSHARD),,,,,
+resource_call,map:65|event:17|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:SUPERPOTION),,,,,
+resource_call,map:65|event:18|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:IRON),,,,,
+resource_call,map:65|event:13|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:SUPERPOTION),,,,,
+resource_call,map:65|event:19|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:HEALPOWDER),,,,,
+resource_call,map:65|event:14|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:ELIXIR),,,,,
+resource_call,map:65|event:20|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:TM01) #FOCUSPUNCH,,,,,
+resource_call,map:65|event:15|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PPUP),,,,,
+resource_call,map:65|event:21|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:COMETSHARD),,,,,
+resource_call,map:66|event:4|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:TM122),,,,,
+resource_call,map:67|event:4|page:1,pbStoreItem,direct_bag_write,":DEBUGGER,1)",,,,,
+resource_call,map:67|event:4|page:1,pbStoreItem,direct_bag_write,":MAGICBOOTS,1)",,,,,
+resource_call,map:69|event:5|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:TM105) #Aqua Jet,,,,,
+resource_call,map:69|event:6|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRISMSCALE),,,,,
+resource_call,map:71|event:29|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:MAXREVIVE),,,,,
+resource_call,map:71|event:39|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:TM62) #ACROBATICS,,,,,
+resource_call,map:71|event:77|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:DNAREVERSERS),,,,,
+resource_call,map:71|event:12|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:SUPERPOTION),,,,,
+resource_call,map:71|event:50|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:ELIXIR),,,,,
+resource_call,map:71|event:70|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:DAWNSTONE),,,,,
+resource_call,map:71|event:51|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:REVIVE),,,,,
+resource_call,map:71|event:52|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:GREATBALL),,,,,
+resource_call,map:71|event:53|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:RARECANDY),,,,,
+resource_call,map:71|event:25|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:TM40),,,,,
+resource_call,map:71|event:25|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:CARBOS),,,,,
+resource_call,map:71|event:25|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,":FASTBALL,3)",,,,,
+resource_call,map:71|event:25|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:TM40),,,,,
+resource_call,map:71|event:25|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,":FASTBALL,2)",,,,,
+resource_call,map:71|event:25|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:FASTBALL),,,,,
+resource_call,map:71|event:54|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:FULLHEAL),,,,,
+resource_call,map:71|event:7|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:TM12) #TAUNT,,,,,
+resource_call,map:71|event:55|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:DNAREVERSER),,,,,
+resource_call,map:71|event:8|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:THUNDERSTONE),,,,,
+resource_call,map:71|event:56|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:DIREHIT),,,,,
+resource_call,map:73|event:20|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:REVIVE),,,,,
+resource_call,map:73|event:68|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:TM48) #Round,,,,,
+resource_call,map:73|event:34|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:XSPEED),,,,,
+resource_call,map:74|event:6|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:REPEL),,,,,
+resource_call,map:74|event:7|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:GREATBALL),,,,,
+resource_call,map:74|event:8|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:REVIVE),,,,,
+resource_call,map:75|event:95|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:FULLHEAL),,,,,
+resource_call,map:75|event:79|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:HM06),,,,,
+resource_call,map:75|event:22|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,":EXPCANDY,nb_candies)",,,,,
+resource_call,map:75|event:43|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:BICYCLE),,,,,
+resource_call,map:75|event:8|page:1,pbPokemonMart,filtered_standard_mart,"[:POKEBALL,:GREATBALL,",,,,,
+resource_call,map:76|event:5|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:HEARTSCALE),,,,,
+resource_call,map:76|event:6|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:IRON),,,,,
+resource_call,map:76|event:7|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:HYPERPOTION),,,,,
+resource_call,map:76|event:8|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:THUNDERSTONE),,,,,
+resource_call,map:77|event:35|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PPMAX),,,,,
+resource_call,map:77|event:3|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:ELIXIR),,,,,
+resource_call,map:77|event:9|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MACHOBRACE),,,,,
+resource_call,map:77|event:4|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:HPUP),,,,,
+resource_call,map:78|event:12|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:FRESHWATER),,,,,
+resource_call,map:78|event:15|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRESENT),,,,,
+resource_call,map:78|event:10|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:TM39),,,,,
+resource_call,map:79|event:12|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:FRESHWATER),,,,,
+resource_call,map:79|event:18|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRESENT),,,,,
+resource_call,map:79|event:10|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:TM08) #BULK UP,,,,,
+resource_call,map:81|event:19|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:OLDROD),,,,,
+resource_call,map:81|event:19|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,":NETBALL,5)",,,,,
+resource_call,map:82|event:4|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,":SODAPOP,6)",,,,,
+resource_call,map:82|event:4|page:3,pbReceiveItem,authored_gift_or_randomized_tm_gift,:SODAPOP),,,,,
+resource_call,map:83|event:28|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:SUNSTONE),,,,,
+resource_call,map:83|event:18|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:TM54) #FALSESWIPE,,,,,
+resource_call,map:84|event:20|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRESENT),,,,,
+resource_call,map:88|event:29|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:ETHER),,,,,
+resource_call,map:90|event:23|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRESENT),,,,,
+resource_call,map:90|event:12|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:SPRAYCAN),,,,,
+resource_call,map:90|event:10|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MAGMAUNIFORM),,,,,
+resource_call,map:92|event:25|page:1,pbPokemonMart,filtered_standard_mart,it),,,,,
+resource_call,map:94|event:17|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRESENT),,,,,
+resource_call,map:95|event:25|page:1,pbPokemonMart,filtered_standard_mart,it),,,,,
+resource_call,map:96|event:14|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:COINCASE),,,,,
+resource_call,map:96|event:25|page:2,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MOONSTONE),,,,,
+resource_call,map:96|event:25|page:3,pbReceiveItem,authored_gift_or_randomized_tm_gift,:SHINYSTONE),,,,,
+resource_call,map:97|event:49|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:TM95) #SNARL,,,,,
+resource_call,map:97|event:60|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:DNAREVERSERS),,,,,
+resource_call,map:97|event:50|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:SMOKEBALL),,,,,
+resource_call,map:97|event:25|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:TM97) #NASTYPLOT,,,,,
+resource_call,map:99|event:8|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:MACHETE),,,,,
+resource_call,map:99|event:8|page:2,pbItemBall,randomized_ground_or_explicit_bypass,:LANTERN),,,,,
+resource_call,map:100|event:5|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:HATSDYEKIT),,,,,
+resource_call,map:100|event:5|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:CLOTHESDYEKIT),,,,,
+resource_call,map:101|event:7|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRESENT),,,,,
+resource_call,map:102|event:23|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:FRESHWATER),,,,,
+resource_call,map:102|event:34|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:PRESENT),,,,,
+resource_call,map:102|event:31|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:TM116),,,,,
+resource_call,map:106|event:4|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:TM123) #TAUNT,,,,,
+resource_call,map:107|event:16|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:LAVACOOKIE),,,,,
+resource_call,map:107|event:17|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:RARECANDY),,,,,
+resource_call,map:107|event:15|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:LAVACOOKIE),,,,,
+resource_call,map:108|event:22|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:LAVACOOKIE),,,,,
+resource_call,map:108|event:23|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:LAVACOOKIE),,,,,
+resource_call,map:108|event:24|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:RARECANDY),,,,,
+resource_call,map:108|event:25|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:ESCAPEROPE),,,,,
+resource_call,map:109|event:22|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:MAXREVIVE),,,,,
+resource_call,map:110|event:23|page:1,pbReceiveItem,authored_gift_or_randomized_tm_gift,:POKEBLOCKCASE),,,,,
+resource_call,map:111|event:22|page:1,pbItemBall,randomized_ground_or_explicit_bypass,:MAXREVIVE),,,,,
+resource_call,common_event:9,pbItemBall,randomized_ground_or_explicit_bypass,"PBItems::BIGMUSHROOM,1,nil,",,,,,
+resource_call,common_event:9,pbItemBall,randomized_ground_or_explicit_bypass,"PBItems::POISONMUSHROOM,1,nil,",,,,,
+resource_call,common_event:9,pbItemBall,randomized_ground_or_explicit_bypass,"PBItems::TINYMUSHROOM,1,nil,",,,,,
+resource_call,common_event:9,pbItemBall,randomized_ground_or_explicit_bypass,"PBItems::POISONMUSHROOM,1,nil,",,,,,
+resource_call,common_event:10,pbReceiveItem,authored_gift_or_randomized_tm_gift,PBItems::DEVONSCOPE),,,,,
+resource_call,common_event:13,pbPokemonMart,filtered_standard_mart,"[:DNASPLICERS,:DNAREVERSER,",,,,,
+resource_call,common_event:13,pbPokemonMart,filtered_standard_mart,"[:DNASPLICERS,:DNAREVERSER,",,,,,
+resource_call,common_event:13,pbPokemonMart,filtered_standard_mart,"[:DNASPLICERS,:DNAREVERSER,",,,,,
+resource_call,common_event:13,pbPokemonMart,filtered_standard_mart,"[:DNASPLICERS,:DNAREVERSER,",,,,,
+resource_call,common_event:13,pbPokemonMart,filtered_standard_mart,"[:DNASPLICERS,",,,,,
+resource_call,common_event:13,pbPokemonMart,filtered_standard_mart,"[:DNASPLICERS,",,,,,
+resource_call,common_event:13,pbPokemonMart,filtered_standard_mart,"[:DNASPLICERS,",,,,,
+resource_call,common_event:13,pbPokemonMart,filtered_standard_mart,[,,,,,
+resource_call,common_event:16,pbReceiveItem,authored_gift_or_randomized_tm_gift,:DEBUGGER),,,,,
+resource_call,common_event:22,pbReceiveItem,authored_gift_or_randomized_tm_gift,PBItems::HM08),,,,,
+resource_call,common_event:22,pbReceiveItem,authored_gift_or_randomized_tm_gift,PBItems::AMULETCOIN),,,,,
+resource_call,common_event:22,pbReceiveItem,authored_gift_or_randomized_tm_gift,PBItems::LANTERN),,,,,
+resource_call,common_event:22,pbReceiveItem,authored_gift_or_randomized_tm_gift,PBItems::SACREDPOTION),,,,,
+resource_call,common_event:22,pbReceiveItem,authored_gift_or_randomized_tm_gift,"PBItems::MISTSTONE,5)",,,,,
+resource_call,common_event:26,pbItemBall,randomized_ground_or_explicit_bypass,"PBItems::PEARL,1,nil,",,,,,
+resource_call,common_event:26,pbItemBall,randomized_ground_or_explicit_bypass,"PBItems::BIGPEARL,1,nil,",,,,,
+resource_call,common_event:29,pbStoreItem,direct_bag_write,":DEBUGGER,1)",,,,,
+resource_call,common_event:41,pbReceiveItem,authored_gift_or_randomized_tm_gift,:MAGICBOOTS),,,,,
+resource_call,common_event:42,pbReceiveItem,authored_gift_or_randomized_tm_gift,"PBItems::GOLDEMBLEM,1,nil,",,,,,
+resource_call,common_event:42,pbReceiveItem,authored_gift_or_randomized_tm_gift,"PBItems::SILVEREMBLEM,1,nil,",,,,,
+resource_call,common_event:42,pbReceiveItem,authored_gift_or_randomized_tm_gift,"PBItems::BRONZEEMBLEM,1,nil,",,,,,
+resource_call,common_event:65,pbReceiveItem,authored_gift_or_randomized_tm_gift,"prize,qt)",,,,,
+resource_call,common_event:65,pbReceiveItem,authored_gift_or_randomized_tm_gift,prize),,,,,
+resource_call,common_event:80,pbReceiveItem,authored_gift_or_randomized_tm_gift,:FAVORITEOUTFIT),,,,,
+resource_call,common_event:109,pbReceiveItem,authored_gift_or_randomized_tm_gift,PBItems::DEVONSCOPE),,,,,
+resource_call,common_event:109,pbReceiveItem,authored_gift_or_randomized_tm_gift,PBItems::HM08),,,,,
+resource_call,common_event:109,pbReceiveItem,authored_gift_or_randomized_tm_gift,PBItems::AMULETCOIN),,,,,
+resource_call,common_event:109,pbReceiveItem,authored_gift_or_randomized_tm_gift,PBItems::LANTERN),,,,,
+resource_call,common_event:109,pbReceiveItem,authored_gift_or_randomized_tm_gift,":LINKINGCORD,3)",,,,,
+resource_call,common_event:109,pbReceiveItem,authored_gift_or_randomized_tm_gift,:SLEEPINGBAG),,,,,
+resource_call,common_event:109,pbReceiveItem,authored_gift_or_randomized_tm_gift,PBItems::MISTSTONE),,,,,
+resource_call,common_event:109,pbReceiveItem,authored_gift_or_randomized_tm_gift,PBItems::GSBALL),,,,,
+resource_source_call,003_Game processing/001_StartGame.rb:158,pbStoreItem,direct_bag_write,"new_storage.pbStoreItem(item, 1)",,,,,
+resource_source_call,011_Battle/003_Battle/007_Battle_Action_UseItem.rb:67,pbStoreItem,direct_bag_write,$PokemonBag.pbStoreItem(item),,,,,
+resource_source_call,012_Overworld/001_Overworld.rb:960,pbStoreItem,direct_bag_write,"if $PokemonBag.pbStoreItem(item, quantity) # If item can be picked up",,,,,
+resource_source_call,012_Overworld/001_Overworld.rb:1041,pbStoreItem,direct_bag_write,"if $PokemonBag.pbStoreItem(item, quantity) # If item can be added",,,,,
+resource_source_call,012_Overworld/005_Overworld_Fishing.rb:109,pbItemBall,randomized_ground_or_explicit_bypass,"Kernel.pbItemBall(items[rand(items.size)],1,nil,false)",,,,,
+resource_source_call,012_Overworld/005_Overworld_Fishing.rb:112,pbItemBall,randomized_ground_or_explicit_bypass,"Kernel.pbItemBall(items[rand(items.size)],1,nil,false)",,,,,
+resource_source_call,012_Overworld/006_Overworld_BerryPlants.rb:507,pbStoreItem,direct_bag_write,"$PokemonBag.pbStoreItem(berry, berrycount)",,,,,
+resource_source_call,012_Overworld/006_Overworld_BerryPlants.rb:569,pbStoreItem,direct_bag_write,"$PokemonBag.pbStoreItem(berry, qty)",,,,,
+resource_source_call,013_Items/001_Item_Utilities.rb:677,pbStoreItem,direct_bag_write,if !$PokemonBag.pbStoreItem(pkmn.item),,,,,
+resource_source_call,013_Items/001_Item_Utilities.rb:678,pbStoreItem,direct_bag_write,if !$PokemonBag.pbStoreItem(item),,,,,
+resource_source_call,013_Items/001_Item_Utilities.rb:689,pbStoreItem,direct_bag_write,if !$PokemonBag.pbStoreItem(item),,,,,
+resource_source_call,013_Items/001_Item_Utilities.rb:727,pbStoreItem,direct_bag_write,$PokemonBag.pbStoreItem(pkmn.item),,,,,
+resource_source_call,013_Items/001_Item_Utilities.rb:734,pbStoreItem,direct_bag_write,$PokemonBag.pbStoreItem(pkmn.item),,,,,
+resource_source_call,013_Items/008_PokemonBag.rb:212,pbStoreItem,direct_bag_write,return ItemStorageHelper.pbStoreItem(,,,,,
+resource_source_call,013_Items/008_PokemonBag.rb:218,pbStoreItem,direct_bag_write,"return pbStoreItem(item, qty)",,,,,
+resource_source_call,013_Items/008_PokemonBag.rb:312,pbStoreItem,direct_bag_write,pbStoreItem(:POTION) if GameData::Item.exists?(:POTION),,,,,
+resource_source_call,013_Items/008_PokemonBag.rb:351,pbStoreItem,direct_bag_write,"return ItemStorageHelper.pbStoreItem(@items, MAX_SIZE, MAX_PER_SLOT, item, qty)",,,,,
+resource_source_call,013_Items/008_PokemonBag.rb:413,pbStoreItem,direct_bag_write,"def self.pbStoreItem(items, maxsize, maxPerSlot, item, qty, sorting = false)",,,,,
+resource_source_call,013_Items/008_PokemonBag.rb:461,pbStoreItem,direct_bag_write,return $PokemonBag.pbStoreItem(*args),,,,,
+resource_source_call,016_UI/001_Non-interactive UI/005_UI_Trading.rb:224,pbStoreItem,direct_bag_write,"$PokemonBag.pbStoreItem(heldItem, 1) if heldItem",,,,,
+resource_source_call,016_UI/007_UI_Bag.rb:613,pbStoreItem,direct_bag_write,"@bag.pbStoreItem(item,newqty-qty)",,,,,
+resource_source_call,016_UI/007_UI_Bag.rb:670,pbStoreItem,direct_bag_write,"if !@bag.pbStoreItem(item,qty)",,,,,
+resource_source_call,016_UI/007_UI_Bag.rb:706,pbStoreItem,direct_bag_write,"if !storage.pbStoreItem(item,qty)",,,,,
+resource_source_call,016_UI/019_UI_PC.rb:195,pbStoreItem,direct_bag_write,if $PokemonBag.pbStoreItem($PokemonGlobal.mailbox[mailIndex].item),,,,,
+resource_source_call,016_UI/020_UI_PokeMart.rb:76,pbStoreItem,direct_bag_write,return $PokemonBag.pbStoreItem(item),,,,,
+resource_source_call,016_UI/023_UI_MysteryGift.rb:524,pbStoreItem,direct_bag_write,"$PokemonBag.pbStoreItem(item,qty)",,,,,
+resource_source_call,016_UI/PokemonStorage/PokemonStorageScreen.rb:635,pbStoreItem,direct_bag_write,if !$PokemonBag.pbStoreItem(pokemon.item),,,,,
+resource_source_call,017_Minigames/002_Minigame_TripleTriad.rb:631,pbStoreItem,direct_bag_write,"return ItemStorageHelper.pbStoreItem(items,$PokemonGlobal.triads.maxSize,",,,,,
+resource_source_call,017_Minigames/002_Minigame_TripleTriad.rb:713,pbStoreItem,direct_bag_write,"ItemStorageHelper.pbStoreItem(@triadCards,",,,,,
+resource_source_call,017_Minigames/002_Minigame_TripleTriad.rb:878,pbStoreItem,direct_bag_write,$PokemonGlobal.triads.pbStoreItem(i),,,,,
+resource_source_call,017_Minigames/002_Minigame_TripleTriad.rb:883,pbStoreItem,direct_bag_write,$PokemonGlobal.triads.pbStoreItem(card),,,,,
+resource_source_call,017_Minigames/002_Minigame_TripleTriad.rb:893,pbStoreItem,direct_bag_write,if species_data && $PokemonGlobal.triads.pbStoreItem(species_data.id),,,,,
+resource_source_call,017_Minigames/002_Minigame_TripleTriad.rb:900,pbStoreItem,direct_bag_write,if $PokemonGlobal.triads.pbStoreItem(card),,,,,
+resource_source_call,017_Minigames/002_Minigame_TripleTriad.rb:909,pbStoreItem,direct_bag_write,$PokemonGlobal.triads.pbStoreItem(i),,,,,
+resource_source_call,017_Minigames/002_Minigame_TripleTriad.rb:914,pbStoreItem,direct_bag_write,$PokemonGlobal.triads.pbStoreItem(card),,,,,
+resource_source_call,017_Minigames/002_Minigame_TripleTriad.rb:920,pbStoreItem,direct_bag_write,$PokemonGlobal.triads.pbStoreItem(card),,,,,
+resource_source_call,017_Minigames/002_Minigame_TripleTriad.rb:939,pbStoreItem,direct_bag_write,$PokemonGlobal.triads.pbStoreItem(i),,,,,
+resource_source_call,017_Minigames/002_Minigame_TripleTriad.rb:944,pbStoreItem,direct_bag_write,$PokemonGlobal.triads.pbStoreItem(card),,,,,
+resource_source_call,017_Minigames/002_Minigame_TripleTriad.rb:1037,pbStoreItem,direct_bag_write,"return ItemStorageHelper.pbStoreItem(@items, self.maxSize, self.maxPerSlot, item, qty)",,,,,
+resource_source_call,017_Minigames/002_Minigame_TripleTriad.rb:1126,pbStoreItem,direct_bag_write,"$PokemonGlobal.triads.pbStoreItem(item,quantity)",,,,,
+resource_source_call,017_Minigames/002_Minigame_TripleTriad.rb:1300,pbStoreItem,direct_bag_write,"$PokemonGlobal.triads.pbStoreItem(sp.id, quantity)",,,,,
+resource_source_call,017_Minigames/006_Minigame_Mining.rb:582,pbStoreItem,direct_bag_write,if $PokemonBag.pbStoreItem(i),,,,,
+resource_source_call,021_Compiler/004_Compiler_MapsAndEvents.rb:699,pbItemBall,randomized_ground_or_explicit_bypass,"push_branch(page.list,sprintf(""pbItemBall(:%s)"",itemName))",,,,,
+resource_source_call,021_Compiler/004_Compiler_MapsAndEvents.rb:931,pbReceiveItem,authored_gift_or_randomized_tm_gift,"push_script(newEvents,""pbReceiveItem(:#{itemname})"",oldIndent+1)",,,,,
+resource_source_call,021_Compiler/004_Compiler_MapsAndEvents.rb:940,pbReceiveItem,authored_gift_or_randomized_tm_gift,"push_script(newEvents,""pbReceiveItem(:#{itemname})"",oldIndent+2)",,,,,
+resource_source_call,050_Outfits/ItemSets.rb:201,pbItemBall,randomized_ground_or_explicit_bypass,Kernel.pbItemBall(items_list.sample),,,,,
+resource_source_call,052_InfiniteFusion/Fusion/Fusing_Unfusing/Unfusing.rb:68,pbStoreItem,direct_bag_write,"$PokemonBag.pbStoreItem(fused_pokemon.item, 1) if fused_pokemon.item",,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/0_Utilities/OutfitUtils.rb:168,pbReceiveItem,authored_gift_or_randomized_tm_gift,Kernel.pbReceiveItem(:HATSDYEKIT),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/0_Utilities/OutfitUtils.rb:181,pbReceiveItem,authored_gift_or_randomized_tm_gift,Kernel.pbReceiveItem(:CLOTHESDYEKIT),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/0_Utilities/RepairUtils.rb:135,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(:HM08),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/0_Utilities/RepairUtils.rb:140,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(:HM01),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/0_Utilities/RepairUtils.rb:145,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(:HM04),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/0_Utilities/RepairUtils.rb:150,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(:HM03),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/0_Utilities/RepairUtils.rb:155,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(:HM07),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/0_Utilities/RepairUtils.rb:160,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(:HM02),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/0_Utilities/RepairUtils.rb:165,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(:HM05),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/0_Utilities/RepairUtils.rb:170,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(:HM06),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/0_Utilities/RepairUtils.rb:175,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(:HM10),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/0_Utilities/RepairUtils.rb:226,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(:INFINITESPLICERS),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/0_Utilities/RepairUtils.rb:229,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(:INFINITESPLICERS2),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/Items/New HMs.rb:67,pbItemBall,randomized_ground_or_explicit_bypass,"Kernel.pbItemBall(itemsList[i],1,nil,false)",,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/Items/New HMs.rb:85,pbItemBall,randomized_ground_or_explicit_bypass,"Kernel.pbItemBall(itemsList[i],1,nil,false)",,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/Items/New Items effects.rb:471,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(:REPEL),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/Items/New Items effects.rb:1053,pbStoreItem,direct_bag_write,"$PokemonBag.pbStoreItem(it1, 1)",,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/Items/New Items effects.rb:1056,pbStoreItem,direct_bag_write,"$PokemonBag.pbStoreItem(it2, 1)",,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/Items/New Items effects.rb:1963,pbStoreItem,direct_bag_write,"$PokemonBag.pbStoreItem(it1, 1) if it1 != nil",,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/Items/New Items effects.rb:1964,pbStoreItem,direct_bag_write,"$PokemonBag.pbStoreItem(it2, 1) if it2 != nil",,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/Overworld/Events/OverworldEventUtils.rb:327,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(:PEARL),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/Overworld/Events/OverworldEventUtils.rb:329,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(:HEARTSCALE),,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/Overworld/Events/OverworldEventUtils.rb:480,pbPokemonMart,filtered_standard_mart,"pbPokemonMart(stock, _INTL(""It's a vending machine. What do you want to buy?""), true, _INTL(""""), _INTL(""Purchase anything else?""))",,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/Quests/QuestLogScript.rb:559,pbReceiveItem,authored_gift_or_randomized_tm_gift,"pbReceiveItem(reward.item, reward.quantity)",,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/Quests/QuestUtils.rb:54,pbReceiveItem,authored_gift_or_randomized_tm_gift,"pbReceiveItem(item, quantity)",,,,,
+resource_source_call,052_InfiniteFusion/Gameplay/Quests/TRQuests.rb:35,pbReceiveItem,authored_gift_or_randomized_tm_gift,Kernel.pbReceiveItem(:ROCKETUNIFORM),,,,,
+resource_source_call,053_PIF_Hoenn/Contests/Pokemon Contests/009_Results.rb:73,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(GameData::Item.get(ContestSettings::CONTEST_OTHER_PRIZE[@category][@rank])),,,,,
+resource_source_call,053_PIF_Hoenn/Contests/Pokemon Contests/015_Fans.rb:66,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(items[rand(items.length)]),,,,,
+resource_source_call,053_PIF_Hoenn/Contests/TDW Berry Core and Dex/003_BerryDex.rb:166,pbStoreItem,direct_bag_write,dex_list.length.times { |i| $PokemonBag.pbStoreItem(dex_list[i].id) },,,,,
+resource_source_call,053_PIF_Hoenn/PokeNav/Challenges/ChallengesUI/ChallengeAppScene.rb:127,pbReceiveItem,authored_gift_or_randomized_tm_gift,"pbReceiveItem(item_reward[0], quantity)",,,,,
+resource_source_call,053_PIF_Hoenn/TrainerRematches/TrainerRematch_Menus.rb:144,pbReceiveItem,authored_gift_or_randomized_tm_gift,pbReceiveItem(item),,,,,
+starter_slot,starter:0,1,wild,"[:starter, 0]",choice-exclusive; fused starters cannot unfuse,,,,
+starter_slot,starter:1,4,wild,"[:starter, 1]",choice-exclusive; fused starters cannot unfuse,,,,
+starter_slot,starter:2,7,wild,"[:starter, 2]",choice-exclusive; fused starters cannot unfuse,,,,
+encounter_slot,GameData::Encounter,5,0,LandDay,1,WURMPLE,40,2,3
+encounter_slot,GameData::Encounter,5,0,LandDay,2,ZIGZAGOON,37,2,3
+encounter_slot,GameData::Encounter,5,0,LandDay,3,POOCHYENA,20,2,3
+encounter_slot,GameData::Encounter,5,0,LandDay,4,EEVEE,3,2,3
+encounter_slot,GameData::Encounter,5,0,LandMorning,1,WURMPLE,60,2,3
+encounter_slot,GameData::Encounter,5,0,LandMorning,2,ZIGZAGOON,27,2,3
+encounter_slot,GameData::Encounter,5,0,LandMorning,3,POOCHYENA,10,2,3
+encounter_slot,GameData::Encounter,5,0,LandMorning,4,EEVEE,3,2,3
+encounter_slot,GameData::Encounter,5,0,LandNight,1,POOCHYENA,57,2,3
+encounter_slot,GameData::Encounter,5,0,LandNight,2,WURMPLE,30,2,3
+encounter_slot,GameData::Encounter,5,0,LandNight,3,ZIGZAGOON,10,2,3
+encounter_slot,GameData::Encounter,5,0,LandNight,4,EEVEE,3,2,3
+encounter_slot,GameData::Encounter,5,0,LandSunny,1,ZIGZAGOON,100,2,3
+encounter_slot,GameData::Encounter,5,0,LandRain,1,WURMPLE,100,2,3
+encounter_slot,GameData::Encounter,5,0,LandWind,1,POOCHYENA,100,2,3
+encounter_slot,GameData::Encounter,5,0,LandStorm,1,POOCHYENA,100,2,3
+encounter_slot,GameData::Encounter,5,0,LandFog,1,WURMPLE,100,2,3
+encounter_slot,GameData::Encounter,6,0,Water,1,TENTACOOL,60,5,35
+encounter_slot,GameData::Encounter,6,0,Water,2,WINGULL,35,10,30
+encounter_slot,GameData::Encounter,6,0,Water,3,PELIPPER,5,25,30
+encounter_slot,GameData::Encounter,6,0,WaterNight,1,TENTACOOL,60,5,35
+encounter_slot,GameData::Encounter,6,0,WaterNight,2,STARYU,40,10,30
+encounter_slot,GameData::Encounter,6,0,OldRod,1,MAGIKARP,50,5,10
+encounter_slot,GameData::Encounter,6,0,OldRod,2,TENTACOOL,30,5,10
+encounter_slot,GameData::Encounter,6,0,OldRod,3,LUVDISC,20,5,10
+encounter_slot,GameData::Encounter,6,0,GoodRod,1,MAGIKARP,40,10,30
+encounter_slot,GameData::Encounter,6,0,GoodRod,2,LUVDISC,20,10,30
+encounter_slot,GameData::Encounter,6,0,GoodRod,3,TENTACOOL,20,10,30
+encounter_slot,GameData::Encounter,6,0,GoodRod,4,WAILMER,20,10,30
+encounter_slot,GameData::Encounter,6,0,SuperRod,1,WAILMER,60,20,45
+encounter_slot,GameData::Encounter,6,0,SuperRod,2,LUVDISC,40,20,45
+encounter_slot,GameData::Encounter,7,0,Water,1,MARILL,70,5,35
+encounter_slot,GameData::Encounter,7,0,Water,2,LOTAD,25,5,10
+encounter_slot,GameData::Encounter,7,0,Water,3,LOMBRE,5,20,30
+encounter_slot,GameData::Encounter,7,0,WaterSunny,1,HOPPIP,80,15,15
+encounter_slot,GameData::Encounter,7,0,WaterSunny,2,BEAUTIFLY,20,20,25
+encounter_slot,GameData::Encounter,7,0,WaterRain,1,MARILL,65,5,35
+encounter_slot,GameData::Encounter,7,0,WaterRain,2,SURSKIT,20,20,25
+encounter_slot,GameData::Encounter,7,0,WaterRain,3,AZUMARILL,15,20,35
+encounter_slot,GameData::Encounter,7,0,WaterWind,1,HOPPIP,75,20,25
+encounter_slot,GameData::Encounter,7,0,WaterWind,2,SKIPLOOM,25,20,30
+encounter_slot,GameData::Encounter,7,0,WaterStorm,1,SKIPLOOM,100,20,30
+encounter_slot,GameData::Encounter,7,0,WaterFog,1,WINGULL,100,25,35
+encounter_slot,GameData::Encounter,7,0,OldRod,1,MAGIKARP,70,5,10
+encounter_slot,GameData::Encounter,7,0,OldRod,2,CORPHISH,30,5,10
+encounter_slot,GameData::Encounter,7,0,GoodRod,1,MAGIKARP,60,10,30
+encounter_slot,GameData::Encounter,7,0,GoodRod,2,CORPHISH,20,10,30
+encounter_slot,GameData::Encounter,7,0,GoodRod,3,GOLDEEN,20,10,30
+encounter_slot,GameData::Encounter,7,0,SuperRod,1,CORPHISH,100,20,45
+encounter_slot,GameData::Encounter,10,0,Land,1,POOCHYENA,30,3,4
+encounter_slot,GameData::Encounter,10,0,Land,2,WURMPLE,30,3,4
+encounter_slot,GameData::Encounter,10,0,Land,3,ZIGZAGOON,15,3,4
+encounter_slot,GameData::Encounter,10,0,Land,4,LOTAD,10,2,4
+encounter_slot,GameData::Encounter,10,0,Land,5,SEEDOT,10,3,3
+encounter_slot,GameData::Encounter,10,0,Land,6,RALTS,5,4,4
+encounter_slot,GameData::Encounter,10,0,LandSunny,1,FLETCHLING,100,3,4
+encounter_slot,GameData::Encounter,10,0,LandRain,1,SURSKIT,70,3,4
+encounter_slot,GameData::Encounter,10,0,LandRain,2,LOTAD,30,2,4
+encounter_slot,GameData::Encounter,10,0,LandWind,1,SEEDOT,100,2,4
+encounter_slot,GameData::Encounter,10,0,LandStorm,1,LOTAD,60,3,4
+encounter_slot,GameData::Encounter,10,0,LandStorm,2,SURSKIT,40,4,5
+encounter_slot,GameData::Encounter,10,0,LandFog,1,RALTS,100,3,4
+encounter_slot,GameData::Encounter,10,0,Water,1,MARILL,50,5,25
+encounter_slot,GameData::Encounter,10,0,Water,2,LOTAD,20,10,15
+encounter_slot,GameData::Encounter,10,0,Water,3,SURSKIT,20,10,25
+encounter_slot,GameData::Encounter,10,0,Water,4,GOLDEEN,10,20,30
+encounter_slot,GameData::Encounter,10,0,WaterSunny,1,FLETCHLING,100,10,30
+encounter_slot,GameData::Encounter,10,0,WaterRain,1,WINGULL,85,10,30
+encounter_slot,GameData::Encounter,10,0,WaterRain,2,PELIPPER,15,25,30
+encounter_slot,GameData::Encounter,10,0,WaterWind,1,WINGULL,100,10,30
+encounter_slot,GameData::Encounter,10,0,WaterFog,1,WINGULL,100,10,30
+encounter_slot,GameData::Encounter,10,0,OldRod,1,MAGIKARP,70,5,10
+encounter_slot,GameData::Encounter,10,0,OldRod,2,GOLDEEN,30,5,10
+encounter_slot,GameData::Encounter,10,0,GoodRod,1,MAGIKARP,60,10,30
+encounter_slot,GameData::Encounter,10,0,GoodRod,2,CORPHISH,20,10,30
+encounter_slot,GameData::Encounter,10,0,GoodRod,3,GOLDEEN,20,10,30
+encounter_slot,GameData::Encounter,10,0,SuperRod,1,CORPHISH,100,20,45
+encounter_slot,GameData::Encounter,11,0,LandDay,1,ZIGZAGOON,60,2,4
+encounter_slot,GameData::Encounter,11,0,LandDay,2,WINGULL,30,2,4
+encounter_slot,GameData::Encounter,11,0,LandDay,3,POOCHYENA,10,2,4
+encounter_slot,GameData::Encounter,11,0,LandMorning,1,ZIGZAGOON,60,2,4
+encounter_slot,GameData::Encounter,11,0,LandMorning,2,POOCHYENA,30,2,4
+encounter_slot,GameData::Encounter,11,0,LandMorning,3,WINGULL,10,2,4
+encounter_slot,GameData::Encounter,11,0,LandNight,1,POOCHYENA,70,2,4
+encounter_slot,GameData::Encounter,11,0,LandNight,2,ZIGZAGOON,20,2,4
+encounter_slot,GameData::Encounter,11,0,LandNight,3,WINGULL,10,2,4
+encounter_slot,GameData::Encounter,11,0,LandSunny,1,HOPPIP,100,2,4
+encounter_slot,GameData::Encounter,11,0,LandRain,1,AZURILL,100,2,4
+encounter_slot,GameData::Encounter,11,0,LandWind,1,HOPPIP,100,2,4
+encounter_slot,GameData::Encounter,11,0,LandStorm,1,HOPPIP,100,2,4
+encounter_slot,GameData::Encounter,11,0,Water,1,TENTACOOL,60,5,35
+encounter_slot,GameData::Encounter,11,0,Water,2,WINGULL,35,10,30
+encounter_slot,GameData::Encounter,11,0,Water,3,PELIPPER,5,25,30
+encounter_slot,GameData::Encounter,11,0,WaterNight,1,TENTACOOL,60,5,35
+encounter_slot,GameData::Encounter,11,0,WaterNight,2,STARYU,40,10,30
+encounter_slot,GameData::Encounter,11,0,WaterSunny,1,WINGULL,100,25,25
+encounter_slot,GameData::Encounter,11,0,WaterRain,1,PELIPPER,5,25,30
+encounter_slot,GameData::Encounter,11,0,WaterWind,1,PELIPPER,5,25,30
+encounter_slot,GameData::Encounter,11,0,WaterStorm,1,TENTACRUEL,60,5,35
+encounter_slot,GameData::Encounter,11,0,WaterFog,1,WINGULL,35,10,30
+encounter_slot,GameData::Encounter,11,0,OldRod,1,MAGIKARP,70,5,10
+encounter_slot,GameData::Encounter,11,0,OldRod,2,TENTACOOL,30,5,10
+encounter_slot,GameData::Encounter,11,0,GoodRod,1,MAGIKARP,60,10,30
+encounter_slot,GameData::Encounter,11,0,GoodRod,2,TENTACOOL,20,10,30
+encounter_slot,GameData::Encounter,11,0,GoodRod,3,WAILMER,20,10,30
+encounter_slot,GameData::Encounter,11,0,SuperRod,1,WAILMER,60,25,45
+encounter_slot,GameData::Encounter,11,0,SuperRod,2,SHARPEDO,40,30,34
+encounter_slot,GameData::Encounter,12,0,Land,1,POOCHYENA,40,4,5
+encounter_slot,GameData::Encounter,12,0,Land,2,MARILL,20,4,5
+encounter_slot,GameData::Encounter,12,0,Land,3,WURMPLE,20,4,5
+encounter_slot,GameData::Encounter,12,0,Land,4,TAILLOW,10,4,5
+encounter_slot,GameData::Encounter,12,0,Land,5,WINGULL,10,3,5
+encounter_slot,GameData::Encounter,12,0,Water,1,WINGULL,95,10,15
+encounter_slot,GameData::Encounter,12,0,Water,2,PELIPPER,5,15,18
+encounter_slot,GameData::Encounter,12,0,WaterNight,1,STARYU,55,10,15
+encounter_slot,GameData::Encounter,12,0,WaterNight,2,TENTACOOL,45,10,15
+encounter_slot,GameData::Encounter,12,0,OldRod,1,MAGIKARP,100,5,10
+encounter_slot,GameData::Encounter,12,0,GoodRod,1,MAGIKARP,100,10,30
+encounter_slot,GameData::Encounter,12,0,SuperRod,1,MAGIKARP,100,20,45
+encounter_slot,GameData::Encounter,12,0,LandSunny,1,BUDEW,100,4,5
+encounter_slot,GameData::Encounter,12,0,LandRain,1,SHROOMISH,60,4,4
+encounter_slot,GameData::Encounter,12,0,LandRain,2,WINGULL,40,3,5
+encounter_slot,GameData::Encounter,12,0,LandWind,1,TAILLOW,70,4,5
+encounter_slot,GameData::Encounter,12,0,LandWind,2,PIDGEY,30,4,5
+encounter_slot,GameData::Encounter,12,0,LandStorm,1,PICHU,100,3,4
+encounter_slot,GameData::Encounter,12,0,LandFog,1,SHROOMISH,50,4,4
+encounter_slot,GameData::Encounter,12,0,LandFog,2,WINGULL,30,3,5
+encounter_slot,GameData::Encounter,12,0,LandFog,3,PICHU,20,3,4
+encounter_slot,GameData::Encounter,12,0,WaterSunny,1,WINGULL,75,10,30
+encounter_slot,GameData::Encounter,12,0,WaterSunny,2,HORSEA,25,15,25
+encounter_slot,GameData::Encounter,12,0,WaterRain,1,PELIPPER,100,25,30
+encounter_slot,GameData::Encounter,12,0,WaterWind,1,TAILLOW,50,15,30
+encounter_slot,GameData::Encounter,12,0,WaterWind,2,WINGULL,50,15,30
+encounter_slot,GameData::Encounter,12,0,WaterStorm,1,GYARADOS,100,25,30
+encounter_slot,GameData::Encounter,12,0,WaterFog,1,PELIPPER,100,25,30
+encounter_slot,GameData::Encounter,20,0,Land,1,POOCHYENA,40,4,5
+encounter_slot,GameData::Encounter,20,0,Land,2,MARILL,20,4,5
+encounter_slot,GameData::Encounter,20,0,Land,3,WURMPLE,20,4,5
+encounter_slot,GameData::Encounter,20,0,Land,4,TAILLOW,10,4,5
+encounter_slot,GameData::Encounter,20,0,Land,5,WINGULL,10,3,5
+encounter_slot,GameData::Encounter,20,0,Land3,1,ORICORIO_3,50,4,5
+encounter_slot,GameData::Encounter,20,0,Land3,2,POOCHYENA,20,4,5
+encounter_slot,GameData::Encounter,20,0,Land3,3,WURMPLE,20,4,5
+encounter_slot,GameData::Encounter,20,0,Land3,4,TAILLOW,10,4,5
+encounter_slot,GameData::Encounter,20,0,Land1,1,MARILL,40,8,10
+encounter_slot,GameData::Encounter,20,0,Land1,2,TAILLOW,30,11,12
+encounter_slot,GameData::Encounter,20,0,Land1,3,POLIWAG,15,8,9
+encounter_slot,GameData::Encounter,20,0,Land1,4,SPEAROW,15,9,10
+encounter_slot,GameData::Encounter,20,0,LandSunny,1,SUNKERN,100,5,6
+encounter_slot,GameData::Encounter,20,0,LandRain,1,POLIWAG,60,5,5
+encounter_slot,GameData::Encounter,20,0,LandRain,2,WURMPLE,40,4,5
+encounter_slot,GameData::Encounter,20,0,LandWind,1,SPEAROW,60,4,5
+encounter_slot,GameData::Encounter,20,0,LandWind,2,TAILLOW,40,5,6
+encounter_slot,GameData::Encounter,20,0,LandStorm,1,POLIWAG,100,5,5
+encounter_slot,GameData::Encounter,20,0,LandFog,1,SPEAROW,60,4,5
+encounter_slot,GameData::Encounter,20,0,LandFog,2,POLIWAG,40,4,5
+encounter_slot,GameData::Encounter,20,0,Water,1,SURSKIT,55,20,25
+encounter_slot,GameData::Encounter,20,0,Water,2,LOTAD,20,5,15
+encounter_slot,GameData::Encounter,20,0,Water,3,MARILL,10,5,35
+encounter_slot,GameData::Encounter,20,0,Water,4,MASQUERAIN,10,20,25
+encounter_slot,GameData::Encounter,20,0,Water,5,LOMBRE,5,20,30
+encounter_slot,GameData::Encounter,20,0,WaterSunny,1,HOPPIP,80,15,15
+encounter_slot,GameData::Encounter,20,0,WaterSunny,2,BEAUTIFLY,20,20,25
+encounter_slot,GameData::Encounter,20,0,WaterRain,1,MARILL,65,5,35
+encounter_slot,GameData::Encounter,20,0,WaterRain,2,SURSKIT,20,20,25
+encounter_slot,GameData::Encounter,20,0,WaterRain,3,AZUMARILL,15,20,35
+encounter_slot,GameData::Encounter,20,0,WaterWind,1,HOPPIP,75,20,25
+encounter_slot,GameData::Encounter,20,0,WaterWind,2,SKIPLOOM,25,20,30
+encounter_slot,GameData::Encounter,20,0,WaterStorm,1,SKIPLOOM,100,20,30
+encounter_slot,GameData::Encounter,20,0,WaterFog,1,WINGULL,100,25,35
+encounter_slot,GameData::Encounter,20,0,OldRod,1,MAGIKARP,70,5,10
+encounter_slot,GameData::Encounter,20,0,OldRod,2,CORPHISH,30,5,10
+encounter_slot,GameData::Encounter,20,0,GoodRod,1,MAGIKARP,60,10,30
+encounter_slot,GameData::Encounter,20,0,GoodRod,2,CORPHISH,20,10,30
+encounter_slot,GameData::Encounter,20,0,GoodRod,3,GOLDEEN,20,10,30
+encounter_slot,GameData::Encounter,20,0,SuperRod,1,CORPHISH,100,20,45
+encounter_slot,GameData::Encounter,28,0,Cave,1,WHISMUR,100,5,8
+encounter_slot,GameData::Encounter,28,0,Land,1,WHISMUR,50,10,12
+encounter_slot,GameData::Encounter,28,0,Land,2,JIGGLYPUFF,45,12,13
+encounter_slot,GameData::Encounter,28,0,Land,3,NOIBAT,5,12,14
+encounter_slot,GameData::Encounter,28,0,RockSmash,1,GEODUDE,100,5,15
+encounter_slot,GameData::Encounter,30,0,LandDay,1,WURMPLE,40,5,6
+encounter_slot,GameData::Encounter,30,0,LandDay,2,SHROOMISH,20,5,6
+encounter_slot,GameData::Encounter,30,0,LandDay,3,CASCOON,10,5,5
+encounter_slot,GameData::Encounter,30,0,LandDay,4,SILCOON,10,5,5
+encounter_slot,GameData::Encounter,30,0,LandDay,5,TAILLOW,10,5,6
+encounter_slot,GameData::Encounter,30,0,LandDay,6,POOCHYENA,5,4,5
+encounter_slot,GameData::Encounter,30,0,LandDay,7,SLAKOTH,5,5,6
+encounter_slot,GameData::Encounter,30,0,LandMorning,1,WURMPLE,25,5,6
+encounter_slot,GameData::Encounter,30,0,LandMorning,2,POOCHYENA,20,4,5
+encounter_slot,GameData::Encounter,30,0,LandMorning,3,SHROOMISH,15,5,6
+encounter_slot,GameData::Encounter,30,0,LandMorning,4,TAILLOW,15,5,6
+encounter_slot,GameData::Encounter,30,0,LandMorning,5,CASCOON,10,5,5
+encounter_slot,GameData::Encounter,30,0,LandMorning,6,SILCOON,10,5,5
+encounter_slot,GameData::Encounter,30,0,LandMorning,7,SLAKOTH,5,5,6
+encounter_slot,GameData::Encounter,30,0,LandNight,1,POOCHYENA,30,4,5
+encounter_slot,GameData::Encounter,30,0,LandNight,2,HOOTHOOT,15,4,5
+encounter_slot,GameData::Encounter,30,0,LandNight,3,SHROOMISH,15,5,6
+encounter_slot,GameData::Encounter,30,0,LandNight,4,WURMPLE,15,5,6
+encounter_slot,GameData::Encounter,30,0,LandNight,5,CASCOON,10,5,5
+encounter_slot,GameData::Encounter,30,0,LandNight,6,SILCOON,10,5,5
+encounter_slot,GameData::Encounter,30,0,LandNight,7,SLAKOTH,5,5,6
+encounter_slot,GameData::Encounter,30,0,Land1,1,SLAKOTH,30,5,6
+encounter_slot,GameData::Encounter,30,0,Land1,2,WURMPLE,30,5,6
+encounter_slot,GameData::Encounter,30,0,Land1,3,PARAS,20,4,5
+encounter_slot,GameData::Encounter,30,0,Land1,4,CASCOON,10,5,5
+encounter_slot,GameData::Encounter,30,0,Land1,5,SILCOON,10,5,5
+encounter_slot,GameData::Encounter,30,0,Land3,1,WURMPLE,30,5,6
+encounter_slot,GameData::Encounter,30,0,Land3,2,CASCOON,20,8,9
+encounter_slot,GameData::Encounter,30,0,Land3,3,SILCOON,20,8,9
+encounter_slot,GameData::Encounter,30,0,Land3,4,BEAUTIFLY,15,10,10
+encounter_slot,GameData::Encounter,30,0,Land3,5,DUSTOX,15,10,10
+encounter_slot,GameData::Encounter,30,0,LandSunny,1,COTTONEE,100,5,6
+encounter_slot,GameData::Encounter,30,0,LandRain,1,SHROOMISH,45,5,6
+encounter_slot,GameData::Encounter,30,0,LandRain,2,POLIWAG,35,5,5
+encounter_slot,GameData::Encounter,30,0,LandRain,3,WURMPLE,20,5,6
+encounter_slot,GameData::Encounter,30,0,LandWind,1,TAILLOW,100,5,6
+encounter_slot,GameData::Encounter,30,0,LandStorm,1,SHROOMISH,65,5,6
+encounter_slot,GameData::Encounter,30,0,LandStorm,2,POLIWAG,35,5,5
+encounter_slot,GameData::Encounter,30,0,LandFog,1,PHANTUMP,100,4,5
+encounter_slot,GameData::Encounter,31,0,Land,1,POOCHYENA,25,6,8
+encounter_slot,GameData::Encounter,31,0,Land,2,NINCADA,20,6,7
+encounter_slot,GameData::Encounter,31,0,Land,3,TAILLOW,20,6,8
+encounter_slot,GameData::Encounter,31,0,Land,4,WHISMUR,20,6,6
+encounter_slot,GameData::Encounter,31,0,Land,5,ABRA,10,7,7
+encounter_slot,GameData::Encounter,31,0,Land,6,SKITTY,5,7,8
+encounter_slot,GameData::Encounter,31,0,Land2,1,GEODUDE,60,15,18
+encounter_slot,GameData::Encounter,31,0,Land2,2,WHISMUR,20,10,16
+encounter_slot,GameData::Encounter,31,0,Land2,3,TAILLOW,15,15,17
+encounter_slot,GameData::Encounter,31,0,Land2,4,MUNCHLAX,5,14,14
+encounter_slot,GameData::Encounter,31,0,LandNight,1,POOCHYENA,25,6,8
+encounter_slot,GameData::Encounter,31,0,LandNight,2,HOOTHOOT,20,6,8
+encounter_slot,GameData::Encounter,31,0,LandNight,3,NINCADA,20,6,7
+encounter_slot,GameData::Encounter,31,0,LandNight,4,WHISMUR,20,6,6
+encounter_slot,GameData::Encounter,31,0,LandNight,5,MEOWTH,15,7,8
+encounter_slot,GameData::Encounter,31,0,LandSunny,1,SKITTY,100,4,5
+encounter_slot,GameData::Encounter,31,0,LandRain,1,NINCADA,60,4,4
+encounter_slot,GameData::Encounter,31,0,LandRain,2,WURMPLE,40,4,5
+encounter_slot,GameData::Encounter,31,0,LandWind,1,SPEAROW,60,4,5
+encounter_slot,GameData::Encounter,31,0,LandWind,2,WINGULL,40,3,5
+encounter_slot,GameData::Encounter,31,0,LandStorm,1,SHINX,100,5,5
+encounter_slot,GameData::Encounter,31,0,LandFog,1,ABRA,100,4,5
+encounter_slot,GameData::Encounter,32,0,Cave,1,MAKUHITA,50,6,10
+encounter_slot,GameData::Encounter,32,0,Cave,2,ZUBAT,30,7,8
+encounter_slot,GameData::Encounter,32,0,Cave,3,ABRA,10,8,8
+encounter_slot,GameData::Encounter,32,0,Cave,4,GEODUDE,10,6,9
+encounter_slot,GameData::Encounter,34,0,Cave,1,ARON,40,9,11
+encounter_slot,GameData::Encounter,34,0,Cave,2,ZUBAT,30,9,10
+encounter_slot,GameData::Encounter,34,0,Cave,3,ABRA,10,9,9
+encounter_slot,GameData::Encounter,34,0,Cave,4,MAKUHITA,10,10,11
+encounter_slot,GameData::Encounter,34,0,Cave,5,SABLEYE,10,9,11
+encounter_slot,GameData::Encounter,35,0,Cave,1,ARON,35,10,12
+encounter_slot,GameData::Encounter,35,0,Cave,2,ZUBAT,30,10,11
+encounter_slot,GameData::Encounter,35,0,Cave,3,ABRA,10,10,10
+encounter_slot,GameData::Encounter,35,0,Cave,4,MAWILE,10,10,12
+encounter_slot,GameData::Encounter,35,0,Cave,5,SABLEYE,10,10,12
+encounter_slot,GameData::Encounter,35,0,Cave,6,NOSEPASS,5,12,14
+encounter_slot,GameData::Encounter,35,0,RockSmash,1,GEODUDE,70,5,20
+encounter_slot,GameData::Encounter,35,0,RockSmash,2,CARBINK,30,10,20
+encounter_slot,GameData::Encounter,37,0,Water,1,TENTACOOL,60,5,35
+encounter_slot,GameData::Encounter,37,0,Water,2,WINGULL,35,10,30
+encounter_slot,GameData::Encounter,37,0,Water,3,PELIPPER,5,25,30
+encounter_slot,GameData::Encounter,37,0,WaterNight,1,STARYU,60,10,30
+encounter_slot,GameData::Encounter,37,0,WaterNight,2,TENTACOOL,40,5,35
+encounter_slot,GameData::Encounter,37,0,WaterSunny,1,REMORAID,95,10,30
+encounter_slot,GameData::Encounter,37,0,WaterSunny,2,OCTILLERY,5,25,30
+encounter_slot,GameData::Encounter,37,0,OldRod,1,MAGIKARP,60,5,10
+encounter_slot,GameData::Encounter,37,0,OldRod,2,TENTACOOL,30,5,10
+encounter_slot,GameData::Encounter,37,0,OldRod,3,REMORAID,10,5,10
+encounter_slot,GameData::Encounter,37,0,GoodRod,1,MAGIKARP,40,10,30
+encounter_slot,GameData::Encounter,37,0,GoodRod,2,REMORAID,20,10,30
+encounter_slot,GameData::Encounter,37,0,GoodRod,3,TENTACOOL,20,10,30
+encounter_slot,GameData::Encounter,37,0,GoodRod,4,WAILMER,20,10,30
+encounter_slot,GameData::Encounter,37,0,SuperRod,1,WAILMER,100,20,45
+encounter_slot,GameData::Encounter,37,0,WaterRain,1,SEADRA,80,30,30
+encounter_slot,GameData::Encounter,37,0,WaterRain,2,HORSEA,20,20,25
+encounter_slot,GameData::Encounter,37,0,WaterWind,1,PELIPPER,100,25,30
+encounter_slot,GameData::Encounter,37,0,WaterStorm,1,CHINCHOU,80,10,20
+encounter_slot,GameData::Encounter,37,0,WaterStorm,2,LANTURN,20,25,30
+encounter_slot,GameData::Encounter,37,0,WaterFog,1,HORSEA,80,10,20
+encounter_slot,GameData::Encounter,37,0,WaterFog,2,SEADRA,20,25,30
+encounter_slot,GameData::Encounter,38,0,Water,1,TENTACOOL,50,5,35
+encounter_slot,GameData::Encounter,38,0,Water,2,WINGULL,35,10,30
+encounter_slot,GameData::Encounter,38,0,Water,3,WAILMER,10,25,30
+encounter_slot,GameData::Encounter,38,0,Water,4,PELIPPER,5,25,30
+encounter_slot,GameData::Encounter,38,0,WaterNight,1,TENTACOOL,50,5,35
+encounter_slot,GameData::Encounter,38,0,WaterNight,2,STARYU,30,10,30
+encounter_slot,GameData::Encounter,38,0,WaterNight,3,MANTINE,20,25,30
+encounter_slot,GameData::Encounter,38,0,OldRod,1,MAGIKARP,60,5,10
+encounter_slot,GameData::Encounter,38,0,OldRod,2,TENTACOOL,30,5,10
+encounter_slot,GameData::Encounter,38,0,OldRod,3,REMORAID,10,5,10
+encounter_slot,GameData::Encounter,38,0,GoodRod,1,MAGIKARP,40,10,30
+encounter_slot,GameData::Encounter,38,0,GoodRod,2,REMORAID,20,10,30
+encounter_slot,GameData::Encounter,38,0,GoodRod,3,TENTACOOL,20,10,30
+encounter_slot,GameData::Encounter,38,0,GoodRod,4,WAILMER,20,10,30
+encounter_slot,GameData::Encounter,38,0,SuperRod,1,WAILMER,100,20,45
+encounter_slot,GameData::Encounter,38,0,WaterSunny,1,WAILMER,40,25,35
+encounter_slot,GameData::Encounter,38,0,WaterSunny,2,REMORAID,35,10,30
+encounter_slot,GameData::Encounter,38,0,WaterSunny,3,OCTILLERY,5,25,30
+encounter_slot,GameData::Encounter,38,0,WaterRain,1,TENTACOOL,90,5,35
+encounter_slot,GameData::Encounter,38,0,WaterRain,2,GYARADOS,10,30,35
+encounter_slot,GameData::Encounter,38,0,WaterWind,1,MANTINE,100,25,35
+encounter_slot,GameData::Encounter,38,0,WaterStorm,1,GYARADOS,30,25,35
+encounter_slot,GameData::Encounter,38,0,WaterStorm,2,MANTINE,25,25,35
+encounter_slot,GameData::Encounter,38,0,WaterFog,1,REMORAID,70,10,30
+encounter_slot,GameData::Encounter,38,0,WaterFog,2,MANTINE,25,20,30
+encounter_slot,GameData::Encounter,38,0,WaterFog,3,DHELMISE,5,25,30
+encounter_slot,GameData::Encounter,39,0,Land,1,KRABBY,90,8,10
+encounter_slot,GameData::Encounter,39,0,Land,2,SANDYGAST,10,8,10
+encounter_slot,GameData::Encounter,39,0,Water,1,TENTACOOL,60,5,15
+encounter_slot,GameData::Encounter,39,0,Water,2,WINGULL,35,10,15
+encounter_slot,GameData::Encounter,39,0,Water,3,PELIPPER,5,15,18
+encounter_slot,GameData::Encounter,39,0,WaterNight,1,TENTACOOL,60,5,15
+encounter_slot,GameData::Encounter,39,0,WaterNight,2,STARYU,30,10,15
+encounter_slot,GameData::Encounter,39,0,WaterNight,3,MANTINE,10,10,15
+encounter_slot,GameData::Encounter,39,0,OldRod,1,MAGIKARP,60,5,10
+encounter_slot,GameData::Encounter,39,0,OldRod,2,TENTACOOL,30,5,10
+encounter_slot,GameData::Encounter,39,0,OldRod,3,REMORAID,10,5,10
+encounter_slot,GameData::Encounter,39,0,GoodRod,1,MAGIKARP,50,10,30
+encounter_slot,GameData::Encounter,39,0,GoodRod,2,TENTACOOL,20,10,30
+encounter_slot,GameData::Encounter,39,0,GoodRod,3,WAILMER,20,10,30
+encounter_slot,GameData::Encounter,39,0,GoodRod,4,REMORAID,10,10,30
+encounter_slot,GameData::Encounter,39,0,SuperRod,1,WAILMER,100,20,45
+encounter_slot,GameData::Encounter,39,0,WaterSunny,1,WAILMER,100,25,35
+encounter_slot,GameData::Encounter,39,0,WaterRain,1,MANTINE,100,20,30
+encounter_slot,GameData::Encounter,39,0,WaterWind,1,MANTINE,100,20,30
+encounter_slot,GameData::Encounter,39,0,WaterStorm,1,MANTINE,100,20,30
+encounter_slot,GameData::Encounter,39,0,WaterFog,1,MANTINE,80,20,30
+encounter_slot,GameData::Encounter,39,0,WaterFog,2,MANTYKE,20,10,30
+encounter_slot,GameData::Encounter,49,0,Land2,1,KRABBY,40,6,8
+encounter_slot,GameData::Encounter,49,0,Land2,2,WINGULL,40,6,7
+encounter_slot,GameData::Encounter,49,0,Land2,3,AZURILL,20,6,7
+encounter_slot,GameData::Encounter,49,0,Water,1,TENTACOOL,60,5,15
+encounter_slot,GameData::Encounter,49,0,Water,2,WINGULL,35,10,15
+encounter_slot,GameData::Encounter,49,0,Water,3,PELIPPER,5,15,18
+encounter_slot,GameData::Encounter,49,0,WaterNight,1,TENTACOOL,60,5,35
+encounter_slot,GameData::Encounter,49,0,WaterNight,2,STARYU,40,10,30
+encounter_slot,GameData::Encounter,49,0,OldRod,1,MAGIKARP,60,5,10
+encounter_slot,GameData::Encounter,49,0,OldRod,2,SKRELP,20,5,10
+encounter_slot,GameData::Encounter,49,0,OldRod,3,TENTACOOL,20,5,10
+encounter_slot,GameData::Encounter,49,0,GoodRod,1,MAGIKARP,40,10,30
+encounter_slot,GameData::Encounter,49,0,GoodRod,2,SKRELP,20,10,30
+encounter_slot,GameData::Encounter,49,0,GoodRod,3,TENTACOOL,20,10,30
+encounter_slot,GameData::Encounter,49,0,GoodRod,4,WAILMER,20,10,30
+encounter_slot,GameData::Encounter,49,0,SuperRod,1,WAILMER,80,20,45
+encounter_slot,GameData::Encounter,49,0,SuperRod,2,SKRELP,20,20,45
+encounter_slot,GameData::Encounter,49,0,WaterSunny,1,PELIPPER,100,25,30
+encounter_slot,GameData::Encounter,49,0,WaterRain,1,TENTACOOL,80,5,10
+encounter_slot,GameData::Encounter,49,0,WaterRain,2,SKRELP,20,20,30
+encounter_slot,GameData::Encounter,49,0,WaterWind,1,WINGULL,100,10,30
+encounter_slot,GameData::Encounter,49,0,WaterStorm,1,TENTACOOL,40,5,10
+encounter_slot,GameData::Encounter,49,0,WaterStorm,2,GYARADOS,20,20,30
+encounter_slot,GameData::Encounter,49,0,WaterStorm,3,SKRELP,20,15,20
+encounter_slot,GameData::Encounter,49,0,WaterStorm,4,TENTACRUEL,20,25,32
+encounter_slot,GameData::Encounter,49,0,WaterFog,1,WINGULL,100,10,30
+encounter_slot,GameData::Encounter,50,0,Water,1,TENTACOOL,60,5,35
+encounter_slot,GameData::Encounter,50,0,Water,2,WINGULL,35,10,30
+encounter_slot,GameData::Encounter,50,0,Water,3,PELIPPER,5,25,30
+encounter_slot,GameData::Encounter,50,0,WaterNight,1,TENTACOOL,60,5,35
+encounter_slot,GameData::Encounter,50,0,WaterNight,2,STARYU,40,10,30
+encounter_slot,GameData::Encounter,50,0,OldRod,1,MAGIKARP,60,5,10
+encounter_slot,GameData::Encounter,50,0,OldRod,2,SKRELP,20,5,10
+encounter_slot,GameData::Encounter,50,0,OldRod,3,TENTACOOL,20,5,10
+encounter_slot,GameData::Encounter,50,0,GoodRod,1,MAGIKARP,30,10,30
+encounter_slot,GameData::Encounter,50,0,GoodRod,2,SKRELP,30,10,30
+encounter_slot,GameData::Encounter,50,0,GoodRod,3,TENTACOOL,20,10,30
+encounter_slot,GameData::Encounter,50,0,GoodRod,4,WAILMER,20,10,30
+encounter_slot,GameData::Encounter,50,0,SuperRod,1,WAILMER,70,20,45
+encounter_slot,GameData::Encounter,50,0,SuperRod,2,SKRELP,30,20,45
+encounter_slot,GameData::Encounter,50,0,WaterSunny,1,PELIPPER,100,25,30
+encounter_slot,GameData::Encounter,50,0,WaterRain,1,TENTACOOL,80,5,10
+encounter_slot,GameData::Encounter,50,0,WaterRain,2,SKRELP,20,20,30
+encounter_slot,GameData::Encounter,50,0,WaterWind,1,WINGULL,100,10,30
+encounter_slot,GameData::Encounter,50,0,WaterStorm,1,TENTACOOL,40,5,10
+encounter_slot,GameData::Encounter,50,0,WaterStorm,2,GYARADOS,20,20,30
+encounter_slot,GameData::Encounter,50,0,WaterStorm,3,SKRELP,20,15,20
+encounter_slot,GameData::Encounter,50,0,WaterStorm,4,TENTACRUEL,20,25,32
+encounter_slot,GameData::Encounter,50,0,WaterFog,1,WINGULL,100,10,30
+encounter_slot,GameData::Encounter,51,0,Water,1,TENTACOOL,60,5,15
+encounter_slot,GameData::Encounter,51,0,Water,2,WINGULL,35,10,12
+encounter_slot,GameData::Encounter,51,0,Water,3,PELIPPER,5,15,18
+encounter_slot,GameData::Encounter,51,0,WaterNight,1,TENTACOOL,60,5,15
+encounter_slot,GameData::Encounter,51,0,WaterNight,2,STARYU,40,10,15
+encounter_slot,GameData::Encounter,51,0,OldRod,1,MAGIKARP,60,5,10
+encounter_slot,GameData::Encounter,51,0,OldRod,2,TENTACOOL,30,5,10
+encounter_slot,GameData::Encounter,51,0,OldRod,3,SKRELP,10,5,10
+encounter_slot,GameData::Encounter,51,0,GoodRod,1,MAGIKARP,40,10,30
+encounter_slot,GameData::Encounter,51,0,GoodRod,2,SKRELP,20,10,30
+encounter_slot,GameData::Encounter,51,0,GoodRod,3,TENTACOOL,20,10,30
+encounter_slot,GameData::Encounter,51,0,GoodRod,4,WAILMER,20,10,30
+encounter_slot,GameData::Encounter,51,0,SuperRod,1,WAILMER,80,20,45
+encounter_slot,GameData::Encounter,51,0,SuperRod,2,SKRELP,20,20,45
+encounter_slot,GameData::Encounter,51,0,WaterSunny,1,PELIPPER,100,25,30
+encounter_slot,GameData::Encounter,51,0,WaterRain,1,TENTACOOL,80,5,10
+encounter_slot,GameData::Encounter,51,0,WaterRain,2,SKRELP,20,20,30
+encounter_slot,GameData::Encounter,51,0,WaterWind,1,WINGULL,100,10,30
+encounter_slot,GameData::Encounter,51,0,WaterStorm,1,TENTACOOL,40,5,10
+encounter_slot,GameData::Encounter,51,0,WaterStorm,2,GYARADOS,20,20,30
+encounter_slot,GameData::Encounter,51,0,WaterStorm,3,SKRELP,20,15,20
+encounter_slot,GameData::Encounter,51,0,WaterStorm,4,TENTACRUEL,20,25,32
+encounter_slot,GameData::Encounter,51,0,WaterFog,1,WINGULL,100,10,30
+encounter_slot,GameData::Encounter,62,0,LandDay,1,WURMPLE,40,5,6
+encounter_slot,GameData::Encounter,62,0,LandDay,2,SHROOMISH,20,5,6
+encounter_slot,GameData::Encounter,62,0,LandDay,3,CASCOON,10,5,5
+encounter_slot,GameData::Encounter,62,0,LandDay,4,SILCOON,10,5,5
+encounter_slot,GameData::Encounter,62,0,LandDay,5,TAILLOW,10,5,6
+encounter_slot,GameData::Encounter,62,0,LandDay,6,POOCHYENA,5,4,5
+encounter_slot,GameData::Encounter,62,0,LandDay,7,SLAKOTH,5,5,6
+encounter_slot,GameData::Encounter,62,0,LandMorning,1,WURMPLE,25,5,6
+encounter_slot,GameData::Encounter,62,0,LandMorning,2,POOCHYENA,20,4,5
+encounter_slot,GameData::Encounter,62,0,LandMorning,3,SHROOMISH,15,5,6
+encounter_slot,GameData::Encounter,62,0,LandMorning,4,TAILLOW,15,5,6
+encounter_slot,GameData::Encounter,62,0,LandMorning,5,CASCOON,10,5,5
+encounter_slot,GameData::Encounter,62,0,LandMorning,6,SILCOON,10,5,5
+encounter_slot,GameData::Encounter,62,0,LandMorning,7,SLAKOTH,5,5,6
+encounter_slot,GameData::Encounter,62,0,LandNight,1,POOCHYENA,30,4,5
+encounter_slot,GameData::Encounter,62,0,LandNight,2,HOOTHOOT,15,4,5
+encounter_slot,GameData::Encounter,62,0,LandNight,3,SHROOMISH,15,5,6
+encounter_slot,GameData::Encounter,62,0,LandNight,4,WURMPLE,15,5,6
+encounter_slot,GameData::Encounter,62,0,LandNight,5,CASCOON,10,5,5
+encounter_slot,GameData::Encounter,62,0,LandNight,6,SILCOON,10,5,5
+encounter_slot,GameData::Encounter,62,0,LandNight,7,SLAKOTH,5,5,6
+encounter_slot,GameData::Encounter,62,0,Land1,1,PARAS,20,24,25
+encounter_slot,GameData::Encounter,62,0,Land1,2,SLAKOTH,20,25,26
+encounter_slot,GameData::Encounter,62,0,Land1,3,CASCOON,10,15,15
+encounter_slot,GameData::Encounter,62,0,Land1,4,SILCOON,10,15,15
+encounter_slot,GameData::Encounter,62,0,Land1,5,ZOROARK,10,30,30
+encounter_slot,GameData::Encounter,62,0,Land3,1,WURMPLE,30,5,6
+encounter_slot,GameData::Encounter,62,0,Land3,2,BEAUTIFLY,15,10,10
+encounter_slot,GameData::Encounter,62,0,Land3,3,CASCOON,15,8,9
+encounter_slot,GameData::Encounter,62,0,Land3,4,DUSTOX,15,10,10
+encounter_slot,GameData::Encounter,62,0,Land3,5,SILCOON,15,8,9
+encounter_slot,GameData::Encounter,62,0,Land3,6,ZORUA,10,6,8
+encounter_slot,GameData::Encounter,62,0,LandSunny,1,COTTONEE,100,5,6
+encounter_slot,GameData::Encounter,62,0,LandRain,1,SHROOMISH,45,5,6
+encounter_slot,GameData::Encounter,62,0,LandRain,2,POLIWAG,35,5,5
+encounter_slot,GameData::Encounter,62,0,LandRain,3,WURMPLE,20,5,6
+encounter_slot,GameData::Encounter,62,0,LandWind,1,TAILLOW,100,5,6
+encounter_slot,GameData::Encounter,62,0,LandStorm,1,SHROOMISH,65,5,6
+encounter_slot,GameData::Encounter,62,0,LandStorm,2,POLIWAG,35,5,5
+encounter_slot,GameData::Encounter,62,0,LandFog,1,PHANTUMP,100,4,5
+encounter_slot,GameData::Encounter,65,0,Land,1,TAILLOW,40,6,8
+encounter_slot,GameData::Encounter,65,0,Land,2,IGGLYBUFF,25,6,8
+encounter_slot,GameData::Encounter,65,0,Land,3,WINGULL,25,6,6
+encounter_slot,GameData::Encounter,65,0,Land,4,SKITTY,15,6,8
+encounter_slot,GameData::Encounter,65,0,LandNight,1,HOOTHOOT,35,6,8
+encounter_slot,GameData::Encounter,65,0,LandNight,2,CLEFFA,25,6,8
+encounter_slot,GameData::Encounter,65,0,LandNight,3,WINGULL,25,6,6
+encounter_slot,GameData::Encounter,65,0,LandNight,4,POOCHYENA,15,6,8
+encounter_slot,GameData::Encounter,65,0,LandNight,5,MISDREAVUS,5,6,7
+encounter_slot,GameData::Encounter,65,0,LandSunny,1,JIGGLYPUFF,100,7,8
+encounter_slot,GameData::Encounter,65,0,LandRain,1,WINGULL,100,6,6
+encounter_slot,GameData::Encounter,65,0,LandWind,1,TAILLOW,75,6,8
+encounter_slot,GameData::Encounter,65,0,LandStorm,1,SHINX,100,5,5
+encounter_slot,GameData::Encounter,65,0,LandFog,1,MISDREAVUS,50,4,5
+encounter_slot,GameData::Encounter,65,0,Land1,1,TAILLOW,40,23,25
+encounter_slot,GameData::Encounter,65,0,Land1,2,SWABLU,30,23,25
+encounter_slot,GameData::Encounter,65,0,Land1,3,CLEFAIRY,10,24,26
+encounter_slot,GameData::Encounter,65,0,Land1,4,JIGGLYPUFF,10,24,25
+encounter_slot,GameData::Encounter,65,0,Land1,5,SWELLOW,10,25,25
+encounter_slot,GameData::Encounter,65,0,Land3,1,SEVIPER,10,25,25
+encounter_slot,GameData::Encounter,65,0,Land3,2,ZANGOOSE,10,25,25
+encounter_slot,GameData::Encounter,65,0,Water,1,TENTACOOL,40,5,35
+encounter_slot,GameData::Encounter,65,0,Water,2,WINGULL,35,10,30
+encounter_slot,GameData::Encounter,65,0,Water,3,MAGIKARP,20,5,35
+encounter_slot,GameData::Encounter,65,0,Water,4,PELIPPER,5,25,30
+encounter_slot,GameData::Encounter,65,0,WaterNight,1,STARYU,40,10,30
+encounter_slot,GameData::Encounter,65,0,WaterNight,2,TENTACOOL,40,5,35
+encounter_slot,GameData::Encounter,65,0,WaterNight,3,MAGIKARP,20,5,35
+encounter_slot,GameData::Encounter,65,0,WaterSunny,1,STARYU,100,25,25
+encounter_slot,GameData::Encounter,65,0,WaterRain,1,PELIPPER,5,25,30
+encounter_slot,GameData::Encounter,65,0,WaterWind,1,PELIPPER,5,25,30
+encounter_slot,GameData::Encounter,65,0,WaterStorm,1,TENTACRUEL,60,5,35
+encounter_slot,GameData::Encounter,65,0,WaterFog,1,WINGULL,35,10,30
+encounter_slot,GameData::Encounter,65,0,OldRod,1,MAGIKARP,70,5,10
+encounter_slot,GameData::Encounter,65,0,OldRod,2,TENTACOOL,30,5,10
+encounter_slot,GameData::Encounter,65,0,GoodRod,1,MAGIKARP,60,10,30
+encounter_slot,GameData::Encounter,65,0,GoodRod,2,TENTACOOL,20,10,30
+encounter_slot,GameData::Encounter,65,0,GoodRod,3,WAILMER,20,10,30
+encounter_slot,GameData::Encounter,65,0,SuperRod,1,WAILMER,100,20,45
+encounter_slot,GameData::Encounter,69,0,Water,1,TENTACOOL,60,5,35
+encounter_slot,GameData::Encounter,69,0,Water,2,WINGULL,35,10,30
+encounter_slot,GameData::Encounter,69,0,Water,3,PELIPPER,5,25,30
+encounter_slot,GameData::Encounter,69,0,WaterNight,1,TENTACOOL,60,5,35
+encounter_slot,GameData::Encounter,69,0,WaterNight,2,STARYU,40,10,30
+encounter_slot,GameData::Encounter,69,0,Land2,1,KRABBY,40,6,8
+encounter_slot,GameData::Encounter,69,0,Land2,2,WINGULL,40,6,7
+encounter_slot,GameData::Encounter,69,0,Land2,3,AZURILL,20,6,7
+encounter_slot,GameData::Encounter,69,0,Land,1,ABRA,30,10,15
+encounter_slot,GameData::Encounter,69,0,Land,2,SHUCKLE,25,18,21
+encounter_slot,GameData::Encounter,69,0,Land,3,MAKUHITA,20,9,20
+encounter_slot,GameData::Encounter,69,0,Land,4,KADABRA,10,18,22
+encounter_slot,GameData::Encounter,69,0,Land,5,TYROGUE,5,9,20
+encounter_slot,GameData::Encounter,69,0,LandSunny,1,TANGELA,100,18,21
+encounter_slot,GameData::Encounter,69,0,OldRod,1,MAGIKARP,60,5,10
+encounter_slot,GameData::Encounter,69,0,OldRod,2,SKRELP,20,5,10
+encounter_slot,GameData::Encounter,69,0,OldRod,3,TENTACOOL,20,5,10
+encounter_slot,GameData::Encounter,69,0,GoodRod,1,MAGIKARP,30,10,30
+encounter_slot,GameData::Encounter,69,0,GoodRod,2,SKRELP,30,10,30
+encounter_slot,GameData::Encounter,69,0,GoodRod,3,TENTACOOL,20,10,30
+encounter_slot,GameData::Encounter,69,0,GoodRod,4,WAILMER,20,10,30
+encounter_slot,GameData::Encounter,69,0,SuperRod,1,WAILMER,70,20,45
+encounter_slot,GameData::Encounter,69,0,SuperRod,2,SKRELP,30,20,45
+encounter_slot,GameData::Encounter,69,0,WaterSunny,1,PELIPPER,100,25,30
+encounter_slot,GameData::Encounter,69,0,WaterRain,1,TENTACOOL,80,5,10
+encounter_slot,GameData::Encounter,69,0,WaterRain,2,SKRELP,20,20,30
+encounter_slot,GameData::Encounter,69,0,WaterWind,1,WINGULL,100,10,30
+encounter_slot,GameData::Encounter,69,0,WaterStorm,1,TENTACOOL,40,5,10
+encounter_slot,GameData::Encounter,69,0,WaterStorm,2,GYARADOS,20,20,30
+encounter_slot,GameData::Encounter,69,0,WaterStorm,3,SKRELP,20,15,20
+encounter_slot,GameData::Encounter,69,0,WaterStorm,4,TENTACRUEL,20,25,32
+encounter_slot,GameData::Encounter,69,0,WaterFog,1,WINGULL,100,10,30
+encounter_slot,GameData::Encounter,70,0,Cave,1,ZUBAT,80,9,12
+encounter_slot,GameData::Encounter,70,0,Cave,2,WOOBAT,20,9,12
+encounter_slot,GameData::Encounter,71,0,LandDay,1,ELECTRIKE,30,12,13
+encounter_slot,GameData::Encounter,71,0,LandDay,2,ZIGZAGOON,20,12,12
+encounter_slot,GameData::Encounter,71,0,LandDay,3,GULPIN,15,12,13
+encounter_slot,GameData::Encounter,71,0,LandDay,4,PLUSLE,15,12,13
+encounter_slot,GameData::Encounter,71,0,LandDay,5,ODDISH,10,13,13
+encounter_slot,GameData::Encounter,71,0,LandDay,6,WINGULL,8,12,12
+encounter_slot,GameData::Encounter,71,0,LandDay,7,MINUN,2,13,13
+encounter_slot,GameData::Encounter,71,0,LandNight,1,POOCHYENA,30,12,12
+encounter_slot,GameData::Encounter,71,0,LandNight,2,ODDISH,25,13,13
+encounter_slot,GameData::Encounter,71,0,LandNight,3,MINUN,15,13,13
+encounter_slot,GameData::Encounter,71,0,LandNight,4,MURKROW,15,12,13
+encounter_slot,GameData::Encounter,71,0,LandNight,5,WINGULL,8,12,12
+encounter_slot,GameData::Encounter,71,0,LandNight,6,TRUBBISH,5,12,13
+encounter_slot,GameData::Encounter,71,0,LandNight,7,PLUSLE,2,12,13
+encounter_slot,GameData::Encounter,71,0,Land1,1,ODDISH,50,13,13
+encounter_slot,GameData::Encounter,71,0,Land1,2,VENIPEDE,30,10,12
+encounter_slot,GameData::Encounter,71,0,Land1,3,MAGNEMITE,20,12,12
+encounter_slot,GameData::Encounter,71,0,Land2,1,MAGNEMITE,55,10,12
+encounter_slot,GameData::Encounter,71,0,Land2,2,VOLTORB,30,10,12
+encounter_slot,GameData::Encounter,71,0,Land2,3,PIKACHU,10,14,14
+encounter_slot,GameData::Encounter,71,0,Land2,4,KLINK,5,10,11
+encounter_slot,GameData::Encounter,71,0,Land3,1,MINUN,35,14,15
+encounter_slot,GameData::Encounter,71,0,Land3,2,PLUSLE,35,14,15
+encounter_slot,GameData::Encounter,71,0,Land3,3,PICHU,30,14,15
+encounter_slot,GameData::Encounter,71,0,LandWind,1,WINGULL,100,12,12
+encounter_slot,GameData::Encounter,71,0,LandRain,1,ODDISH,70,13,15
+encounter_slot,GameData::Encounter,71,0,LandRain,2,WINGULL,30,12,12
+encounter_slot,GameData::Encounter,71,0,LandStorm,1,MAGNEMITE,60,9,13
+encounter_slot,GameData::Encounter,71,0,LandStorm,2,ELECTRIKE,30,13,15
+encounter_slot,GameData::Encounter,71,0,LandStorm,3,KLINK,10,10,11
+encounter_slot,GameData::Encounter,71,0,LandSunny,1,ODDISH,40,13,15
+encounter_slot,GameData::Encounter,71,0,LandSunny,2,MINUN,30,13,13
+encounter_slot,GameData::Encounter,71,0,LandSunny,3,PLUSLE,30,12,13
+encounter_slot,GameData::Encounter,71,0,LandFog,1,DRIFLOON,70,11,12
+encounter_slot,GameData::Encounter,71,0,LandFog,2,GULPIN,30,12,13
+encounter_slot,GameData::Encounter,71,0,Water,1,TENTACOOL,60,5,35
+encounter_slot,GameData::Encounter,71,0,Water,2,WINGULL,35,10,30
+encounter_slot,GameData::Encounter,71,0,Water,3,PELIPPER,5,25,30
+encounter_slot,GameData::Encounter,71,0,WaterNight,1,TENTACOOL,60,5,35
+encounter_slot,GameData::Encounter,71,0,WaterNight,2,STARYU,40,10,30
+encounter_slot,GameData::Encounter,71,0,WaterFog,1,DRIFLOON,100,11,21
+encounter_slot,GameData::Encounter,71,0,OldRod,1,MAGIKARP,70,5,10
+encounter_slot,GameData::Encounter,71,0,OldRod,2,TYNAMO,30,10,10
+encounter_slot,GameData::Encounter,71,0,GoodRod,1,MAGIKARP,45,10,30
+encounter_slot,GameData::Encounter,71,0,GoodRod,2,TYNAMO,40,10,20
+encounter_slot,GameData::Encounter,71,0,GoodRod,3,WAILMER,15,10,30
+encounter_slot,GameData::Encounter,71,0,SuperRod,1,TYNAMO,50,20,30
+encounter_slot,GameData::Encounter,71,0,SuperRod,2,WAILMER,45,20,45
+encounter_slot,GameData::Encounter,71,0,SuperRod,3,EELEKTRIK,5,40,40
+encounter_slot,GameData::Encounter,72,0,Land,1,ABRA,40,2,3
+encounter_slot,GameData::Encounter,72,0,Land,2,DIGLETT,30,2,3
+encounter_slot,GameData::Encounter,72,0,Land,3,GASTLY,30,2,3
+encounter_slot,GameData::Encounter,74,0,Land,1,ROSELIA,30,13,14
+encounter_slot,GameData::Encounter,74,0,Land,2,MARILL,25,13,13
+encounter_slot,GameData::Encounter,74,0,Land,3,ILLUMISE,15,13,14
+encounter_slot,GameData::Encounter,74,0,Land,4,VOLBEAT,15,13,14
+encounter_slot,GameData::Encounter,74,0,Land,5,ODDISH,10,13,14
+encounter_slot,GameData::Encounter,74,0,Land,6,DITTO,5,10,12
+encounter_slot,GameData::Encounter,74,0,LandNight,1,ILLUMISE,25,13,14
+encounter_slot,GameData::Encounter,74,0,LandNight,2,VOLBEAT,25,13,14
+encounter_slot,GameData::Encounter,74,0,LandNight,3,ODDISH,20,13,14
+encounter_slot,GameData::Encounter,74,0,LandNight,4,POOCHYENA,15,13,14
+encounter_slot,GameData::Encounter,74,0,LandNight,5,ROSELIA,10,13,14
+encounter_slot,GameData::Encounter,74,0,LandNight,6,DITTO,5,10,12
+encounter_slot,GameData::Encounter,74,0,Land3,1,ROSELIA,70,13,14
+encounter_slot,GameData::Encounter,74,0,Land3,2,ILLUMISE,15,13,14
+encounter_slot,GameData::Encounter,74,0,Land3,3,VOLBEAT,15,13,14
+encounter_slot,GameData::Encounter,74,0,LandSunny,1,ROSELIA,70,13,14
+encounter_slot,GameData::Encounter,74,0,LandSunny,2,BUDEW,30,10,11
+encounter_slot,GameData::Encounter,74,0,LandWind,1,SEEDOT,100,13,13
+encounter_slot,GameData::Encounter,74,0,LandRain,1,SURSKIT,100,13,13
+encounter_slot,GameData::Encounter,74,0,LandStorm,1,SURSKIT,60,13,13
+encounter_slot,GameData::Encounter,74,0,LandStorm,2,PIKACHU,30,13,13
+encounter_slot,GameData::Encounter,74,0,LandFog,1,ILLUMISE,50,13,14
+encounter_slot,GameData::Encounter,74,0,LandFog,2,VOLBEAT,50,13,14
+encounter_slot,GameData::Encounter,74,0,Water,1,MARILL,50,5,25
+encounter_slot,GameData::Encounter,74,0,Water,2,MAGIKARP,20,10,15
+encounter_slot,GameData::Encounter,74,0,Water,3,SURSKIT,20,10,25
+encounter_slot,GameData::Encounter,74,0,Water,4,GOLDEEN,10,20,30
+encounter_slot,GameData::Encounter,74,0,WaterSunny,1,FLETCHLING,100,10,30
+encounter_slot,GameData::Encounter,74,0,WaterRain,1,SURSKIT,85,10,30
+encounter_slot,GameData::Encounter,74,0,WaterRain,2,MASQUERAIN,15,25,30
+encounter_slot,GameData::Encounter,74,0,OldRod,1,MAGIKARP,70,5,10
+encounter_slot,GameData::Encounter,74,0,OldRod,2,GOLDEEN,30,5,10
+encounter_slot,GameData::Encounter,74,0,GoodRod,1,MAGIKARP,60,10,30
+encounter_slot,GameData::Encounter,74,0,GoodRod,2,CORPHISH,20,10,30
+encounter_slot,GameData::Encounter,74,0,GoodRod,3,GOLDEEN,20,10,30
+encounter_slot,GameData::Encounter,74,0,SuperRod,1,CORPHISH,100,20,45
+encounter_slot,GameData::Encounter,76,0,Land,1,ELECTRIKE,40,21,24
+encounter_slot,GameData::Encounter,76,0,Land,2,LINOONE,40,21,24
+encounter_slot,GameData::Encounter,76,0,Land,3,WINGULL,15,22,24
+encounter_slot,GameData::Encounter,76,0,Land,4,KECLEON,5,24,24
+encounter_slot,GameData::Encounter,76,0,LandNight,1,ELECTRIKE,40,21,24
+encounter_slot,GameData::Encounter,76,0,LandNight,2,RATICATE,40,21,24
+encounter_slot,GameData::Encounter,76,0,LandNight,3,WINGULL,15,22,24
+encounter_slot,GameData::Encounter,76,0,LandNight,4,KECLEON,5,24,24
+encounter_slot,GameData::Encounter,76,0,Land2,1,KRABBY,75,11,12
+encounter_slot,GameData::Encounter,76,0,Land2,2,WINGULL,25,12,14
+encounter_slot,GameData::Encounter,76,0,TallGrass,1,LINOONE,40,21,24
+encounter_slot,GameData::Encounter,76,0,TallGrass,2,ELECTRIKE,20,21,24
+encounter_slot,GameData::Encounter,76,0,TallGrass,3,AIPOM,15,22,24
+encounter_slot,GameData::Encounter,76,0,TallGrass,4,KECLEON,15,24,24
+encounter_slot,GameData::Encounter,76,0,TallGrass,5,MANECTRIC,10,25,25
+encounter_slot,GameData::Encounter,76,0,LandRain,1,WINGULL,70,22,24
+encounter_slot,GameData::Encounter,76,0,LandRain,2,PELIPPER,30,25,30
+encounter_slot,GameData::Encounter,76,0,LandSunny,1,AIPOM,60,22,24
+encounter_slot,GameData::Encounter,76,0,LandSunny,2,KECLEON,40,24,24
+encounter_slot,GameData::Encounter,76,0,LandStorm,1,LUXIO,60,24,24
+encounter_slot,GameData::Encounter,76,0,LandStorm,2,ELECTRIKE,20,21,24
+encounter_slot,GameData::Encounter,76,0,LandStorm,3,MANECTRIC,20,25,25
+encounter_slot,GameData::Encounter,76,0,LandFog,1,RATICATE,100,21,24
+encounter_slot,GameData::Encounter,76,0,LandWind,1,SWELLOW,40,21,24
+encounter_slot,GameData::Encounter,76,0,LandWind,2,TAILLOW,40,21,22
+encounter_slot,GameData::Encounter,76,0,Water,1,TENTACOOL,50,20,25
+encounter_slot,GameData::Encounter,76,0,Water,2,WINGULL,30,20,20
+encounter_slot,GameData::Encounter,76,0,Water,3,CARVANHA,15,20,25
+encounter_slot,GameData::Encounter,76,0,Water,4,PELIPPER,5,25,30
+encounter_slot,GameData::Encounter,76,0,WaterNight,1,TENTACOOL,50,20,25
+encounter_slot,GameData::Encounter,76,0,WaterNight,2,STARYU,35,20,20
+encounter_slot,GameData::Encounter,76,0,WaterNight,3,CARVANHA,15,20,25
+encounter_slot,GameData::Encounter,76,0,WaterSunny,1,CARVANHA,100,20,25
+encounter_slot,GameData::Encounter,76,0,WaterRain,1,PELIPPER,90,20,25
+encounter_slot,GameData::Encounter,76,0,WaterRain,2,SHARPEDO,10,25,25
+encounter_slot,GameData::Encounter,76,0,WaterWind,1,PELIPPER,60,20,25
+encounter_slot,GameData::Encounter,76,0,WaterWind,2,SWELLOW,30,20,25
+encounter_slot,GameData::Encounter,76,0,WaterStorm,1,SHARPEDO,30,25,25
+encounter_slot,GameData::Encounter,76,0,WaterFog,1,CARVANHA,100,20,25
+encounter_slot,GameData::Encounter,76,0,OldRod,1,MAGIKARP,65,5,10
+encounter_slot,GameData::Encounter,76,0,OldRod,2,CARVANHA,45,5,10
+encounter_slot,GameData::Encounter,76,0,GoodRod,1,MAGIKARP,65,15,25
+encounter_slot,GameData::Encounter,76,0,GoodRod,2,CARVANHA,45,15,25
+encounter_slot,GameData::Encounter,76,0,SuperRod,1,CARVANHA,90,30,35
+encounter_slot,GameData::Encounter,76,0,SuperRod,2,SHARPEDO,10,40,40
+encounter_slot,GameData::Encounter,77,0,Land,1,MACHOP,70,13,16
+encounter_slot,GameData::Encounter,77,0,Land,2,TAILLOW,30,13,16
+encounter_slot,GameData::Encounter,77,0,Land,3,NUMEL,20,13,16
+encounter_slot,GameData::Encounter,77,0,LandNight,1,MACHOP,70,13,16
+encounter_slot,GameData::Encounter,77,0,LandNight,2,MURKROW,30,13,16
+encounter_slot,GameData::Encounter,77,0,LandNight,3,NUMEL,20,13,16
+encounter_slot,GameData::Encounter,77,0,LandSunny,1,PONYTA,100,16,16
+encounter_slot,GameData::Encounter,77,0,LandFog,1,MACHOP,100,16,16
+encounter_slot,GameData::Encounter,77,0,LandWind,1,TYROGUE,100,16,16
+encounter_slot,GameData::Encounter,77,0,Water,1,MARILL,50,5,25
+encounter_slot,GameData::Encounter,77,0,Water,2,MAGIKARP,20,10,15
+encounter_slot,GameData::Encounter,77,0,Water,3,SURSKIT,20,10,25
+encounter_slot,GameData::Encounter,77,0,Water,4,GOLDEEN,10,20,30
+encounter_slot,GameData::Encounter,77,0,WaterSunny,1,FLETCHLING,100,10,30
+encounter_slot,GameData::Encounter,77,0,WaterRain,1,SURSKIT,85,10,30
+encounter_slot,GameData::Encounter,77,0,WaterRain,2,MASQUERAIN,15,25,30
+encounter_slot,GameData::Encounter,77,0,OldRod,1,MAGIKARP,70,5,10
+encounter_slot,GameData::Encounter,77,0,OldRod,2,GOLDEEN,30,5,10
+encounter_slot,GameData::Encounter,77,0,GoodRod,1,MAGIKARP,60,10,30
+encounter_slot,GameData::Encounter,77,0,GoodRod,2,CORPHISH,20,10,30
+encounter_slot,GameData::Encounter,77,0,GoodRod,3,GOLDEEN,20,10,30
+encounter_slot,GameData::Encounter,77,0,SuperRod,1,CORPHISH,100,20,45
+encounter_slot,GameData::Encounter,78,0,Land,1,GEODUDE,65,9,10
+encounter_slot,GameData::Encounter,78,0,Land,2,ARON,20,9,10
+encounter_slot,GameData::Encounter,78,0,Land,3,NOSEPASS,10,12,12
+encounter_slot,GameData::Encounter,78,0,Land,4,CARBINK,5,12,12
+encounter_slot,GameData::Encounter,79,0,Land,1,MACHOP,70,12,14
+encounter_slot,GameData::Encounter,79,0,Land,2,MEDITITE,20,12,12
+encounter_slot,GameData::Encounter,79,0,Land,3,MAKUHITA,10,12,12
+encounter_slot,GameData::Encounter,80,0,Land,1,MACHOP,65,14,16
+encounter_slot,GameData::Encounter,80,0,Land,2,MEDITITE,20,14,16
+encounter_slot,GameData::Encounter,80,0,Land,3,MAKUHITA,10,14,16
+encounter_slot,GameData::Encounter,80,0,Land,4,RIOLU,5,16,18
+encounter_slot,GameData::Encounter,97,0,Land,1,CASCOON,20,15,15
+encounter_slot,GameData::Encounter,97,0,Land,2,SHROOMISH,20,25,26
+encounter_slot,GameData::Encounter,97,0,Land,3,SILCOON,20,15,15
+encounter_slot,GameData::Encounter,97,0,Land,4,SLAKOTH,20,25,25
+encounter_slot,GameData::Encounter,97,0,Land,5,WURMPLE,20,24,25
+encounter_slot,GameData::Encounter,97,0,Land1,1,ZOROARK,40,30,30
+encounter_slot,GameData::Encounter,97,0,Land1,2,SLAKOTH,20,25,25
+encounter_slot,GameData::Encounter,97,0,Land1,3,WURMPLE,15,24,25
+encounter_slot,GameData::Encounter,97,0,Land1,4,SHROOMISH,10,25,26
+encounter_slot,GameData::Encounter,97,0,Land1,5,CASCOON,6,15,15
+encounter_slot,GameData::Encounter,97,0,Land1,6,SILCOON,6,15,15
+encounter_slot,GameData::Encounter,97,0,Land1,7,BRELOOM,3,28,28
+encounter_slot,GameData::Encounter,102,0,Land,1,MAGNEMITE,25,9,10
+encounter_slot,GameData::Encounter,102,0,Land,2,ELECTRIKE,20,12,12
+encounter_slot,GameData::Encounter,102,0,Land,3,VOLTORB,20,9,10
+encounter_slot,GameData::Encounter,102,0,Land,4,MINUN,10,12,12
+encounter_slot,GameData::Encounter,102,0,Land,5,PIKACHU,10,12,12
+encounter_slot,GameData::Encounter,102,0,Land,6,PLUSLE,10,12,12
+encounter_slot,GameData::Encounter,102,0,Land,7,KLINK,5,12,12
+encounter_slot,GameData::Encounter,104,0,Land,1,MACHOP,50,13,16
+encounter_slot,GameData::Encounter,104,0,Land,2,TAILLOW,25,13,16
+encounter_slot,GameData::Encounter,104,0,Land,3,NUMEL,20,13,16
+encounter_slot,GameData::Encounter,104,0,Land,4,CORPHISH,10,13,16
+encounter_slot,GameData::Encounter,104,0,Land,5,ROSELIA,10,13,16
+encounter_slot,GameData::Encounter,104,0,Land,6,LOMBRE,5,13,16
+encounter_slot,GameData::Encounter,104,0,LandNight,1,MACHOP,50,13,16
+encounter_slot,GameData::Encounter,104,0,LandNight,2,MURKROW,30,13,16
+encounter_slot,GameData::Encounter,104,0,LandNight,3,NUMEL,20,13,16
+encounter_slot,GameData::Encounter,104,0,LandNight,4,ILLUMISE,10,13,16
+encounter_slot,GameData::Encounter,104,0,LandNight,5,VOLBEAT,10,13,16
+encounter_slot,GameData::Encounter,112,0,Land,1,SKRELP,30,26,34
+encounter_slot,GameData::Encounter,112,0,Land,2,KRABBY,20,22,28
+encounter_slot,GameData::Encounter,112,0,Land,3,STARYU,20,26,27
+encounter_slot,GameData::Encounter,112,0,Land,4,WAILMER,20,26,30
+encounter_slot,GameData::Encounter,112,0,Land,5,HORSEA,10,27,27
+encounter_slot,GameData::EncounterModern,10,0,Land,1,POOCHYENA,30,3,4
+encounter_slot,GameData::EncounterModern,10,0,Land,2,WURMPLE,30,3,4
+encounter_slot,GameData::EncounterModern,10,0,Land,3,LOTAD,20,2,4
+encounter_slot,GameData::EncounterModern,10,0,Land,4,ZIGZAGOON,15,3,4
+encounter_slot,GameData::EncounterModern,10,0,Land,5,RALTS,4,4,4
+encounter_slot,GameData::EncounterModern,10,0,Land,6,SEEDOT,1,3,3
+encounter_slot,GameData::EncounterModern,10,0,Water,1,MARILL,99,5,25
+encounter_slot,GameData::EncounterModern,10,0,Water,2,GOLDEEN,1,20,30
+encounter_slot,GameData::EncounterModern,10,0,OldRod,1,MAGIKARP,70,5,10
+encounter_slot,GameData::EncounterModern,10,0,OldRod,2,GOLDEEN,30,5,10
+encounter_slot,GameData::EncounterModern,10,0,GoodRod,1,MAGIKARP,60,10,30
+encounter_slot,GameData::EncounterModern,10,0,GoodRod,2,CORPHISH,20,10,30
+encounter_slot,GameData::EncounterModern,10,0,GoodRod,3,GOLDEEN,20,10,30
+encounter_slot,GameData::EncounterModern,10,0,SuperRod,1,CORPHISH,100,20,45
+randomizable_item_slot,map:101|event:7,,,,,,,,
+randomizable_item_slot,map:102|event:34,,,,,,,,
+randomizable_item_slot,map:106|event:4,,,,,,,,
+randomizable_item_slot,map:107|event:15,,,,,,,,
+randomizable_item_slot,map:107|event:16,,,,,,,,
+randomizable_item_slot,map:107|event:17,,,,,,,,
+randomizable_item_slot,map:108|event:22,,,,,,,,
+randomizable_item_slot,map:108|event:23,,,,,,,,
+randomizable_item_slot,map:108|event:24,,,,,,,,
+randomizable_item_slot,map:108|event:25,,,,,,,,
+randomizable_item_slot,map:109|event:22,,,,,,,,
+randomizable_item_slot,map:10|event:19,,,,,,,,
+randomizable_item_slot,map:111|event:22,,,,,,,,
+randomizable_item_slot,map:11|event:25,,,,,,,,
+randomizable_item_slot,map:11|event:27,,,,,,,,
+randomizable_item_slot,map:12|event:30,,,,,,,,
+randomizable_item_slot,map:12|event:31,,,,,,,,
+randomizable_item_slot,map:12|event:32,,,,,,,,
+randomizable_item_slot,map:12|event:33,,,,,,,,
+randomizable_item_slot,map:13|event:97,,,,,,,,
+randomizable_item_slot,map:13|event:98,,,,,,,,
+randomizable_item_slot,map:18|event:24,,,,,,,,
+randomizable_item_slot,map:20|event:2,,,,,,,,
+randomizable_item_slot,map:20|event:29,,,,,,,,
+randomizable_item_slot,map:20|event:30,,,,,,,,
+randomizable_item_slot,map:20|event:33,,,,,,,,
+randomizable_item_slot,map:20|event:4,,,,,,,,
+randomizable_item_slot,map:20|event:6,,,,,,,,
+randomizable_item_slot,map:27|event:17,,,,,,,,
+randomizable_item_slot,map:28|event:20,,,,,,,,
+randomizable_item_slot,map:28|event:3,,,,,,,,
+randomizable_item_slot,map:28|event:4,,,,,,,,
+randomizable_item_slot,map:30|event:31,,,,,,,,
+randomizable_item_slot,map:30|event:34,,,,,,,,
+randomizable_item_slot,map:30|event:36,,,,,,,,
+randomizable_item_slot,map:30|event:40,,,,,,,,
+randomizable_item_slot,map:30|event:42,,,,,,,,
+randomizable_item_slot,map:30|event:43,,,,,,,,
+randomizable_item_slot,map:30|event:44,,,,,,,,
+randomizable_item_slot,map:31|event:12,,,,,,,,
+randomizable_item_slot,map:31|event:13,,,,,,,,
+randomizable_item_slot,map:31|event:14,,,,,,,,
+randomizable_item_slot,map:31|event:15,,,,,,,,
+randomizable_item_slot,map:31|event:16,,,,,,,,
+randomizable_item_slot,map:31|event:17,,,,,,,,
+randomizable_item_slot,map:31|event:32,,,,,,,,
+randomizable_item_slot,map:31|event:34,,,,,,,,
+randomizable_item_slot,map:31|event:43,,,,,,,,
+randomizable_item_slot,map:31|event:45,,,,,,,,
+randomizable_item_slot,map:32|event:5,,,,,,,,
+randomizable_item_slot,map:34|event:66,,,,,,,,
+randomizable_item_slot,map:35|event:12,,,,,,,,
+randomizable_item_slot,map:35|event:3,,,,,,,,
+randomizable_item_slot,map:35|event:4,,,,,,,,
+randomizable_item_slot,map:35|event:5,,,,,,,,
+randomizable_item_slot,map:35|event:6,,,,,,,,
+randomizable_item_slot,map:38|event:32,,,,,,,,
+randomizable_item_slot,map:38|event:33,,,,,,,,
+randomizable_item_slot,map:38|event:34,,,,,,,,
+randomizable_item_slot,map:38|event:35,,,,,,,,
+randomizable_item_slot,map:38|event:36,,,,,,,,
+randomizable_item_slot,map:38|event:37,,,,,,,,
+randomizable_item_slot,map:38|event:64,,,,,,,,
+randomizable_item_slot,map:39|event:41,,,,,,,,
+randomizable_item_slot,map:39|event:42,,,,,,,,
+randomizable_item_slot,map:39|event:43,,,,,,,,
+randomizable_item_slot,map:39|event:44,,,,,,,,
+randomizable_item_slot,map:39|event:45,,,,,,,,
+randomizable_item_slot,map:39|event:46,,,,,,,,
+randomizable_item_slot,map:39|event:47,,,,,,,,
+randomizable_item_slot,map:39|event:48,,,,,,,,
+randomizable_item_slot,map:39|event:49,,,,,,,,
+randomizable_item_slot,map:39|event:50,,,,,,,,
+randomizable_item_slot,map:39|event:53,,,,,,,,
+randomizable_item_slot,map:47|event:20,,,,,,,,
+randomizable_item_slot,map:47|event:50,,,,,,,,
+randomizable_item_slot,map:47|event:51,,,,,,,,
+randomizable_item_slot,map:47|event:54,,,,,,,,
+randomizable_item_slot,map:47|event:91,,,,,,,,
+randomizable_item_slot,map:49|event:21,,,,,,,,
+randomizable_item_slot,map:49|event:23,,,,,,,,
+randomizable_item_slot,map:49|event:25,,,,,,,,
+randomizable_item_slot,map:49|event:26,,,,,,,,
+randomizable_item_slot,map:58|event:5,,,,,,,,
+randomizable_item_slot,map:61|event:12,,,,,,,,
+randomizable_item_slot,map:62|event:5,,,,,,,,
+randomizable_item_slot,map:65|event:13,,,,,,,,
+randomizable_item_slot,map:65|event:14,,,,,,,,
+randomizable_item_slot,map:65|event:15,,,,,,,,
+randomizable_item_slot,map:65|event:16,,,,,,,,
+randomizable_item_slot,map:65|event:17,,,,,,,,
+randomizable_item_slot,map:65|event:18,,,,,,,,
+randomizable_item_slot,map:65|event:19,,,,,,,,
+randomizable_item_slot,map:65|event:20,,,,,,,,
+randomizable_item_slot,map:65|event:21,,,,,,,,
+randomizable_item_slot,map:65|event:22,,,,,,,,
+randomizable_item_slot,map:65|event:5,,,,,,,,
+randomizable_item_slot,map:69|event:5,,,,,,,,
+randomizable_item_slot,map:69|event:6,,,,,,,,
+randomizable_item_slot,map:6|event:98,,,,,,,,
+randomizable_item_slot,map:71|event:12,,,,,,,,
+randomizable_item_slot,map:71|event:29,,,,,,,,
+randomizable_item_slot,map:71|event:39,,,,,,,,
+randomizable_item_slot,map:71|event:50,,,,,,,,
+randomizable_item_slot,map:71|event:51,,,,,,,,
+randomizable_item_slot,map:71|event:52,,,,,,,,
+randomizable_item_slot,map:71|event:53,,,,,,,,
+randomizable_item_slot,map:71|event:54,,,,,,,,
+randomizable_item_slot,map:71|event:55,,,,,,,,
+randomizable_item_slot,map:71|event:56,,,,,,,,
+randomizable_item_slot,map:71|event:7,,,,,,,,
+randomizable_item_slot,map:71|event:70,,,,,,,,
+randomizable_item_slot,map:71|event:8,,,,,,,,
+randomizable_item_slot,map:73|event:20,,,,,,,,
+randomizable_item_slot,map:73|event:34,,,,,,,,
+randomizable_item_slot,map:73|event:68,,,,,,,,
+randomizable_item_slot,map:74|event:6,,,,,,,,
+randomizable_item_slot,map:74|event:7,,,,,,,,
+randomizable_item_slot,map:74|event:8,,,,,,,,
+randomizable_item_slot,map:75|event:95,,,,,,,,
+randomizable_item_slot,map:76|event:5,,,,,,,,
+randomizable_item_slot,map:76|event:6,,,,,,,,
+randomizable_item_slot,map:76|event:7,,,,,,,,
+randomizable_item_slot,map:76|event:8,,,,,,,,
+randomizable_item_slot,map:77|event:3,,,,,,,,
+randomizable_item_slot,map:77|event:35,,,,,,,,
+randomizable_item_slot,map:77|event:4,,,,,,,,
+randomizable_item_slot,map:78|event:15,,,,,,,,
+randomizable_item_slot,map:79|event:18,,,,,,,,
+randomizable_item_slot,map:7|event:36,,,,,,,,
+randomizable_item_slot,map:83|event:18,,,,,,,,
+randomizable_item_slot,map:84|event:20,,,,,,,,
+randomizable_item_slot,map:88|event:29,,,,,,,,
+randomizable_item_slot,map:90|event:23,,,,,,,,
+randomizable_item_slot,map:94|event:17,,,,,,,,
+randomizable_item_slot,map:97|event:25,,,,,,,,
+randomizable_item_slot,map:97|event:49,,,,,,,,
+randomizable_item_slot,map:97|event:50,,,,,,,,
+randomizable_item_slot,map:99|event:8,,,,,,,,
+randomizable_item_slot,special:starter_rescue_reward,,,,,,,,
+authored_item_gift,map:18|event:20,POKEBALL,candidate_not_path_proven,Poké Ball,,,,,
+authored_item_gift,map:27|event:10,POKEBALL,candidate_not_path_proven,Poké Ball,,,,,
+authored_item_gift,map:31|event:33,MOONSTONE,candidate_not_path_proven,Moon Stone,,,,,
+authored_item_gift,map:39|event:5,SUNSTONE,candidate_not_path_proven,Sun Stone,,,,,
+authored_item_gift,map:61|event:5,POKEBALL,candidate_not_path_proven,Poké Ball,,,,,
+authored_item_gift,map:61|event:5,POKEBALL,candidate_not_path_proven,Poké Ball,,,,,
+authored_item_gift,map:61|event:6,POKEBALL,candidate_not_path_proven,Poké Ball,,,,,
+authored_item_gift,map:83|event:28,SUNSTONE,candidate_not_path_proven,Sun Stone,,,,,
+authored_item_gift,map:96|event:25,MOONSTONE,candidate_not_path_proven,Moon Stone,,,,,
+authored_item_gift,map:96|event:25,SHINYSTONE,candidate_not_path_proven,Shiny Stone,,,,,
+authored_item_gift,common_event:109,LINKINGCORD,candidate_not_path_proven,Linking Cord,,,,,
+evolution_item_requirement,CLAMPERL,,HoldItem,DEEPSEASCALE,true,true,true,0,Deep Sea Scale
+evolution_item_requirement,CLAMPERL,,HoldItem,DEEPSEATOOTH,true,true,true,0,Deep Sea Tooth
+evolution_item_requirement,CLEFAIRY,,Item,MOONSTONE,true,false,true,2,Moon Stone
+evolution_item_requirement,COTTONEE,,Item,SUNSTONE,true,false,true,2,Sun Stone
+evolution_item_requirement,DOUBLADE,,Item,DUSKSTONE,true,false,true,0,Dusk Stone
+evolution_item_requirement,DUSCLOPS,,Item,REAPERCLOTH,true,false,true,0,Reaper Cloth
+evolution_item_requirement,EELEKTRIK,,Item,THUNDERSTONE,true,false,true,0,Thunder Stone
+evolution_item_requirement,EEVEE,,Item,SUNSTONE,true,false,true,2,Sun Stone
+evolution_item_requirement,EEVEE,,Item,FIRESTONE,true,false,true,0,Fire Stone
+evolution_item_requirement,EEVEE,,Item,ICESTONE,true,false,true,0,Ice Stone
+evolution_item_requirement,EEVEE,,Item,THUNDERSTONE,true,false,true,0,Thunder Stone
+evolution_item_requirement,EEVEE,,Item,LEAFSTONE,true,false,true,0,Leaf Stone
+evolution_item_requirement,EEVEE,,Item,SHINYSTONE,true,false,true,1,Shiny Stone
+evolution_item_requirement,EEVEE,,Item,MOONSTONE,true,false,true,2,Moon Stone
+evolution_item_requirement,EEVEE,,Item,WATERSTONE,true,false,true,0,Water Stone
+evolution_item_requirement,ELECTABUZZ,,Item,ELECTIRIZER,true,false,true,0,Electirizer
+evolution_item_requirement,EXEGGCUTE,,Item,LEAFSTONE,true,false,true,0,Leaf Stone
+evolution_item_requirement,FEEBAS,,Item,PRISMSCALE,true,false,true,0,Prism Scale
+evolution_item_requirement,GLIGAR,,Item,DUSKSTONE,true,false,true,0,Dusk Stone
+evolution_item_requirement,GLOOM,,Item,SUNSTONE,true,false,true,2,Sun Stone
+evolution_item_requirement,GLOOM,,Item,LEAFSTONE,true,false,true,0,Leaf Stone
+evolution_item_requirement,GRAVELER,,Item,LINKINGCORD,true,false,true,1,Linking Cord
+evolution_item_requirement,GROWLITHE,,Item,FIRESTONE,true,false,true,0,Fire Stone
+evolution_item_requirement,HAPPINY,,DayHoldItem,OVALSTONE,true,false,true,0,Oval Stone
+evolution_item_requirement,HAUNTER,,Item,LINKINGCORD,true,false,true,1,Linking Cord
+evolution_item_requirement,JIGGLYPUFF,,Item,MOONSTONE,true,false,true,2,Moon Stone
+evolution_item_requirement,KADABRA,,Item,LINKINGCORD,true,false,true,1,Linking Cord
+evolution_item_requirement,KIRLIA,,Item,DAWNSTONE,true,false,true,0,Dawn Stone
+evolution_item_requirement,LAMPENT,,Item,DUSKSTONE,true,false,true,0,Dusk Stone
+evolution_item_requirement,LOMBRE,,Item,WATERSTONE,true,false,true,0,Water Stone
+evolution_item_requirement,MACHOKE,,Item,LINKINGCORD,true,false,true,1,Linking Cord
+evolution_item_requirement,MAGMAR,,Item,MAGMARIZER,true,false,true,0,Magmarizer
+evolution_item_requirement,MAGNETON,,Item,MAGNETSTONE,true,false,true,0,Magnet Stone
+evolution_item_requirement,MISDREAVUS,,Item,DUSKSTONE,true,false,true,0,Dusk Stone
+evolution_item_requirement,MURKROW,,Item,DUSKSTONE,true,false,true,0,Dusk Stone
+evolution_item_requirement,NIDORINA,,Item,MOONSTONE,true,false,true,2,Moon Stone
+evolution_item_requirement,NIDORINO,,Item,MOONSTONE,true,false,true,2,Moon Stone
+evolution_item_requirement,NOSEPASS,,Item,MAGNETSTONE,true,false,true,0,Magnet Stone
+evolution_item_requirement,NUZLEAF,,Item,LEAFSTONE,true,false,true,0,Leaf Stone
+evolution_item_requirement,ONIX,,Item,METALCOAT,true,false,true,0,Metal Coat
+evolution_item_requirement,PHANTUMP,,Item,LINKINGCORD,true,false,true,1,Linking Cord
+evolution_item_requirement,PIKACHU,,Item,THUNDERSTONE,true,false,true,0,Thunder Stone
+evolution_item_requirement,POLIWHIRL,,Item,KINGSROCK,true,false,true,0,King's Rock
+evolution_item_requirement,POLIWHIRL,,Item,WATERSTONE,true,false,true,0,Water Stone
+evolution_item_requirement,PORYGON2,,Item,DUBIOUSDISC,true,false,true,0,Dubious Disc
+evolution_item_requirement,PORYGON,,Item,UPGRADE,true,false,true,0,Upgrade
+evolution_item_requirement,PUMPKABOO,,Item,LINKINGCORD,true,false,true,1,Linking Cord
+evolution_item_requirement,RHYDON,,Item,PROTECTOR,true,false,true,0,Protector
+evolution_item_requirement,ROSELIA,,Item,SHINYSTONE,true,false,true,1,Shiny Stone
+evolution_item_requirement,SCYTHER,,Item,METALCOAT,true,false,true,0,Metal Coat
+evolution_item_requirement,SEADRA,,Item,DRAGONSCALE,true,false,true,0,Dragon Scale
+evolution_item_requirement,SHELLDER,,Item,WATERSTONE,true,false,true,0,Water Stone
+evolution_item_requirement,SKITTY,,Item,MOONSTONE,true,false,true,2,Moon Stone
+evolution_item_requirement,SLOWPOKE,,Item,KINGSROCK,true,false,true,0,King's Rock
+evolution_item_requirement,SLOWPOKE,,Item,WATERSTONE,true,false,true,0,Water Stone
+evolution_item_requirement,SNEASEL,,Item,ICESTONE,true,false,true,0,Ice Stone
+evolution_item_requirement,SNORUNT,,Item,DAWNSTONE,true,false,true,0,Dawn Stone
+evolution_item_requirement,STARYU,,Item,WATERSTONE,true,false,true,0,Water Stone
+evolution_item_requirement,SUNKERN,,Item,SUNSTONE,true,false,true,2,Sun Stone
+evolution_item_requirement,TOGETIC,,Item,SHINYSTONE,true,false,true,1,Shiny Stone
+evolution_item_requirement,VULPIX,,Item,FIRESTONE,true,false,true,0,Fire Stone
+evolution_item_requirement,WEEPINBELL,,Item,LEAFSTONE,true,false,true,0,Leaf Stone
+required_item_summary,DAWNSTONE,Dawn Stone,2,Item,true,,true,0,evolution
+required_item_summary,DEEPSEASCALE,Deep Sea Scale,1,HoldItem,true,,true,0,held_combat
+required_item_summary,DEEPSEATOOTH,Deep Sea Tooth,1,HoldItem,true,,true,0,held_combat
+required_item_summary,DRAGONSCALE,Dragon Scale,1,Item,true,,true,0,evolution
+required_item_summary,DUBIOUSDISC,Dubious Disc,1,Item,true,,true,0,evolution
+required_item_summary,DUSKSTONE,Dusk Stone,5,Item,true,,true,0,evolution
+required_item_summary,ELECTIRIZER,Electirizer,1,Item,true,,true,0,evolution
+required_item_summary,FIRESTONE,Fire Stone,3,Item,true,,true,0,evolution
+required_item_summary,ICESTONE,Ice Stone,2,Item,true,,true,0,evolution
+required_item_summary,KINGSROCK,King's Rock,2,Item,true,,true,0,held_combat
+required_item_summary,LEAFSTONE,Leaf Stone,5,Item,true,,true,0,evolution
+required_item_summary,LINKINGCORD,Linking Cord,6,Item,true,,true,1,evolution
+required_item_summary,MAGMARIZER,Magmarizer,1,Item,true,,true,0,evolution
+required_item_summary,MAGNETSTONE,Magnet Stone,2,Item,true,,true,0,evolution
+required_item_summary,METALCOAT,Metal Coat,2,Item,true,,true,0,held_combat
+required_item_summary,MOONSTONE,Moon Stone,6,Item,true,,true,2,evolution
+required_item_summary,OVALSTONE,Oval Stone,1,DayHoldItem,true,,true,0,evolution
+required_item_summary,PRISMSCALE,Prism Scale,1,Item,true,,true,0,evolution
+required_item_summary,PROTECTOR,Protector,1,Item,true,,true,0,evolution
+required_item_summary,REAPERCLOTH,Reaper Cloth,1,Item,true,,true,0,evolution
+required_item_summary,SHINYSTONE,Shiny Stone,3,Item,true,,true,1,evolution
+required_item_summary,SUNSTONE,Sun Stone,4,Item,true,,true,2,evolution
+required_item_summary,THUNDERSTONE,Thunder Stone,3,Item,true,,true,0,evolution
+required_item_summary,UPGRADE,Upgrade,1,Item,true,,true,0,evolution
+required_item_summary,WATERSTONE,Water Stone,6,Item,true,,true,0,evolution
+evolution_item_requirement,duplicate_branch,,Shedinja,POKEBALL,true,false,true,5,requires and consumes one Poke Ball

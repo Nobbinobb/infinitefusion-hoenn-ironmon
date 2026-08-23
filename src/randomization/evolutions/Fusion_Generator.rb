@@ -17,14 +17,16 @@ module Ironmon
     attr_reader :catalog
     attr_reader :target_pool_info
 
-    def initialize(seed, catalog, target_species, target_pool_info, base_stat_generator)
+    def initialize(seed, catalog, target_species, target_pool_info, base_stat_generator, work_checkpoint = nil)
       @seed = seed.to_i
       @catalog = catalog
       @target_species = target_species
       @target_pool_info = target_pool_info
       @base_stat_generator = base_stat_generator
+      @work_checkpoint = work_checkpoint
       @valid_fusion_identities = {}
-      target_species.each do |species_id|
+      target_species.each_with_index do |species_id, index|
+        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
         @valid_fusion_identities[species_id.to_s] = true
       end
       @taxonomy_by_identity = {}
@@ -1082,6 +1084,7 @@ module Ironmon
       result = []
       position = 0
       while position < length && result.length < limit
+        @work_checkpoint.call if @work_checkpoint && (position % 32).zero?
         offset, state = deterministic_bounded_value(state, length - position)
         selected_position = position + offset
         original_position = swaps.fetch(selected_position, selected_position)
@@ -1209,14 +1212,20 @@ module Ironmon
           targets_for_type_signature(bucket, type_signature)
         )
       end
-      candidates.select! do |target|
-        !family_ids_overlap?(target[:family_ids], source_family_ids) &&
-          target_bst(target) > source_bst
+      filtered = []
+      candidates.each_with_index do |target, index|
+        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+        next if family_ids_overlap?(target[:family_ids], source_family_ids)
+        next if target_bst(target) <= source_bst
+        filtered << target
       end
-      candidates.sort_by! do |target|
+      index = 0
+      filtered.sort_by! do |target|
+        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+        index += 1
         [target_bst(target), target[:identity]]
       end
-      return candidates
+      return filtered
     end
 
     def merge_indexed_candidate_ranges(ranges, source_bst, source_family_ids)
@@ -1295,7 +1304,8 @@ module Ironmon
       end
       pools = { :continuing => [], :terminal => [] }
       by_identity = {}
-      @target_species.each do |target_id|
+      @target_species.each_with_index do |target_id, index|
+        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
         match = /\AB(\d+)H(\d+)\z/.match(target_id.to_s)
         next if !match
         body = GameData::Species.get(match[1].to_i)
@@ -1325,7 +1335,12 @@ module Ironmon
         by_identity[entry[:identity]] = entry
       end
       pools.each_value do |entries|
-        entries.sort_by! { |entry| entry[:identity] }
+        index = 0
+        entries.sort_by! do |entry|
+          @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+          index += 1
+          entry[:identity]
+        end
         entries.freeze
       end
       @target_pools = pools.freeze
@@ -1345,7 +1360,8 @@ module Ironmon
       result = {}
       target_pools.each do |bucket, targets|
         by_type = {}
-        targets.each do |target|
+        targets.each_with_index do |target, index|
+          @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
           target[:types].each do |type|
             by_type[type] ||= []
             by_type[type] << target
@@ -1406,7 +1422,10 @@ module Ironmon
       positions = Array.new(lists.length, 0)
       result = []
       last_identity = nil
+      iteration = 0
       loop do
+        @work_checkpoint.call if @work_checkpoint && (iteration % 32).zero?
+        iteration += 1
         selected_list_index = nil
         selected_target = nil
         lists.each_with_index do |targets, list_index|

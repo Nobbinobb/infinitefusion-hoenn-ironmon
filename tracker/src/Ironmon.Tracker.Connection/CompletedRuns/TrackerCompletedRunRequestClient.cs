@@ -1,4 +1,5 @@
 using Ironmon.Tracker.Connection.Transport;
+using Ironmon.Tracker.Connection.Obtainability;
 
 namespace Ironmon.Tracker.Connection.CompletedRuns;
 
@@ -8,6 +9,7 @@ namespace Ironmon.Tracker.Connection.CompletedRuns;
 internal sealed class TrackerCompletedRunRequestClient
 {
     private readonly TrackerResponseCache _cache;
+    private readonly PlayerFusionMappingCoordinator _fusionMappings;
     private readonly TrackerRequestSession _session;
 
     /// <summary>
@@ -15,12 +17,15 @@ internal sealed class TrackerCompletedRunRequestClient
     /// </summary>
     /// <param name="session">The correlated request session.</param>
     /// <param name="cache">The connection-scoped response cache.</param>
-    internal TrackerCompletedRunRequestClient(TrackerRequestSession session, TrackerResponseCache cache)
+    /// <param name="fusionMappings">The shared tracker-side material-mapping coordinator.</param>
+    internal TrackerCompletedRunRequestClient(TrackerRequestSession session, TrackerResponseCache cache, PlayerFusionMappingCoordinator fusionMappings)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(cache);
+        ArgumentNullException.ThrowIfNull(fusionMappings);
         _session = session;
         _cache = cache;
+        _fusionMappings = fusionMappings;
     }
 
     /// <summary>
@@ -69,7 +74,54 @@ internal sealed class TrackerCompletedRunRequestClient
 
         PokemonLookupRequestPayload payload = new() { SpeciesId = speciesId, Level = TrackerProtocol.CompatibilityLookupLevel, Section = section, Recipe = recipe };
         PokemonLookupSnapshot response = await _session.SendAsync<PokemonLookupRequestPayload, PokemonLookupSnapshot>(TrackerCommands.PokemonLookup, payload, recipe.RunId, cancellationToken);
-        _cache.Set(TrackerCommands.PokemonLookup, cacheKey, response);
+        if (response.Identity.Obtainability.Status != PokemonObtainabilityStatus.Calculating)
+            _cache.Set(TrackerCommands.PokemonLookup, cacheKey, response);
+        return response;
+    }
+
+    /// <summary>
+    /// Advances and reads the shared obtainability calculation for one completed run.
+    /// </summary>
+    /// <param name="recipe">The completed-run reconstruction recipe.</param>
+    /// <param name="speciesId">The optional species whose witness should be returned.</param>
+    /// <param name="speciesIds">The bounded identifiers whose proven membership should be returned.</param>
+    /// <param name="evolutionEdgeKeys">The bounded evolution connections whose possible membership should be returned.</param>
+    /// <param name="foreground">Whether the game should temporarily prioritize this run's calculation.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The current shared calculation state.</returns>
+    internal async Task<PokemonObtainabilityResponsePayload> AdvanceObtainabilityAsync(CompletedRunRecipePayload recipe, string? speciesId, IReadOnlyList<string>? speciesIds, IReadOnlyList<string>? evolutionEdgeKeys, bool foreground, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        IReadOnlyList<string> requestedSpeciesIds = speciesIds ?? [];
+        IReadOnlyList<string> requestedEvolutionEdgeKeys = evolutionEdgeKeys ?? [];
+        string requestedKey = string.Join(",", requestedSpeciesIds.Select(value => value.ToUpperInvariant()));
+        string requestedEdgesKey = string.Join(",", requestedEvolutionEdgeKeys.Select(value => value.ToUpperInvariant()));
+        string cacheKey = $"{recipe.RunId}|{speciesId?.ToUpperInvariant() ?? "NONE"}|{requestedKey}|{requestedEdgesKey}";
+        if (_cache.TryGet(TrackerCommands.PokemonObtainability, cacheKey, out PokemonObtainabilityResponsePayload cached))
+            return cached;
+
+        PokemonObtainabilityRequestPayload request = new() { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, Recipe = recipe };
+        PokemonObtainabilityResponsePayload response = await _session.SendAsync<PokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.PokemonObtainability, request, recipe.RunId, cancellationToken);
+        while (response.FusionMappingWork is not null)
+        {
+            PlayerFusionMappingBatchPayload? batch = await _fusionMappings.CreateBatchAsync(response.FusionMappingWork, foreground, cancellationToken).ConfigureAwait(false);
+            if (batch is not null)
+            {
+                request = new PokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, FusionMappingBatch = batch, Recipe = recipe };
+                response = await _session.SendAsync<PokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.PokemonObtainability, request, recipe.RunId, cancellationToken);
+            }
+            else
+            {
+                request = new PokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, FusionMappingWorkerUnavailable = true, Recipe = recipe };
+                response = await _session.SendAsync<PokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.PokemonObtainability, request, recipe.RunId, cancellationToken);
+            }
+
+            if (!foreground)
+                break;
+        }
+        if (response.Complete)
+            _cache.Set(TrackerCommands.PokemonObtainability, cacheKey, response);
+
         return response;
     }
 

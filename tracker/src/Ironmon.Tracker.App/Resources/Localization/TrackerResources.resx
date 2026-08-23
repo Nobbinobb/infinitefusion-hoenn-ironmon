@@ -1470,5 +1470,34 @@
   <data name="Lookup.Graph.BstValue" xml:space="preserve"><value>BST {0}</value></data>
   <data name="Lookup.Graph.BstRange" xml:space="preserve"><value>BST {0}–{1}</value></data>
   <data name="Lookup.Graph.DuplicateBstRange" xml:space="preserve"><value>{0} · {1}/{2}</value></data>
+  <data name="Lookup.Graph.UnavailableBstRange" xml:space="preserve"><value>⊘ {0}</value></data>
+  <data name="Lookup.Graph.UnavailableBstRangeTitle" xml:space="preserve"><value>Evolution-unreachable · {0}</value></data>
   <data name="Lookup.Graph.HiddenConnections" xml:space="preserve"><value>{0} connections to hidden Pokémon</value></data>
+  <data name="Lookup.Graph.ShowOnlyObtainable" xml:space="preserve"><value>Show only evolution-reachable Pokémon</value></data>
+  <data name="Lookup.Graph.ShowAvailabilityRows" xml:space="preserve"><value>Separate reachable and unreachable evolutions</value></data>
+  <data name="Lookup.Graph.ShowAllPossible" xml:space="preserve"><value>Show all valid evolutions</value></data>
+  <data name="Lookup.Graph.ObtainableFilterActive" xml:space="preserve"><value>Proven-path filter active · {0} Pokémon · {1} source calls and {2} resource categories still need path semantics</value></data>
+  <data name="Lookup.Graph.AvailabilityViewActive" xml:space="preserve"><value>Evolution reachability view active · {0} reachable · {1} unreachable</value></data>
+  <data name="Lookup.Graph.ObtainableOnlyViewActive" xml:space="preserve"><value>Evolution-reachable-only view active · {0} Pokémon shown</value></data>
+  <data name="Lookup.Graph.ShowOnlyObtainableHint" xml:space="preserve"><value>Arrows show executable evolution routes. Select the green filter icon to hide evolution-unreachable Pokémon.</value></data>
+  <data name="Lookup.Graph.ShowAllPossibleHint" xml:space="preserve"><value>Arrows show executable evolution routes. Select the green filter icon to restore the original unfiltered graph.</value></data>
+  <data name="Lookup.Obtainability.Heading" xml:space="preserve"><value>Run obtainability</value></data>
+  <data name="Lookup.Obtainability.Obtainable" xml:space="preserve"><value>Obtainable</value></data>
+  <data name="Lookup.Obtainability.Unobtainable" xml:space="preserve"><value>Not obtainable</value></data>
+  <data name="Lookup.Obtainability.Calculating" xml:space="preserve"><value>Not fully checked</value></data>
+  <data name="Lookup.Obtainability.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Lookup.Obtainability.ShowPath" xml:space="preserve"><value>Show one valid path</value></data>
+  <data name="Lookup.Obtainability.Check" xml:space="preserve"><value>Check this run</value></data>
+  <data name="Lookup.Obtainability.Checking" xml:space="preserve"><value>Checking…</value></data>
+  <data name="Lookup.Obtainability.Progress" xml:space="preserve"><value>Checking obtainable paths… {0} of {1} material pairs</value></data>
+  <data name="Lookup.Obtainability.Phase.Preparing" xml:space="preserve"><value>preparing run sources</value></data>
+  <data name="Lookup.Obtainability.Phase.PlayerFusions" xml:space="preserve"><value>applying fusion pairs</value></data>
+  <data name="Lookup.Obtainability.Phase.GraphEvolutions" xml:space="preserve"><value>checking graph evolution routes</value></data>
+  <data name="Lookup.Obtainability.Phase.FullEvolutionChain" xml:space="preserve"><value>checking a complete Pokémon evolution chain</value></data>
+  <data name="Lookup.Obtainability.Phase.AuthoredSources" xml:space="preserve"><value>finalizing acquisition sources</value></data>
+  <data name="Lookup.Obtainability.Phase.Complete" xml:space="preserve"><value>complete</value></data>
+  <data name="Lookup.Obtainability.Mapping.Preparing" xml:space="preserve"><value>mapping not started</value></data>
+  <data name="Lookup.Obtainability.Mapping.WaitingForTracker" xml:space="preserve"><value>waiting for parallel tracker worker</value></data>
+  <data name="Lookup.Obtainability.Mapping.TrackerWorker" xml:space="preserve"><value>parallel tracker worker</value></data>
+  <data name="Lookup.Obtainability.Mapping.RubyFallback" xml:space="preserve"><value>Ruby fallback</value></data>
 </root>

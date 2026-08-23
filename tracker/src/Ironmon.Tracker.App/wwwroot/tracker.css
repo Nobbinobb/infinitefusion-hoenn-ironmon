@@ -2859,6 +2859,37 @@ button.move-placeholder:hover {
     gap: 0.4rem;
 }
 
+.evolution-obtainability-toggle {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 0.45rem;
+    color: var(--muted-strong);
+    background: var(--surface-soft);
+    font: inherit;
+    cursor: pointer;
+}
+
+.evolution-obtainability-toggle.active {
+    border-color: #78dfaa;
+    color: #78dfaa;
+}
+
+.evolution-obtainability-toggle:disabled {
+    cursor: wait;
+    opacity: 0.7;
+}
+
+.evolution-obtainability-active-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.8rem;
+    color: #78dfaa;
+}
+
 .evolution-graph-dialog-error {
     display: grid;
     justify-items: start;
@@ -2977,6 +3008,20 @@ button.move-placeholder:hover {
 
 .evolution-graph-node.current {
     z-index: 3;
+}
+
+.evolution-graph-node.unavailable {
+    opacity: 0.34;
+    filter: grayscale(0.45) saturate(0.45);
+}
+
+.evolution-graph-node.unavailable:hover {
+    opacity: 0.58;
+}
+
+.evolution-graph-range-selector.unavailable,
+.evolution-graph-range-label.unavailable {
+    opacity: 0.48;
 }
 
 .evolution-graph-level-band {
@@ -4312,6 +4357,49 @@ button.move-placeholder:hover {
     display: grid;
     gap: 0.3rem;
     margin: 0;
+}
+
+.obtainability-summary {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0.65rem 0;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.65rem;
+    background: color-mix(in srgb, var(--surface-soft) 88%, var(--accent) 12%);
+    font-size: 0.72rem;
+}
+
+.obtainability-summary > div {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.obtainability-summary p,
+.obtainability-summary ol {
+    margin: 0;
+}
+
+.obtainability-state {
+    flex: 0 0 auto;
+    padding: 0.16rem 0.45rem;
+    border-radius: 999px;
+    font-weight: 700;
+    background: var(--surface-raised);
+}
+
+.obtainability-state.obtainable {
+    color: #78dfaa;
+}
+
+.obtainability-state.unobtainable {
+    color: #ff8c91;
+}
+
+.obtainability-state.calculating,
+.obtainability-state.unknown {
+    color: var(--muted);
 }
 
 .debug-ability-slot dl > div {

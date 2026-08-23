@@ -5,6 +5,7 @@
 module Ironmon
   def self.tracker_debug_active_recipe
     return {
+      "active_run" => true,
       "run_id" => ensure_tracker_run_id,
       "seed" => $PokemonGlobal.ironmon_seed || 0,
       "result" => "active_debug",
@@ -44,6 +45,12 @@ module Ironmon
       "fusion_tutor_source_fingerprint" => $PokemonGlobal.ironmon_fusion_tutor_source_fingerprint,
       "player_fusion_generator_version" => PlayerFusionMapper::SCHEMA_VERSION,
       "item_generator" => item_generator_recipe,
+      "item_mappings" => tracker_item_mapping_recipe(
+        $PokemonGlobal.randomItemsHash
+      ),
+      "tm_mappings" => tracker_item_mapping_recipe(
+        $PokemonGlobal.randomTMsHash
+      ),
       "species_pool_fingerprint" => tracker_species_pool_fingerprint,
       "ability_pool_fingerprint" => $PokemonGlobal.ironmon_ability_pool_fingerprint,
       "fusion_pool_fingerprint" => $PokemonGlobal.ironmon_custom_fusion_pool_fingerprint

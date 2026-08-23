@@ -439,6 +439,28 @@ module IronmonSeededRunImportRuntimeTests
       mewtwo = GameData::Species.get(:MEWTWO)
       forward = preview_mapper.species(mudkip, mewtwo)
       reverse = preview_mapper.species(mewtwo, mudkip)
+      indexed_mapper = Ironmon::PlayerFusionMapper.new(
+        seed, Ironmon.custom_fusion_pool, {}, {},
+        Ironmon::BaseStatGenerator.new(
+          seed, Ironmon.base_stat_source_fingerprint
+        ),
+        Ironmon::PlayerFusionMapper::SCHEMA_VERSION, nil, true
+      )
+      indexed_mapper.prepare
+      sample_ids = [1, 4, 7, 25, 94, 150, 251, 384, 493, NB_POKEMON]
+      sample_ids.each_with_index do |first_id, first_index|
+        sample_ids[first_index..-1].each do |second_id|
+          pair = [first_id, second_id]
+          indexed = indexed_mapper.send(:select_result_ids, pair)
+          linear = indexed_mapper.send(:select_result_ids_linear, pair)
+          assert(
+            indexed == linear,
+            "indexed player-fusion selection matches the schema-3 linear " +
+              "reference for #{pair.inspect}: #{indexed.inspect} != " +
+              linear.inspect
+          )
+        end
+      end
       reverse_mapper = Ironmon::PlayerFusionMapper.new(
         seed, Ironmon.custom_fusion_pool, {}, {},
         Ironmon::BaseStatGenerator.new(

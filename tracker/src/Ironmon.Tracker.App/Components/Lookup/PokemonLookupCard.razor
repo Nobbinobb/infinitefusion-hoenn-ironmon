@@ -41,6 +41,42 @@
             </div>
         }
 
+        @if (!DebugMode)
+        {
+            <section class="obtainability-summary" aria-label="@Text["Lookup.Obtainability.Heading"]">
+                <div>
+                    <span class="@ObtainabilityCssClass">@ObtainabilityLabel</span>
+                    <span>@_obtainability.Reason</span>
+                </div>
+                @if (_obtainability.Path.Count > 0)
+                {
+                    <details>
+                        <summary>@Text["Lookup.Obtainability.ShowPath"]</summary>
+                        <ol>
+                            @foreach (string step in _obtainability.Path)
+                            {
+                                <li>@step</li>
+                            }
+                        </ol>
+                    </details>
+                }
+                @if (_obtainability.Status is PokemonObtainabilityStatus.Calculating or PokemonObtainabilityStatus.Unknown)
+                {
+                    <button type="button" disabled="@_checkingObtainability" @onclick="CheckObtainabilityAsync">
+                        @(_checkingObtainability ? Text["Lookup.Obtainability.Checking"] : Text["Lookup.Obtainability.Check"])
+                    </button>
+                }
+                @if (_checkingObtainability && _obtainabilityProgress is not null)
+                {
+                    <p>@Text["Lookup.Obtainability.Progress", _obtainabilityProgress.ProcessedPairs, _obtainabilityProgress.TotalPairs]</p>
+                }
+                @if (_obtainabilityError is not null)
+                {
+                    <p class="lookup-message error">@_obtainabilityError</p>
+                }
+            </section>
+        }
+
         <PokemonLookupSupplementalData Pokemon="@Pokemon"
                                        Recipe="@Recipe"
                                        DebugMode="@DebugMode"

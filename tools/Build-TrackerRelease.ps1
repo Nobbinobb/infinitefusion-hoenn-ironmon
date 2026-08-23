@@ -16,18 +16,33 @@ if ($null -eq $releaseVersion -or $releaseVersion -notmatch '^\d+\.\d+\.\d+(?:[-
 $releaseRuntimeIdentifier = "win-x64"
 $selfContainedArchiveName = "Ironmon-v$releaseVersion-$releaseRuntimeIdentifier.zip"
 $runtimeRequiredArchiveName = "Ironmon-v$releaseVersion-$releaseRuntimeIdentifier-runtime-required.zip"
+$releaseArtifactNames = @(
+  $selfContainedArchiveName,
+  ($selfContainedArchiveName -replace "\.zip$", ".sha256.txt"),
+  $runtimeRequiredArchiveName,
+  ($runtimeRequiredArchiveName -replace "\.zip$", ".sha256.txt")
+)
+$existingReleaseArtifacts = $releaseArtifactNames | Where-Object {
+  Test-Path -LiteralPath (Join-Path $releaseDirectory $_)
+}
+if ($existingReleaseArtifacts) {
+  throw "Release version $releaseVersion already has published artifacts: $($existingReleaseArtifacts -join ', '). Bump ApplicationDisplayVersion, ApplicationVersion, and Version before building another release. Existing release artifacts are immutable."
+}
 $areaCatalog = Join-Path $projectRoot "data\area_catalog.dat"
 $fusionPredecessorIndex = Join-Path $projectRoot "data\fusion_predecessor_index.dat"
+$playerFusionWorkerCatalog = Join-Path $projectRoot "data\player_fusion_worker_catalog.json"
 $areaAudit = Join-Path $projectRoot "docs\audits\generated\AREA_CATALOG_GENERATED.csv"
 $coverageDataset = Join-Path $projectRoot "data\type_coverage.json"
 $coverageAudit = Join-Path $projectRoot "docs\audits\generated\TYPE_COVERAGE_GENERATED.csv"
 $itemAudit = Join-Path $projectRoot "docs\audits\generated\ITEM_RANDOMIZATION_GENERATED.csv"
+$obtainabilityAudit = Join-Path $projectRoot "docs\audits\generated\OBTAINABILITY_FOUNDATION_GENERATED.csv"
 $generatedAreaCatalog = "$areaCatalog.release.tmp"
 $generatedFusionPredecessorIndex = "$fusionPredecessorIndex.release.tmp"
 $generatedAreaAudit = "$areaAudit.release.tmp"
 $generatedCoverageDataset = "$coverageDataset.release.tmp"
 $generatedCoverageAudit = "$coverageAudit.release.tmp"
 $generatedItemAudit = "$itemAudit.release.tmp"
+$generatedObtainabilityAudit = "$obtainabilityAudit.release.tmp"
 
 function Test-PlayerDistribution {
   param([string]$DistributionPath)
@@ -43,6 +58,27 @@ function Test-PlayerDistribution {
       (Get-FileHash -LiteralPath $distributedFusionPredecessorIndex -Algorithm SHA256).Hash -ne
         (Get-FileHash -LiteralPath $fusionPredecessorIndex -Algorithm SHA256).Hash) {
     throw "The player distribution does not contain the freshly generated fusion predecessor index."
+  }
+
+  $trackerConnectionAssemblyPath = Join-Path $DistributionPath "Ironmon Tracker\Ironmon.Tracker.Connection.dll"
+  $trackerConnectionAssembly = [Reflection.Assembly]::LoadFile($trackerConnectionAssemblyPath)
+  $workerResourceName = "Ironmon.Tracker.Connection.Resources.player_fusion_worker_catalog.json"
+  $workerResource = $trackerConnectionAssembly.GetManifestResourceStream($workerResourceName)
+  if ($null -eq $workerResource) {
+    throw "The published tracker does not contain the player-fusion worker catalog."
+  }
+  $workerSha256 = [Security.Cryptography.SHA256]::Create()
+  try {
+    $workerResourceHash = [BitConverter]::ToString(
+      $workerSha256.ComputeHash($workerResource)
+    ).Replace("-", "")
+  } finally {
+    $workerSha256.Dispose()
+    $workerResource.Dispose()
+  }
+  if ($workerResourceHash -ne
+      (Get-FileHash -LiteralPath $playerFusionWorkerCatalog -Algorithm SHA256).Hash) {
+    throw "The published tracker does not contain the freshly generated player-fusion worker catalog."
   }
 
   $trackerAssemblyPath = Join-Path $DistributionPath "Ironmon Tracker\Ironmon Tracker.dll"
@@ -69,9 +105,9 @@ function Test-PlayerDistribution {
   $forbiddenFiles = Get-ChildItem -LiteralPath $DistributionPath -File -Recurse |
     Where-Object {
       $_.Name -match "AccessGenerator|private[-_ ]?key" -or
-      $_.Name -match "Generate-(?:Area-Catalog|Type-Coverage-Dataset|Item-Randomization-Audit)" -or
-      $_.Name -match "Export-(?:AreaCatalog|TypeCoverageDataset|ItemRandomizationAudit)" -or
-      $_.Name -match "(?:AREA_CATALOG|TYPE_COVERAGE|ITEM_RANDOMIZATION)_GENERATED|GameRuntime-Tooling|Script-Loader" -or
+      $_.Name -match "Generate-(?:Area-Catalog|Type-Coverage-Dataset|Item-Randomization-Audit|Obtainability-Foundation-Audit|Player-Fusion-Worker-Catalog)" -or
+      $_.Name -match "Export-(?:AreaCatalog|TypeCoverageDataset|ItemRandomizationAudit|ObtainabilityFoundationAudit|PlayerFusionWorkerCatalog)" -or
+      $_.Name -match "(?:AREA_CATALOG|TYPE_COVERAGE|ITEM_RANDOMIZATION|OBTAINABILITY_FOUNDATION)_GENERATED|GameRuntime-Tooling|Script-Loader" -or
       $_.Name -match "Test-GameRuntime|(?:Area-Progress|Diagnostic-Access)\.rb" -or
       $_.Name -match "\.(?:bootstrap|progress|summary|tests|tmp)$" -or
       $_.Extension -in ".ironmon-access", ".key", ".p8", ".p12", ".pfx", ".pem" -or
@@ -92,11 +128,9 @@ function New-DeterministicReleaseArchive {
 
   $archive = Join-Path $releaseDirectory $ArchiveName
   $checksum = Join-Path $releaseDirectory ($ArchiveName -replace "\.zip$", ".sha256.txt")
-  if (Test-Path -LiteralPath $archive) {
-    Remove-Item -LiteralPath $archive -Force
-  }
-  if (Test-Path -LiteralPath $checksum) {
-    Remove-Item -LiteralPath $checksum -Force
+  if ((Test-Path -LiteralPath $archive) -or
+      (Test-Path -LiteralPath $checksum)) {
+    throw "Release artifacts are immutable and '$ArchiveName' already exists."
   }
 
   $archiveStream = [System.IO.File]::Open($archive, [System.IO.FileMode]::CreateNew)
@@ -132,9 +166,27 @@ function New-DeterministicReleaseArchive {
   }
 
   $hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
-  Set-Content -LiteralPath $checksum -Value "$hash  $ArchiveName"
+  "$hash  $ArchiveName" | Out-File -LiteralPath $checksum -Encoding utf8NoBOM -NoClobber
   Write-Output "Created $archive"
   Write-Output "SHA256 $hash"
+}
+
+$generatedPlayerFusionWorkerCatalog = "$playerFusionWorkerCatalog.release.tmp"
+try {
+  & (Join-Path $PSScriptRoot "generation\Generate-Player-Fusion-Worker-Catalog.ps1") `
+    -GameRoot $gameRoot `
+    -OutputPath $generatedPlayerFusionWorkerCatalog
+  if (-not (Test-Path -LiteralPath $generatedPlayerFusionWorkerCatalog) -or
+      (Get-Item -LiteralPath $generatedPlayerFusionWorkerCatalog).Length -eq 0) {
+    throw "Release generation did not produce the player-fusion worker catalog."
+  }
+  if (-not (Test-Path -LiteralPath $playerFusionWorkerCatalog) -or
+      (Get-FileHash -LiteralPath $generatedPlayerFusionWorkerCatalog -Algorithm SHA256).Hash -ne
+        (Get-FileHash -LiteralPath $playerFusionWorkerCatalog -Algorithm SHA256).Hash) {
+    Copy-Item -LiteralPath $generatedPlayerFusionWorkerCatalog -Destination $playerFusionWorkerCatalog -Force
+  }
+} finally {
+  Remove-Item -LiteralPath $generatedPlayerFusionWorkerCatalog -Force -ErrorAction SilentlyContinue
 }
 
 & dotnet test (Join-Path $projectRoot "tracker\tests\Ironmon.Tracker.Tests\Ironmon.Tracker.Tests.csproj") `
@@ -162,7 +214,11 @@ try {
   & (Join-Path $PSScriptRoot "generation\Generate-Item-Randomization-Audit.ps1") `
     -GameRoot $gameRoot `
     -AuditPath $generatedItemAudit
-  foreach ($generatedPath in $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit) {
+  & (Join-Path $PSScriptRoot "generation\Generate-Obtainability-Foundation-Audit.ps1") `
+    -GameRoot $gameRoot `
+    -AreaCatalogPath $generatedAreaCatalog `
+    -AuditPath $generatedObtainabilityAudit
+  foreach ($generatedPath in $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit, $generatedObtainabilityAudit) {
     if (-not (Test-Path -LiteralPath $generatedPath) -or
         (Get-Item -LiteralPath $generatedPath).Length -eq 0) {
       throw "Release generation did not produce '$generatedPath'."
@@ -178,7 +234,8 @@ try {
     @{ Generated = $generatedFusionPredecessorIndex; Canonical = $fusionPredecessorIndex },
     @{ Generated = $generatedCoverageDataset; Canonical = $coverageDataset },
     @{ Generated = $generatedCoverageAudit; Canonical = $coverageAudit },
-    @{ Generated = $generatedItemAudit; Canonical = $itemAudit }
+    @{ Generated = $generatedItemAudit; Canonical = $itemAudit },
+    @{ Generated = $generatedObtainabilityAudit; Canonical = $obtainabilityAudit }
   )) {
     $canonicalExists = Test-Path -LiteralPath $generatedFile.Canonical
     $contentChanged = -not $canonicalExists -or
@@ -189,7 +246,7 @@ try {
     }
   }
 } finally {
-  Remove-Item -LiteralPath $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit `
+  Remove-Item -LiteralPath $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit, $generatedObtainabilityAudit `
     -Force `
     -ErrorAction SilentlyContinue
 }

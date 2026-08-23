@@ -74,6 +74,121 @@ function Compress-ZlibBytes {
     )
 }
 
+function Get-IronmonScriptsArchiveMainSource {
+    param(
+        [Parameter(Mandatory)]
+        [byte[]]$ArchiveBytes
+    )
+
+    $mainName = [Text.Encoding]::ASCII.GetBytes("Main")
+    $mainOffset = -1
+    for ($index = 0; $index -le $ArchiveBytes.Length - $mainName.Length; $index++) {
+        $matches = $true
+        for ($nameIndex = 0; $nameIndex -lt $mainName.Length; $nameIndex++) {
+            if ($ArchiveBytes[$index + $nameIndex] -ne $mainName[$nameIndex]) {
+                $matches = $false
+                break
+            }
+        }
+        if ($matches) {
+            $mainOffset = $index
+            break
+        }
+    }
+    if ($mainOffset -lt 2 -or $ArchiveBytes[$mainOffset - 2] -ne 0x22) {
+        throw "The Infinite Fusion Scripts.rxdata Main entry was not recognized."
+    }
+
+    $position = $mainOffset + $mainName.Length
+    if ($ArchiveBytes[$position] -ne 0x22) {
+        throw "The Infinite Fusion Scripts.rxdata Main payload was not recognized."
+    }
+    $position++
+    $lengthMarker = [int]$ArchiveBytes[$position]
+    $position++
+    if ($lengthMarker -ge 5 -and $lengthMarker -le 127) {
+        $compressedLength = $lengthMarker - 5
+    }
+    elseif ($lengthMarker -ge 1 -and $lengthMarker -le 4) {
+        $compressedLength = 0
+        for ($index = 0; $index -lt $lengthMarker; $index++) {
+            $compressedLength = $compressedLength -bor (
+                [int]$ArchiveBytes[$position + $index] -shl (8 * $index)
+            )
+        }
+        $position += $lengthMarker
+    }
+    else {
+        throw "The Infinite Fusion Scripts.rxdata Main length was not recognized."
+    }
+    if ($position + $compressedLength -gt $ArchiveBytes.Length) {
+        throw "The Infinite Fusion Scripts.rxdata Main payload is truncated."
+    }
+
+    $compressedStream = [IO.MemoryStream]::new(
+        $ArchiveBytes,
+        $position,
+        $compressedLength
+    )
+    $zlibStream = [IO.Compression.ZLibStream]::new(
+        $compressedStream,
+        [IO.Compression.CompressionMode]::Decompress
+    )
+    $sourceStream = [IO.MemoryStream]::new()
+    try {
+        $zlibStream.CopyTo($sourceStream)
+        return [Text.Encoding]::UTF8.GetString($sourceStream.ToArray())
+    }
+    finally {
+        $sourceStream.Dispose()
+        $zlibStream.Dispose()
+        $compressedStream.Dispose()
+    }
+}
+
+function Assert-IronmonNormalScriptsArchive {
+    param(
+        [Parameter(Mandatory)]
+        [byte[]]$ArchiveBytes
+    )
+
+    $mainSource = Get-IronmonScriptsArchiveMainSource -ArchiveBytes $ArchiveBytes
+    if ($mainSource -match 'IronmonScriptLoader\.load_manifest' -or
+        $mainSource -match '\$ironmon_[A-Za-z0-9_]+_output_path') {
+        throw "Data/Scripts.rxdata contains a temporary Ironmon runtime bootstrap instead of the normal game loader."
+    }
+}
+
+function Restore-IronmonGameRuntimeArchive {
+    param(
+        [Parameter(Mandatory)]
+        [string]$GameRoot
+    )
+
+    $resolvedGameRoot = [IO.Path]::GetFullPath($GameRoot)
+    $dataRoot = Join-Path $resolvedGameRoot "Data"
+    $scriptsArchive = Join-Path $dataRoot "Scripts.rxdata"
+    $backupArchive = "$scriptsArchive.ironmon-runtime-backup"
+    Assert-PathWithinDirectory -Path $scriptsArchive -Directory $dataRoot
+    Assert-PathWithinDirectory -Path $backupArchive -Directory $dataRoot
+    if (-not (Test-Path -LiteralPath $backupArchive)) {
+        return $false
+    }
+
+    $backupBytes = [IO.File]::ReadAllBytes($backupArchive)
+    Assert-IronmonNormalScriptsArchive -ArchiveBytes $backupBytes
+    [IO.File]::WriteAllBytes($scriptsArchive, $backupBytes)
+    $restoredBytes = [IO.File]::ReadAllBytes($scriptsArchive)
+    if (-not [Linq.Enumerable]::SequenceEqual[byte](
+        $backupBytes,
+        $restoredBytes
+    )) {
+        throw "The Infinite Fusion Scripts.rxdata backup could not be restored exactly."
+    }
+    Remove-Item -LiteralPath $backupArchive -Force
+    return $true
+}
+
 function New-TemporaryScriptsArchive {
     param(
         [Parameter(Mandatory)]
@@ -158,15 +273,20 @@ function Invoke-IronmonGameRuntime {
 
     $gameExecutable = $candidateExecutables[0]
     $scriptsArchive = Join-Path $resolvedGameRoot "Data\Scripts.rxdata"
+    $scriptsArchiveBackup = "$scriptsArchive.ironmon-runtime-backup"
     Assert-PathWithinDirectory -Path $scriptsArchive -Directory (Join-Path $resolvedGameRoot "Data")
+    Assert-PathWithinDirectory -Path $scriptsArchiveBackup -Directory (Join-Path $resolvedGameRoot "Data")
     if (-not (Test-Path -LiteralPath $scriptsArchive)) {
         throw "The Infinite Fusion Scripts.rxdata file was not found."
     }
 
+    Restore-IronmonGameRuntimeArchive -GameRoot $resolvedGameRoot | Out-Null
     $originalScriptsArchive = [IO.File]::ReadAllBytes($scriptsArchive)
+    Assert-IronmonNormalScriptsArchive -ArchiveBytes $originalScriptsArchive
     $temporaryScriptsArchive = New-TemporaryScriptsArchive -OriginalBytes $originalScriptsArchive -RubySource $RubySource
     $gameProcess = $null
     try {
+        [IO.File]::WriteAllBytes($scriptsArchiveBackup, $originalScriptsArchive)
         [IO.File]::WriteAllBytes($scriptsArchive, $temporaryScriptsArchive)
         $startArguments = @{
             FilePath = $gameExecutable
@@ -257,6 +377,11 @@ function Invoke-IronmonGameRuntime {
             Stop-Process -Id $gameProcess.Id
             $gameProcess.WaitForExit()
         }
-        [IO.File]::WriteAllBytes($scriptsArchive, $originalScriptsArchive)
+        if (Test-Path -LiteralPath $scriptsArchiveBackup) {
+            Restore-IronmonGameRuntimeArchive -GameRoot $resolvedGameRoot | Out-Null
+        }
+        else {
+            [IO.File]::WriteAllBytes($scriptsArchive, $originalScriptsArchive)
+        }
     }
 }

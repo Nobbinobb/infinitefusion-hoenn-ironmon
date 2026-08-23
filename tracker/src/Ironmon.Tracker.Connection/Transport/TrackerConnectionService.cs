@@ -8,6 +8,8 @@ namespace Ironmon.Tracker.Connection.Transport;
 /// </summary>
 public sealed class TrackerConnectionService : IAsyncDisposable
 {
+    private static readonly TimeSpan ObtainabilityPrecalculationInterval = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan ObtainabilityPrecalculationStartupDelay = TimeSpan.FromSeconds(2);
     private readonly Lock _lifecycleSync = new();
     private readonly TrackerDiagnosticAccessNotifier? _diagnosticAccessNotifier;
     private readonly TrackerDiagnosticsStore _diagnostics;
@@ -234,13 +236,59 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         _state.Publish(TrackerConnectionStatus.Connected, game);
         _diagnostics.RecordLifecycle(TrackerDiagnosticConstants.Connected, $"Infinite Fusion {game.GameVersion} · Ironmon {game.IronmonVersion}");
 
+        using CancellationTokenSource precalculationCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        Task precalculation = RunObtainabilityPrecalculationAsync(precalculationCancellation.Token);
         try
         {
             await ReadMessagesAsync(reader, requestId, game, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
+            precalculationCancellation.Cancel();
+            try
+            {
+                await precalculation.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (precalculationCancellation.IsCancellationRequested)
+            {
+            }
             ClearRequestSession();
+        }
+    }
+
+    /// <summary>
+    /// Advances authorized active-run obtainability in small tracker-driven batches while the game remains connected.
+    /// </summary>
+    /// <param name="cancellationToken">The token that stops work for the current game connection.</param>
+    /// <returns>A task representing the background polling loop.</returns>
+    private async Task RunObtainabilityPrecalculationAsync(CancellationToken cancellationToken)
+    {
+        string? completedRunId = null;
+        await Task.Delay(ObtainabilityPrecalculationStartupDelay, cancellationToken).ConfigureAwait(false);
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            TrackerConnectionSnapshot snapshot = _state.Snapshot;
+            string? runId = snapshot.CurrentState?.RunId ?? snapshot.Game?.RunId;
+            bool authorized = Requests.HasDiagnosticCapability(DiagnosticCapabilities.EvolutionResults)
+                && Requests.HasDiagnosticCapability(DiagnosticCapabilities.FusionMaterialPairs)
+                && Requests.HasDiagnosticCapability(DiagnosticCapabilities.PokemonAllActive)
+                && Requests.HasDiagnosticCapability(DiagnosticCapabilities.WorldItems)
+                && Requests.HasDiagnosticCapability(DiagnosticCapabilities.WorldWildEncounters);
+
+            if (authorized && snapshot.CurrentState?.IronmonActive == true && !string.IsNullOrWhiteSpace(runId) && runId != completedRunId)
+            {
+                try
+                {
+                    PokemonObtainabilityResponsePayload response = await Requests.AdvanceDebugPokemonObtainabilityAsync(foreground: false, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    if (response.Complete)
+                        completedRunId = runId;
+                }
+                catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
+                {
+                    _diagnostics.RecordError(exception);
+                }
+            }
+            await Task.Delay(ObtainabilityPrecalculationInterval, cancellationToken).ConfigureAwait(false);
         }
     }
 

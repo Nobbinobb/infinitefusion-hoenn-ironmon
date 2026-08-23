@@ -6,6 +6,15 @@
                 <h2 id="evolution-graph-dialog-title">@Current.SpeciesName</h2>
             </div>
             <div class="evolution-graph-dialog-actions">
+                <button class="evolution-obtainability-toggle @(ReachabilityModeActive ? "active" : null)"
+                        type="button"
+                        disabled="@_obtainabilityLoading"
+                        title="@(_obtainabilityLoading ? Text["Lookup.Obtainability.Checking"] : ReachabilityToggleLabel)"
+                        aria-label="@(_obtainabilityLoading ? Text["Lookup.Obtainability.Checking"] : ReachabilityToggleLabel)"
+                        aria-pressed="@ReachabilityModeActive"
+                        @onclick="ToggleReachabilityFilterAsync">
+                    <span aria-hidden="true">@ReachabilityToggleIcon</span>
+                </button>
                 <button class="detail-close" type="button" title="@RowModeToggleLabel" aria-label="@RowModeToggleLabel" @onclick="ToggleRowMode">@RowModeToggleIcon</button>
                 <button class="detail-close" type="button" title="@ScopeToggleLabel" aria-label="@ScopeToggleLabel" @onclick="ToggleGraphScope">@ScopeToggleIcon</button>
                 <button class="detail-close" type="button" title="@WindowToggleLabel" aria-label="@WindowToggleLabel" @onclick="ToggleMaximizedAsync">@WindowToggleIcon</button>
@@ -24,6 +33,8 @@
                             ViewportRevision="@_viewportRevision"
                             NodesPerRow="@_nodesPerRow"
                             CompactRows="@_compactRows"
+                            ReachabilityViewActive="@GroupedReachabilityMode"
+                            ReachableSpeciesIds="@EvolutionReachableSpeciesIds"
                             BranchSelectionEnabled="true"
                             Nodes="@GraphNodes"
                             Edges="@GraphEdges"
@@ -40,6 +51,28 @@
             {
                 <p class="lookup-message">@Text["Lookup.Graph.LoadedNeighborhood", _displayedNodeCount, _nodes.Count, _edges.Count, _expansionDepth]</p>
             }
+
+            @if (_obtainabilityLoading && _obtainabilityProgress is not null)
+            {
+                <p class="lookup-message">
+                    <span>@Text["Lookup.Obtainability.Progress", _obtainabilityProgress.ProcessedPairs, _obtainabilityProgress.TotalPairs]</span>
+                    <span> · @ObtainabilityPhaseLabel · @FusionMappingModeLabel</span>
+                </p>
+            }
+            else if (GroupedReachabilityMode && _obtainabilityProgress is not null)
+            {
+                <p class="lookup-message evolution-obtainability-active-info">
+                    <span>@Text["Lookup.Graph.AvailabilityViewActive", EvolutionReachableSpeciesIds.Count, Math.Max(0, GraphNodes.Count - EvolutionReachableSpeciesIds.Count)]</span>
+                    <span>@Text["Lookup.Graph.ShowOnlyObtainableHint"]</span>
+                </p>
+            }
+            else if (ReachableOnlyMode && _obtainabilityProgress is not null)
+            {
+                <p class="lookup-message evolution-obtainability-active-info">
+                    <span>@Text["Lookup.Graph.ObtainableOnlyViewActive", EvolutionReachableSpeciesIds.Count]</span>
+                    <span>@Text["Lookup.Graph.ShowAllPossibleHint"]</span>
+                </p>
+            }
         }
 
         @if (_error is not null)
@@ -48,6 +81,10 @@
                 <p class="lookup-message error">@_error</p>
                 <button type="button" @onclick="RetryAsync">@Text["Lookup.Graph.Retry"]</button>
             </div>
+        }
+        @if (_obtainabilityError is not null)
+        {
+            <p class="lookup-message error">@_obtainabilityError</p>
         }
     </section>
 </div>

@@ -20,9 +20,10 @@
                     int portalCount = GetPortalCount(range.Key.Level, range.Key.PageIndex);
                     <button @key="range.Key"
                             type="button"
-                            class="evolution-graph-range-selector @(IsRangeActive(range.Key.Level, range.Key.PageIndex) ? "active" : null) @(IsFocusRange(range.Key.Level, range.Key.PageIndex) ? "focused" : null) @(portalCount > 0 ? "connected" : null)"
+                            class="evolution-graph-range-selector @(IsRangeActive(range.Key.Level, range.Key.PageIndex) ? "active" : null) @(IsFocusRange(range.Key.Level, range.Key.PageIndex) ? "focused" : null) @(portalCount > 0 ? "connected" : null) @(!IsRangeReachable(range.Key.Level, range.Key.PageIndex) ? "unavailable" : null)"
                             style="@GetRangeStyle(range.Value.X, range.Value.Y)"
-                            title="@GetRangeLabel(range.Key.Level, range.Key.PageIndex)"
+                            title="@GetRangeTitle(range.Key.Level, range.Key.PageIndex)"
+                            aria-label="@GetRangeTitle(range.Key.Level, range.Key.PageIndex)"
                             @onclick="() => SelectRangeAsync(range.Key.Level, range.Key.PageIndex)">
                         <span>@GetRangeLabel(range.Key.Level, range.Key.PageIndex)</span>
                         @if (portalCount > 0)
@@ -36,7 +37,7 @@
             {
                 @foreach ((int Level, int PageIndex, double X, double Y) range in _expandedRangeLabels)
                 {
-                    <div @key="range" class="evolution-graph-range-label" style="@GetRangeStyle(range.X, range.Y)">@GetRangeLabel(range.Level, range.PageIndex)</div>
+                    <div @key="range" class="evolution-graph-range-label @(!IsRangeReachable(range.Level, range.PageIndex) ? "unavailable" : null)" style="@GetRangeStyle(range.X, range.Y)" title="@GetRangeTitle(range.Level, range.PageIndex)">@GetRangeLabel(range.Level, range.PageIndex)</div>
                 }
             }
 
@@ -53,7 +54,7 @@
                 <g class="evolution-graph-paths">
                     @foreach (EvolutionGraphEdge edge in _visibleEdges)
                     {
-                        bool active = IsActive(edge);
+                        bool active = IsActive(edge) && IsReachable(edge.SourceSpeciesId) && IsReachable(edge.TargetSpeciesId);
                         <path @key="edge.Key" class="@(active ? "active" : "faint")" d="@GetPath(edge)" marker-end="@GetArrowMarkerReference(active)" />
                     }
                     @foreach ((string Key, string VisibleSpeciesId, int HiddenLevel, int HiddenPageIndex, bool HiddenIsSource, int Count, bool Active) connection in _portalConnections)
@@ -83,7 +84,7 @@
 
             @foreach (EvolutionTargetSnapshot node in _visibleNodes)
             {
-                <div @key="node.SpeciesId" class="evolution-graph-node @(IsFocused(node.SpeciesId) ? "current" : null)" style="@GetNodeStyle(node.SpeciesId)">
+                <div @key="node.SpeciesId" class="evolution-graph-node @(IsFocused(node.SpeciesId) ? "current" : null) @(!IsReachable(node.SpeciesId) ? "unavailable" : null)" style="@GetNodeStyle(node.SpeciesId)">
                     <EvolutionTargetButton Target="@node"
                                            GameRoot="@GameRoot"
                                            Selected="@Selected"

@@ -61,6 +61,11 @@ public static class TrackerCommands
     public const string PokemonLookup = "pokemon_lookup";
 
     /// <summary>
+    /// Gets the bounded completed-run obtainability calculation command.
+    /// </summary>
+    public const string PokemonObtainability = "pokemon_obtainability";
+
+    /// <summary>
     /// Gets the completed-run evolution-candidate search command.
     /// </summary>
     public const string EvolutionCandidateSearch = "evolution_candidate_search";
@@ -109,6 +114,11 @@ public static class TrackerCommands
     /// Gets the authorized active-run Pokemon lookup command.
     /// </summary>
     public const string DebugPokemonLookup = "debug_pokemon_lookup";
+
+    /// <summary>
+    /// Gets the authorized active-run obtainability calculation command.
+    /// </summary>
+    public const string DebugPokemonObtainability = "debug_pokemon_obtainability";
 
     /// <summary>
     /// Gets the authorized active-run evolution-candidate search command.

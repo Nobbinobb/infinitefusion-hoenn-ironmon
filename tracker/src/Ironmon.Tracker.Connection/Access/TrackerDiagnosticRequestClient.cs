@@ -1,4 +1,5 @@
 using Ironmon.Tracker.Connection.Transport;
+using Ironmon.Tracker.Connection.Obtainability;
 
 namespace Ironmon.Tracker.Connection.Access;
 
@@ -8,6 +9,7 @@ namespace Ironmon.Tracker.Connection.Access;
 internal sealed class TrackerDiagnosticRequestClient
 {
     private readonly TrackerDiagnosticAuthorizer _authorization;
+    private readonly PlayerFusionMappingCoordinator _fusionMappings;
     private readonly TrackerRequestSession _session;
 
     /// <summary>
@@ -15,12 +17,15 @@ internal sealed class TrackerDiagnosticRequestClient
     /// </summary>
     /// <param name="session">The correlated request session.</param>
     /// <param name="authorization">The diagnostic authorization policy.</param>
-    internal TrackerDiagnosticRequestClient(TrackerRequestSession session, TrackerDiagnosticAuthorizer authorization)
+    /// <param name="fusionMappings">The shared tracker-side material-mapping coordinator.</param>
+    internal TrackerDiagnosticRequestClient(TrackerRequestSession session, TrackerDiagnosticAuthorizer authorization, PlayerFusionMappingCoordinator fusionMappings)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(authorization);
+        ArgumentNullException.ThrowIfNull(fusionMappings);
         _session = session;
         _authorization = authorization;
+        _fusionMappings = fusionMappings;
     }
 
     /// <summary>
@@ -86,6 +91,36 @@ internal sealed class TrackerDiagnosticRequestClient
         _authorization.EnsurePokemonLookup(section);
         DebugPokemonLookupRequestPayload request = new() { SpeciesId = speciesId, Section = section };
         return _session.SendAsync<DebugPokemonLookupRequestPayload, PokemonLookupSnapshot>(TrackerCommands.DebugPokemonLookup, request, runId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Advances and reads the shared obtainability calculation for the authorized active run.
+    /// </summary>
+    /// <param name="speciesId">The optional species whose witness should be returned.</param>
+    /// <param name="speciesIds">The bounded identifiers whose proven membership should be returned.</param>
+    /// <param name="evolutionEdgeKeys">The bounded evolution connections whose possible membership should be returned.</param>
+    /// <param name="foreground">Whether the game should temporarily prioritize this run's calculation.</param>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The current shared calculation state.</returns>
+    internal async Task<PokemonObtainabilityResponsePayload> AdvanceObtainabilityAsync(string? speciesId, IReadOnlyList<string>? speciesIds, IReadOnlyList<string>? evolutionEdgeKeys, bool foreground, string? runId, CancellationToken cancellationToken)
+    {
+        _authorization.EnsureAll(DiagnosticCapabilities.EvolutionResults, DiagnosticCapabilities.FusionMaterialPairs, DiagnosticCapabilities.PokemonAllActive, DiagnosticCapabilities.WorldItems, DiagnosticCapabilities.WorldWildEncounters);
+        DebugPokemonObtainabilityRequestPayload request = new() { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground };
+        PokemonObtainabilityResponsePayload response = await _session.SendAsync<DebugPokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.DebugPokemonObtainability, request, runId, cancellationToken);
+        while (response.FusionMappingWork is not null)
+        {
+            PlayerFusionMappingBatchPayload? batch = await _fusionMappings.CreateBatchAsync(response.FusionMappingWork, foreground, cancellationToken).ConfigureAwait(false);
+            request = batch is null
+                ? new DebugPokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, FusionMappingWorkerUnavailable = true }
+                : new DebugPokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, FusionMappingBatch = batch };
+
+            response = await _session.SendAsync<DebugPokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.DebugPokemonObtainability, request, runId, cancellationToken);
+            if (!foreground)
+                break;
+        }
+
+        return response;
     }
 
     /// <summary>
