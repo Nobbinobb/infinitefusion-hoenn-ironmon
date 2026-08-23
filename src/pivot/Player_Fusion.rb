@@ -97,6 +97,11 @@ module Ironmon
         GameData::Species.get(fusion_species).id_number
       )
       return @material_pairs[species_id] if @material_pairs[species_id]
+      if @schema_version == SCHEMA_VERSION
+        pairs = schema_3_material_pairs_for(species_id).freeze
+        @material_pairs[species_id] = pairs
+        return @material_pairs[species_id]
+      end
       ensure_material_pair_codes
       codes = @material_pair_codes.fetch(species_id, [])
       pairs = codes.map do |code|
@@ -131,6 +136,134 @@ module Ironmon
       end
       codes.each_value(&:freeze)
       @material_pair_codes = codes.freeze
+    end
+
+    def schema_3_material_pairs_for(species_id)
+      fusion_pair_index = @fusion_pairs.index do |fusion_pair|
+        fusion_pair[0] == species_id || fusion_pair[1] == species_id
+      end
+      if !fusion_pair_index
+        raise PlayerFusionMappingError,
+              "a custom fusion has no result-pair position"
+      end
+      pairs = []
+      seen = {}
+      append_cached_material_pairs(species_id, pairs, seen)
+      (1..NB_POKEMON).each do |first_id|
+        (first_id..NB_POKEMON).each do |second_id|
+          pair = [first_id, second_id]
+          result_ids = schema_3_result_ids_at_pair(
+            pair, fusion_pair_index
+          )
+          next if !result_ids
+          append_material_pair(
+            pairs, seen, first_id, second_id
+          ) if result_ids[0] == species_id
+          if first_id != second_id && result_ids[1] == species_id
+            append_material_pair(
+              pairs, seen, second_id, first_id
+            )
+          end
+        end
+      end
+      return pairs.sort
+    end
+
+    def append_cached_material_pairs(species_id, pairs, seen)
+      @mappings.keys.each do |key|
+        match = /\A(\d+):(\d+)\z/.match(key.to_s)
+        next if !match
+        first_id = match[1].to_i
+        second_id = match[2].to_i
+        next if first_id <= 0 || second_id <= 0 ||
+          first_id > NB_POKEMON || second_id > NB_POKEMON
+        result_ids = mapped_result_ids([first_id, second_id].sort)
+        append_material_pair(
+          pairs, seen, first_id, second_id
+        ) if result_ids[0] == species_id
+        if first_id != second_id && result_ids[1] == species_id
+          append_material_pair(
+            pairs, seen, second_id, first_id
+          )
+        end
+      end
+    end
+
+    def append_material_pair(pairs, seen, body_id, head_id)
+      code = pack_material_pair(body_id, head_id)
+      return if seen[code]
+      seen[code] = true
+      pairs << [body_id, head_id]
+    end
+
+    def schema_3_result_ids_at_pair(pair, fusion_pair_index)
+      body = GameData::Species.get(pair[0])
+      head = GameData::Species.get(pair[1])
+      source_types = [
+        body.type1, body.type2, head.type1, head.type2
+      ].compact.uniq
+      forward_range = preferred_range(normal_fusion_bst(body, head))
+      reverse_range = preferred_range(normal_fusion_bst(head, body))
+      reverse_first = deterministic_value(
+        "orientation", pair[0], pair[1]
+      ).odd?
+      result_ids = matching_result_orientation(
+        @fusion_pairs[fusion_pair_index], source_types,
+        forward_range, reverse_range, reverse_first
+      )
+      return nil if !result_ids
+      previous_index = fusion_pair_index
+      loop do
+        previous_index -= 1
+        previous_index = @fusion_pairs.length - 1 if previous_index < 0
+        break if previous_index == fusion_pair_index
+        break if result_pair_matches?(
+          @fusion_pairs[previous_index], source_types,
+          forward_range, reverse_range
+        )
+      end
+      return result_ids if previous_index == fusion_pair_index
+      start = deterministic_result_value(pair[0], pair[1]) %
+              @fusion_pairs.length
+      distance_to_result = (fusion_pair_index - start) %
+                           @fusion_pairs.length
+      distance_to_previous = (previous_index - start) %
+                             @fusion_pairs.length
+      return distance_to_result < distance_to_previous ? result_ids : nil
+    end
+
+    def matching_result_orientation(fusion_pair, source_types, forward_range,
+                                    reverse_range, reverse_first)
+      first = fusion_pair
+      second = [fusion_pair[1], fusion_pair[0]]
+      first, second = second, first if reverse_first
+      return first if result_orientation_matches?(
+        first, source_types, forward_range, reverse_range
+      )
+      return second if result_orientation_matches?(
+        second, source_types, forward_range, reverse_range
+      )
+      return nil
+    end
+
+    def result_pair_matches?(fusion_pair, source_types, forward_range,
+                             reverse_range)
+      return true if result_orientation_matches?(
+        fusion_pair, source_types, forward_range, reverse_range
+      )
+      reverse = [fusion_pair[1], fusion_pair[0]]
+      return result_orientation_matches?(
+        reverse, source_types, forward_range, reverse_range
+      )
+    end
+
+    def result_orientation_matches?(orientation, source_types, forward_range,
+                                    reverse_range)
+      return target_matches?(
+        orientation[0], source_types, forward_range
+      ) && target_matches?(
+        orientation[1], source_types, reverse_range
+      )
     end
 
     def pack_material_pair(body_id, head_id)

@@ -101,6 +101,40 @@ public sealed class TrackerKnowledgeStoreTests
     }
 
     /// <summary>
+    /// Verifies equivalent observations are ignored while changed persisted metadata is published.
+    /// </summary>
+    [Fact]
+    public void EquivalentKnowledgeObservationsDoNotPublishChanges()
+    {
+        string root = CreateRoot();
+        try
+        {
+            TrackerKnowledgeStore store = new(new TrackerKnowledgeOptions(root));
+            store.SelectRun("run-equivalence");
+            int changes = 0;
+            store.Changed += (_, _) => changes++;
+
+            store.ObserveEnemy(CreateEnemy(18, CreateAbility("FRISK", "Frisk")));
+            Assert.Equal(1, changes);
+            store.ObserveEnemy(CreateEnemy(18, CreateAbility("FRISK", "Frisk")));
+            Assert.Equal(1, changes);
+            store.ObserveEnemy(CreateEnemy(18, CreateAbility("FRISK", "Frisk", "Updated description")));
+            Assert.Equal(2, changes);
+
+            store.ObserveEnemyMove(CreateEnemyUse(CreateMove("MOVE1", 10, 1, 8)));
+            Assert.Equal(3, changes);
+            store.ObserveEnemyMove(CreateEnemyUse(CreateMove("MOVE1", 10, 1, 8)));
+            Assert.Equal(3, changes);
+            store.ObserveEnemyMove(CreateEnemyUse(CreateMove("MOVE1", 10, 1, 8, description: "Updated description")));
+            Assert.Equal(4, changes);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    /// <summary>
     /// Verifies annotation cycling in both directions and persistence.
     /// </summary>
     [Fact]
@@ -156,12 +190,13 @@ public sealed class TrackerKnowledgeStoreTests
     /// </summary>
     /// <param name="id">The ability identifier.</param>
     /// <param name="name">The localized ability name.</param>
+    /// <param name="description">The localized ability description.</param>
     /// <returns>The ability snapshot.</returns>
-    private static AbilitySnapshot CreateAbility(string id, string name) => new()
+    private static AbilitySnapshot CreateAbility(string id, string name, string? description = null) => new()
     {
         Id = id,
         Name = name,
-        Description = $"{name} description"
+        Description = description ?? $"{name} description"
     };
 
     /// <summary>
@@ -204,8 +239,9 @@ public sealed class TrackerKnowledgeStoreTests
     /// <param name="order">The learnset order.</param>
     /// <param name="ppAfterUse">The observed remaining PP.</param>
     /// <param name="source">The move's learn-source identifier.</param>
+    /// <param name="description">The localized move description.</param>
     /// <returns>The move observation.</returns>
-    private static ObservedMoveSnapshot CreateMove(string id, int level, int order, int? ppAfterUse = null, string source = "level_up") => new()
+    private static ObservedMoveSnapshot CreateMove(string id, int level, int order, int? ppAfterUse = null, string source = "level_up", string description = "") => new()
     {
         Id = id,
         Name = id,
@@ -214,6 +250,7 @@ public sealed class TrackerKnowledgeStoreTests
         Source = source,
         Origin = ppAfterUse is null ? "player_initial" : "enemy_use",
         Type = "GRASS",
+        Description = description,
         Power = 40,
         Accuracy = 100,
         TotalPp = 15,

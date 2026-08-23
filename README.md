@@ -20,17 +20,19 @@ and a fast reset to starter selection.
 - `dist/` and `release/` are ignored generated output directories.
 - `tools/Build-Distribution.ps1` validates the Ruby manifest and synchronizes
   flat, load-ordered scripts into `dist/` and the local game installation.
-- `tools/Build-TrackerRelease.ps1` publishes the self-contained Windows tracker
-  and creates the combined copy-ready ZIP and SHA-256 checksum in `release/`.
+- `tools/Build-TrackerRelease.ps1` publishes the self-contained and
+  runtime-required Windows trackers and creates both copy-ready ZIPs and
+  SHA-256 checksums in `release/`.
 - `tools/generation/` contains release-data generators and their runtime bridge.
 
 Milestone 6 is on hold while optional quality-of-life features are developed.
-Version `0.7.8` refreshes the tracker around its fixed 500 × 840 window with a
-compact header, aligned move information, tabbed Archive and run statistics,
-ten-row area paging, save-slot history, and collapsible settings and diagnostic
-content. It retains seeded-run sharing, battle-item control, type coverage,
-signed diagnostic access, Favorite Clause, and the randomization safeguards
-from the 0.7 series. See
+Version `0.7.9` adds progressively loaded generated-evolution neighborhoods,
+fast paged fusion reconstruction, transactional run preparation, and a more
+modular game and tracker architecture. It also provides equivalent
+self-contained and runtime-required Windows distributions while retaining
+seeded-run sharing, battle-item control, type coverage, signed diagnostic
+access, Favorite Clause, and the randomization safeguards from the 0.7 series.
+See
 `docs/IRONMON_MECHANICS.html` for the complete behavior reference,
 `docs/ROADMAP.md` for cumulative scope, and `docs/guides/INSTALLATION.md` for
 installation steps.

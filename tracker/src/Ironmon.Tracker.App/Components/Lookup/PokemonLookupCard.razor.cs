@@ -15,6 +15,7 @@ public partial class PokemonLookupCard
     private string? _spriteKey;
     private string? _spriteSource;
     private AbilitySnapshot? _selectedAbility;
+    private bool _evolutionGraphOpen;
 
     /// <summary>
     /// Gets or sets the request client used to load a selected information section.
@@ -87,12 +88,16 @@ public partial class PokemonLookupCard
             _observedSpeciesId = Pokemon.Identity.SpeciesId;
             _sections.Clear();
             _selectedAbility = null;
+            _evolutionGraphOpen = false;
             _sectionError = null;
             PokemonInformationPage incomingPage = (PokemonInformationPage)(int)Pokemon.Section;
             _selectedPage = CanShowPage(incomingPage) ? incomingPage : GetFirstVisiblePage();
         }
 
-        _sections[(PokemonInformationPage)(int)Pokemon.Section] = Pokemon;
+        PokemonInformationPage receivedPage = (PokemonInformationPage)(int)Pokemon.Section;
+        _sections[receivedPage] = Pokemon;
+        if (_loadingPage == receivedPage)
+            _loadingPage = null;
         string? key = GameRoot is null || Pokemon.Identity.SpritePath is null ? null : $"{GameRoot}|{Pokemon.Identity.SpritePath}";
         if (key != _spriteKey)
         {
@@ -142,27 +147,6 @@ public partial class PokemonLookupCard
         => ActivePokemon.Evolutions ?? throw new InvalidOperationException("The Evolutions lookup response is missing its section payload.");
 
     /// <summary>
-    /// Gets whether the lookup contains generated evolution destinations.
-    /// </summary>
-    /// <returns>Whether any generated target list is populated.</returns>
-    private bool HasGeneratedEvolutionTargets()
-        => GetGeneratedEvolutionBranchCount() > 0;
-
-    /// <summary>
-    /// Gets the number of generated conceptual branches represented by selected-target data.
-    /// </summary>
-    /// <returns>The generated branch count.</returns>
-    private int GetGeneratedEvolutionBranchCount()
-        => EvolutionSection.GeneratedTargets.Count + EvolutionSection.HeadTargets.Count + EvolutionSection.BodyTargets.Count;
-
-    /// <summary>
-    /// Gets whether the lookup contains any generated graph edge.
-    /// </summary>
-    /// <returns>Whether the evolution graph should be displayed.</returns>
-    private bool HasGeneratedEvolutionGraph()
-        => EvolutionSection.GeneratedPredecessors.Count + GetGeneratedEvolutionBranchCount() > 0;
-
-    /// <summary>
     /// Gets whether the represented species is a fusion without requiring Overview relationship data.
     /// </summary>
     /// <returns>Whether the represented species is a fusion.</returns>
@@ -178,7 +162,8 @@ public partial class PokemonLookupCard
         SpeciesId = ActivePokemon.Identity.SpeciesId,
         SpeciesName = ActivePokemon.Identity.SpeciesName,
         SpritePath = ActivePokemon.Identity.SpritePath,
-        BaseStatTotal = EvolutionSection.CurrentBaseStatTotal
+        BaseStatTotal = EvolutionSection.CurrentBaseStatTotal,
+        StageLevel = EvolutionSection.CurrentStageLevel
     };
 
     /// <summary>
@@ -192,9 +177,11 @@ public partial class PokemonLookupCard
 
         _selectedPage = page;
         _selectedAbility = null;
+        _evolutionGraphOpen = false;
         _sectionError = null;
         if (DebugMode && Inspector is not null)
         {
+            _loadingPage = page;
             await InformationPageSelected.InvokeAsync(page);
         }
         else
@@ -359,4 +346,16 @@ public partial class PokemonLookupCard
     /// </summary>
     private void CloseAbility()
         => _selectedAbility = null;
+
+    /// <summary>
+    /// Opens the progressively loaded generated evolution graph.
+    /// </summary>
+    private void OpenEvolutionGraph()
+        => _evolutionGraphOpen = true;
+
+    /// <summary>
+    /// Closes the generated evolution graph.
+    /// </summary>
+    private void CloseEvolutionGraph()
+        => _evolutionGraphOpen = false;
 }

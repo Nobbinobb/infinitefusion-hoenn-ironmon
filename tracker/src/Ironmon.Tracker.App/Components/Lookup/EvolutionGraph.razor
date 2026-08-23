@@ -1,55 +1,102 @@
 <section class="evolution-graph" aria-label="@Text["Lookup.Graph.EvolutionGraph"]">
-    <header>
+    <header class="evolution-graph-header">
         <p class="section-label">@Text["Lookup.Graph.EvolutionGraphHeading"]</p>
+        <span>@Text["Lookup.Graph.CanvasInstructions"]</span>
     </header>
 
-    @if (Predecessors.Count > 0)
-    {
-        <div class="evolution-graph-branches incoming">
-            @foreach (EvolutionTargetSnapshot predecessor in Predecessors)
+    <div class="evolution-graph-viewport" @ref="_viewport">
+        <div class="evolution-graph-canvas" style="@CanvasStyle" @ref="_canvas">
+            @foreach ((int Level, double Top, double Height) band in _levelBands)
             {
-                <div class="evolution-graph-branch">
-                    <EvolutionTargetButton Target="@predecessor" GameRoot="@GameRoot" Selected="@Selected" />
-                    <div class="evolution-graph-edge">
-                        @foreach (string method in predecessor.EffectiveMethods)
+                <div @key="band.Level" class="evolution-graph-level-band" style="@GetLevelBandStyle(band.Top, band.Height)">
+                    <span class="evolution-graph-level-label">@Text["Lookup.Graph.Level", band.Level]</span>
+                </div>
+            }
+
+            @if (CompactRows)
+            {
+                @foreach (KeyValuePair<(int Level, int PageIndex), (double X, double Y)> range in _rangePositions.OrderBy(range => range.Key.Level).ThenBy(range => range.Key.PageIndex))
+                {
+                    int portalCount = GetPortalCount(range.Key.Level, range.Key.PageIndex);
+                    <button @key="range.Key"
+                            type="button"
+                            class="evolution-graph-range-selector @(IsRangeActive(range.Key.Level, range.Key.PageIndex) ? "active" : null) @(IsFocusRange(range.Key.Level, range.Key.PageIndex) ? "focused" : null) @(portalCount > 0 ? "connected" : null)"
+                            style="@GetRangeStyle(range.Value.X, range.Value.Y)"
+                            title="@GetRangeLabel(range.Key.Level, range.Key.PageIndex)"
+                            @onclick="() => SelectRangeAsync(range.Key.Level, range.Key.PageIndex)">
+                        <span>@GetRangeLabel(range.Key.Level, range.Key.PageIndex)</span>
+                        @if (portalCount > 0)
                         {
-                            <span>@method</span>
+                            <small title="@Text["Lookup.Graph.HiddenConnections", portalCount]">@portalCount</small>
                         }
-                        <strong aria-hidden="true">&darr;</strong>
-                    </div>
+                    </button>
+                }
+            }
+            else
+            {
+                @foreach ((int Level, int PageIndex, double X, double Y) range in _expandedRangeLabels)
+                {
+                    <div @key="range" class="evolution-graph-range-label" style="@GetRangeStyle(range.X, range.Y)">@GetRangeLabel(range.Level, range.PageIndex)</div>
+                }
+            }
+
+            <svg class="evolution-graph-lines" width="@_canvasWidth" height="@_canvasHeight" viewBox="@SvgViewBox" aria-hidden="true">
+                <defs>
+                    <marker id="@_activeArrowMarkerId" class="active" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                        <path d="M 0 0 L 8 4 L 0 8 z" />
+                    </marker>
+                    <marker id="@_faintArrowMarkerId" class="faint" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                        <path d="M 0 0 L 8 4 L 0 8 z" />
+                    </marker>
+                </defs>
+
+                <g class="evolution-graph-paths">
+                    @foreach (EvolutionGraphEdge edge in _visibleEdges)
+                    {
+                        bool active = IsActive(edge);
+                        <path @key="edge.Key" class="@(active ? "active" : "faint")" d="@GetPath(edge)" marker-end="@GetArrowMarkerReference(active)" />
+                    }
+                    @foreach ((string Key, string VisibleSpeciesId, int HiddenLevel, int HiddenPageIndex, bool HiddenIsSource, int Count, bool Active) connection in _portalConnections)
+                    {
+                        <path @key="connection.Key" class="portal @(connection.Active ? "active" : "faint")" d="@GetPortalPath(connection)" marker-end="@GetArrowMarkerReference(connection.Active)" />
+                    }
+                </g>
+
+                <g class="evolution-graph-edge-labels">
+                    @foreach (EvolutionGraphEdge edge in _visibleEdges.Where(ShouldShowLabel))
+                    {
+                        <foreignObject @key="edge.Key" x="@GetLabelX(edge)" y="@GetLabelY(edge)" width="@_edgeLabelWidth" height="@_edgeLabelHeight">
+                            <div class="evolution-graph-edge-label" xmlns="http://www.w3.org/1999/xhtml">
+                                @if (edge.ComponentSide != EvolutionCandidateSide.Normal)
+                                {
+                                    <small>@(edge.ComponentSide == EvolutionCandidateSide.Head ? Text["Common.BaseStats.Head"] : Text["Common.BaseStats.Body"])</small>
+                                }
+                                @foreach (string method in edge.EffectiveMethods)
+                                {
+                                    <span>@method</span>
+                                }
+                            </div>
+                        </foreignObject>
+                    }
+                </g>
+            </svg>
+
+            @foreach (EvolutionTargetSnapshot node in _visibleNodes)
+            {
+                <div @key="node.SpeciesId" class="evolution-graph-node @(IsFocused(node.SpeciesId) ? "current" : null)" style="@GetNodeStyle(node.SpeciesId)">
+                    <EvolutionTargetButton Target="@node"
+                                           GameRoot="@GameRoot"
+                                           Selected="@Selected"
+                                           Focused="@(BranchSelectionEnabled ? Focused : default(EventCallback<string>))"
+                                           IsFocused="@IsFocused(node.SpeciesId)" />
                 </div>
             }
         </div>
-    }
 
-    <div class="evolution-graph-current">
-        <EvolutionTargetButton Target="@Current" GameRoot="@GameRoot" Selected="@Selected" />
+        <div class="evolution-graph-controls">
+            <button type="button" title="@Text["Lookup.Graph.ZoomOut"]" aria-label="@Text["Lookup.Graph.ZoomOut"]" @onclick="ZoomOutAsync">−</button>
+            <button class="evolution-graph-zoom" type="button" title="@Text["Lookup.Graph.ResetView"]" aria-label="@Text["Lookup.Graph.ResetView"]" @onclick="ResetViewAsync">◎</button>
+            <button type="button" title="@Text["Lookup.Graph.ZoomIn"]" aria-label="@Text["Lookup.Graph.ZoomIn"]" @onclick="ZoomInAsync">+</button>
+        </div>
     </div>
-
-    @if (HasOutgoingTargets())
-    {
-        <div class="evolution-graph-branches outgoing">
-            @foreach (EvolutionTargetSnapshot target in Targets)
-            {
-                <div class="evolution-graph-branch">
-                    <EvolutionGraphEdge Methods="@target.EffectiveMethods" />
-                    <EvolutionTargetButton Target="@target" GameRoot="@GameRoot" Selected="@Selected" />
-                </div>
-            }
-            @foreach (EvolutionTargetSnapshot target in HeadTargets)
-            {
-                <div class="evolution-graph-branch">
-                    <EvolutionGraphEdge Side="@Text["Common.BaseStats.Head"]" Methods="@target.EffectiveMethods" />
-                    <EvolutionTargetButton Target="@target" GameRoot="@GameRoot" Selected="@Selected" />
-                </div>
-            }
-            @foreach (EvolutionTargetSnapshot target in BodyTargets)
-            {
-                <div class="evolution-graph-branch">
-                    <EvolutionGraphEdge Side="@Text["Common.BaseStats.Body"]" Methods="@target.EffectiveMethods" />
-                    <EvolutionTargetButton Target="@target" GameRoot="@GameRoot" Selected="@Selected" />
-                </div>
-            }
-        </div>
-    }
 </section>

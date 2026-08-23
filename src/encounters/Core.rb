@@ -16,6 +16,26 @@ module Ironmon
     ) == true
   end
 
+  def self.with_wild_table_battle
+    previous = @wild_table_battle_active
+    @wild_table_battle_active = true
+    return yield
+  ensure
+    @wild_table_battle_active = previous
+  end
+
+  def self.wild_table_battle_active?
+    return @wild_table_battle_active == true
+  end
+
+  def self.wild_battle_species_for(species, context)
+    if wild_table_battle_active?
+      species, accepted = prepare_wild_table_result(species)
+      return species if accepted
+    end
+    return wild_species_for(species, context)
+  end
+
   def self.with_wild_table_spawn(result)
     previous = @wild_table_spawn_active
     @wild_table_spawn_active = previous || wild_table_result?(result)
@@ -36,6 +56,20 @@ module Ironmon
     end
     return species if accepted
     return wild_species_for(species, context)
+  end
+end
+
+alias ironmon_original_battle_on_step_taken pbBattleOnStepTaken
+def pbBattleOnStepTaken(repel_active)
+  return Ironmon.with_wild_table_battle do
+    ironmon_original_battle_on_step_taken(repel_active)
+  end
+end
+
+alias ironmon_original_pb_encounter pbEncounter
+def pbEncounter(enc_type)
+  return Ironmon.with_wild_table_battle do
+    ironmon_original_pb_encounter(enc_type)
   end
 end
 

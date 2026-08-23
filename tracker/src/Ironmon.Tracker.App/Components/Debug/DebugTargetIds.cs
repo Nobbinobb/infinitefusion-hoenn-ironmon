@@ -34,4 +34,20 @@ internal static class DebugTargetIds
     /// Gets the offset from zero-based game positions to one-based display positions.
     /// </summary>
     internal const int DisplayPositionOffset = 1;
+
+    /// <summary>
+    /// Creates the stable selector value for one enemy battler position.
+    /// </summary>
+    /// <param name="position">The protocol enemy position.</param>
+    /// <returns>The enemy selector value.</returns>
+    internal static string CreateEnemy(int position)
+        => $"{Enemy}{Separator}{position}";
+
+    /// <summary>
+    /// Converts a protocol enemy position to its one-based display position.
+    /// </summary>
+    /// <param name="position">The protocol enemy position.</param>
+    /// <returns>The one-based display position.</returns>
+    internal static int GetDisplayPosition(int position)
+        => (position / EnemyPositionStride) + DisplayPositionOffset;
 }

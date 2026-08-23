@@ -9,14 +9,11 @@ namespace Ironmon.Tracker.Connection.Transport;
 public sealed class TrackerConnectionService : IAsyncDisposable
 {
     private readonly Lock _lifecycleSync = new();
-    private readonly CompletedRunArchive _completedRuns;
-    private readonly DiagnosticAccessService? _diagnosticAccess;
-    private readonly AreaDiscoveryStore _areaDiscoveries;
+    private readonly TrackerDiagnosticAccessNotifier? _diagnosticAccessNotifier;
     private readonly TrackerDiagnosticsStore _diagnostics;
-    private readonly TrackerKnowledgeStore _knowledge;
+    private readonly TrackerGameEventProcessor _events;
     private readonly TrackerConnectionOptions _options;
     private readonly TrackerRequestSession _requests;
-    private readonly TrackerRunState _runState;
     private readonly TrackerConnectionState _state;
     private CancellationTokenSource? _cancellation;
     private TcpListener? _listener;
@@ -49,12 +46,9 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         _requests = new TrackerRequestSession(diagnostics);
         Requests = new TrackerRequestClient(_requests, options, state, areaDiscoveries, diagnosticAccess);
         _state = state;
-        _runState = runState;
-        _knowledge = knowledge;
-        _areaDiscoveries = areaDiscoveries;
-        _completedRuns = completedRuns;
-        _diagnosticAccess = diagnosticAccess;
-        _diagnosticAccess?.Changed += OnDiagnosticAccessChanged;
+        _events = new TrackerGameEventProcessor(state, runState, knowledge, areaDiscoveries, completedRuns, _requests, Requests);
+        if (diagnosticAccess is not null)
+            _diagnosticAccessNotifier = new TrackerDiagnosticAccessNotifier(diagnosticAccess, diagnostics, state, _requests, Requests);
     }
 
     /// <summary>
@@ -144,10 +138,10 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         if (_disposed)
             return;
 
-        await StopAsync().ConfigureAwait(false);
-        if (_diagnosticAccess is not null)
-            _diagnosticAccess.Changed -= OnDiagnosticAccessChanged;
+        if (_diagnosticAccessNotifier is not null)
+            await _diagnosticAccessNotifier.DisposeAsync().ConfigureAwait(false);
 
+        await StopAsync().ConfigureAwait(false);
         _requests.Dispose();
         _disposed = true;
     }
@@ -223,7 +217,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         TrackerMessage handshakeMessage = await ReadHandshakeAsync(reader, cancellationToken).ConfigureAwait(false);
         _diagnostics.RecordIncoming(handshakeMessage);
         GameHandshakePayload game = ValidateGameHandshake(handshakeMessage);
-        _knowledge.SelectRun(game.RunId);
+        _events.SelectRun(game.RunId);
         IReadOnlyList<string> diagnosticCapabilities = Requests.GetNegotiatedDiagnosticCapabilities(game);
         TrackerHandshakePayload tracker = new(_options.TrackerVersion, _options.DebugRequested, _options.AutoSelectStarter, _options.MaximumStarterBaseStatTotal, _options.FavoriteSpeciesIds, diagnosticCapabilities);
         TrackerMessage trackerHandshake = TrackerMessageFactory.CreateEvent(TrackerEvents.TrackerConnected, TrackerProtocol.InitialEventSequence, tracker, game.RunId, game.BattleId);
@@ -303,32 +297,9 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 return;
 
             _diagnostics.RecordIncoming(message);
-            if (message.Type == TrackerMessageType.Event && message.Event == TrackerEvents.RunStarted)
-            {
-                GameCurrentStatePayload startedState = TrackerJson.DeserializePayload<GameCurrentStatePayload>(message.Payload);
-                _knowledge.SelectRun(startedState.RunId);
-                _state.Publish(TrackerConnectionStatus.Connected, game, startedState);
-                _runState.Recover(startedState);
-                ObserveRecoveredKnowledge(startedState);
-                ObserveCompletedRun(startedState);
-                continue;
-            }
-
-            if (message.Type == TrackerMessageType.Event && message.Event == TrackerEvents.RunCompleted)
-            {
-                _completedRuns.Store(TrackerJson.DeserializePayload<CompletedRunRecipePayload>(message.Payload));
-                continue;
-            }
-
-            if (message.Type == TrackerMessageType.Event && message.Event == TrackerEvents.AreaDiscovery)
-            {
-                await PersistAndAcknowledgeAreaDiscoveryAsync(message, cancellationToken).ConfigureAwait(false);
-                continue;
-            }
-
             if (message.Type == TrackerMessageType.Event)
             {
-                ApplyGameEvent(message);
+                await _events.ProcessAsync(message, game, cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
@@ -345,39 +316,8 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 throw new TrackerProtocolException(message.Error?.Message ?? "The current_state request failed.");
 
             GameCurrentStatePayload currentState = TrackerJson.DeserializePayload<GameCurrentStatePayload>(message.Payload);
-            _knowledge.SelectRun(currentState.RunId);
-            _state.Publish(TrackerConnectionStatus.Connected, game, currentState);
-            _runState.Recover(currentState);
-            ObserveRecoveredKnowledge(currentState);
-            ObserveCompletedRun(currentState);
+            _events.RecoverCurrentState(game, currentState);
         }
-    }
-
-    /// <summary>
-    /// Persists one idempotent area discovery before acknowledging it to the game.
-    /// </summary>
-    /// <param name="message">The received discovery event.</param>
-    /// <param name="cancellationToken">The token that stops the connection.</param>
-    /// <returns>A task representing the acknowledgment write.</returns>
-    private async Task PersistAndAcknowledgeAreaDiscoveryAsync(TrackerMessage message, CancellationToken cancellationToken)
-    {
-        string runId = message.RunId ?? throw new TrackerProtocolException("An area discovery requires a run identifier.");
-        AreaDiscoveryPackagePayload package = TrackerJson.DeserializePayload<AreaDiscoveryPackagePayload>(message.Payload);
-        bool persisted;
-        try
-        {
-            persisted = _areaDiscoveries.RecordPackage(runId, package);
-        }
-        catch (ArgumentException exception)
-        {
-            throw new TrackerProtocolException("The area discovery package is invalid.", exception);
-        }
-
-        if (!persisted)
-            return;
-
-        AreaDiscoveryAcknowledgmentPayload acknowledgment = new() { PackageId = package.PackageId };
-        await _requests.SendEventAsync(TrackerEvents.AreaDiscoveryAcknowledged, acknowledgment, runId, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -386,126 +326,5 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     private void ClearRequestSession()
     {
         Requests.Disconnect();
-    }
-
-    /// <summary>
-    /// Immediately replaces the named capability grants held by a connected game.
-    /// </summary>
-    /// <param name="sender">The diagnostic-access service.</param>
-    /// <param name="eventArgs">The empty change arguments.</param>
-    private async void OnDiagnosticAccessChanged(object? sender, EventArgs eventArgs)
-    {
-        TrackerConnectionSnapshot snapshot = _state.Snapshot;
-        if (snapshot.Status != TrackerConnectionStatus.Connected || snapshot.Game is null)
-            return;
-
-        DiagnosticAccessChangedPayload payload = new()
-        {
-            DiagnosticCapabilities = Requests.GetNegotiatedDiagnosticCapabilities(snapshot.Game)
-        };
-
-        try
-        {
-            await _requests.SendEventAsync(TrackerEvents.DiagnosticAccessChanged, payload, snapshot.CurrentState?.RunId ?? snapshot.Game.RunId, CancellationToken.None).ConfigureAwait(false);
-        }
-        catch (Exception exception) when (exception is InvalidOperationException or IOException or ObjectDisposedException)
-        {
-            _diagnostics.RecordError(exception);
-        }
-    }
-
-    /// <summary>
-    /// Applies one supported live game event to the tracker run-state store.
-    /// </summary>
-    /// <param name="message">The validated game event.</param>
-    private void ApplyGameEvent(TrackerMessage message)
-    {
-        _knowledge.SelectRun(message.RunId);
-        Action apply = message.Event switch
-        {
-            TrackerEvents.BattleStarted => () => _runState.StartBattle(TrackerJson.DeserializePayload<BattleSnapshot>(message.Payload)),
-            TrackerEvents.BattleEnded => _runState.EndBattle,
-            TrackerEvents.StarterSelectionChanged => () => _runState.UpdateStarterSelection(TrackerJson.DeserializePayload<StarterSelectionSnapshot>(message.Payload)),
-            TrackerEvents.SeededRunImportStatus => () => Requests.PublishSeededRunImportStatus(TrackerJson.DeserializePayload<SeededRunImportStatusPayload>(message.Payload)),
-            TrackerEvents.PlayerSentOut or TrackerEvents.PlayerStateChanged => () => ApplyPlayerUpdate(message),
-            TrackerEvents.PlayerMoveMenuOpened => () => _runState.OpenPlayerMoveMenu(TrackerJson.DeserializePayload<PlayerMoveMenuOpenedPayload>(message.Payload)),
-            TrackerEvents.EnemySentOut or TrackerEvents.EnemyStateChanged => () => ApplyEnemyUpdate(message),
-            TrackerEvents.EnemyMoveUsed => () =>
-                _knowledge.ObserveEnemyMove(TrackerJson.DeserializePayload<EnemyMoveUsedPayload>(message.Payload)),
-            TrackerEvents.EnemyAbilityRevealed => () =>
-                _knowledge.ObserveEnemyAbility(TrackerJson.DeserializePayload<EnemyAbilityRevealedPayload>(message.Payload)),
-            _ => () => { }
-        };
-
-        apply();
-    }
-
-    /// <summary>
-    /// Applies a complete player update and its legal move discoveries.
-    /// </summary>
-    /// <param name="message">The player update event.</param>
-    private void ApplyPlayerUpdate(TrackerMessage message)
-    {
-        PlayerPokemonSnapshot player = TrackerJson.DeserializePayload<PlayerPokemonSnapshot>(message.Payload);
-        _runState.UpdatePlayer(player);
-        _knowledge.ObservePlayer(player);
-    }
-
-    /// <summary>
-    /// Applies an enemy update and remembers its most recently observed move.
-    /// </summary>
-    /// <param name="message">The enemy state event.</param>
-    private void ApplyEnemyUpdate(TrackerMessage message)
-    {
-        EnemyPokemonSnapshot enemy = TrackerJson.DeserializePayload<EnemyPokemonSnapshot>(message.Payload);
-        _runState.UpdateEnemy(enemy);
-        _knowledge.ObserveEnemy(enemy);
-        ObserveEnemyMove(enemy);
-    }
-
-    /// <summary>
-    /// Restores legally observable knowledge included in a complete game-state snapshot.
-    /// </summary>
-    /// <param name="state">The recovered game state.</param>
-    private void ObserveRecoveredKnowledge(GameCurrentStatePayload state)
-    {
-        if (state.Player is not null)
-            _knowledge.ObservePlayer(state.Player);
-
-        foreach (EnemyPokemonSnapshot enemy in state.Enemies)
-        {
-            _knowledge.ObserveEnemy(enemy);
-            ObserveEnemyMove(enemy);
-        }
-    }
-
-    /// <summary>
-    /// Persists the completed-run recipe included in recovered game state.
-    /// </summary>
-    /// <param name="state">The recovered game state.</param>
-    private void ObserveCompletedRun(GameCurrentStatePayload state)
-    {
-        if (state.CompletedRun is not null)
-            _completedRuns.Store(state.CompletedRun);
-    }
-
-    /// <summary>
-    /// Remembers a move included in an enemy snapshot when one is present.
-    /// </summary>
-    /// <param name="enemy">The complete legal enemy snapshot.</param>
-    private void ObserveEnemyMove(EnemyPokemonSnapshot enemy)
-    {
-        if (enemy.LastMove is null)
-            return;
-
-        EnemyMoveUsedPayload observation = new()
-        {
-            EnemyId = enemy.EnemyId,
-            SpeciesId = enemy.SpeciesId,
-            EnemyLevel = enemy.Level,
-            Move = enemy.LastMove
-        };
-
-        _knowledge.ObserveEnemyMove(observation);
     }
 }

@@ -5,18 +5,20 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// <summary>
 /// Renders authored occurrences and Pokemon relationships shared by all complete information entry points.
 /// </summary>
-public partial class PokemonLookupSupplementalData
+public partial class PokemonLookupSupplementalData : IDisposable
 {
+    private readonly PaginationState _fusionMaterialPagination = new(TrackerProtocol.FusionMaterialPageSize);
+    private readonly PaginationState _trainerOccurrencePagination = new(TrackerProtocol.OccurrencePageSize);
+    private readonly PaginationState _wildOccurrencePagination = new(TrackerProtocol.OccurrencePageSize);
     private string? _observedPokemonKey;
     private FusionMaterialSearchResponsePayload _fusionMaterials = new();
     private TrainerOccurrenceSearchResponsePayload _trainerOccurrences = new();
     private WildOccurrenceSearchResponsePayload _wildOccurrences = new();
-    private int _fusionMaterialOffset;
-    private int _trainerOccurrenceOffset;
-    private int _wildOccurrenceOffset;
     private bool _loadingFusionMaterials;
     private bool _loadingTrainerOccurrences;
     private bool _loadingWildOccurrences;
+    private bool _loadFusionMaterialsAfterRender;
+    private CancellationTokenSource? _fusionMaterialCancellation;
     private string? _fusionMaterialError;
     private string? _trainerOccurrenceError;
     private string? _wildOccurrenceError;
@@ -84,16 +86,26 @@ public partial class PokemonLookupSupplementalData
         if (_observedPokemonKey == key)
             return;
 
+        _fusionMaterialCancellation?.Cancel();
+        _fusionMaterialCancellation?.Dispose();
+        _fusionMaterialCancellation = null;
         _observedPokemonKey = key;
-        _fusionMaterials = DebugMode ? new FusionMaterialSearchResponsePayload() : Overview.FusionMaterials;
+        _fusionMaterials = new FusionMaterialSearchResponsePayload();
         _trainerOccurrences = DebugMode ? new TrainerOccurrenceSearchResponsePayload() : Overview.TrainerOccurrences;
         _wildOccurrences = DebugMode ? new WildOccurrenceSearchResponsePayload() : Overview.WildOccurrences;
-        _fusionMaterialOffset = 0;
-        _trainerOccurrenceOffset = 0;
-        _wildOccurrenceOffset = 0;
+        _fusionMaterialPagination.Reset();
+        _trainerOccurrencePagination.Reset();
+        _wildOccurrencePagination.Reset();
         _fusionMaterialError = null;
         _trainerOccurrenceError = null;
         _wildOccurrenceError = null;
+        _loadingFusionMaterials = false;
+        _loadFusionMaterialsAfterRender = Pokemon.Identity.Fusion
+            && (!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.FusionMaterialPairs));
+
+        if (_loadFusionMaterialsAfterRender)
+            _fusionMaterialCancellation = new CancellationTokenSource();
+
         if (!DebugMode)
             return;
 
@@ -104,19 +116,31 @@ public partial class PokemonLookupSupplementalData
         if (Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldTrainerParties))
             loads.Add(LoadTrainerOccurrencePageAsync(0));
 
-        if (Connection.HasDiagnosticCapability(DiagnosticCapabilities.FusionMaterialPairs) && Pokemon.Identity.Fusion)
-            loads.Add(LoadFusionMaterialPageAsync(0));
-
         await Task.WhenAll(loads);
+    }
+
+    /// <summary>
+    /// Starts fusion-material reconstruction only after the Overview has rendered.
+    /// </summary>
+    /// <param name="firstRender">Whether this is the component's first render.</param>
+    /// <returns>A task representing the progressive material request.</returns>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_loadFusionMaterialsAfterRender)
+            return;
+
+        _loadFusionMaterialsAfterRender = false;
+        await LoadFusionMaterialPageAsync(0);
     }
 
     /// <summary>
     /// Loads one bounded wild-occurrence page through the selected lookup channel.
     /// </summary>
-    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="pageIndex">The zero-based result page.</param>
     /// <returns>A task representing the request.</returns>
-    private async Task LoadWildOccurrencePageAsync(int offset)
+    private async Task LoadWildOccurrencePageAsync(int pageIndex)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(pageIndex);
         if (_loadingWildOccurrences)
             return;
 
@@ -124,11 +148,12 @@ public partial class PokemonLookupSupplementalData
         _wildOccurrenceError = null;
         try
         {
+            int offset = checked(pageIndex * _wildOccurrencePagination.PageSize);
             WildOccurrenceSearchResponsePayload response = DebugMode
                 ? await Connection.SearchDebugWildOccurrencesAsync(Pokemon.Identity.SpeciesId, offset, DebugTarget, DebugEnemyPosition)
                 : await Connection.SearchWildOccurrencesAsync(Recipe ?? throw new InvalidOperationException(Text["Lookup.Fusion.CompletedRunRecipeRequired"]), Pokemon.Identity.SpeciesId, offset);
             _wildOccurrences = response;
-            _wildOccurrenceOffset = offset;
+            _wildOccurrencePagination.Select(pageIndex);
         }
         catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
         {
@@ -143,10 +168,11 @@ public partial class PokemonLookupSupplementalData
     /// <summary>
     /// Loads one bounded trainer-occurrence page through the selected lookup channel.
     /// </summary>
-    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="pageIndex">The zero-based result page.</param>
     /// <returns>A task representing the request.</returns>
-    private async Task LoadTrainerOccurrencePageAsync(int offset)
+    private async Task LoadTrainerOccurrencePageAsync(int pageIndex)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(pageIndex);
         if (_loadingTrainerOccurrences)
             return;
 
@@ -154,11 +180,12 @@ public partial class PokemonLookupSupplementalData
         _trainerOccurrenceError = null;
         try
         {
+            int offset = checked(pageIndex * _trainerOccurrencePagination.PageSize);
             TrainerOccurrenceSearchResponsePayload response = DebugMode
                 ? await Connection.SearchDebugTrainerOccurrencesAsync(Pokemon.Identity.SpeciesId, offset, DebugTarget, DebugEnemyPosition)
                 : await Connection.SearchTrainerOccurrencesAsync(Recipe ?? throw new InvalidOperationException(Text["Lookup.Fusion.CompletedRunRecipeRequired"]), Pokemon.Identity.SpeciesId, offset);
             _trainerOccurrences = response;
-            _trainerOccurrenceOffset = offset;
+            _trainerOccurrencePagination.Select(pageIndex);
         }
         catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
         {
@@ -175,62 +202,70 @@ public partial class PokemonLookupSupplementalData
     /// </summary>
     /// <returns>A task representing the request.</returns>
     private Task PreviousWildOccurrencePageAsync()
-        => LoadWildOccurrencePageAsync(Math.Max(0, _wildOccurrenceOffset - TrackerProtocol.OccurrencePageSize));
+        => LoadWildOccurrencePageAsync(_wildOccurrencePagination.PageIndex - 1);
 
     /// <summary>
     /// Loads the following wild-occurrence page.
     /// </summary>
     /// <returns>A task representing the request.</returns>
     private Task NextWildOccurrencePageAsync()
-        => LoadWildOccurrencePageAsync(_wildOccurrenceOffset + TrackerProtocol.OccurrencePageSize);
+        => LoadWildOccurrencePageAsync(_wildOccurrencePagination.PageIndex + 1);
 
     /// <summary>
     /// Loads the preceding trainer-occurrence page.
     /// </summary>
     /// <returns>A task representing the request.</returns>
     private Task PreviousTrainerOccurrencePageAsync()
-        => LoadTrainerOccurrencePageAsync(Math.Max(0, _trainerOccurrenceOffset - TrackerProtocol.OccurrencePageSize));
+        => LoadTrainerOccurrencePageAsync(_trainerOccurrencePagination.PageIndex - 1);
 
     /// <summary>
     /// Loads the following trainer-occurrence page.
     /// </summary>
     /// <returns>A task representing the request.</returns>
     private Task NextTrainerOccurrencePageAsync()
-        => LoadTrainerOccurrencePageAsync(_trainerOccurrenceOffset + TrackerProtocol.OccurrencePageSize);
+        => LoadTrainerOccurrencePageAsync(_trainerOccurrencePagination.PageIndex + 1);
 
     /// <summary>
     /// Formats the visible occurrence result range.
     /// </summary>
-    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="pagination">The selected result pagination.</param>
     /// <param name="count">The number of results on the current page.</param>
     /// <param name="total">The complete result count.</param>
     /// <returns>The inclusive result range and total.</returns>
-    private string GetOccurrenceRangeText(int offset, int count, int total)
+    private string GetOccurrenceRangeText(PaginationState pagination, int count, int total)
     {
-        int first = count == 0 ? 0 : offset + 1;
-        int last = offset + count;
+        (int first, int last) = pagination.GetRange(total, count);
         return Text["Lookup.Fusion.ResultRange", first, last, total];
     }
 
     /// <summary>
     /// Loads one bounded fusion-material page through the selected lookup channel.
     /// </summary>
-    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="pageIndex">The zero-based result page.</param>
     /// <returns>A task representing the request.</returns>
-    private async Task LoadFusionMaterialPageAsync(int offset)
+    private async Task LoadFusionMaterialPageAsync(int pageIndex)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(pageIndex);
         if (_loadingFusionMaterials)
             return;
 
+        CancellationToken cancellationToken = _fusionMaterialCancellation?.Token ?? CancellationToken.None;
         _loadingFusionMaterials = true;
         _fusionMaterialError = null;
+        await InvokeAsync(StateHasChanged);
         try
         {
+            int offset = checked(pageIndex * _fusionMaterialPagination.PageSize);
             FusionMaterialSearchResponsePayload response = DebugMode
-                ? await Connection.SearchDebugFusionMaterialsAsync(Pokemon.Identity.SpeciesId, offset, DebugTarget, DebugEnemyPosition)
-                : await Connection.SearchFusionMaterialsAsync(Recipe ?? throw new InvalidOperationException(Text["Lookup.Fusion.CompletedRunRecipeRequired"]), Pokemon.Identity.SpeciesId, offset);
+                ? await Connection.SearchDebugFusionMaterialsAsync(Pokemon.Identity.SpeciesId, offset, DebugTarget, DebugEnemyPosition, cancellationToken)
+                : await Connection.SearchFusionMaterialsAsync(Recipe ?? throw new InvalidOperationException(Text["Lookup.Fusion.CompletedRunRecipeRequired"]), Pokemon.Identity.SpeciesId, offset, cancellationToken);
+
+            cancellationToken.ThrowIfCancellationRequested();
             _fusionMaterials = response;
-            _fusionMaterialOffset = offset;
+            _fusionMaterialPagination.Select(pageIndex);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
         }
         catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
         {
@@ -238,23 +273,34 @@ public partial class PokemonLookupSupplementalData
         }
         finally
         {
-            _loadingFusionMaterials = false;
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                _loadingFusionMaterials = false;
+                await InvokeAsync(StateHasChanged);
+            }
         }
     }
+
+    /// <summary>
+    /// Retries the currently selected fusion-material page.
+    /// </summary>
+    /// <returns>A task representing the request.</returns>
+    private Task RetryFusionMaterialPageAsync()
+        => LoadFusionMaterialPageAsync(_fusionMaterialPagination.PageIndex);
 
     /// <summary>
     /// Loads the preceding fusion-material page.
     /// </summary>
     /// <returns>A task representing the request.</returns>
     private Task PreviousFusionMaterialPageAsync()
-        => LoadFusionMaterialPageAsync(Math.Max(0, _fusionMaterialOffset - TrackerProtocol.FusionMaterialPageSize));
+        => LoadFusionMaterialPageAsync(_fusionMaterialPagination.PageIndex - 1);
 
     /// <summary>
     /// Loads the following fusion-material page.
     /// </summary>
     /// <returns>A task representing the request.</returns>
     private Task NextFusionMaterialPageAsync()
-        => LoadFusionMaterialPageAsync(_fusionMaterialOffset + TrackerProtocol.FusionMaterialPageSize);
+        => LoadFusionMaterialPageAsync(_fusionMaterialPagination.PageIndex + 1);
 
     /// <summary>
     /// Formats the visible fusion-material result range.
@@ -262,8 +308,7 @@ public partial class PokemonLookupSupplementalData
     /// <returns>The inclusive result range and total.</returns>
     private string GetFusionMaterialRangeText()
     {
-        int first = _fusionMaterials.Matches.Count == 0 ? 0 : _fusionMaterialOffset + 1;
-        int last = _fusionMaterialOffset + _fusionMaterials.Matches.Count;
+        (int first, int last) = _fusionMaterialPagination.GetRange(_fusionMaterials.Total, _fusionMaterials.Matches.Count);
         return Text["Lookup.Fusion.ResultRange", first, last, _fusionMaterials.Total];
     }
 
@@ -292,4 +337,13 @@ public partial class PokemonLookupSupplementalData
     /// <returns>The compact level label.</returns>
     private string FormatLevelRange(int minimumLevel, int maximumLevel)
         => minimumLevel == maximumLevel ? Text["Lookup.Card.LevelValue", minimumLevel] : Text["Lookup.Card.LevelRange", minimumLevel, maximumLevel];
+
+    /// <summary>
+    /// Cancels material reconstruction when the represented Pokemon leaves the page.
+    /// </summary>
+    public void Dispose()
+    {
+        _fusionMaterialCancellation?.Cancel();
+        _fusionMaterialCancellation?.Dispose();
+    }
 }

@@ -50,6 +50,14 @@ module Ironmon
     )
   end
 
+  def self.tracker_debug_evolution_predecessor_search(payload)
+    tracker_validate_debug_context(["evolution.results"])
+    payload = tracker_debug_secure_species_payload(payload)
+    return tracker_evolution_predecessor_search_for_recipe(
+      payload || {}, tracker_debug_active_recipe
+    )
+  end
+
   def self.tracker_debug_fusion_material_search(payload)
     tracker_validate_debug_context(["fusion.material_pairs"])
     payload = tracker_debug_secure_species_payload(payload)

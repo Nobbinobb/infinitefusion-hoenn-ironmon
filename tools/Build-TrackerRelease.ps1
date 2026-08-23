@@ -3,20 +3,139 @@ $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $gameRoot = Split-Path -Parent $projectRoot
 $distribution = Join-Path $projectRoot "dist"
+$runtimeRequiredDistribution = Join-Path $projectRoot "dist-runtime-required"
 $releaseDirectory = Join-Path $projectRoot "release"
-$archiveName = "Ironmon-v0.7.8-tracker-ui.zip"
-$archive = Join-Path $releaseDirectory $archiveName
-$checksum = Join-Path $releaseDirectory "Ironmon-v0.7.8-tracker-ui.sha256.txt"
+$trackerProject = Join-Path $projectRoot "tracker\src\Ironmon.Tracker.App\Ironmon.Tracker.App.csproj"
+[xml]$trackerProjectDocument = Get-Content -LiteralPath $trackerProject
+$releaseVersion = @($trackerProjectDocument.Project.PropertyGroup.ApplicationDisplayVersion) |
+  Where-Object { ![string]::IsNullOrWhiteSpace($_) } |
+  Select-Object -First 1
+if ($null -eq $releaseVersion -or $releaseVersion -notmatch '^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$') {
+  throw "The tracker project must define a valid ApplicationDisplayVersion."
+}
+$releaseRuntimeIdentifier = "win-x64"
+$selfContainedArchiveName = "Ironmon-v$releaseVersion-$releaseRuntimeIdentifier.zip"
+$runtimeRequiredArchiveName = "Ironmon-v$releaseVersion-$releaseRuntimeIdentifier-runtime-required.zip"
 $areaCatalog = Join-Path $projectRoot "data\area_catalog.dat"
+$fusionPredecessorIndex = Join-Path $projectRoot "data\fusion_predecessor_index.dat"
 $areaAudit = Join-Path $projectRoot "docs\audits\generated\AREA_CATALOG_GENERATED.csv"
 $coverageDataset = Join-Path $projectRoot "data\type_coverage.json"
 $coverageAudit = Join-Path $projectRoot "docs\audits\generated\TYPE_COVERAGE_GENERATED.csv"
 $itemAudit = Join-Path $projectRoot "docs\audits\generated\ITEM_RANDOMIZATION_GENERATED.csv"
 $generatedAreaCatalog = "$areaCatalog.release.tmp"
+$generatedFusionPredecessorIndex = "$fusionPredecessorIndex.release.tmp"
 $generatedAreaAudit = "$areaAudit.release.tmp"
 $generatedCoverageDataset = "$coverageDataset.release.tmp"
 $generatedCoverageAudit = "$coverageAudit.release.tmp"
 $generatedItemAudit = "$itemAudit.release.tmp"
+
+function Test-PlayerDistribution {
+  param([string]$DistributionPath)
+
+  $distributedAreaCatalog = Join-Path $DistributionPath "Data\Ironmon\area_catalog.dat"
+  if (-not (Test-Path -LiteralPath $distributedAreaCatalog) -or
+      (Get-FileHash -LiteralPath $distributedAreaCatalog -Algorithm SHA256).Hash -ne
+        (Get-FileHash -LiteralPath $areaCatalog -Algorithm SHA256).Hash) {
+    throw "The player distribution does not contain the freshly generated area catalog."
+  }
+  $distributedFusionPredecessorIndex = Join-Path $DistributionPath "Data\Ironmon\fusion_predecessor_index.dat"
+  if (-not (Test-Path -LiteralPath $distributedFusionPredecessorIndex) -or
+      (Get-FileHash -LiteralPath $distributedFusionPredecessorIndex -Algorithm SHA256).Hash -ne
+        (Get-FileHash -LiteralPath $fusionPredecessorIndex -Algorithm SHA256).Hash) {
+    throw "The player distribution does not contain the freshly generated fusion predecessor index."
+  }
+
+  $trackerAssemblyPath = Join-Path $DistributionPath "Ironmon Tracker\Ironmon Tracker.dll"
+  $trackerAssembly = [Reflection.Assembly]::LoadFile($trackerAssemblyPath)
+  $coverageResourceName = "Ironmon.Tracker.App.Resources.Coverage.type_coverage.json"
+  $coverageResource = $trackerAssembly.GetManifestResourceStream($coverageResourceName)
+  if ($null -eq $coverageResource) {
+    throw "The published tracker does not contain the aggregate coverage resource."
+  }
+  $sha256 = [Security.Cryptography.SHA256]::Create()
+  try {
+    $resourceHash = [BitConverter]::ToString(
+      $sha256.ComputeHash($coverageResource)
+    ).Replace("-", "")
+  } finally {
+    $sha256.Dispose()
+    $coverageResource.Dispose()
+  }
+  if ($resourceHash -ne
+      (Get-FileHash -LiteralPath $coverageDataset -Algorithm SHA256).Hash) {
+    throw "The published tracker does not contain the freshly generated coverage dataset."
+  }
+
+  $forbiddenFiles = Get-ChildItem -LiteralPath $DistributionPath -File -Recurse |
+    Where-Object {
+      $_.Name -match "AccessGenerator|private[-_ ]?key" -or
+      $_.Name -match "Generate-(?:Area-Catalog|Type-Coverage-Dataset|Item-Randomization-Audit)" -or
+      $_.Name -match "Export-(?:AreaCatalog|TypeCoverageDataset|ItemRandomizationAudit)" -or
+      $_.Name -match "(?:AREA_CATALOG|TYPE_COVERAGE|ITEM_RANDOMIZATION)_GENERATED|GameRuntime-Tooling|Script-Loader" -or
+      $_.Name -match "Test-GameRuntime|(?:Area-Progress|Diagnostic-Access)\.rb" -or
+      $_.Name -match "\.(?:bootstrap|progress|summary|tests|tmp)$" -or
+      $_.Extension -in ".ironmon-access", ".key", ".p8", ".p12", ".pfx", ".pem" -or
+      $_.FullName -match "998_Ironmon_Development|maintainer-dist"
+    }
+  if ($forbiddenFiles) {
+    $relativeForbiddenFiles = $forbiddenFiles.FullName |
+      ForEach-Object { $_.Substring($DistributionPath.Length + 1) }
+    throw "Player distribution contains forbidden maintainer, token, key, or development files: $($relativeForbiddenFiles -join ', ')"
+  }
+}
+
+function New-DeterministicReleaseArchive {
+  param(
+    [string]$DistributionPath,
+    [string]$ArchiveName
+  )
+
+  $archive = Join-Path $releaseDirectory $ArchiveName
+  $checksum = Join-Path $releaseDirectory ($ArchiveName -replace "\.zip$", ".sha256.txt")
+  if (Test-Path -LiteralPath $archive) {
+    Remove-Item -LiteralPath $archive -Force
+  }
+  if (Test-Path -LiteralPath $checksum) {
+    Remove-Item -LiteralPath $checksum -Force
+  }
+
+  $archiveStream = [System.IO.File]::Open($archive, [System.IO.FileMode]::CreateNew)
+  $zip = New-Object System.IO.Compression.ZipArchive(
+    $archiveStream,
+    [System.IO.Compression.ZipArchiveMode]::Create,
+    $false
+  )
+  $fixedTimestamp = New-Object System.DateTimeOffset(2000, 1, 1, 0, 0, 0,
+                                                     [System.TimeSpan]::Zero)
+  try {
+    $files = Get-ChildItem -LiteralPath $DistributionPath -File -Recurse |
+      Sort-Object FullName
+    foreach ($file in $files) {
+      $relativePath = $file.FullName.Substring($DistributionPath.Length + 1)
+      $entry = $zip.CreateEntry(
+        $relativePath.Replace("\", "/"),
+        [System.IO.Compression.CompressionLevel]::Optimal
+      )
+      $entry.LastWriteTime = $fixedTimestamp
+      $inputStream = [System.IO.File]::OpenRead($file.FullName)
+      $entryStream = $entry.Open()
+      try {
+        $inputStream.CopyTo($entryStream)
+      } finally {
+        $entryStream.Dispose()
+        $inputStream.Dispose()
+      }
+    }
+  } finally {
+    $zip.Dispose()
+    $archiveStream.Dispose()
+  }
+
+  $hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+  Set-Content -LiteralPath $checksum -Value "$hash  $ArchiveName"
+  Write-Output "Created $archive"
+  Write-Output "SHA256 $hash"
+}
 
 & dotnet test (Join-Path $projectRoot "tracker\tests\Ironmon.Tracker.Tests\Ironmon.Tracker.Tests.csproj") `
   --configuration Release `
@@ -37,10 +156,13 @@ try {
     -GameRoot $gameRoot `
     -OutputPath $generatedCoverageDataset `
     -AuditPath $generatedCoverageAudit
+  & (Join-Path $PSScriptRoot "generation\Generate-Fusion-Predecessor-Index.ps1") `
+    -GameRoot $gameRoot `
+    -OutputPath $generatedFusionPredecessorIndex
   & (Join-Path $PSScriptRoot "generation\Generate-Item-Randomization-Audit.ps1") `
     -GameRoot $gameRoot `
     -AuditPath $generatedItemAudit
-  foreach ($generatedPath in $generatedAreaCatalog, $generatedAreaAudit, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit) {
+  foreach ($generatedPath in $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit) {
     if (-not (Test-Path -LiteralPath $generatedPath) -or
         (Get-Item -LiteralPath $generatedPath).Length -eq 0) {
       throw "Release generation did not produce '$generatedPath'."
@@ -53,6 +175,7 @@ try {
   foreach ($generatedFile in @(
     @{ Generated = $generatedAreaCatalog; Canonical = $areaCatalog },
     @{ Generated = $generatedAreaAudit; Canonical = $areaAudit },
+    @{ Generated = $generatedFusionPredecessorIndex; Canonical = $fusionPredecessorIndex },
     @{ Generated = $generatedCoverageDataset; Canonical = $coverageDataset },
     @{ Generated = $generatedCoverageAudit; Canonical = $coverageAudit },
     @{ Generated = $generatedItemAudit; Canonical = $itemAudit }
@@ -66,100 +189,39 @@ try {
     }
   }
 } finally {
-  Remove-Item -LiteralPath $generatedAreaCatalog, $generatedAreaAudit, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit `
+  Remove-Item -LiteralPath $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit `
     -Force `
     -ErrorAction SilentlyContinue
 }
 
 & (Join-Path $PSScriptRoot "Build-Distribution.ps1")
-& (Join-Path $PSScriptRoot "Publish-Tracker.ps1")
+& (Join-Path $PSScriptRoot "Publish-Tracker.ps1") -DeploymentMode SelfContained
 
-$distributedAreaCatalog = Join-Path $distribution "Data\Ironmon\area_catalog.dat"
-if (-not (Test-Path -LiteralPath $distributedAreaCatalog) -or
-    (Get-FileHash -LiteralPath $distributedAreaCatalog -Algorithm SHA256).Hash -ne
-      (Get-FileHash -LiteralPath $areaCatalog -Algorithm SHA256).Hash) {
-  throw "The player distribution does not contain the freshly generated area catalog."
+$resolvedRuntimeRequiredDistribution = [System.IO.Path]::GetFullPath($runtimeRequiredDistribution)
+$resolvedProjectRoot = [System.IO.Path]::GetFullPath($projectRoot).TrimEnd([System.IO.Path]::DirectorySeparatorChar)
+if (!$resolvedRuntimeRequiredDistribution.StartsWith($resolvedProjectRoot + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
+  throw "Runtime-required distribution must remain inside the Ironmon project directory."
 }
-
-$trackerAssemblyPath = Join-Path $distribution "Ironmon Tracker\Ironmon Tracker.dll"
-$trackerAssembly = [Reflection.Assembly]::LoadFile($trackerAssemblyPath)
-$coverageResourceName = "Ironmon.Tracker.App.Resources.Coverage.type_coverage.json"
-$coverageResource = $trackerAssembly.GetManifestResourceStream($coverageResourceName)
-if ($null -eq $coverageResource) {
-  throw "The published tracker does not contain the aggregate coverage resource."
+if (Test-Path -LiteralPath $resolvedRuntimeRequiredDistribution) {
+  Remove-Item -LiteralPath $resolvedRuntimeRequiredDistribution -Recurse -Force
 }
-$sha256 = [Security.Cryptography.SHA256]::Create()
-try {
-  $resourceHash = [BitConverter]::ToString(
-    $sha256.ComputeHash($coverageResource)
-  ).Replace("-", "")
-} finally {
-  $sha256.Dispose()
-  $coverageResource.Dispose()
-}
-if ($resourceHash -ne
-    (Get-FileHash -LiteralPath $coverageDataset -Algorithm SHA256).Hash) {
-  throw "The published tracker does not contain the freshly generated coverage dataset."
-}
-
-$forbiddenFiles = Get-ChildItem -LiteralPath $distribution -File -Recurse |
-  Where-Object {
-    $_.Name -match "AccessGenerator|private[-_ ]?key" -or
-    $_.Name -match "Generate-(?:Area-Catalog|Type-Coverage-Dataset|Item-Randomization-Audit)" -or
-    $_.Name -match "Export-(?:AreaCatalog|TypeCoverageDataset|ItemRandomizationAudit)" -or
-    $_.Name -match "(?:AREA_CATALOG|TYPE_COVERAGE|ITEM_RANDOMIZATION)_GENERATED|GameRuntime-Tooling|Script-Loader" -or
-    $_.Name -match "Test-GameRuntime|(?:Area-Progress|Diagnostic-Access)\.rb" -or
-    $_.Name -match "\.(?:bootstrap|progress|summary|tests|tmp)$" -or
-    $_.Extension -in ".ironmon-access", ".key", ".p8", ".p12", ".pfx", ".pem" -or
-    $_.FullName -match "998_Ironmon_Development|maintainer-dist"
+New-Item -ItemType Directory -Force -Path $resolvedRuntimeRequiredDistribution | Out-Null
+foreach ($distributionEntry in "Data", "README.md", "INSTALLATION.md", "RELEASE_NOTES.md") {
+  $sourceEntry = Join-Path $distribution $distributionEntry
+  if (-not (Test-Path -LiteralPath $sourceEntry)) {
+    throw "The base player distribution is missing '$distributionEntry'."
   }
-if ($forbiddenFiles) {
-  $relativeForbiddenFiles = $forbiddenFiles.FullName |
-    ForEach-Object { $_.Substring($distribution.Length + 1) }
-  throw "Player distribution contains forbidden maintainer, token, key, or development files: $($relativeForbiddenFiles -join ', ')"
+
+  Copy-Item -LiteralPath $sourceEntry -Destination (Join-Path $resolvedRuntimeRequiredDistribution $distributionEntry) -Recurse -Force
 }
+& (Join-Path $PSScriptRoot "Publish-Tracker.ps1") `
+  -DeploymentMode RuntimeRequired `
+  -OutputDirectory (Join-Path $resolvedRuntimeRequiredDistribution "Ironmon Tracker")
+
+Test-PlayerDistribution -DistributionPath $distribution
+Test-PlayerDistribution -DistributionPath $resolvedRuntimeRequiredDistribution
+
 New-Item -ItemType Directory -Force -Path $releaseDirectory | Out-Null
-if (Test-Path -LiteralPath $archive) {
-  Remove-Item -LiteralPath $archive -Force
-}
-if (Test-Path -LiteralPath $checksum) {
-  Remove-Item -LiteralPath $checksum -Force
-}
-
 Add-Type -AssemblyName System.IO.Compression
-$archiveStream = [System.IO.File]::Open($archive, [System.IO.FileMode]::CreateNew)
-$zip = New-Object System.IO.Compression.ZipArchive(
-  $archiveStream,
-  [System.IO.Compression.ZipArchiveMode]::Create,
-  $false
-)
-$fixedTimestamp = New-Object System.DateTimeOffset(2000, 1, 1, 0, 0, 0,
-                                                   [System.TimeSpan]::Zero)
-try {
-  $files = Get-ChildItem -LiteralPath $distribution -File -Recurse |
-    Sort-Object FullName
-  foreach ($file in $files) {
-    $relativePath = $file.FullName.Substring($distribution.Length + 1)
-    $entry = $zip.CreateEntry(
-      $relativePath.Replace("\", "/"),
-      [System.IO.Compression.CompressionLevel]::Optimal
-    )
-    $entry.LastWriteTime = $fixedTimestamp
-    $inputStream = [System.IO.File]::OpenRead($file.FullName)
-    $entryStream = $entry.Open()
-    try {
-      $inputStream.CopyTo($entryStream)
-    } finally {
-      $entryStream.Dispose()
-      $inputStream.Dispose()
-    }
-  }
-} finally {
-  $zip.Dispose()
-  $archiveStream.Dispose()
-}
-
-$hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
-Set-Content -LiteralPath $checksum -Value "$hash  $archiveName"
-Write-Output "Created $archive"
-Write-Output "SHA256 $hash"
+New-DeterministicReleaseArchive -DistributionPath $distribution -ArchiveName $selfContainedArchiveName
+New-DeterministicReleaseArchive -DistributionPath $resolvedRuntimeRequiredDistribution -ArchiveName $runtimeRequiredArchiveName

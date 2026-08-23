@@ -3,5 +3,6 @@ tracker/.vs/
 tracker/**/bin/
 tracker/**/obj/
 dist/
+dist-runtime-required/
 release/
 simulation-results/

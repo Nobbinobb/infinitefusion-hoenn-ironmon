@@ -41,6 +41,48 @@
         </div>
     </details>
 
+    <details class="settings-group">
+        <summary>
+            <span>
+                <strong>@Text["Settings.EvolutionGraph.Group"]</strong>
+                <small>@Text["Settings.EvolutionGraph.GroupDescription"]</small>
+            </span>
+        </summary>
+        <div class="settings-group-content">
+            <label class="settings-number-option">
+                <span>
+                    <strong>@Text["Settings.EvolutionGraph.ExpansionDepth"]</strong>
+                    <small>@Text["Settings.EvolutionGraph.ExpansionDepthDescription"]</small>
+                </span>
+                <input type="number"
+                       min="@EvolutionGraphSettings.MinimumExpansionDepth"
+                       max="@EvolutionGraphSettings.MaximumExpansionDepth"
+                       value="@EvolutionGraphSettings.ExpansionDepth"
+                       @onchange="HandleExpansionDepthChanged" />
+                @if (!string.IsNullOrWhiteSpace(_graphDepthError))
+                {
+                    <small class="settings-validation">@_graphDepthError</small>
+                }
+            </label>
+
+            <label class="settings-number-option">
+                <span>
+                    <strong>@Text["Settings.EvolutionGraph.NodesPerRow"]</strong>
+                    <small>@Text["Settings.EvolutionGraph.NodesPerRowDescription"]</small>
+                </span>
+                <input type="number"
+                       min="@EvolutionGraphSettings.MinimumNodesPerRow"
+                       max="@EvolutionGraphSettings.MaximumNodesPerRow"
+                       value="@EvolutionGraphSettings.NodesPerRow"
+                       @onchange="HandleNodesPerRowChanged" />
+                @if (!string.IsNullOrWhiteSpace(_nodesPerRowError))
+                {
+                    <small class="settings-validation">@_nodesPerRowError</small>
+                }
+            </label>
+        </div>
+    </details>
+
     <details class="settings-group favorite-settings">
         <summary>
             <span>

@@ -219,6 +219,8 @@ module Ironmon
       respond_to?(:reset_player_fusion_mapper_cache)
     reset_fusion_evolution_target_catalog_cache if
       respond_to?(:reset_fusion_evolution_target_catalog_cache)
+    reset_fusion_predecessor_index_cache if
+      respond_to?(:reset_fusion_predecessor_index_cache)
     reset_tracker_post_run_cache if respond_to?(:reset_tracker_post_run_cache)
   end
 end

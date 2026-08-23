@@ -2,6 +2,7 @@ param(
     [string]$GameRoot = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)),
     [ValidateRange(1, 600)]
     [int]$TimeoutSeconds = 90,
+    [switch]$BenchmarkFusionPredecessors,
     [switch]$ShowGameWindow
 )
 
@@ -22,6 +23,7 @@ $runtimeHookTestPath = Join-Path $projectRoot "tests\runtime\Runtime-Hooks.rb"
 $deterministicHashingTestPath = Join-Path $projectRoot "tests\runtime\Deterministic-Hashing.rb"
 $generatorMetadataTestPath = Join-Path $projectRoot "tests\runtime\Generator-Metadata.rb"
 $evolutionUpwardExpansionTestPath = Join-Path $projectRoot "tests\runtime\Evolution-Upward-Expansion.rb"
+$fusionPredecessorBenchmarkPath = Join-Path $projectRoot "tests\runtime\Fusion-Predecessor-Benchmark.rb"
 $moveAccessStructureTestPath = Join-Path $projectRoot "tests\runtime\Move-Access-Structure.rb"
 $trackerStructureTestPath = Join-Path $projectRoot "tests\runtime\Tracker-Structure.rb"
 $diagnosticResultPath = Join-Path $projectRoot "runtime-diagnostic-access.tests"
@@ -35,9 +37,12 @@ $runtimeHookResultPath = Join-Path $projectRoot "runtime-hooks.tests"
 $deterministicHashingResultPath = Join-Path $projectRoot "runtime-deterministic-hashing.tests"
 $generatorMetadataResultPath = Join-Path $projectRoot "runtime-generator-metadata.tests"
 $evolutionUpwardExpansionResultPath = Join-Path $projectRoot "runtime-evolution-upward-expansion.tests"
+$fusionPredecessorBenchmarkResultPath = Join-Path $projectRoot "runtime-fusion-predecessor.benchmark"
 $moveAccessStructureResultPath = Join-Path $projectRoot "runtime-move-access-structure.tests"
 $trackerStructureResultPath = Join-Path $projectRoot "runtime-tracker-structure.tests"
 $diagnosticErrorPath = Join-Path $projectRoot "runtime-diagnostic-access.error"
+$evolutionPredecessorDiagnostic = $null
+$fusionPredecessorBenchmarkOutput = @()
 
 . (Join-Path $generationRoot "GameRuntime-Tooling.ps1")
 
@@ -97,6 +102,10 @@ $evolutionUpwardExpansionTestSource = [IO.File]::ReadAllText(
     $evolutionUpwardExpansionTestPath,
     [Text.Encoding]::UTF8
 )
+$fusionPredecessorBenchmarkSource = [IO.File]::ReadAllText(
+    $fusionPredecessorBenchmarkPath,
+    [Text.Encoding]::UTF8
+)
 $moveAccessStructureTestSource = [IO.File]::ReadAllText(
     $moveAccessStructureTestPath,
     [Text.Encoding]::UTF8
@@ -116,6 +125,7 @@ $rubyRuntimeHookResultPath = $runtimeHookResultPath.Replace('\', '/')
 $rubyDeterministicHashingResultPath = $deterministicHashingResultPath.Replace('\', '/')
 $rubyGeneratorMetadataResultPath = $generatorMetadataResultPath.Replace('\', '/')
 $rubyEvolutionUpwardExpansionResultPath = $evolutionUpwardExpansionResultPath.Replace('\', '/')
+$rubyFusionPredecessorBenchmarkResultPath = $fusionPredecessorBenchmarkResultPath.Replace('\', '/')
 $rubyMoveAccessStructureResultPath = $moveAccessStructureResultPath.Replace('\', '/')
 $rubyTrackerStructureResultPath = $trackerStructureResultPath.Replace('\', '/')
 $bootstrapSource = @(
@@ -131,6 +141,8 @@ $bootstrapSource = @(
     "`$ironmon_deterministic_hashing_test_output_path = `"$rubyDeterministicHashingResultPath`""
     "`$ironmon_generator_metadata_test_output_path = `"$rubyGeneratorMetadataResultPath`""
     "`$ironmon_evolution_upward_expansion_test_output_path = `"$rubyEvolutionUpwardExpansionResultPath`""
+    "`$ironmon_fusion_predecessor_benchmark_output_path = `"$rubyFusionPredecessorBenchmarkResultPath`""
+    "`$ironmon_run_fusion_predecessor_benchmark = $($BenchmarkFusionPredecessors.IsPresent.ToString().ToLowerInvariant())"
     "`$ironmon_move_access_structure_test_output_path = `"$rubyMoveAccessStructureResultPath`""
     "`$ironmon_tracker_structure_test_output_path = `"$rubyTrackerStructureResultPath`""
     "Dir.chdir(`"$($resolvedGameRoot.Replace('\', '/'))`")"
@@ -147,6 +159,7 @@ $bootstrapSource = @(
     $deterministicHashingTestSource
     $generatorMetadataTestSource
     $evolutionUpwardExpansionTestSource
+    $fusionPredecessorBenchmarkSource
     $moveAccessStructureTestSource
     $trackerStructureTestSource
     $diagnosticTestSource
@@ -157,7 +170,7 @@ $bootstrapSource = @(
     "exit! 1"
     "end"
 ) -join "`n"
-Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
+Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
     -Force `
     -ErrorAction SilentlyContinue
 try {
@@ -219,10 +232,33 @@ try {
             "generator-metadata tests passed") {
         throw "The bundled runtime did not complete the generator-metadata tests."
     }
-    if (-not (Test-Path -LiteralPath $evolutionUpwardExpansionResultPath) -or
-        (Get-Content -LiteralPath $evolutionUpwardExpansionResultPath -Raw).Trim() -ne
+    $evolutionUpwardExpansionOutput = if (
+        Test-Path -LiteralPath $evolutionUpwardExpansionResultPath
+    ) {
+        @(Get-Content -LiteralPath $evolutionUpwardExpansionResultPath)
+    } else {
+        @()
+    }
+    if ($evolutionUpwardExpansionOutput.Count -lt 1 -or
+        $evolutionUpwardExpansionOutput[0] -ne
             "evolution upward-expansion tests passed") {
         throw "The bundled runtime did not complete the evolution upward-expansion tests."
+    }
+    if ($evolutionUpwardExpansionOutput.Count -gt 1) {
+        $evolutionPredecessorDiagnostic = $evolutionUpwardExpansionOutput[1]
+    }
+    if ($BenchmarkFusionPredecessors) {
+        if (-not (Test-Path -LiteralPath $fusionPredecessorBenchmarkResultPath)) {
+            throw "The bundled runtime did not complete the fusion predecessor benchmark."
+        }
+        $fusionPredecessorBenchmarkOutput = @(
+            Get-Content -LiteralPath $fusionPredecessorBenchmarkResultPath
+        )
+        if ($fusionPredecessorBenchmarkOutput.Count -lt 1 -or
+            $fusionPredecessorBenchmarkOutput[0] -ne
+                "fusion predecessor benchmark passed") {
+            throw "The bundled runtime did not complete the fusion predecessor benchmark."
+        }
     }
     if (-not (Test-Path -LiteralPath $moveAccessStructureResultPath) -or
         (Get-Content -LiteralPath $moveAccessStructureResultPath -Raw).Trim() -ne
@@ -236,9 +272,15 @@ try {
     }
 }
 finally {
-    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
+    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
         -Force `
         -ErrorAction SilentlyContinue
 }
 
+if ($evolutionPredecessorDiagnostic) {
+    Write-Output "Fusion predecessor prototype: $evolutionPredecessorDiagnostic"
+}
+if ($fusionPredecessorBenchmarkOutput.Count -gt 1) {
+    $fusionPredecessorBenchmarkOutput | Select-Object -Skip 1
+}
 Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, battle item, Repel overlay, item randomization, seeded-run import, run-transition, runtime-hook, deterministic-hashing, generator-metadata, evolution upward-expansion, move-access structure, and tracker structure tests passed."

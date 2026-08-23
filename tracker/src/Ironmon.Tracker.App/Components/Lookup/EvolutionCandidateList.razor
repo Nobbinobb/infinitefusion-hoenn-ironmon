@@ -34,9 +34,9 @@
             }
         </div>
         <nav class="lookup-pager" aria-label="@Text["Lookup.Candidates.Pages"]">
-            <button type="button" disabled="@(_loading || _offset == 0)" @onclick="PreviousPageAsync">@Text["Lookup.Search.Previous"]</button>
+            <button type="button" disabled="@(_loading || !_pagination.HasPrevious)" @onclick="PreviousPageAsync">@Text["Lookup.Search.Previous"]</button>
             <span>@GetRangeText()</span>
-            <button type="button" disabled="@(_loading || _offset + _matches.Count >= _total)" @onclick="NextPageAsync">@Text["Lookup.Search.Next"]</button>
+            <button type="button" disabled="@(_loading || !_pagination.HasNext(_total, _matches.Count))" @onclick="NextPageAsync">@Text["Lookup.Search.Next"]</button>
         </nav>
     }
 </section>

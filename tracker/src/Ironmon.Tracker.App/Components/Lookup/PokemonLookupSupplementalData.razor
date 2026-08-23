@@ -33,9 +33,9 @@
         @if (_wildOccurrences.Total > TrackerProtocol.OccurrencePageSize)
         {
             <nav class="lookup-pager" aria-label="@Text["Lookup.Card.WildEncounterLocations"]">
-                <button type="button" disabled="@(_loadingWildOccurrences || _wildOccurrenceOffset == 0)" @onclick="PreviousWildOccurrencePageAsync">@Text["Lookup.Fusion.Previous"]</button>
-                <span>@GetOccurrenceRangeText(_wildOccurrenceOffset, _wildOccurrences.Matches.Count, _wildOccurrences.Total)</span>
-                <button type="button" disabled="@(_loadingWildOccurrences || _wildOccurrenceOffset + _wildOccurrences.Matches.Count >= _wildOccurrences.Total)" @onclick="NextWildOccurrencePageAsync">@Text["Lookup.Fusion.Next"]</button>
+                <button type="button" disabled="@(_loadingWildOccurrences || !_wildOccurrencePagination.HasPrevious)" @onclick="PreviousWildOccurrencePageAsync">@Text["Lookup.Fusion.Previous"]</button>
+                <span>@GetOccurrenceRangeText(_wildOccurrencePagination, _wildOccurrences.Matches.Count, _wildOccurrences.Total)</span>
+                <button type="button" disabled="@(_loadingWildOccurrences || !_wildOccurrencePagination.HasNext(_wildOccurrences.Total, _wildOccurrences.Matches.Count))" @onclick="NextWildOccurrencePageAsync">@Text["Lookup.Fusion.Next"]</button>
             </nav>
         }
     </section>
@@ -66,9 +66,9 @@
         @if (_trainerOccurrences.Total > TrackerProtocol.OccurrencePageSize)
         {
             <nav class="lookup-pager" aria-label="@Text["Lookup.Card.TrainerPartyLocations"]">
-                <button type="button" disabled="@(_loadingTrainerOccurrences || _trainerOccurrenceOffset == 0)" @onclick="PreviousTrainerOccurrencePageAsync">@Text["Lookup.Fusion.Previous"]</button>
-                <span>@GetOccurrenceRangeText(_trainerOccurrenceOffset, _trainerOccurrences.Matches.Count, _trainerOccurrences.Total)</span>
-                <button type="button" disabled="@(_loadingTrainerOccurrences || _trainerOccurrenceOffset + _trainerOccurrences.Matches.Count >= _trainerOccurrences.Total)" @onclick="NextTrainerOccurrencePageAsync">@Text["Lookup.Fusion.Next"]</button>
+                <button type="button" disabled="@(_loadingTrainerOccurrences || !_trainerOccurrencePagination.HasPrevious)" @onclick="PreviousTrainerOccurrencePageAsync">@Text["Lookup.Fusion.Previous"]</button>
+                <span>@GetOccurrenceRangeText(_trainerOccurrencePagination, _trainerOccurrences.Matches.Count, _trainerOccurrences.Total)</span>
+                <button type="button" disabled="@(_loadingTrainerOccurrences || !_trainerOccurrencePagination.HasNext(_trainerOccurrences.Total, _trainerOccurrences.Matches.Count))" @onclick="NextTrainerOccurrencePageAsync">@Text["Lookup.Fusion.Next"]</button>
             </nav>
         }
     </section>
@@ -97,31 +97,43 @@
     </section>
 }
 
-@if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.FusionMaterialPairs)) && _fusionMaterials.Total > 0)
+@if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.FusionMaterialPairs)) && Pokemon.Identity.Fusion)
 {
     <section class="lookup-relations" aria-label="@Text["Lookup.Card.IronmonFusionMaterials"]">
         <header><p class="section-label">@Text["Lookup.Card.FusionMaterialsHeading"]</p></header>
-        <div class="lookup-material-list">
-            @foreach (FusionMaterialPairSnapshot materials in _fusionMaterials.Matches)
-            {
-                <div class="lookup-material-pair">
-                    <PokemonRelationButton Relation="@materials.Body" GameRoot="@GameRoot" Selected="PokemonSelected" />
-                    <span aria-hidden="true">+</span>
-                    <PokemonRelationButton Relation="@materials.Head" GameRoot="@GameRoot" Selected="PokemonSelected" />
-                </div>
-            }
-        </div>
-        @if (_fusionMaterialError is not null)
+        @if (_loadingFusionMaterials)
+        {
+            <p class="lookup-empty">@Text["Lookup.Card.LoadingFusionMaterials"]</p>
+        }
+        else if (_fusionMaterialError is not null)
         {
             <p class="lookup-error" role="alert">@_fusionMaterialError</p>
+            <button type="button" @onclick="RetryFusionMaterialPageAsync">@Text["Lookup.Graph.Retry"]</button>
         }
-        @if (_fusionMaterials.Total > TrackerProtocol.FusionMaterialPageSize)
+        else if (_fusionMaterials.Total == 0)
         {
-            <nav class="lookup-pager" aria-label="@Text["Lookup.Fusion.FusionMaterialSearchPages"]">
-                <button type="button" disabled="@(_loadingFusionMaterials || _fusionMaterialOffset == 0)" @onclick="PreviousFusionMaterialPageAsync">@Text["Lookup.Fusion.Previous"]</button>
-                <span>@GetFusionMaterialRangeText()</span>
-                <button type="button" disabled="@(_loadingFusionMaterials || _fusionMaterialOffset + _fusionMaterials.Matches.Count >= _fusionMaterials.Total)" @onclick="NextFusionMaterialPageAsync">@Text["Lookup.Fusion.Next"]</button>
-            </nav>
+            <p class="lookup-empty">@Text["Lookup.Card.NoFusionMaterials"]</p>
+        }
+        else
+        {
+            <div class="lookup-material-list">
+                @foreach (FusionMaterialPairSnapshot materials in _fusionMaterials.Matches)
+                {
+                    <div class="lookup-material-pair">
+                        <PokemonRelationButton Relation="@materials.Body" GameRoot="@GameRoot" Selected="PokemonSelected" />
+                        <span aria-hidden="true">+</span>
+                        <PokemonRelationButton Relation="@materials.Head" GameRoot="@GameRoot" Selected="PokemonSelected" />
+                    </div>
+                }
+            </div>
+            @if (_fusionMaterials.Total > TrackerProtocol.FusionMaterialPageSize)
+            {
+                <nav class="lookup-pager" aria-label="@Text["Lookup.Fusion.FusionMaterialSearchPages"]">
+                    <button type="button" disabled="@(!_fusionMaterialPagination.HasPrevious)" @onclick="PreviousFusionMaterialPageAsync">@Text["Lookup.Fusion.Previous"]</button>
+                    <span>@GetFusionMaterialRangeText()</span>
+                    <button type="button" disabled="@(!_fusionMaterialPagination.HasNext(_fusionMaterials.Total, _fusionMaterials.Matches.Count))" @onclick="NextFusionMaterialPageAsync">@Text["Lookup.Fusion.Next"]</button>
+                </nav>
+            }
         }
     </section>
 }

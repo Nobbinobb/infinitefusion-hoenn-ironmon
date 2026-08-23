@@ -42,8 +42,8 @@
     @if (_lookup is not null)
     {
         <nav class="lookup-history" aria-label="@Text["Lookup.Search.PokemonLookupHistory"]">
-            <button type="button" disabled="@(_backHistory.Count == 0 || _loading)" @onclick="GoBackAsync">&#8592; @Text["Lookup.Search.Back"]</button>
-            <button type="button" disabled="@(_forwardHistory.Count == 0 || _loading)" @onclick="GoForwardAsync">@Text["Lookup.Search.Forward"] &#8594;</button>
+            <button type="button" disabled="@(!_history.CanGoBack || _loading)" @onclick="GoBackAsync">&#8592; @Text["Lookup.Search.Back"]</button>
+            <button type="button" disabled="@(!_history.CanGoForward || _loading)" @onclick="GoForwardAsync">@Text["Lookup.Search.Forward"] &#8594;</button>
         </nav>
         <PokemonLookupCard Pokemon="@_lookup" Recipe="@Recipe" DebugMode="@DebugMode" GameRoot="@GameRoot" PokemonSelected="NavigateToPokemonAsync" />
     }

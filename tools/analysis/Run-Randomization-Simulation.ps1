@@ -11,6 +11,8 @@ param(
     [int]$SeedCount = 25,
     [ValidateRange(1, 500)]
     [int]$FusionSamplesPerSeed = 16,
+    [ValidateRange(0, 100)]
+    [int]$FusionPredecessorSamples = 12,
     [ValidateRange(1, 100000)]
     [int]$ItemSlotsPerSeed = 500,
     [ValidateRange(0, 86400)]
@@ -72,7 +74,11 @@ if ($TimeoutSeconds -eq 0) {
         86400,
         [Math]::Max(
             300,
-            [Math]::Ceiling(60 + ($SeedCount * $secondsPerSeed))
+            [Math]::Ceiling(
+                60 +
+                ($SeedCount * $secondsPerSeed) +
+                ($FusionPredecessorSamples * 5)
+            )
         )
     )
 }
@@ -120,6 +126,7 @@ $bootstrapSource = @(
     "`$ironmon_simulation_selection_seed = $SelectionSeed"
     "`$ironmon_simulation_seed_count = $SeedCount"
     "`$ironmon_simulation_fusion_samples_per_seed = $FusionSamplesPerSeed"
+    "`$ironmon_simulation_fusion_predecessor_samples = $FusionPredecessorSamples"
     "`$ironmon_simulation_item_slots_per_seed = $ItemSlotsPerSeed"
     "Dir.chdir(`"$rubyGameRoot`")"
     $loaderSource
@@ -163,6 +170,7 @@ try {
     }
     Write-Output "Normal species checks: $($report.families.species.normal_observations)"
     Write-Output "Fusion samples: $($report.families.species.fusion_samples)"
+    Write-Output "Fusion predecessor pages: $($report.families.evolutions.fusion_predecessor_page_observations)"
     Write-Output "Item slots: $($report.families.items.ground_observations)"
     Write-Output "Hard failures: $($report.hard_failures.Count); statistical alerts: $($report.statistical_alerts.Count)"
     Write-Output "Report: $resolvedOutputPath"

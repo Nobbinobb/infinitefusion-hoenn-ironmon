@@ -196,6 +196,11 @@ public sealed class PokemonLookupMovesSnapshot
 public sealed class PokemonLookupEvolutionsSnapshot
 {
     /// <summary>
+    /// Gets or initializes the current Pokemon's stable graph row.
+    /// </summary>
+    public int CurrentStageLevel { get; init; }
+
+    /// <summary>
     /// Gets or initializes the current Pokemon's generated base-stat total.
     /// </summary>
     public int CurrentBaseStatTotal { get; init; }

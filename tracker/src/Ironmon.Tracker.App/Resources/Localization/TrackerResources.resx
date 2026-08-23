@@ -843,11 +843,53 @@
   <data name="Lookup.Graph.EvolutionGraphHeading" xml:space="preserve">
     <value>EVOLUTION GRAPH</value>
   </data>
+  <data name="Lookup.Graph.Open" xml:space="preserve">
+    <value>Open evolution graph</value>
+  </data>
+  <data name="Lookup.Graph.Close" xml:space="preserve">
+    <value>Close evolution graph</value>
+  </data>
+  <data name="Lookup.Graph.Loading" xml:space="preserve">
+    <value>Loading evolution graph...</value>
+  </data>
+  <data name="Lookup.Graph.LoadingPredecessors" xml:space="preserve">
+    <value>Loading previous evolutions... {0} found</value>
+  </data>
+  <data name="Lookup.Graph.LoadedPredecessors" xml:space="preserve">
+    <value>{0} previous evolutions loaded</value>
+  </data>
+  <data name="Lookup.Graph.Retry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="Lookup.Graph.CanvasInstructions" xml:space="preserve">
+    <value>Drag to move · Wheel to zoom</value>
+  </data>
+  <data name="Lookup.Graph.ZoomIn" xml:space="preserve">
+    <value>Zoom in</value>
+  </data>
+  <data name="Lookup.Graph.ZoomOut" xml:space="preserve">
+    <value>Zoom out</value>
+  </data>
+  <data name="Lookup.Graph.ResetView" xml:space="preserve">
+    <value>Center graph</value>
+  </data>
+  <data name="Lookup.Graph.Maximize" xml:space="preserve">
+    <value>Maximize graph to monitor</value>
+  </data>
+  <data name="Lookup.Graph.Restore" xml:space="preserve">
+    <value>Restore tracker window</value>
+  </data>
   <data name="Lookup.Card.EvolutionTargetsHeading" xml:space="preserve">
     <value>EVOLUTION TARGETS</value>
   </data>
   <data name="Lookup.Card.FusionMaterialsHeading" xml:space="preserve">
     <value>FUSION MATERIALS</value>
+  </data>
+  <data name="Lookup.Card.LoadingFusionMaterials" xml:space="preserve">
+    <value>Loading fusion materials…</value>
+  </data>
+  <data name="Lookup.Card.NoFusionMaterials" xml:space="preserve">
+    <value>No fusion material pairs were found.</value>
   </data>
   <data name="Lookup.Card.GeneratedPokemonDetails" xml:space="preserve">
     <value>Generated Pokemon details</value>
@@ -1408,4 +1450,25 @@
   <data name="Seeds.Errors.Unsupported" xml:space="preserve"><value>The token is not a supported Ironmon seeded-run token.</value></data>
   <data name="Seeds.Errors.InvalidSignature" xml:space="preserve"><value>The seeded-run token signature is invalid.</value></data>
   <data name="Seeds.Errors.InvalidClaims" xml:space="preserve"><value>The signed seeded-run inputs are invalid or unsupported.</value></data>
+  <data name="Settings.EvolutionGraph.Group" xml:space="preserve"><value>Evolution graph</value></data>
+  <data name="Settings.EvolutionGraph.GroupDescription" xml:space="preserve"><value>Control how much of a generated evolution tree is loaded.</value></data>
+  <data name="Settings.EvolutionGraph.ExpansionDepth" xml:space="preserve"><value>Layers loaded per selection</value></data>
+  <data name="Settings.EvolutionGraph.ExpansionDepthDescription" xml:space="preserve"><value>Load this many predecessor and evolution layers around the initially selected Pokémon and every branch you select later.</value></data>
+  <data name="Settings.EvolutionGraph.ExpansionDepthValidation" xml:space="preserve"><value>Choose between {0} and {1} layers.</value></data>
+  <data name="Settings.EvolutionGraph.NodesPerRow" xml:space="preserve"><value>Maximum nodes per row</value></data>
+  <data name="Settings.EvolutionGraph.NodesPerRowDescription" xml:space="preserve"><value>Wrap a logical level into another row after this many Pokémon.</value></data>
+  <data name="Settings.EvolutionGraph.NodesPerRowValidation" xml:space="preserve"><value>Choose between {0} and {1} Pokémon per row.</value></data>
+  <data name="Lookup.Graph.LoadingNeighborhood" xml:space="preserve"><value>Loading up to {0} layers… {1} of {2} loaded Pokémon shown · {3} connections loaded</value></data>
+  <data name="Lookup.Graph.LoadedNeighborhood" xml:space="preserve"><value>Neighborhood loaded · {0} of {1} loaded Pokémon shown · {2} connections · select a branch to load up to {3} layers around it</value></data>
+  <data name="Lookup.Graph.SelectNode" xml:space="preserve"><value>Select branch</value></data>
+  <data name="Lookup.Graph.OpenPokemon" xml:space="preserve"><value>Open Pokémon details</value></data>
+  <data name="Lookup.Graph.Level" xml:space="preserve"><value>Level {0}</value></data>
+  <data name="Lookup.Graph.ShowAllLoaded" xml:space="preserve"><value>Show all loaded</value></data>
+  <data name="Lookup.Graph.ShowFocusedNeighborhood" xml:space="preserve"><value>Show focused neighborhood</value></data>
+  <data name="Lookup.Graph.ShowCompactRows" xml:space="preserve"><value>Show one BST range per level</value></data>
+  <data name="Lookup.Graph.ShowExpandedRows" xml:space="preserve"><value>Show every BST range</value></data>
+  <data name="Lookup.Graph.BstValue" xml:space="preserve"><value>BST {0}</value></data>
+  <data name="Lookup.Graph.BstRange" xml:space="preserve"><value>BST {0}–{1}</value></data>
+  <data name="Lookup.Graph.DuplicateBstRange" xml:space="preserve"><value>{0} · {1}/{2}</value></data>
+  <data name="Lookup.Graph.HiddenConnections" xml:space="preserve"><value>{0} connections to hidden Pokémon</value></data>
 </root>

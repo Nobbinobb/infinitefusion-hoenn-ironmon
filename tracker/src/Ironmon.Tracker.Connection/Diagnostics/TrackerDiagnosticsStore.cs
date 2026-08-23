@@ -165,11 +165,7 @@ public sealed class TrackerDiagnosticsStore
         {
             try
             {
-                string directory = Path.GetDirectoryName(_automaticErrorPath) ?? throw new IOException("The automatic diagnostic path has no parent directory.");
-                Directory.CreateDirectory(directory);
-                string temporaryPath = _automaticErrorPath + TrackerStorageNames.TemporaryExtension;
-                File.WriteAllText(temporaryPath, JsonSerializer.Serialize(snapshot, AutomaticSnapshotJsonOptions));
-                File.Move(temporaryPath, _automaticErrorPath, true);
+                TrackerAtomicFileWriter.WriteAllText(_automaticErrorPath, JsonSerializer.Serialize(snapshot, AutomaticSnapshotJsonOptions));
             }
             catch (Exception)
             {

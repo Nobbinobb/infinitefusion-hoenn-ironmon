@@ -26,6 +26,16 @@ internal static class TrackerApplicationConstants
     internal const string MaximumStarterBaseStatTotalPreferenceKey = "maximum_starter_base_stat_total";
 
     /// <summary>
+    /// Gets the persisted evolution-graph expansion-depth preference key.
+    /// </summary>
+    internal const string EvolutionGraphExpansionDepthPreferenceKey = "evolution_graph_expansion_depth";
+
+    /// <summary>
+    /// Gets the persisted evolution-graph nodes-per-row preference key.
+    /// </summary>
+    internal const string EvolutionGraphNodesPerRowPreferenceKey = "evolution_graph_nodes_per_row";
+
+    /// <summary>
     /// Gets the fallback application version.
     /// </summary>
     internal const string DefaultVersion = "0.1.0";

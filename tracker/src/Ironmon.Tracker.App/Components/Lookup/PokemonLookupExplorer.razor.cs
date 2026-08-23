@@ -8,17 +8,20 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class PokemonLookupExplorer : IDisposable
 {
-    private readonly List<string> _backHistory = [];
-    private readonly List<string> _forwardHistory = [];
+    private const string _lookupRequestKey = "lookup";
+    private readonly NavigationHistory<string> _history = new();
+    private readonly PaginationState _searchPagination = new(TrackerProtocol.DefaultSearchPageSize);
+    private readonly LatestRequestCoordinator<string> _requests = new();
     private IReadOnlyList<PokemonSearchMatch> _matches = [];
     private PokemonLookupSnapshot? _lookup;
     private string? _currentSpeciesId;
     private string _query = string.Empty;
     private string? _error;
-    private int _searchOffset;
     private int _matchTotal;
     private bool _loading;
     private bool _searched;
+    private bool _observedDebugMode;
+    private CompletedRunRecipePayload? _observedRecipe;
     private string? _observedRequestedSpeciesId;
 
     /// <summary>
@@ -69,6 +72,23 @@ public partial class PokemonLookupExplorer : IDisposable
     /// <returns>A task representing the requested lookup.</returns>
     protected override async Task OnParametersSetAsync()
     {
+        bool sourceChanged = _observedDebugMode != DebugMode || !ReferenceEquals(_observedRecipe, Recipe);
+        if (sourceChanged)
+        {
+            _observedDebugMode = DebugMode;
+            _observedRecipe = Recipe;
+            _observedRequestedSpeciesId = null;
+            CancelRequest();
+            _matches = [];
+            _lookup = null;
+            _currentSpeciesId = null;
+            _history.Clear();
+            _searchPagination.Reset();
+            _matchTotal = 0;
+            _error = null;
+            _searched = false;
+        }
+
         if (string.IsNullOrWhiteSpace(RequestedSpeciesId) || RequestedSpeciesId == _observedRequestedSpeciesId)
             return;
 
@@ -102,13 +122,11 @@ public partial class PokemonLookupExplorer : IDisposable
     /// <summary>
     /// Requests one page of generated Pokémon matches.
     /// </summary>
-    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="pageIndex">The zero-based result page.</param>
     /// <returns>A task representing the search.</returns>
-    private async Task SearchPageAsync(int offset)
+    private async Task SearchPageAsync(int pageIndex)
     {
-        if (_loading)
-            return;
-
+        ArgumentOutOfRangeException.ThrowIfNegative(pageIndex);
         string query = _query.Trim();
         if (query.Length == 0)
         {
@@ -119,33 +137,42 @@ public partial class PokemonLookupExplorer : IDisposable
         if (!DebugMode && Recipe is null)
             return;
 
-        _loading = true;
+        LatestRequestLease<string> request = BeginRequest();
         _searched = false;
         _error = null;
         _lookup = null;
-        if (offset == 0)
+        if (pageIndex == 0)
         {
             _currentSpeciesId = null;
-            _backHistory.Clear();
-            _forwardHistory.Clear();
+            _history.Clear();
         }
 
         try
         {
-            PokemonSearchResponsePayload response = await SearchPokemonAsync(query, offset);
+            int offset = checked(pageIndex * _searchPagination.PageSize);
+            PokemonSearchResponsePayload response = await SearchPokemonAsync(query, offset, request.CancellationToken);
+            if (!request.IsCurrent)
+                return;
+
             _matches = response.Matches;
-            _searchOffset = offset;
+            _searchPagination.Select(pageIndex);
             _matchTotal = Math.Max(response.Total, offset + response.Matches.Count);
             _searched = true;
         }
+        catch (OperationCanceledException) when (request.CancellationToken.IsCancellationRequested)
+        {
+        }
         catch (Exception exception) when (IsExpectedRequestException(exception))
         {
-            _matches = [];
-            _error = exception.Message;
+            if (request.IsCurrent)
+            {
+                _matches = [];
+                _error = exception.Message;
+            }
         }
         finally
         {
-            _loading = false;
+            CompleteRequest(request);
         }
     }
 
@@ -154,12 +181,13 @@ public partial class PokemonLookupExplorer : IDisposable
     /// </summary>
     /// <param name="query">The trimmed name query.</param>
     /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="cancellationToken">The token that cancels a replaced request.</param>
     /// <returns>The matching generated Pokémon.</returns>
-    private Task<PokemonSearchResponsePayload> SearchPokemonAsync(string query, int offset)
+    private Task<PokemonSearchResponsePayload> SearchPokemonAsync(string query, int offset, CancellationToken cancellationToken)
     {
         return DebugMode
-            ? Connection.SearchDebugPokemonAsync(query, offset, TrackerProtocol.DefaultSearchPageSize)
-            : Connection.SearchPokemonAsync(Recipe!, query, offset, TrackerProtocol.DefaultSearchPageSize);
+            ? Connection.SearchDebugPokemonAsync(query, offset, TrackerProtocol.DefaultSearchPageSize, cancellationToken: cancellationToken)
+            : Connection.SearchPokemonAsync(Recipe!, query, offset, TrackerProtocol.DefaultSearchPageSize, cancellationToken: cancellationToken);
     }
 
     /// <summary>
@@ -169,7 +197,7 @@ public partial class PokemonLookupExplorer : IDisposable
     /// <returns>A task representing the lookup.</returns>
     private async Task NavigateToPokemonAsync(string speciesId)
     {
-        if (_loading || speciesId == _currentSpeciesId)
+        if (speciesId == _currentSpeciesId)
             return;
 
         string? previousSpeciesId = _currentSpeciesId;
@@ -178,8 +206,7 @@ public partial class PokemonLookupExplorer : IDisposable
             return;
 
         if (previousSpeciesId is not null)
-            _backHistory.Add(previousSpeciesId);
-        _forwardHistory.Clear();
+            _history.RecordNavigation(previousSpeciesId);
     }
 
     /// <summary>
@@ -199,18 +226,13 @@ public partial class PokemonLookupExplorer : IDisposable
     /// <returns>A task representing the lookup.</returns>
     private async Task GoBackAsync()
     {
-        if (_backHistory.Count == 0)
+        if (!_history.TryPeekBack(out string? targetSpeciesId) || _currentSpeciesId is not string currentSpeciesId)
             return;
 
-        int lastIndex = _backHistory.Count - 1;
-        string targetSpeciesId = _backHistory[lastIndex];
-        string? currentSpeciesId = _currentSpeciesId;
         if (!await LoadPokemonAsync(targetSpeciesId))
             return;
 
-        _backHistory.RemoveAt(lastIndex);
-        if (currentSpeciesId is not null)
-            _forwardHistory.Add(currentSpeciesId);
+        _history.CommitBack(currentSpeciesId);
     }
 
     /// <summary>
@@ -219,18 +241,13 @@ public partial class PokemonLookupExplorer : IDisposable
     /// <returns>A task representing the lookup.</returns>
     private async Task GoForwardAsync()
     {
-        if (_forwardHistory.Count == 0)
+        if (!_history.TryPeekForward(out string? targetSpeciesId) || _currentSpeciesId is not string currentSpeciesId)
             return;
 
-        int lastIndex = _forwardHistory.Count - 1;
-        string targetSpeciesId = _forwardHistory[lastIndex];
-        string? currentSpeciesId = _currentSpeciesId;
         if (!await LoadPokemonAsync(targetSpeciesId))
             return;
 
-        _forwardHistory.RemoveAt(lastIndex);
-        if (currentSpeciesId is not null)
-            _backHistory.Add(currentSpeciesId);
+        _history.CommitForward(currentSpeciesId);
     }
 
     /// <summary>
@@ -241,24 +258,25 @@ public partial class PokemonLookupExplorer : IDisposable
     /// <returns>Whether the lookup succeeded.</returns>
     private async Task<bool> LoadPokemonAsync(string speciesId, PokemonSearchMatch? match = null)
     {
-        if (_loading || !DebugMode && Recipe is null)
+        if (!DebugMode && Recipe is null)
             return false;
 
-        _loading = true;
+        LatestRequestLease<string> request = BeginRequest();
         _error = null;
         try
         {
             PokemonLookupSection? section = GetFirstAuthorizedLookupSection();
+            PokemonLookupSnapshot lookup;
             if (!DebugMode || section is not null)
             {
-                _lookup = await LookupPokemonAsync(speciesId, section ?? PokemonLookupSection.Overview);
+                lookup = await LookupPokemonAsync(speciesId, section ?? PokemonLookupSection.Overview, request.CancellationToken);
             }
             else if (match is not null)
             {
                 PokemonInformationPage page = TrackerDiagnosticCapabilityRules.HasAnyOverviewSurface(Connection)
                     ? PokemonInformationPage.Overview
                     : PokemonInformationPage.Evolutions;
-                _lookup = new PokemonLookupSnapshot
+                lookup = new PokemonLookupSnapshot
                 {
                     Identity = new PokemonLookupIdentitySnapshot
                     {
@@ -274,18 +292,28 @@ public partial class PokemonLookupExplorer : IDisposable
                 throw new InvalidOperationException(Text["Lookup.Search.SelectPokemonFromResults"]);
             }
 
-            _currentSpeciesId = _lookup.Identity.SpeciesId;
+            if (!request.IsCurrent)
+                return false;
+
+            _lookup = lookup;
+            _currentSpeciesId = lookup.Identity.SpeciesId;
             _matches = [];
             return true;
         }
+        catch (OperationCanceledException) when (request.CancellationToken.IsCancellationRequested)
+        {
+            return false;
+        }
         catch (Exception exception) when (IsExpectedRequestException(exception))
         {
-            _error = exception.Message;
+            if (request.IsCurrent)
+                _error = exception.Message;
+
             return false;
         }
         finally
         {
-            _loading = false;
+            CompleteRequest(request);
         }
     }
 
@@ -294,9 +322,44 @@ public partial class PokemonLookupExplorer : IDisposable
     /// </summary>
     /// <param name="speciesId">The stable Pokémon identifier.</param>
     /// <param name="section">The independently requested information section.</param>
+    /// <param name="cancellationToken">The token that cancels a replaced request.</param>
     /// <returns>The generated Pokémon snapshot.</returns>
-    private Task<PokemonLookupSnapshot> LookupPokemonAsync(string speciesId, PokemonLookupSection section)
-        => DebugMode ? Connection.LookupDebugPokemonAsync(speciesId, section) : Connection.LookupPokemonAsync(Recipe!, speciesId, section);
+    private Task<PokemonLookupSnapshot> LookupPokemonAsync(string speciesId, PokemonLookupSection section, CancellationToken cancellationToken)
+    {
+        return DebugMode
+            ? Connection.LookupDebugPokemonAsync(speciesId, section, cancellationToken)
+            : Connection.LookupPokemonAsync(Recipe!, speciesId, section, cancellationToken);
+    }
+
+    /// <summary>
+    /// Cancels the previous explorer operation and begins the new latest request.
+    /// </summary>
+    /// <returns>The lease owned by the new request.</returns>
+    private LatestRequestLease<string> BeginRequest()
+    {
+        LatestRequestLease<string> request = _requests.Begin(_lookupRequestKey);
+        _loading = true;
+        return request;
+    }
+
+    /// <summary>
+    /// Releases one completed request without clearing a newer request's loading state.
+    /// </summary>
+    /// <param name="request">The completed request lease.</param>
+    private void CompleteRequest(LatestRequestLease<string> request)
+    {
+        if (request.Complete())
+            _loading = false;
+    }
+
+    /// <summary>
+    /// Invalidates the active request and clears its loading state.
+    /// </summary>
+    private void CancelRequest()
+    {
+        _requests.CancelAll();
+        _loading = false;
+    }
 
     /// <summary>
     /// Gets the first active-run information section that may be requested directly.
@@ -322,28 +385,28 @@ public partial class PokemonLookupExplorer : IDisposable
     /// </summary>
     /// <returns>Whether the current page starts after the first match.</returns>
     private bool HasPreviousSearchPage()
-        => _searchOffset > 0;
+        => _searchPagination.HasPrevious;
 
     /// <summary>
     /// Gets whether a later search page exists.
     /// </summary>
     /// <returns>Whether matches remain after the current page.</returns>
     private bool HasNextSearchPage()
-        => _searchOffset + _matches.Count < _matchTotal;
+        => _searchPagination.HasNext(_matchTotal, _matches.Count);
 
     /// <summary>
     /// Loads the previous search page.
     /// </summary>
     /// <returns>A task representing the search.</returns>
     private Task PreviousSearchPageAsync()
-        => SearchPageAsync(Math.Max(0, _searchOffset - TrackerProtocol.DefaultSearchPageSize));
+        => SearchPageAsync(_searchPagination.PageIndex - 1);
 
     /// <summary>
     /// Loads the next search page.
     /// </summary>
     /// <returns>A task representing the search.</returns>
     private Task NextSearchPageAsync()
-        => SearchPageAsync(_searchOffset + TrackerProtocol.DefaultSearchPageSize);
+        => SearchPageAsync(_searchPagination.PageIndex + 1);
 
     /// <summary>
     /// Formats the inclusive visible result range.
@@ -351,8 +414,7 @@ public partial class PokemonLookupExplorer : IDisposable
     /// <returns>The visible range and total count.</returns>
     private string GetSearchRangeText()
     {
-        int first = _matches.Count == 0 ? 0 : _searchOffset + 1;
-        int last = _searchOffset + _matches.Count;
+        (int first, int last) = _searchPagination.GetRange(_matchTotal, _matches.Count);
         return Text["Lookup.Search.ResultRange", first, last, _matchTotal];
     }
 
@@ -374,11 +436,13 @@ public partial class PokemonLookupExplorer : IDisposable
         if (!DebugMode)
             return;
 
+        CancelRequest();
         _matches = [];
         _lookup = null;
         _currentSpeciesId = null;
-        _backHistory.Clear();
-        _forwardHistory.Clear();
+        _history.Clear();
+        _searchPagination.Reset();
+        _matchTotal = 0;
         _error = null;
         _searched = false;
         _ = InvokeAsync(StateHasChanged);
@@ -388,5 +452,8 @@ public partial class PokemonLookupExplorer : IDisposable
     /// Removes the diagnostic-access subscription.
     /// </summary>
     public void Dispose()
-        => AccessService.Changed -= HandleDiagnosticAccessChanged;
+    {
+        AccessService.Changed -= HandleDiagnosticAccessChanged;
+        _requests.Dispose();
+    }
 }

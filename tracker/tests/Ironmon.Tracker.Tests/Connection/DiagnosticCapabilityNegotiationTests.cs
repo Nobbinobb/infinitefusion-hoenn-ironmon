@@ -32,7 +32,7 @@ public sealed class DiagnosticCapabilityNegotiationTests : IAsyncLifetime
         DiagnosticAccessTokenValidator validator = new(new DiagnosticAccessKeyring([verificationKey]));
         TrackerKnowledgeOptions storage = new(_root);
         using DiagnosticAccessService access = new(storage, validator);
-        DiagnosticAccessTokenGenerationRequest tokenRequest = new("negotiation", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddHours(1), null, [DiagnosticCapabilities.RunSeed, DiagnosticCapabilities.PokemonCurrentPlayer, DiagnosticCapabilities.EvolutionCandidates, DiagnosticCapabilities.TrackerRawState]);
+        DiagnosticAccessTokenGenerationRequest tokenRequest = new("negotiation", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddHours(1), null, [DiagnosticCapabilities.RunSeed, DiagnosticCapabilities.PokemonCurrentPlayer, DiagnosticCapabilities.EvolutionCandidates, DiagnosticCapabilities.EvolutionResults, DiagnosticCapabilities.TrackerRawState]);
         string token = new DiagnosticAccessTokenGenerator().Generate(signingKey, tokenRequest).Token;
         Assert.True((await access.ActivateAsync(token)).IsValid);
 
@@ -51,12 +51,12 @@ public sealed class DiagnosticCapabilityNegotiationTests : IAsyncLifetime
         NetworkStream stream = client.GetStream();
         using TrackerMessageReader reader = new(stream, leaveOpen: true);
         await using TrackerMessageWriter writer = new(stream, leaveOpen: true);
-        GameHandshakePayload game = new("6.8.0", "0.7.4", true, false, @"C:\Game", "run-1", null, [DiagnosticCapabilities.RunSeed, DiagnosticCapabilities.PokemonCurrentPlayer, DiagnosticCapabilities.EvolutionCandidates]);
+        GameHandshakePayload game = new("6.8.0", "0.7.4", true, false, @"C:\Game", "run-1", null, [DiagnosticCapabilities.RunSeed, DiagnosticCapabilities.PokemonCurrentPlayer, DiagnosticCapabilities.EvolutionCandidates, DiagnosticCapabilities.EvolutionResults]);
         await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.GameConnected, 0, game));
 
         TrackerMessage trackerHandshake = await ReadRequiredAsync(reader);
         TrackerHandshakePayload tracker = TrackerJson.DeserializePayload<TrackerHandshakePayload>(trackerHandshake.Payload);
-        Assert.Equal([DiagnosticCapabilities.EvolutionCandidates, DiagnosticCapabilities.PokemonCurrentPlayer, DiagnosticCapabilities.RunSeed], tracker.DiagnosticCapabilities);
+        Assert.Equal([DiagnosticCapabilities.EvolutionCandidates, DiagnosticCapabilities.EvolutionResults, DiagnosticCapabilities.PokemonCurrentPlayer, DiagnosticCapabilities.RunSeed], tracker.DiagnosticCapabilities);
         TrackerMessage currentStateRequest = await ReadRequiredAsync(reader);
         GameCurrentStatePayload currentState = new(true, "run-1", null, 1);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(currentStateRequest.RequestId!, currentState, "run-1"));
@@ -74,6 +74,17 @@ public sealed class DiagnosticCapabilityNegotiationTests : IAsyncLifetime
         Assert.Equal(DebugPokemonTarget.Player, candidatePayload.Target);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(candidateRequest.RequestId!, new EvolutionCandidateSearchResponsePayload(), "run-1"));
         Assert.Empty((await candidateTask).Matches);
+
+        Task<EvolutionPredecessorSearchResponsePayload> predecessorTask = service.Requests.SearchDebugEvolutionPredecessorsAsync("TAMPERED:0", target: DebugPokemonTarget.Player);
+        TrackerMessage predecessorRequest = await ReadRequiredAsync(reader);
+        DebugEvolutionPredecessorSearchRequestPayload predecessorPayload = TrackerJson.DeserializePayload<DebugEvolutionPredecessorSearchRequestPayload>(predecessorRequest.Payload);
+        Assert.Equal(TrackerCommands.DebugEvolutionPredecessorSearch, predecessorRequest.Command);
+        Assert.Equal("TAMPERED:0", predecessorPayload.SpeciesId);
+        Assert.Equal(DebugPokemonTarget.Player, predecessorPayload.Target);
+        Assert.Equal(TrackerProtocol.EvolutionPredecessorPageSize, predecessorPayload.Limit);
+        EvolutionPredecessorSearchResponsePayload predecessorResponse = new() { Continuation = EvolutionPredecessorContinuation.Complete };
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(predecessorRequest.RequestId!, predecessorResponse, "run-1"));
+        Assert.Empty((await predecessorTask).Matches);
 
         DebugPokemonInspectionRequestPayload inspection = new() { Target = DebugPokemonTarget.Player, Section = PokemonLookupSection.Evolutions };
         Task<DebugPokemonInspectorSnapshot> inspectionTask = service.Requests.InspectPokemonAsync(inspection);

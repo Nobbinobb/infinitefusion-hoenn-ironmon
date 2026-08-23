@@ -61,7 +61,7 @@ Debug Pokemon, Debug Lookup, and completed-run Archive use the same tabbed
 Pokemon-information card: Overview, Abilities, Stats, Moves, and Evolutions.
 Debug Pokemon merges live player/enemy diagnostics into those shared pages.
 Overview wild locations, trainer locations, and fusion materials use bounded
-50-row pages so high-collision fusions cannot exceed the protocol frame.
+10-row pages so high-collision fusions remain compact in the Overview.
 The diagnostic tools hosted with Diagnostic Access also include tracker-owned
 raw protocol and state diagnostics.
 Protocol history, raw tracker state, and persisted knowledge are separately
@@ -96,15 +96,19 @@ developer override authorizes them.
 ```
 
 Building the shell requires the Windows-only `maui-windows` workload during
-development. End users will receive a self-contained executable in the release
-packaging part and will not need the SDK or workload.
+development. The standard end-user package is self-contained. A smaller
+runtime-required package requires the Windows x64 .NET 10 Runtime,
+but neither package requires the SDK or MAUI workload.
 
 ## Publish the release tracker
 
 Run `tools/Publish-Tracker.ps1` from the repository root to create the
-self-contained `win-x64` application under `dist/Ironmon Tracker`. Run
-`tools/Build-TrackerRelease.ps1` to rebuild the Ruby distribution, publish the
-tracker, and create the combined deterministic release ZIP and checksum. The
-release command first regenerates and validates both `area_catalog.dat` and the
-coverage dataset in the bundled game runtime; it aborts rather than packaging
-stale data and excludes the generators and audits from the player archive.
+self-contained `win-x64` application under `dist/Ironmon Tracker`. Pass
+`-DeploymentMode RuntimeRequired` to create the smaller runtime-dependent
+application under `dist-runtime-required/Ironmon Tracker`. Run
+`tools/Build-TrackerRelease.ps1` to rebuild the Ruby distribution, publish both
+tracker variants, and create a deterministic release ZIP and checksum for each.
+The release command first regenerates and validates `area_catalog.dat`, the
+fusion-predecessor index, the coverage dataset, and the item-randomization audit
+in the bundled game runtime. It aborts rather than packaging stale data and
+excludes the generators and audits from both player archives.

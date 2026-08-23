@@ -5,12 +5,8 @@
 alias ironmon_original_pb_wild_battle pbWildBattle
 def pbWildBattle(species, level, outcomeVar = 1, canRun = true, canLose = false)
   if Ironmon.active?
-    table_result = false
-    if $PokemonTemp && $PokemonTemp.encounterType
-      species, table_result = Ironmon.prepare_wild_table_result(species)
-    end
     context = Ironmon.wild_script_context(:single, 0)
-    species = Ironmon.wild_species_for(species, context) if !table_result
+    species = Ironmon.wild_battle_species_for(species, context)
     random_static = $game_switches[SWITCH_RANDOM_STATIC_ENCOUNTERS]
     begin
       $game_switches[SWITCH_RANDOM_STATIC_ENCOUNTERS] = false
@@ -94,18 +90,12 @@ alias ironmon_original_pb_double_wild_battle pbDoubleWildBattle
 def pbDoubleWildBattle(species1, level1, species2, level2,
                        outcomeVar = 1, canRun = true, canLose = false)
   if Ironmon.active?
-    table_result = $PokemonTemp && $PokemonTemp.encounterType
-    if table_result
-      species1, = Ironmon.prepare_wild_table_result(species1)
-      species2, = Ironmon.prepare_wild_table_result(species2)
-    else
-      species1 = Ironmon.wild_species_for(
-        species1, Ironmon.wild_script_context(:double, 0)
-      )
-      species2 = Ironmon.wild_species_for(
-        species2, Ironmon.wild_script_context(:double, 1)
-      )
-    end
+    species1 = Ironmon.wild_battle_species_for(
+      species1, Ironmon.wild_script_context(:double, 0)
+    )
+    species2 = Ironmon.wild_battle_species_for(
+      species2, Ironmon.wild_script_context(:double, 1)
+    )
   end
   return ironmon_original_pb_double_wild_battle(
     species1, level1, species2, level2, outcomeVar, canRun, canLose
@@ -116,22 +106,15 @@ alias ironmon_original_pb_triple_wild_battle pbTripleWildBattle
 def pbTripleWildBattle(species1, level1, species2, level2, species3, level3,
                        outcomeVar = 1, canRun = true, canLose = false)
   if Ironmon.active?
-    table_result = $PokemonTemp && $PokemonTemp.encounterType
-    if table_result
-      species1, = Ironmon.prepare_wild_table_result(species1)
-      species2, = Ironmon.prepare_wild_table_result(species2)
-      species3, = Ironmon.prepare_wild_table_result(species3)
-    else
-      species1 = Ironmon.wild_species_for(
-        species1, Ironmon.wild_script_context(:triple, 0)
-      )
-      species2 = Ironmon.wild_species_for(
-        species2, Ironmon.wild_script_context(:triple, 1)
-      )
-      species3 = Ironmon.wild_species_for(
-        species3, Ironmon.wild_script_context(:triple, 2)
-      )
-    end
+    species1 = Ironmon.wild_battle_species_for(
+      species1, Ironmon.wild_script_context(:triple, 0)
+    )
+    species2 = Ironmon.wild_battle_species_for(
+      species2, Ironmon.wild_script_context(:triple, 1)
+    )
+    species3 = Ironmon.wild_battle_species_for(
+      species3, Ironmon.wild_script_context(:triple, 2)
+    )
   end
   return ironmon_original_pb_triple_wild_battle(
     species1, level1, species2, level2, species3, level3,

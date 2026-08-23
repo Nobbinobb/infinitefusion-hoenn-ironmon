@@ -9,7 +9,10 @@ module IronmonRandomizationSimulator
   SEED_COUNT = $ironmon_simulation_seed_count.to_i
   FUSION_SAMPLES_PER_SEED =
     $ironmon_simulation_fusion_samples_per_seed.to_i
+  FUSION_PREDECESSOR_SAMPLES =
+    $ironmon_simulation_fusion_predecessor_samples.to_i
   ITEM_SLOTS_PER_SEED = $ironmon_simulation_item_slots_per_seed.to_i
+  FUSION_PREDECESSOR_PAGE_LIMIT = 8
   MAX_FAILURES = 100
   ALERT_Z_SCORE = 6.0
   MAXIMUM_RUN_SEED = 2_147_483_646
@@ -133,6 +136,32 @@ module IronmonRandomizationSimulator
            "#{identity} received an unknown #{channel} move")
   end
 
+  def self.validate_fusion_predecessor_page(page, target)
+    assert(page[:branches].length <= FUSION_PREDECESSOR_PAGE_LIMIT,
+           "#{target} predecessor page exceeded its requested limit")
+    assert(page[:branches].all? do |branch|
+             branch[:target_id] == target
+           end,
+           "#{target} predecessor page contained an inexact result")
+    diagnostics = page[:diagnostics]
+    assert(diagnostics, "#{target} predecessor page omitted diagnostics")
+    case page[:continuation]
+    when :available
+      assert(diagnostics[:predecessor_count] > FUSION_PREDECESSOR_PAGE_LIMIT,
+             "#{target} predecessor page lacks its available result")
+    when :unknown
+      assert(page[:branches].length == FUSION_PREDECESSOR_PAGE_LIMIT,
+             "#{target} predecessor page stopped before filling")
+      assert(!diagnostics[:complete],
+             "#{target} predecessor page left completion unresolved")
+    when :complete
+      assert(diagnostics[:complete],
+             "#{target} predecessor page stopped without proving completion")
+    else
+      assert(false, "#{target} predecessor page returned an invalid continuation")
+    end
+  end
+
   def self.z_score(observed, total, probability)
     variance = total.to_f * probability * (1.0 - probability)
     return 0.0 if variance <= 0.0
@@ -238,6 +267,9 @@ module IronmonRandomizationSimulator
     ability_observations = 0
     base_stat_observations = 0
     fusion_base_stat_observations = 0
+    fusion_predecessor_page_observations = 0
+    fusion_predecessor_returned_results = 0
+    fusion_predecessor_continuations = Hash.new(0)
     fusion_stat_minimum = nil
     fusion_stat_maximum = nil
     move_species_observations = 0
@@ -418,9 +450,11 @@ module IronmonRandomizationSimulator
         fusion_generator = Ironmon::FusionEvolutionGenerator.new(
           seed, catalog, fusion_pool, fusion_info, base_stat_generator
         )
+        generated_fusion_branches = []
         fusions.each do |fusion|
           fusion_generator.validate_source(fusion)
           fusion_generator.branches_for(fusion).each do |branch|
+            generated_fusion_branches << branch
             increment(evolution_totals, :fusion_branches)
             increment(evolution_totals, :fusion_fallbacks) if branch[:fallback]
             increment(evolution_totals, :fusion_upward_expansions) if
@@ -428,6 +462,22 @@ module IronmonRandomizationSimulator
             increment(evolution_totals, :fusion_bucket_reassignments) if
               branch[:bucket_reassigned]
           end
+        end
+        if fusion_predecessor_page_observations < FUSION_PREDECESSOR_SAMPLES &&
+           !generated_fusion_branches.empty?
+          selected_index = Ironmon.fnv1a_64_joined(
+            [1, seed, "simulation_fusion_predecessor"]
+          ) % generated_fusion_branches.length
+          target = generated_fusion_branches[selected_index][:target_id]
+          page = fusion_generator.predecessor_page_for(
+            target, 0, FUSION_PREDECESSOR_PAGE_LIMIT
+          )
+          validate_fusion_predecessor_page(page, target)
+          fusion_predecessor_page_observations += 1
+          fusion_predecessor_returned_results += page[:branches].length
+          increment(
+            fusion_predecessor_continuations, page[:continuation]
+          )
         end
       end
 
@@ -528,7 +578,7 @@ module IronmonRandomizationSimulator
 
     finished_at = Time.now
     report = {
-      "schema_version" => 2,
+      "schema_version" => 3,
       "status" => failures.empty? ? "passed" : "failed",
       "generated_at" => finished_at.utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
       "duration_seconds" => (finished_at - started_at).round(3),
@@ -547,8 +597,48 @@ module IronmonRandomizationSimulator
       },
       "configuration" => {
         "fusion_samples_per_seed" => FUSION_SAMPLES_PER_SEED,
+        "fusion_predecessor_samples" => FUSION_PREDECESSOR_SAMPLES,
+        "fusion_predecessor_page_limit" => FUSION_PREDECESSOR_PAGE_LIMIT,
         "item_slots_per_seed" => ITEM_SLOTS_PER_SEED,
         "statistical_alert_z_score" => ALERT_Z_SCORE
+      },
+      "generators" => {
+        "species" => {
+          "schema_version" => Ironmon::SpeciesGenerator::SCHEMA_VERSION
+        },
+        "abilities" => {
+          "schema_version" => Ironmon::AbilityGenerator::SCHEMA_VERSION,
+          "pool_rules_version" =>
+            Ironmon::AbilityGenerator::POOL_RULES_VERSION
+        },
+        "base_stats" => {
+          "schema_version" => Ironmon::BaseStatGenerator::SCHEMA_VERSION,
+          "rules_version" => Ironmon::BaseStatGenerator::RULES_VERSION,
+          "source_fingerprint" => Ironmon.base_stat_source_fingerprint
+        },
+        "move_access" => {
+          "schema_version" => Ironmon::MoveAccessGenerator::SCHEMA_VERSION
+        },
+        "normal_evolutions" => {
+          "schema_version" =>
+            Ironmon::NormalEvolutionGenerator::SCHEMA_VERSION,
+          "rules_version" => Ironmon::NormalEvolutionGenerator::RULES_VERSION
+        },
+        "fusion_evolutions" => {
+          "schema_version" =>
+            Ironmon::FusionEvolutionGenerator::SCHEMA_VERSION,
+          "rules_version" => Ironmon::FusionEvolutionGenerator::RULES_VERSION,
+          "target_pool_schema_version" => fusion_info[:schema_version],
+          "target_pool_fingerprint" => fusion_info[:fingerprint]
+        },
+        "fusion_predecessor_index" => {
+          "schema_version" =>
+            Ironmon::FusionPredecessorIndex::SCHEMA_VERSION
+        },
+        "items" => {
+          "schema_version" => Ironmon::ItemSlotGenerator::SCHEMA_VERSION,
+          "pool_rules_version" => Ironmon::ItemSlotGenerator::POOL_RULES_VERSION
+        }
       },
       "catalogs" => {
         "normal_species" => species_data.length,
@@ -597,7 +687,14 @@ module IronmonRandomizationSimulator
           "distinct_results" => move_frequencies.length,
           "most_common_results" => top_counts(move_frequencies)
         },
-        "evolutions" => evolution_totals,
+        "evolutions" => evolution_totals.merge({
+          "fusion_predecessor_page_observations" =>
+            fusion_predecessor_page_observations,
+          "fusion_predecessor_returned_results" =>
+            fusion_predecessor_returned_results,
+          "fusion_predecessor_continuations" =>
+            fusion_predecessor_continuations
+        }),
         "items" => {
           "ground_observations" => ground_observations,
           "category_distribution" => item_distribution,

@@ -17,6 +17,7 @@
   { "source": "randomization/base_stats/Runtime_Integration.rb", "output": "003_Base_Stat_Randomization_Runtime_Integration.rb" },
   { "source": "run/Checkpoint_Reset.rb", "output": "003_Checkpoint_Reset.rb" },
   { "source": "randomization/evolutions/Fusion_Generator.rb", "output": "003_Evolution_Fusion_Generation.rb" },
+  { "source": "randomization/evolutions/Fusion_Predecessor_Index.rb", "output": "003_Evolution_Fusion_Predecessor_Index.rb" },
   { "source": "randomization/evolutions/Catalog.rb", "output": "003_Evolution_Randomization.rb" },
   { "source": "randomization/evolutions/Normal_Generator.rb", "output": "003_Evolution_Randomization_Generation.rb" },
   { "source": "randomization/evolutions/Readiness.rb", "output": "003_Evolution_Randomization_Readiness.rb" },

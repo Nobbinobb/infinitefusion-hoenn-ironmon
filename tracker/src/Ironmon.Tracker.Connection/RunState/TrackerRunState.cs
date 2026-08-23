@@ -73,15 +73,17 @@ public sealed class TrackerRunState
     /// Replaces one active opposing position with its latest legal snapshot.
     /// </summary>
     /// <param name="enemy">The latest opposing Pokemon snapshot.</param>
-    internal void UpdateEnemy(EnemyPokemonSnapshot enemy)
+    /// <param name="sentOut">Whether this update represents a newly sent-out opponent.</param>
+    internal void UpdateEnemy(EnemyPokemonSnapshot enemy, bool sentOut)
     {
         ArgumentNullException.ThrowIfNull(enemy);
         List<EnemyPokemonSnapshot> enemies = [.. Snapshot.Enemies.Where(candidate => candidate.Position != enemy.Position), enemy];
-        Publish(Snapshot.Battle, Snapshot.Player, [.. enemies.OrderBy(candidate => candidate.Position)], Snapshot.MoveMenuPokemonId, Snapshot.StarterSelection);
+        string? moveMenuPokemonId = sentOut ? null : Snapshot.MoveMenuPokemonId;
+        Publish(Snapshot.Battle, Snapshot.Player, [.. enemies.OrderBy(candidate => candidate.Position)], moveMenuPokemonId, Snapshot.StarterSelection);
     }
 
     /// <summary>
-    /// Records the first move-menu opening for the active player Pokémon.
+    /// Records the first player move-menu opening after the latest send-out.
     /// </summary>
     /// <param name="payload">The move-menu event payload.</param>
     internal void OpenPlayerMoveMenu(PlayerMoveMenuOpenedPayload payload)

@@ -12,6 +12,8 @@ public partial class TrackerSettingsPage : IDisposable
     private IReadOnlyList<PokemonSearchMatch> _favorites = [];
     private IReadOnlyList<PokemonSearchMatch> _matches = [];
     private string _query = string.Empty;
+    private string? _graphDepthError;
+    private string? _nodesPerRowError;
     private string? _searchError;
     private string? _maximumBstError;
     private int _favoritePage;
@@ -28,6 +30,12 @@ public partial class TrackerSettingsPage : IDisposable
     /// </summary>
     [Inject]
     private TrackerRequestClient Requests { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or initializes tracker-local evolution graph preferences.
+    /// </summary>
+    [Inject]
+    private EvolutionGraphSettings EvolutionGraphSettings { get; set; } = null!;
 
     /// <summary>
     /// Gets or initializes whether starter selection is controlled automatically.
@@ -87,6 +95,40 @@ public partial class TrackerSettingsPage : IDisposable
     /// <returns>A task representing callback dispatch.</returns>
     private Task HandleAutoSelectChanged(ChangeEventArgs args)
         => AutoSelectStarterChanged.InvokeAsync(args.Value is bool enabled && enabled);
+
+    /// <summary>
+    /// Validates and persists the graph neighborhood expansion depth.
+    /// </summary>
+    /// <param name="args">The numeric input change event.</param>
+    private void HandleExpansionDepthChanged(ChangeEventArgs args)
+    {
+        string text = args.Value?.ToString()?.Trim() ?? string.Empty;
+        if (!int.TryParse(text, out int value) || value < EvolutionGraphSettings.MinimumExpansionDepth || value > EvolutionGraphSettings.MaximumExpansionDepth)
+        {
+            _graphDepthError = Text["Settings.EvolutionGraph.ExpansionDepthValidation", EvolutionGraphSettings.MinimumExpansionDepth, EvolutionGraphSettings.MaximumExpansionDepth];
+            return;
+        }
+
+        _graphDepthError = null;
+        EvolutionGraphSettings.ExpansionDepth = value;
+    }
+
+    /// <summary>
+    /// Validates and persists the maximum number of nodes in one physical graph row.
+    /// </summary>
+    /// <param name="args">The numeric input change event.</param>
+    private void HandleNodesPerRowChanged(ChangeEventArgs args)
+    {
+        string text = args.Value?.ToString()?.Trim() ?? string.Empty;
+        if (!int.TryParse(text, out int value) || value < EvolutionGraphSettings.MinimumNodesPerRow || value > EvolutionGraphSettings.MaximumNodesPerRow)
+        {
+            _nodesPerRowError = Text["Settings.EvolutionGraph.NodesPerRowValidation", EvolutionGraphSettings.MinimumNodesPerRow, EvolutionGraphSettings.MaximumNodesPerRow];
+            return;
+        }
+
+        _nodesPerRowError = null;
+        EvolutionGraphSettings.NodesPerRow = value;
+    }
 
     /// <summary>
     /// Validates and applies a changed maximum-starter-BST value.

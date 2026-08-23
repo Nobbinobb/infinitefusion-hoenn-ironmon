@@ -66,6 +66,11 @@ public static class TrackerCommands
     public const string EvolutionCandidateSearch = "evolution_candidate_search";
 
     /// <summary>
+    /// Gets the completed-run generated-evolution predecessor page command.
+    /// </summary>
+    public const string EvolutionPredecessorSearch = "evolution_predecessor_search";
+
+    /// <summary>
     /// Gets the completed-run fusion-material page command.
     /// </summary>
     public const string FusionMaterialSearch = "fusion_material_search";
@@ -109,6 +114,11 @@ public static class TrackerCommands
     /// Gets the authorized active-run evolution-candidate search command.
     /// </summary>
     public const string DebugEvolutionCandidateSearch = "debug_evolution_candidate_search";
+
+    /// <summary>
+    /// Gets the authorized active-run generated-evolution predecessor page command.
+    /// </summary>
+    public const string DebugEvolutionPredecessorSearch = "debug_evolution_predecessor_search";
 
     /// <summary>
     /// Gets the authorized active-run fusion-material page command.

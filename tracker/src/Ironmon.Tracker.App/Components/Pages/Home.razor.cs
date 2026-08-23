@@ -59,12 +59,6 @@ public partial class Home : IDisposable
     private TrackerConnectionOptions ConnectionOptions { get; set; } = null!;
 
     /// <summary>
-    /// Gets or initializes tracker-owned diagnostic access.
-    /// </summary>
-    [Inject]
-    private DiagnosticAccessService AccessService { get; set; } = null!;
-
-    /// <summary>
     /// Subscribes the tracker shell to connection and run-state changes.
     /// </summary>
     protected override void OnInitialized()
@@ -83,7 +77,6 @@ public partial class Home : IDisposable
         RunState.Changed += HandleRunChanged;
         CompletedRuns.SelectionRequested += HandleCompletedRunSelectionRequested;
         ShortcutService.ViewRequested += HandleGlobalViewRequested;
-        AccessService.Changed += HandleDiagnosticAccessChanged;
     }
 
     /// <summary>
@@ -129,11 +122,6 @@ public partial class Home : IDisposable
         _accessOpen = false;
         _settingsOpen = false;
     }
-
-    /// <summary>
-    /// Gets whether diagnostic tools currently have any local authorization path.
-    /// </summary>
-    private bool CanShowDiagnosticTools => TrackerConnection.DebugAuthorized || AccessService.Snapshot.IsActive;
 
     /// <summary>
     /// Gets the visual classes for the diagnostic-access button.
@@ -417,16 +405,6 @@ public partial class Home : IDisposable
     }
 
     /// <summary>
-    /// Recomputes navigation immediately after activation, replacement, removal, or expiration.
-    /// </summary>
-    /// <param name="sender">The diagnostic-access service raising the event.</param>
-    /// <param name="args">The empty change event arguments.</param>
-    private void HandleDiagnosticAccessChanged(object? sender, EventArgs args)
-    {
-        _ = InvokeAsync(StateHasChanged);
-    }
-
-    /// <summary>
     /// Removes tracker-state subscriptions when the page is disposed.
     /// </summary>
     public void Dispose()
@@ -435,6 +413,5 @@ public partial class Home : IDisposable
         RunState.Changed -= HandleRunChanged;
         CompletedRuns.SelectionRequested -= HandleCompletedRunSelectionRequested;
         ShortcutService.ViewRequested -= HandleGlobalViewRequested;
-        AccessService.Changed -= HandleDiagnosticAccessChanged;
     }
 }

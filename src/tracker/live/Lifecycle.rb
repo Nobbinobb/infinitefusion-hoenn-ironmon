@@ -34,6 +34,7 @@ module Ironmon
     @tracker_player_json = nil
     @tracker_move_menu_pokemon_id = nil
     @tracker_enemy_battlers = {}
+    @tracker_enemy_pokemon_ids = {}
     @tracker_enemy_json = {}
     @tracker_enemy_move_signatures = {}
     @tracker_enemy_abilities = {}
@@ -58,6 +59,7 @@ module Ironmon
     @tracker_player_json = nil
     @tracker_move_menu_pokemon_id = nil
     @tracker_enemy_battlers = {}
+    @tracker_enemy_pokemon_ids = {}
     @tracker_enemy_json = {}
     @tracker_enemy_move_signatures = {}
     @tracker_enemy_abilities = {}
@@ -76,6 +78,7 @@ module Ironmon
     @tracker_player_battler = nil
     @tracker_move_menu_pokemon_id = nil
     @tracker_enemy_battlers = {}
+    @tracker_enemy_pokemon_ids = {}
     @tracker_enemy_json = {}
     @tracker_enemy_move_signatures = {}
     @tracker_enemy_abilities = {}
@@ -141,9 +144,12 @@ module Ironmon
       respond_to?(:register_statistics_battler_item)
     record_trainer_species_encounter(battler) if
       respond_to?(:record_trainer_species_encounter)
-    current = @tracker_enemy_battlers[battler.index]
-    return if current && current.pokemon.equal?(battler.pokemon)
+    @tracker_enemy_pokemon_ids ||= {}
+    pokemon_id = tracker_enemy_id(battler.pokemon)
+    return if @tracker_enemy_pokemon_ids[battler.index] == pokemon_id
+    @tracker_move_menu_pokemon_id = nil
     @tracker_enemy_battlers[battler.index] = battler
+    @tracker_enemy_pokemon_ids[battler.index] = pokemon_id
     @tracker_enemy_move_signatures.delete(battler.index)
     @tracker_enemy_abilities.delete(battler.index)
     snapshot = tracker_enemy_snapshot(battler)

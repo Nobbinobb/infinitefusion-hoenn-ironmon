@@ -1,6 +1,18 @@
 module IronmonRuntimeHookTests
   OUTPUT_PATH = $ironmon_runtime_hook_test_output_path.to_s
 
+  class TrackerLifecycleConnection
+    attr_reader :events
+
+    def initialize
+      @events = []
+    end
+
+    def send_event(name, payload)
+      @events << [name, payload]
+    end
+  end
+
   def self.assert(condition, message)
     raise "Runtime-hook test failed: #{message}" if !condition
   end
@@ -316,6 +328,96 @@ module IronmonRuntimeHookTests
     end
   end
 
+  def self.test_tracker_reused_enemy_battler
+    singleton = class << Ironmon; self; end
+    method_names = [
+      :active?,
+      :register_statistics_battler_item,
+      :record_trainer_species_encounter,
+      :tracker_enemy_snapshot
+    ]
+    original_methods = {}
+    method_names.each do |name|
+      original_methods[name] = singleton.instance_method(name)
+    end
+    variable_names = [
+      :@tracker_connection,
+      :@tracker_battle_id,
+      :@tracker_move_menu_pokemon_id,
+      :@tracker_enemy_battlers,
+      :@tracker_enemy_pokemon_ids,
+      :@tracker_enemy_json,
+      :@tracker_enemy_move_signatures,
+      :@tracker_enemy_abilities
+    ]
+    missing = Object.new
+    original_variables = {}
+    variable_names.each do |name|
+      original_variables[name] = if Ironmon.instance_variable_defined?(name)
+                                   Ironmon.instance_variable_get(name)
+                                 else
+                                   missing
+                                 end
+    end
+
+    singleton.send(:define_method, :active?) { true }
+    singleton.send(:define_method, :register_statistics_battler_item) { |_battler| }
+    singleton.send(:define_method, :record_trainer_species_encounter) { |_battler| }
+    singleton.send(:define_method, :tracker_enemy_snapshot) do |battler|
+      {
+        "enemy_id" => tracker_enemy_id(battler.pokemon),
+        "position" => battler.index
+      }
+    end
+    connection = TrackerLifecycleConnection.new
+    Ironmon.instance_variable_set(:@tracker_connection, connection)
+    Ironmon.instance_variable_set(:@tracker_battle_id, "battle-runtime-test")
+    Ironmon.instance_variable_set(:@tracker_move_menu_pokemon_id, nil)
+    Ironmon.instance_variable_set(:@tracker_enemy_battlers, {})
+    Ironmon.instance_variable_set(:@tracker_enemy_pokemon_ids, {})
+    Ironmon.instance_variable_set(:@tracker_enemy_json, {})
+    Ironmon.instance_variable_set(:@tracker_enemy_move_signatures, {})
+    Ironmon.instance_variable_set(:@tracker_enemy_abilities, {})
+    pokemon = Struct.new(:personalID)
+    battler = Struct.new(:index, :pokemon).new(1, pokemon.new(101))
+
+    Ironmon.tracker_enemy_sent_out(battler)
+    Ironmon.tracker_player_move_menu_opened(
+      Struct.new(:pokemon).new(pokemon.new(201))
+    )
+    battler.pokemon = pokemon.new(102)
+    Ironmon.tracker_enemy_sent_out(battler)
+    Ironmon.tracker_player_move_menu_opened(
+      Struct.new(:pokemon).new(pokemon.new(201))
+    )
+
+    assert(
+      connection.events.map { |event| event[0] } == [
+        "enemy_sent_out",
+        "player_move_menu_opened",
+        "enemy_sent_out",
+        "player_move_menu_opened"
+      ],
+      "a reused enemy battle slot resets repeated Fight-menu navigation"
+    )
+  ensure
+    if original_methods
+      original_methods.each do |name, implementation|
+        singleton.send(:define_method, name, implementation)
+      end
+    end
+    if original_variables
+      original_variables.each do |name, value|
+        if value.equal?(missing)
+          Ironmon.send(:remove_instance_variable, name) if
+            Ironmon.instance_variable_defined?(name)
+        else
+          Ironmon.instance_variable_set(name, value)
+        end
+      end
+    end
+  end
+
   def self.run
     test_registered_hook_order
     test_encounter_hook_source_ownership
@@ -328,6 +430,7 @@ module IronmonRuntimeHookTests
     test_save_hook_execution
     test_hook_failure_semantics
     test_graphics_hook_execution
+    test_tracker_reused_enemy_battler
     File.binwrite(OUTPUT_PATH, "runtime-hook tests passed\n")
   rescue Exception => exception
     File.binwrite(

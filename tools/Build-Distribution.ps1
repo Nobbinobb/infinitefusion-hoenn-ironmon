@@ -5,12 +5,13 @@ $gameRoot = Split-Path -Parent $projectRoot
 $sourceRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot "src"))
 $sourceManifest = Join-Path $sourceRoot "load_order.json"
 $catalog = Join-Path $projectRoot "data\area_catalog.dat"
+$fusionPredecessorIndex = Join-Path $projectRoot "data\fusion_predecessor_index.dat"
 $distribution = Join-Path $projectRoot "dist\Data\Scripts\997_Ironmon"
 $distributionData = Join-Path $projectRoot "dist\Data\Ironmon"
 $distributionRoot = Join-Path $projectRoot "dist"
 $distributionReadme = Join-Path $projectRoot "packaging\README.md"
 $installationGuide = Join-Path $projectRoot "docs\guides\INSTALLATION.md"
-$releaseNotes = Join-Path $projectRoot "docs\releases\RELEASE_NOTES_0.7.8.md"
+$releaseNotes = Join-Path $projectRoot "docs\releases\RELEASE_NOTES_0.7.9.md"
 $installation = Join-Path $gameRoot "Data\Scripts\997_Ironmon"
 $installationData = Join-Path $gameRoot "Data\Ironmon"
 
@@ -130,6 +131,8 @@ foreach ($runtimeRoot in $distribution, $installation) {
 }
 Copy-Item -LiteralPath $catalog -Destination (Join-Path $distributionData "area_catalog.dat")
 Copy-Item -LiteralPath $catalog -Destination (Join-Path $installationData "area_catalog.dat")
+Copy-Item -LiteralPath $fusionPredecessorIndex -Destination (Join-Path $distributionData "fusion_predecessor_index.dat")
+Copy-Item -LiteralPath $fusionPredecessorIndex -Destination (Join-Path $installationData "fusion_predecessor_index.dat")
 Copy-Item -LiteralPath $distributionReadme -Destination (Join-Path $distributionRoot "README.md")
 Copy-Item -LiteralPath $installationGuide -Destination (Join-Path $distributionRoot "INSTALLATION.md")
 Copy-Item -LiteralPath $releaseNotes -Destination (Join-Path $distributionRoot "RELEASE_NOTES.md")

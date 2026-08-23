@@ -8,12 +8,12 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class IronmonFusionSearch
 {
+    private readonly PaginationState _searchPagination = new(TrackerProtocol.DefaultSearchPageSize);
     private IReadOnlyList<PokemonSearchMatch> _matches = [];
     private IReadOnlyList<FusionOutcomeSnapshot> _outcomes = [];
     private string _query = string.Empty;
     private string? _error;
     private string? _pokemonKey;
-    private int _searchOffset;
     private int _matchTotal;
     private bool _loading;
     private bool _searched;
@@ -67,7 +67,7 @@ public partial class IronmonFusionSearch
         _outcomes = [];
         _query = string.Empty;
         _error = null;
-        _searchOffset = 0;
+        _searchPagination.Reset();
         _matchTotal = 0;
         _searched = false;
     }
@@ -92,10 +92,11 @@ public partial class IronmonFusionSearch
     /// <summary>
     /// Searches one page of normal-species fusion materials.
     /// </summary>
-    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="pageIndex">The zero-based result page.</param>
     /// <returns>A task representing the search.</returns>
-    private async Task SearchPageAsync(int offset)
+    private async Task SearchPageAsync(int pageIndex)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(pageIndex);
         if (_loading)
             return;
 
@@ -111,9 +112,10 @@ public partial class IronmonFusionSearch
         _outcomes = [];
         try
         {
+            int offset = checked(pageIndex * _searchPagination.PageSize);
             PokemonSearchResponsePayload response = await SearchPokemonAsync(offset);
             _matches = response.Matches;
-            _searchOffset = offset;
+            _searchPagination.Select(pageIndex);
             _matchTotal = Math.Max(response.Total, offset + response.Matches.Count);
             _searched = true;
         }
@@ -161,28 +163,28 @@ public partial class IronmonFusionSearch
     /// </summary>
     /// <returns>True when the current page does not begin at the first match.</returns>
     private bool HasPreviousPage()
-        => _searchOffset > 0;
+        => _searchPagination.HasPrevious;
 
     /// <summary>
     /// Gets whether a subsequent material page is available.
     /// </summary>
     /// <returns>True when matches remain after the current page.</returns>
     private bool HasNextPage()
-        => _searchOffset + _matches.Count < _matchTotal;
+        => _searchPagination.HasNext(_matchTotal, _matches.Count);
 
     /// <summary>
     /// Loads the previous material page.
     /// </summary>
     /// <returns>A task representing the search.</returns>
     private Task PreviousPageAsync()
-        => SearchPageAsync(Math.Max(0, _searchOffset - TrackerProtocol.DefaultSearchPageSize));
+        => SearchPageAsync(_searchPagination.PageIndex - 1);
 
     /// <summary>
     /// Loads the next material page.
     /// </summary>
     /// <returns>A task representing the search.</returns>
     private Task NextPageAsync()
-        => SearchPageAsync(_searchOffset + TrackerProtocol.DefaultSearchPageSize);
+        => SearchPageAsync(_searchPagination.PageIndex + 1);
 
     /// <summary>
     /// Formats the visible inclusive material-search range.
@@ -190,8 +192,7 @@ public partial class IronmonFusionSearch
     /// <returns>The result range and total.</returns>
     private string GetRangeText()
     {
-        int first = _matches.Count == 0 ? 0 : _searchOffset + 1;
-        int last = _searchOffset + _matches.Count;
+        (int first, int last) = _searchPagination.GetRange(_matchTotal, _matches.Count);
         return Text["Lookup.Fusion.ResultRange", first, last, _matchTotal];
     }
 

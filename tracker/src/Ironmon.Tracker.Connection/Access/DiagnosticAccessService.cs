@@ -167,24 +167,12 @@ public sealed class DiagnosticAccessService : IDisposable
     /// <returns>A task representing durable persistence.</returns>
     private async Task PersistAsync(string token)
     {
-        string directory = Path.GetDirectoryName(_path) ?? throw new IOException(_persistedTokenWriteError);
-        Directory.CreateDirectory(directory);
-        string temporaryPath = $"{_path}{TrackerStorageNames.TemporaryExtension}";
         try
         {
-            await File.WriteAllTextAsync(temporaryPath, token);
-            File.Move(temporaryPath, _path, true);
+            await TrackerAtomicFileWriter.WriteAllTextAsync(_path, token).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            try
-            {
-                File.Delete(temporaryPath);
-            }
-            catch (Exception cleanupException) when (cleanupException is IOException or UnauthorizedAccessException)
-            {
-            }
-
             throw new IOException(_persistedTokenWriteError, exception);
         }
     }

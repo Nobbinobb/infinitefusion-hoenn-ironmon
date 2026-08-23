@@ -5,15 +5,27 @@ namespace Ironmon.Tracker.App.Components.Access;
 /// <summary>
 /// Hosts always-available diagnostic access and capability-controlled diagnostic tools.
 /// </summary>
-public partial class DiagnosticToolsPage
+public partial class DiagnosticToolsPage : IDisposable
 {
     private bool _toolsSelected;
 
     /// <summary>
-    /// Gets or sets whether at least one diagnostic tool can be opened.
+    /// Gets or initializes the active tracker connection service.
     /// </summary>
-    [Parameter]
-    public bool ToolsAvailable { get; set; }
+    [Inject]
+    private TrackerConnectionService TrackerConnection { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or initializes tracker-owned diagnostic access.
+    /// </summary>
+    [Inject]
+    private DiagnosticAccessService AccessService { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or initializes the shared connection status service.
+    /// </summary>
+    [Inject]
+    private TrackerConnectionState ConnectionState { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the initialized player Pokemon when available.
@@ -34,13 +46,18 @@ public partial class DiagnosticToolsPage
     public string? GameRoot { get; set; }
 
     /// <summary>
-    /// Returns to the access page if authorization disappears.
+    /// Subscribes to authorization sources controlling tool availability.
     /// </summary>
-    protected override void OnParametersSet()
+    protected override void OnInitialized()
     {
-        if (!ToolsAvailable)
-            _toolsSelected = false;
+        AccessService.Changed += HandleAvailabilityChanged;
+        ConnectionState.Changed += HandleAvailabilityChanged;
     }
+
+    /// <summary>
+    /// Gets whether at least one diagnostic tool can be opened.
+    /// </summary>
+    private bool ToolsAvailable => TrackerConnection.DebugAuthorized || AccessService.Snapshot.IsActive;
 
     /// <summary>
     /// Shows diagnostic-access lifecycle controls.
@@ -64,4 +81,26 @@ public partial class DiagnosticToolsPage
     /// <returns>The tab CSS classes.</returns>
     private string GetTabClass(bool tools)
         => tools == _toolsSelected ? "diagnostic-tool-tab selected" : "diagnostic-tool-tab";
+
+    /// <summary>
+    /// Returns to access controls when authorization disappears and refreshes the host.
+    /// </summary>
+    /// <param name="sender">The changed authorization source.</param>
+    /// <param name="args">The empty change arguments.</param>
+    private void HandleAvailabilityChanged(object? sender, EventArgs args)
+    {
+        if (!ToolsAvailable)
+            _toolsSelected = false;
+
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Removes authorization-source subscriptions.
+    /// </summary>
+    public void Dispose()
+    {
+        AccessService.Changed -= HandleAvailabilityChanged;
+        ConnectionState.Changed -= HandleAvailabilityChanged;
+    }
 }

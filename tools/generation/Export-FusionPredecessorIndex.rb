@@ -1,0 +1,125 @@
+module IronmonFusionPredecessorIndexExporter
+  SCHEMA_VERSION = 2
+
+  def self.allowed_buckets(role)
+    return [:terminal] if role == :intermediate
+    return [:continuing, :terminal] if role == :first_stage
+    return []
+  end
+
+  def self.component_signatures(catalog)
+    taxonomy = {}
+    catalog.taxonomy_catalog.each do |entry|
+      taxonomy[entry[:identity]] = entry
+    end
+    signatures = Hash.new { |hash, key| hash[key] = {} }
+    catalog.branch_catalog.each do |branch|
+      component = GameData::Species.get(branch[:source])
+      base_component = GameData::Species.get(component.id_number)
+      next if base_component.id.to_s != branch[:source]
+      role = taxonomy[branch[:source]][:role]
+      required_types = catalog.required_target_types(component, branch)
+      allowed_buckets(role).each do |bucket|
+        required_types.each do |type|
+          signatures[component.id_number]["#{bucket}|#{type}"] = true
+        end
+      end
+    end
+    return signatures
+  end
+
+  def self.build_document
+    catalog = Ironmon.evolution_catalog
+    fusion_pool = Ironmon.custom_fusion_pool
+    fusion_pool_info = Ironmon.custom_fusion_pool_info
+    component_entries = component_signatures(catalog)
+    signatures = Hash.new { |hash, key| hash[key] = {} }
+    fusion_pool.each do |species_id|
+      match = /\AB(\d+)H(\d+)\z/.match(species_id.to_s)
+      raise "the custom fusion pool contains an invalid identity" if !match
+      body_id = match[1].to_i
+      head_id = match[2].to_i
+      source_id = (body_id * NB_POKEMON) + head_id
+      [body_id, head_id].uniq.each do |component_id|
+        entries = component_entries[component_id]
+        next if !entries
+        entries.each_key do |signature|
+          signatures[signature][source_id] = true
+        end
+      end
+    end
+    packed_signatures = {}
+    membership_count = 0
+    signatures.keys.sort.each do |signature|
+      source_ids = signatures[signature].keys.sort
+      membership_count += source_ids.length
+      packed_signatures[signature] = source_ids.pack("L<*")
+    end
+    return {
+      "schema_version" => SCHEMA_VERSION,
+      "game_version" => Settings::GAME_VERSION_NUMBER.to_s,
+      "normal_species_count" => NB_POKEMON,
+      "source_fingerprint" => catalog.source_fingerprint,
+      "taxonomy_fingerprint" => catalog.taxonomy_fingerprint,
+      "method_fingerprint" => catalog.method_fingerprint,
+      "fusion_pool_schema_version" => fusion_pool_info[:schema_version],
+      "fusion_pool_size" => fusion_pool_info[:size],
+      "fusion_pool_fingerprint" => fusion_pool_info[:fingerprint],
+      "signature_count" => packed_signatures.length,
+      "membership_count" => membership_count,
+      "signatures" => packed_signatures
+    }
+  end
+
+  def self.write(path, document)
+    temporary_path = "#{path}.tmp"
+    File.open(temporary_path, "wb") do |file|
+      Marshal.dump(document, file)
+    end
+    File.delete(path) if File.exist?(path)
+    File.rename(temporary_path, path)
+  end
+
+  def self.run(path)
+    document = build_document
+    write(path, document)
+    return document
+  end
+end
+
+output_path = $ironmon_fusion_predecessor_index_output_path.to_s
+game_root = $ironmon_fusion_predecessor_index_game_root.to_s
+source_path = $ironmon_fusion_predecessor_index_source_path.to_s
+source_manifest_path = $ironmon_fusion_predecessor_index_source_manifest_path.to_s
+exit! 0 if output_path.empty? || game_root.empty? || source_path.empty? ||
+  source_manifest_path.empty?
+begin
+  Dir.chdir(game_root)
+  File.binwrite("#{output_path}.progress", "exporter loaded\n")
+  IronmonScriptLoader.load_directory(
+    "Data/Scripts", [/\A(?:997|998|999)/]
+  )
+  IronmonScriptLoader.load_manifest(source_path, source_manifest_path)
+  if IronmonFusionPredecessorIndexExporter::SCHEMA_VERSION !=
+     Ironmon::FusionPredecessorIndex::SCHEMA_VERSION
+    raise "the fusion predecessor exporter schema does not match the runtime"
+  end
+  GameData.load_all
+  $game_temp = Game_Temp.new
+  Game.load_sprites_list_caches
+  document = IronmonFusionPredecessorIndexExporter.run(output_path)
+  File.binwrite(
+    "#{output_path}.summary",
+    "signature_count=#{document["signature_count"]}\n" \
+      "membership_count=#{document["membership_count"]}\n" \
+      "normal_species_count=#{document["normal_species_count"]}\n"
+  )
+  exit! 0
+rescue Exception => error
+  backtrace = error.backtrace ? error.backtrace.join("\n") : ""
+  File.binwrite(
+    "#{output_path}.error",
+    "#{error.class}: #{error.message}\n#{backtrace}"
+  )
+  exit! 1
+end

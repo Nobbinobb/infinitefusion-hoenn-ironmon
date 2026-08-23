@@ -103,10 +103,7 @@ public sealed class FavoritePokemonStore
     {
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            string temporaryPath = $"{_path}{TrackerStorageNames.TemporaryExtension}";
-            File.WriteAllText(temporaryPath, JsonSerializer.Serialize(_favorites, TrackerJson.Options));
-            File.Move(temporaryPath, _path, true);
+            TrackerAtomicFileWriter.WriteAllText(_path, JsonSerializer.Serialize(_favorites, TrackerJson.Options));
             LastError = null;
             return true;
         }

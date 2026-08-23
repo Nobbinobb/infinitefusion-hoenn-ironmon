@@ -8,6 +8,7 @@ public partial class App : Application
     private readonly TrackerConnectionService _connectionService;
     private readonly TrackerGlobalShortcutService _shortcutService;
     private readonly IStringLocalizer<TrackerResources> _text;
+    private readonly TrackerWindowService _windowService;
 
     /// <summary>
     /// Initializes the tracker application.
@@ -15,14 +16,17 @@ public partial class App : Application
     /// <param name="connectionService">The local game connection service.</param>
     /// <param name="shortcutService">The foreground-safe global shortcut service.</param>
     /// <param name="text">The localized tracker text.</param>
-    public App(TrackerConnectionService connectionService, TrackerGlobalShortcutService shortcutService, IStringLocalizer<TrackerResources> text)
+    /// <param name="windowService">The native tracker-window coordinator.</param>
+    public App(TrackerConnectionService connectionService, TrackerGlobalShortcutService shortcutService, IStringLocalizer<TrackerResources> text, TrackerWindowService windowService)
     {
         ArgumentNullException.ThrowIfNull(connectionService);
         ArgumentNullException.ThrowIfNull(shortcutService);
         ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(windowService);
         _connectionService = connectionService;
         _shortcutService = shortcutService;
         _text = text;
+        _windowService = windowService;
         InitializeComponent();
         _connectionService.Start();
         _shortcutService.Start();
@@ -52,11 +56,11 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Disables native resizing and maximizing once the Windows window is available.
+    /// Connects native window control once the Windows window is available.
     /// </summary>
     /// <param name="sender">The tracker window whose native handler changed.</param>
     /// <param name="args">The handler-change event arguments.</param>
-    private static void HandleWindowHandlerChanged(object? sender, EventArgs args)
+    private void HandleWindowHandlerChanged(object? sender, EventArgs args)
     {
         if (sender is not Window window || window.Handler?.PlatformView is not Microsoft.UI.Xaml.Window platformWindow)
             return;
@@ -65,10 +69,7 @@ public partial class App : Application
         Microsoft.UI.WindowId windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(windowHandle);
         Microsoft.UI.Windowing.AppWindow appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
         if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
-        {
-            presenter.IsMaximizable = false;
-            presenter.IsResizable = false;
-        }
+            _windowService.Attach(window, presenter);
 
         window.HandlerChanged -= HandleWindowHandlerChanged;
     }

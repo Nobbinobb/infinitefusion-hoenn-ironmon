@@ -24,6 +24,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<DiagnosticAccessTokenValidator>();
         builder.Services.AddSingleton(static services => new DiagnosticAccessService(services.GetRequiredService<TrackerKnowledgeOptions>(), services.GetRequiredService<DiagnosticAccessTokenValidator>(), IsDiagnosticAccessDeveloperOverride(), services.GetRequiredService<TimeProvider>()));
         builder.Services.AddSingleton<FavoritePokemonStore>();
+        builder.Services.AddSingleton<EvolutionGraphSettings>();
         builder.Services.AddSingleton(static services => CreateConnectionOptions(services.GetRequiredService<FavoritePokemonStore>()));
         builder.Services.AddSingleton<TrackerDiagnosticsStore>();
         builder.Services.AddSingleton<TrackerConnectionState>();
@@ -33,6 +34,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<CompletedRunArchive>();
         builder.Services.AddSingleton<TrackerConnectionService>();
         builder.Services.AddSingleton<TrackerGlobalShortcutService>();
+        builder.Services.AddSingleton<TrackerWindowService>();
         builder.Services.AddSingleton(static services => services.GetRequiredService<TrackerConnectionService>().Requests);
 
 #if DEBUG

@@ -290,6 +290,36 @@ module IronmonAreaProgressRuntimeTests
         Ironmon.wild_table_result?(table_result),
         "selected encounter is marked as a table result"
       )
+      scripted_context = [:script, 5, 2, 1, :single, 0]
+      scripted_species = Ironmon.wild_species_for(
+        :POOCHYENA, scripted_context
+      )
+      previous_encounter_type = $PokemonTemp.encounterType
+      $PokemonTemp.encounterType = encounter_type
+      assert(
+        Ironmon.wild_battle_species_for(
+          :POOCHYENA, scripted_context
+        ) == scripted_species,
+        "a retained encounter type does not bypass scripted randomization"
+      )
+      $PokemonTemp.encounterType = previous_encounter_type
+      table_battle_species = Ironmon.with_wild_table_battle do
+        assert(
+          Ironmon.wild_table_battle_active?,
+          "table battle origin remains active while the battle is prepared"
+        )
+        Ironmon.wild_battle_species_for(
+          table_result[0], [:script, 10, 1, 1, :single, 0]
+        )
+      end
+      assert(
+        table_battle_species == table_result[0],
+        "a mapped table battle is not randomized a second time"
+      )
+      assert(
+        !Ironmon.wild_table_battle_active?,
+        "table battle origin is cleared after battle preparation"
+      )
       resolved_overworld_species = Ironmon.with_wild_table_spawn(
         table_result
       ) do

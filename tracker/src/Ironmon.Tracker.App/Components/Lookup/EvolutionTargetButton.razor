@@ -1,16 +1,22 @@
-<button class="evolution-target" type="button" @onclick="SelectAsync">
-    <span class="evolution-target-sprite" aria-hidden="true">
-        @if (_spriteSource is not null)
-        {
-            <img src="@_spriteSource" alt="" />
-        }
-        else
-        {
-            <span>?</span>
-        }
-    </span>
-    <span class="evolution-target-copy">
-        <strong>@Target.SpeciesName</strong>
-        <small>BST @Target.BaseStatTotal</small>
-    </span>
-</button>
+<div class="evolution-target-shell @(IsFocused ? "focused" : null)">
+    <button class="evolution-target" type="button" title="@GetActionTitle()" @onclick="ActivateAsync">
+        <span class="evolution-target-sprite" aria-hidden="true">
+            @if (_spriteSource is not null)
+            {
+                <img src="@_spriteSource" alt="" />
+            }
+            else
+            {
+                <span>?</span>
+            }
+        </span>
+        <span class="evolution-target-copy">
+            <strong>@Target.SpeciesName</strong>
+            <small>BST @Target.BaseStatTotal</small>
+        </span>
+    </button>
+    @if (Focused.HasDelegate)
+    {
+        <button class="evolution-target-open" type="button" title="@Text["Lookup.Graph.OpenPokemon"]" aria-label="@Text["Lookup.Graph.OpenPokemon"]" @onclick="SelectAsync">↗</button>
+    }
+</div>

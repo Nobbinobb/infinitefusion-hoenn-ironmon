@@ -3,6 +3,19 @@
 #===============================================================================
 
 module Ironmon
+  EVOLUTION_GRAPH_FUSION_LEVELS = {
+    [0, 0] => 8,
+    [0, 1] => 0,
+    [1, 1] => 1,
+    [1, 2] => 2,
+    [1, 3] => 3,
+    [0, 2] => 4,
+    [2, 2] => 5,
+    [2, 3] => 6,
+    [0, 3] => 7,
+    [3, 3] => 8
+  }
+
   def self.tracker_evolution_recipe?(recipe)
     return recipe["evolution_generator_version"] ==
       NormalEvolutionGenerator::SCHEMA_VERSION
@@ -114,6 +127,48 @@ module Ironmon
     return predecessors.sort_by { |entry| entry["species_id"] }
   end
 
+  def self.tracker_lookup_evolution_predecessor_page(species, recipe, offset, limit)
+    return tracker_empty_evolution_predecessor_page(offset, limit) if
+      !tracker_evolution_recipe?(recipe)
+    if normal_evolution_runtime_species?(species)
+      predecessors = tracker_lookup_evolution_predecessors(species, recipe)
+      matches = predecessors.slice(offset, limit) || []
+      continuation = offset + limit < predecessors.length ?
+        "available" : "complete"
+      return {
+        "matches" => matches,
+        "offset" => offset,
+        "limit" => limit,
+        "continuation" => continuation,
+        "next_offset" => continuation == "complete" ? nil : offset + limit
+      }
+    end
+    return tracker_empty_evolution_predecessor_page(offset, limit) if
+      !fusion_evolution_runtime_species?(species)
+    page = tracker_fusion_evolution_generator(recipe).predecessor_page_for(
+      species, offset, limit
+    )
+    return {
+      "matches" => page[:branches].map do |branch|
+        tracker_evolution_predecessor_snapshot(branch)
+      end,
+      "offset" => page[:offset],
+      "limit" => page[:limit],
+      "continuation" => page[:continuation].to_s,
+      "next_offset" => page[:next_offset]
+    }
+  end
+
+  def self.tracker_empty_evolution_predecessor_page(offset, limit)
+    return {
+      "matches" => [],
+      "offset" => offset,
+      "limit" => limit,
+      "continuation" => "complete",
+      "next_offset" => nil
+    }
+  end
+
   def self.tracker_evolution_predecessor_snapshot(branch)
     source = GameData::Species.get(branch[:source].to_sym)
     return {
@@ -121,6 +176,8 @@ module Ironmon
       "species_name" => source.name,
       "sprite_path" => tracker_lookup_sprite_path(source),
       "base_stat_total" => branch[:source_bst],
+      "stage_level" => tracker_evolution_graph_level(source),
+      "component_side" => (branch[:component_side] || :normal).to_s,
       "effective_methods" => branch[:effective_methods].map do |method|
         tracker_evolution_snapshot(
           method[:method], method[:parameter]
@@ -136,12 +193,40 @@ module Ironmon
       "species_name" => target.name,
       "sprite_path" => tracker_lookup_sprite_path(target),
       "base_stat_total" => branch[:target_bst],
+      "stage_level" => tracker_evolution_graph_level(target),
+      "component_side" => (branch[:component_side] || :normal).to_s,
       "effective_methods" => branch[:effective_methods].map do |method|
         tracker_evolution_snapshot(
           method[:method], method[:parameter]
         )["requirement"]
       end
     }
+  end
+
+  def self.tracker_evolution_graph_level(species)
+    if species.is_a?(GameData::FusedSpecies)
+      levels = [
+        tracker_evolution_component_level(species.body_pokemon),
+        tracker_evolution_component_level(species.head_pokemon)
+      ].sort
+      return EVOLUTION_GRAPH_FUSION_LEVELS[levels] || 8
+    end
+    level = tracker_evolution_component_level(species)
+    return level == 0 ? 3 : level
+  end
+
+  def self.tracker_evolution_component_level(species)
+    @tracker_evolution_taxonomy_roles ||= evolution_catalog.taxonomy_catalog.each_with_object({}) do |entry, roles|
+      roles[entry[:identity]] = entry[:role]
+    end
+    identity = species.id.to_s
+    role = @tracker_evolution_taxonomy_roles[identity] || :standalone
+    return {
+      :standalone => 0,
+      :first_stage => 1,
+      :intermediate => 2,
+      :final => 3
+    }[role] || 0
   end
 
   def self.tracker_evolution_candidates_for(species, recipe, side)

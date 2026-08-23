@@ -177,7 +177,7 @@ public sealed class AreaDiscoveryStore
         bool changed;
         lock (_sync)
         {
-            PersistedAreaDiscoveries run = GetOrLoad(runId);
+            PersistedAreaDiscoveries run = Copy(GetOrLoad(runId));
             HashSet<string> keys = GetOrCreateKeys(run, response.AreaId, response.Category);
             changed = response.Category switch
             {
@@ -190,7 +190,14 @@ public sealed class AreaDiscoveryStore
             if (changed)
             {
                 run.Revision++;
-                Save(runId, run);
+                if (Save(runId, run))
+                {
+                    _runs[runId] = run;
+                }
+                else
+                {
+                    changed = false;
+                }
             }
         }
 
@@ -198,6 +205,34 @@ public sealed class AreaDiscoveryStore
             Changed?.Invoke(this, new AreaDiscoveryChangedEventArgs(runId, response.AreaId, response.Category));
 
         return changed;
+    }
+
+    /// <summary>
+    /// Creates a mutable copy so failed persistence cannot alter the live run document.
+    /// </summary>
+    /// <param name="source">The currently persisted run document.</param>
+    /// <returns>An independent copy of the run document.</returns>
+    private static PersistedAreaDiscoveries Copy(PersistedAreaDiscoveries source)
+    {
+        Dictionary<string, Dictionary<string, HashSet<string>>> discoveries = new(StringComparer.Ordinal);
+        foreach ((string areaId, Dictionary<string, HashSet<string>> categories) in source.Discoveries)
+        {
+            Dictionary<string, HashSet<string>> copiedCategories = new(StringComparer.Ordinal);
+            foreach ((string category, HashSet<string> keys) in categories)
+                copiedCategories[category] = new HashSet<string>(keys, StringComparer.Ordinal);
+
+            discoveries[areaId] = copiedCategories;
+        }
+
+        return new PersistedAreaDiscoveries
+        {
+            SchemaVersion = source.SchemaVersion,
+            Revision = source.Revision,
+            Discoveries = discoveries,
+            Trainers = new Dictionary<string, AreaTrainerEntryPayload>(source.Trainers, StringComparer.Ordinal),
+            Encounters = new Dictionary<string, AreaEncounterEntryPayload>(source.Encounters, StringComparer.Ordinal),
+            Items = new Dictionary<string, AreaItemEntryPayload>(source.Items, StringComparer.Ordinal)
+        };
     }
 
     /// <summary>
@@ -232,7 +267,7 @@ public sealed class AreaDiscoveryStore
                 changed |= keys.Add(entry.EntryId);
 
             if (entry.DetailsRevealed)
-                changed |= StoreChanged(run.Trainers, entry.EntryId, entry);
+                changed |= StoreChanged(run.Trainers, entry.EntryId, entry, AreaDiscoveryEntryComparer.AreEquivalent);
         }
 
         return changed;
@@ -254,7 +289,7 @@ public sealed class AreaDiscoveryStore
                 changed |= keys.Add(entry.EntryId);
 
             if (entry.DetailsRevealed)
-                changed |= StoreChanged(run.Encounters, entry.EntryId, entry);
+                changed |= StoreChanged(run.Encounters, entry.EntryId, entry, AreaDiscoveryEntryComparer.AreEquivalent);
         }
 
         return changed;
@@ -276,24 +311,25 @@ public sealed class AreaDiscoveryStore
                 changed |= keys.Add(entry.EntryId);
 
             if (entry.DetailsRevealed)
-                changed |= StoreChanged(run.Items, entry.EntryId, entry);
+                changed |= StoreChanged(run.Items, entry.EntryId, entry, AreaDiscoveryEntryComparer.AreEquivalent);
         }
 
         return changed;
     }
 
     /// <summary>
-    /// Adds or replaces a complete entry when its serialized value changed.
+    /// Adds or replaces a complete entry when its persisted value changed.
     /// </summary>
     /// <typeparam name="TEntry">The protocol entry type.</typeparam>
     /// <param name="entries">The persisted entry map.</param>
     /// <param name="key">The stable entry key.</param>
     /// <param name="entry">The complete entry.</param>
+    /// <param name="equivalent">Compares all persisted fields.</param>
     /// <returns>Whether the persisted entry changed.</returns>
-    private static bool StoreChanged<TEntry>(Dictionary<string, TEntry> entries, string key, TEntry entry)
+    private static bool StoreChanged<TEntry>(Dictionary<string, TEntry> entries, string key, TEntry entry, Func<TEntry, TEntry, bool> equivalent)
     {
         if (entries.TryGetValue(key, out TEntry? existing)
-            && JsonSerializer.Serialize(existing, TrackerJson.Options) == JsonSerializer.Serialize(entry, TrackerJson.Options))
+            && equivalent(existing, entry))
             return false;
 
         entries[key] = entry;
@@ -405,10 +441,7 @@ public sealed class AreaDiscoveryStore
         try
         {
             string path = GetPath(runId);
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            string temporaryPath = $"{path}{TrackerStorageNames.TemporaryExtension}";
-            File.WriteAllText(temporaryPath, JsonSerializer.Serialize(run, TrackerJson.Options));
-            File.Move(temporaryPath, path, true);
+            TrackerAtomicFileWriter.WriteAllText(path, JsonSerializer.Serialize(run, TrackerJson.Options));
             LastError = null;
             return true;
         }

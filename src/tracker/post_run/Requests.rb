@@ -40,6 +40,12 @@ module Ironmon
     return tracker_evolution_candidate_search_for_recipe(payload, recipe)
   end
 
+  def self.tracker_evolution_predecessor_search(payload, envelope_run_id)
+    payload ||= {}
+    recipe = tracker_validate_completed_recipe(payload["recipe"], envelope_run_id)
+    return tracker_evolution_predecessor_search_for_recipe(payload, recipe)
+  end
+
   def self.tracker_fusion_material_search(payload, envelope_run_id)
     payload ||= {}
     recipe = tracker_validate_completed_recipe(payload["recipe"], envelope_run_id)
@@ -157,6 +163,28 @@ module Ironmon
     }
   end
 
+  def self.tracker_evolution_predecessor_search_for_recipe(payload, recipe)
+    species_id = payload["species_id"].to_s
+    species_key = species_id.split(":", 2)[0]
+    species = GameData::Species.try_get(species_key.to_sym)
+    if !species || !tracker_lookup_species_available?(species)
+      raise TrackerLookupError.new(
+        "pokemon_not_found", "The selected Pokemon is not available in this run."
+      )
+    end
+    offset = payload["offset"].to_i
+    limit = payload["limit"].to_i
+    limit = 8 if limit == 0
+    if offset < 0 || limit < 1 || limit > TRACKER_SEARCH_LIMIT
+      raise TrackerLookupError.new(
+        "invalid_page", "Predecessor pages must contain between 1 and 50 targets."
+      )
+    end
+    return tracker_lookup_evolution_predecessor_page(
+      species, recipe, offset, limit
+    )
+  end
+
   def self.tracker_pokemon_lookup_for_recipe(payload, recipe, visibility = nil)
     species_id = payload["species_id"].to_s
     section = payload["section"].to_s
@@ -207,9 +235,7 @@ module Ironmon
           [] : tracker_lookup_fusion_bases(species),
         "reverse_fusion" => visibility && !visibility[:overview] ?
           nil : tracker_lookup_reverse_fusion(species, fusion_mapper),
-        "fusion_materials" => visibility && !visibility[:materials] ?
-          { "matches" => [], "total" => 0 } :
-          tracker_lookup_fusion_materials(species, fusion_mapper, 0, 50)
+        "fusion_materials" => { "matches" => [], "total" => 0 }
       }
     when "abilities"
       result["abilities"] = {
@@ -244,14 +270,14 @@ module Ironmon
       generated_stats = show_results ?
         tracker_lookup_generated_base_stats(species, recipe) : {}
       result["evolutions"] = {
+        "current_stage_level" => tracker_evolution_graph_level(species),
         "current_base_stat_total" => show_results ?
           tracker_base_stat_total(generated_stats) : 0,
         "native_targets" => !show_results || generated_evolutions ?
           [] : tracker_lookup_evolutions(species),
         "native_predecessors" => !show_results || generated_evolutions ?
           [] : tracker_lookup_previous_evolutions(species),
-        "generated_predecessors" => show_results ?
-          tracker_lookup_evolution_predecessors(species, recipe) : [],
+        "generated_predecessors" => [],
         "generated_targets" => evolution_targets[:normal],
         "head_targets" => evolution_targets[:head],
         "body_targets" => evolution_targets[:body],

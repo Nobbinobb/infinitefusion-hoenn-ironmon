@@ -1,6 +1,6 @@
-# Installing Ironmon 0.7.8
+# Installing Ironmon 0.7.9
 
-Ironmon `0.7.8` targets Pokemon Infinite Fusion 2 version 6.8.0.
+Ironmon `0.7.9` targets Pokemon Infinite Fusion 2 version 6.8.0.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
 
@@ -8,14 +8,19 @@ official game's Git repository.
 
 1. Fully close Pokemon Infinite Fusion 2.
 2. Keep a backup of saves you care about.
-3. Extract `Ironmon-v0.7.8-tracker-ui.zip` into the game's root directory—the
-   directory containing `InfiniteFusion2.exe`.
+3. Choose and extract one release archive into the game's root directory—the
+   directory containing `InfiniteFusion2.exe`:
+   - `Ironmon-v0.7.9-win-x64.zip` is self-contained and includes the .NET
+     runtime.
+   - `Ironmon-v0.7.9-win-x64-runtime-required.zip` is smaller and
+     requires the Windows x64 .NET 10 Runtime to be installed.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
    directory. The package installs Ruby files under
-   `Data/Scripts/997_Ironmon` and the self-contained tracker under
-   `Ironmon Tracker`.
-5. Double-click `Ironmon Tracker/Ironmon Tracker.exe`. No .NET installation or
-   terminal command is required. Starting the game first also works.
+   `Data/Scripts/997_Ironmon` and the selected tracker under `Ironmon Tracker`.
+5. Double-click `Ironmon Tracker/Ironmon Tracker.exe`. The self-contained
+   archive requires no .NET installation. The runtime-required archive
+   requires the Windows x64 .NET 10 Runtime, but not the SDK or MAUI
+   workload. Starting the game first also works.
 6. Leave `Download data` enabled in Gameplay Options so missing sprites are
    downloaded automatically. You can optionally install the current Infinite
    Fusion spritepack to reduce downloads during play. Disable `Download data`
@@ -52,8 +57,12 @@ before 0.6.0 retain native evolutions because they do not declare evolution
 generator metadata. Start a new run or use F7 to enable generated evolutions.
 Development saves using evolution rules version 1 or 2 migrate to rules version
 3 when their exact legacy metadata still matches; already evolved Pokemon remain
-unchanged. Existing ability, base-stat, and move-access metadata continues to
-reproduce its assignments.
+unchanged. Pre-release saves using normal evolution rules version 3 with fusion
+evolution rules version 3 migrate their fusion ordering to version 4 when every
+recorded catalog and dependency still matches. Their seed and current Pokemon
+state remain unchanged, while future fusion evolutions use the current ordering.
+Existing ability, base-stat, and move-access metadata continues to reproduce its
+assignments.
 
 ## Share a seeded run
 
@@ -74,11 +83,12 @@ release together.
 Run `tools/Build-TrackerRelease.ps1` from PowerShell. It first runs the Release
 tracker tests and complete bundled-runtime suite, including seed-token and
 deterministic-import checks. It then regenerates and validates the release
-datasets, synchronizes `src`, publishes the self-contained Windows x64 tracker,
-verifies the player output, and creates the release ZIP and SHA-256 checksum in
-`release`. Any failed test, stale generation, or packaging violation aborts the
-release. The player-package build rejects token and private-key files,
-maintainer or release-data generators, audits, and development scripts.
+datasets, synchronizes `src`, and publishes both self-contained and
+runtime-required Windows x64 trackers. It verifies both player outputs and
+creates a deterministic release ZIP and SHA-256 checksum for each in `release`.
+Any failed test, stale generation, or packaging violation aborts the release.
+The player-package build rejects token and private-key files, maintainer or
+release-data generators, audits, and development scripts.
 
 ## Diagnostic log
 

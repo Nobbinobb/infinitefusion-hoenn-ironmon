@@ -107,7 +107,11 @@ module Ironmon
         raise EvolutionRandomizationError,
               evolution_randomization_error_message
       end
-      echoln "Ironmon upgraded saved evolution rules from version #{legacy_version} to version #{NormalEvolutionGenerator::RULES_VERSION}."
+      if legacy_version == :fusion_rules_3
+        echoln "Ironmon upgraded saved fusion evolution rules from version 3 to version #{FusionEvolutionGenerator::RULES_VERSION}."
+      else
+        echoln "Ironmon upgraded saved evolution rules from version #{legacy_version} to version #{NormalEvolutionGenerator::RULES_VERSION}."
+      end
       return true
     end
     if !current_evolution_randomization?
@@ -160,6 +164,17 @@ module Ironmon
       ]
       return version if actual == expected
     end
+    expected_fusion_rules_3 = [
+      NormalEvolutionGenerator::SCHEMA_VERSION,
+      NormalEvolutionGenerator::RULES_VERSION,
+      catalog.source_fingerprint, catalog.taxonomy_fingerprint,
+      catalog.method_fingerprint, catalog.normal_target_fingerprint,
+      BaseStatGenerator::SCHEMA_VERSION, base_stat_source_fingerprint,
+      FusionEvolutionGenerator::SCHEMA_VERSION, 3,
+      fusion_pool[:schema_version], fusion_pool[:size],
+      fusion_pool[:fingerprint]
+    ]
+    return :fusion_rules_3 if actual == expected_fusion_rules_3
     return nil
   end
 

@@ -51,9 +51,14 @@ public static class TrackerProtocol
     public const int EvolutionCandidatePageSize = 50;
 
     /// <summary>
+    /// Gets the number of generated predecessors requested for each progressive graph page.
+    /// </summary>
+    public const int EvolutionPredecessorPageSize = 8;
+
+    /// <summary>
     /// Gets the number of fusion material pairs returned per page.
     /// </summary>
-    public const int FusionMaterialPageSize = 50;
+    public const int FusionMaterialPageSize = 10;
 
     /// <summary>
     /// Gets the number of wild or trainer occurrences returned per page.

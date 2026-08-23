@@ -1,7 +1,7 @@
 module IronmonSeededRunImportRuntimeTests
   OUTPUT_PATH = $ironmon_seeded_run_import_test_output_path.to_s
   EXPECTED_WORLD_SNAPSHOT_SHA256 =
-    "fc7cf5156e932aebea1f8356bd3c384192c3ed2dfff87c305ceb99702bdb416b"
+    "e79189901ee0fba21922e77e2fe2486eecbc9f4eca014a1af04725e90805683b"
 
   def self.assert(condition, message)
     raise "Seeded-run import runtime test failed: #{message}" if !condition
@@ -411,11 +411,56 @@ module IronmonSeededRunImportRuntimeTests
         second_seed.reject { |key, _value| key == :recipe },
       "a different imported seed changes the generated world"
     )
-    digest = Digest::SHA256.hexdigest(Marshal.dump(forward))
+    baseline_snapshot = Marshal.load(Marshal.dump(forward))
+    baseline_snapshot[:recipe] = baseline_snapshot[:recipe].reject do |key, _value|
+      key == "ironmon_version"
+    end
+    digest = Digest::SHA256.hexdigest(Marshal.dump(baseline_snapshot))
     assert(
       digest == EXPECTED_WORLD_SNAPSHOT_SHA256,
       "the deterministic world matches the refactor baseline: #{digest}"
     )
+  end
+
+  def self.test_player_fusion_reverse_materials
+    original_game_temp = $game_temp
+    begin
+      $game_temp = Game_Temp.new
+      Game.load_sprites_list_caches
+      Ironmon.reset_custom_fusion_pool_cache
+      seed = 987_654_321
+      preview_mapper = Ironmon::PlayerFusionMapper.new(
+        seed, Ironmon.custom_fusion_pool, {}, {},
+        Ironmon::BaseStatGenerator.new(
+          seed, Ironmon.base_stat_source_fingerprint
+        )
+      )
+      mudkip = GameData::Species.get(:MUDKIP)
+      mewtwo = GameData::Species.get(:MEWTWO)
+      forward = preview_mapper.species(mudkip, mewtwo)
+      reverse = preview_mapper.species(mewtwo, mudkip)
+      reverse_mapper = Ironmon::PlayerFusionMapper.new(
+        seed, Ironmon.custom_fusion_pool, {}, {},
+        Ironmon::BaseStatGenerator.new(
+          seed, Ironmon.base_stat_source_fingerprint
+        )
+      )
+      forward_materials = reverse_mapper.material_pairs_for(forward)
+      assert(
+        forward_materials.include?([mudkip.id_number, mewtwo.id_number]),
+        "schema-3 reverse materials include the pair used by its preview"
+      )
+      assert(
+        reverse_mapper.material_pairs_for(reverse).include?(
+          [mewtwo.id_number, mudkip.id_number]
+        ),
+        "schema-3 reverse materials preserve the preview orientation"
+      )
+    ensure
+      Ironmon.reset_custom_fusion_pool_cache
+      $game_temp = original_game_temp
+      Ironmon.reset_custom_fusion_pool_cache
+    end
   end
 
   def self.test_preset_failure_rollback
@@ -551,6 +596,7 @@ module IronmonSeededRunImportRuntimeTests
     test_transaction(false)
     test_preset_failure_rollback
     test_repeated_import_determinism
+    test_player_fusion_reverse_materials
     File.binwrite(OUTPUT_PATH, "seeded-run import runtime tests passed\n")
   rescue Exception => exception
     File.binwrite(

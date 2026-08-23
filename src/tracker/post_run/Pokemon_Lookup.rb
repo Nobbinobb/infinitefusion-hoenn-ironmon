@@ -74,9 +74,7 @@ module Ironmon
   def self.tracker_lookup_species_available?(species)
     return true if normal_species_pool.include?(species.id)
     return true if custom_fusion_pool.include?(species.id)
-    return false if !species.is_a?(GameData::FusedSpecies)
-    return normal_species_pool.include?(species.body_pokemon.id) &&
-      normal_species_pool.include?(species.head_pokemon.id)
+    return false
   end
 
   def self.tracker_base_stat_snapshot(stats)

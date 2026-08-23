@@ -1,0 +1,53 @@
+<div class="detail-overlay" role="presentation" @onclick="CloseAsync">
+    <section class="@DialogCssClass" role="dialog" aria-modal="true" aria-labelledby="evolution-graph-dialog-title" @onclick:stopPropagation>
+        <header class="detail-panel-header">
+            <div>
+                <p class="card-kicker">@Text["Lookup.Graph.EvolutionGraph"]</p>
+                <h2 id="evolution-graph-dialog-title">@Current.SpeciesName</h2>
+            </div>
+            <div class="evolution-graph-dialog-actions">
+                <button class="detail-close" type="button" title="@RowModeToggleLabel" aria-label="@RowModeToggleLabel" @onclick="ToggleRowMode">@RowModeToggleIcon</button>
+                <button class="detail-close" type="button" title="@ScopeToggleLabel" aria-label="@ScopeToggleLabel" @onclick="ToggleGraphScope">@ScopeToggleIcon</button>
+                <button class="detail-close" type="button" title="@WindowToggleLabel" aria-label="@WindowToggleLabel" @onclick="ToggleMaximizedAsync">@WindowToggleIcon</button>
+                <button class="detail-close" type="button" aria-label="@Text["Lookup.Graph.Close"]" @onclick="CloseAsync">×</button>
+            </div>
+        </header>
+
+        @if (!_firstPageLoaded && _loading)
+        {
+            <p class="lookup-message">@Text["Lookup.Graph.Loading"]</p>
+        }
+        else
+        {
+            <EvolutionGraph Current="@Current"
+                            GameRoot="@GameRoot"
+                            ViewportRevision="@_viewportRevision"
+                            NodesPerRow="@_nodesPerRow"
+                            CompactRows="@_compactRows"
+                            BranchSelectionEnabled="true"
+                            Nodes="@GraphNodes"
+                            Edges="@GraphEdges"
+                            FocusedSpeciesId="@_focusedSpeciesId"
+                            Focused="FocusPokemonAsync"
+                            VisibleNodeCountChanged="HandleVisibleNodeCountChanged"
+                            Selected="SelectPokemonAsync" />
+
+            @if (_loading)
+            {
+                <p class="lookup-message">@Text["Lookup.Graph.LoadingNeighborhood", _expansionDepth, _displayedNodeCount, _nodes.Count, _edges.Count]</p>
+            }
+            else if (_error is null)
+            {
+                <p class="lookup-message">@Text["Lookup.Graph.LoadedNeighborhood", _displayedNodeCount, _nodes.Count, _edges.Count, _expansionDepth]</p>
+            }
+        }
+
+        @if (_error is not null)
+        {
+            <div class="evolution-graph-dialog-error">
+                <p class="lookup-message error">@_error</p>
+                <button type="button" @onclick="RetryAsync">@Text["Lookup.Graph.Retry"]</button>
+            </div>
+        }
+    </section>
+</div>

@@ -470,6 +470,7 @@ public sealed class TrackerConnectionServiceTests
             },
             Evolutions = new PokemonLookupEvolutionsSnapshot
             {
+                CurrentStageLevel = 1,
                 NativeTargets =
                 [
                     new PokemonRelationSnapshot { SpeciesId = "CHARMELEON:0", SpeciesName = "Charmeleon", Label = "Level 16" }
@@ -482,19 +483,12 @@ public sealed class TrackerConnectionServiceTests
                         SpeciesName = "Pyukumuku",
                         SpritePath = "Graphics/Battlers/pyukumuku.png",
                         BaseStatTotal = 410,
+                        StageLevel = 2,
+                        ComponentSide = EvolutionCandidateSide.Head,
                         EffectiveMethods = ["Level 25", "Moon Stone"]
                     }
                 ],
-                GeneratedPredecessors =
-                [
-                    new EvolutionTargetSnapshot
-                    {
-                        SpeciesId = "CYNDAQUIL:0",
-                        SpeciesName = "Cyndaquil",
-                        BaseStatTotal = 309,
-                        EffectiveMethods = ["Level 16"]
-                    }
-                ]
+                GeneratedPredecessors = []
             }
         };
 
@@ -516,12 +510,13 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal(7, receivedTrainer.Level);
         Assert.Equal("Route 1", receivedTrainer.RouteName);
         EvolutionTargetSnapshot receivedTarget = Assert.Single(receivedLookup.Evolutions!.GeneratedTargets);
+        Assert.Equal(1, receivedLookup.Evolutions.CurrentStageLevel);
         Assert.Equal("PYUKUMUKU:0", receivedTarget.SpeciesId);
         Assert.Equal(410, receivedTarget.BaseStatTotal);
+        Assert.Equal(2, receivedTarget.StageLevel);
+        Assert.Equal(EvolutionCandidateSide.Head, receivedTarget.ComponentSide);
         Assert.Equal(["Level 25", "Moon Stone"], receivedTarget.EffectiveMethods);
-        EvolutionTargetSnapshot receivedPredecessor = Assert.Single(receivedLookup.Evolutions.GeneratedPredecessors);
-        Assert.Equal("CYNDAQUIL:0", receivedPredecessor.SpeciesId);
-        Assert.Equal(["Level 16"], receivedPredecessor.EffectiveMethods);
+        Assert.Empty(receivedLookup.Evolutions.GeneratedPredecessors);
         Assert.Same(receivedLookup, await service.Requests.LookupPokemonAsync(recipe, "CHARMANDER:0"));
 
         Task<EvolutionCandidateSearchResponsePayload> candidateTask = service.Requests.SearchEvolutionCandidatesAsync(recipe, "CHARMANDER:0", EvolutionCandidateSide.Normal, "saur");
@@ -543,13 +538,38 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal("BULBASAUR:0", Assert.Single(receivedCandidates.Matches).SpeciesId);
         Assert.Same(receivedCandidates, await service.Requests.SearchEvolutionCandidatesAsync(recipe, "CHARMANDER:0", EvolutionCandidateSide.Normal, "saur"));
 
+        Task<EvolutionPredecessorSearchResponsePayload> predecessorTask = service.Requests.SearchEvolutionPredecessorsAsync(recipe, "CHARMANDER:0");
+        TrackerMessage? predecessorRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(TrackerCommands.EvolutionPredecessorSearch, predecessorRequest?.Command);
+        EvolutionPredecessorSearchRequestPayload predecessorPayload = TrackerJson.DeserializePayload<EvolutionPredecessorSearchRequestPayload>(predecessorRequest!.Payload);
+        Assert.Equal("CHARMANDER:0", predecessorPayload.SpeciesId);
+        Assert.Equal(0, predecessorPayload.Offset);
+        Assert.Equal(TrackerProtocol.EvolutionPredecessorPageSize, predecessorPayload.Limit);
+        EvolutionPredecessorSearchResponsePayload predecessorResponse = new()
+        {
+            Matches = [new EvolutionTargetSnapshot { SpeciesId = "CYNDAQUIL:0", SpeciesName = "Cyndaquil", BaseStatTotal = 309, StageLevel = 1, ComponentSide = EvolutionCandidateSide.Body, EffectiveMethods = ["Level 16"] }],
+            Offset = 0,
+            Limit = TrackerProtocol.EvolutionPredecessorPageSize,
+            Continuation = EvolutionPredecessorContinuation.Unknown,
+            NextOffset = TrackerProtocol.EvolutionPredecessorPageSize
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(predecessorRequest.RequestId!, predecessorResponse, "run-1"));
+        EvolutionPredecessorSearchResponsePayload receivedPredecessors = await predecessorTask;
+        Assert.Equal(EvolutionPredecessorContinuation.Unknown, receivedPredecessors.Continuation);
+        EvolutionTargetSnapshot receivedPredecessor = Assert.Single(receivedPredecessors.Matches);
+        Assert.Equal("CYNDAQUIL:0", receivedPredecessor.SpeciesId);
+        Assert.Equal(1, receivedPredecessor.StageLevel);
+        Assert.Equal(EvolutionCandidateSide.Body, receivedPredecessor.ComponentSide);
+        Assert.Same(receivedPredecessors, await service.Requests.SearchEvolutionPredecessorsAsync(recipe, "CHARMANDER:0"));
+
         Task<FusionMaterialSearchResponsePayload> materialTask = service.Requests.SearchFusionMaterialsAsync(recipe, "B445H175:0", 50);
         TrackerMessage? materialRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
         Assert.Equal("fusion_material_search", materialRequest?.Command);
         FusionMaterialSearchRequestPayload materialPayload = TrackerJson.DeserializePayload<FusionMaterialSearchRequestPayload>(materialRequest!.Payload);
         Assert.Equal("B445H175:0", materialPayload.SpeciesId);
         Assert.Equal(50, materialPayload.Offset);
-        Assert.Equal(TrackerProtocol.FusionMaterialPageSize, materialPayload.Limit);
+        Assert.Equal(10, materialPayload.Limit);
         FusionMaterialSearchResponsePayload materialResponse = new()
         {
             Matches =
@@ -672,12 +692,21 @@ public sealed class TrackerConnectionServiceTests
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugCandidateRequest.RequestId!, candidateResponse, "run-1"));
         Assert.Equal("BULBASAUR:0", Assert.Single((await debugCandidateTask).Matches).SpeciesId);
 
+        Task<EvolutionPredecessorSearchResponsePayload> debugPredecessorTask = service.Requests.SearchDebugEvolutionPredecessorsAsync("CHARMANDER:0", target: DebugPokemonTarget.Player);
+        TrackerMessage? debugPredecessorRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(TrackerCommands.DebugEvolutionPredecessorSearch, debugPredecessorRequest?.Command);
+        DebugEvolutionPredecessorSearchRequestPayload debugPredecessorPayload = TrackerJson.DeserializePayload<DebugEvolutionPredecessorSearchRequestPayload>(debugPredecessorRequest!.Payload);
+        Assert.Equal(DebugPokemonTarget.Player, debugPredecessorPayload.Target);
+        Assert.Equal(TrackerProtocol.EvolutionPredecessorPageSize, debugPredecessorPayload.Limit);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugPredecessorRequest.RequestId!, predecessorResponse, "run-1"));
+        Assert.Equal("CYNDAQUIL:0", Assert.Single((await debugPredecessorTask).Matches).SpeciesId);
+
         Task<FusionMaterialSearchResponsePayload> debugMaterialTask = service.Requests.SearchDebugFusionMaterialsAsync("B445H175:0", 100);
         TrackerMessage? debugMaterialRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
         Assert.Equal("debug_fusion_material_search", debugMaterialRequest?.Command);
         DebugFusionMaterialSearchRequestPayload debugMaterialPayload = TrackerJson.DeserializePayload<DebugFusionMaterialSearchRequestPayload>(debugMaterialRequest!.Payload);
         Assert.Equal(100, debugMaterialPayload.Offset);
-        Assert.Equal(TrackerProtocol.FusionMaterialPageSize, debugMaterialPayload.Limit);
+        Assert.Equal(10, debugMaterialPayload.Limit);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugMaterialRequest.RequestId!, materialResponse, "run-1"));
         Assert.Equal(5_000, (await debugMaterialTask).Total);
 

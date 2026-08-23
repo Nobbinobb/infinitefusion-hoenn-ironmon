@@ -8,12 +8,12 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class EvolutionCandidateList
 {
+    private readonly PaginationState _pagination = new(TrackerProtocol.EvolutionCandidatePageSize);
     private IReadOnlyList<EvolutionCandidateSnapshot> _matches = [];
     private string _query = string.Empty;
     private string _appliedQuery = string.Empty;
     private string? _error;
     private string? _observedSource;
-    private int _offset;
     private int _total;
     private int _unfilteredTotal;
     private bool _loading;
@@ -108,6 +108,7 @@ public partial class EvolutionCandidateList
         _observedSource = source;
         _query = string.Empty;
         _appliedQuery = string.Empty;
+        _pagination.Reset();
         _unfilteredTotal = 0;
         await LoadPageAsync(0);
     }
@@ -135,22 +136,23 @@ public partial class EvolutionCandidateList
     /// </summary>
     /// <returns>A task representing the page request.</returns>
     private Task PreviousPageAsync()
-        => LoadPageAsync(Math.Max(0, _offset - TrackerProtocol.EvolutionCandidatePageSize));
+        => LoadPageAsync(_pagination.PageIndex - 1);
 
     /// <summary>
     /// Loads the following candidate page.
     /// </summary>
     /// <returns>A task representing the page request.</returns>
     private Task NextPageAsync()
-        => LoadPageAsync(_offset + TrackerProtocol.EvolutionCandidatePageSize);
+        => LoadPageAsync(_pagination.PageIndex + 1);
 
     /// <summary>
     /// Requests one candidate page through the selected authorization channel.
     /// </summary>
-    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="pageIndex">The zero-based result page.</param>
     /// <returns>A task representing the request.</returns>
-    private async Task LoadPageAsync(int offset)
+    private async Task LoadPageAsync(int pageIndex)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(pageIndex);
         if (_loading || !DebugMode && Recipe is null)
             return;
 
@@ -158,11 +160,12 @@ public partial class EvolutionCandidateList
         _error = null;
         try
         {
+            int offset = checked(pageIndex * _pagination.PageSize);
             EvolutionCandidateSearchResponsePayload response = DebugMode
                 ? await Connection.SearchDebugEvolutionCandidatesAsync(SpeciesId, Side, _appliedQuery, offset, DebugTarget, DebugEnemyPosition)
                 : await Connection.SearchEvolutionCandidatesAsync(Recipe!, SpeciesId, Side, _appliedQuery, offset);
             _matches = response.Matches;
-            _offset = offset;
+            _pagination.Select(pageIndex);
             _total = response.Total;
             if (_appliedQuery.Length == 0)
                 _unfilteredTotal = response.Total;
@@ -184,8 +187,7 @@ public partial class EvolutionCandidateList
     /// <returns>The visible range and filtered total.</returns>
     private string GetRangeText()
     {
-        int first = _matches.Count == 0 ? 0 : _offset + 1;
-        int last = _offset + _matches.Count;
+        (int first, int last) = _pagination.GetRange(_total, _matches.Count);
         return Text["Lookup.Search.ResultRange", first, last, _total];
     }
 }

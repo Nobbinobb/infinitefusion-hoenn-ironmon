@@ -62,7 +62,7 @@
 
     @if (_accessOpen)
     {
-        <DiagnosticToolsPage ToolsAvailable="@CanShowDiagnosticTools" Player="@_run.Player" Enemies="@_run.Enemies" GameRoot="@_connection.Game?.GameRoot" />
+        <DiagnosticToolsPage Player="@_run.Player" Enemies="@_run.Enemies" GameRoot="@_connection.Game?.GameRoot" />
     }
     else if (_seedsOpen)
     {

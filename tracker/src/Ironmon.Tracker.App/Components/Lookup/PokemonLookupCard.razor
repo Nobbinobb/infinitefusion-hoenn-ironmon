@@ -101,18 +101,25 @@
     }
     else if (_selectedPage == PokemonInformationPage.Evolutions)
     {
+        @if (HasEvolutionCandidates)
+        {
+            <EvolutionCandidateLists SpeciesId="@ActivePokemon.Identity.SpeciesId"
+                                     HasNormal="@(!IsFusion())"
+                                     HasHead="@IsFusion()"
+                                     HasBody="@IsFusion()"
+                                     Recipe="@Recipe"
+                                     DebugMode="@DebugMode"
+                                     DebugTarget="@DebugTarget"
+                                     DebugEnemyPosition="@DebugEnemyPosition"
+                                     GameRoot="@GameRoot"
+                                     Selected="PokemonSelected" />
+        }
+
         @if (HasEvolutionResults && ActivePokemon.Evolutions is not null)
         {
-            @if (HasGeneratedEvolutionGraph())
-            {
-                <EvolutionGraph Current="@GetCurrentEvolutionNode()"
-                                Predecessors="@EvolutionSection.GeneratedPredecessors"
-                                Targets="@EvolutionSection.GeneratedTargets"
-                                HeadTargets="@EvolutionSection.HeadTargets"
-                                BodyTargets="@EvolutionSection.BodyTargets"
-                                GameRoot="@GameRoot"
-                                Selected="@PokemonSelected" />
-            }
+            <div class="evolution-graph-action">
+                <button type="button" @onclick="OpenEvolutionGraph">@Text["Lookup.Graph.Open"]</button>
+            </div>
 
             @if (EvolutionSection.NativeTargets.Count > 0)
             {
@@ -140,30 +147,11 @@
                 </section>
             }
 
-            @if (!HasGeneratedEvolutionGraph() && EvolutionSection.NativeTargets.Count == 0 && EvolutionSection.NativePredecessors.Count == 0)
-            {
-                <p class="lookup-message">@Text["Debug.Inspector.NoGeneratedEvolutionTargets"]</p>
-            }
-
             @if (HasEvolutionGeneratorDetails)
             {
                 <GeneratorDiagnostics Heading="@Text["Lookup.Generator.EvolutionHeading"]"
                                       Diagnostics="@EvolutionSection.Generator" />
             }
-        }
-
-        @if (HasEvolutionCandidates)
-        {
-            <EvolutionCandidateLists SpeciesId="@ActivePokemon.Identity.SpeciesId"
-                                     HasNormal="@(!IsFusion())"
-                                     HasHead="@IsFusion()"
-                                     HasBody="@IsFusion()"
-                                     Recipe="@Recipe"
-                                     DebugMode="@DebugMode"
-                                     DebugTarget="@DebugTarget"
-                                     DebugEnemyPosition="@DebugEnemyPosition"
-                                     GameRoot="@GameRoot"
-                                     Selected="PokemonSelected" />
         }
 
         @if (!HasEvolutionResults && !HasEvolutionCandidates)
@@ -176,4 +164,20 @@
 @if (_selectedAbility is not null)
 {
     <AbilityDetailPanel Ability="@_selectedAbility" Closed="CloseAbility" />
+}
+
+@if (_evolutionGraphOpen && ActivePokemon.Evolutions is not null)
+{
+    <EvolutionGraphDialog SpeciesId="@ActivePokemon.Identity.SpeciesId"
+                          Current="@GetCurrentEvolutionNode()"
+                          Targets="@EvolutionSection.GeneratedTargets"
+                          HeadTargets="@EvolutionSection.HeadTargets"
+                          BodyTargets="@EvolutionSection.BodyTargets"
+                          Recipe="@Recipe"
+                          DebugMode="@DebugMode"
+                          DebugTarget="@DebugTarget"
+                          DebugEnemyPosition="@DebugEnemyPosition"
+                          GameRoot="@GameRoot"
+                          Selected="@PokemonSelected"
+                          Closed="CloseEvolutionGraph" />
 }

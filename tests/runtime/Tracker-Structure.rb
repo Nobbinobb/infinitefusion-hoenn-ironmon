@@ -112,6 +112,11 @@ module IronmonTrackerStructureRuntimeTests
       "completed-run evolution reconstruction"
     )
     assert_source(
+      Ironmon.method(:tracker_lookup_evolution_predecessor_page),
+      "019_Tracker_Post_Run_3_Evolution_Lookup.rb",
+      "paged completed-run evolution predecessors"
+    )
+    assert_source(
       Ironmon.method(:tracker_lookup_wild_occurrences),
       "019_Tracker_Post_Run_4_Occurrence_Lookup.rb",
       "completed-run occurrence lookup"
@@ -130,6 +135,11 @@ module IronmonTrackerStructureRuntimeTests
       Ironmon.method(:tracker_debug_pokemon_search),
       "020_Tracker_Debug_1_Requests.rb",
       "diagnostic lookup requests"
+    )
+    assert_source(
+      Ironmon.method(:tracker_debug_evolution_predecessor_search),
+      "020_Tracker_Debug_1_Requests.rb",
+      "diagnostic evolution predecessor requests"
     )
     assert_source(
       Ironmon.method(:tracker_validate_debug_context),

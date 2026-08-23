@@ -176,6 +176,11 @@ module Ironmon
           message["payload"], message["run_id"]
         )
         queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "evolution_predecessor_search"
+        payload = Ironmon.tracker_evolution_predecessor_search(
+          message["payload"], message["run_id"]
+        )
+        queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "fusion_material_search"
         payload = Ironmon.tracker_fusion_material_search(
           message["payload"], message["run_id"]
@@ -231,6 +236,15 @@ module Ironmon
           "evolution.candidates"
         ])
         payload = Ironmon.tracker_debug_evolution_candidate_search(
+          message["payload"]
+        )
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "debug_evolution_predecessor_search"
+        require_diagnostic_capabilities([
+          pokemon_source_diagnostic_capability(message["payload"] || {}),
+          "evolution.results"
+        ])
+        payload = Ironmon.tracker_debug_evolution_predecessor_search(
           message["payload"]
         )
         queue_message(success_response(request_id, payload, message["run_id"]))

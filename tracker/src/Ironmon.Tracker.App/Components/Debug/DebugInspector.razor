@@ -7,24 +7,7 @@
         <span class="debug-authorized">@Text["Debug.Inspector.Authorized"]</span>
     </header>
 
-    <nav class="debug-pages" aria-label="@Text["Debug.Inspector.DebugInspectorPages"]">
-        @if (CanShowPage(DebugInspectorPage.Pokemon))
-        {
-            <button type="button" class="@GetPageClass(DebugInspectorPage.Pokemon)" @onclick="() => SelectPageAsync(DebugInspectorPage.Pokemon)">@Text["Debug.Inspector.Pokemon"]</button>
-        }
-        @if (CanShowPage(DebugInspectorPage.Lookup))
-        {
-            <button type="button" class="@GetPageClass(DebugInspectorPage.Lookup)" @onclick="() => SelectPageAsync(DebugInspectorPage.Lookup)">@Text["Debug.Inspector.Lookup"]</button>
-        }
-        @if (CanShowPage(DebugInspectorPage.Diagnostics))
-        {
-            <button type="button" class="@GetPageClass(DebugInspectorPage.Diagnostics)" @onclick="() => SelectPageAsync(DebugInspectorPage.Diagnostics)">@Text["Debug.Inspector.RunDiagnostics"]</button>
-        }
-        @if (CanShowPage(DebugInspectorPage.Protocol))
-        {
-            <button type="button" class="@GetPageClass(DebugInspectorPage.Protocol)" @onclick="() => SelectPageAsync(DebugInspectorPage.Protocol)">@Text["Debug.Inspector.Protocol"]</button>
-        }
-    </nav>
+    <DebugInspectorTabs Pages="@_visiblePages" SelectedPage="@_selectedPage" SelectedPageChanged="SelectPageAsync" />
 
     @if (!HasAnyPage)
     {
@@ -35,24 +18,13 @@
     }
     else if (_selectedPage == DebugInspectorPage.Pokemon)
     {
-        <div class="debug-target-controls">
-            <label>
-                Inspect
-                <select value="@_selectedTarget" disabled="@(_loading || (Player is null && Enemies.Count == 0))" @onchange="SelectTarget" @onkeydown:stopPropagation="true">
-                    @if (Player is not null && Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentPlayer))
-                    {
-                        <option value="@DebugTargetIds.Player">@Text["Debug.Inspector.Player"] · @Player.Nickname</option>
-                    }
-                    @if (Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentEnemies))
-                    {
-                        @foreach (EnemyPokemonSnapshot enemy in Enemies)
-                        {
-                            <option value="@($"{DebugTargetIds.Enemy}{DebugTargetIds.Separator}{enemy.Position}")">@Text["Debug.Inspector.EnemyNumber", (enemy.Position / DebugTargetIds.EnemyPositionStride) + DebugTargetIds.DisplayPositionOffset] · @enemy.SpeciesName</option>
-                        }
-                    }
-                </select>
-            </label>
-        </div>
+        <DebugInspectionTargetSelector Player="@Player"
+                                       Enemies="@Enemies"
+                                       PlayerAvailable="@CanInspectPlayer"
+                                       EnemiesAvailable="@CanInspectEnemies"
+                                       SelectedTarget="@_selectedTarget"
+                                       Loading="@_loading"
+                                       SelectedTargetChanged="SelectTarget" />
     }
 
     @if (HasAnyPage && _selectedPage == DebugInspectorPage.Lookup)

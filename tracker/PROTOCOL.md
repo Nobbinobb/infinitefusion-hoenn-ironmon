@@ -1,8 +1,8 @@
 # Ironmon Tracker protocol v1
 
-This document records the implemented protocol through the 0.7.8 tracker UI
-and battle-stage additions. Later parts extend the payload catalog without
-changing the common envelope or transport.
+This document records the implemented protocol through the 0.7.9 tracker UI,
+paged reconstruction, and evolution-neighborhood additions. Later parts extend
+the payload catalog without changing the common envelope or transport.
 
 ## Transport
 
@@ -41,7 +41,7 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.0",
-    "ironmon_version": "0.7.8",
+    "ironmon_version": "0.7.9",
     "ironmon_active": false,
     "debug_available": true,
     "supported_diagnostic_capabilities": ["pokemon.current_player", "run.seed"],
@@ -241,7 +241,7 @@ action path. Non-cancellable nested screens such as Summary reject the request
 until closed. The native battle checks, turn consumption, item consumption, and
 effect handlers remain authoritative.
 
-An active 0.7.8 run also includes optional aggregate type-coverage context:
+An active 0.7.9 run also includes optional aggregate type-coverage context:
 
 ```json
 {
@@ -566,10 +566,11 @@ The tracker remembers multiple abilities per run and species/form, together
 with the highest visible enemy level. Player-owned abilities also contribute
 to this knowledge.
 
-`player_move_menu_opened` is emitted once per player Pokémon send-out when the
-battle first enters that Pokémon's move-selection menu. It contains only the
-stable `pokemon_id`. The UI consumes this as navigation intent; repeated visits
-to the same menu do not emit another event.
+`player_move_menu_opened` is emitted when the battle first enters the player's
+move-selection menu after the latest player or opponent send-out. It contains
+only the stable `pokemon_id`. The UI consumes this as navigation intent. An
+opponent replacement re-enables the event even when the player's active Pokémon
+did not change; repeated visits without another send-out do not emit it again.
 
 Move effectiveness is calculated in the tracker from move and target types.
 It deliberately excludes hidden or conditional ability effects.
@@ -590,7 +591,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.0",
-  "ironmon_version": "0.7.8",
+  "ironmon_version": "0.7.9",
   "configuration": {
     "schema_version": 3,
     "wild_policy": "mixed",
@@ -693,12 +694,43 @@ limit the returned learnset. The response includes:
   species and slot percentage when available;
 - authored trainer and party-slot occurrences with source species;
 - displayed body and head components for a fusion;
-- the fusion's deterministic Ironmon reverse; and
-- every ordered normal-material pair that maps to that fusion in the run.
+- the fusion's deterministic Ironmon reverse.
 
 Evolution destinations, previous evolutions, displayed components, reverse
 fusions, and fusion materials use stable species identifiers and can be
 selected as the subject of another lookup.
+
+Overview leaves `fusion_materials` empty so reconstructing reverse mappings
+cannot delay the initial Pokemon page. For a fusion, the tracker requests the
+first 10-row page separately through `fusion_material_search` after Overview
+has rendered. Later pages use the same command and remain independently cached.
+
+The Evolutions section deliberately leaves `generated_predecessors` empty in
+its initial `pokemon_lookup` response. The tracker requests predecessors only
+when the generated graph is opened. `evolution_predecessor_search` accepts the
+selected `species_id`, completed-run recipe, zero-based `offset`, and a `limit`
+from 1 through 50. The tracker normally uses pages of 8. Its response contains
+the page's predecessor nodes, echoed offset and limit, a `continuation` value
+of `complete`, `available`, or `unknown`, and `next_offset` unless complete.
+`available` proves that another result is already known; `unknown` permits a
+later page without forcing an exhaustive scan before returning the current
+page. Evolution-section payloads include `current_stage_level`, and every
+generated target or predecessor includes `stage_level` plus a
+`component_side` of `normal`, `head`, or `body`. These stable values let the
+tracker progressively assemble bounded neighborhoods without deriving rows
+from response order. The local expansion-depth preference applies independently
+to the original node and every later branch selection. Already completed nodes
+are reused. The tracker can therefore limit the visible canvas to the selected
+node's configured neighborhood without discarding loaded nodes, while an
+all-loaded view requires no new protocol requests. The view scope remains a
+presentation choice when another branch is selected. Closing the graph stops
+the tracker from requesting further pages.
+
+Graph row presentation is also tracker-local. Nodes within each stable
+`stage_level` are ordered by generated BST and divided according to the local
+nodes-per-row preference. A compact view may represent a connection to a
+currently hidden BST range through a local range portal; this does not alter or
+aggregate the directed relationships received from the game.
 
 The machine list identifies the TM or TR item that teaches each compatible
 move. The tutor list includes only moves supported by a currently available
@@ -756,6 +788,7 @@ The request requirements are:
 | active-run Pokemon search | `pokemon.all_active` |
 | active-run Pokemon lookup | `pokemon.all_active` plus the selected information capability |
 | evolution candidates | `evolution.candidates` plus either a represented current target or `pokemon.all_active` |
+| evolution predecessors | `evolution.results` plus either a represented current target or `pokemon.all_active` |
 | fusion material pairs | `fusion.material_pairs` plus either a represented current target or `pokemon.all_active` |
 | wild reverse occurrences | `world.wild_encounters` plus either a represented current target or `pokemon.all_active` |
 | trainer reverse occurrences | `world.trainer_parties` plus either a represented current target or `pokemon.all_active` |
@@ -769,7 +802,7 @@ trainer, material-pair, or preview surface, and Evolutions also accepts
 when only a tool surface is granted. The `pokemon.all_active` catalog grant
 implies both current-Pokemon availability grants before negotiation.
 
-Candidate, material, and reverse-occurrence requests optionally carry a
+Candidate, predecessor, material, and reverse-occurrence requests optionally carry a
 `target` and `enemy_position`. When present, only `player` or `enemy` is valid,
 and the game resolves that live target and replaces the supplied `species_id`
 before lookup. Without a target, the request is arbitrary and therefore

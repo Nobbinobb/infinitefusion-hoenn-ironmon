@@ -245,7 +245,7 @@ public sealed class TrackerKnowledgeStore
             foreach (ObservedMoveSnapshot observation in observations)
             {
                 int index = moves.FindIndex(move => MatchesDiscovery(move, observation));
-                if (index >= 0 && Equivalent(moves[index], observation))
+                if (index >= 0 && TrackerKnowledgeSnapshotComparer.AreEquivalent(moves[index], observation))
                     continue;
 
                 if (index >= 0)
@@ -305,7 +305,7 @@ public sealed class TrackerKnowledgeStore
         }
 
         int index = abilities.FindIndex(candidate => candidate.Id == ability.Id);
-        if (index >= 0 && JsonSerializer.Serialize(abilities[index], TrackerJson.Options) == JsonSerializer.Serialize(ability, TrackerJson.Options))
+        if (index >= 0 && TrackerKnowledgeSnapshotComparer.AreEquivalent(abilities[index], ability))
             return false;
 
         if (index >= 0)
@@ -389,10 +389,7 @@ public sealed class TrackerKnowledgeStore
         try
         {
             string path = GetRunPath(_runId);
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            string temporaryPath = $"{path}{TrackerStorageNames.TemporaryExtension}";
-            File.WriteAllText(temporaryPath, JsonSerializer.Serialize(_knowledge, TrackerJson.Options));
-            File.Move(temporaryPath, path, true);
+            TrackerAtomicFileWriter.WriteAllText(path, JsonSerializer.Serialize(_knowledge, TrackerJson.Options));
             LastError = null;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -411,15 +408,6 @@ public sealed class TrackerKnowledgeStore
         string fileName = string.Concat(runId.Select(character => char.IsLetterOrDigit(character) || character is '-' or '_' ? character : '_'));
         return Path.Combine(_options.RootDirectory, TrackerStorageNames.RunsDirectory, $"{fileName}{TrackerStorageNames.JsonExtension}");
     }
-
-    /// <summary>
-    /// Determines whether two observations contain identical persisted data.
-    /// </summary>
-    /// <param name="left">The existing observation.</param>
-    /// <param name="right">The new observation.</param>
-    /// <returns>True when all persisted fields match.</returns>
-    private static bool Equivalent(ObservedMoveSnapshot left, ObservedMoveSnapshot right)
-        => JsonSerializer.Serialize(left, TrackerJson.Options) == JsonSerializer.Serialize(right, TrackerJson.Options);
 
     /// <summary>
     /// Determines whether two observations identify the same retained discovery.

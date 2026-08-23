@@ -1,7 +1,7 @@
 namespace Ironmon.Tracker.Protocol.Live;
 
 /// <summary>
-/// Identifies the player Pokémon whose move menu was opened for the first time after send-out.
+/// Identifies the player Pokémon whose move menu first opened after the latest player or opponent send-out.
 /// </summary>
 public sealed class PlayerMoveMenuOpenedPayload
 {

@@ -188,11 +188,11 @@
                                 int detailEntryCount = GetDetailEntryCount(detail);
                                 @if (detailEntryCount > _pageSize)
                                 {
-                                    int detailPage = GetDetailPage(area.AreaId);
+                                    PaginationState detailPagination = GetDetailPagination(area.AreaId);
                                     <nav class="lookup-pager area-entry-pager" aria-label="@Text["Lookup.Areas.EntryPages", area.Name]">
-                                        <button type="button" disabled="@(detailPage == 0)" @onclick="() => PreviousDetailPage(area.AreaId)">@Text["Lookup.Search.Previous"]</button>
-                                        <span>@GetPageRangeText(detailPage, detailEntryCount)</span>
-                                        <button type="button" disabled="@(detailPage >= GetMaximumPage(detailEntryCount))" @onclick="() => NextDetailPage(area.AreaId, detailEntryCount)">@Text["Lookup.Search.Next"]</button>
+                                        <button type="button" disabled="@(!detailPagination.HasPrevious)" @onclick="() => PreviousDetailPage(area.AreaId)">@Text["Lookup.Search.Previous"]</button>
+                                        <span>@GetPageRangeText(detailPagination, detailEntryCount)</span>
+                                        <button type="button" disabled="@(!detailPagination.HasNext(detailEntryCount))" @onclick="() => NextDetailPage(area.AreaId, detailEntryCount)">@Text["Lookup.Search.Next"]</button>
                                     </nav>
                                 }
                             }
@@ -204,9 +204,9 @@
         @if (visibleAreas.Count > _pageSize)
         {
             <nav class="lookup-pager area-summary-pager" aria-label="@Text["Lookup.Areas.AreaPages"]">
-                <button type="button" disabled="@(_areaPage == 0)" @onclick="PreviousAreaPage">@Text["Lookup.Search.Previous"]</button>
-                <span>@GetPageRangeText(_areaPage, visibleAreas.Count)</span>
-                <button type="button" disabled="@(_areaPage >= GetMaximumPage(visibleAreas.Count))" @onclick="() => NextAreaPage(visibleAreas.Count)">@Text["Lookup.Search.Next"]</button>
+                <button type="button" disabled="@(!_areaPagination.HasPrevious)" @onclick="PreviousAreaPage">@Text["Lookup.Search.Previous"]</button>
+                <span>@GetPageRangeText(_areaPagination, visibleAreas.Count)</span>
+                <button type="button" disabled="@(!_areaPagination.HasNext(visibleAreas.Count))" @onclick="() => NextAreaPage(visibleAreas.Count)">@Text["Lookup.Search.Next"]</button>
             </nav>
         }
     }

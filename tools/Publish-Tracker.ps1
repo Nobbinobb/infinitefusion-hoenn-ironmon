@@ -1,14 +1,34 @@
+param(
+  [ValidateSet("SelfContained", "RuntimeRequired")]
+  [string]$DeploymentMode = "SelfContained",
+  [string]$OutputDirectory
+)
+
 $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$distributionRoot = Join-Path $projectRoot "dist"
-$output = Join-Path $distributionRoot "Ironmon Tracker"
-$project = Join-Path $projectRoot "tracker\src\Ironmon.Tracker.App\Ironmon.Tracker.App.csproj"
-$resolvedDistribution = [System.IO.Path]::GetFullPath($distributionRoot)
-$resolvedOutput = [System.IO.Path]::GetFullPath($output)
-if (!$resolvedOutput.StartsWith($resolvedDistribution + [System.IO.Path]::DirectorySeparatorChar)) {
-  throw "Tracker publish output must remain inside the distribution directory."
+$distributionRootName = if ($DeploymentMode -eq "SelfContained") { "dist" } else { "dist-runtime-required" }
+$distributionRoot = Join-Path $projectRoot $distributionRootName
+$output = if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
+  Join-Path $distributionRoot "Ironmon Tracker"
+} elseif ([System.IO.Path]::IsPathRooted($OutputDirectory)) {
+  $OutputDirectory
+} else {
+  Join-Path $projectRoot $OutputDirectory
 }
+$project = Join-Path $projectRoot "tracker\src\Ironmon.Tracker.App\Ironmon.Tracker.App.csproj"
+$resolvedOutput = [System.IO.Path]::GetFullPath($output)
+$allowedDistributionRoots = "dist", "dist-runtime-required" | ForEach-Object {
+  [System.IO.Path]::GetFullPath((Join-Path $projectRoot $_)).TrimEnd([System.IO.Path]::DirectorySeparatorChar)
+}
+$outputIsAllowed = $allowedDistributionRoots | Where-Object {
+  $resolvedOutput.StartsWith($_ + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+}
+if (!$outputIsAllowed) {
+  throw "Tracker publish output must remain inside a tracker distribution directory."
+}
+$selfContained = $DeploymentMode -eq "SelfContained"
+$selfContainedArgument = $selfContained.ToString().ToLowerInvariant()
 
 [xml]$projectDocument = Get-Content -LiteralPath $project
 $supportedCultureProperty = @($projectDocument.Project.PropertyGroup.SatelliteResourceLanguages) |
@@ -32,7 +52,7 @@ New-Item -ItemType Directory -Path $resolvedOutput -Force | Out-Null
 & dotnet publish $project `
   --configuration Release `
   --runtime win-x64 `
-  --self-contained true `
+  --self-contained $selfContainedArgument `
   --output $resolvedOutput `
   --no-restore `
   --nologo `
@@ -79,4 +99,5 @@ if (!(Test-Path -LiteralPath $executable)) {
   throw "Tracker publication did not create Ironmon Tracker.exe."
 }
 
-Write-Output "Published self-contained tracker to $resolvedOutput"
+$deploymentLabel = if ($selfContained) { "self-contained" } else { "runtime-required" }
+Write-Output "Published $deploymentLabel tracker to $resolvedOutput"

@@ -13,6 +13,7 @@ public partial class DebugInspector : IDisposable
     private DebugPokemonInspectorSnapshot? _pokemon;
     private PokemonLookupSnapshot? _lookup;
     private DebugRunDiagnosticsSnapshot? _diagnostics;
+    private IReadOnlyList<DebugInspectorPage> _visiblePages = [];
     private string _selectedTarget = DebugTargetIds.Player;
     private string? _requestedLookupSpeciesId;
     private string? _error;
@@ -66,6 +67,7 @@ public partial class DebugInspector : IDisposable
     protected override void OnInitialized()
     {
         _selectedPokemonPage = GetFirstAuthorizedPokemonPage();
+        RefreshVisiblePages();
         AccessService.Changed += HandleAuthorizationChanged;
         ConnectionState.Changed += HandleAuthorizationChanged;
     }
@@ -153,7 +155,7 @@ public partial class DebugInspector : IDisposable
             return DebugTargetIds.Player;
 
         if (Enemies.Count > 0 && Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentEnemies))
-            return $"{DebugTargetIds.Enemy}{DebugTargetIds.Separator}{Enemies[0].Position}";
+            return DebugTargetIds.CreateEnemy(Enemies[0].Position);
 
         return DebugTargetIds.Player;
     }
@@ -195,11 +197,11 @@ public partial class DebugInspector : IDisposable
     /// <summary>
     /// Stores and immediately inspects the newly selected debug target.
     /// </summary>
-    /// <param name="args">The select element change.</param>
+    /// <param name="selectedTarget">The stable selected target value.</param>
     /// <returns>A task representing the inspection and lookup requests.</returns>
-    private async Task SelectTarget(ChangeEventArgs args)
+    private async Task SelectTarget(string selectedTarget)
     {
-        _selectedTarget = args.Value?.ToString() ?? DebugTargetIds.Player;
+        _selectedTarget = selectedTarget;
         await InspectSelectedAsync();
     }
 
@@ -210,7 +212,7 @@ public partial class DebugInspector : IDisposable
     /// <returns>A task representing any required request.</returns>
     private async Task SelectPageAsync(DebugInspectorPage page)
     {
-        if (_loading || !CanShowPage(page))
+        if (_loading || !_visiblePages.Contains(page))
             return;
 
         _selectedPage = page;
@@ -373,14 +375,6 @@ public partial class DebugInspector : IDisposable
     }
 
     /// <summary>
-    /// Gets the CSS class for one debug page button.
-    /// </summary>
-    /// <param name="page">The represented page.</param>
-    /// <returns>The page button CSS classes.</returns>
-    private string GetPageClass(DebugInspectorPage page)
-        => page == _selectedPage ? TrackerUiConstants.SelectedCssClass : string.Empty;
-
-    /// <summary>
     /// Gets whether one primary diagnostic page is currently authorized.
     /// </summary>
     /// <param name="page">The represented diagnostic page.</param>
@@ -406,10 +400,19 @@ public partial class DebugInspector : IDisposable
                 || Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentEnemies));
 
     /// <summary>
+    /// Gets whether player inspection is currently authorized.
+    /// </summary>
+    private bool CanInspectPlayer => Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentPlayer);
+
+    /// <summary>
+    /// Gets whether enemy inspection is currently authorized.
+    /// </summary>
+    private bool CanInspectEnemies => Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonCurrentEnemies);
+
+    /// <summary>
     /// Gets whether at least one primary diagnostic page is authorized.
     /// </summary>
-    private bool HasAnyPage
-        => Enum.GetValues<DebugInspectorPage>().Any(CanShowPage);
+    private bool HasAnyPage => _visiblePages.Count > 0;
 
     /// <summary>
     /// Gets whether one shared Pokemon information page is authorized.
@@ -452,14 +455,15 @@ public partial class DebugInspector : IDisposable
         => Enum.GetValues<PokemonInformationPage>().FirstOrDefault(CanShowPokemonInformationPage);
 
     /// <summary>
-    /// Moves selection to the first currently authorized primary page.
+    /// Rebuilds authorized primary pages and reconciles the current selection.
     /// </summary>
-    private void EnsureSelectedPageAuthorized()
+    private void RefreshVisiblePages()
     {
-        if (CanShowPage(_selectedPage))
+        _visiblePages = [.. Enum.GetValues<DebugInspectorPage>().Where(CanShowPage)];
+        if (_visiblePages.Contains(_selectedPage))
             return;
 
-        _selectedPage = Enum.GetValues<DebugInspectorPage>().FirstOrDefault(CanShowPage);
+        _selectedPage = _visiblePages.Count > 0 ? _visiblePages[0] : default;
     }
 
     /// <summary>
@@ -477,7 +481,7 @@ public partial class DebugInspector : IDisposable
         _error = null;
         _selectedPokemonPage = GetFirstAuthorizedPokemonPage();
         EnsureSelectedTargetAvailable();
-        EnsureSelectedPageAuthorized();
+        RefreshVisiblePages();
         _ = InvokeAsync(StateHasChanged);
     }
 
