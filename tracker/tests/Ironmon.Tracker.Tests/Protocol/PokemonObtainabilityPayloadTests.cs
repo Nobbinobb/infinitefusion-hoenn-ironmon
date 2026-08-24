@@ -125,4 +125,27 @@ public sealed class PokemonObtainabilityPayloadTests
         Assert.Equal(1, actual.Target.RequiredItems["MOONSTONE"]);
         Assert.Contains("\"status\":\"obtainable\"", json, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// Verifies that the foreground-only boundary survives protocol serialization independently of full completion.
+    /// </summary>
+    [Fact]
+    public void ResponseRoundTripsBackgroundCompletionBoundary()
+    {
+        PokemonObtainabilityResponsePayload expected = new()
+        {
+            Phase = "authored_sources",
+            Complete = false,
+            BackgroundComplete = true,
+            ProcessedPairs = 60_726,
+            TotalPairs = 60_726
+        };
+
+        JsonElement payload = TrackerJson.SerializePayload(expected);
+        PokemonObtainabilityResponsePayload actual = TrackerJson.DeserializePayload<PokemonObtainabilityResponsePayload>(payload);
+
+        Assert.False(actual.Complete);
+        Assert.True(actual.BackgroundComplete);
+        Assert.Contains("\"background_complete\":true", payload.GetRawText(), StringComparison.Ordinal);
+    }
 }

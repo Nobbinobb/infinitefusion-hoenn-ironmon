@@ -16,6 +16,20 @@ public sealed class TrackerConnectionServiceTests
     }
 
     /// <summary>
+    /// Verifies background polling stops at either full completion or the foreground-only boundary.
+    /// </summary>
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, true)]
+    [InlineData(false, true, true)]
+    public void ObtainabilityPrecalculationRecognizesTerminalResponses(bool complete, bool backgroundComplete, bool expected)
+    {
+        PokemonObtainabilityResponsePayload response = new() { Complete = complete, BackgroundComplete = backgroundComplete };
+
+        Assert.Equal(expected, TrackerConnectionService.IsObtainabilityPrecalculationFinished(response));
+    }
+
+    /// <summary>
     /// Verifies the duplex handshake and current-state recovery request.
     /// </summary>
     [Fact]

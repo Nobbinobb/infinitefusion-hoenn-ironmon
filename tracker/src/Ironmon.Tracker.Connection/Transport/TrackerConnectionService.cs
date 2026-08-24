@@ -280,7 +280,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 try
                 {
                     PokemonObtainabilityResponsePayload response = await Requests.AdvanceDebugPokemonObtainabilityAsync(foreground: false, cancellationToken: cancellationToken).ConfigureAwait(false);
-                    if (response.Complete)
+                    if (IsObtainabilityPrecalculationFinished(response))
                         completedRunId = runId;
                 }
                 catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
@@ -290,6 +290,17 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             }
             await Task.Delay(ObtainabilityPrecalculationInterval, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// Determines whether a response has exhausted every phase that background precalculation may advance.
+    /// </summary>
+    /// <param name="response">The current game-owned obtainability state.</param>
+    /// <returns>True when background polling should stop for the run; otherwise false.</returns>
+    internal static bool IsObtainabilityPrecalculationFinished(PokemonObtainabilityResponsePayload response)
+    {
+        ArgumentNullException.ThrowIfNull(response);
+        return response.Complete || response.BackgroundComplete;
     }
 
     /// <summary>

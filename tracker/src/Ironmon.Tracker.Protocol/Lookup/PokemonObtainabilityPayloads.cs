@@ -147,6 +147,11 @@ public sealed class PokemonObtainabilityResponsePayload
     public bool Complete { get; init; }
 
     /// <summary>
+    /// Gets or initializes whether cooperative background work has reached its foreground-only boundary.
+    /// </summary>
+    public bool BackgroundComplete { get; init; }
+
+    /// <summary>
     /// Gets or initializes the number of processed unordered material pairs.
     /// </summary>
     public int ProcessedPairs { get; init; }

@@ -144,6 +144,7 @@ module Ironmon
       result = {
         "phase" => @phase.to_s,
         "complete" => @phase == :complete,
+        "background_complete" => complete? || !background_advance_allowed?,
         "processed_pairs" => @pair_index,
         "total_pairs" => @pair_count,
         "obtainable_count" => @obtainable_count,

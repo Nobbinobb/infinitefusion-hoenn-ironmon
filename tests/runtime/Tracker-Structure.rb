@@ -298,6 +298,13 @@ module IronmonTrackerStructureRuntimeTests
         deferred_obtainability.snapshot["phase"] == "prepare_generators",
       "startup requests defer obtainability configuration and generator setup"
     )
+    deferred_obtainability.instance_variable_set(:@phase, :authored_sources)
+    background_terminal_snapshot = deferred_obtainability.snapshot
+    assert(
+      background_terminal_snapshot["background_complete"] == true &&
+        background_terminal_snapshot["complete"] == false,
+      "foreground-only authored sources terminate background polling"
+    )
     integrated_obtainability =
       Ironmon::TrackerObtainabilityService.new(obtainability_recipe)
     initial_obtainability = integrated_obtainability.snapshot
