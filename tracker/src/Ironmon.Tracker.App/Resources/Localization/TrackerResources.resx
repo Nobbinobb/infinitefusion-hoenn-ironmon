@@ -45,6 +45,9 @@
   <data name="App.Shell.GameConnected" xml:space="preserve">
     <value>Game connected</value>
   </data>
+  <data name="App.Shell.GameConnectedCalculating" xml:space="preserve">
+    <value>Game connected, obtainability calculation running</value>
+  </data>
   <data name="App.Shell.HomeEyebrow" xml:space="preserve">
     <value>IRONMON COMPANION</value>
   </data>
@@ -56,6 +59,42 @@
   </data>
   <data name="App.Shell.LocalConnection" xml:space="preserve">
     <value>Local connection</value>
+  </data>
+  <data name="App.Shell.ObtainabilityComplete" xml:space="preserve">
+    <value>{0} obtainability ready · {1:0.0} s&#xA;{2:N0} Pokémon obtainable</value>
+  </data>
+  <data name="App.Shell.ObtainabilityError" xml:space="preserve">
+    <value>Obtainability calculation failed: {0}</value>
+  </data>
+  <data name="App.Shell.ObtainabilityPairs" xml:space="preserve">
+    <value>Fusion pairs: {0:N0} / {1:N0}</value>
+  </data>
+  <data name="App.Shell.ObtainabilityPhase.Complete" xml:space="preserve">
+    <value>Complete</value>
+  </data>
+  <data name="App.Shell.ObtainabilityPhase.Evolutions" xml:space="preserve">
+    <value>Calculating evolution paths</value>
+  </data>
+  <data name="App.Shell.ObtainabilityPhase.Fusions" xml:space="preserve">
+    <value>Calculating fusion closure</value>
+  </data>
+  <data name="App.Shell.ObtainabilityPhase.Preparing" xml:space="preserve">
+    <value>Preparing game data</value>
+  </data>
+  <data name="App.Shell.ObtainabilityPhase.Sources" xml:space="preserve">
+    <value>Scanning acquisition sources</value>
+  </data>
+  <data name="App.Shell.ObtainabilityPhase.Starting" xml:space="preserve">
+    <value>Starting</value>
+  </data>
+  <data name="App.Shell.ObtainabilityProgress" xml:space="preserve">
+    <value>{0} obtainability: {1}&#xA;Elapsed: {2:0.0} s · phase: {3:0.0} s&#xA;Obtainable Pokémon: {4:N0}</value>
+  </data>
+  <data name="App.Shell.ObtainabilityScope.Active" xml:space="preserve">
+    <value>Active-run</value>
+  </data>
+  <data name="App.Shell.ObtainabilityScope.Archive" xml:space="preserve">
+    <value>Archived-run</value>
   </data>
   <data name="App.Shell.Lookup" xml:space="preserve">
     <value>Lookup</value>
@@ -796,7 +835,10 @@
     <value>Body evolution targets</value>
   </data>
   <data name="Lookup.Card.BodyEvolutionsHeading" xml:space="preserve">
-    <value>BODY EVOLUTIONS</value>
+    <value>BODY EVOLUTION CANDIDATES</value>
+  </data>
+  <data name="Lookup.Card.BodyCandidates" xml:space="preserve">
+    <value>Body candidates</value>
   </data>
   <data name="Lookup.Card.DisplayedComponentsHeading" xml:space="preserve">
     <value>DISPLAYED COMPONENTS</value>
@@ -810,11 +852,11 @@
   <data name="Lookup.Card.EvolutionDestinations" xml:space="preserve">
     <value>Evolution destinations</value>
   </data>
-  <data name="Lookup.Card.EvolutionTargets" xml:space="preserve">
-    <value>Evolution targets</value>
-  </data>
   <data name="Lookup.Card.EvolutionCandidates" xml:space="preserve">
     <value>Evolution candidates</value>
+  </data>
+  <data name="Lookup.Card.EvolutionCandidatesHeading" xml:space="preserve">
+    <value>EVOLUTION CANDIDATES</value>
   </data>
   <data name="Lookup.Card.LoadingSection" xml:space="preserve">
     <value>Loading this information...</value>
@@ -843,8 +885,8 @@
   <data name="Lookup.Graph.EvolutionGraphHeading" xml:space="preserve">
     <value>EVOLUTION GRAPH</value>
   </data>
-  <data name="Lookup.Graph.Open" xml:space="preserve">
-    <value>Open evolution graph</value>
+  <data name="Lookup.Graph.OpenShort" xml:space="preserve">
+    <value>Open graph</value>
   </data>
   <data name="Lookup.Graph.Close" xml:space="preserve">
     <value>Close evolution graph</value>
@@ -879,9 +921,6 @@
   <data name="Lookup.Graph.Restore" xml:space="preserve">
     <value>Restore tracker window</value>
   </data>
-  <data name="Lookup.Card.EvolutionTargetsHeading" xml:space="preserve">
-    <value>EVOLUTION TARGETS</value>
-  </data>
   <data name="Lookup.Card.FusionMaterialsHeading" xml:space="preserve">
     <value>FUSION MATERIALS</value>
   </data>
@@ -901,7 +940,10 @@
     <value>Head evolution targets</value>
   </data>
   <data name="Lookup.Card.HeadEvolutionsHeading" xml:space="preserve">
-    <value>HEAD EVOLUTIONS</value>
+    <value>HEAD EVOLUTION CANDIDATES</value>
+  </data>
+  <data name="Lookup.Card.HeadCandidates" xml:space="preserve">
+    <value>Head candidates</value>
   </data>
   <data name="Lookup.Card.IronmonFusionMaterials" xml:space="preserve">
     <value>Ironmon fusion materials</value>
@@ -1481,23 +1523,11 @@
   <data name="Lookup.Graph.ObtainableOnlyViewActive" xml:space="preserve"><value>Evolution-reachable-only view active · {0} Pokémon shown</value></data>
   <data name="Lookup.Graph.ShowOnlyObtainableHint" xml:space="preserve"><value>Arrows show executable evolution routes. Select the green filter icon to hide evolution-unreachable Pokémon.</value></data>
   <data name="Lookup.Graph.ShowAllPossibleHint" xml:space="preserve"><value>Arrows show executable evolution routes. Select the green filter icon to restore the original unfiltered graph.</value></data>
-  <data name="Lookup.Obtainability.Heading" xml:space="preserve"><value>Run obtainability</value></data>
   <data name="Lookup.Obtainability.Obtainable" xml:space="preserve"><value>Obtainable</value></data>
   <data name="Lookup.Obtainability.Unobtainable" xml:space="preserve"><value>Not obtainable</value></data>
-  <data name="Lookup.Obtainability.Calculating" xml:space="preserve"><value>Not fully checked</value></data>
-  <data name="Lookup.Obtainability.Unknown" xml:space="preserve"><value>Unknown</value></data>
-  <data name="Lookup.Obtainability.ShowPath" xml:space="preserve"><value>Show one valid path</value></data>
-  <data name="Lookup.Obtainability.Check" xml:space="preserve"><value>Check this run</value></data>
+  <data name="Lookup.Obtainability.Calculating" xml:space="preserve"><value>Calculating</value></data>
   <data name="Lookup.Obtainability.Checking" xml:space="preserve"><value>Checking…</value></data>
-  <data name="Lookup.Obtainability.Progress" xml:space="preserve"><value>Checking obtainable paths… {0} of {1} material pairs</value></data>
   <data name="Lookup.Obtainability.Phase.Preparing" xml:space="preserve"><value>preparing run sources</value></data>
-  <data name="Lookup.Obtainability.Phase.PlayerFusions" xml:space="preserve"><value>applying fusion pairs</value></data>
-  <data name="Lookup.Obtainability.Phase.GraphEvolutions" xml:space="preserve"><value>checking graph evolution routes</value></data>
-  <data name="Lookup.Obtainability.Phase.FullEvolutionChain" xml:space="preserve"><value>checking a complete Pokémon evolution chain</value></data>
   <data name="Lookup.Obtainability.Phase.AuthoredSources" xml:space="preserve"><value>finalizing acquisition sources</value></data>
   <data name="Lookup.Obtainability.Phase.Complete" xml:space="preserve"><value>complete</value></data>
-  <data name="Lookup.Obtainability.Mapping.Preparing" xml:space="preserve"><value>mapping not started</value></data>
-  <data name="Lookup.Obtainability.Mapping.WaitingForTracker" xml:space="preserve"><value>waiting for parallel tracker worker</value></data>
-  <data name="Lookup.Obtainability.Mapping.TrackerWorker" xml:space="preserve"><value>parallel tracker worker</value></data>
-  <data name="Lookup.Obtainability.Mapping.RubyFallback" xml:space="preserve"><value>Ruby fallback</value></data>
 </root>

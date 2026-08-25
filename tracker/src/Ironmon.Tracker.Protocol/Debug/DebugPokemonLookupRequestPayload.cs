@@ -23,4 +23,9 @@ public sealed class DebugPokemonLookupRequestPayload
     /// Gets or initializes the independently requested information section.
     /// </summary>
     public PokemonLookupSection Section { get; init; } = PokemonLookupSection.Overview;
+
+    /// <summary>
+    /// Gets or initializes exact tracker-computed outgoing fusion-evolution assignments when available.
+    /// </summary>
+    public IReadOnlyList<EvolutionTargetAssignmentPayload>? EvolutionAssignments { get; init; }
 }

@@ -55,8 +55,7 @@
             @if (_obtainabilityLoading && _obtainabilityProgress is not null)
             {
                 <p class="lookup-message">
-                    <span>@Text["Lookup.Obtainability.Progress", _obtainabilityProgress.ProcessedPairs, _obtainabilityProgress.TotalPairs]</span>
-                    <span> · @ObtainabilityPhaseLabel · @FusionMappingModeLabel</span>
+                    <span>@ObtainabilityPhaseLabel</span>
                 </p>
             }
             else if (GroupedReachabilityMode && _obtainabilityProgress is not null)

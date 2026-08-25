@@ -68,6 +68,21 @@ public static class TrackerDiagnosticCapabilityRules
     }
 
     /// <summary>
+    /// Gets whether the complete active-run obtainability information domain is authorized.
+    /// </summary>
+    /// <param name="connection">The active game request client.</param>
+    /// <returns>Whether every capability required by active-run obtainability is available.</returns>
+    public static bool HasRunObtainability(TrackerRequestClient connection)
+    {
+        ArgumentNullException.ThrowIfNull(connection);
+        return connection.HasDiagnosticCapability(DiagnosticCapabilities.EvolutionResults)
+            && connection.HasDiagnosticCapability(DiagnosticCapabilities.FusionMaterialPairs)
+            && connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonAllActive)
+            && connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldItems)
+            && connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldWildEncounters);
+    }
+
+    /// <summary>
     /// Gets whether arbitrary active-run Pokemon lookup has any useful authorized surface.
     /// </summary>
     /// <param name="connection">The active game request client.</param>

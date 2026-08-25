@@ -20,15 +20,6 @@ and fails before generation, testing, publication, or packaging begins. Set a
 new `ApplicationDisplayVersion`, numeric `ApplicationVersion`, and `Version` in
 the tracker project before intentionally creating the next release.
 
-`tools/analysis/Run-Obtainability-Prototype-Benchmark.ps1` measures both cold
-foreground completion and a complete cold pass through the 4 ms cooperative
-Ruby fallback scheduler. The standalone benchmark explicitly disables the
-tracker mapping worker because it cannot fulfill the mapping work advertised
-by a snapshot. Recipe preparation and deferred service construction are timed
-separately so startup request overhead is not confused with benchmark fixture
-setup. Its report must include the maximum slice and phase so a new indivisible
-operation cannot be hidden by an acceptable average.
-
 ## Tracker builds
 
 The tracker solution is `tracker/Ironmon.Tracker.slnx`. Normal Debug and Release

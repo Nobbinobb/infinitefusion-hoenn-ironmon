@@ -6,22 +6,17 @@ namespace Ironmon.Tracker.Protocol.Lookup;
 public enum PokemonObtainabilityStatus
 {
     /// <summary>
-    /// Indicates that authored source coverage is insufficient for a definitive result.
+    /// Indicates that the finite shared proof calculation is still running.
     /// </summary>
-    Unknown = 0,
-
-    /// <summary>
-    /// Indicates that the shared player-fusion pass is still running.
-    /// </summary>
-    Calculating = 1,
+    Calculating = 0,
 
     /// <summary>
     /// Indicates that at least one valid permanent acquisition path was proven.
     /// </summary>
-    Obtainable = 2,
+    Obtainable = 1,
 
     /// <summary>
     /// Indicates that the complete calculation found no valid permanent acquisition path.
     /// </summary>
-    Unobtainable = 3
+    Unobtainable = 2
 }

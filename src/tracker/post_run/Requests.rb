@@ -9,7 +9,7 @@ module Ironmon
     return tracker_pokemon_search_for_recipe(payload, recipe)
   end
 
-  def self.tracker_pokemon_search_for_recipe(payload, recipe)
+  def self.tracker_pokemon_search_for_recipe(payload, recipe, visibility = nil)
     query = payload["query"].to_s.strip
     raise TrackerLookupError.new("invalid_query", "Enter a Pokemon name to search.") if query.empty?
     offset = payload["offset"].to_i
@@ -22,8 +22,20 @@ module Ironmon
     normalized_query = query.downcase
     normal_only = payload["normal_only"] == true
     matches = tracker_search_matches(recipe, normalized_query, normal_only)
+    page = matches.slice(offset, limit) || []
+    if !visibility || visibility[:obtainability]
+      page = page.map do |match|
+        species_key = match["species_id"].to_s.split(":", 2)[0]
+        species = GameData::Species.try_get(species_key.to_sym)
+        next match if !species
+        match.merge(
+          "obtainability_status" =>
+            tracker_obtainability_status(species, recipe)
+        )
+      end
+    end
     return {
-      "matches" => matches.slice(offset, limit) || [],
+      "matches" => page,
       "total" => matches.length
     }
   end
@@ -97,7 +109,9 @@ module Ironmon
     }
   end
 
-  def self.tracker_fusion_material_search_for_recipe(payload, recipe)
+  def self.tracker_fusion_material_search_for_recipe(
+    payload, recipe, obtainability = true
+  )
     species_id = payload["species_id"].to_s
     species_key = species_id.split(":", 2)[0]
     species = GameData::Species.try_get(species_key.to_sym)
@@ -115,11 +129,22 @@ module Ironmon
         "invalid_page", "Fusion-material pages must contain between 1 and 50 pairs."
       )
     end
+    assignments = payload["material_assignments"]
+    assignment_total = payload["material_assignment_total"]
+    if assignments.is_a?(Array) && !assignment_total.nil?
+      return tracker_lookup_fusion_material_assignments(
+        assignments, assignment_total.to_i, recipe, obtainability
+      )
+    end
     mapper = tracker_post_run_fusion_mapper(recipe)
-    return tracker_lookup_fusion_materials(species, mapper, offset, limit)
+    return tracker_lookup_fusion_materials(
+      species, mapper, offset, limit, recipe, obtainability
+    )
   end
 
-  def self.tracker_evolution_candidate_search_for_recipe(payload, recipe)
+  def self.tracker_evolution_candidate_search_for_recipe(
+    payload, recipe, obtainability = true
+  )
     species_id = payload["species_id"].to_s
     species_key = species_id.split(":", 2)[0]
     species = GameData::Species.try_get(species_key.to_sym)
@@ -143,7 +168,14 @@ module Ironmon
       )
     end
     query = payload["query"].to_s.strip.downcase
-    targets = tracker_evolution_candidates_for(species, recipe, side)
+    targets = if fusion_evolution_runtime_species?(species) &&
+      payload["packed_candidate_assignments"].is_a?(String)
+                tracker_fusion_evolution_candidates_for_assignments(
+                  payload["packed_candidate_assignments"]
+                )
+              else
+                tracker_evolution_candidates_for(species, recipe, side)
+              end
     matches = targets.map do |target|
       name = tracker_search_species_name(target[:target_id])
       next if !name
@@ -157,13 +189,17 @@ module Ironmon
     page = matches.slice(offset, limit) || []
     return {
       "matches" => page.map do |entry|
-        tracker_evolution_candidate_snapshot(entry[0], entry[1])
+        tracker_evolution_candidate_snapshot(
+          entry[0], entry[1], recipe, obtainability
+        )
       end,
       "total" => matches.length
     }
   end
 
-  def self.tracker_evolution_predecessor_search_for_recipe(payload, recipe)
+  def self.tracker_evolution_predecessor_search_for_recipe(
+    payload, recipe, obtainability = true
+  )
     species_id = payload["species_id"].to_s
     species_key = species_id.split(":", 2)[0]
     species = GameData::Species.try_get(species_key.to_sym)
@@ -181,7 +217,8 @@ module Ironmon
       )
     end
     return tracker_lookup_evolution_predecessor_page(
-      species, recipe, offset, limit
+      species, recipe, offset, limit, obtainability,
+      payload["predecessor_assignments"]
     )
   end
 
@@ -216,7 +253,7 @@ module Ironmon
                              tracker_obtainability_snapshot(species, recipe)
                            else
                              {
-                               "status" => "unknown",
+                               "status" => "calculating",
                                "reason" => "Run obtainability access is not authorized.",
                                "path" => [],
                                "required_items" => {}
@@ -242,9 +279,14 @@ module Ironmon
             recipe, :trainer
           ),
         "fusion_bases" => visibility && !visibility[:overview] ?
-          [] : tracker_lookup_fusion_bases(species),
+          [] : tracker_lookup_fusion_bases(
+            species, recipe, !visibility || visibility[:obtainability]
+          ),
         "reverse_fusion" => visibility && !visibility[:overview] ?
-          nil : tracker_lookup_reverse_fusion(species, fusion_mapper),
+          nil : tracker_lookup_reverse_fusion(
+            species, fusion_mapper, recipe,
+            !visibility || visibility[:obtainability]
+          ),
         "fusion_materials" => { "matches" => [], "total" => 0 }
       }
     when "abilities"
@@ -273,8 +315,12 @@ module Ironmon
       }
     when "evolutions"
       show_results = !visibility || visibility[:evolution_results]
+      show_obtainability = !visibility || visibility[:obtainability]
       evolution_targets = show_results ?
-        tracker_lookup_evolution_targets(species, recipe) :
+        tracker_lookup_evolution_targets(
+          species, recipe, show_obtainability,
+          payload["evolution_assignments"]
+        ) :
         { :normal => [], :head => [], :body => [] }
       generated_evolutions = tracker_evolution_recipe?(recipe)
       generated_stats = show_results ?
@@ -284,9 +330,13 @@ module Ironmon
         "current_base_stat_total" => show_results ?
           tracker_base_stat_total(generated_stats) : 0,
         "native_targets" => !show_results || generated_evolutions ?
-          [] : tracker_lookup_evolutions(species),
+          [] : tracker_lookup_evolutions(
+            species, recipe, show_obtainability
+          ),
         "native_predecessors" => !show_results || generated_evolutions ?
-          [] : tracker_lookup_previous_evolutions(species),
+          [] : tracker_lookup_previous_evolutions(
+            species, recipe, show_obtainability
+          ),
         "generated_predecessors" => [],
         "generated_targets" => evolution_targets[:normal],
         "head_targets" => evolution_targets[:head],
@@ -295,8 +345,23 @@ module Ironmon
           {} : tracker_lookup_evolution_generator(recipe)
       }
     end
-    tracker_store_bounded(tracker_lookup_cache, cache_key, result, 256)
+    tracker_store_bounded(tracker_lookup_cache, cache_key, result, 256) if
+      !tracker_response_has_calculating_obtainability?(result)
     return result
+  end
+
+  def self.tracker_response_has_calculating_obtainability?(value)
+    if value.is_a?(Array)
+      return value.any? do |entry|
+        tracker_response_has_calculating_obtainability?(entry)
+      end
+    end
+    return false if !value.is_a?(Hash)
+    return true if value["status"] == "calculating" ||
+      value["obtainability_status"] == "calculating"
+    return value.values.any? do |entry|
+      tracker_response_has_calculating_obtainability?(entry)
+    end
   end
 
   def self.tracker_fusion_preview(payload, envelope_run_id)
@@ -305,7 +370,9 @@ module Ironmon
     return tracker_fusion_preview_for_recipe(payload, recipe)
   end
 
-  def self.tracker_fusion_preview_for_recipe(payload, recipe)
+  def self.tracker_fusion_preview_for_recipe(
+    payload, recipe, obtainability = true
+  )
     first = tracker_lookup_normal_species(payload["first_species_id"])
     second = tracker_lookup_normal_species(payload["second_species_id"])
     mapper = tracker_post_run_fusion_mapper(recipe)
@@ -314,10 +381,19 @@ module Ironmon
     end
     outcomes = orientations.map do |body, head|
       result = GameData::Species.get(mapper.species(body.id, head.id))
+      service = tracker_obtainability_services[recipe["run_id"]]
+      service.prove_player_fusion_pair(body, head, result) if
+        obtainability && service
       {
-        "body" => tracker_lookup_relation(body, "Body material"),
-        "head" => tracker_lookup_relation(head, "Head material"),
-        "result" => tracker_lookup_relation(result, "Ironmon result")
+        "body" => tracker_lookup_relation(
+          body, "Body material", recipe, obtainability
+        ),
+        "head" => tracker_lookup_relation(
+          head, "Head material", recipe, obtainability
+        ),
+        "result" => tracker_lookup_relation(
+          result, "Ironmon result", recipe, obtainability
+        )
       }
     end
     return { "outcomes" => outcomes }

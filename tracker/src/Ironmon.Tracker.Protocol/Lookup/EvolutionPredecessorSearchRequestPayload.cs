@@ -28,6 +28,11 @@ public sealed class EvolutionPredecessorSearchRequestPayload
     public int Limit { get; init; } = TrackerProtocol.EvolutionPredecessorPageSize;
 
     /// <summary>
+    /// Gets or initializes the exact tracker-computed fusion predecessor assignments, or null when tracker-side assignment data is unavailable.
+    /// </summary>
+    public IReadOnlyList<EvolutionPredecessorAssignmentPayload>? PredecessorAssignments { get; init; }
+
+    /// <summary>
     /// Gets or initializes the completed-run reconstruction recipe.
     /// </summary>
     public required CompletedRunRecipePayload Recipe { get; init; }

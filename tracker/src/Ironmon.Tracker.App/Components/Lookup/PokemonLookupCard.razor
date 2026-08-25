@@ -13,7 +13,7 @@
     {
         @if (Inspector is not null)
         {
-            <DebugPokemonOverview Pokemon="@Inspector.Identity" Types="@Pokemon.Identity.Types" GameRoot="@GameRoot" />
+            <DebugPokemonOverview Pokemon="@Inspector.Identity" Types="@Pokemon.Identity.Types" ObtainabilityStatus="@(CanShowObtainability ? _obtainability.Status : null)" GameRoot="@GameRoot" />
         }
         else
         {
@@ -30,7 +30,13 @@
                 </div>
                 <div class="identity-placeholder">
                     <p class="card-kicker">@(DebugMode ? "ACTIVE DEBUG RUN" : "POST-RUN DATA")</p>
-                    <h2 class="identity-name"><span>@Pokemon.Identity.SpeciesName</span></h2>
+                    <h2 class="identity-name">
+                        <span>@Pokemon.Identity.SpeciesName</span>
+                        @if (CanShowObtainability)
+                        {
+                            <PokemonObtainabilityMark Status="@_obtainability.Status" ShowLabel="true" />
+                        }
+                    </h2>
                     <p class="typing-line">
                         @foreach (string type in Pokemon.Identity.Types)
                         {
@@ -39,42 +45,6 @@
                     </p>
                 </div>
             </div>
-        }
-
-        @if (!DebugMode)
-        {
-            <section class="obtainability-summary" aria-label="@Text["Lookup.Obtainability.Heading"]">
-                <div>
-                    <span class="@ObtainabilityCssClass">@ObtainabilityLabel</span>
-                    <span>@_obtainability.Reason</span>
-                </div>
-                @if (_obtainability.Path.Count > 0)
-                {
-                    <details>
-                        <summary>@Text["Lookup.Obtainability.ShowPath"]</summary>
-                        <ol>
-                            @foreach (string step in _obtainability.Path)
-                            {
-                                <li>@step</li>
-                            }
-                        </ol>
-                    </details>
-                }
-                @if (_obtainability.Status is PokemonObtainabilityStatus.Calculating or PokemonObtainabilityStatus.Unknown)
-                {
-                    <button type="button" disabled="@_checkingObtainability" @onclick="CheckObtainabilityAsync">
-                        @(_checkingObtainability ? Text["Lookup.Obtainability.Checking"] : Text["Lookup.Obtainability.Check"])
-                    </button>
-                }
-                @if (_checkingObtainability && _obtainabilityProgress is not null)
-                {
-                    <p>@Text["Lookup.Obtainability.Progress", _obtainabilityProgress.ProcessedPairs, _obtainabilityProgress.TotalPairs]</p>
-                }
-                @if (_obtainabilityError is not null)
-                {
-                    <p class="lookup-message error">@_obtainabilityError</p>
-                }
-            </section>
         }
 
         <PokemonLookupSupplementalData Pokemon="@Pokemon"
@@ -148,15 +118,13 @@
                                      DebugTarget="@DebugTarget"
                                      DebugEnemyPosition="@DebugEnemyPosition"
                                      GameRoot="@GameRoot"
+                                     ShowGraphAction="@(HasEvolutionResults && ActivePokemon.Evolutions is not null)"
+                                     GraphOpened="OpenEvolutionGraph"
                                      Selected="PokemonSelected" />
         }
 
         @if (HasEvolutionResults && ActivePokemon.Evolutions is not null)
         {
-            <div class="evolution-graph-action">
-                <button type="button" @onclick="OpenEvolutionGraph">@Text["Lookup.Graph.Open"]</button>
-            </div>
-
             @if (EvolutionSection.NativeTargets.Count > 0)
             {
                 <section class="lookup-relations" aria-label="@Text["Lookup.Card.EvolutionDestinations"]">

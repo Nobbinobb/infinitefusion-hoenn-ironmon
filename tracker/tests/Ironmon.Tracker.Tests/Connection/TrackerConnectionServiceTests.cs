@@ -16,7 +16,7 @@ public sealed class TrackerConnectionServiceTests
     }
 
     /// <summary>
-    /// Verifies background polling stops at either full completion or the foreground-only boundary.
+    /// Verifies background polling stops when the finite calculation reports completion.
     /// </summary>
     [Theory]
     [InlineData(false, false, false)]
@@ -27,6 +27,18 @@ public sealed class TrackerConnectionServiceTests
         PokemonObtainabilityResponsePayload response = new() { Complete = complete, BackgroundComplete = backgroundComplete };
 
         Assert.Equal(expected, TrackerConnectionService.IsObtainabilityPrecalculationFinished(response));
+    }
+
+    /// <summary>
+    /// Verifies an adapter failure stops repeated background requests for the same run.
+    /// </summary>
+    [Fact]
+    public void ObtainabilityPrecalculationRecognizesTerminalAdapterFailure()
+    {
+        TrackerProtocolException exception = new("obtainability_incomplete", "An acquisition source could not be classified.");
+
+        Assert.True(TrackerConnectionService.IsObtainabilityPrecalculationTerminalFailure(exception));
+        Assert.False(TrackerConnectionService.IsObtainabilityPrecalculationTerminalFailure(new TrackerProtocolException("timeout", "Try again.")));
     }
 
     /// <summary>
@@ -408,7 +420,16 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal(PokemonLookupSection.Overview, lookupPayload.Section);
         PokemonLookupSnapshot lookupResponse = new()
         {
-            Identity = new PokemonLookupIdentitySnapshot { SpeciesId = "CHARMANDER:0", SpeciesName = "Charmander", Types = ["FIRE"] },
+            Identity = new PokemonLookupIdentitySnapshot
+            {
+                SpeciesId = "CHARMANDER:0",
+                SpeciesName = "Charmander",
+                Types = ["FIRE"],
+                Obtainability = new PokemonObtainabilitySnapshot
+                {
+                    Status = PokemonObtainabilityStatus.Obtainable
+                }
+            },
             Overview = new PokemonLookupOverviewSnapshot
             {
                 WildOccurrences = new WildOccurrenceSearchResponsePayload

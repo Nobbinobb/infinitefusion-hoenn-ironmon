@@ -31,4 +31,9 @@ public sealed class PokemonRelationSnapshot
     /// Gets or initializes the relationship or evolution requirement shown beneath the name.
     /// </summary>
     public required string Label { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the passive run-obtainability state when that information domain is available.
+    /// </summary>
+    public PokemonObtainabilityStatus? ObtainabilityStatus { get; init; }
 }

@@ -4,8 +4,14 @@
 
 module Ironmon
   AREA_CATALOG_PATH = File.join("Data", "Ironmon", "area_catalog.dat")
+  OBTAINABILITY_SOURCE_CATALOG_PATH = File.join(
+    "Data", "Ironmon", "obtainability_source_catalog.json"
+  )
 
   class AreaCatalogError < StandardError
+  end
+
+  class ObtainabilitySourceCatalogError < StandardError
   end
 
   def self.tracker_area_catalog_document
@@ -23,6 +29,33 @@ module Ironmon
 
   def self.tracker_area_catalog
     return tracker_area_catalog_document["areas"]
+  end
+
+  def self.tracker_obtainability_source_catalog
+    return @tracker_obtainability_source_catalog if
+      @tracker_obtainability_source_catalog
+    document = File.open(OBTAINABILITY_SOURCE_CATALOG_PATH, "rb") do |file|
+      tracker_stringify_catalog_keys(JSON.parse(file.read))
+    end
+    tracker_validate_obtainability_source_catalog(document)
+    @tracker_obtainability_source_catalog = document
+    return @tracker_obtainability_source_catalog
+  rescue Exception => e
+    raise ObtainabilitySourceCatalogError,
+      "The bundled obtainability source catalog is unavailable: #{e.message}"
+  end
+
+  def self.tracker_stringify_catalog_keys(value)
+    if value.is_a?(Hash)
+      result = {}
+      value.each do |key, entry|
+        result[key.to_s] = tracker_stringify_catalog_keys(entry)
+      end
+      return result
+    end
+    return value.map { |entry| tracker_stringify_catalog_keys(entry) } if
+      value.is_a?(Array)
+    return value
   end
 
   def self.tracker_area_event_entry_id(category, map_id, event_id)
@@ -59,7 +92,7 @@ module Ironmon
   end
 
   def self.tracker_validate_area_catalog(document)
-    if !document.is_a?(Hash) || document["schema_version"] != 1 ||
+    if !document.is_a?(Hash) || document["schema_version"].to_i != 1 ||
        !document["areas"].is_a?(Array)
       raise "unsupported area catalog schema"
     end
@@ -81,6 +114,31 @@ module Ironmon
         raise "an area content entry is malformed" if entry_id.empty?
         raise "duplicate area content identifier" if entry_ids[entry_id]
         entry_ids[entry_id] = true
+      end
+    end
+    return true
+  end
+
+  def self.tracker_validate_obtainability_source_catalog(document)
+    if !document.is_a?(Hash) || document["schema_version"] != 1 ||
+       document["fingerprint"].to_s.empty? ||
+       !document["sources"].is_a?(Array) ||
+       !document["resources"].is_a?(Array)
+      raise "unsupported obtainability source catalog schema"
+    end
+    document["sources"].each do |entry|
+      if !entry.is_a?(Hash) || entry["species_id"].to_i < 1 ||
+         !["none", "wild"].include?(entry["mapping_kind"].to_s) ||
+         !entry["mapping_context"].is_a?(Array) ||
+         entry["reason"].to_s.empty? || entry["detail"].to_s.empty?
+        raise "an obtainability source catalog entry is malformed"
+      end
+    end
+    document["resources"].each do |entry|
+      if !entry.is_a?(Hash) || !entry["item_ids"].is_a?(Array) ||
+         entry["item_ids"].empty? || entry["quantity"].to_i < 1 ||
+         entry["slot_id"].to_s.empty?
+        raise "an obtainability resource catalog entry is malformed"
       end
     end
     return true

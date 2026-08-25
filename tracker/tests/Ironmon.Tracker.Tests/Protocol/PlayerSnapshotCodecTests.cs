@@ -57,6 +57,35 @@ public sealed class PlayerSnapshotCodecTests
     }
 
     /// <summary>
+    /// Verifies current-state recovery preserves the authorized native fusion assignment recipe.
+    /// </summary>
+    [Fact]
+    public void CurrentStateRoundTripsFusionAssignmentRecipe()
+    {
+        FusionAssignmentRecipePayload recipe = new()
+        {
+            Seed = 42,
+            PlayerFusionGeneratorVersion = 3,
+            GeneratorVersion = 4,
+            RulesVersion = 2,
+            SourceFingerprint = "sources",
+            TaxonomyFingerprint = "taxonomy",
+            MethodFingerprint = "methods",
+            BaseStatSourceFingerprint = "stats",
+            TargetPoolVersion = 3,
+            TargetPoolSize = 10,
+            TargetPoolFingerprint = "targets"
+        };
+        GameCurrentStatePayload state = new(true, "run-1", null, 9, fusionAssignments: recipe);
+
+        GameCurrentStatePayload restored = TrackerJson.DeserializePayload<GameCurrentStatePayload>(TrackerJson.SerializePayload(state));
+
+        Assert.Equal(42, restored.FusionAssignments?.Seed);
+        Assert.Equal(3, restored.FusionAssignments?.PlayerFusionGeneratorVersion);
+        Assert.Equal("targets", restored.FusionAssignments?.TargetPoolFingerprint);
+    }
+
+    /// <summary>
     /// Verifies evolution requirements cannot reveal the destination species through the protocol.
     /// </summary>
     [Fact]

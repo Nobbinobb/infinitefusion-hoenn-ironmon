@@ -3,33 +3,66 @@
 #===============================================================================
 
 module Ironmon
-  def self.tracker_lookup_fusion_bases(species)
+  def self.tracker_lookup_fusion_bases(species, recipe = nil,
+                                       obtainability = false)
     return [] if !species.is_a?(GameData::FusedSpecies)
     return [
-      tracker_lookup_relation(species.body_pokemon, "Body component"),
-      tracker_lookup_relation(species.head_pokemon, "Head component")
+      tracker_lookup_relation(
+        species.body_pokemon, "Body component", recipe, obtainability
+      ),
+      tracker_lookup_relation(
+        species.head_pokemon, "Head component", recipe, obtainability
+      )
     ]
   end
 
-  def self.tracker_lookup_reverse_fusion(species, mapper)
+  def self.tracker_lookup_reverse_fusion(species, mapper, recipe = nil,
+                                         obtainability = false)
     return nil if !species.is_a?(GameData::FusedSpecies)
     reverse = GameData::Species.get(mapper.paired_species(species.id))
-    return tracker_lookup_relation(reverse, "Ironmon reverse")
+    return tracker_lookup_relation(
+      reverse, "Ironmon reverse", recipe, obtainability
+    )
   end
 
-  def self.tracker_lookup_fusion_materials(species, mapper, offset, limit)
+  def self.tracker_lookup_fusion_materials(
+    species, mapper, offset, limit, recipe = nil, obtainability = false
+  )
     return { "matches" => [], "total" => 0 } if
       !species.is_a?(GameData::FusedSpecies)
     pairs = mapper.material_pairs_for(species.id)
-    matches = (pairs.slice(offset, limit) || []).map do |body_id, head_id|
+    return tracker_format_fusion_material_pairs(
+      pairs.slice(offset, limit) || [], pairs.length, recipe, obtainability
+    )
+  end
+
+  def self.tracker_lookup_fusion_material_assignments(
+    assignments, total, recipe = nil, obtainability = false
+  )
+    pairs = assignments.map do |assignment|
+      [assignment["body_id"].to_i, assignment["head_id"].to_i]
+    end
+    return tracker_format_fusion_material_pairs(
+      pairs, total, recipe, obtainability
+    )
+  end
+
+  def self.tracker_format_fusion_material_pairs(
+    pairs, total, recipe = nil, obtainability = false
+  )
+    matches = pairs.map do |body_id, head_id|
       body = GameData::Species.get(body_id)
       head = GameData::Species.get(head_id)
       {
-        "body" => tracker_lookup_relation(body, "Body material"),
-        "head" => tracker_lookup_relation(head, "Head material")
+        "body" => tracker_lookup_relation(
+          body, "Body material", recipe, obtainability
+        ),
+        "head" => tracker_lookup_relation(
+          head, "Head material", recipe, obtainability
+        )
       }
     end
-    return { "matches" => matches, "total" => pairs.length }
+    return { "matches" => matches, "total" => total }
   end
 
   def self.tracker_post_run_fusion_mapper(recipe)
@@ -60,23 +93,6 @@ module Ironmon
     )
   end
 
-  def self.tracker_obtainability_fusion_evolution_generator(
-    recipe, work_checkpoint = nil
-  )
-    stat_generator = if tracker_loaded_recipe?(recipe)
-                       base_stat_generator
-                     else
-                       base_stat_generator_for(
-                         recipe["seed"],
-                         recipe["evolution_base_stat_source_fingerprint"]
-                       )
-                     end
-    return FusionEvolutionGenerator.new(
-      recipe["seed"], evolution_catalog, custom_fusion_pool,
-      custom_fusion_pool_info, stat_generator, work_checkpoint
-    )
-  end
-
   def self.tracker_lookup_normal_species(species_id)
     species_key = species_id.to_s.split(":", 2)[0]
     species = GameData::Species.try_get(species_key.to_sym)
@@ -87,13 +103,19 @@ module Ironmon
     return species
   end
 
-  def self.tracker_lookup_relation(species, label)
-    return {
+  def self.tracker_lookup_relation(species, label, recipe = nil,
+                                   obtainability = false)
+    result = {
       "species_id" => "#{species.id}:0",
       "species_name" => species.name,
       "sprite_path" => tracker_lookup_sprite_path(species),
       "label" => label
     }
+    if recipe && obtainability
+      result["obtainability_status"] =
+        tracker_obtainability_status(species, recipe)
+    end
+    return result
   end
 
   def self.tracker_lookup_sprite_path(species)

@@ -90,6 +90,18 @@ public partial class EvolutionCandidateList
     public string? GameRoot { get; set; }
 
     /// <summary>
+    /// Gets or sets whether the compact graph action is available.
+    /// </summary>
+    [Parameter]
+    public bool ShowGraphAction { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback invoked when the evolution graph is opened.
+    /// </summary>
+    [Parameter]
+    public EventCallback GraphOpened { get; set; }
+
+    /// <summary>
     /// Gets or sets the callback invoked when a candidate is selected.
     /// </summary>
     [Parameter]

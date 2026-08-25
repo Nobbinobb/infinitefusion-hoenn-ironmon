@@ -1,4 +1,4 @@
-# Ironmon 0.7.9
+# Ironmon 0.8.0
 
 This distribution targets Pokemon Infinite Fusion 2 version 6.8.0.
 
@@ -6,10 +6,11 @@ Copy the included `Data` directory into the game directory and merge it with
 the existing `Data` directory. Only Ruby files are installed beneath
 `Data/Scripts/997_Ironmon`.
 
-Version 0.7.9 includes the cumulative Ironmon mechanics, progressively loaded
-generated-evolution neighborhoods, paged fusion reconstruction, and the compact
-tracker interface. Seeded-run sharing, battle-item control, aggregate type
-coverage, and signed, optionally expiring diagnostic access remain available.
+Version 0.8.0 includes the cumulative Ironmon mechanics, run-aware Pokémon
+obtainability, native tracker-owned fusion closure and reverse indexes, and the
+compact generated-evolution graph. Seeded-run sharing, battle-item control,
+aggregate type coverage, and signed, optionally expiring diagnostic access
+remain available.
 The player package contains no maintainer generator, release-data generator,
 audit, or private signing-key material.
 

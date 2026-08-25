@@ -4,9 +4,13 @@
 
 <main class="tracker-shell" tabindex="0" @onkeydown="HandleKeyDown">
     <header class="tracker-header">
-        <div class="connection-state" role="status" title="@GetConnectionDetail()">
+        <div class="connection-state" role="status" title="@GetConnectionDetail()" aria-label="@GetConnectionAccessibleText()">
             <span class="@GetConnectionDotClass()" aria-hidden="true"></span>
             <span>@GetConnectionText()</span>
+            @if (_obtainabilityProgress.Status == TrackerObtainabilityProgressStatus.Running)
+            {
+                <span class="connection-work-spinner" aria-hidden="true"></span>
+            }
         </div>
         <div class="header-actions" role="group" aria-label="@Text["App.Shell.ToolsLabel"]">
             <button class="@GetAccessButtonClass()" type="button" aria-label="@Text["Access.Page.Open"]" aria-pressed="@_accessOpen" title="@Text["Access.Page.Title"]" @onclick="ToggleAccess">

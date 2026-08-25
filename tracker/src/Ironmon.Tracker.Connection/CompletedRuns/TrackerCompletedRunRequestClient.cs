@@ -52,7 +52,8 @@ internal sealed class TrackerCompletedRunRequestClient
 
         PokemonSearchRequestPayload payload = new() { Query = normalizedQuery, Offset = offset, Limit = limit, NormalOnly = normalOnly, Recipe = recipe };
         PokemonSearchResponsePayload response = await _session.SendAsync<PokemonSearchRequestPayload, PokemonSearchResponsePayload>(TrackerCommands.PokemonSearch, payload, recipe.RunId, cancellationToken);
-        _cache.Set(TrackerCommands.PokemonSearch, cacheKey, response);
+        if (response.Matches.All(match => match.ObtainabilityStatus != PokemonObtainabilityStatus.Calculating))
+            _cache.Set(TrackerCommands.PokemonSearch, cacheKey, response);
         return response;
     }
 
@@ -72,7 +73,11 @@ internal sealed class TrackerCompletedRunRequestClient
         if (_cache.TryGet(TrackerCommands.PokemonLookup, cacheKey, out PokemonLookupSnapshot cached))
             return cached;
 
-        PokemonLookupRequestPayload payload = new() { SpeciesId = speciesId, Level = TrackerProtocol.CompatibilityLookupLevel, Section = section, Recipe = recipe };
+        IReadOnlyList<EvolutionTargetAssignmentPayload>? evolutionAssignments = section == PokemonLookupSection.Evolutions
+            ? _fusionMappings.GetEvolutionTargetAssignments(recipe, speciesId)
+            : null;
+
+        PokemonLookupRequestPayload payload = new() { SpeciesId = speciesId, Level = TrackerProtocol.CompatibilityLookupLevel, Section = section, EvolutionAssignments = evolutionAssignments, Recipe = recipe };
         PokemonLookupSnapshot response = await _session.SendAsync<PokemonLookupRequestPayload, PokemonLookupSnapshot>(TrackerCommands.PokemonLookup, payload, recipe.RunId, cancellationToken);
         if (response.Identity.Obtainability.Status != PokemonObtainabilityStatus.Calculating)
             _cache.Set(TrackerCommands.PokemonLookup, cacheKey, response);
@@ -87,9 +92,10 @@ internal sealed class TrackerCompletedRunRequestClient
     /// <param name="speciesIds">The bounded identifiers whose proven membership should be returned.</param>
     /// <param name="evolutionEdgeKeys">The bounded evolution connections whose possible membership should be returned.</param>
     /// <param name="foreground">Whether the game should temporarily prioritize this run's calculation.</param>
+    /// <param name="progress">The optional observer for intermediate calculation responses.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The current shared calculation state.</returns>
-    internal async Task<PokemonObtainabilityResponsePayload> AdvanceObtainabilityAsync(CompletedRunRecipePayload recipe, string? speciesId, IReadOnlyList<string>? speciesIds, IReadOnlyList<string>? evolutionEdgeKeys, bool foreground, CancellationToken cancellationToken)
+    internal async Task<PokemonObtainabilityResponsePayload> AdvanceObtainabilityAsync(CompletedRunRecipePayload recipe, string? speciesId, IReadOnlyList<string>? speciesIds, IReadOnlyList<string>? evolutionEdgeKeys, bool foreground, Action<PokemonObtainabilityResponsePayload>? progress, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(recipe);
         IReadOnlyList<string> requestedSpeciesIds = speciesIds ?? [];
@@ -102,18 +108,21 @@ internal sealed class TrackerCompletedRunRequestClient
 
         PokemonObtainabilityRequestPayload request = new() { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, Recipe = recipe };
         PokemonObtainabilityResponsePayload response = await _session.SendAsync<PokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.PokemonObtainability, request, recipe.RunId, cancellationToken);
-        while (response.FusionMappingWork is not null)
+        progress?.Invoke(response);
+        while (response.FusionClosureWork is not null)
         {
-            PlayerFusionMappingBatchPayload? batch = await _fusionMappings.CreateBatchAsync(response.FusionMappingWork, foreground, cancellationToken).ConfigureAwait(false);
-            if (batch is not null)
+            PlayerFusionClosureResultPayload? result = await _fusionMappings.CreateResultAsync(response.FusionClosureWork, cancellationToken, recipe.RunId).ConfigureAwait(false);
+            if (result is not null)
             {
-                request = new PokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, FusionMappingBatch = batch, Recipe = recipe };
+                request = new PokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, FusionClosureResult = result, Recipe = recipe };
                 response = await _session.SendAsync<PokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.PokemonObtainability, request, recipe.RunId, cancellationToken);
+                progress?.Invoke(response);
             }
             else
             {
-                request = new PokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, FusionMappingWorkerUnavailable = true, Recipe = recipe };
+                request = new PokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, FusionClosureWorkerUnavailable = true, Recipe = recipe };
                 response = await _session.SendAsync<PokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.PokemonObtainability, request, recipe.RunId, cancellationToken);
+                progress?.Invoke(response);
             }
 
             if (!foreground)
@@ -145,9 +154,12 @@ internal sealed class TrackerCompletedRunRequestClient
         if (_cache.TryGet(TrackerCommands.EvolutionCandidateSearch, cacheKey, out EvolutionCandidateSearchResponsePayload cached))
             return cached;
 
-        EvolutionCandidateSearchRequestPayload request = new() { SpeciesId = speciesId, Side = side, Query = normalizedQuery, Offset = offset, Recipe = recipe };
+        byte[]? candidateAssignments = _fusionMappings.GetEvolutionCandidateAssignments(recipe, speciesId, side);
+        EvolutionCandidateSearchRequestPayload request = new() { SpeciesId = speciesId, Side = side, Query = normalizedQuery, Offset = offset, PackedCandidateAssignments = candidateAssignments, Recipe = recipe };
         EvolutionCandidateSearchResponsePayload response = await _session.SendAsync<EvolutionCandidateSearchRequestPayload, EvolutionCandidateSearchResponsePayload>(TrackerCommands.EvolutionCandidateSearch, request, recipe.RunId, cancellationToken);
-        _cache.Set(TrackerCommands.EvolutionCandidateSearch, cacheKey, response);
+        if (response.Matches.All(match => match.ObtainabilityStatus != PokemonObtainabilityStatus.Calculating))
+            _cache.Set(TrackerCommands.EvolutionCandidateSearch, cacheKey, response);
+
         return response;
     }
 
@@ -171,9 +183,16 @@ internal sealed class TrackerCompletedRunRequestClient
         if (_cache.TryGet(TrackerCommands.EvolutionPredecessorSearch, cacheKey, out EvolutionPredecessorSearchResponsePayload cached))
             return cached;
 
-        EvolutionPredecessorSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset, Limit = limit, Recipe = recipe };
+        IReadOnlyList<EvolutionPredecessorAssignmentPayload>? predecessorAssignments = await _fusionMappings.GetEvolutionPredecessorAssignmentsAsync(recipe, speciesId, cancellationToken).ConfigureAwait(false);
+        int requestLimit = predecessorAssignments is null
+            ? limit
+            : Math.Min(TrackerProtocol.MaximumSearchPageSize, Math.Max(limit, predecessorAssignments.Count - offset));
+
+        EvolutionPredecessorSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset, Limit = requestLimit, PredecessorAssignments = predecessorAssignments, Recipe = recipe };
         EvolutionPredecessorSearchResponsePayload response = await _session.SendAsync<EvolutionPredecessorSearchRequestPayload, EvolutionPredecessorSearchResponsePayload>(TrackerCommands.EvolutionPredecessorSearch, request, recipe.RunId, cancellationToken);
-        _cache.Set(TrackerCommands.EvolutionPredecessorSearch, cacheKey, response);
+        if (response.Matches.All(match => match.ObtainabilityStatus != PokemonObtainabilityStatus.Calculating))
+            _cache.Set(TrackerCommands.EvolutionPredecessorSearch, cacheKey, response);
+
         return response;
     }
 
@@ -194,9 +213,20 @@ internal sealed class TrackerCompletedRunRequestClient
         if (_cache.TryGet(TrackerCommands.FusionMaterialSearch, cacheKey, out FusionMaterialSearchResponsePayload cached))
             return cached;
 
-        FusionMaterialSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset, Recipe = recipe };
+        PlayerFusionMaterialPage? assignments = await _fusionMappings.GetFusionMaterialAssignmentsAsync(recipe, speciesId, offset, TrackerProtocol.FusionMaterialPageSize, cancellationToken).ConfigureAwait(false);
+        FusionMaterialSearchRequestPayload request = new()
+        {
+            SpeciesId = speciesId,
+            Offset = offset,
+            MaterialAssignments = assignments?.Assignments,
+            MaterialAssignmentTotal = assignments?.Total,
+            Recipe = recipe
+        };
+
         FusionMaterialSearchResponsePayload response = await _session.SendAsync<FusionMaterialSearchRequestPayload, FusionMaterialSearchResponsePayload>(TrackerCommands.FusionMaterialSearch, request, recipe.RunId, cancellationToken);
-        _cache.Set(TrackerCommands.FusionMaterialSearch, cacheKey, response);
+        if (response.Matches.All(match => match.Body.ObtainabilityStatus != PokemonObtainabilityStatus.Calculating && match.Head.ObtainabilityStatus != PokemonObtainabilityStatus.Calculating))
+            _cache.Set(TrackerCommands.FusionMaterialSearch, cacheKey, response);
+
         return response;
     }
 
@@ -265,7 +295,14 @@ internal sealed class TrackerCompletedRunRequestClient
 
         FusionPreviewRequestPayload payload = new() { FirstSpeciesId = firstSpeciesId, SecondSpeciesId = secondSpeciesId, Recipe = recipe };
         FusionPreviewResponsePayload response = await _session.SendAsync<FusionPreviewRequestPayload, FusionPreviewResponsePayload>(TrackerCommands.FusionPreview, payload, recipe.RunId, cancellationToken);
-        _cache.Set(TrackerCommands.FusionPreview, cacheKey, response);
+        if (response.Outcomes.All(outcome =>
+            outcome.Body.ObtainabilityStatus != PokemonObtainabilityStatus.Calculating
+            && outcome.Head.ObtainabilityStatus != PokemonObtainabilityStatus.Calculating
+            && outcome.Result.ObtainabilityStatus != PokemonObtainabilityStatus.Calculating))
+        {
+            _cache.Set(TrackerCommands.FusionPreview, cacheKey, response);
+        }
+
         return response;
     }
 }

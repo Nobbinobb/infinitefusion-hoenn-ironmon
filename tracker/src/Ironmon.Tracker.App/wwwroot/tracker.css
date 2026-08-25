@@ -125,6 +125,29 @@ h1 {
     box-shadow: 0 0 0 0.2rem rgb(240 139 160 / 13%);
 }
 
+.connection-work-spinner {
+    width: 0.58rem;
+    height: 0.58rem;
+    border: 0.11rem solid rgb(183 164 255 / 28%);
+    border-top-color: var(--accent-soft);
+    border-radius: 50%;
+    animation: connection-work-spin 0.75s linear infinite;
+}
+
+@keyframes connection-work-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .connection-work-spinner {
+        animation: none;
+        border-color: var(--accent-soft);
+        border-right-color: transparent;
+    }
+}
+
 .view-tabs {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2795,9 +2818,31 @@ button.move-placeholder:hover {
     gap: 0.6rem;
 }
 
-.evolution-candidate-heading > span {
+.evolution-candidate-heading-actions {
+    display: flex;
+    align-items: baseline;
+    gap: 0.55rem;
+}
+
+.evolution-candidate-heading-actions > span {
     color: var(--muted);
     font-size: 0.62rem;
+}
+
+.evolution-candidate-graph-action {
+    padding: 0;
+    border: 0;
+    color: var(--accent-soft);
+    background: transparent;
+    font: inherit;
+    font-size: 0.64rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.evolution-candidate-graph-action:hover {
+    color: var(--text);
+    text-decoration: underline;
 }
 
 .evolution-candidate-search {
@@ -2821,11 +2866,6 @@ button.move-placeholder:hover {
     min-height: 0;
 }
 
-.evolution-graph-action {
-    display: flex;
-}
-
-.evolution-graph-action button,
 .evolution-graph-dialog-error button {
     padding: 0.55rem 0.8rem;
     border: 1px solid var(--border-strong);
@@ -3120,6 +3160,7 @@ button.move-placeholder:hover {
 }
 
 .evolution-target {
+    position: relative;
     display: grid;
     grid-template-columns: 2.75rem minmax(0, 1fr);
     align-items: center;
@@ -3173,6 +3214,17 @@ button.move-placeholder:hover {
     display: grid;
     gap: 0.18rem;
     min-width: 0;
+    padding-right: 0.7rem;
+}
+
+.evolution-target > .pokemon-obtainability-mark {
+    position: absolute;
+    top: 0.42rem;
+    right: 0.6rem;
+}
+
+.evolution-target-shell:has(.evolution-target-open) .evolution-target > .pokemon-obtainability-mark {
+    right: 2.05rem;
 }
 
 .evolution-target-copy strong {
@@ -3340,6 +3392,7 @@ button.move-placeholder:hover {
 }
 
 .lookup-relation {
+    position: relative;
     display: grid;
     grid-template-columns: 3rem minmax(0, 1fr);
     align-items: center;
@@ -3380,6 +3433,13 @@ button.move-placeholder:hover {
     display: grid;
     gap: 0.18rem;
     min-width: 0;
+    padding-right: 0.65rem;
+}
+
+.lookup-relation > .pokemon-obtainability-mark {
+    position: absolute;
+    top: 0.42rem;
+    right: 0.48rem;
 }
 
 .lookup-relation-copy strong {
@@ -3424,6 +3484,14 @@ button.move-placeholder:hover {
     text-align: left;
 }
 
+.lookup-result-heading {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+}
+
 .lookup-results button:hover,
 .lookup-abilities button:hover {
     border-color: var(--accent-soft);
@@ -3434,6 +3502,30 @@ button.move-placeholder:hover {
     font-size: 0.76rem;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.pokemon-obtainability-mark {
+    flex: 0 0 auto;
+    overflow: visible;
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.pokemon-obtainability-mark.obtainable {
+    color: #78dfaa;
+}
+
+.pokemon-obtainability-mark.unobtainable {
+    color: #ff8c91;
+}
+
+.pokemon-obtainability-mark.calculating {
+    color: var(--muted);
+}
+
+.lookup-results .pokemon-obtainability-mark {
+    font-size: 0.74rem;
 }
 
 .lookup-results span {
@@ -4359,34 +4451,16 @@ button.move-placeholder:hover {
     margin: 0;
 }
 
-.obtainability-summary {
-    display: grid;
-    gap: 0.45rem;
-    margin: 0.65rem 0;
-    padding: 0.65rem 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 0.65rem;
-    background: color-mix(in srgb, var(--surface-soft) 88%, var(--accent) 12%);
-    font-size: 0.72rem;
-}
-
-.obtainability-summary > div {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-}
-
-.obtainability-summary p,
-.obtainability-summary ol {
-    margin: 0;
-}
-
 .obtainability-state {
     flex: 0 0 auto;
     padding: 0.16rem 0.45rem;
     border-radius: 999px;
     font-weight: 700;
     background: var(--surface-raised);
+}
+
+.identity-name .obtainability-state {
+    font-size: 0.62rem;
 }
 
 .obtainability-state.obtainable {
@@ -4397,8 +4471,7 @@ button.move-placeholder:hover {
     color: #ff8c91;
 }
 
-.obtainability-state.calculating,
-.obtainability-state.unknown {
+.obtainability-state.calculating {
     color: var(--muted);
 }
 

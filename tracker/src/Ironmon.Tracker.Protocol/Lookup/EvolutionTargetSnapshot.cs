@@ -46,4 +46,9 @@ public sealed class EvolutionTargetSnapshot
     /// Gets or initializes every effective evolution-method label for the destination branch.
     /// </summary>
     public IReadOnlyList<string> EffectiveMethods { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes the passive run-obtainability state when that information domain is available.
+    /// </summary>
+    public PokemonObtainabilityStatus? ObtainabilityStatus { get; init; }
 }

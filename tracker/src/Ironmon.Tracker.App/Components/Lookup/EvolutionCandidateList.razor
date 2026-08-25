@@ -1,10 +1,16 @@
 <section class="evolution-targets" aria-label="@AriaLabel">
     <header class="evolution-candidate-heading">
         <p class="section-label">@Heading</p>
-        @if (!_loading)
-        {
-            <span>@Text["Lookup.Candidates.Total", _total]</span>
-        }
+        <div class="evolution-candidate-heading-actions">
+            @if (!_loading)
+            {
+                <span>@Text["Lookup.Candidates.Total", _total]</span>
+            }
+            @if (ShowGraphAction)
+            {
+                <button type="button" class="evolution-candidate-graph-action" @onclick="GraphOpened">@Text["Lookup.Graph.OpenShort"]</button>
+            }
+        </div>
     </header>
     @if (ShowFilter)
     {

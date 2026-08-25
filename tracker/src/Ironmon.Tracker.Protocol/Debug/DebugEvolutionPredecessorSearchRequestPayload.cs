@@ -36,4 +36,9 @@ public sealed class DebugEvolutionPredecessorSearchRequestPayload
     /// Gets or initializes the maximum number of predecessors to return.
     /// </summary>
     public int Limit { get; init; } = TrackerProtocol.EvolutionPredecessorPageSize;
+
+    /// <summary>
+    /// Gets or initializes the exact tracker-computed fusion predecessor assignments, or null when the active background assignment job is unavailable.
+    /// </summary>
+    public IReadOnlyList<EvolutionPredecessorAssignmentPayload>? PredecessorAssignments { get; init; }
 }

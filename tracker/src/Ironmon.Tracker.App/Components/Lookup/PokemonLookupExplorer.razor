@@ -23,7 +23,10 @@
             @foreach (PokemonSearchMatch match in _matches)
             {
                 <button type="button" disabled="@_loading" @onclick="() => NavigateToPokemonAsync(match)">
-                    <strong>@match.SpeciesName</strong>
+                    <div class="lookup-result-heading">
+                        <strong>@match.SpeciesName</strong>
+                        <PokemonObtainabilityMark Status="@match.ObtainabilityStatus" />
+                    </div>
                     <span>@match.SpeciesId</span>
                 </button>
             }

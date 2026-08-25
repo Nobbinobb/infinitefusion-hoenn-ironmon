@@ -1375,7 +1375,7 @@ Status: **Awaiting review**
 
 ## Ironmon 0.7.5 navigation and lookup composition
 
-Status: **Implemented; awaiting review**
+Status: **Implemented**
 
 - Replaced conditional Debug navigation with four permanent Player, Enemy,
   Lookup, and Archive views.
@@ -1509,3 +1509,30 @@ Status: **Implemented and released**
 - Collapsed long settings, access grants, and protocol JSON content by default
   and standardized arrow-free disclosure headers.
 - All 201 tracker tests and the complete bundled-runtime release suite pass.
+
+## Ironmon 0.8.0 native obtainability and evolution performance
+
+Status: **Implemented and released**
+
+- Added exact run-aware obtainability marks across Pokémon Lookup, fusion
+  outcomes, evolution candidates and destinations, and generated graph nodes.
+- Moved player-fusion material mapping, fusion-evolution assignment,
+  resource-aware proof closure, executable-edge indexing, and fusion-material
+  reverse lookup into cached native tracker jobs.
+- Added release-generated acquisition/resource semantics so the game runtime
+  prepares compact proof inputs without rescanning map event pages.
+- Added active-run background preparation and run-isolated archived jobs so
+  graph, candidate, and material requests reuse the correct run’s native index.
+- Reduced the game/tracker handoff to one atomic fusion-closure result and
+  removed the retired progressive Ruby batch, target-resolution, and fallback
+  implementations.
+- Optimized the first Evolutions, candidate, graph, and fusion-material loads;
+  refreshed graph marks in place; and added compact background progress to the
+  connection indicator.
+- All 246 tracker tests and the complete bundled-game runtime suite pass. The
+  release pipeline regenerated and validated the area, type-coverage, fusion
+  predecessor, item, obtainability-source, and player-fusion worker catalogs.
+- Released equivalent Windows x64 packages: the self-contained archive has
+  SHA-256 `d927ff54d54a1ca2b405e5b88496706ebb33925dcb42f7cc48aee853c89d0ebd`;
+  the runtime-required archive has SHA-256
+  `c3bf083b2b62ceea2ada03072422d7c2f56b45af71f3ee51fac13b0aaaf5ca4a`.

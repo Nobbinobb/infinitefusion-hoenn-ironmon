@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <EmbeddedResource Include="..\..\..\data\obtainability_source_catalog.json" LogicalName="Ironmon.Tracker.Connection.Resources.obtainability_source_catalog.json" />
     <EmbeddedResource Include="..\..\..\data\player_fusion_worker_catalog.json" LogicalName="Ironmon.Tracker.Connection.Resources.player_fusion_worker_catalog.json" />
   </ItemGroup>
   <ItemGroup>

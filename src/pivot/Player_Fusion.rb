@@ -173,6 +173,8 @@ module Ironmon
       append_cached_material_pairs(species_id, pairs, seen)
       (1..NB_POKEMON).each do |first_id|
         (first_id..NB_POKEMON).each do |second_id|
+          @work_checkpoint.call if @work_checkpoint &&
+            (second_id % 32).zero?
           pair = [first_id, second_id]
           result_ids = schema_3_result_ids_at_pair(
             pair, fusion_pair_index

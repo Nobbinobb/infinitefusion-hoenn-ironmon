@@ -92,11 +92,18 @@ module Ironmon
       fusion_pool[:fingerprint]
   end
 
-  def self.tracker_lookup_evolution_targets(species, recipe)
+  def self.tracker_lookup_evolution_targets(
+    species, recipe, obtainability = true, assignments = nil
+  )
     empty = { :normal => [], :head => [], :body => [] }
     return empty if !tracker_evolution_recipe?(recipe)
     branches = if normal_evolution_runtime_species?(species)
                  tracker_normal_evolution_generator(recipe).branches_for(species)
+               elsif fusion_evolution_runtime_species?(species) &&
+                     assignments.is_a?(Array)
+                 tracker_fusion_evolution_targets_for_assignments(
+                   species, assignments
+                 )
                elsif fusion_evolution_runtime_species?(species)
                  tracker_fusion_evolution_generator(recipe).branches_for(species)
                else
@@ -108,12 +115,16 @@ module Ironmon
       group = branch[:component_side] || :normal
       next if seen[group][branch[:target]]
       seen[group][branch[:target]] = true
-      result[group] << tracker_evolution_target_snapshot(branch)
+      result[group] << tracker_evolution_target_snapshot(
+        branch, recipe, obtainability
+      )
     end
     return result
   end
 
-  def self.tracker_lookup_evolution_predecessors(species, recipe)
+  def self.tracker_lookup_evolution_predecessors(
+    species, recipe, obtainability = true
+  )
     return [] if !normal_evolution_runtime_species?(species)
     return [] if !tracker_evolution_recipe?(recipe)
     generator = tracker_normal_evolution_generator(recipe)
@@ -121,17 +132,24 @@ module Ironmon
     generator.graph.each_value do |branches|
       branches.each do |branch|
         next if branch[:target] != species.id.to_s
-        predecessors << tracker_evolution_predecessor_snapshot(branch)
+        predecessors << tracker_evolution_predecessor_snapshot(
+          branch, recipe, obtainability
+        )
       end
     end
     return predecessors.sort_by { |entry| entry["species_id"] }
   end
 
-  def self.tracker_lookup_evolution_predecessor_page(species, recipe, offset, limit)
+  def self.tracker_lookup_evolution_predecessor_page(
+    species, recipe, offset, limit, obtainability = true,
+    predecessor_assignments = nil
+  )
     return tracker_empty_evolution_predecessor_page(offset, limit) if
       !tracker_evolution_recipe?(recipe)
     if normal_evolution_runtime_species?(species)
-      predecessors = tracker_lookup_evolution_predecessors(species, recipe)
+      predecessors = tracker_lookup_evolution_predecessors(
+        species, recipe, obtainability
+      )
       matches = predecessors.slice(offset, limit) || []
       continuation = offset + limit < predecessors.length ?
         "available" : "complete"
@@ -145,12 +163,19 @@ module Ironmon
     end
     return tracker_empty_evolution_predecessor_page(offset, limit) if
       !fusion_evolution_runtime_species?(species)
-    page = tracker_fusion_evolution_generator(recipe).predecessor_page_for(
-      species, offset, limit
-    )
+    generator = tracker_fusion_evolution_generator(recipe)
+    page = if predecessor_assignments.is_a?(Array)
+             generator.predecessor_page_for_assignments(
+               species, predecessor_assignments, offset, limit
+             )
+           else
+             generator.predecessor_page_for(species, offset, limit)
+           end
     return {
       "matches" => page[:branches].map do |branch|
-        tracker_evolution_predecessor_snapshot(branch)
+        tracker_evolution_predecessor_snapshot(
+          branch, recipe, obtainability
+        )
       end,
       "offset" => page[:offset],
       "limit" => page[:limit],
@@ -169,9 +194,11 @@ module Ironmon
     }
   end
 
-  def self.tracker_evolution_predecessor_snapshot(branch)
+  def self.tracker_evolution_predecessor_snapshot(
+    branch, recipe = nil, obtainability = false
+  )
     source = GameData::Species.get(branch[:source].to_sym)
-    return {
+    result = {
       "species_id" => "#{source.id}:0",
       "species_name" => source.name,
       "sprite_path" => tracker_lookup_sprite_path(source),
@@ -184,11 +211,91 @@ module Ironmon
         )["requirement"]
       end
     }
+    if recipe && obtainability
+      result["obtainability_status"] =
+        tracker_obtainability_status(source, recipe)
+    end
+    return result
   end
 
-  def self.tracker_evolution_target_snapshot(branch)
+  def self.tracker_fusion_evolution_targets_for_assignments(
+    species, assignments
+  )
+    branches_by_identity = {}
+    evolution_catalog.branch_catalog.each do |branch|
+      branches_by_identity[branch[:identity]] = branch
+    end
+    result = []
+    assignments.each do |assignment|
+      next if !assignment.is_a?(Hash)
+      target = tracker_fusion_species_for_numeric_id(
+        assignment["target_id"].to_i
+      )
+      next if !target
+      side = assignment["component_side"].to_s
+      component_side = side == "head" ? :head : side == "body" ? :body : nil
+      next if !component_side
+      component_branch = branches_by_identity[
+        assignment["component_branch_identity"].to_s
+      ]
+      next if !component_branch
+      component = component_side == :body ?
+        species.body_pokemon : species.head_pokemon
+      next if component_branch[:source] != component.id.to_s
+      result << {
+        :identity => "#{species.id}|#{component_side}|#{component_branch[:identity]}",
+        :source => species.id.to_s,
+        :component_side => component_side,
+        :component_source => component.id.to_s,
+        :component_branch_identity => component_branch[:identity],
+        :original_destination => component_branch[:original_destination],
+        :target => target.id.to_s,
+        :target_id => target.id,
+        :target_bst => assignment["target_base_stat_total"].to_i,
+        :effective_methods => component_branch[:effective_methods]
+      }
+    end
+    return result
+  end
+
+  def self.tracker_fusion_evolution_candidates_for_assignments(packed)
+    decoded = packed.to_s.unpack("m0")[0]
+    return [] if !decoded || decoded.bytesize % 4 != 0
+    result = {}
+    decoded.unpack("L<*").each do |assignment|
+      target_identity = tracker_fusion_identity_for_numeric_id(
+        assignment >> 11
+      )
+      next if !target_identity
+      result[target_identity] = {
+        :target => target_identity.to_s,
+        :target_id => target_identity,
+        :target_bst => assignment & 0x7FF
+      }
+    end
+    return result.values.sort_by { |target| target[:target] }
+  end
+
+  def self.tracker_fusion_species_for_numeric_id(numeric_id)
+    identity = tracker_fusion_identity_for_numeric_id(numeric_id)
+    return identity ? GameData::Species.try_get(identity) : nil
+  end
+
+  def self.tracker_fusion_identity_for_numeric_id(numeric_id)
+    return nil if numeric_id <= NB_POKEMON ||
+      numeric_id > (NB_POKEMON * NB_POKEMON) + NB_POKEMON
+    body_id = (numeric_id - 1) / NB_POKEMON
+    head_id = numeric_id - (body_id * NB_POKEMON)
+    identity = "B#{body_id}H#{head_id}".to_sym
+    return nil if !custom_fusion_species?(identity)
+    return identity
+  end
+
+  def self.tracker_evolution_target_snapshot(
+    branch, recipe = nil, obtainability = false
+  )
     target = GameData::Species.get(branch[:target_id])
-    return {
+    result = {
       "species_id" => "#{target.id}:0",
       "species_name" => target.name,
       "sprite_path" => tracker_lookup_sprite_path(target),
@@ -201,6 +308,11 @@ module Ironmon
         )["requirement"]
       end
     }
+    if recipe && obtainability
+      result["obtainability_status"] =
+        tracker_obtainability_status(target, recipe)
+    end
+    return result
   end
 
   def self.tracker_evolution_graph_level(species)
@@ -242,14 +354,21 @@ module Ironmon
     )[side]
   end
 
-  def self.tracker_evolution_candidate_snapshot(target, name)
+  def self.tracker_evolution_candidate_snapshot(
+    target, name, recipe = nil, obtainability = false
+  )
     species = GameData::Species.get(target[:target_id])
-    return {
+    result = {
       "species_id" => "#{species.id}:0",
       "species_name" => name,
       "sprite_path" => tracker_lookup_sprite_path(species),
       "base_stat_total" => target[:target_bst]
     }
+    if recipe && obtainability
+      result["obtainability_status"] =
+        tracker_obtainability_status(species, recipe)
+    end
+    return result
   end
 
   def self.tracker_normal_evolution_generator(recipe)
@@ -306,17 +425,23 @@ module Ironmon
     return generator
   end
 
-  def self.tracker_lookup_evolutions(species)
+  def self.tracker_lookup_evolutions(
+    species, recipe = nil, obtainability = false
+  )
     relations = species.get_evolutions(true).map do |evolution|
       evolved_species = GameData::Species.try_get(evolution[0])
       next if !evolved_species || !tracker_lookup_species_available?(evolved_species)
       requirement = tracker_evolution_snapshot(evolution[1], evolution[2])["requirement"]
-      tracker_lookup_relation(evolved_species, requirement)
+      tracker_lookup_relation(
+        evolved_species, requirement, recipe, obtainability
+      )
     end.compact
     return relations.sort_by { |relation| [relation["label"], relation["species_name"]] }
   end
 
-  def self.tracker_lookup_previous_evolutions(species)
+  def self.tracker_lookup_previous_evolutions(
+    species, recipe = nil, obtainability = false
+  )
     candidates = if species.is_a?(GameData::FusedSpecies)
                    tracker_lookup_previous_fusions(species)
                  else
@@ -330,7 +455,9 @@ module Ironmon
       end
       next if !evolution
       requirement = tracker_evolution_snapshot(evolution[1], evolution[2])["requirement"]
-      tracker_lookup_relation(previous_species, requirement)
+      tracker_lookup_relation(
+        previous_species, requirement, recipe, obtainability
+      )
     end.compact
     return relations.sort_by { |relation| relation["species_name"] }
   end

@@ -28,6 +28,11 @@ public sealed class PokemonLookupRequestPayload
     public PokemonLookupSection Section { get; init; } = PokemonLookupSection.Overview;
 
     /// <summary>
+    /// Gets or initializes exact tracker-computed outgoing fusion-evolution assignments when available.
+    /// </summary>
+    public IReadOnlyList<EvolutionTargetAssignmentPayload>? EvolutionAssignments { get; init; }
+
+    /// <summary>
     /// Gets or initializes the completed-run reconstruction recipe.
     /// </summary>
     public required CompletedRunRecipePayload Recipe { get; init; }

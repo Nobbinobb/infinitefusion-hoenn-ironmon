@@ -1,6 +1,6 @@
-# Installing Ironmon 0.7.9
+# Installing Ironmon 0.8.0
 
-Ironmon `0.7.9` targets Pokemon Infinite Fusion 2 version 6.8.0.
+Ironmon `0.8.0` targets Pokemon Infinite Fusion 2 version 6.8.0.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
 
@@ -10,9 +10,9 @@ official game's Git repository.
 2. Keep a backup of saves you care about.
 3. Choose and extract one release archive into the game's root directory—the
    directory containing `InfiniteFusion2.exe`:
-   - `Ironmon-v0.7.9-win-x64.zip` is self-contained and includes the .NET
+   - `Ironmon-v0.8.0-win-x64.zip` is self-contained and includes the .NET
      runtime.
-   - `Ironmon-v0.7.9-win-x64-runtime-required.zip` is smaller and
+   - `Ironmon-v0.8.0-win-x64-runtime-required.zip` is smaller and
      requires the Windows x64 .NET 10 Runtime to be installed.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
    directory. The package installs Ruby files under

@@ -26,9 +26,10 @@ and a fast reset to starter selection.
 - `tools/generation/` contains release-data generators and their runtime bridge.
 
 Milestone 6 is on hold while optional quality-of-life features are developed.
-Version `0.7.9` adds progressively loaded generated-evolution neighborhoods,
-fast paged fusion reconstruction, transactional run preparation, and a more
-modular game and tracker architecture. It also provides equivalent
+Version `0.8.0` adds run-aware Pokémon obtainability throughout Lookup and the
+evolution graph, moves seed-specific fusion closure and reverse-index work into
+the native tracker, and substantially improves cold graph, evolution, and
+fusion-material loading. It also provides equivalent
 self-contained and runtime-required Windows distributions while retaining
 seeded-run sharing, battle-item control, type coverage, signed diagnostic
 access, Favorite Clause, and the randomization safeguards from the 0.7 series.

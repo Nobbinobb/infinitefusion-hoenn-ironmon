@@ -57,6 +57,7 @@ internal sealed class TrackerGameEventProcessor
     {
         ArgumentNullException.ThrowIfNull(game);
         ArgumentNullException.ThrowIfNull(state);
+        _requestClient.PrepareActiveFusionAssignments(state);
         _knowledge.SelectRun(state.RunId);
         _state.Publish(TrackerConnectionStatus.Connected, game, state);
         _runState.Recover(state);

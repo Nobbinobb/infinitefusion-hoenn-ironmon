@@ -109,6 +109,7 @@ application under `dist-runtime-required/Ironmon Tracker`. Run
 `tools/Build-TrackerRelease.ps1` to rebuild the Ruby distribution, publish both
 tracker variants, and create a deterministic release ZIP and checksum for each.
 The release command first regenerates and validates `area_catalog.dat`, the
-fusion-predecessor index, the coverage dataset, and the item-randomization audit
-in the bundled game runtime. It aborts rather than packaging stale data and
-excludes the generators and audits from both player archives.
+semantic obtainability source catalog, the fusion-predecessor index, the
+coverage dataset, and the item-randomization audit in the bundled game runtime.
+It aborts rather than packaging stale data and excludes the generators and
+audits from both player archives.

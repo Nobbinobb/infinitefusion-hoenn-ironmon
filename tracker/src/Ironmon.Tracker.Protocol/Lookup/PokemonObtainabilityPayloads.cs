@@ -33,14 +33,14 @@ public sealed class PokemonObtainabilityRequestPayload
     public bool Foreground { get; init; }
 
     /// <summary>
-    /// Gets or initializes one tracker-computed material-mapping batch.
+    /// Gets or initializes the tracker-computed obtainability closure.
     /// </summary>
-    public PlayerFusionMappingBatchPayload? FusionMappingBatch { get; init; }
+    public PlayerFusionClosureResultPayload? FusionClosureResult { get; init; }
 
     /// <summary>
-    /// Gets or initializes whether this tracker cannot reproduce the game-owned mapping job.
+    /// Gets or initializes whether this tracker cannot reproduce the game-owned closure job.
     /// </summary>
-    public bool FusionMappingWorkerUnavailable { get; init; }
+    public bool FusionClosureWorkerUnavailable { get; init; }
 
     /// <summary>
     /// Gets or initializes the completed-run reconstruction recipe.
@@ -81,14 +81,14 @@ public sealed class DebugPokemonObtainabilityRequestPayload
     public bool Foreground { get; init; }
 
     /// <summary>
-    /// Gets or initializes one tracker-computed material-mapping batch.
+    /// Gets or initializes the tracker-computed obtainability closure.
     /// </summary>
-    public PlayerFusionMappingBatchPayload? FusionMappingBatch { get; init; }
+    public PlayerFusionClosureResultPayload? FusionClosureResult { get; init; }
 
     /// <summary>
-    /// Gets or initializes whether this tracker cannot reproduce the game-owned mapping job.
+    /// Gets or initializes whether this tracker cannot reproduce the game-owned closure job.
     /// </summary>
-    public bool FusionMappingWorkerUnavailable { get; init; }
+    public bool FusionClosureWorkerUnavailable { get; init; }
 }
 
 /// <summary>
@@ -106,7 +106,7 @@ public sealed class PokemonObtainabilitySnapshot
     /// <summary>
     /// Gets or initializes the current proof status.
     /// </summary>
-    public PokemonObtainabilityStatus Status { get; init; } = PokemonObtainabilityStatus.Unknown;
+    public PokemonObtainabilityStatus Status { get; init; } = PokemonObtainabilityStatus.Calculating;
 
     /// <summary>
     /// Gets or initializes the concise explanation for the status.
@@ -177,21 +177,6 @@ public sealed class PokemonObtainabilityResponsePayload
     public int UnresolvedResourceCount { get; init; }
 
     /// <summary>
-    /// Gets or initializes the active material-mapping implementation.
-    /// </summary>
-    public string FusionMappingMode { get; init; } = string.Empty;
-
-    /// <summary>
-    /// Gets or initializes the number of tracker-computed batches accepted by the game.
-    /// </summary>
-    public int TrackerMappingBatchesApplied { get; init; }
-
-    /// <summary>
-    /// Gets or initializes the number of material pairs mapped by the Ruby fallback.
-    /// </summary>
-    public int RubyMappingPairsProcessed { get; init; }
-
-    /// <summary>
     /// Gets or initializes the currently proven identifiers from the bounded set requested by the caller.
     /// </summary>
     public IReadOnlyList<string> ObtainableSpeciesIds { get; init; } = [];
@@ -202,9 +187,9 @@ public sealed class PokemonObtainabilityResponsePayload
     public IReadOnlyList<string> ObtainableEvolutionEdgeKeys { get; init; } = [];
 
     /// <summary>
-    /// Gets or initializes the remaining tracker-side material-mapping job when compatible work is available.
+    /// Gets or initializes the tracker-side fusion closure job when compatible work is available.
     /// </summary>
-    public PlayerFusionMappingWorkPayload? FusionMappingWork { get; init; }
+    public PlayerFusionClosureWorkPayload? FusionClosureWork { get; init; }
 
     /// <summary>
     /// Gets or initializes the requested target proof, when a target was supplied.
@@ -213,14 +198,19 @@ public sealed class PokemonObtainabilityResponsePayload
 }
 
 /// <summary>
-/// Describes the seed-specific material mapping that the tracker can calculate in parallel.
+/// Describes the seed-specific fusion obtainability closure that the tracker calculates in parallel.
 /// </summary>
-public sealed class PlayerFusionMappingWorkPayload
+public sealed class PlayerFusionClosureWorkPayload
 {
     /// <summary>
     /// Gets or initializes the stable calculation identifier.
     /// </summary>
     public required string JobId { get; init; }
+
+    /// <summary>
+    /// Gets the release-generated semantic acquisition/resource catalog fingerprint.
+    /// </summary>
+    public required string SourceCatalogFingerprint { get; init; }
 
     /// <summary>
     /// Gets or initializes the run seed.
@@ -258,20 +248,98 @@ public sealed class PlayerFusionMappingWorkPayload
     public IReadOnlyList<int> MaterialIds { get; init; } = [];
 
     /// <summary>
-    /// Gets or initializes the first unordered pair not yet applied by the game.
-    /// </summary>
-    public int ProcessedPairs { get; init; }
-
-    /// <summary>
     /// Gets or initializes the total unordered pair count.
     /// </summary>
     public int TotalPairs { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the unordered pair offsets whose normal-material proof states are incompatible.
+    /// </summary>
+    public IReadOnlyList<int> ExcludedPairOffsets { get; init; } = [];
+
+    /// <summary>
+    /// Gets the compact normal and caught-fusion proof states that seed tracker-owned closure.
+    /// </summary>
+    public IReadOnlyList<PlayerFusionProofSpeciesPayload> BaseProofs { get; init; } = [];
+
+    /// <summary>
+    /// Gets the run-wide quantities available to item-consuming evolution methods.
+    /// </summary>
+    public IReadOnlyDictionary<string, int> ResourceSupply { get; init; } = new Dictionary<string, int>();
+
+    /// <summary>
+    /// Gets the fusion-evolution generator version required by this run.
+    /// </summary>
+    public int FusionEvolutionGeneratorVersion { get; init; }
+
+    /// <summary>
+    /// Gets the fusion-evolution rules version required by this run.
+    /// </summary>
+    public int FusionEvolutionRulesVersion { get; init; }
+
+    /// <summary>
+    /// Gets the evolution source fingerprint required by this run.
+    /// </summary>
+    public string EvolutionSourceFingerprint { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Gets the evolution taxonomy fingerprint required by this run.
+    /// </summary>
+    public string EvolutionTaxonomyFingerprint { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Gets the evolution method fingerprint required by this run.
+    /// </summary>
+    public string EvolutionMethodFingerprint { get; init; } = string.Empty;
+
 }
 
 /// <summary>
-/// Returns one ordered batch of tracker-computed material mappings to the game.
+/// Carries every nondominated base proof for one normal or directly caught fusion species.
 /// </summary>
-public sealed class PlayerFusionMappingBatchPayload
+public sealed class PlayerFusionProofSpeciesPayload
+{
+    /// <summary>
+    /// Gets the numeric species identifier.
+    /// </summary>
+    public int SpeciesId { get; init; }
+
+    /// <summary>
+    /// Gets the bounded nondominated proof states for the species.
+    /// </summary>
+    public IReadOnlyList<PlayerFusionProofPlanPayload> Plans { get; init; } = [];
+}
+
+/// <summary>
+/// Carries the feasibility state of one acquisition proof without its display path.
+/// </summary>
+public sealed class PlayerFusionProofPlanPayload
+{
+    /// <summary>
+    /// Gets the evolution-item quantities consumed by the proof.
+    /// </summary>
+    public IReadOnlyDictionary<string, int> Items { get; init; } = new Dictionary<string, int>();
+
+    /// <summary>
+    /// Gets mutually exclusive run choices made by the proof.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> Constraints { get; init; } = new Dictionary<string, string>();
+
+    /// <summary>
+    /// Gets unique acquisition-source quantities consumed by the proof.
+    /// </summary>
+    public IReadOnlyDictionary<string, int> SourceUses { get; init; } = new Dictionary<string, int>();
+
+    /// <summary>
+    /// Gets the number of acquisition operations in the proof.
+    /// </summary>
+    public int PathLength { get; init; }
+}
+
+/// <summary>
+/// Returns a tracker-computed player-fusion result to the game.
+/// </summary>
+public sealed class PlayerFusionClosureResultPayload
 {
     /// <summary>
     /// Gets or initializes the calculation identifier supplied by the game.
@@ -279,12 +347,18 @@ public sealed class PlayerFusionMappingBatchPayload
     public required string JobId { get; init; }
 
     /// <summary>
-    /// Gets or initializes the zero-based unordered-pair offset.
+    /// Gets the packed final obtainability bitset in numeric custom-fusion order.
     /// </summary>
-    public int Offset { get; init; }
+    public IReadOnlyList<uint> ObtainableFusionWords { get; init; } = [];
 
     /// <summary>
-    /// Gets or initializes the ordered mapped pairs as consecutive first-material, second-material, first-result, and second-result identifiers.
+    /// Gets sorted executable evolution edges packed as unsigned delta varints.
     /// </summary>
-    public IReadOnlyList<int> PackedPairs { get; init; } = [];
+    public byte[] PackedExecutableEvolutionEdges { get; init; } = [];
+
+    /// <summary>
+    /// Gets the final number of normal and fusion species with an acquisition proof.
+    /// </summary>
+    public int ObtainableCount { get; init; }
+
 }

@@ -36,4 +36,14 @@ public sealed class DebugFusionMaterialSearchRequestPayload
     /// Gets or initializes the maximum number of pairs to return.
     /// </summary>
     public int Limit { get; init; } = TrackerProtocol.FusionMaterialPageSize;
+
+    /// <summary>
+    /// Gets or initializes the tracker-generated material assignments for this page when available.
+    /// </summary>
+    public IReadOnlyList<FusionMaterialAssignmentPayload>? MaterialAssignments { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the total number of tracker-generated material assignments when available.
+    /// </summary>
+    public int? MaterialAssignmentTotal { get; init; }
 }

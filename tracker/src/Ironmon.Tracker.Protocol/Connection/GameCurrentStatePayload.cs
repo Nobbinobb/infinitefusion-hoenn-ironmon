@@ -19,8 +19,9 @@ public sealed class GameCurrentStatePayload
     /// <param name="attemptStatistics">The current attempt statistics when available.</param>
     /// <param name="completedRun">The completed-run recipe when the active save's run has ended.</param>
     /// <param name="typeCoverage">The non-sensitive type-coverage compatibility context when supported.</param>
+    /// <param name="fusionAssignments">The authorized active-run recipe for early native fusion assignment preparation.</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when sequence is negative.</exception>
-    public GameCurrentStatePayload(bool ironmonActive, string? runId, string? battleId, long sequence, BattleSnapshot? battle = null, PlayerPokemonSnapshot? player = null, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null, StarterSelectionSnapshot? starterSelection = null, RunStatisticsPayload? attemptStatistics = null, CompletedRunRecipePayload? completedRun = null, TypeCoverageContextPayload? typeCoverage = null)
+    public GameCurrentStatePayload(bool ironmonActive, string? runId, string? battleId, long sequence, BattleSnapshot? battle = null, PlayerPokemonSnapshot? player = null, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null, StarterSelectionSnapshot? starterSelection = null, RunStatisticsPayload? attemptStatistics = null, CompletedRunRecipePayload? completedRun = null, TypeCoverageContextPayload? typeCoverage = null, FusionAssignmentRecipePayload? fusionAssignments = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(sequence);
         IronmonActive = ironmonActive;
@@ -34,6 +35,7 @@ public sealed class GameCurrentStatePayload
         AttemptStatistics = attemptStatistics;
         CompletedRun = completedRun;
         TypeCoverage = typeCoverage;
+        FusionAssignments = fusionAssignments;
     }
 
     /// <summary>
@@ -90,4 +92,9 @@ public sealed class GameCurrentStatePayload
     /// Gets the non-sensitive type-coverage compatibility context when supported.
     /// </summary>
     public TypeCoverageContextPayload? TypeCoverage { get; }
+
+    /// <summary>
+    /// Gets the authorized active-run recipe used to prepare exact fusion assignments before graph or material requests.
+    /// </summary>
+    public FusionAssignmentRecipePayload? FusionAssignments { get; }
 }

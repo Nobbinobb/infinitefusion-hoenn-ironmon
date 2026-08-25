@@ -1,0 +1,11 @@
+@if (Status is not null)
+{
+    @if (ShowLabel)
+    {
+        <span class="@CssClass" title="@Label">@Label</span>
+    }
+    else
+    {
+        <span class="@CssClass" title="@Label" aria-label="@Label">@Icon</span>
+    }
+}

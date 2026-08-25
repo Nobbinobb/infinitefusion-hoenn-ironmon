@@ -9,12 +9,6 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
 {
     private const string _authoredSourcesPhase = "authored_sources";
     private const string _completePhase = "complete";
-    private const string _fusionEvolutionsPhase = "fusion_evolutions";
-    private const string _playerFusionsPhase = "player_fusions";
-    private const string _requestedEvolutionsPhase = "requested_evolutions";
-    private const string _rubyFallbackMappingMode = "ruby_fallback";
-    private const string _trackerWorkerMappingMode = "tracker_worker";
-    private const string _waitingForTrackerMappingMode = "waiting_for_tracker";
 
     private enum ReachabilityDisplayMode
     {
@@ -47,7 +41,6 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
     private bool _loading;
     private bool _maximized;
     private bool _obtainabilityLoading;
-    private bool _obtainabilityPrewarmPending;
     private ReachabilityDisplayMode _reachabilityMode;
     private bool _showAllLoaded;
 
@@ -151,23 +144,9 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
     /// </summary>
     private string ObtainabilityPhaseLabel => _obtainabilityProgress?.Phase switch
     {
-        _playerFusionsPhase => Text["Lookup.Obtainability.Phase.PlayerFusions"],
-        _requestedEvolutionsPhase => Text["Lookup.Obtainability.Phase.GraphEvolutions"],
-        _fusionEvolutionsPhase => Text["Lookup.Obtainability.Phase.FullEvolutionChain"],
         _authoredSourcesPhase => Text["Lookup.Obtainability.Phase.AuthoredSources"],
         _completePhase => Text["Lookup.Obtainability.Phase.Complete"],
         _ => Text["Lookup.Obtainability.Phase.Preparing"]
-    };
-
-    /// <summary>
-    /// Gets the user-facing material-mapping implementation.
-    /// </summary>
-    private string FusionMappingModeLabel => _obtainabilityProgress?.FusionMappingMode switch
-    {
-        _trackerWorkerMappingMode => Text["Lookup.Obtainability.Mapping.TrackerWorker"],
-        _rubyFallbackMappingMode => Text["Lookup.Obtainability.Mapping.RubyFallback"],
-        _waitingForTrackerMappingMode => Text["Lookup.Obtainability.Mapping.WaitingForTracker"],
-        _ => Text["Lookup.Obtainability.Mapping.Preparing"]
     };
 
     /// <summary>
@@ -293,21 +272,6 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
     }
 
     /// <summary>
-    /// Starts prioritized obtainability work only after the ordinary graph has rendered once.
-    /// </summary>
-    /// <param name="firstRender">Whether this is the component's first render.</param>
-    /// <returns>A completed render task.</returns>
-    protected override Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!_obtainabilityPrewarmPending || _disposed)
-            return Task.CompletedTask;
-
-        _obtainabilityPrewarmPending = false;
-        _ = LoadObtainabilityAsync(null);
-        return Task.CompletedTask;
-    }
-
-    /// <summary>
     /// Loads a fresh bounded graph neighborhood around the original Pokemon.
     /// </summary>
     /// <returns>A task representing the progressive lookup.</returns>
@@ -325,7 +289,6 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
         _executableEvolutionEdgeKeys.Clear();
         _reachabilityMode = ReachabilityDisplayMode.All;
         _obtainabilityLoading = false;
-        _obtainabilityPrewarmPending = false;
         _displayedNodeCount = 0;
         _firstPageLoaded = false;
         _showAllLoaded = false;
@@ -338,7 +301,6 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
         AddNode(Current);
         AddOutgoingRelationships(Current.SpeciesId, Targets, HeadTargets, BodyTargets);
         await StartNeighborhoodExpansionAsync(SpeciesId);
-        _obtainabilityPrewarmPending = DebugMode || Recipe is not null;
     }
 
     /// <summary>
@@ -442,7 +404,10 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
                 SpeciesName = lookup.Identity.SpeciesName,
                 SpritePath = lookup.Identity.SpritePath,
                 BaseStatTotal = evolutions.CurrentBaseStatTotal,
-                StageLevel = evolutions.CurrentStageLevel
+                StageLevel = evolutions.CurrentStageLevel,
+                ObtainabilityStatus = !DebugMode || TrackerDiagnosticCapabilityRules.HasRunObtainability(Connection)
+                    ? lookup.Identity.Obtainability.Status
+                    : null
             });
 
             AddOutgoingRelationships(speciesId, evolutions.GeneratedTargets, evolutions.HeadTargets, evolutions.BodyTargets);
@@ -705,10 +670,11 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
         {
             while (true)
             {
-                IReadOnlyList<string> graphEvolutionEdgeKeys = [.. _edges.Keys];
+                IReadOnlyList<string> graphEvolutionEdgeKeys = GetObtainabilityEvolutionEdgeKeys();
+                IReadOnlyList<string> graphSpeciesIds = [.. _nodes.Keys];
                 PokemonObtainabilityResponsePayload response = DebugMode
-                    ? await Connection.AdvanceDebugPokemonObtainabilityAsync(evolutionEdgeKeys: graphEvolutionEdgeKeys, foreground: true, cancellationToken: cancellation.Token)
-                    : await Connection.AdvancePokemonObtainabilityAsync(Recipe!, evolutionEdgeKeys: graphEvolutionEdgeKeys, foreground: true, cancellationToken: cancellation.Token);
+                    ? await Connection.AdvanceDebugPokemonObtainabilityAsync(speciesIds: graphSpeciesIds, evolutionEdgeKeys: graphEvolutionEdgeKeys, foreground: true, cancellationToken: cancellation.Token)
+                    : await Connection.AdvancePokemonObtainabilityAsync(Recipe!, speciesIds: graphSpeciesIds, evolutionEdgeKeys: graphEvolutionEdgeKeys, foreground: true, cancellationToken: cancellation.Token);
 
                 if (!ReferenceEquals(_obtainabilityCancellation, cancellation))
                     return;
@@ -721,6 +687,7 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
                 _classifiedEvolutionEdgeKeys.UnionWith(graphEvolutionEdgeKeys);
                 _executableEvolutionEdgeKeys.Clear();
                 _executableEvolutionEdgeKeys.UnionWith(response.ObtainableEvolutionEdgeKeys);
+                UpdateNodeObtainability(graphSpeciesIds, response.ObtainableSpeciesIds, response.Complete);
                 await InvokeAsync(StateHasChanged);
                 if (response.Complete && ObtainabilityCoversCurrentGraph)
                     break;
@@ -754,6 +721,54 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
             cancellation.Dispose();
             if (ownsLoadingState && !_disposed)
                 await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    /// <summary>
+    /// Orders graph relationships so the game queues lower-strength sources before targets that they can prove obtainable.
+    /// </summary>
+    /// <returns>The current stable relationship keys in reverse source-strength order expected by the game's priority queue.</returns>
+    private IReadOnlyList<string> GetObtainabilityEvolutionEdgeKeys()
+    {
+        return [.. _edges.Values
+            .OrderByDescending(edge => _nodes.TryGetValue(edge.SourceSpeciesId, out EvolutionTargetSnapshot? source) ? source.BaseStatTotal : int.MaxValue)
+            .ThenByDescending(edge => edge.SourceSpeciesId, StringComparer.OrdinalIgnoreCase)
+            .ThenByDescending(edge => edge.TargetSpeciesId, StringComparer.OrdinalIgnoreCase)
+            .Select(edge => edge.Key)];
+    }
+
+    /// <summary>
+    /// Replaces stale graph-node status snapshots with the latest shared obtainability result.
+    /// </summary>
+    /// <param name="requestedSpeciesIds">The node identifiers included in the request.</param>
+    /// <param name="obtainableSpeciesIds">The requested identifiers currently backed by a valid path.</param>
+    /// <param name="complete">Whether every requested node has received its final classification.</param>
+    private void UpdateNodeObtainability(IReadOnlyList<string> requestedSpeciesIds, IReadOnlyList<string> obtainableSpeciesIds, bool complete)
+    {
+        HashSet<string> obtainable = new(obtainableSpeciesIds.Select(value => value.Split(':', 2)[0]), StringComparer.OrdinalIgnoreCase);
+        foreach (string requestedSpeciesId in requestedSpeciesIds)
+        {
+            if (!_nodes.TryGetValue(requestedSpeciesId, out EvolutionTargetSnapshot? node))
+                continue;
+
+            PokemonObtainabilityStatus status = obtainable.Contains(requestedSpeciesId.Split(':', 2)[0])
+                ? PokemonObtainabilityStatus.Obtainable
+                : complete ? PokemonObtainabilityStatus.Unobtainable : PokemonObtainabilityStatus.Calculating;
+
+            if (node.ObtainabilityStatus == status)
+                continue;
+
+            _nodes[requestedSpeciesId] = new EvolutionTargetSnapshot
+            {
+                SpeciesId = node.SpeciesId,
+                SpeciesName = node.SpeciesName,
+                SpritePath = node.SpritePath,
+                BaseStatTotal = node.BaseStatTotal,
+                StageLevel = node.StageLevel,
+                ComponentSide = node.ComponentSide,
+                EffectiveMethods = node.EffectiveMethods,
+                ObtainabilityStatus = status
+            };
         }
     }
 

@@ -12,13 +12,10 @@ public partial class PokemonLookupCard
     private PokemonInformationPage? _loadingPage;
     private string? _observedSpeciesId;
     private string? _sectionError;
-    private string? _obtainabilityError;
     private string? _spriteKey;
     private string? _spriteSource;
     private AbilitySnapshot? _selectedAbility;
     private PokemonObtainabilitySnapshot _obtainability = new();
-    private PokemonObtainabilityResponsePayload? _obtainabilityProgress;
-    private bool _checkingObtainability;
     private bool _evolutionGraphOpen;
 
     /// <summary>
@@ -94,13 +91,11 @@ public partial class PokemonLookupCard
             _selectedAbility = null;
             _evolutionGraphOpen = false;
             _sectionError = null;
-            _obtainabilityError = null;
-            _obtainability = Pokemon.Identity.Obtainability;
-            _obtainabilityProgress = null;
-            _checkingObtainability = false;
             PokemonInformationPage incomingPage = (PokemonInformationPage)(int)Pokemon.Section;
             _selectedPage = CanShowPage(incomingPage) ? incomingPage : GetFirstVisiblePage();
         }
+
+        _obtainability = Pokemon.Identity.Obtainability;
 
         PokemonInformationPage receivedPage = (PokemonInformationPage)(int)Pokemon.Section;
         _sections[receivedPage] = Pokemon;
@@ -162,61 +157,9 @@ public partial class PokemonLookupCard
         => Inspector?.Identity.Fusion ?? ActivePokemon.Identity.Fusion;
 
     /// <summary>
-    /// Gets the localized obtainability state shown beside the selected Pokemon.
+    /// Gets whether the represented run authorizes its complete obtainability domain.
     /// </summary>
-    private string ObtainabilityLabel => _obtainability.Status switch
-    {
-        PokemonObtainabilityStatus.Obtainable => Text["Lookup.Obtainability.Obtainable"],
-        PokemonObtainabilityStatus.Unobtainable => Text["Lookup.Obtainability.Unobtainable"],
-        PokemonObtainabilityStatus.Calculating => Text["Lookup.Obtainability.Calculating"],
-        _ => Text["Lookup.Obtainability.Unknown"]
-    };
-
-    /// <summary>
-    /// Gets the visual class for the current obtainability state.
-    /// </summary>
-    private string ObtainabilityCssClass => $"obtainability-state {_obtainability.Status.ToString().ToLowerInvariant()}";
-
-    /// <summary>
-    /// Advances the shared run calculation until this Pokemon is proven or the run is complete.
-    /// </summary>
-    /// <returns>A task representing the progressive calculation.</returns>
-    private async Task CheckObtainabilityAsync()
-    {
-        if (_checkingObtainability || Recipe is null || DebugMode)
-            return;
-
-        string speciesId = Pokemon.Identity.SpeciesId;
-        _checkingObtainability = true;
-        _obtainabilityError = null;
-        try
-        {
-            while (true)
-            {
-                PokemonObtainabilityResponsePayload response = await Connection.AdvancePokemonObtainabilityAsync(Recipe, speciesId, foreground: true);
-                if (!string.Equals(Pokemon.Identity.SpeciesId, speciesId, StringComparison.Ordinal))
-                    return;
-
-                _obtainabilityProgress = response;
-                if (response.Target is not null)
-                    _obtainability = response.Target;
-
-                await InvokeAsync(StateHasChanged);
-                if (response.Complete || _obtainability.Status == PokemonObtainabilityStatus.Obtainable)
-                    break;
-
-                await Task.Delay(50);
-            }
-        }
-        catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
-        {
-            _obtainabilityError = exception.Message;
-        }
-        finally
-        {
-            _checkingObtainability = false;
-        }
-    }
+    private bool CanShowObtainability => !DebugMode || TrackerDiagnosticCapabilityRules.HasRunObtainability(Connection);
 
     /// <summary>
     /// Creates the selected Pokemon's graph node.
@@ -228,7 +171,8 @@ public partial class PokemonLookupCard
         SpeciesName = ActivePokemon.Identity.SpeciesName,
         SpritePath = ActivePokemon.Identity.SpritePath,
         BaseStatTotal = EvolutionSection.CurrentBaseStatTotal,
-        StageLevel = EvolutionSection.CurrentStageLevel
+        StageLevel = EvolutionSection.CurrentStageLevel,
+        ObtainabilityStatus = CanShowObtainability ? _obtainability.Status : null
     };
 
     /// <summary>

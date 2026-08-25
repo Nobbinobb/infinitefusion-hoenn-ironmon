@@ -7,6 +7,7 @@ namespace Ironmon.Tracker.Connection.Transport;
 /// </summary>
 public sealed class TrackerRequestClient
 {
+    private readonly Lock _archiveObtainabilitySync = new();
     private readonly TrackerAreaRequestClient _areaRequests;
     private readonly TrackerDiagnosticAuthorizer _authorization;
     private readonly TrackerResponseCache _cache = new();
@@ -17,6 +18,7 @@ public sealed class TrackerRequestClient
     private readonly TrackerRequestSession _session;
     private readonly TrackerConnectionState _state;
     private readonly PlayerFusionMappingCoordinator _fusionMappings = new();
+    private string? _selectedArchiveObtainabilityRunId;
 
     /// <summary>
     /// Occurs when the game reports a queued, started, or failed seeded-run import transition.
@@ -52,6 +54,57 @@ public sealed class TrackerRequestClient
     public bool DebugAuthorized => _authorization.DebugAuthorized;
 
     /// <summary>
+    /// Gets the shared active-run obtainability progress source.
+    /// </summary>
+    public TrackerObtainabilityProgressState ObtainabilityProgress { get; } = new();
+
+    /// <summary>
+    /// Gets whether an archived run currently owns background obtainability preparation.
+    /// </summary>
+    internal bool ArchiveObtainabilityPrecalculationSelected
+    {
+        get
+        {
+            lock (_archiveObtainabilitySync)
+                return _selectedArchiveObtainabilityRunId is not null;
+        }
+    }
+
+    /// <summary>
+    /// Selects one archived run for background obtainability preparation.
+    /// </summary>
+    /// <param name="runId">The selected archived run identifier.</param>
+    public void SelectArchiveObtainabilityPrecalculation(string runId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(runId);
+        lock (_archiveObtainabilitySync)
+            _selectedArchiveObtainabilityRunId = runId;
+
+        ObtainabilityProgress.Begin(runId, TrackerObtainabilityProgressScope.ArchivedRun);
+    }
+
+    /// <summary>
+    /// Releases one archived run from background obtainability preparation.
+    /// </summary>
+    /// <param name="runId">The archived run identifier being released.</param>
+    public void ClearArchiveObtainabilityPrecalculation(string runId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(runId);
+        bool cleared = false;
+        lock (_archiveObtainabilitySync)
+        {
+            if (string.Equals(_selectedArchiveObtainabilityRunId, runId, StringComparison.Ordinal))
+            {
+                _selectedArchiveObtainabilityRunId = null;
+                cleared = true;
+            }
+        }
+
+        if (cleared)
+            ObtainabilityProgress.Cancel(runId, TrackerObtainabilityProgressScope.ArchivedRun);
+    }
+
+    /// <summary>
     /// Determines whether one named diagnostic capability is effective for the connected game.
     /// </summary>
     /// <param name="capability">The stable capability identifier.</param>
@@ -66,6 +119,17 @@ public sealed class TrackerRequestClient
     /// <returns>The negotiated capability identifiers.</returns>
     internal IReadOnlyList<string> GetNegotiatedDiagnosticCapabilities(GameHandshakePayload game)
         => _authorization.GetNegotiatedCapabilities(game);
+
+    /// <summary>
+    /// Starts tracker-owned fusion assignment preparation from recovered active-run metadata.
+    /// </summary>
+    /// <param name="state">The recovered authoritative game state.</param>
+    internal void PrepareActiveFusionAssignments(GameCurrentStatePayload state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        if (!string.IsNullOrWhiteSpace(state.RunId) && state.FusionAssignments is not null)
+            _fusionMappings.PrepareActiveFusionAssignments(state.RunId, state.FusionAssignments);
+    }
 
     /// <summary>
     /// Updates tracker-owned settings in the connected game.
@@ -220,10 +284,16 @@ public sealed class TrackerRequestClient
     /// <returns>The current calculation progress and proven species set.</returns>
     public async Task<PokemonObtainabilityResponsePayload> AdvancePokemonObtainabilityAsync(CompletedRunRecipePayload recipe, string? speciesId = null, IReadOnlyList<string>? speciesIds = null, IReadOnlyList<string>? evolutionEdgeKeys = null, bool foreground = false, CancellationToken cancellationToken = default)
     {
+        ObtainabilityProgress.Begin(recipe.RunId, TrackerObtainabilityProgressScope.ArchivedRun);
         await _obtainabilityRequestGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            return await _completedRunRequests.AdvanceObtainabilityAsync(recipe, speciesId, speciesIds, evolutionEdgeKeys, foreground, cancellationToken).ConfigureAwait(false);
+            return await _completedRunRequests.AdvanceObtainabilityAsync(recipe, speciesId, speciesIds, evolutionEdgeKeys, foreground, response => ObtainabilityProgress.Report(recipe.RunId, TrackerObtainabilityProgressScope.ArchivedRun, response), cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException or TimeoutException or TrackerProtocolException)
+        {
+            ObtainabilityProgress.Fail(recipe.RunId, TrackerObtainabilityProgressScope.ArchivedRun, exception.Message);
+            throw;
         }
         finally
         {
@@ -242,10 +312,17 @@ public sealed class TrackerRequestClient
     /// <returns>The current calculation progress and proven species set.</returns>
     public async Task<PokemonObtainabilityResponsePayload> AdvanceDebugPokemonObtainabilityAsync(string? speciesId = null, IReadOnlyList<string>? speciesIds = null, IReadOnlyList<string>? evolutionEdgeKeys = null, bool foreground = false, CancellationToken cancellationToken = default)
     {
+        string? runId = GetConnectedRunId();
+        ObtainabilityProgress.Begin(runId, TrackerObtainabilityProgressScope.ActiveRun);
         await _obtainabilityRequestGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            return await _diagnosticRequests.AdvanceObtainabilityAsync(speciesId, speciesIds, evolutionEdgeKeys, foreground, GetConnectedRunId(), cancellationToken).ConfigureAwait(false);
+            return await _diagnosticRequests.AdvanceObtainabilityAsync(speciesId, speciesIds, evolutionEdgeKeys, foreground, response => ObtainabilityProgress.Report(runId, TrackerObtainabilityProgressScope.ActiveRun, response), runId, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException or TimeoutException or TrackerProtocolException)
+        {
+            ObtainabilityProgress.Fail(runId, TrackerObtainabilityProgressScope.ActiveRun, exception.Message);
+            throw;
         }
         finally
         {

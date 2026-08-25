@@ -41,7 +41,43 @@ module Ironmon
     }
     coverage = tracker_type_coverage_context
     payload["type_coverage"] = coverage if coverage
+    assignments = tracker_active_fusion_assignment_recipe
+    payload["fusion_assignments"] = assignments if assignments
     return payload
+  end
+
+  def self.tracker_active_fusion_assignment_recipe
+    return nil if !active? || !$PokemonGlobal
+    return nil if !tracker_connection.diagnostic_capabilities?(
+      *TRACKER_OBTAINABILITY_DIAGNOSTIC_CAPABILITIES
+    )
+    metadata = [
+      $PokemonGlobal.ironmon_seed,
+      PlayerFusionMapper::SCHEMA_VERSION,
+      $PokemonGlobal.ironmon_evolution_fusion_generator_version,
+      $PokemonGlobal.ironmon_evolution_fusion_rules_version,
+      $PokemonGlobal.ironmon_evolution_source_fingerprint,
+      $PokemonGlobal.ironmon_evolution_taxonomy_fingerprint,
+      $PokemonGlobal.ironmon_evolution_method_fingerprint,
+      $PokemonGlobal.ironmon_evolution_base_stat_source_fingerprint,
+      $PokemonGlobal.ironmon_evolution_fusion_target_pool_version,
+      $PokemonGlobal.ironmon_evolution_fusion_target_pool_size,
+      $PokemonGlobal.ironmon_evolution_fusion_target_pool_fingerprint
+    ]
+    return nil if metadata.any? { |value| value.nil? }
+    return {
+      "seed" => metadata[0],
+      "player_fusion_generator_version" => metadata[1],
+      "generator_version" => metadata[2],
+      "rules_version" => metadata[3],
+      "source_fingerprint" => metadata[4],
+      "taxonomy_fingerprint" => metadata[5],
+      "method_fingerprint" => metadata[6],
+      "base_stat_source_fingerprint" => metadata[7],
+      "target_pool_version" => metadata[8],
+      "target_pool_size" => metadata[9],
+      "target_pool_fingerprint" => metadata[10]
+    }
   end
 
   def self.tracker_type_coverage_context

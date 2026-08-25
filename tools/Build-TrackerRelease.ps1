@@ -36,6 +36,7 @@ $coverageDataset = Join-Path $projectRoot "data\type_coverage.json"
 $coverageAudit = Join-Path $projectRoot "docs\audits\generated\TYPE_COVERAGE_GENERATED.csv"
 $itemAudit = Join-Path $projectRoot "docs\audits\generated\ITEM_RANDOMIZATION_GENERATED.csv"
 $obtainabilityAudit = Join-Path $projectRoot "docs\audits\generated\OBTAINABILITY_FOUNDATION_GENERATED.csv"
+$obtainabilitySourceCatalog = Join-Path $projectRoot "data\obtainability_source_catalog.json"
 $generatedAreaCatalog = "$areaCatalog.release.tmp"
 $generatedFusionPredecessorIndex = "$fusionPredecessorIndex.release.tmp"
 $generatedAreaAudit = "$areaAudit.release.tmp"
@@ -43,6 +44,7 @@ $generatedCoverageDataset = "$coverageDataset.release.tmp"
 $generatedCoverageAudit = "$coverageAudit.release.tmp"
 $generatedItemAudit = "$itemAudit.release.tmp"
 $generatedObtainabilityAudit = "$obtainabilityAudit.release.tmp"
+$generatedObtainabilitySourceCatalog = "$obtainabilitySourceCatalog.release.tmp"
 
 function Test-PlayerDistribution {
   param([string]$DistributionPath)
@@ -52,6 +54,12 @@ function Test-PlayerDistribution {
       (Get-FileHash -LiteralPath $distributedAreaCatalog -Algorithm SHA256).Hash -ne
         (Get-FileHash -LiteralPath $areaCatalog -Algorithm SHA256).Hash) {
     throw "The player distribution does not contain the freshly generated area catalog."
+  }
+  $distributedObtainabilitySourceCatalog = Join-Path $DistributionPath "Data\Ironmon\obtainability_source_catalog.json"
+  if (-not (Test-Path -LiteralPath $distributedObtainabilitySourceCatalog) -or
+      (Get-FileHash -LiteralPath $distributedObtainabilitySourceCatalog -Algorithm SHA256).Hash -ne
+        (Get-FileHash -LiteralPath $obtainabilitySourceCatalog -Algorithm SHA256).Hash) {
+    throw "The player distribution does not contain the freshly generated obtainability source catalog."
   }
   $distributedFusionPredecessorIndex = Join-Path $DistributionPath "Data\Ironmon\fusion_predecessor_index.dat"
   if (-not (Test-Path -LiteralPath $distributedFusionPredecessorIndex) -or
@@ -79,6 +87,24 @@ function Test-PlayerDistribution {
   if ($workerResourceHash -ne
       (Get-FileHash -LiteralPath $playerFusionWorkerCatalog -Algorithm SHA256).Hash) {
     throw "The published tracker does not contain the freshly generated player-fusion worker catalog."
+  }
+  $sourceResourceName = "Ironmon.Tracker.Connection.Resources.obtainability_source_catalog.json"
+  $sourceResource = $trackerConnectionAssembly.GetManifestResourceStream($sourceResourceName)
+  if ($null -eq $sourceResource) {
+    throw "The published tracker does not contain the obtainability source catalog."
+  }
+  $sourceSha256 = [Security.Cryptography.SHA256]::Create()
+  try {
+    $sourceResourceHash = [BitConverter]::ToString(
+      $sourceSha256.ComputeHash($sourceResource)
+    ).Replace("-", "")
+  } finally {
+    $sourceSha256.Dispose()
+    $sourceResource.Dispose()
+  }
+  if ($sourceResourceHash -ne
+      (Get-FileHash -LiteralPath $obtainabilitySourceCatalog -Algorithm SHA256).Hash) {
+    throw "The published tracker does not contain the freshly generated obtainability source catalog."
   }
 
   $trackerAssemblyPath = Join-Path $DistributionPath "Ironmon Tracker\Ironmon Tracker.dll"
@@ -217,8 +243,9 @@ try {
   & (Join-Path $PSScriptRoot "generation\Generate-Obtainability-Foundation-Audit.ps1") `
     -GameRoot $gameRoot `
     -AreaCatalogPath $generatedAreaCatalog `
+    -SourceCatalogPath $generatedObtainabilitySourceCatalog `
     -AuditPath $generatedObtainabilityAudit
-  foreach ($generatedPath in $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit, $generatedObtainabilityAudit) {
+  foreach ($generatedPath in $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit, $generatedObtainabilityAudit, $generatedObtainabilitySourceCatalog) {
     if (-not (Test-Path -LiteralPath $generatedPath) -or
         (Get-Item -LiteralPath $generatedPath).Length -eq 0) {
       throw "Release generation did not produce '$generatedPath'."
@@ -235,7 +262,8 @@ try {
     @{ Generated = $generatedCoverageDataset; Canonical = $coverageDataset },
     @{ Generated = $generatedCoverageAudit; Canonical = $coverageAudit },
     @{ Generated = $generatedItemAudit; Canonical = $itemAudit },
-    @{ Generated = $generatedObtainabilityAudit; Canonical = $obtainabilityAudit }
+    @{ Generated = $generatedObtainabilityAudit; Canonical = $obtainabilityAudit },
+    @{ Generated = $generatedObtainabilitySourceCatalog; Canonical = $obtainabilitySourceCatalog }
   )) {
     $canonicalExists = Test-Path -LiteralPath $generatedFile.Canonical
     $contentChanged = -not $canonicalExists -or
@@ -246,7 +274,7 @@ try {
     }
   }
 } finally {
-  Remove-Item -LiteralPath $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit, $generatedObtainabilityAudit `
+  Remove-Item -LiteralPath $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit, $generatedObtainabilityAudit, $generatedObtainabilitySourceCatalog `
     -Force `
     -ErrorAction SilentlyContinue
 }

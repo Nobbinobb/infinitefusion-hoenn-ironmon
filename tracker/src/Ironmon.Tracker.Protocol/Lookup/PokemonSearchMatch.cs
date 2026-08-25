@@ -26,4 +26,9 @@ public sealed class PokemonSearchMatch
     /// Gets or initializes whether the match is a fusion species.
     /// </summary>
     public bool Fusion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the passive run-obtainability state when that information domain is available.
+    /// </summary>
+    public PokemonObtainabilityStatus? ObtainabilityStatus { get; init; }
 }

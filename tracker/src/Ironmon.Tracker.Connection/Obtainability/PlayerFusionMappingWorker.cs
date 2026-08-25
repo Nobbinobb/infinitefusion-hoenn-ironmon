@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text;
 
 namespace Ironmon.Tracker.Connection.Obtainability;
@@ -13,7 +14,9 @@ internal sealed class PlayerFusionMappingWorker
     private const int MaterialIdMask = (1 << MaterialIdBits) - 1;
     private const int PreferredMinimumPercent = 90;
     private const int PreferredMaximumPercent = 115;
+    private const int MaximumCachedStates = 2;
     private readonly PlayerFusionMappingWorkerCatalog _catalog;
+    private readonly ConcurrentDictionary<PlayerFusionStateKey, Lazy<WorkerState>> _states = new();
 
     /// <summary>
     /// Initializes a worker from the embedded generated game-data catalog.
@@ -51,7 +54,7 @@ internal sealed class PlayerFusionMappingWorker
         if (materials.Any(value => value <= 0 || value > _catalog.NormalSpeciesCount))
             throw new ArgumentOutOfRangeException(nameof(materialIds), "Every fusion material must be a normal species in the generated catalog.");
 
-        WorkerState state = BuildState(seed, generatorVersion, cancellationToken);
+        WorkerState state = GetState(seed, generatorVersion);
         int pairCount = checked(materials.Length * (materials.Length + 1) / 2);
         PlayerFusionMappedPair[] mappings = new PlayerFusionMappedPair[pairCount];
         Parallel.For(0, materials.Length, new ParallelOptions { CancellationToken = cancellationToken }, firstIndex =>
@@ -66,6 +69,33 @@ internal sealed class PlayerFusionMappingWorker
             }
         });
         return mappings;
+    }
+
+    /// <summary>
+    /// Gets or builds the expensive seed-specific mapping state shared by material requests and obtainability work.
+    /// </summary>
+    /// <param name="seed">The Ironmon run seed.</param>
+    /// <param name="generatorVersion">The player-fusion generator schema version.</param>
+    /// <returns>The retained deterministic mapping state.</returns>
+    private WorkerState GetState(long seed, int generatorVersion)
+    {
+        PlayerFusionStateKey key = new(seed, generatorVersion);
+        Lazy<WorkerState> state = _states.GetOrAdd(key, value => new Lazy<WorkerState>(() => BuildState(value.Seed, value.GeneratorVersion, CancellationToken.None), LazyThreadSafetyMode.ExecutionAndPublication));
+        TrimStates(key);
+        return state.Value;
+    }
+
+    /// <summary>
+    /// Bounds retained seed-specific mapping state while preserving the requested entry.
+    /// </summary>
+    /// <param name="currentKey">The state currently being requested.</param>
+    private void TrimStates(PlayerFusionStateKey currentKey)
+    {
+        if (_states.Count <= MaximumCachedStates)
+            return;
+
+        foreach (PlayerFusionStateKey key in _states.Keys.Where(key => key != currentKey).Take(_states.Count - MaximumCachedStates))
+            _states.TryRemove(key, out _);
     }
 
     /// <summary>
@@ -382,3 +412,10 @@ internal sealed class PlayerFusionMappingWorker
 /// <param name="FirstResultId">The result when the first material is Body.</param>
 /// <param name="SecondResultId">The result when the second material is Body.</param>
 internal sealed record PlayerFusionMappedPair(int FirstMaterialId, int SecondMaterialId, int FirstResultId, int SecondResultId);
+
+/// <summary>
+/// Identifies one reusable seed-specific player-fusion mapping state.
+/// </summary>
+/// <param name="Seed">The Ironmon run seed.</param>
+/// <param name="GeneratorVersion">The player-fusion generator schema version.</param>
+internal sealed record PlayerFusionStateKey(long Seed, int GeneratorVersion);

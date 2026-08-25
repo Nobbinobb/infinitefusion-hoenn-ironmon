@@ -31,6 +31,14 @@ module Ironmon
       end
       @taxonomy_by_identity = {}
       @family_id_by_family = {}
+      @body_lexical_rank = {}
+      @head_lexical_rank = {}
+      (1..NB_POKEMON).sort_by { |identity| "#{identity}H" }.each_with_index do |identity, index|
+        @body_lexical_rank[identity] = index
+      end
+      (1..NB_POKEMON).sort_by { |identity| identity.to_s }.each_with_index do |identity, index|
+        @head_lexical_rank[identity] = index
+      end
       @branches_by_source = Hash.new { |hash, key| hash[key] = [] }
       catalog.taxonomy_catalog.each do |entry|
         @taxonomy_by_identity[entry[:identity]] = entry
@@ -179,8 +187,74 @@ module Ironmon
       advance_predecessor_scan(
         scan, normalized_offset + normalized_limit
       )
+      if scan[:complete]
+        predecessors = deep_freeze(scan[:predecessors].dup)
+        diagnostics = deep_freeze(predecessor_scan_diagnostics(scan))
+        @predecessors_by_fusion[identity] = predecessors
+        @predecessor_diagnostics_by_fusion[identity] = diagnostics
+        @predecessor_scans_by_fusion.delete(identity)
+        return predecessor_page_from_complete_result(
+          predecessors, normalized_offset, normalized_limit, diagnostics
+        )
+      end
       return predecessor_page_from_scan(
         scan, normalized_offset, normalized_limit
+      )
+    end
+
+    def predecessor_page_for_assignments(target, assignments, offset, limit)
+      normalized_offset = offset.to_i
+      normalized_limit = limit.to_i
+      validate_predecessor_page(normalized_offset, normalized_limit)
+      species = GameData::Species.try_get(target)
+      return empty_predecessor_page(
+        normalized_offset, normalized_limit
+      ) if !valid_fusion_source?(species)
+      identity = species.id.to_s
+      if !@predecessors_by_fusion.key?(identity)
+        predecessors = []
+        branches_by_identity = {}
+        @catalog.branch_catalog.each do |branch|
+          branches_by_identity[branch[:identity]] = branch
+        end
+        assignments.each do |assignment|
+          @work_checkpoint.call if @work_checkpoint
+          next if !assignment.is_a?(Hash)
+          numeric_source_id = assignment["source_id"].to_i
+          next if numeric_source_id <= NB_POKEMON ||
+            numeric_source_id > (NB_POKEMON * NB_POKEMON) + NB_POKEMON
+          source = fusion_species_for_source_id(numeric_source_id)
+          next if !valid_fusion_source?(source)
+          side = assignment["component_side"].to_s
+          component_side = side == "head" ? :head : side == "body" ? :body : nil
+          next if !component_side
+          component_branch = branches_by_identity[
+            assignment["component_branch_identity"].to_s
+          ]
+          next if !component_branch
+          component = component_side == :body ?
+            source.body_pokemon : source.head_pokemon
+          next if component_branch[:source] != component.id.to_s
+          predecessors << {
+            :identity => "#{source.id}|#{component_side}|#{component_branch[:identity]}",
+            :source => source.id.to_s,
+            :component_side => component_side,
+            :component_source => component.id.to_s,
+            :component_branch_identity => component_branch[:identity],
+            :original_destination => component_branch[:original_destination],
+            :target => identity,
+            :target_id => species.id_number,
+            :source_bst => assignment["source_base_stat_total"].to_i,
+            :effective_methods => component_branch[:effective_methods]
+          }
+        end
+        @predecessors_by_fusion[identity] = deep_freeze(predecessors)
+        @predecessor_diagnostics_by_fusion[identity] = nil
+        @predecessor_scans_by_fusion.delete(identity)
+      end
+      return predecessor_page_from_complete_result(
+        @predecessors_by_fusion[identity], normalized_offset,
+        normalized_limit, @predecessor_diagnostics_by_fusion[identity]
       )
     end
 
@@ -190,6 +264,12 @@ module Ironmon
         :continuing => @target_pools[:continuing].length,
         :terminal => @target_pools[:terminal].length
       }
+    end
+
+    def prepare_predecessor_lookup
+      build_target_pools
+      target_pools_by_type_and_bst
+      return true
     end
 
     def validate_source(source)
@@ -248,7 +328,8 @@ module Ironmon
       structural_started_at = Time.now
       compatible_branches = 0
       compatible_components = {}
-      @catalog.branch_catalog.each do |component_branch|
+      @catalog.branch_catalog.each_with_index do |component_branch, index|
+        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
         metadata = component_branch_metadata(component_branch)
         component = metadata[:component]
         next if !metadata[:allowed_buckets].include?(target[:bucket])
@@ -259,33 +340,42 @@ module Ironmon
       source_ids = Ironmon.fusion_predecessor_index.source_ids_for(
         target[:bucket], target_types
       )
-      family_candidates = []
-      source_ids.each do |source_id|
-        body, head = fusion_components_for_source_id(source_id)
-        source_family_ids = family_ids_for_components(body, head)
-        next if family_ids_overlap?(source_family_ids, target_family_ids)
-        family_candidates << [source_id, body, head]
+      family_eligible_count = 0
+      packed_sources = []
+      source_ids.each_with_index do |source_id, index|
+        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+        body_id = (source_id - 1) / NB_POKEMON
+        head_id = source_id - (body_id * NB_POKEMON)
+        body = GameData::Species.get(body_id)
+        head = GameData::Species.get(head_id)
+        body_family = @family_id_by_family[taxonomy_for(body)[:family]]
+        head_family = @family_id_by_family[taxonomy_for(head)[:family]]
+        next if target_family_ids.include?(body_family) ||
+          target_family_ids.include?(head_family)
+        family_eligible_count += 1
+        source_bst = fusion_bst_for_components(body, head)
+        next if source_bst >= target_strength
+        lexical_key = (@body_lexical_rank[body_id] * NB_POKEMON) +
+          @head_lexical_rank[head_id]
+        packed_sources << ((lexical_key << 40) | (source_id << 12) |
+          source_bst)
       end
       structural_milliseconds = elapsed_milliseconds(structural_started_at)
       bst_started_at = Time.now
-      sources = {}
-      family_candidates.each do |source_id, body, head|
-        source_bst = fusion_bst_for_components(body, head)
-        next if source_bst >= target_strength
-        sources[fusion_identity_for_source_id(source_id)] = [
-          source_id, source_bst
-        ]
+      packed_sources.sort!
+      ordered_source_ids = packed_sources.map do |value|
+        (value >> 12) & 0xFFFFF
       end
+      ordered_source_bsts = packed_sources.map { |value| value & 0xFFF }
       bst_milliseconds = elapsed_milliseconds(bst_started_at)
-      ordered_sources = sources.keys.sort.map { |identity| sources[identity] }
       return {
         :target_entry => target,
         :target_bst => target_strength,
-        :sources => ordered_sources.map { |entry| entry[0] },
-        :source_bsts => ordered_sources.map { |entry| entry[1] },
+        :sources => ordered_source_ids,
+        :source_bsts => ordered_source_bsts,
         :next_source_index => 0,
         :predecessors => [],
-        :complete => sources.empty?,
+        :complete => packed_sources.empty?,
         :initialization_milliseconds => initialization_milliseconds,
         :structural_lookup_milliseconds => structural_milliseconds,
         :bst_filter_milliseconds => bst_milliseconds,
@@ -305,8 +395,8 @@ module Ironmon
         :compatible_component_branch_count => compatible_branches,
         :compatible_component_count => compatible_components.length,
         :source_combination_count => source_ids.length,
-        :family_eligible_count => family_candidates.length,
-        :bst_eligible_count => sources.length
+        :family_eligible_count => family_eligible_count,
+        :bst_eligible_count => packed_sources.length
       }
     end
 
@@ -351,6 +441,7 @@ module Ironmon
     def advance_predecessor_scan(scan, required_result_count)
       target = scan[:target_entry]
       while !scan[:complete]
+        @work_checkpoint.call if @work_checkpoint
         if required_result_count &&
            scan[:predecessors].length >= required_result_count
           break
@@ -614,13 +705,15 @@ module Ironmon
       priority = candidate_priority_for(
         branch, branch_context, selected_target[:bucket]
       )
+      included = deterministic_type_candidate_in_prefix?(
+        selected_target[:bucket], type_signature, minimum, maximum,
+        source_family_ids, priority, limit, selected_target[:identity]
+      )
+      return false if !included
       ranked = deterministic_type_candidate_prefix(
         selected_target[:bucket], type_signature, minimum, maximum,
         source_family_ids, priority, limit
       )
-      return false if !ranked.any? do |target|
-        target[:identity] == selected_target[:identity]
-      end
       plan = candidate_plan_from_ordered(
         selected_target[:bucket], ranked, false,
         minimum, maximum, branch_context[:reference_bst]
@@ -1076,6 +1169,43 @@ module Ironmon
       end
     end
 
+    def deterministic_type_candidate_in_prefix?(bucket, type_signature, minimum, maximum, source_family_ids, priority, limit, selected_identity)
+      targets = targets_for_type_signature(bucket, type_signature)
+      return deterministic_range_contains?(
+        targets, priority, limit, source_family_ids, selected_identity,
+        minimum, maximum
+      )
+    end
+
+    def deterministic_range_contains?(targets, priority, limit, excluded_family_ids, selected_identity, minimum, maximum)
+      return false if limit <= 0 || targets.empty?
+      swaps = {}
+      state = priority
+      accepted = 0
+      position = 0
+      while position < targets.length && accepted < limit
+        offset, state = deterministic_bounded_value(
+          state, targets.length - position
+        )
+        selected_position = position + offset
+        original_position = swaps.fetch(selected_position, selected_position)
+        current_position = swaps.fetch(position, position)
+        swaps[selected_position] = current_position if
+          selected_position != position
+        swaps.delete(position)
+        target = targets[original_position]
+        position += 1
+        next if family_ids_overlap?(
+          target[:family_ids], excluded_family_ids
+        )
+        strength = target_bst(target)
+        next if strength < minimum || strength > maximum
+        return true if target[:identity] == selected_identity
+        accepted += 1
+      end
+      return false
+    end
+
     def deterministic_range_prefix(targets, first, after, priority, limit, excluded_family_ids)
       return [] if limit <= 0 || first >= after
       length = after - first
@@ -1335,11 +1465,9 @@ module Ironmon
         by_identity[entry[:identity]] = entry
       end
       pools.each_value do |entries|
-        index = 0
         entries.sort_by! do |entry|
-          @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
-          index += 1
-          entry[:identity]
+          (@body_lexical_rank[entry[:body].id_number] * NB_POKEMON) +
+            @head_lexical_rank[entry[:head].id_number]
         end
         entries.freeze
       end
@@ -1393,9 +1521,20 @@ module Ironmon
       target_pools_by_type.each do |bucket, by_type|
         sorted_by_type = {}
         by_type.each do |type, targets|
-          sorted_by_type[type] = targets.sort_by do |target|
-            [target_bst(target), target[:identity]]
-          end.freeze
+          targets_by_bst = []
+          targets.each_with_index do |target, index|
+            @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+            strength = target_bst(target)
+            targets_by_bst[strength] ||= []
+            targets_by_bst[strength] << target
+          end
+          sorted = []
+          targets_by_bst.each_with_index do |strength_targets, strength|
+            next if !strength_targets
+            @work_checkpoint.call if @work_checkpoint
+            sorted.concat(strength_targets)
+          end
+          sorted_by_type[type] = sorted.freeze
         end
         result[bucket] = sorted_by_type.freeze
       end

@@ -204,6 +204,46 @@ module IronmonEvolutionUpwardExpansionRuntimeTests
         assert(target_snapshot["component_side"] ==
                  branches[0][:component_side].to_s,
                "generated target snapshots expose their fusion component")
+        target_assignments = branches.map do |branch|
+          {
+            "target_id" => GameData::Species.get(branch[:target_id]).id_number,
+            "target_base_stat_total" => branch[:target_bst],
+            "component_side" => branch[:component_side].to_s,
+            "component_branch_identity" =>
+              branch[:component_branch_identity]
+          }
+        end
+        native_targets =
+          Ironmon.tracker_fusion_evolution_targets_for_assignments(
+            GameData::Species.get(identity), target_assignments
+          )
+        native_target_snapshots = native_targets.map do |branch|
+          Ironmon.tracker_evolution_target_snapshot(branch)
+        end
+        expected_target_snapshots = branches.map do |branch|
+          Ironmon.tracker_evolution_target_snapshot(branch)
+        end
+        assert(
+          native_target_snapshots == expected_target_snapshots,
+          "#{identity} native target hints preserve exact outgoing results"
+        )
+        generator.candidate_targets_for(identity).each do |_side, candidates|
+          sample = candidates.first(5)
+          packed_candidates = sample.map do |candidate|
+            target_id = GameData::Species.get(candidate[:target_id]).id_number
+            (target_id << 11) | candidate[:target_bst]
+          end
+          candidate_assignments = [packed_candidates.pack("L<*")].pack("m0")
+          native_candidates =
+            Ironmon.tracker_fusion_evolution_candidates_for_assignments(
+              candidate_assignments
+            )
+          assert(
+            native_candidates.map { |candidate| candidate[:target] }.sort ==
+              sample.map { |candidate| candidate[:target] }.sort,
+            "#{identity} native candidate hints preserve valid targets"
+          )
+        end
         expanded = branches.select { |branch| branch[:upward_expansion] }
         assert(expanded.length == 1,
                "#{identity} expands exactly one branch upward")
@@ -263,6 +303,40 @@ module IronmonEvolutionUpwardExpansionRuntimeTests
                  Ironmon.custom_fusion_species?(branch[:source].to_sym)
                end,
                "#{target} reverse lookup contains only custom fusion sources")
+        exact_assignments = predecessors.map do |branch|
+          {
+            "source_id" =>
+              GameData::Species.get(branch[:source].to_sym).id_number,
+            "source_base_stat_total" => branch[:source_bst],
+            "component_side" => branch[:component_side].to_s,
+            "component_branch_identity" =>
+              branch[:component_branch_identity]
+          }
+        end
+        exact_generator = Ironmon::FusionEvolutionGenerator.new(
+          seed, catalog, pool, pool_info,
+          Ironmon::BaseStatGenerator.new(
+            seed, Ironmon.base_stat_source_fingerprint
+          )
+        )
+        exact_predecessors = []
+        exact_offset = 0
+        loop do
+          exact_page = exact_generator.predecessor_page_for_assignments(
+            target, exact_assignments, exact_offset, 2
+          )
+          exact_predecessors.concat(exact_page[:branches])
+          break if exact_page[:continuation] == :complete
+          exact_offset = exact_page[:next_offset]
+        end
+        expected_snapshots = predecessors.map do |branch|
+          Ironmon.tracker_evolution_predecessor_snapshot(branch)
+        end
+        exact_snapshots = exact_predecessors.map do |branch|
+          Ironmon.tracker_evolution_predecessor_snapshot(branch)
+        end
+        assert(exact_snapshots == expected_snapshots,
+               "#{target} tracker source hints preserve exact reverse results")
         predecessor_snapshot = Ironmon.tracker_evolution_predecessor_snapshot(
           predecessors[0]
         )

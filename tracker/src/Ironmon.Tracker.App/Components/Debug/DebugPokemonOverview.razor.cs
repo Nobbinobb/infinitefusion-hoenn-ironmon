@@ -23,6 +23,12 @@ public partial class DebugPokemonOverview
     public IReadOnlyList<string> Types { get; set; } = [];
 
     /// <summary>
+    /// Gets or sets the run-obtainability state shown beside the inspected identity.
+    /// </summary>
+    [Parameter]
+    public PokemonObtainabilityStatus? ObtainabilityStatus { get; set; }
+
+    /// <summary>
     /// Gets or sets the connected game installation directory.
     /// </summary>
     [Parameter]

@@ -46,4 +46,9 @@ public sealed class DebugEvolutionCandidateSearchRequestPayload
     /// Gets or initializes the maximum number of candidates to return.
     /// </summary>
     public int Limit { get; init; } = TrackerProtocol.EvolutionCandidatePageSize;
+
+    /// <summary>
+    /// Gets or initializes little-endian packed tracker-computed fusion candidate identifiers and base-stat totals when available.
+    /// </summary>
+    public byte[]? PackedCandidateAssignments { get; init; }
 }

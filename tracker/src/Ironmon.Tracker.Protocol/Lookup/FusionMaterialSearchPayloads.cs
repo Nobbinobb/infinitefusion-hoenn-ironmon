@@ -28,9 +28,42 @@ public sealed class FusionMaterialSearchRequestPayload
     public int Limit { get; init; } = TrackerProtocol.FusionMaterialPageSize;
 
     /// <summary>
+    /// Gets or initializes the tracker-generated material assignments for this page when available.
+    /// </summary>
+    public IReadOnlyList<FusionMaterialAssignmentPayload>? MaterialAssignments { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the total number of tracker-generated material assignments when available.
+    /// </summary>
+    public int? MaterialAssignmentTotal { get; init; }
+
+    /// <summary>
     /// Gets or initializes the completed-run reconstruction recipe.
     /// </summary>
     public required CompletedRunRecipePayload Recipe { get; init; }
+}
+
+/// <summary>
+/// Identifies one ordered normal-material pair assigned to a player fusion.
+/// </summary>
+public sealed class FusionMaterialAssignmentPayload
+{
+    /// <summary>
+    /// Initializes an empty assignment for protocol serialization.
+    /// </summary>
+    public FusionMaterialAssignmentPayload()
+    {
+    }
+
+    /// <summary>
+    /// Gets or initializes the numeric Body material identifier.
+    /// </summary>
+    public int BodyId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the numeric Head material identifier.
+    /// </summary>
+    public int HeadId { get; init; }
 }
 
 /// <summary>

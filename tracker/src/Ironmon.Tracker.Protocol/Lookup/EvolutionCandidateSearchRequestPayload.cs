@@ -38,6 +38,11 @@ public sealed class EvolutionCandidateSearchRequestPayload
     public int Limit { get; init; } = TrackerProtocol.EvolutionCandidatePageSize;
 
     /// <summary>
+    /// Gets or initializes little-endian packed tracker-computed fusion candidate identifiers and base-stat totals when available.
+    /// </summary>
+    public byte[]? PackedCandidateAssignments { get; init; }
+
+    /// <summary>
     /// Gets or initializes the completed-run reconstruction recipe.
     /// </summary>
     public required CompletedRunRecipePayload Recipe { get; init; }

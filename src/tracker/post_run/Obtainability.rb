@@ -1,5 +1,5 @@
 #===============================================================================
-# Ironmon completed-run obtainability prototype
+# Ironmon completed-run obtainability proof service
 #===============================================================================
 
 module Ironmon
@@ -12,11 +12,10 @@ module Ironmon
     MAX_PLANS_PER_SPECIES = 8
     MAX_REQUESTED_SPECIES = 2_000
     MAX_REQUESTED_EVOLUTION_EDGES = 4_000
-    MAXIMUM_FUSION_MAPPING_BATCH = 8_192
-    BACKGROUND_MILLISECONDS = 4.0
+    BACKGROUND_MILLISECONDS = 6.0
     FOREGROUND_MILLISECONDS = 250.0
+    BACKGROUND_LEASE_SECONDS = 1.0
     FOREGROUND_LEASE_SECONDS = 2.0
-    TRACKER_MAPPING_LEASE_SECONDS = 5.0
     EXCLUDED_MAP_NAME = /\A(?:EVENT_TEMPLATES|QUEST_TEMPLATES|testing)\z|\Aquest_/i
     SCRIPTED_ACQUISITION_METHODS = [
       "pbAddPokemon", "pbAddPokemonSilent", "pbAddToParty",
@@ -30,6 +29,11 @@ module Ironmon
     SCRIPTED_RESOURCE_METHODS = [
       "pbItemBall", "pbReceiveItem", "pbPokemonMart", "pbStoreItem"
     ].freeze
+    HOENN_MART_CITIES = [
+      :OLDALE, :PETALBURG, :RUSTBORO, :DEWFORD, :SLATEPORT, :MAUVILLE,
+      :VERDANTURF, :LAVARIDGE, :FALLARBOR, :FORTREE, :LILYCOVE,
+      :MOSSDEEP, :SOOTOPOLIS, :EVERGRANDE, :PACIFIDLOG
+    ].freeze
     ITEM_EVOLUTION_METHODS = [
       :HappinessHoldItem, :HoldItem, :HoldItemMale, :HoldItemFemale,
       :DayHoldItem, :NightHoldItem, :HoldItemHappiness,
@@ -42,54 +46,38 @@ module Ironmon
       @plans = Hash.new { |hash, key| hash[key] = [] }
       @obtainable_count = 0
       @direct_caught_fusions = {}
-      @candidate_species = {}
       @unresolved_sources = []
-      @unresolved_resources = [
-        "conditional authored gifts, specialized marts, and direct Bag writes"
-      ]
+      @unresolved_resources = []
+      @authored_variable_species = Hash.new do |hash, key|
+        hash[key] = []
+      end
+      @authored_variable_items = Hash.new do |hash, key|
+        hash[key] = []
+      end
       @resource_supply = Hash.new(0)
-      @fusion_evolution_queue = []
-      @fusion_evolution_work = nil
-      @queued_fusion_evolutions = {}
       @normal_evolution_queue = []
       @normal_evolution_work = nil
       @queued_normal_evolutions = {}
-      @possible_evolution_edges = {}
-      @requested_evolution_edges = Hash.new do |hash, key|
-        hash[key] = {}
-      end
-      @requested_evolution_edge_keys = {}
-      @requested_evolution_queue = []
-      @queued_requested_evolutions = {}
-      @requested_target_species = {}
-      @full_fusion_closure_requested = false
+      @possible_evolution_edge_numbers = {}
       @phase = :prepare_generators
-      @pair_index = 0
-      @pair_first = 0
-      @pair_second = 0
       @pair_count = 0
       @material_pairs_prepared = false
       @material_ids = []
+      @excluded_material_pair_offsets = []
+      @tracker_obtainable_fusion_words = nil
+      @tracker_executable_evolution_edges = nil
+      @fusion_mapping_complete = false
       @normal_generator = nil
-      @fusion_generator = nil
       @fusion_mapper = nil
       @encounter_tables = nil
       @encounter_table_index = 0
-      @map_paths = nil
-      @map_path_index = 0
-      @map_infos = nil
-      @authored_pages = nil
-      @authored_page_index = 0
-      @authored_map_id = nil
+      @authored_catalog_entries = nil
+      @authored_catalog_index = 0
       @authored_sources_complete = false
       @foreground_until = 0.0
-      @fusion_evolution_warmed = false
-      @player_fusion_pair_work = nil
-      @precomputed_fusion_mapping_entries = []
-      @tracker_mapping_until = 0.0
-      @tracker_mapping_worker_disabled = false
-      @tracker_mapping_batches_applied = 0
-      @ruby_mapping_pairs_processed = 0
+      @background_until = 0.0
+      @tracker_base_proof_snapshot = nil
+      @tracker_resource_supply_snapshot = nil
       @caught_fusion_entries = nil
       @caught_fusion_index = 0
       @work_fiber = nil
@@ -102,8 +90,9 @@ module Ironmon
       @work_deadline = Ironmon.tracker_uptime_seconds + duration
       @work_fiber = nil if @work_fiber && !@work_fiber.alive?
       @work_fiber ||= Fiber.new do
-        while @phase != :complete
+        while ![:complete, :failed].include?(@phase)
           advance_work_unit
+          Fiber.yield if @phase == :player_fusions
           cooperative_checkpoint
         end
       end
@@ -121,8 +110,13 @@ module Ironmon
         FOREGROUND_LEASE_SECONDS
     end
 
+    def request_background
+      @background_until = Ironmon.tracker_uptime_seconds +
+        BACKGROUND_LEASE_SECONDS
+    end
+
     def foreground_requested?
-      return @phase != :complete &&
+      return scheduled_advance_allowed? &&
         Ironmon.tracker_uptime_seconds < @foreground_until
     end
 
@@ -130,93 +124,185 @@ module Ironmon
       return @foreground_until
     end
 
+    def background_deadline
+      return @background_until
+    end
+
     def complete?
       return @phase == :complete
     end
 
     def background_advance_allowed?
-      return @phase != :authored_sources
+      return ![:complete, :failed].include?(@phase)
+    end
+
+    def background_requested?
+      return scheduled_advance_allowed? &&
+        Ironmon.tracker_uptime_seconds < @background_until
+    end
+
+    def scheduled_advance_allowed?
+      return ![:player_fusions, :complete, :failed].include?(@phase)
     end
 
     def snapshot(species = nil, requested_species_ids = [], requested_edge_keys = [])
-      request_target_species(species) if species
-      request_evolution_edges(requested_edge_keys)
+      raise_if_failed
       result = {
         "phase" => @phase.to_s,
-        "complete" => @phase == :complete,
-        "background_complete" => complete? || !background_advance_allowed?,
-        "processed_pairs" => @pair_index,
+        "complete" => requested_work_complete?(
+          species, requested_species_ids, requested_edge_keys
+        ),
+        "background_complete" => !background_advance_allowed?,
+        "processed_pairs" => @fusion_mapping_complete ? @pair_count : 0,
         "total_pairs" => @pair_count,
         "obtainable_count" => @obtainable_count,
         "unresolved_source_count" => @unresolved_sources.length,
         "unresolved_resource_count" => @unresolved_resources.length,
-        "fusion_mapping_mode" => fusion_mapping_mode,
-        "tracker_mapping_batches_applied" =>
-          @tracker_mapping_batches_applied,
-        "ruby_mapping_pairs_processed" => @ruby_mapping_pairs_processed,
         "obtainable_species_ids" => requested_species_ids.map do |value|
           identity = value.to_s.split(":", 2)[0].to_s
           key = identity.to_sym
-          plans = @plans.key?(key) ? @plans[key] : nil
-          next if identity.empty? || !plans || plans.empty?
+          next if identity.empty? || !obtainable_identity?(key)
           "#{identity}:0"
         end.compact.uniq,
         "obtainable_evolution_edge_keys" => requested_edge_keys.map do |value|
           key = value.to_s
-          @possible_evolution_edges[key] ? key : nil
+          requested_evolution_edge_obtainable?(key) ? key : nil
         end.compact.uniq,
-        "fusion_mapping_work" => fusion_mapping_work_snapshot
+        "fusion_closure_work" => fusion_closure_work_snapshot
       }
       result["target"] = target_snapshot(species) if species
       return result
     end
 
-    def apply_fusion_mapping_batch(batch, foreground = false)
-      return if !batch
-      if !batch.is_a?(Hash) || batch["job_id"].to_s != fusion_mapping_job_id
+    def apply_fusion_closure_result(result)
+      return if !result
+      if !result.is_a?(Hash) || result["job_id"].to_s != fusion_closure_job_id
         raise TrackerLookupError.new(
-          "invalid_query", "The tracker material-mapping job is stale."
+          "invalid_query", "The tracker fusion-closure job is stale."
         )
       end
-      offset = batch["offset"].to_i
-      if offset < 0 || offset > @pair_index
-        raise TrackerLookupError.new(
-          "invalid_query", "The tracker material-mapping batch is out of order."
-        )
-      end
-      packed_pairs = batch["packed_pairs"]
-      if !packed_pairs.is_a?(Array) || packed_pairs.empty? ||
-         packed_pairs.length % 4 != 0 ||
-         packed_pairs.length > MAXIMUM_FUSION_MAPPING_BATCH * 4
-        raise TrackerLookupError.new(
-          "invalid_query", "The tracker material-mapping batch size is invalid."
-        )
-      end
-      pair_count = packed_pairs.length / 4
-      overlap = [@pair_index - offset, pair_count].min
-      validate_fusion_mapping_entries(
-        packed_pairs.first(overlap * 4), offset
-      ) if
-        overlap > 0
-      packed_pairs = packed_pairs.drop(overlap * 4)
-      return true if packed_pairs.empty?
       @work_fiber = nil
       @work_deadline = nil
-      @player_fusion_pair_work = nil
-      @precomputed_fusion_mapping_entries = packed_pairs.dup
-      @tracker_mapping_batches_applied += 1
-      @tracker_mapping_until = Ironmon.tracker_uptime_seconds +
-        TRACKER_MAPPING_LEASE_SECONDS
-      if foreground
-        apply_next_fusion_mapping_entry until
-          @precomputed_fusion_mapping_entries.empty?
-      end
+      apply_tracker_closure_summary(result)
+      @fusion_mapping_complete = true
+      @phase = :complete
       return true
     end
 
-    def disable_tracker_mapping_worker
-      @tracker_mapping_worker_disabled = true
-      @tracker_mapping_until = 0.0
+    def apply_tracker_closure_summary(batch)
+      words = batch["obtainable_fusion_words"]
+      encoded_edges = batch["packed_executable_evolution_edges"]
+      if !words.is_a?(Array) || !encoded_edges.is_a?(String)
+        raise TrackerLookupError.new(
+          "invalid_query", "The tracker closure summary is malformed."
+        )
+      end
+      maximum_number = (NB_POKEMON * NB_POKEMON) + NB_POKEMON
+      maximum_words = (maximum_number >> 5) + 1
+      if words.length != maximum_words || words.any? do |word|
+           !word.is_a?(Integer) || word < 0 || word > 0xFFFFFFFF
+         end
+        raise TrackerLookupError.new(
+          "invalid_query", "The tracker obtainability bitset is malformed."
+        )
+      end
+      @tracker_executable_evolution_edges =
+        decode_tracker_executable_edges(encoded_edges)
+      @tracker_obtainable_fusion_words = words
+      obtainable_count = batch["obtainable_count"]
+      if !obtainable_count.is_a?(Integer) || obtainable_count < 0 ||
+         obtainable_count > maximum_number
+        raise TrackerLookupError.new(
+          "invalid_query", "The tracker obtainability count is malformed."
+        )
+      end
+      @obtainable_count = obtainable_count
+    end
+
+    def decode_tracker_executable_edges(encoded)
+      edges = []
+      previous = 0
+      value = 0
+      shift = 0
+      base64_value = 0
+      base64_bits = 0
+      encoded.each_byte do |character|
+        break if character == 61
+        sextet = if character >= 65 && character <= 90
+                   character - 65
+                 elsif character >= 97 && character <= 122
+                   character - 71
+                 elsif character >= 48 && character <= 57
+                   character + 4
+                 elsif character == 43
+                   62
+                 elsif character == 47
+                   63
+                  elsif character == 9 || character == 10 ||
+                        character == 13 || character == 32
+                   next
+                 end
+        if !sextet
+          raise TrackerLookupError.new(
+            "invalid_query", "The tracker executable-edge index is malformed."
+          )
+        end
+        base64_value = (base64_value << 6) | sextet
+        base64_bits += 6
+        while base64_bits >= 8
+          base64_bits -= 8
+          byte = (base64_value >> base64_bits) & 0xFF
+          value |= (byte & 0x7F) << shift
+          if (byte & 0x80) == 0
+            previous += value
+            edges << previous
+            value = 0
+            shift = 0
+          else
+            shift += 7
+            if shift > 63
+              raise TrackerLookupError.new(
+                "invalid_query", "The tracker executable-edge index is malformed."
+              )
+            end
+          end
+        end
+        base64_value &= (1 << base64_bits) - 1
+      end
+      if shift != 0
+        raise TrackerLookupError.new(
+          "invalid_query", "The tracker executable-edge index is malformed."
+        )
+      end
+      return edges
+    end
+
+    def report_tracker_closure_unavailable
+      @phase = :failed if !@fusion_mapping_complete
+      @failure_message =
+        "The parallel tracker obtainability worker is unavailable." if
+        @phase == :failed
+    end
+
+    def prove_player_fusion_pair(body, head, fusion)
+      return false if !@material_pairs_prepared
+      body_species = GameData::Species.get(body)
+      head_species = GameData::Species.get(head)
+      fusion_species = GameData::Species.get(fusion)
+      @plans[body_species.id].each do |body_plan|
+        @plans[head_species.id].each do |head_plan|
+          combination = player_fusion_plan_combination(body_plan, head_plan)
+          next if !combination
+          add_player_fusion_combination(
+            fusion_species.id, body_species, head_species,
+            body_plan, head_plan, combination
+          )
+        end
+      end
+      if !@plans[fusion_species.id].empty?
+        return true
+      end
+      return false
     end
 
     def target_snapshot(species)
@@ -226,30 +312,23 @@ module Ironmon
         return {
           "status" => "obtainable",
           "reason" => plan[:reason],
-          "path" => materialize_path(plan[:path]),
+          "path" => materialize_plan_path(plan),
           "required_items" => stringify_counts(plan[:items])
         }
       end
-      if @phase != :complete
+      if !@fusion_mapping_complete
         return {
           "status" => "calculating",
-          "reason" => "Player-fusion combinations are still being checked.",
+          "reason" => "This Pokemon's material and evolution paths are being checked.",
           "path" => [],
           "required_items" => {}
         }
       end
-      if @candidate_species[identity]
+      if species.is_a?(GameData::FusedSpecies) &&
+         tracker_fusion_obtainable_number?(species.id_number)
         return {
-          "status" => "unknown",
-          "reason" => "An authored acquisition can produce this Pokemon, but its story conditions are not yet path-proven.",
-          "path" => [@candidate_species[identity]],
-          "required_items" => {}
-        }
-      end
-      if !@unresolved_sources.empty? || !@unresolved_resources.empty?
-        return {
-          "status" => "unknown",
-          "reason" => "No proven path was found, but some authored sources could not be resolved safely.",
+          "status" => "obtainable",
+          "reason" => "The tracker proved a valid acquisition path.",
           "path" => [],
           "required_items" => {}
         }
@@ -263,37 +342,69 @@ module Ironmon
     end
 
     def passive_target_snapshot(species)
-      identity = normalize_species_id(species)
-      return target_snapshot(species) if best_plan(identity)
-      return target_snapshot(species) if @full_fusion_closure_requested
-      return {
-        "status" => "calculating",
-        "reason" => "This Pokemon has not been checked through its complete evolution chain yet.",
-        "path" => [],
-        "required_items" => {}
-      }
+      raise_if_failed
+      return target_snapshot(species)
     end
 
     private
 
-    def fusion_mapping_mode
-      return "ruby_fallback" if @tracker_mapping_worker_disabled ||
-        @ruby_mapping_pairs_processed > 0
-      return "tracker_worker" if @tracker_mapping_batches_applied > 0
-      return "waiting_for_tracker" if @material_pairs_prepared &&
-        @pair_index < @pair_count
-      return "preparing"
+    def obtainable_identity?(identity)
+      plans = @plans.key?(identity) ? @plans[identity] : nil
+      return true if plans && !plans.empty?
+      species = GameData::Species.try_get(identity)
+      return false if !species || !species.is_a?(GameData::FusedSpecies)
+      return tracker_fusion_obtainable_number?(species.id_number)
     end
 
-    def fusion_mapping_work_snapshot
-      return nil if @tracker_mapping_worker_disabled
-      return nil if !@material_pairs_prepared || @pair_index >= @pair_count
-      return nil if !@precomputed_fusion_mapping_entries.empty?
+    def tracker_fusion_obtainable_number?(number)
+      return false if !@tracker_obtainable_fusion_words
+      word = @tracker_obtainable_fusion_words[number >> 5].to_i
+      return (word & (1 << (number & 31))) != 0
+    end
+
+    def raise_if_failed
+      return if @phase != :failed
+      raise TrackerLookupError.new(
+        "obtainability_incomplete", @failure_message.to_s
+      )
+    end
+
+    def requested_work_complete?(species, species_ids, edge_keys)
+      requested = false
+      if species
+        requested = true
+        identity = normalize_species_id(species)
+        return false if !obtainable_identity?(identity) &&
+          !@fusion_mapping_complete
+      end
+      species_ids.each do |value|
+        identity = value.to_s.split(":", 2)[0].to_s
+        next if identity.empty?
+        requested = true
+        species_data = GameData::Species.try_get(identity.to_sym)
+        return false if species_data &&
+          !obtainable_identity?(species_data.id) &&
+          !@fusion_mapping_complete
+      end
+      edge_keys.each do |value|
+        key = value.to_s
+        next if key.empty?
+        requested = true
+        return false if !requested_evolution_edge_obtainable?(key) &&
+          !@fusion_mapping_complete
+      end
+      return complete? if !requested
+      return true
+    end
+
+    def fusion_closure_work_snapshot
+      return nil if !@material_pairs_prepared ||
+        @fusion_mapping_complete
       info = Ironmon.custom_fusion_pool_info
-      @tracker_mapping_until = Ironmon.tracker_uptime_seconds +
-        TRACKER_MAPPING_LEASE_SECONDS
       return {
-        "job_id" => fusion_mapping_job_id,
+        "job_id" => fusion_closure_job_id,
+        "source_catalog_fingerprint" =>
+          Ironmon.tracker_obtainability_source_catalog["fingerprint"],
         "seed" => @recipe["seed"],
         "generator_version" => @recipe["player_fusion_generator_version"],
         "base_stat_source_fingerprint" =>
@@ -304,119 +415,80 @@ module Ironmon
         "material_ids" => @material_ids.map do |identity|
           GameData::Species.get(identity).id_number
         end,
-        "processed_pairs" => @pair_index,
-        "total_pairs" => @pair_count
+        "total_pairs" => @pair_count,
+        "excluded_pair_offsets" => @excluded_material_pair_offsets,
+        "base_proofs" => tracker_base_proof_snapshot,
+        "resource_supply" => tracker_resource_supply_snapshot,
+        "fusion_evolution_generator_version" =>
+          @recipe["fusion_evolution_generator_version"],
+        "fusion_evolution_rules_version" =>
+          @recipe["fusion_evolution_rules_version"],
+        "evolution_source_fingerprint" =>
+          @recipe["evolution_source_fingerprint"],
+        "evolution_taxonomy_fingerprint" =>
+          @recipe["evolution_taxonomy_fingerprint"],
+        "evolution_method_fingerprint" =>
+          @recipe["evolution_method_fingerprint"]
       }
     end
 
-    def fusion_mapping_job_id
-      return @fusion_mapping_job_id if @fusion_mapping_job_id
+    def fusion_closure_job_id
+      return @fusion_closure_job_id if @fusion_closure_job_id
       material_numbers = @material_ids.map do |identity|
         GameData::Species.get(identity).id_number
       end
-      fingerprint = Ironmon.fnv1a_64_fingerprint(material_numbers)
-      @fusion_mapping_job_id = [
+      fingerprint = Ironmon.fnv1a_64_fingerprint(
+        material_numbers + @excluded_material_pair_offsets
+      )
+      @fusion_closure_job_id = [
         @recipe["run_id"], @recipe["seed"],
         @recipe["player_fusion_generator_version"], fingerprint
       ].join(":")
-      return @fusion_mapping_job_id
+      return @fusion_closure_job_id
     end
 
-    def apply_next_fusion_mapping_entry
-      if @precomputed_fusion_mapping_entries.length < 4 ||
-         @pair_index >= @pair_count
-        raise TrackerLookupError.new(
-          "invalid_query", "The tracker material mapping contains extra pairs."
-        )
-      end
-      values = @precomputed_fusion_mapping_entries.shift(4)
-      first_id = @material_ids[@pair_first]
-      second_id = @material_ids[@pair_second]
-      first_number = GameData::Species.get(first_id).id_number
-      second_number = GameData::Species.get(second_id).id_number
-      if values[0].to_i != first_number || values[1].to_i != second_number
-        raise TrackerLookupError.new(
-          "invalid_query", "The tracker material mapping does not match the expected pair."
-        )
-      end
-      first_result = valid_tracker_fusion_result(values[2])
-      second_result = valid_tracker_fusion_result(values[3])
-      apply_precomputed_player_fusion_pair(
-        first_id, second_id, first_result, second_result
-      )
-      finish_player_fusion_pair
-    end
-
-    def validate_fusion_mapping_entries(entries, offset)
-      first_index, second_index = material_pair_indices(offset)
-      entries.each_slice(4) do |values|
-        first_id = @material_ids[first_index]
-        second_id = @material_ids[second_index]
-        first_number = GameData::Species.get(first_id).id_number
-        second_number = GameData::Species.get(second_id).id_number
-        if values[0].to_i != first_number || values[1].to_i != second_number
-          raise TrackerLookupError.new(
-            "invalid_query", "The tracker material mapping does not match the expected pair."
-          )
-        end
-        valid_tracker_fusion_result(values[2])
-        valid_tracker_fusion_result(values[3])
-        second_index += 1
-        if second_index >= @material_ids.length
-          first_index += 1
-          second_index = first_index
-        end
-      end
-    end
-
-    def material_pair_indices(offset)
-      first_index = 0
-      second_index = 0
-      remaining = offset.to_i
-      row_length = @material_ids.length
-      while remaining >= row_length && row_length > 0
-        remaining -= row_length
-        first_index += 1
-        row_length -= 1
-      end
-      second_index = first_index + remaining
-      return first_index, second_index
-    end
-
-    def valid_tracker_fusion_result(value)
-      number = value.to_i
-      identity = Ironmon.fusion_species_identity(number)
-      if !identity ||
-         !Ironmon.custom_fusion_pool_service.include_number?(number)
-        raise TrackerLookupError.new(
-          "invalid_query", "The tracker returned a fusion outside the custom pool."
-        )
-      end
-      return identity
-    end
-
-    def apply_precomputed_player_fusion_pair(first_id, second_id,
-                                             first_result, second_result)
-      first = GameData::Species.get(first_id)
-      second = GameData::Species.get(second_id)
-      first_plans = @plans[first_id]
-      second_plans = @plans[second_id]
-      first_plans.each do |first_plan|
-        second_plans.each do |second_plan|
-          combination = player_fusion_plan_combination(
-            first_plan, second_plan
-          )
-          next if !combination
-          add_player_fusion_combination(
-            first_result, first, second, first_plan, second_plan,
-            combination
-          )
-          if first_id != second_id
-            add_player_fusion_combination(
-              second_result, second, first, second_plan, first_plan,
-              combination
-            )
+    def tracker_base_proof_snapshot
+      return @tracker_base_proof_snapshot if @tracker_base_proof_snapshot
+      result = []
+      @plans.each do |identity, plans|
+        next if plans.empty?
+        species = GameData::Species.try_get(identity)
+        next if !species
+        result << {
+          "species_id" => species.id_number,
+          "plans" => plans.map do |plan|
+            {
+              "items" => stringify_counts(plan[:items]),
+              "constraints" => stringify_constraints(plan[:constraints]),
+              "source_uses" => stringify_counts(plan[:source_uses]),
+              "path_length" => plan[:path_length].to_i
+            }
           end
+        }
+      end
+      @tracker_base_proof_snapshot = result.sort_by do |entry|
+        entry["species_id"]
+      end
+      return @tracker_base_proof_snapshot
+    end
+
+    def tracker_resource_supply_snapshot
+      @tracker_resource_supply_snapshot ||= stringify_counts(@resource_supply)
+      return @tracker_resource_supply_snapshot
+    end
+
+    def stringify_constraints(values)
+      result = {}
+      values.each do |key, value|
+        result[key.to_s] = value.to_s
+      end
+      return result
+    end
+
+    def compatible_material_pair?(body, head)
+      return @plans[body].any? do |body_plan|
+        @plans[head].any? do |head_plan|
+          player_fusion_plan_combination(body_plan, head_plan)
         end
       end
     end
@@ -447,7 +519,7 @@ module Ironmon
       when :starter_sources
         seed_starter_sources
         prepare_authored_map_scan
-        @phase = :resources
+        @phase = :authored_sources
       when :authored_sources
         advance_authored_source_work
       when :resources
@@ -466,10 +538,8 @@ module Ironmon
       when :transformation_evolutions
         close_normal_evolutions(1)
         prepare_material_pairs if !normal_evolution_pending?
-      when :player_fusions, :fusion_evolutions
-        advance_fusion_work
-      when :requested_evolutions
-        advance_requested_evolution_work
+      when :player_fusions
+        return
       end
     end
 
@@ -489,101 +559,10 @@ module Ironmon
       checkpoint = proc { cooperative_checkpoint }
       @configuration ||= Configuration.from(@recipe["configuration"])
       @normal_generator ||= Ironmon.tracker_normal_evolution_generator(@recipe)
-      @fusion_generator ||=
-        Ironmon.tracker_obtainability_fusion_evolution_generator(
-          @recipe, checkpoint
-        )
       @fusion_mapper ||= Ironmon.tracker_obtainability_fusion_mapper(
         @recipe, checkpoint
       )
       @phase = :prepare_encounters
-    end
-
-    def advance_fusion_work
-      if !@fusion_evolution_warmed
-        @fusion_evolution_warmed = true
-        return
-      end
-      if !@precomputed_fusion_mapping_entries.empty?
-        apply_next_fusion_mapping_entry
-        return
-      end
-      if @pair_index < @pair_count &&
-         Ironmon.tracker_uptime_seconds < @tracker_mapping_until
-        return
-      end
-      if @full_fusion_closure_requested && fusion_evolution_pending?
-        @phase = :fusion_evolutions
-        close_fusion_evolutions(1)
-        return
-      end
-      if @pair_index < @pair_count
-        @phase = :player_fusions
-        process_player_fusion_pair
-        return
-      end
-      request_full_fusion_closure_if_needed
-      if fusion_evolution_pending?
-        @phase = :fusion_evolutions
-        close_fusion_evolutions(1)
-        return
-      end
-      finish_evolution_work
-    end
-
-    def finish_evolution_work
-      if !@requested_evolution_queue.empty?
-        @phase = :requested_evolutions
-      else
-        @phase = @authored_sources_complete ? :complete : :authored_sources
-      end
-    end
-
-    def request_target_species(species)
-      identity = normalize_species_id(species)
-      @requested_target_species[identity] = true
-      request_full_fusion_closure_if_needed
-    end
-
-    def request_full_fusion_closure_if_needed
-      return if @full_fusion_closure_requested
-      return if !@material_pairs_prepared
-      return if @pair_index < @pair_count
-      unresolved = @requested_target_species.keys.any? do |identity|
-        plans = @plans.key?(identity) ? @plans[identity] : nil
-        !plans || plans.empty?
-      end
-      return if !unresolved
-      @full_fusion_closure_requested = true
-      @plans.each do |identity, plans|
-        next if plans.empty?
-        species = GameData::Species.try_get(identity)
-        next if !species || !species.is_a?(GameData::FusedSpecies)
-        queue_fusion_evolution(identity)
-      end
-      @phase = :fusion_evolutions if @phase == :complete
-    end
-
-    def request_evolution_edges(edge_keys)
-      edge_keys.each do |value|
-        key = value.to_s
-        next if @requested_evolution_edge_keys[key]
-        source_text, target_text = key.split(">", 2)
-        next if !source_text || !target_text
-        source = source_text.split(":", 2)[0].to_s
-        target = target_text.split(":", 2)[0].to_s
-        next if source.empty? || target.empty?
-        source_id = requested_evolution_species_identity(source)
-        target_id = requested_evolution_species_identity(target)
-        next if !source_id || !target_id
-        @requested_evolution_edge_keys[key] = true
-        @requested_evolution_edges[source_id][target_id] = key
-        queue_requested_evolution(source_id) if
-          !@possible_evolution_edges[key]
-      end
-      if @phase == :complete && !@requested_evolution_queue.empty?
-        @phase = :requested_evolutions
-      end
     end
 
     def requested_evolution_species_identity(value)
@@ -594,109 +573,17 @@ module Ironmon
       return species ? species.id : nil
     end
 
-    def queue_requested_evolution(identity)
-      return if !@requested_evolution_edges
-      return if @queued_requested_evolutions[identity]
-      return if @requested_evolution_edges[identity].empty?
-      @queued_requested_evolutions[identity] = true
-      @requested_evolution_queue << identity
-    end
-
-    def advance_requested_evolution_work
-      source = @requested_evolution_queue.shift
-      @queued_requested_evolutions.delete(source)
-      process_requested_evolution_source(source) if source
-      finish_evolution_work if @requested_evolution_queue.empty?
-    end
-
-    def process_requested_evolution_source(source)
-      species = GameData::Species.get(source)
-      branches = if species.is_a?(GameData::FusedSpecies)
-                   @fusion_generator.branches_for(species)
-                 else
-                   @normal_generator.branches_for(species)
-                 end
-      by_target = {}
-      branches.each { |branch| by_target[branch[:target_id]] = branch }
-      plans = @plans[source].dup
-      @requested_evolution_edges[source].each do |target, key|
-        branch = by_target[target]
-        next if !branch || plans.empty?
-        possible = false
-        plans.each do |plan|
-          next_plans = branch_plans(plan, branch)
-          possible = true if !next_plans.empty?
-          next_plans.each { |next_plan| add_plan(target, next_plan) }
-        end
-        @possible_evolution_edges[key] = true if possible
-      end
-    end
-
-    def process_player_fusion_pair
-      if !@player_fusion_pair_work
-        first_id = @material_ids[@pair_first]
-        second_id = @material_ids[@pair_second]
-        fusion_ids = @fusion_mapper.species_pair(first_id, second_id)
-        orientations = [[
-          fusion_ids[0],
-          GameData::Species.get(first_id),
-          GameData::Species.get(second_id),
-          @plans[first_id], @plans[second_id]
-        ]]
-        if first_id != second_id
-          orientations << [
-            fusion_ids[1],
-            GameData::Species.get(second_id),
-            GameData::Species.get(first_id),
-            @plans[second_id], @plans[first_id]
-          ]
-        end
-        @player_fusion_pair_work = {
-          :orientations => orientations,
-          :first_plan_index => 0,
-          :second_plan_index => 0
-        }
-      end
-      work = @player_fusion_pair_work
-      first = work[:orientations][0]
-      first_plan = first[3][work[:first_plan_index]]
-      second_plan = first[4][work[:second_plan_index]]
-      combination = player_fusion_plan_combination(first_plan, second_plan)
-      if combination
-        work[:orientations].each do |fusion, body, head, body_plans, head_plans|
-          body_plan = body_plans[work[:first_plan_index]]
-          head_plan = head_plans[work[:second_plan_index]]
-          if body_plans.equal?(first[4])
-            body_plan = body_plans[work[:second_plan_index]]
-            head_plan = head_plans[work[:first_plan_index]]
-          end
-          add_player_fusion_combination(
-            fusion, body, head, body_plan, head_plan, combination
-          )
-        end
-      end
-      work[:second_plan_index] += 1
-      if work[:second_plan_index] >= first[4].length
-        work[:second_plan_index] = 0
-        work[:first_plan_index] += 1
-      end
-      return if work[:first_plan_index] < first[3].length
-      @player_fusion_pair_work = nil
-      @ruby_mapping_pairs_processed += 1
-      finish_player_fusion_pair
-    rescue PlayerFusionMappingError
-      @player_fusion_pair_work = nil
-      @ruby_mapping_pairs_processed += 1
-      finish_player_fusion_pair
-    end
-
-    def finish_player_fusion_pair
-      @pair_index += 1
-      @pair_second += 1
-      if @pair_second >= @material_ids.length
-        @pair_first += 1
-        @pair_second = @pair_first
-      end
+    def requested_evolution_edge_obtainable?(key)
+      source_text, target_text = key.to_s.split(">", 2)
+      return false if !source_text || !target_text
+      source = requested_evolution_species_identity(
+        source_text.split(":", 2)[0]
+      )
+      target = requested_evolution_species_identity(
+        target_text.split(":", 2)[0]
+      )
+      return false if !source || !target
+      return possible_evolution_edge?(source, target)
     end
 
     def process_encounter_table(table)
@@ -744,54 +631,99 @@ module Ironmon
     end
 
     def prepare_authored_map_scan
-      @map_infos = load_data("Data/MapInfos.rxdata")
-      @map_paths = Dir.glob(
-        File.join("Data", "Map[0-9][0-9][0-9].rxdata")
-      ).sort
-      @map_path_index = 0
+      catalog = Ironmon.tracker_obtainability_source_catalog
+      @authored_catalog_entries = catalog["sources"].map do |entry|
+        [:source, entry]
+      end
+      catalog["resources"].each do |entry|
+        @authored_catalog_entries << [:resource, entry]
+      end
+      @authored_catalog_index = 0
     rescue Exception => e
       @unresolved_sources << "catalog:#{e.class}:#{e.message}"
-      @map_infos = {}
-      @map_paths = []
+      @authored_catalog_entries = []
     end
 
     def advance_authored_source_work
-      if @authored_pages && @authored_page_index < @authored_pages.length
-        page, event_id = @authored_pages[@authored_page_index]
-        scan_command_list(page.list, @authored_map_id, event_id, {})
-        @authored_page_index += 1
+      if @authored_catalog_index < @authored_catalog_entries.length
+        kind, entry = @authored_catalog_entries[@authored_catalog_index]
+        if kind == :source
+          apply_authored_source_catalog_entry(entry)
+        else
+          apply_authored_resource_catalog_entry(entry)
+        end
+        @authored_catalog_index += 1
         return
       end
-      @authored_pages = nil
-      while @map_path_index < @map_paths.length
-        path = @map_paths[@map_path_index]
-        @map_path_index += 1
-        map_id = File.basename(path)[/\d+/].to_i
-        begin
-          info = @map_infos[map_id]
-          next if !info || info.name.to_s.match?(EXCLUDED_MAP_NAME)
-          map = load_data(path)
-          pages = []
-          map.events.each_value do |event|
-            event.pages.each { |page| pages << [page, event.id] }
-          end
-          next if pages.empty?
-          @authored_pages = pages
-          @authored_page_index = 0
-          @authored_map_id = map_id
-          return
-        rescue Exception => e
-          @unresolved_sources << "map:#{map_id}:#{e.class}:#{e.message}"
-        end
+      if !@unresolved_sources.empty? || !@unresolved_resources.empty?
+        @phase = :failed
+        first_unresolved = (@unresolved_sources + @unresolved_resources).first
+        @failure_message =
+          "Run obtainability could not classify every acquisition source " +
+          "or evolution resource (#{first_unresolved})."
+        raise_if_failed
       end
       @authored_sources_complete = true
-      finish_evolution_work
+      @phase = :resources
     end
 
-    def scan_command_list(commands, map_id, event_id, common_stack)
-      script_chunks(commands).each do |index, script|
+    def apply_authored_source_catalog_entry(entry)
+      identity = GameData::Species.get(entry["species_id"].to_i).id
+      if entry["mapping_kind"] == "wild"
+        identity = species_generator.map(identity, entry["mapping_context"])
+      end
+      constraints = entry["starter_slot"] ?
+        { :starter => entry["starter_slot"].to_i } : nil
+      add_direct_source(
+        identity, entry["reason"], entry["detail"], constraints,
+        entry["caught"] == true, entry["source_id"]
+      )
+    rescue Exception => e
+      @unresolved_sources << "catalog:source:#{e.class}:#{e.message}"
+    end
+
+    def apply_authored_resource_catalog_entry(entry)
+      quantity = entry["quantity"].to_i
+      entry["item_ids"].each do |item_id|
+        item = GameData::Item.get(item_id.to_sym)
+        if entry["tm_gift"] == true && item.is_TM?
+          generator = tracker_item_generator
+          item = GameData::Item.get(
+            Ironmon.resolve_tm_gift(item, entry["slot_id"], generator)
+          ) if generator
+        end
+        if entry["repeatable"] == true
+          @resource_supply[item.id] = MAX_REQUESTED_SPECIES
+        else
+          @resource_supply[item.id] += quantity
+        end
+      end
+    rescue Exception => e
+      @unresolved_resources << "catalog:resource:#{e.class}:#{e.message}"
+    end
+
+    def scan_command_list(commands, map_id, event_id, common_stack,
+                          inherited_species = {}, inherited_items = {})
+      chunks = script_chunks(commands)
+      complete_script = chunks.map { |_index, script| script }.join("\n")
+      variable_species = authored_variable_species_candidates(
+        complete_script, inherited_species
+      )
+      variable_items = authored_variable_item_candidates(
+        complete_script, inherited_items
+      )
+      chunks.each do |index, script|
         scripted_calls(script).each do |method_name, arguments|
-          add_scripted_call(method_name, arguments, map_id, event_id, index)
+          add_scripted_call(
+            method_name, arguments, map_id, event_id, index, complete_script,
+            variable_species
+          )
+        end
+        scripted_resource_calls(script).each do |method_name, arguments|
+          add_scripted_resource_call(
+            method_name, arguments, map_id, event_id, index, complete_script,
+            variable_items
+          )
         end
       end
       commands.each do |command|
@@ -803,7 +735,10 @@ module Ironmon
         next if !common
         nested_stack = common_stack.dup
         nested_stack[common_id] = true
-        scan_command_list(common.list, map_id, event_id, nested_stack)
+        scan_command_list(
+          common.list, map_id, event_id, nested_stack, variable_species,
+          variable_items
+        )
       end
     end
 
@@ -820,6 +755,8 @@ module Ironmon
             parts << commands[index].parameters[0].to_s
           end
           chunks << [start_index, parts.join("\n")]
+        elsif command.code == 111 && command.parameters[0].to_i == 12
+          chunks << [index, command.parameters[1].to_s]
         end
         index += 1
       end
@@ -827,8 +764,18 @@ module Ironmon
     end
 
     def scripted_calls(script)
+      return parsed_script_calls(
+        script, SCRIPTED_ACQUISITION_METHODS + DEFERRED_ACQUISITION_METHODS
+      )
+    end
+
+    def scripted_resource_calls(script)
+      return parsed_script_calls(script, SCRIPTED_RESOURCE_METHODS)
+    end
+
+    def parsed_script_calls(script, method_names)
       calls = []
-      SCRIPTED_ACQUISITION_METHODS.each do |method_name|
+      method_names.each do |method_name|
         offset = 0
         loop do
           match = script.match(/\b#{Regexp.escape(method_name)}\s*\(/, offset)
@@ -904,27 +851,155 @@ module Ironmon
       return result
     end
 
-    def add_scripted_call(method_name, arguments, map_id, event_id, index)
-      positions = scripted_species_positions(method_name)
-      positions.each_with_index do |position, subslot|
+    def add_scripted_call(method_name, arguments, map_id, event_id, index,
+                          script, variable_species)
+      entries = authored_source_catalog_entries(
+        method_name, arguments, map_id, event_id, index, script,
+        variable_species
+      )
+      entries.each { |entry| apply_authored_source_catalog_entry(entry) }
+    rescue Exception => e
+      @unresolved_sources << e.message
+    end
+
+    def collect_authored_catalog_entries(commands, map_id, event_id,
+                                         common_stack, sources, resources,
+                                         inherited_species = {},
+                                         inherited_items = {})
+      chunks = script_chunks(commands)
+      complete_script = chunks.map { |_index, script| script }.join("\n")
+      variable_species = authored_variable_species_candidates(
+        complete_script, inherited_species
+      )
+      variable_items = authored_variable_item_candidates(
+        complete_script, inherited_items
+      )
+      chunks.each do |index, script|
+        scripted_calls(script).each do |method_name, arguments|
+          sources.concat(authored_source_catalog_entries(
+            method_name, arguments, map_id, event_id, index, complete_script,
+            variable_species
+          ))
+        end
+        scripted_resource_calls(script).each do |method_name, arguments|
+          resources.concat(authored_resource_catalog_entries(
+            method_name, arguments, map_id, event_id, index, complete_script,
+            variable_items
+          ))
+        end
+      end
+      commands.each do |command|
+        next if command.code != 117
+        common_id = command.parameters[0].to_i
+        next if common_id < 1 || common_stack[common_id]
+        @common_events ||= load_data("Data/CommonEvents.rxdata")
+        common = @common_events[common_id]
+        next if !common
+        nested_stack = common_stack.dup
+        nested_stack[common_id] = true
+        collect_authored_catalog_entries(
+          common.list, map_id, event_id, nested_stack, sources, resources,
+          variable_species, variable_items
+        )
+      end
+    end
+
+    def authored_source_catalog_entries(method_name, arguments, map_id,
+                                        event_id, index, script, variables)
+      entries = []
+      scripted_species_positions(method_name).each_with_index do |position, subslot|
         expression = arguments[position]
-        identity = literal_species(expression)
-        if !identity
+        identities = species_expression_candidates(expression, script, variables)
+        if identities.empty?
           next if expression.to_s == "starter" ||
             expression.to_s.include?("VAR_PLAYER_STARTER_CHOICE")
-          @unresolved_sources <<
-            "map:#{map_id}|event:#{event_id}|index:#{index}|#{method_name}:#{expression}"
-          next
+          raise "unresolved authored source map:#{map_id}|event:#{event_id}|" +
+            "index:#{index}|#{method_name}:#{expression}"
         end
-        identity = randomized_scripted_species(
-          identity, method_name, arguments, map_id, event_id, index, subslot
-        )
-        label = scripted_source_label(method_name)
-        detail = "#{label} on #{pbGetMapNameFromId(map_id)} (event #{event_id})"
-        species = GameData::Species.try_get(identity)
-        @candidate_species[species.id] = detail if species &&
-          Ironmon.tracker_lookup_species_available?(species)
+        identities.each do |identity|
+          species = GameData::Species.try_get(identity)
+          next if !species || !Ironmon.tracker_lookup_species_available?(species)
+          mapping_kind, context = authored_source_mapping(
+            method_name, arguments, map_id, event_id, index, subslot
+          )
+          label = scripted_source_label(method_name)
+          entries << {
+            "species_id" => species.id_number,
+            "mapping_kind" => mapping_kind,
+            "mapping_context" => context,
+            "reason" => label,
+            "detail" => "#{label} on #{pbGetMapNameFromId(map_id)} " +
+              "(event #{event_id})",
+            "caught" => true,
+            "source_id" => "authored:#{map_id}:#{event_id}"
+          }
+        end
       end
+      return entries
+    end
+
+    def authored_source_mapping(method_name, arguments, map_id, event_id,
+                                index, subslot)
+      if method_name.include?("WildBattle")
+        purpose = method_name == "pbDoubleWildBattle" ? "double" :
+          (method_name == "pbTripleWildBattle" ? "triple" : "single")
+        return ["wild", ["script", map_id, event_id, index, purpose, subslot]]
+      end
+      if ["pbAddPokemon", "pbAddToParty"].include?(method_name) &&
+         arguments[3].to_s != "true"
+        return ["wild", ["script", map_id, event_id, index, "gift", 0]]
+      end
+      return ["none", []]
+    end
+
+    def authored_resource_catalog_entries(method_name, arguments, map_id,
+                                          event_id, index, script, variables)
+      return [] if method_name == "pbItemBall"
+      items = item_expression_candidates(arguments[0], script, variables)
+      if items.empty?
+        raise "unresolved authored resource map:#{map_id}|event:#{event_id}|" +
+          "index:#{index}|#{method_name}:#{arguments[0]}"
+      end
+      return [{
+        "item_ids" => items.map { |item| item.id.to_s },
+        "quantity" => literal_quantity(arguments[1]),
+        "repeatable" => method_name == "pbPokemonMart",
+        "tm_gift" => method_name == "pbReceiveItem",
+        "slot_id" => "map:#{map_id}|event:#{event_id}|command:#{index}"
+      }]
+    end
+
+    def add_scripted_resource_call(method_name, arguments, map_id, event_id,
+                                   index, script, variable_items)
+      entries = authored_resource_catalog_entries(
+        method_name, arguments, map_id, event_id, index, script,
+        variable_items
+      )
+      entries.each { |entry| apply_authored_resource_catalog_entry(entry) }
+    rescue Exception => e
+      @unresolved_resources << e.message
+    end
+
+    def literal_item(expression)
+      match = expression.to_s.strip.match(
+        /\A(?::|PBItems::)([A-Za-z0-9_]+)\z/
+      )
+      return nil if !match
+      return GameData::Item.try_get(match[1].upcase.to_sym)
+    end
+
+    def literal_quantity(expression)
+      value = expression.to_s.strip
+      return 1 if value.empty? || !value.match?(/\A\d+\z/)
+      return [value.to_i, 1].max
+    end
+
+    def tracker_item_generator
+      item_generator = @recipe["item_generator"]
+      return nil if !item_generator.is_a?(Hash)
+      return Ironmon.build_item_slot_generator(
+        @recipe["seed"], item_generator["rules_version"]
+      )
     end
 
     def scripted_species_positions(method_name)
@@ -938,13 +1013,14 @@ module Ironmon
       value = expression.to_s.strip
       match = value.match(/\A:([A-Za-z0-9_]+)\z/)
       return normalized_literal_species(match[1]) if match
-      match = value.match(/\A(?:fusionOf|getFusionSpecies)\(\s*:([A-Za-z0-9_]+)\s*,\s*:([A-Za-z0-9_]+)\s*\)\z/)
+      match = value.match(/\A(fusionOf|getFusionSpecies)\(\s*:([A-Za-z0-9_]+)\s*,\s*:([A-Za-z0-9_]+)\s*\)\z/)
       if match
-        first = normalized_literal_species(match[1])
-        second = normalized_literal_species(match[2])
+        first = normalized_literal_species(match[2])
+        second = normalized_literal_species(match[3])
         return nil if !first || !second
+        body, head = match[1] == "fusionOf" ? [second, first] : [first, second]
         return GameData::Species.get(
-          getFusedPokemonIdFromSymbols(first, second)
+          getFusedPokemonIdFromSymbols(body, head)
         ).id
       end
       match = value.match(/\A(?:GameData::Species\.get\()?\s*(\d+)\s*\)?\z/)
@@ -961,23 +1037,6 @@ module Ironmon
       return species ? species.id : nil
     end
 
-    def randomized_scripted_species(identity, method_name, arguments, map_id,
-                                    event_id, index, subslot)
-      if method_name.include?("WildBattle")
-        purpose = method_name == "pbDoubleWildBattle" ? :double :
-          (method_name == "pbTripleWildBattle" ? :triple : :single)
-        context = [:script, map_id, event_id, index, purpose, subslot]
-        return species_generator.map(identity, context)
-      end
-      if ["pbAddPokemon", "pbAddToParty"].include?(method_name)
-        dont_randomize = arguments[3].to_s == "true"
-        return identity if dont_randomize
-        context = [:script, map_id, event_id, index, :gift, 0]
-        return species_generator.map(identity, context)
-      end
-      return identity
-    end
-
     def scripted_source_label(method_name)
       return "Scripted wild encounter" if method_name.include?("WildBattle")
       return "Egg hatch" if ["pbGenerateEgg", "pbAddEgg", "pbGenEgg"].include?(method_name)
@@ -985,22 +1044,160 @@ module Ironmon
       return "Gift or static Pokemon"
     end
 
-    def add_direct_source(identity, reason, detail, constraints, caught)
+    def add_direct_source(identity, reason, detail, constraints, caught,
+                          source_id = nil)
       species = GameData::Species.try_get(identity)
       return if !species || !Ironmon.tracker_lookup_species_available?(species)
       plan = {
         :items => {},
         :constraints => constraints || {},
-        :source_uses => constraints && constraints[:starter] ?
-          { "starter:#{constraints[:starter]}" => 1 } : {},
+        :source_uses => direct_source_uses(constraints, source_id),
         :reason => reason,
         :path => path_step(nil, nil, detail),
         :path_length => 1
       }
       added = add_plan(species.id, plan)
       if added && caught && species.is_a?(GameData::FusedSpecies)
-        @direct_caught_fusions[species.id] = plan
+        @direct_caught_fusions[species.id] ||= []
+        @direct_caught_fusions[species.id] << plan
       end
+    end
+
+    def species_expression_candidates(expression, script, variables)
+      literal = literal_species(expression)
+      return [literal] if literal
+      variable_key = pb_get_variable_key(expression)
+      return variables[variable_key].to_a if variable_key
+      local_name = expression.to_s.strip
+      return [] if !local_name.match?(/\A[a-z_][A-Za-z0-9_]*\z/)
+      return local_species_candidates(script)[local_name].to_a
+    end
+
+    def authored_variable_species_candidates(script, inherited)
+      result = merge_candidate_hashes(
+        @authored_variable_species, inherited
+      )
+      locals = local_species_candidates(script)
+      parsed_script_calls(script, ["pbSet"]).each do |_method_name, arguments|
+        key = game_variable_key(arguments[0])
+        next if !key
+        candidates = species_expression_candidates(
+          arguments[1], script, result
+        )
+        candidates = locals[arguments[1].to_s.strip].to_a if
+          candidates.empty?
+        merge_candidates(result[key], candidates)
+      end
+      parsed_script_calls(script, ["pbConvertItemToPokemon"]).each do |_method_name, arguments|
+        key = game_variable_key(arguments[0])
+        next if !key
+        candidates = arguments[1].to_s.scan(/:([A-Za-z0-9_]+)/).flatten.map do |value|
+          normalized_literal_species(value)
+        end.compact
+        merge_candidates(result[key], candidates)
+        merge_candidates(@authored_variable_species[key], candidates)
+      end
+      return result
+    end
+
+    def authored_variable_item_candidates(script, inherited)
+      result = merge_candidate_hashes(@authored_variable_items, inherited)
+      parsed_script_calls(script, ["pbSet", "pbChooseItemFromList"]).each do |method_name, arguments|
+        key_position = method_name == "pbChooseItemFromList" ? 1 : 0
+        value_position = method_name == "pbChooseItemFromList" ? 2 : 1
+        key = game_variable_key(arguments[key_position])
+        next if !key
+        candidates = item_expression_candidates(
+          arguments[value_position], script, result
+        )
+        merge_candidates(result[key], candidates)
+        merge_candidates(@authored_variable_items[key], candidates)
+      end
+      return result
+    end
+
+    def local_species_candidates(script)
+      result = Hash.new { |hash, key| hash[key] = [] }
+      script.to_s.scan(/\b([a-z_][A-Za-z0-9_]*)\s*=\s*([^\n;]+)/) do |name, value|
+        literal = literal_species(value.strip)
+        result[name] << literal if literal && !result[name].include?(literal)
+      end
+      return result
+    end
+
+    def item_expression_candidates(expression, script, variables)
+      item = literal_item(expression)
+      return [item] if item
+      if script.to_s.include?("get_mart_exclusive_items_hoenn")
+        return HOENN_MART_CITIES.map do |city|
+          get_mart_exclusive_items_hoenn(city)
+        end.flatten.map do |item_id|
+          GameData::Item.try_get(item_id)
+        end.compact.uniq { |candidate| candidate.id }
+      end
+      variable_key = pb_get_variable_key(expression)
+      return variables[variable_key].to_a if variable_key
+      text = expression.to_s
+      embedded_variable = text.match(/pbGet\(\s*([^\)]+)\s*\)/)
+      if embedded_variable
+        key = game_variable_key(embedded_variable[1])
+        candidates = key ? variables[key].to_a : []
+        return candidates if !candidates.empty?
+      end
+      local_name = text.strip
+      if local_name.match?(/\A[a-z_][A-Za-z0-9_]*\z/)
+        assignments = script.to_s.scan(
+          /\b#{Regexp.escape(local_name)}\s*=\s*([^\n;]+)/
+        ).flatten
+        text = assignments.join("\n")
+      end
+      candidates = item_symbols(text)
+      candidates = item_symbols(script) if candidates.empty? &&
+        local_name.match?(/\A[a-z_][A-Za-z0-9_]*\z/)
+      return candidates
+    end
+
+    def item_symbols(text)
+      return text.to_s.scan(/(?::|PBItems::)([A-Za-z0-9_]+)/).flatten.map do |value|
+        GameData::Item.try_get(value.upcase.to_sym)
+      end.compact.uniq { |candidate| candidate.id }
+    end
+
+    def pb_get_variable_key(expression)
+      match = expression.to_s.strip.match(/\ApbGet\(\s*([^\)]+)\s*\)\z/)
+      return match ? game_variable_key(match[1]) : nil
+    end
+
+    def game_variable_key(expression)
+      text = expression.to_s.strip
+      return text.to_i if text.match?(/\A\d+\z/)
+      return nil if !text.match?(/\A[A-Z][A-Za-z0-9_]*\z/)
+      return Object.const_get(text).to_i if Object.const_defined?(text)
+      return nil
+    rescue Exception
+      return nil
+    end
+
+    def merge_candidate_hashes(first, second)
+      result = Hash.new { |hash, key| hash[key] = [] }
+      [first, second].each do |source|
+        source.each do |key, candidates|
+          merge_candidates(result[key], candidates)
+        end
+      end
+      return result
+    end
+
+    def merge_candidates(target, candidates)
+      candidates.each do |candidate|
+        target << candidate if candidate && !target.include?(candidate)
+      end
+    end
+
+    def direct_source_uses(constraints, source_id)
+      return { "starter:#{constraints[:starter]}" => 1 } if
+        constraints && constraints[:starter]
+      return source_id ? { source_id => 1 } : {}
     end
 
     def build_resource_supply
@@ -1009,6 +1206,13 @@ module Ironmon
           Ironmon.tracker_area_resolved_item_ids(entry, @recipe).each do |item_id|
             @resource_supply[item_id.to_sym] += 1
           end
+        end
+      end
+      if defined?(MiningGameScene) && MiningGameScene.const_defined?(:ITEMS)
+        MiningGameScene::ITEMS.each do |entry|
+          item = GameData::Item.try_get(entry[0])
+          next if !item
+          @resource_supply[item.id] = MAX_REQUESTED_SPECIES
         end
       end
       @resource_supply[:POKEBALL] += 1
@@ -1022,7 +1226,7 @@ module Ironmon
         work = @normal_evolution_work
         branch = work[:branches][work[:branch_index]]
         plan = work[:plans][work[:plan_index]]
-        next_plans = branch_plans(plan, branch)
+        next_plans = branch_plans(plan, branch, false)
         mark_possible_evolution(work[:source], branch) if !next_plans.empty?
         next_plans.each do |next_plan|
           add_plan(branch[:target_id], next_plan)
@@ -1038,23 +1242,24 @@ module Ironmon
     end
 
     def begin_normal_evolution_work
-      source = @normal_evolution_queue.shift
-      @queued_normal_evolutions.delete(source)
-      species = GameData::Species.get(source)
-      branches = @normal_generator.branches_for(species)
-      plans = @plans[source].dup
-      if branches.empty? || plans.empty?
-        @normal_evolution_work = nil
-        return begin_normal_evolution_work if !@normal_evolution_queue.empty?
+      while !@normal_evolution_queue.empty?
+        cooperative_checkpoint
+        source = @normal_evolution_queue.shift
+        @queued_normal_evolutions.delete(source)
+        species = GameData::Species.get(source)
+        branches = @normal_generator.branches_for(species)
+        plans = @plans[source].dup
+        next if branches.empty? || plans.empty?
+        @normal_evolution_work = {
+          :source => source,
+          :branches => branches,
+          :plans => plans,
+          :branch_index => 0,
+          :plan_index => 0
+        }
         return
       end
-      @normal_evolution_work = {
-        :source => source,
-        :branches => branches,
-        :plans => plans,
-        :branch_index => 0,
-        :plan_index => 0
-      }
+      @normal_evolution_work = nil
     end
 
     def advance_normal_evolution_work
@@ -1068,60 +1273,7 @@ module Ironmon
         work[:branch_index] >= work[:branches].length
     end
 
-    def close_fusion_evolutions(limit)
-      processed = 0
-      while fusion_evolution_pending? && (!limit || processed < limit)
-        begin_fusion_evolution_work if !@fusion_evolution_work
-        next if !@fusion_evolution_work
-        work = @fusion_evolution_work
-        branch = work[:branches][work[:branch_index]]
-        plan = work[:plans][work[:plan_index]]
-        next_plans = branch_plans(plan, branch)
-        mark_possible_evolution(work[:source], branch) if !next_plans.empty?
-        next_plans.each do |next_plan|
-          add_plan(branch[:target_id], next_plan)
-        end
-        advance_fusion_evolution_work
-        processed += 1
-      end
-    end
-
-    def fusion_evolution_pending?
-      return !!@fusion_evolution_work || !@fusion_evolution_queue.empty?
-    end
-
-    def begin_fusion_evolution_work
-      source = @fusion_evolution_queue.shift
-      @queued_fusion_evolutions.delete(source)
-      species = GameData::Species.get(source)
-      branches = @fusion_generator.branches_for(species)
-      plans = @plans[source].dup
-      if branches.empty? || plans.empty?
-        @fusion_evolution_work = nil
-        return begin_fusion_evolution_work if !@fusion_evolution_queue.empty?
-        return
-      end
-      @fusion_evolution_work = {
-        :source => source,
-        :branches => branches,
-        :plans => plans,
-        :branch_index => 0,
-        :plan_index => 0
-      }
-    end
-
-    def advance_fusion_evolution_work
-      work = @fusion_evolution_work
-      work[:plan_index] += 1
-      if work[:plan_index] >= work[:plans].length
-        work[:plan_index] = 0
-        work[:branch_index] += 1
-      end
-      @fusion_evolution_work = nil if
-        work[:branch_index] >= work[:branches].length
-    end
-
-    def branch_plans(plan, branch)
+    def branch_plans(plan, branch, materialize_path = true)
       results = []
       branch[:effective_methods].each do |method|
         next_plan = clone_plan(plan)
@@ -1132,14 +1284,20 @@ module Ironmon
           next if next_plan[:items][required_item] >
             @resource_supply[required_item]
         end
-        target = GameData::Species.get(branch[:target_id])
         next_plan[:reason] = "Evolution"
-        requirement = Ironmon.tracker_evolution_snapshot(
-          method[:method], method[:parameter]
-        )["requirement"]
-        next_plan[:path] = path_step(
-          plan[:path], nil, "Evolve into #{target.name}: #{requirement}"
-        )
+        if materialize_path
+          target = GameData::Species.get(branch[:target_id])
+          requirement = Ironmon.tracker_evolution_snapshot(
+            method[:method], method[:parameter]
+          )["requirement"]
+          next_plan[:path] = path_step(
+            plan[:path], nil, "Evolve into #{target.name}: #{requirement}"
+          )
+          next_plan.delete(:bulk_witness)
+        else
+          next_plan[:path] = nil
+          next_plan[:bulk_witness] = [:evolution, plan, branch, method].freeze
+        end
         next_plan[:path_length] = plan[:path_length].to_i + 1
         results << next_plan
       end
@@ -1155,11 +1313,49 @@ module Ironmon
 
     def mark_possible_evolution(source, branch)
       target = GameData::Species.get(branch[:target_id]).id
-      @possible_evolution_edges["#{source}:0>#{target}:0"] = true
+      source_number = GameData::Species.get(source).id_number
+      target_number = GameData::Species.get(target).id_number
+      mark_possible_evolution_numbers(source_number, target_number)
+    end
+
+    def mark_possible_evolution_numbers(source_number, target_number)
+      @possible_evolution_edge_numbers[
+        (source_number << 20) | target_number
+      ] = true
+    end
+
+    def possible_evolution_edge?(source, target)
+      source_number = GameData::Species.get(source).id_number
+      target_number = GameData::Species.get(target).id_number
+      return true if @possible_evolution_edge_numbers[
+        (source_number << 20) | target_number
+      ] == true
+      if @tracker_executable_evolution_edges
+        key = (source_number << 32) | target_number
+        low = 0
+        high = @tracker_executable_evolution_edges.length - 1
+        while low <= high
+          middle = (low + high) / 2
+          value = @tracker_executable_evolution_edges[middle]
+          return true if value == key
+          if value < key
+            low = middle + 1
+          else
+            high = middle - 1
+          end
+        end
+        return false
+      end
+      return false
     end
 
     def apply_caught_fusion_transformations(limit = nil)
-      @caught_fusion_entries ||= @direct_caught_fusions.to_a
+      if !@caught_fusion_entries
+        @caught_fusion_entries = []
+        @direct_caught_fusions.each do |identity, plans|
+          plans.each { |plan| @caught_fusion_entries << [identity, plan] }
+        end
+      end
       processed = 0
       while @caught_fusion_index < @caught_fusion_entries.length &&
             (!limit || processed < limit)
@@ -1184,13 +1380,17 @@ module Ironmon
       components = [species.body_pokemon, species.head_pokemon]
       if @configuration.unfusion_setting !=
          Configuration::UNFUSION_PLAYER_CHOICE
-        @unresolved_sources << "caught-fusion random component acquisition order" if
-          !@unresolved_sources.include?(
-            "caught-fusion random component acquisition order"
-          )
         components.each do |component|
-          @candidate_species[component.id] ||=
-            "Random-component unfusion of a caught #{species.name}"
+          component_plan = clone_plan(plan)
+          choice_key = caught_unfusion_choice_key(identity, plan)
+          component_plan[:constraints][choice_key] = component.id
+          component_plan[:reason] = "Caught-fusion random-component unfusion"
+          component_plan[:path] = path_step(
+            plan[:path], nil,
+            "Unfuse the caught fusion and keep #{component.name}"
+          )
+          component_plan[:path_length] = plan[:path_length].to_i + 1
+          add_plan(component.id, component_plan)
         end
         return
       end
@@ -1206,6 +1406,11 @@ module Ironmon
       end
     end
 
+    def caught_unfusion_choice_key(identity, plan)
+      sources = plan[:source_uses].keys.map(&:to_s).sort.join("|")
+      return "caught_unfusion:#{identity}:#{sources}".to_sym
+    end
+
     def prepare_material_pairs
       @material_ids = @plans.keys.select do |identity|
         species = GameData::Species.try_get(identity)
@@ -1213,6 +1418,16 @@ module Ironmon
           !@plans[identity].empty?
       end.sort_by { |identity| GameData::Species.get(identity).id_number }
       @pair_count = (@material_ids.length * (@material_ids.length + 1)) / 2
+      @excluded_material_pair_offsets = []
+      pair_offset = 0
+      @material_ids.each_with_index do |first, first_index|
+        (first_index...@material_ids.length).each do |second_index|
+          second = @material_ids[second_index]
+          @excluded_material_pair_offsets << pair_offset if
+            !compatible_material_pair?(first, second)
+          pair_offset += 1
+        end
+      end
       @material_pairs_prepared = true
       @phase = @pair_count > 0 ? :player_fusions : :complete
     end
@@ -1239,16 +1454,25 @@ module Ironmon
     end
 
     def add_player_fusion_combination(fusion, body, head, body_plan, head_plan,
-                                      combination)
+                                      combination, materialize_path = true)
+      path = nil
+      bulk_witness = nil
+      if materialize_path
+        path = fusion_path_step(
+          body_plan[:path], head_plan[:path], body.id, head.id
+        )
+      else
+        bulk_witness = [
+          :fusion, body.id, head.id, body_plan, head_plan
+        ].freeze
+      end
       return add_plan(fusion, {
         :items => combination[:items],
-        :constraints => combination[:constraints],
-        :source_uses => combination[:source_uses],
+        :constraints => materialize_path ? combination[:constraints] : {},
+        :source_uses => materialize_path ? combination[:source_uses] : {},
         :reason => "Player fusion",
-        :path => fusion_path_step(
-          body_plan[:path], head_plan[:path],
-          body.id, head.id
-        ),
+        :path => path,
+        :bulk_witness => bulk_witness,
         :path_length => combination[:path_length]
       })
     end
@@ -1284,10 +1508,7 @@ module Ironmon
       end
       @obtainable_count = @obtainable_count.to_i + 1 if
         added && newly_obtainable
-      if added && fused &&
-         @full_fusion_closure_requested
-        queue_fusion_evolution(key)
-      elsif added && !fused
+      if added && !fused
         @queued_normal_evolutions ||= {}
         @normal_evolution_queue ||= []
         if !@queued_normal_evolutions[key]
@@ -1295,14 +1516,7 @@ module Ironmon
           @normal_evolution_queue << key
         end
       end
-      queue_requested_evolution(key) if added
       return added
-    end
-
-    def queue_fusion_evolution(key)
-      return if @queued_fusion_evolutions[key]
-      @queued_fusion_evolutions[key] = true
-      @fusion_evolution_queue << key
     end
 
     def plan_dominates?(first, second)
@@ -1343,6 +1557,7 @@ module Ironmon
         :source_uses => plan[:source_uses].dup,
         :reason => plan[:reason],
         :path => plan[:path],
+        :bulk_witness => plan[:bulk_witness],
         :path_length => plan[:path_length]
       }
     end
@@ -1391,6 +1606,33 @@ module Ironmon
         result << step
       end
       return result
+    end
+
+    def materialize_plan_path(plan)
+      return materialize_path(plan[:path]) if plan[:path]
+      witness = plan[:bulk_witness]
+      return [] if !witness
+      if witness[0] == :fusion
+        body = GameData::Species.get(witness[1])
+        head = GameData::Species.get(witness[2])
+        steps = materialize_plan_path(witness[3]) +
+          materialize_plan_path(witness[4])
+        steps << "Fuse #{body.name} as Body with #{head.name} as Head"
+        return steps.uniq
+      end
+      if witness[0] == :evolution
+        source_plan = witness[1]
+        branch = witness[2]
+        method = witness[3]
+        target = GameData::Species.get(branch[:target_id])
+        requirement = Ironmon.tracker_evolution_snapshot(
+          method[:method], method[:parameter]
+        )["requirement"]
+        return (materialize_plan_path(source_plan) + [
+          "Evolve into #{target.name}: #{requirement}"
+        ]).uniq
+      end
+      return []
     end
 
     def species_generator
@@ -1473,11 +1715,10 @@ module Ironmon
       )
     end
     service = tracker_obtainability_service(recipe)
-    service.disable_tracker_mapping_worker if
-      payload["fusion_mapping_worker_unavailable"] == true
-    service.apply_fusion_mapping_batch(
-      payload["fusion_mapping_batch"], payload["foreground"] == true
-    )
+    service.report_tracker_closure_unavailable if
+      payload["fusion_closure_worker_unavailable"] == true
+    service.apply_fusion_closure_result(payload["fusion_closure_result"])
+    service.request_background
     service.request_foreground if payload["foreground"] == true
     prefix = "#{recipe["run_id"]}|"
     sections = ["overview", "abilities", "stats", "moves", "evolutions"]
@@ -1490,14 +1731,12 @@ module Ironmon
   end
 
   def self.tracker_obtainability_snapshot(species, recipe)
-    service = tracker_obtainability_services[recipe["run_id"]]
-    return service.passive_target_snapshot(species) if service
-    return {
-      "status" => "calculating",
-      "reason" => "Run obtainability has not been checked yet.",
-      "path" => [],
-      "required_items" => {}
-    }
+    service = tracker_obtainability_service(recipe)
+    return service.passive_target_snapshot(species)
+  end
+
+  def self.tracker_obtainability_status(species, recipe)
+    return tracker_obtainability_snapshot(species, recipe)["status"]
   end
 
   def self.update_tracker_obtainability
@@ -1512,10 +1751,10 @@ module Ironmon
       return
     end
     return if !tracker_obtainability_background_safe?
-    recipe = tracker_debug_active_recipe
-    service = tracker_obtainability_service(recipe)
-    return if service.complete?
-    return if !service.background_advance_allowed?
+    service = tracker_obtainability_services.values.select do |candidate|
+      candidate.background_requested?
+    end.max_by { |candidate| candidate.background_deadline }
+    return if !service
     service.advance_for_milliseconds(
       TrackerObtainabilityService::BACKGROUND_MILLISECONDS
     )

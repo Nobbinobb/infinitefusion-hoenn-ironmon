@@ -8,7 +8,33 @@ namespace Ironmon.Tracker.App.Components.Pages;
 /// </summary>
 public partial class Home : IDisposable
 {
+    private const string _gameConnectedCalculatingResourceKey = "App.Shell.GameConnectedCalculating";
+    private const string _obtainabilityCompleteResourceKey = "App.Shell.ObtainabilityComplete";
+    private const string _obtainabilityErrorResourceKey = "App.Shell.ObtainabilityError";
+    private const string _obtainabilityPairsResourceKey = "App.Shell.ObtainabilityPairs";
+    private const string _obtainabilityPhaseCompleteResourceKey = "App.Shell.ObtainabilityPhase.Complete";
+    private const string _obtainabilityPhaseEvolutionsResourceKey = "App.Shell.ObtainabilityPhase.Evolutions";
+    private const string _obtainabilityPhaseFusionsResourceKey = "App.Shell.ObtainabilityPhase.Fusions";
+    private const string _obtainabilityPhasePreparingResourceKey = "App.Shell.ObtainabilityPhase.Preparing";
+    private const string _obtainabilityPhaseSourcesResourceKey = "App.Shell.ObtainabilityPhase.Sources";
+    private const string _obtainabilityPhaseStartingResourceKey = "App.Shell.ObtainabilityPhase.Starting";
+    private const string _obtainabilityProgressResourceKey = "App.Shell.ObtainabilityProgress";
+    private const string _obtainabilityScopeActiveResourceKey = "App.Shell.ObtainabilityScope.Active";
+    private const string _obtainabilityScopeArchiveResourceKey = "App.Shell.ObtainabilityScope.Archive";
+    private const string _authoredSourcesPhase = "authored_sources";
+    private const string _caughtFusionTransformationsPhase = "caught_fusion_transformations";
+    private const string _completePhase = "complete";
+    private const string _encounterSourcesPhase = "encounter_sources";
+    private const string _normalEvolutionsPhase = "normal_evolutions";
+    private const string _normalGraphPhase = "normal_graph";
+    private const string _playerFusionsPhase = "player_fusions";
+    private const string _prepareEncountersPhase = "prepare_encounters";
+    private const string _prepareGeneratorsPhase = "prepare_generators";
+    private const string _resourcesPhase = "resources";
+    private const string _starterSourcesPhase = "starter_sources";
+    private const string _transformationEvolutionsPhase = "transformation_evolutions";
     private TrackerConnectionSnapshot _connection = new(TrackerConnectionStatus.Stopped, null, null, null);
+    private TrackerObtainabilityProgressSnapshot _obtainabilityProgress = TrackerObtainabilityProgressSnapshot.Idle;
     private TrackerRunStateSnapshot _run = new(null, null);
     private TrackerView _selectedView = TrackerView.Player;
     private string? _activeRunId;
@@ -70,10 +96,12 @@ public partial class Home : IDisposable
         _lastMoveMenuPokemonId = _run.MoveMenuPokemonId;
         _autoSelectStarter = ConnectionOptions.AutoSelectStarter;
         _maximumStarterBaseStatTotal = ConnectionOptions.MaximumStarterBaseStatTotal;
+        _obtainabilityProgress = TrackerConnection.Requests.ObtainabilityProgress.Snapshot;
         if (_selectedEnemyId is not null)
             _selectedView = TrackerView.Enemy;
 
         ConnectionState.Changed += HandleConnectionChanged;
+        TrackerConnection.Requests.ObtainabilityProgress.Changed += HandleObtainabilityProgressChanged;
         RunState.Changed += HandleRunChanged;
         CompletedRuns.SelectionRequested += HandleCompletedRunSelectionRequested;
         ShortcutService.ViewRequested += HandleGlobalViewRequested;
@@ -301,10 +329,77 @@ public partial class Home : IDisposable
             return _connection.LastError;
 
         if (_connection.Game is not null)
-            return Text["App.Shell.ConnectedGameVersions", _connection.Game.GameVersion, _connection.Game.IronmonVersion];
+        {
+            string connection = Text["App.Shell.ConnectedGameVersions", _connection.Game.GameVersion, _connection.Game.IronmonVersion];
+            string? obtainability = GetObtainabilityProgressDetail();
+            return obtainability is null ? connection : connection + Environment.NewLine + obtainability;
+        }
 
         return Text["App.Shell.ListeningOn", TrackerProtocol.LoopbackHost, TrackerProtocol.Port];
     }
+
+    /// <summary>
+    /// Gets the stable accessible connection description without rapidly changing timing values.
+    /// </summary>
+    /// <returns>The accessible connection description.</returns>
+    private string GetConnectionAccessibleText()
+    {
+        if (_connection.Status == TrackerConnectionStatus.Connected
+            && _obtainabilityProgress.Status == TrackerObtainabilityProgressStatus.Running)
+        {
+            return Text[_gameConnectedCalculatingResourceKey];
+        }
+
+        return GetConnectionText();
+    }
+
+    /// <summary>
+    /// Gets the obtainability timing and progress appended to the connection tooltip.
+    /// </summary>
+    /// <returns>The localized detail, or null before calculation begins.</returns>
+    private string? GetObtainabilityProgressDetail()
+    {
+        if (_obtainabilityProgress.Status == TrackerObtainabilityProgressStatus.Idle)
+            return null;
+
+        if (_obtainabilityProgress.Status == TrackerObtainabilityProgressStatus.Error)
+            return Text[_obtainabilityErrorResourceKey, _obtainabilityProgress.Error ?? Text["App.Shell.UnknownState"]];
+
+        if (_obtainabilityProgress.Status == TrackerObtainabilityProgressStatus.Complete)
+            return Text[_obtainabilityCompleteResourceKey, GetObtainabilityScopeText(), _obtainabilityProgress.Elapsed.TotalSeconds, _obtainabilityProgress.ObtainableCount];
+
+        string detail = Text[_obtainabilityProgressResourceKey, GetObtainabilityScopeText(), GetObtainabilityPhaseText(), _obtainabilityProgress.Elapsed.TotalSeconds, _obtainabilityProgress.PhaseElapsed.TotalSeconds, _obtainabilityProgress.ObtainableCount];
+
+        if (_obtainabilityProgress.TotalPairs <= 0)
+            return detail;
+
+        return detail + Environment.NewLine + Text[_obtainabilityPairsResourceKey, _obtainabilityProgress.ProcessedPairs, _obtainabilityProgress.TotalPairs];
+    }
+
+    /// <summary>
+    /// Gets the localized run surface owning the displayed calculation.
+    /// </summary>
+    /// <returns>The localized run scope.</returns>
+    private string GetObtainabilityScopeText()
+    {
+        return _obtainabilityProgress.Scope == TrackerObtainabilityProgressScope.ArchivedRun
+            ? Text[_obtainabilityScopeArchiveResourceKey]
+            : Text[_obtainabilityScopeActiveResourceKey];
+    }
+
+    /// <summary>
+    /// Gets a localized broad phase for the game-owned calculation phase.
+    /// </summary>
+    /// <returns>The localized phase.</returns>
+    private string GetObtainabilityPhaseText() => _obtainabilityProgress.Phase switch
+    {
+        _prepareGeneratorsPhase or _prepareEncountersPhase => Text[_obtainabilityPhasePreparingResourceKey],
+        _encounterSourcesPhase or _starterSourcesPhase or _authoredSourcesPhase or _resourcesPhase => Text[_obtainabilityPhaseSourcesResourceKey],
+        _normalGraphPhase or _normalEvolutionsPhase or _caughtFusionTransformationsPhase or _transformationEvolutionsPhase => Text[_obtainabilityPhaseEvolutionsResourceKey],
+        _playerFusionsPhase => Text[_obtainabilityPhaseFusionsResourceKey],
+        _completePhase => Text[_obtainabilityPhaseCompleteResourceKey],
+        _ => Text[_obtainabilityPhaseStartingResourceKey]
+    };
 
     /// <summary>
     /// Gets the CSS classes for the connection state indicator.
@@ -344,6 +439,17 @@ public partial class Home : IDisposable
         }
 
         _connection = next;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Refreshes the shell after shared obtainability progress changes.
+    /// </summary>
+    /// <param name="sender">The progress state raising the event.</param>
+    /// <param name="args">The progress change event arguments.</param>
+    private void HandleObtainabilityProgressChanged(object? sender, EventArgs args)
+    {
+        _obtainabilityProgress = TrackerConnection.Requests.ObtainabilityProgress.Snapshot;
         _ = InvokeAsync(StateHasChanged);
     }
 
@@ -410,6 +516,7 @@ public partial class Home : IDisposable
     public void Dispose()
     {
         ConnectionState.Changed -= HandleConnectionChanged;
+        TrackerConnection.Requests.ObtainabilityProgress.Changed -= HandleObtainabilityProgressChanged;
         RunState.Changed -= HandleRunChanged;
         CompletedRuns.SelectionRequested -= HandleCompletedRunSelectionRequested;
         ShortcutService.ViewRequested -= HandleGlobalViewRequested;

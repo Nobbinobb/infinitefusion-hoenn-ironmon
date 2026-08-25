@@ -9,10 +9,12 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 public partial class PokemonLookupExplorer : IDisposable
 {
     private const string _lookupRequestKey = "lookup";
+    private static readonly TimeSpan _obtainabilityRefreshInterval = TimeSpan.FromMilliseconds(500);
     private readonly NavigationHistory<string> _history = new();
     private readonly PaginationState _searchPagination = new(TrackerProtocol.DefaultSearchPageSize);
     private readonly LatestRequestCoordinator<string> _requests = new();
     private IReadOnlyList<PokemonSearchMatch> _matches = [];
+    private CancellationTokenSource? _obtainabilityRefreshCancellation;
     private PokemonLookupSnapshot? _lookup;
     private string? _currentSpeciesId;
     private string _query = string.Empty;
@@ -158,6 +160,7 @@ public partial class PokemonLookupExplorer : IDisposable
             _searchPagination.Select(pageIndex);
             _matchTotal = Math.Max(response.Total, offset + response.Matches.Count);
             _searched = true;
+            StartObtainabilityRefresh();
         }
         catch (OperationCanceledException) when (request.CancellationToken.IsCancellationRequested)
         {
@@ -188,6 +191,82 @@ public partial class PokemonLookupExplorer : IDisposable
         return DebugMode
             ? Connection.SearchDebugPokemonAsync(query, offset, TrackerProtocol.DefaultSearchPageSize, cancellationToken: cancellationToken)
             : Connection.SearchPokemonAsync(Recipe!, query, offset, TrackerProtocol.DefaultSearchPageSize, cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
+    /// Starts a passive refresh for visible search results that still have active target proofs.
+    /// </summary>
+    private void StartObtainabilityRefresh()
+    {
+        _obtainabilityRefreshCancellation?.Cancel();
+        _obtainabilityRefreshCancellation?.Dispose();
+        _obtainabilityRefreshCancellation = null;
+        IReadOnlyList<string> speciesIds = [.. _matches
+            .Where(match => match.ObtainabilityStatus == PokemonObtainabilityStatus.Calculating)
+            .Select(match => match.SpeciesId)];
+        if (speciesIds.Count == 0)
+            return;
+
+        CancellationTokenSource cancellation = new();
+        _obtainabilityRefreshCancellation = cancellation;
+        _ = RefreshSearchObtainabilityAsync(speciesIds, cancellation);
+    }
+
+    /// <summary>
+    /// Refreshes only the displayed target statuses without requesting run-wide fusion work.
+    /// </summary>
+    /// <param name="speciesIds">The visible species identifiers awaiting a final status.</param>
+    /// <param name="cancellation">The owner of the refresh lifetime.</param>
+    /// <returns>A task representing passive status refreshes.</returns>
+    private async Task RefreshSearchObtainabilityAsync(IReadOnlyList<string> speciesIds, CancellationTokenSource cancellation)
+    {
+        try
+        {
+            while (!cancellation.IsCancellationRequested)
+            {
+                PokemonObtainabilityResponsePayload response = DebugMode
+                    ? await Connection.AdvanceDebugPokemonObtainabilityAsync(speciesIds: speciesIds, foreground: false, cancellationToken: cancellation.Token)
+                    : await Connection.AdvancePokemonObtainabilityAsync(Recipe!, speciesIds: speciesIds, foreground: false, cancellationToken: cancellation.Token);
+
+                if (!ReferenceEquals(_obtainabilityRefreshCancellation, cancellation))
+                    return;
+
+                HashSet<string> obtainable = new(response.ObtainableSpeciesIds, StringComparer.OrdinalIgnoreCase);
+                bool complete = response.Complete || response.BackgroundComplete;
+                _matches = [.. _matches.Select(match => new PokemonSearchMatch
+                {
+                    SpeciesId = match.SpeciesId,
+                    SpeciesName = match.SpeciesName,
+                    Fusion = match.Fusion,
+                    ObtainabilityStatus = obtainable.Contains(match.SpeciesId)
+                        ? PokemonObtainabilityStatus.Obtainable
+                        : complete && speciesIds.Contains(match.SpeciesId, StringComparer.OrdinalIgnoreCase)
+                            ? PokemonObtainabilityStatus.Unobtainable
+                            : match.ObtainabilityStatus
+                })];
+
+                await InvokeAsync(StateHasChanged);
+                if (complete)
+                    return;
+
+                await Task.Delay(_obtainabilityRefreshInterval, cancellation.Token);
+            }
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception) when (IsExpectedRequestException(exception))
+        {
+            if (ReferenceEquals(_obtainabilityRefreshCancellation, cancellation))
+                _error = exception.Message;
+        }
+        finally
+        {
+            if (ReferenceEquals(_obtainabilityRefreshCancellation, cancellation))
+                _obtainabilityRefreshCancellation = null;
+
+            cancellation.Dispose();
+        }
     }
 
     /// <summary>
@@ -298,6 +377,7 @@ public partial class PokemonLookupExplorer : IDisposable
             _lookup = lookup;
             _currentSpeciesId = lookup.Identity.SpeciesId;
             _matches = [];
+            StartLookupObtainabilityRefresh();
             return true;
         }
         catch (OperationCanceledException) when (request.CancellationToken.IsCancellationRequested)
@@ -332,6 +412,98 @@ public partial class PokemonLookupExplorer : IDisposable
     }
 
     /// <summary>
+    /// Starts a passive exact-target refresh for the selected Pokemon card when needed.
+    /// </summary>
+    private void StartLookupObtainabilityRefresh()
+    {
+        if (_lookup is null || _lookup.Identity.Obtainability.Status != PokemonObtainabilityStatus.Calculating)
+            return;
+
+        if (DebugMode && !TrackerDiagnosticCapabilityRules.HasRunObtainability(Connection))
+            return;
+
+        _obtainabilityRefreshCancellation?.Cancel();
+        CancellationTokenSource cancellation = new();
+        _obtainabilityRefreshCancellation = cancellation;
+        _ = RefreshLookupObtainabilityAsync(_lookup.Identity.SpeciesId, cancellation);
+    }
+
+    /// <summary>
+    /// Replaces the selected card's temporary calculation state with its final exact proof.
+    /// </summary>
+    /// <param name="speciesId">The selected species identifier.</param>
+    /// <param name="cancellation">The owner of the refresh lifetime.</param>
+    /// <returns>A task representing passive status refreshes.</returns>
+    private async Task RefreshLookupObtainabilityAsync(string speciesId, CancellationTokenSource cancellation)
+    {
+        try
+        {
+            while (!cancellation.IsCancellationRequested)
+            {
+                PokemonObtainabilityResponsePayload response = DebugMode
+                    ? await Connection.AdvanceDebugPokemonObtainabilityAsync(speciesId: speciesId, foreground: false, cancellationToken: cancellation.Token)
+                    : await Connection.AdvancePokemonObtainabilityAsync(Recipe!, speciesId: speciesId, foreground: false, cancellationToken: cancellation.Token);
+
+                if (!ReferenceEquals(_obtainabilityRefreshCancellation, cancellation) || _lookup?.Identity.SpeciesId != speciesId)
+                    return;
+
+                if (response.Target is not null)
+                    _lookup = CopyLookupWithObtainability(_lookup, response.Target);
+
+                await InvokeAsync(StateHasChanged);
+                if (response.Target?.Status != PokemonObtainabilityStatus.Calculating)
+                    return;
+
+                await Task.Delay(_obtainabilityRefreshInterval, cancellation.Token);
+            }
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception) when (IsExpectedRequestException(exception))
+        {
+            if (ReferenceEquals(_obtainabilityRefreshCancellation, cancellation))
+                _error = exception.Message;
+        }
+        finally
+        {
+            if (ReferenceEquals(_obtainabilityRefreshCancellation, cancellation))
+                _obtainabilityRefreshCancellation = null;
+
+            cancellation.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Copies a lookup section while replacing only its identity obtainability proof.
+    /// </summary>
+    /// <param name="lookup">The current lookup section.</param>
+    /// <param name="obtainability">The newest exact target proof.</param>
+    /// <returns>The refreshed lookup section.</returns>
+    private static PokemonLookupSnapshot CopyLookupWithObtainability(PokemonLookupSnapshot lookup, PokemonObtainabilitySnapshot obtainability)
+    {
+        PokemonLookupIdentitySnapshot identity = lookup.Identity;
+        return new PokemonLookupSnapshot
+        {
+            Identity = new PokemonLookupIdentitySnapshot
+            {
+                SpeciesId = identity.SpeciesId,
+                SpeciesName = identity.SpeciesName,
+                SpritePath = identity.SpritePath,
+                Types = identity.Types,
+                Fusion = identity.Fusion,
+                Obtainability = obtainability
+            },
+            Section = lookup.Section,
+            Overview = lookup.Overview,
+            Abilities = lookup.Abilities,
+            Stats = lookup.Stats,
+            Moves = lookup.Moves,
+            Evolutions = lookup.Evolutions
+        };
+    }
+
+    /// <summary>
     /// Cancels the previous explorer operation and begins the new latest request.
     /// </summary>
     /// <returns>The lease owned by the new request.</returns>
@@ -358,6 +530,8 @@ public partial class PokemonLookupExplorer : IDisposable
     private void CancelRequest()
     {
         _requests.CancelAll();
+        _obtainabilityRefreshCancellation?.Cancel();
+        _obtainabilityRefreshCancellation = null;
         _loading = false;
     }
 
@@ -454,6 +628,8 @@ public partial class PokemonLookupExplorer : IDisposable
     public void Dispose()
     {
         AccessService.Changed -= HandleDiagnosticAccessChanged;
+        _obtainabilityRefreshCancellation?.Cancel();
+        _obtainabilityRefreshCancellation?.Dispose();
         _requests.Dispose();
     }
 }

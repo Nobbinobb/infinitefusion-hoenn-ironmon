@@ -57,6 +57,11 @@ module IronmonTrackerStructureRuntimeTests
       "tracker snapshots"
     )
     assert_source(
+      Ironmon.method(:tracker_active_fusion_assignment_recipe),
+      "018_Tracker_Snapshots.rb",
+      "tracker early fusion evolution recipe"
+    )
+    assert_source(
       Ironmon.method(:begin_tracker_battle_command),
       "018_Tracker_User_Commands.rb",
       "tracker user commands"
@@ -70,6 +75,14 @@ module IronmonTrackerStructureRuntimeTests
       Ironmon.method(:tracker_area_catalog),
       "010_Tracker_Area_Lookup.rb",
       "tracker area catalog"
+    )
+    source_catalog = Ironmon.tracker_obtainability_source_catalog
+    assert(
+      source_catalog["schema_version"] == 1 &&
+        !source_catalog["fingerprint"].to_s.empty? &&
+        !source_catalog["sources"].empty? &&
+        !source_catalog["resources"].empty?,
+      "the generated semantic obtainability source catalog is loadable"
     )
     assert_source(
       Ironmon.method(:tracker_area_lookup_summary),
@@ -112,6 +125,16 @@ module IronmonTrackerStructureRuntimeTests
       "completed-run evolution reconstruction"
     )
     assert_source(
+      Ironmon.method(:tracker_fusion_evolution_targets_for_assignments),
+      "019_Tracker_Post_Run_3_Evolution_Lookup.rb",
+      "native fusion evolution target formatting"
+    )
+    assert_source(
+      Ironmon.method(:tracker_fusion_evolution_candidates_for_assignments),
+      "019_Tracker_Post_Run_3_Evolution_Lookup.rb",
+      "native fusion evolution candidate formatting"
+    )
+    assert_source(
       Ironmon.method(:tracker_lookup_evolution_predecessor_page),
       "019_Tracker_Post_Run_3_Evolution_Lookup.rb",
       "paged completed-run evolution predecessors"
@@ -127,7 +150,7 @@ module IronmonTrackerStructureRuntimeTests
       "incremental completed-run obtainability"
     )
     assert(
-      Ironmon::TrackerObtainabilityService::BACKGROUND_MILLISECONDS == 4.0 &&
+      Ironmon::TrackerObtainabilityService::BACKGROUND_MILLISECONDS == 6.0 &&
         Ironmon::TrackerObtainabilityService::FOREGROUND_MILLISECONDS >
           Ironmon::TrackerObtainabilityService::BACKGROUND_MILLISECONDS,
       "obtainability preserves its background frame budget and faster foreground mode"
@@ -197,6 +220,12 @@ module IronmonTrackerStructureRuntimeTests
       "obtainability acquisition adapters have unique ownership"
     )
     obtainability = Ironmon::TrackerObtainabilityService.allocate
+    assert(
+      obtainability.send(
+        :decode_tracker_executable_edges, "AYEBqgE="
+      ) == [1, 130, 300],
+      "obtainability decodes the tracker's compact delta-varint edge index"
+    )
     obtainability.instance_variable_set(
       :@plans, Hash.new { |hash, key| hash[key] = [] }
     )
@@ -301,19 +330,114 @@ module IronmonTrackerStructureRuntimeTests
     deferred_obtainability.instance_variable_set(:@phase, :authored_sources)
     background_terminal_snapshot = deferred_obtainability.snapshot
     assert(
-      background_terminal_snapshot["background_complete"] == true &&
+      background_terminal_snapshot["background_complete"] == false &&
         background_terminal_snapshot["complete"] == false,
-      "foreground-only authored sources terminate background polling"
+      "authored source adapters remain inside bounded background calculation"
     )
+    failed_obtainability = Ironmon::TrackerObtainabilityService.new(
+      obtainability_recipe, true
+    )
+    failed_obtainability.instance_variable_set(:@phase, :failed)
+    failed_obtainability.instance_variable_set(
+      :@failure_message, "Deliberate obtainability adapter failure."
+    )
+    failure = begin
+      failed_obtainability.snapshot
+      nil
+    rescue Ironmon::TrackerLookupError => error
+      error
+    end
+    assert(
+      failure && failure.code == "obtainability_incomplete",
+      "an unclassified acquisition adapter fails explicitly instead of " +
+        "leaving Pokemon permanently calculating"
+    )
+    first_archive_recipe = obtainability_recipe.merge(
+      "run_id" => "tracker-structure-archive-a"
+    )
+    second_archive_recipe = obtainability_recipe.merge(
+      "run_id" => "tracker-structure-archive-b"
+    )
+    first_archive_service =
+      Ironmon.tracker_obtainability_service(first_archive_recipe)
+    second_archive_service =
+      Ironmon.tracker_obtainability_service(second_archive_recipe)
+    assert(
+      !first_archive_service.equal?(second_archive_service) &&
+        Ironmon.tracker_obtainability_services[first_archive_recipe["run_id"]]
+          .equal?(first_archive_service) &&
+        Ironmon.tracker_obtainability_services[second_archive_recipe["run_id"]]
+          .equal?(second_archive_service),
+      "archived obtainability services are isolated by completed-run identity"
+    )
+    Ironmon.tracker_obtainability_services.delete(first_archive_recipe["run_id"])
+    Ironmon.tracker_obtainability_services.delete(second_archive_recipe["run_id"])
     integrated_obtainability =
       Ironmon::TrackerObtainabilityService.new(obtainability_recipe)
     initial_obtainability = integrated_obtainability.snapshot
+    closure_work = initial_obtainability["fusion_closure_work"]
     assert(
-      initial_obtainability["total_pairs"] > 0 &&
+      !initial_obtainability["complete"] &&
+        !initial_obtainability["background_complete"] &&
+        initial_obtainability["total_pairs"] > 0 &&
+        initial_obtainability["processed_pairs"] == 0 &&
         initial_obtainability["obtainable_count"] > 0 &&
-        initial_obtainability["fusion_mapping_mode"] ==
-          "waiting_for_tracker",
-      "obtainability initializes deterministic run sources and material work"
+        initial_obtainability["unresolved_source_count"] == 0 &&
+        initial_obtainability["unresolved_resource_count"] == 0 &&
+        closure_work.is_a?(Hash) &&
+        closure_work["source_catalog_fingerprint"] ==
+          source_catalog["fingerprint"],
+      "obtainability classifies every audited source and resource before " +
+        "handing the direct-result index to the parallel tracker worker"
+    )
+    maximum_fusion_number = (NB_POKEMON * NB_POKEMON) + NB_POKEMON
+    integrated_obtainability.apply_fusion_closure_result({
+      "job_id" => initial_obtainability["fusion_closure_work"]["job_id"],
+      "obtainable_fusion_words" =>
+        Array.new((maximum_fusion_number >> 5) + 1, 0),
+      "packed_executable_evolution_edges" => "",
+      "obtainable_count" => integrated_obtainability.instance_variable_get(
+        :@plans
+      ).count { |_identity, plans| !plans.empty? }
+    })
+    lazy_evolution_entry = integrated_obtainability.instance_variable_get(
+      :@plans
+    ).find do |_identity, plans|
+      plans.any? do |plan|
+        witness = plan[:bulk_witness]
+        witness && witness[0] == :evolution
+      end
+    end
+    lazy_evolution_plan = lazy_evolution_entry[1].find do |plan|
+      witness = plan[:bulk_witness]
+      witness && witness[0] == :evolution
+    end if lazy_evolution_entry
+    lazy_evolution_path = integrated_obtainability.send(
+      :materialize_plan_path, lazy_evolution_plan
+    ) if lazy_evolution_plan
+    assert(
+      lazy_evolution_path &&
+        lazy_evolution_path.any? { |step| step.start_with?("Evolve into ") },
+      "deferred evolution witnesses materialize a readable proof path on demand"
+    )
+    fusion_literal = integrated_obtainability.send(
+      :literal_species, "fusionOf(:MAGCARGO,:GRAVELER)"
+    )
+    assert(
+      fusion_literal == GameData::Species.get(
+        fusionOf(:MAGCARGO, :GRAVELER)
+      ).id,
+      "authored fusionOf acquisition expressions preserve their Head/Body " +
+        "orientation"
+    )
+    fossil_page = load_data("Data/Map048.rxdata").events[87].pages[1]
+    fossil_scripts = integrated_obtainability.send(
+      :script_chunks, fossil_page.list
+    ).map { |_index, script| script }
+    assert(
+      fossil_scripts.any? { |script| script.include?("pbAddToParty") } &&
+        fossil_scripts.any? { |script| script.include?("pbAddPokemon") },
+      "authored acquisition calls embedded in event conditions are parsed"
     )
     passive_target = Ironmon.custom_fusion_pool.find do |identity|
       plans = integrated_obtainability.instance_variable_get(:@plans)
@@ -323,109 +447,105 @@ module IronmonTrackerStructureRuntimeTests
       passive_target
     )
     assert(
-      passive_snapshot["status"] == "calculating" &&
-        !integrated_obtainability.instance_variable_get(
-          :@full_fusion_closure_requested
-        ),
-      "passive Pokemon-card status does not start the complete fusion " +
-        "evolution fallback needed only by an explicit target check"
+      passive_snapshot["status"] == "unobtainable" &&
+        integrated_obtainability.snapshot["phase"] == "complete" &&
+        integrated_obtainability.snapshot["background_complete"],
+      "completed run-wide closure answers a passive Pokemon-card status " +
+        "without queuing target-specific work"
+    )
+    obtainability_services = Ironmon.tracker_obtainability_services
+    previous_integrated_service = obtainability_services[
+      obtainability_recipe["run_id"]
+    ]
+    obtainability_services[obtainability_recipe["run_id"]] =
+      integrated_obtainability
+    search_species = GameData::Species.get(Ironmon.normal_species_pool.first)
+    search_response = Ironmon.tracker_pokemon_search_for_recipe(
+      {
+        "query" => search_species.name,
+        "offset" => 0,
+        "limit" => 50
+      },
+      obtainability_recipe
+    )
+    search_match = search_response["matches"].find do |match|
+      match["species_id"] == "#{search_species.id}:0"
+    end
+    expected_search_status = integrated_obtainability.passive_target_snapshot(
+      search_species
+    )["status"]
+    assert(
+      search_match &&
+        search_match["obtainability_status"] == expected_search_status,
+      "Pokemon search attaches the shared request-scoped obtainability state"
+    )
+    hidden_search_response = Ironmon.tracker_pokemon_search_for_recipe(
+      {
+        "query" => search_species.name,
+        "offset" => 0,
+        "limit" => 50
+      },
+      obtainability_recipe,
+      { :obtainability => false }
+    )
+    hidden_search_omits_status =
+      hidden_search_response["matches"].all? do |match|
+        !match.key?("obtainability_status")
+      end
+    assert(
+      hidden_search_omits_status,
+      "Pokemon search omits passive obtainability outside its authorized " +
+        "information domain"
+    )
+    relation_snapshot = Ironmon.tracker_lookup_relation(
+      search_species, "Test relation", obtainability_recipe, true
+    )
+    assert(
+      relation_snapshot["obtainability_status"] == expected_search_status,
+      "reusable Pokemon relation cards receive the same passive status"
     )
     unresolved_sources = integrated_obtainability.instance_variable_get(
       :@unresolved_sources
     )
+    direct_caught_fusions = integrated_obtainability.instance_variable_get(
+      :@direct_caught_fusions
+    )
+    caught_fusion_identity = direct_caught_fusions.keys.first
+    caught_fusion = GameData::Species.get(caught_fusion_identity) if
+      caught_fusion_identity
+    caught_components = caught_fusion ? [
+      caught_fusion.body_pokemon.id, caught_fusion.head_pokemon.id
+    ] : []
+    component_plans = integrated_obtainability.instance_variable_get(:@plans)
     assert(
-      unresolved_sources.include?(
-        "caught-fusion random component acquisition order"
-      ),
-      "obtainability does not expose both random-unfusion components as proven"
+      !caught_fusion_identity.nil? && unresolved_sources.empty? &&
+        caught_components.all? do |identity|
+          component_plans[identity].any? do |plan|
+            plan[:reason] == "Caught-fusion random-component unfusion"
+          end
+        end,
+      "random-component unfusion records both acquisition-order outcomes as " +
+        "exclusive proof alternatives"
     )
-    integrated_obtainability.disable_tracker_mapping_worker
-    integrated_obtainability.send(:advance_work_unit)
-    warmed_obtainability = integrated_obtainability.snapshot
-    assert(
-      warmed_obtainability["processed_pairs"] == 0,
-      "obtainability isolates fusion-evolution warm-up from material work"
-    )
-    integrated_obtainability.send(:advance_work_unit)
-    advanced_obtainability = integrated_obtainability.snapshot
-    assert(
-      advanced_obtainability["processed_pairs"] == 1,
-      "obtainability advances one player-fusion mapping work unit"
-    )
-    integrated_obtainability.instance_variable_set(
-      :@tracker_mapping_worker_disabled, false
-    )
-    mapping_work = integrated_obtainability.snapshot["fusion_mapping_work"]
-    pair_first = integrated_obtainability.instance_variable_get(:@pair_first)
-    pair_second = integrated_obtainability.instance_variable_get(:@pair_second)
     material_ids = integrated_obtainability.instance_variable_get(:@material_ids)
-    first_material = material_ids[pair_first]
-    second_material = material_ids[pair_second]
+    first_material = material_ids[0]
+    second_material = material_ids[1]
     mapped_results = integrated_obtainability.instance_variable_get(
       :@fusion_mapper
     ).species_pair(first_material, second_material)
-    mapped_result_number = GameData::Species.get(mapped_results[0]).id_number
+    mapped_result = GameData::Species.get(mapped_results[0])
+    pair_proven = integrated_obtainability.prove_player_fusion_pair(
+      first_material, second_material, mapped_result
+    )
     assert(
-      Ironmon.fusion_species_identity(mapped_result_number) ==
-        mapped_results[0] &&
-        Ironmon.custom_fusion_species?(mapped_result_number),
-      "tracker mapping validates numeric custom-fusion identities without " +
-        "requiring a materialized fusion object"
-    )
-    mapped_entry = [
-      GameData::Species.get(first_material).id_number,
-      GameData::Species.get(second_material).id_number,
-      mapped_result_number,
-      GameData::Species.get(mapped_results[1]).id_number
-    ]
-    mapped_entry_offset = mapping_work["processed_pairs"]
-    integrated_obtainability.apply_fusion_mapping_batch({
-      "job_id" => mapping_work["job_id"],
-      "offset" => mapped_entry_offset,
-      "packed_pairs" => mapped_entry
-    })
-    integrated_obtainability.send(:advance_work_unit)
-    assert(
-      integrated_obtainability.snapshot["processed_pairs"] == 2,
-      "obtainability validates and applies an ordered tracker mapping batch"
-    )
-    next_first_index = integrated_obtainability.instance_variable_get(
-      :@pair_first
-    )
-    next_second_index = integrated_obtainability.instance_variable_get(
-      :@pair_second
-    )
-    next_first_material = material_ids[next_first_index]
-    next_second_material = material_ids[next_second_index]
-    next_mapped_results = integrated_obtainability.instance_variable_get(
-      :@fusion_mapper
-    ).species_pair(next_first_material, next_second_material)
-    next_mapped_entry = [
-      GameData::Species.get(next_first_material).id_number,
-      GameData::Species.get(next_second_material).id_number,
-      GameData::Species.get(next_mapped_results[0]).id_number,
-      GameData::Species.get(next_mapped_results[1]).id_number
-    ]
-    integrated_obtainability.apply_fusion_mapping_batch({
-      "job_id" => mapping_work["job_id"],
-      "offset" => mapped_entry_offset,
-      "packed_pairs" => mapped_entry + next_mapped_entry
-    }, true)
-    overlap_snapshot = integrated_obtainability.snapshot
-    assert(
-      overlap_snapshot["processed_pairs"] == mapped_entry_offset + 2,
-      "obtainability resumes the unapplied suffix of an overlapping " +
-        "background/foreground tracker batch"
-    )
-    integrated_obtainability.apply_fusion_mapping_batch({
-      "job_id" => mapping_work["job_id"],
-      "offset" => mapped_entry_offset,
-      "packed_pairs" => mapped_entry
-    }, true)
-    assert(
-      integrated_obtainability.snapshot["processed_pairs"] ==
-        overlap_snapshot["processed_pairs"],
-      "obtainability safely ignores a fully applied in-flight tracker batch"
+      pair_proven &&
+        integrated_obtainability.passive_target_snapshot(mapped_result)[
+          "status"
+        ] == "obtainable" &&
+        integrated_obtainability.snapshot["processed_pairs"] ==
+          integrated_obtainability.snapshot["total_pairs"],
+      "a displayed craft result is proven from only its selected material " +
+        "pair without advancing the global pair scan"
     )
     obtainable_plan_count = integrated_obtainability.instance_variable_get(
       :@plans
@@ -439,7 +559,6 @@ module IronmonTrackerStructureRuntimeTests
     dead_fiber = Fiber.new {}
     dead_fiber.resume
     integrated_obtainability.instance_variable_set(:@work_fiber, dead_fiber)
-    integrated_obtainability.disable_tracker_mapping_worker
     integrated_obtainability.advance_for_milliseconds(1.0)
     replacement_fiber = integrated_obtainability.instance_variable_get(
       :@work_fiber
@@ -450,26 +569,36 @@ module IronmonTrackerStructureRuntimeTests
         "remaining permanently calculating"
     )
     possible_evolution_edges = integrated_obtainability.instance_variable_get(
-      :@possible_evolution_edges
+      :@possible_evolution_edge_numbers
     ).keys
-    possible_edge_parts = possible_evolution_edges.first.to_s.split(">", 2)
     possible_edge_source = GameData::Species.get(
-      possible_edge_parts[0].split(":", 2)[0].to_sym
+      possible_evolution_edges.first >> 20
+    )
+    possible_edge_target = GameData::Species.get(
+      possible_evolution_edges.first & ((1 << 20) - 1)
     )
     graph_target = Ironmon.tracker_lookup_evolution_targets(
       possible_edge_source, obtainability_recipe
     ).values.flatten.find do |target|
-      target["species_id"] == possible_edge_parts[1]
+      target["species_id"] == "#{possible_edge_target.id}:0"
     end
     graph_edge_key = graph_target ?
       "#{possible_edge_source.id}:0>#{graph_target["species_id"]}" : ""
     integrated_obtainability.instance_variable_set(:@phase, :complete)
+    integrated_obtainability.snapshot(
+      nil, [], [graph_edge_key, "unproven:0>edge:0"]
+    )
+    100.times do
+      break if integrated_obtainability.complete?
+      integrated_obtainability.send(:advance_work_unit)
+    end
     complete_edge_snapshot = integrated_obtainability.snapshot(
       nil, [], [graph_edge_key, "unproven:0>edge:0"]
     )
     assert(
       !possible_evolution_edges.empty? &&
         graph_target && complete_edge_snapshot["complete"] &&
+        graph_target.key?("obtainability_status") &&
         complete_edge_snapshot["obtainable_evolution_edge_keys"] == [
           graph_edge_key
         ],
@@ -478,17 +607,22 @@ module IronmonTrackerStructureRuntimeTests
         "graph=#{graph_edge_key.inspect}, target=#{graph_target.inspect}, " +
         "returned=#{complete_edge_snapshot["obtainable_evolution_edge_keys"].inspect})"
     )
-    registered_edge_count = integrated_obtainability.instance_variable_get(
-      :@requested_evolution_edge_keys
-    ).length
-    integrated_obtainability.snapshot(nil, [], [graph_edge_key])
-    assert(
-      integrated_obtainability.instance_variable_get(
-        :@requested_evolution_edge_keys
-      ).length == registered_edge_count,
-      "repeated graph polls skip already registered evolution edges before " +
-        "resolving their fused species"
+    repeated_edge_snapshot = integrated_obtainability.snapshot(
+      nil, [], [graph_edge_key]
     )
+    assert(
+      repeated_edge_snapshot["obtainable_evolution_edge_keys"] == [
+        graph_edge_key
+      ] && integrated_obtainability.snapshot["phase"] == "complete",
+      "repeated graph polls read the immutable closure without registering " +
+        "request-specific work"
+    )
+    if previous_integrated_service
+      obtainability_services[obtainability_recipe["run_id"]] =
+        previous_integrated_service
+    else
+      obtainability_services.delete(obtainability_recipe["run_id"])
+    end
     assert_source(
       Ironmon.method(:reset_tracker_post_run_cache),
       "019_Tracker_Post_Run_6_Fusion_Caches_And_Runtime.rb",
@@ -562,9 +696,30 @@ module IronmonTrackerStructureRuntimeTests
         "diagnostic obtainability accepts an omitted optional species without returning the full catalog"
       )
       assert(
-        active_service.foreground_requested?,
-        "diagnostic obtainability requests renew foreground calculation priority"
+        active_service.foreground_requested? &&
+          active_service.background_requested?,
+        "diagnostic obtainability requests renew foreground and background " +
+          "calculation priority"
       )
+      active_service.instance_variable_set(:@phase, :player_fusions)
+      assert(
+        !active_service.foreground_requested? &&
+          !active_service.background_requested? &&
+          !active_service.scheduled_advance_allowed? &&
+          active_service.background_advance_allowed?,
+        "tracker mapping waits without burning a game-thread work slice"
+      )
+      waiting_started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      active_service.advance_for_milliseconds(
+        Ironmon::TrackerObtainabilityService::FOREGROUND_MILLISECONDS
+      )
+      waiting_elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) -
+        waiting_started
+      assert(
+        waiting_elapsed < 0.05,
+        "tracker mapping returns immediately instead of consuming its foreground budget"
+      )
+      active_service.instance_variable_set(:@phase, :prepare_generators)
       active_service.send(:advance_work_unit)
       assert(
         !active_service.instance_variable_get(:@fusion_mapper).equal?(
@@ -573,10 +728,8 @@ module IronmonTrackerStructureRuntimeTests
         "obtainability keeps speculative fusion mappings out of live gameplay state"
       )
       assert(
-        !active_service.instance_variable_get(:@fusion_generator).equal?(
-          Ironmon.fusion_evolution_generator
-        ),
-        "obtainability keeps cooperative fusion generation out of live gameplay caches"
+        !active_service.instance_variable_defined?(:@fusion_generator),
+        "tracker-owned closure does not retain an obsolete Ruby fusion-evolution generator"
       )
     ensure
       $PokemonGlobal = original_global

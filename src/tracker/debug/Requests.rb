@@ -5,7 +5,10 @@
 module Ironmon
   def self.tracker_debug_pokemon_search(payload)
     tracker_validate_debug_context(["pokemon.all_active"])
-    return tracker_pokemon_search_for_recipe(payload || {}, tracker_debug_active_recipe)
+    return tracker_pokemon_search_for_recipe(
+      payload || {}, tracker_debug_active_recipe,
+      tracker_debug_lookup_visibility
+    )
   end
 
   def self.tracker_debug_pokemon_lookup(payload)
@@ -58,7 +61,8 @@ module Ironmon
     tracker_validate_debug_context(["evolution.candidates"])
     payload = tracker_debug_secure_species_payload(payload)
     return tracker_evolution_candidate_search_for_recipe(
-      payload || {}, tracker_debug_active_recipe
+      payload || {}, tracker_debug_active_recipe,
+      tracker_debug_lookup_visibility[:obtainability]
     )
   end
 
@@ -66,7 +70,8 @@ module Ironmon
     tracker_validate_debug_context(["evolution.results"])
     payload = tracker_debug_secure_species_payload(payload)
     return tracker_evolution_predecessor_search_for_recipe(
-      payload || {}, tracker_debug_active_recipe
+      payload || {}, tracker_debug_active_recipe,
+      tracker_debug_lookup_visibility[:obtainability]
     )
   end
 
@@ -74,7 +79,8 @@ module Ironmon
     tracker_validate_debug_context(["fusion.material_pairs"])
     payload = tracker_debug_secure_species_payload(payload)
     return tracker_fusion_material_search_for_recipe(
-      payload || {}, tracker_debug_active_recipe
+      payload || {}, tracker_debug_active_recipe,
+      tracker_debug_lookup_visibility[:obtainability]
     )
   end
 
@@ -96,7 +102,10 @@ module Ironmon
 
   def self.tracker_debug_fusion_preview(payload)
     tracker_validate_debug_context(["fusion.preview_results"])
-    return tracker_fusion_preview_for_recipe(payload || {}, tracker_debug_active_recipe)
+    return tracker_fusion_preview_for_recipe(
+      payload || {}, tracker_debug_active_recipe,
+      tracker_debug_lookup_visibility[:obtainability]
+    )
   end
 
   def self.tracker_debug_secure_species_payload(payload)

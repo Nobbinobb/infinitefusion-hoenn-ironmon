@@ -12,7 +12,12 @@
         </div>
         <div class="identity-placeholder">
             <p class="card-kicker">@(Pokemon.Fusion ? "FUSION" : "NORMAL POKEMON")</p>
-                <h2 class="identity-name"><span>@Pokemon.Nickname</span><GenderIcon Gender="@Pokemon.Gender" /><small>@Text["Debug.Overview.LevelValue", Pokemon.Level]</small></h2>
+            <h2 class="identity-name">
+                <span>@Pokemon.Nickname</span>
+                <GenderIcon Gender="@Pokemon.Gender" />
+                <small>@Text["Debug.Overview.LevelValue", Pokemon.Level]</small>
+                <PokemonObtainabilityMark Status="@ObtainabilityStatus" ShowLabel="true" />
+            </h2>
             @if (HasDistinctNickname())
             {
                 <p class="debug-species-name">@Pokemon.SpeciesName</p>

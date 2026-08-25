@@ -8,6 +8,7 @@ namespace Ironmon.Tracker.Connection.Transport;
 /// </summary>
 public sealed class TrackerConnectionService : IAsyncDisposable
 {
+    private const string ObtainabilityIncompleteErrorCode = "obtainability_incomplete";
     private static readonly TimeSpan ObtainabilityPrecalculationInterval = TimeSpan.FromMilliseconds(250);
     private static readonly TimeSpan ObtainabilityPrecalculationStartupDelay = TimeSpan.FromSeconds(2);
     private readonly Lock _lifecycleSync = new();
@@ -220,6 +221,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         _diagnostics.RecordIncoming(handshakeMessage);
         GameHandshakePayload game = ValidateGameHandshake(handshakeMessage);
         _events.SelectRun(game.RunId);
+        Requests.ObtainabilityProgress.Reset();
         IReadOnlyList<string> diagnosticCapabilities = Requests.GetNegotiatedDiagnosticCapabilities(game);
         TrackerHandshakePayload tracker = new(_options.TrackerVersion, _options.DebugRequested, _options.AutoSelectStarter, _options.MaximumStarterBaseStatTotal, _options.FavoriteSpeciesIds, diagnosticCapabilities);
         TrackerMessage trackerHandshake = TrackerMessageFactory.CreateEvent(TrackerEvents.TrackerConnected, TrackerProtocol.InitialEventSequence, tracker, game.RunId, game.BattleId);
@@ -252,6 +254,8 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             catch (OperationCanceledException) when (precalculationCancellation.IsCancellationRequested)
             {
             }
+
+            Requests.ObtainabilityProgress.Reset();
             ClearRequestSession();
         }
     }
@@ -275,13 +279,18 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 && Requests.HasDiagnosticCapability(DiagnosticCapabilities.WorldItems)
                 && Requests.HasDiagnosticCapability(DiagnosticCapabilities.WorldWildEncounters);
 
-            if (authorized && snapshot.CurrentState?.IronmonActive == true && !string.IsNullOrWhiteSpace(runId) && runId != completedRunId)
+            if (authorized && snapshot.CurrentState?.IronmonActive == true && !string.IsNullOrWhiteSpace(runId) && runId != completedRunId && !Requests.ArchiveObtainabilityPrecalculationSelected)
             {
                 try
                 {
                     PokemonObtainabilityResponsePayload response = await Requests.AdvanceDebugPokemonObtainabilityAsync(foreground: false, cancellationToken: cancellationToken).ConfigureAwait(false);
                     if (IsObtainabilityPrecalculationFinished(response))
                         completedRunId = runId;
+                }
+                catch (TrackerProtocolException exception) when (IsObtainabilityPrecalculationTerminalFailure(exception))
+                {
+                    _diagnostics.RecordError(exception);
+                    completedRunId = runId;
                 }
                 catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
                 {
@@ -301,6 +310,17 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(response);
         return response.Complete || response.BackgroundComplete;
+    }
+
+    /// <summary>
+    /// Determines whether a rejected obtainability request represents a terminal adapter failure for the run.
+    /// </summary>
+    /// <param name="exception">The rejected tracker request.</param>
+    /// <returns>True when polling the same run cannot make further progress.</returns>
+    internal static bool IsObtainabilityPrecalculationTerminalFailure(TrackerProtocolException exception)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+        return exception.ErrorCode == ObtainabilityIncompleteErrorCode;
     }
 
     /// <summary>

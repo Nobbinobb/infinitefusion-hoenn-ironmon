@@ -208,8 +208,33 @@ module IronmonObtainabilityFoundationAuditExporter
     end
   end
 
-  def self.prototype_adapter_rows(event_rows, source_rows,
-                                  event_resource_rows, source_resource_rows)
+  def self.validate_hoenn_mart_adapter(service)
+    location = Object.method(:get_mart_exclusive_items_hoenn).source_location
+    raise "Hoenn mart inventory has no runtime source location" if !location
+    source_path = location[0]
+    if !File.file?(source_path)
+      source_path = Dir.glob("Data/Scripts/**/#{File.basename(source_path)}").first
+    end
+    raise "Hoenn mart runtime source file is unavailable" if !source_path
+    source = File.readlines(source_path)[location[1] - 1, 100].join
+    source = source.split(/^def\s+regional_clothes_shop\b/, 2)[0]
+    cities = source.scan(/^\s*when\s+:([A-Za-z0-9_]+)/).flatten.map do |value|
+      value.upcase.to_sym
+    end
+    if cities.sort != service::HOENN_MART_CITIES.sort
+      raise "Hoenn mart obtainability adapter does not match runtime cities"
+    end
+    service::HOENN_MART_CITIES.each do |city|
+      get_mart_exclusive_items_hoenn(city).each do |item_id|
+        raise "Hoenn mart contains invalid item #{item_id}" if
+          !GameData::Item.try_get(item_id)
+      end
+    end
+  end
+
+  def self.obtainability_adapter_rows(event_rows, source_rows,
+                                      event_resource_rows,
+                                      source_resource_rows)
     service = Ironmon::TrackerObtainabilityService
     scripted = service::SCRIPTED_ACQUISITION_METHODS
     deferred = service::DEFERRED_ACQUISITION_METHODS
@@ -234,17 +259,26 @@ module IronmonObtainabilityFoundationAuditExporter
     if !evolution_missing.empty?
       raise "obtainability item consumers are missing: #{evolution_missing.sort.join(', ')}"
     end
+    validate_hoenn_mart_adapter(service)
     rows = scripted.sort.map do |method_name|
-      ["prototype_adapter", method_name, "scripted_acquisition_candidate",
-       "conditions remain path-unproven"]
+      ["obtainability_adapter", method_name, "authored_acquisition_proof",
+       "literal, fusion, local-variable, and event-variable outputs resolve"]
     end
     rows.concat(deferred.sort.map do |method_name|
-      ["prototype_adapter", method_name, "deferred_acquisition_source",
-       "result remains unknown rather than impossible"]
+      ["obtainability_adapter", method_name, "authored_acquisition_proof",
+       "deferred runtime entry point uses the same species adapters"]
     end)
     rows.concat(service::SCRIPTED_RESOURCE_METHODS.sort.map do |method_name|
-      ["prototype_adapter", method_name, "resource_inventory",
-       "unresolved categories prevent a false impossible result"]
+      detail = case method_name
+               when "pbItemBall"
+                 "physical source resolves through the area catalog"
+               when "pbPokemonMart"
+                 "resolved stock contributes repeatable item supply"
+               else
+                 "resolved item and quantity contribute authored supply"
+               end
+      ["obtainability_adapter", method_name, "evolution_resource_proof",
+       detail]
     end)
     return rows
   end
@@ -316,7 +350,7 @@ module IronmonObtainabilityFoundationAuditExporter
         next if !item || item.is_TM?
         result[item.id] += 1
         rows << ["authored_item_gift", context, item.id,
-                 :candidate_not_path_proven, item.name]
+                 :resolved_authored_supply, item.name]
       end
     end
     return result, rows
@@ -370,13 +404,48 @@ module IronmonObtainabilityFoundationAuditExporter
     end
   end
 
-  def self.run(path)
+  def self.semantic_source_catalog
+    scanner = Ironmon::TrackerObtainabilityService.new({}, true)
+    sources = []
+    resources = []
+    audited_map_paths.each do |path|
+      map_id = File.basename(path)[/\d+/].to_i
+      map = load_data(path)
+      map.events.each_value do |event|
+        event.pages.each do |page|
+          scanner.collect_authored_catalog_entries(
+            page.list, map_id, event.id, {}, sources, resources
+          )
+        end
+      end
+    end
+    payload = {
+      "schema_version" => 1,
+      "sources" => sources,
+      "resources" => resources
+    }
+    fingerprint_source = JSON.generate(payload)
+    payload["fingerprint"] = format(
+      "%016x", Ironmon.fnv1a_64(fingerprint_source)
+    )
+    return payload
+  end
+
+  def self.write_semantic_source_catalog(path, document)
+    temporary_path = "#{path}.tmp"
+    File.open(temporary_path, "wb") do |file|
+      file.write(JSON.generate(document))
+    end
+    File.rename(temporary_path, path)
+  end
+
+  def self.run(path, catalog_path)
     validate_hooks
     catalog = Ironmon.evolution_catalog
     catalog.validate
     event_rows, event_resource_rows = event_call_rows
     source_rows, source_resource_rows = source_call_rows
-    adapter_rows = prototype_adapter_rows(
+    adapter_rows = obtainability_adapter_rows(
       event_rows, source_rows, event_resource_rows, source_resource_rows
     )
     encounters = encounter_rows
@@ -398,13 +467,14 @@ module IronmonObtainabilityFoundationAuditExporter
     item_slot_rows = item_slots.map do |slot_id|
       ["randomizable_item_slot", slot_id]
     end
+    source_catalog = semantic_source_catalog
     rows = hook_rows + adapter_rows + event_rows + source_rows + event_resource_rows +
       source_resource_rows + starters + encounters + item_slot_rows +
       required_gift_rows + resource_rows
     summary = {
-      :schema_version => 1,
+      :schema_version => 2,
       :runtime_hooks => hook_rows.length,
-      :prototype_adapters => adapter_rows.length,
+      :obtainability_adapters => adapter_rows.length,
       :event_acquisition_calls => event_rows.length,
       :source_acquisition_calls => source_rows.length,
       :event_resource_calls => event_resource_rows.length,
@@ -419,7 +489,10 @@ module IronmonObtainabilityFoundationAuditExporter
       end,
       :authored_required_item_gift_calls => required_gift_rows.length
     }
+    summary[:semantic_source_entries] = source_catalog["sources"].length
+    summary[:semantic_resource_entries] = source_catalog["resources"].length
     write_audit(path, rows, summary)
+    write_semantic_source_catalog(catalog_path, source_catalog)
     return summary
   end
 end
@@ -429,8 +502,9 @@ game_root = $ironmon_obtainability_audit_game_root.to_s
 source_root = $ironmon_obtainability_audit_source_root.to_s
 manifest_path = $ironmon_obtainability_audit_manifest_path.to_s
 area_catalog_path = $ironmon_obtainability_audit_area_catalog_path.to_s
+source_catalog_path = $ironmon_obtainability_source_catalog_output_path.to_s
 exit! 0 if output_path.empty? || game_root.empty? || source_root.empty? ||
-  manifest_path.empty? || area_catalog_path.empty?
+  manifest_path.empty? || area_catalog_path.empty? || source_catalog_path.empty?
 begin
   Dir.chdir(game_root)
   File.binwrite("#{output_path}.progress", "exporter loaded\n")
@@ -439,7 +513,9 @@ begin
   $game_temp = Game_Temp.new
   Game.load_sprites_list_caches
   IronmonScriptLoader.load_manifest(source_root, manifest_path)
-  summary = IronmonObtainabilityFoundationAuditExporter.run(output_path)
+  summary = IronmonObtainabilityFoundationAuditExporter.run(
+    output_path, source_catalog_path
+  )
   File.open("#{output_path}.summary", "wb") do |file|
     summary.each { |key, value| file.write("#{key}=#{value}\n") }
   end
