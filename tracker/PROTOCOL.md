@@ -40,7 +40,7 @@ handshake and state-recovery sequence without restarting the game.
   "sequence": 0,
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
-    "game_version": "6.8.0",
+    "game_version": "6.8.2",
     "ironmon_version": "0.8.0",
     "ironmon_active": false,
     "debug_available": true,
@@ -250,7 +250,7 @@ An active 0.8.0 run also includes optional aggregate type-coverage context:
     "normal_pool_size": 576,
     "normal_pool_fingerprint": "5ab45fb7fa469aa5",
     "fusion_pool_schema_version": 2,
-    "fusion_pool_size": 174348,
+    "fusion_pool_size": 171396,
     "fusion_pool_fingerprint": "a71c6c1c12491b47"
   }
 }
@@ -590,7 +590,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "run_id": "run-seed-918273645",
   "seed": 918273645,
   "result": "lost",
-  "game_version": "6.8.0",
+  "game_version": "6.8.2",
   "ironmon_version": "0.8.0",
   "configuration": {
     "schema_version": 3,

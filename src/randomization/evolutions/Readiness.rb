@@ -116,6 +116,14 @@ module Ironmon
     end
     if !current_evolution_randomization?
       mismatch = evolution_metadata_mismatch
+      if saved_run_migration_approved?(:evolution_randomization)
+        if !prepare_evolution_randomization
+          raise EvolutionRandomizationError,
+                evolution_randomization_error_message
+        end
+        echoln "Ironmon migrated saved evolution randomization metadata."
+        return true
+      end
       raise EvolutionRandomizationError,
             "the saved evolution #{mismatch} is incompatible"
     end

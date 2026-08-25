@@ -230,6 +230,14 @@ module Ironmon
       $PokemonGlobal.ironmon_move_access_generator_version !=
       MoveAccessGenerator::SCHEMA_VERSION
     if !current_move_access_randomization?
+      if saved_run_migration_approved?(:move_access_randomization)
+        if !prepare_move_access_randomization
+          raise MoveAccessRandomizationError,
+                move_access_randomization_error_message
+        end
+        echoln "Ironmon migrated saved move-access randomization metadata."
+        return true
+      end
       raise MoveAccessRandomizationError,
             "the saved move-access generator or source data is incompatible"
     end

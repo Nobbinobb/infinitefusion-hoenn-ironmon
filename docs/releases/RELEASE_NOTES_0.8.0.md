@@ -68,7 +68,15 @@ from the game’s Ruby runtime into the native tracker.
 
 ## Compatibility
 
-Ironmon 0.8.0 targets Pokemon Infinite Fusion 2 version 6.8.0. Existing 0.7
+Ironmon 0.8.0 targets Pokemon Infinite Fusion 2 version 6.8.2. Its game-derived
+catalogs and deterministic runtime baseline were refreshed and validated against
+that installation. See the
+[version compatibility table](../guides/INSTALLATION.md#version-compatibility)
+for current and legacy pairings. Loading a save whose generator catalogs no
+longer match now presents one migration prompt listing every affected system.
+Declining returns to save selection without modifying the file; accepting
+refreshes the incompatible in-memory metadata and allows the run to load.
+Existing 0.7
 saves, seeded-run tokens, and completed-run recipes remain readable when their
 recorded generator metadata and installed game data are compatible. Install
 the game scripts and tracker from the same 0.8.0 archive.

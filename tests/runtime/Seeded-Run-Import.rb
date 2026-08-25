@@ -1,7 +1,7 @@
 module IronmonSeededRunImportRuntimeTests
   OUTPUT_PATH = $ironmon_seeded_run_import_test_output_path.to_s
   EXPECTED_WORLD_SNAPSHOT_SHA256 =
-    "e79189901ee0fba21922e77e2fe2486eecbc9f4eca014a1af04725e90805683b"
+    "37c9abf6f6b65f1df3d243f835d02a310f59326ca1200851c3bf5c43c9a7f4a1"
 
   def self.assert(condition, message)
     raise "Seeded-run import runtime test failed: #{message}" if !condition

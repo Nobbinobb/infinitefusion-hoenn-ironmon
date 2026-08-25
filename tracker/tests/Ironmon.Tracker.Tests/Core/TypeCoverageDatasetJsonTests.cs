@@ -66,9 +66,9 @@ public sealed class TypeCoverageDatasetJsonTests
 
         TypeCoverageDataset dataset = TypeCoverageDatasetJson.Deserialize(stream);
 
-        Assert.Equal("6.8.0", dataset.GameVersion);
+        Assert.Equal("6.8.2", dataset.GameVersion);
         Assert.Equal(576, dataset.NormalPoolSize);
-        Assert.Equal(174_348, dataset.FusionPoolSize);
+        Assert.Equal(171_396, dataset.FusionPoolSize);
         Assert.Equal(170, dataset.Profiles.Count);
     }
 

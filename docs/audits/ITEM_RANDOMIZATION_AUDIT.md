@@ -1,7 +1,7 @@
 # Infinite Fusion item and item-randomization audit
 
-Audit date: 2026-08-16
-Audited installation: Infinite Fusion 2, game version declared as 6.8.0
+Audit date: 2026-08-25
+Audited installation: Infinite Fusion 2, game version declared as 6.8.2
 Scope: registered item data, ground pickups, scripted gifts, shops, trainer-held items, TM rewards, and current Ironmon integration
 
 ## Executive summary
@@ -74,7 +74,7 @@ The authoritative bundled runtime reports 721 unique registered items.
 | Key Items | 97 | 0 |
 | **Total** | **721** | **476** |
 
-Of the 135 machines, 125 are TMs and enter the separate TM permutation. The remaining 10 machines do not enter either base permutation. The complete runtime-derived catalog is in `generated/ITEM_RANDOMIZER_POOL.csv`.
+Of the 135 machines, 125 are TMs and enter the separate TM permutation. The remaining 10 machines do not enter either base permutation.
 
 The base registrations contain an important naming anomaly: `HM06` reports
 `is_TM? == true` and `is_HM? == false`, so it is one of those 125 base TM-pool

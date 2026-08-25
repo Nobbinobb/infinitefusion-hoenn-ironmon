@@ -89,6 +89,13 @@ module Ironmon
       return true
     end
     if !current_item_randomization?
+      if saved_run_migration_approved?(:item_randomization)
+        if !prepare_item_randomization
+          raise ItemRandomizationError, item_randomization_error_message
+        end
+        echoln "Ironmon migrated saved item randomization metadata."
+        return true
+      end
       raise ItemRandomizationError,
             "the saved item generator or item pools are incompatible"
     end

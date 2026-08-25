@@ -1531,8 +1531,17 @@ Status: **Implemented and released**
   connection indicator.
 - All 246 tracker tests and the complete bundled-game runtime suite pass. The
   release pipeline regenerated and validated the area, type-coverage, fusion
-  predecessor, item, obtainability-source, and player-fusion worker catalogs.
+  predecessor, item, obtainability-source, and player-fusion worker catalogs
+  against Infinite Fusion 2 version 6.8.2.
+- Added a current and legacy compatibility table to the installation guide;
+  Ironmon 0.8.0 now targets Infinite Fusion 6.8.2 while documented releases
+  0.2.1 through 0.7.9 remain paired with Infinite Fusion 6.8.0.
+- Replaced fatal saved-catalog load errors with one explicit migration prompt.
+  Declining returns to save selection without mutation; accepting refreshes all
+  reported generator systems during that load. The real File H save migrated
+  custom-fusion, evolution, and move-access metadata and reached `Scene_Map`
+  without changing the source file during verification.
 - Released equivalent Windows x64 packages: the self-contained archive has
-  SHA-256 `d927ff54d54a1ca2b405e5b88496706ebb33925dcb42f7cc48aee853c89d0ebd`;
+  SHA-256 `2fddfa1b0f223078ad7fb7aa3f6233fc94a2801dff28f74e5382f5e3b2d88f32`;
   the runtime-required archive has SHA-256
-  `c3bf083b2b62ceea2ada03072422d7c2f56b45af71f3ee51fac13b0aaaf5ca4a`.
+  `994f0161b618791befa280e3b433891e0739cb365cc321cf62b83d20b9d6bb94`.

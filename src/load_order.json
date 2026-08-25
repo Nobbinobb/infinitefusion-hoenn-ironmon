@@ -33,6 +33,7 @@
   { "source": "randomization/species/Pools.rb", "output": "003_Species_Generators_1_Pools.rb" },
   { "source": "randomization/species/Mapping.rb", "output": "003_Species_Generators_2_Mapping.rb" },
   { "source": "randomization/species/Readiness.rb", "output": "003_Species_Generators_3_Readiness.rb" },
+  { "source": "run/Saved_Run_Migration.rb", "output": "003_Z_Saved_Run_Migration.rb" },
   { "source": "encounters/Core.rb", "output": "004_Encounter_Hooks.rb" },
   { "source": "encounters/Trainers.rb", "output": "004_Encounter_Hooks_1_Trainers.rb" },
   { "source": "encounters/Wild_Battles.rb", "output": "004_Encounter_Hooks_2_Wild_Battles.rb" },

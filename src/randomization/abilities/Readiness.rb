@@ -131,6 +131,14 @@ module Ironmon
       return migrate_legacy_fusion_fallback_abilities
     end
     if !current_ability_randomization?
+      if saved_run_migration_approved?(:ability_randomization)
+        if !prepare_ability_randomization
+          raise AbilityRandomizationError,
+                ability_randomization_error_message
+        end
+        echoln "Ironmon migrated saved ability randomization metadata."
+        return true
+      end
       raise AbilityRandomizationError,
             "the saved ability generator or allowed pool is incompatible"
     end

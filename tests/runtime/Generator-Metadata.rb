@@ -208,6 +208,171 @@ module IronmonGeneratorMetadataRuntimeTests
     )
   end
 
+  def self.test_saved_run_migration
+    original_global = $PokemonGlobal
+    original_game_temp = $game_temp
+    original_pool_service = Ironmon.instance_variable_get(
+      :@custom_fusion_pool_service
+    )
+    original_approval = Ironmon.instance_variable_get(
+      :@approved_saved_run_migration
+    )
+    singleton = class << Ironmon; self; end
+    original_confirmation = singleton.instance_method(
+      :confirm_saved_run_migration
+    )
+    metadata = PokemonGlobalMetadata.new
+    metadata.ironmon_mode = true
+    metadata.ironmon_seed = 918_273_645
+    $game_temp = Game_Temp.new
+    Game.load_sprites_list_caches
+    Ironmon.reset_custom_fusion_pool_cache
+    $PokemonGlobal = metadata
+    assert(
+      Ironmon.prepare_base_stat_randomization,
+      "migration fixture prepares base-stat metadata"
+    )
+    prepared_evolutions = Ironmon.prepare_evolution_randomization
+    assert(
+      prepared_evolutions,
+      "migration fixture prepares evolution metadata: " +
+        Ironmon.evolution_randomization_error_message.to_s
+    )
+    Ironmon.record_custom_fusion_pool_metadata
+    save_data = {
+      :game_version => "6.8.0",
+      :global_metadata => metadata
+    }
+    assert(
+      Ironmon.saved_run_migration_issues(save_data).empty?,
+      "current saved-run metadata needs no migration"
+    )
+
+    metadata.ironmon_custom_fusion_pool_size += 1
+    metadata.ironmon_custom_fusion_pool_fingerprint = "old-fusion-pool"
+    metadata.ironmon_evolution_source_fingerprint = "old-evolutions"
+    before_detection = [
+      metadata.ironmon_custom_fusion_pool_size,
+      metadata.ironmon_custom_fusion_pool_fingerprint,
+      metadata.ironmon_evolution_source_fingerprint
+    ]
+    issues = Ironmon.saved_run_migration_issues(save_data)
+    assert(
+      issues == [:custom_fusion_pool, :evolution_randomization],
+      "saved-run inspection reports all incompatible catalogs once"
+    )
+    assert(
+      before_detection == [
+        metadata.ironmon_custom_fusion_pool_size,
+        metadata.ironmon_custom_fusion_pool_fingerprint,
+        metadata.ironmon_evolution_source_fingerprint
+      ],
+      "saved-run inspection does not mutate declined save data"
+    )
+    assert(
+      $PokemonGlobal.equal?(metadata),
+      "saved-run inspection restores the caller's global metadata"
+    )
+
+    singleton.send(:define_method, :confirm_saved_run_migration) do |_data, _issues|
+      false
+    end
+    begin
+      Ironmon.begin_saved_run_migration(save_data)
+      assert(false, "declined saved-run migration stops loading")
+    rescue Ironmon::SavedRunMigrationDeclined
+      assert(
+        !Ironmon.saved_run_migration_approved?(:evolution_randomization),
+        "declined migration grants no compatibility override"
+      )
+    end
+    assert(
+      before_detection == [
+        metadata.ironmon_custom_fusion_pool_size,
+        metadata.ironmon_custom_fusion_pool_fingerprint,
+        metadata.ironmon_evolution_source_fingerprint
+      ],
+      "declining migration leaves the save metadata unchanged"
+    )
+
+    singleton.send(:define_method, :confirm_saved_run_migration) do |_data, _issues|
+      true
+    end
+    assert(
+      Ironmon.begin_saved_run_migration(save_data) &&
+        Ironmon.saved_run_migration_approved?(:custom_fusion_pool) &&
+        Ironmon.saved_run_migration_approved?(:evolution_randomization),
+      "one accepted prompt approves every reported migration system"
+    )
+    assert(
+      Ironmon.ensure_evolution_randomization,
+      "approved evolution migration refreshes incompatible metadata"
+    )
+    Ironmon.record_custom_fusion_pool_metadata
+    assert(
+      Ironmon.current_evolution_randomization? &&
+        Ironmon.saved_run_migration_issues(save_data).empty?,
+      "approved migration produces current runnable metadata"
+    )
+  ensure
+    singleton.send(
+      :define_method, :confirm_saved_run_migration, original_confirmation
+    ) if singleton && original_confirmation
+    Ironmon.finish_saved_run_migration
+    Ironmon.instance_variable_set(
+      :@approved_saved_run_migration, original_approval
+    )
+    Ironmon.suspend_evolution_randomization
+    Ironmon.suspend_base_stat_randomization
+    Ironmon.instance_variable_set(
+      :@custom_fusion_pool_service, original_pool_service
+    )
+    $game_temp = original_game_temp
+    $PokemonGlobal = original_global
+  end
+
+  def self.test_saved_run_migration_source_ownership
+    game_load_location = Game.method(:load).source_location
+    load_screen_location = PokemonLoadScreen.instance_method(
+      :pbStartLoadScreen
+    ).source_location
+    assert(
+      game_load_location && load_screen_location &&
+        File.basename(game_load_location[0]) ==
+          "003_Z_Saved_Run_Migration.rb" &&
+        File.basename(load_screen_location[0]) ==
+          "003_Z_Saved_Run_Migration.rb",
+      "saved-run migration owns load approval and clean decline handling"
+    )
+  end
+
+  def self.test_saved_run_migration_decline_returns_to_load_screen
+    load_screen = PokemonLoadScreen
+    original_start = load_screen.instance_method(
+      :ironmon_saved_run_migration_original_start
+    )
+    calls = 0
+    load_screen.send(
+      :define_method, :ironmon_saved_run_migration_original_start
+    ) do
+      calls += 1
+      raise Ironmon::SavedRunMigrationDeclined if calls == 1
+      :reopened
+    end
+    screen = load_screen.allocate
+    result = screen.pbStartLoadScreen
+    assert(
+      result == :reopened && calls == 2 &&
+        screen.instance_variable_get(:@scene).is_a?(PokemonLoad_Scene),
+      "declining migration rebuilds the save-selection scene"
+    )
+  ensure
+    load_screen.send(
+      :define_method, :ironmon_saved_run_migration_original_start,
+      original_start
+    ) if load_screen && original_start
+  end
+
   def self.run
     test_shared_metadata_primitives
     test_pre_generator_legacy_policies
@@ -215,6 +380,9 @@ module IronmonGeneratorMetadataRuntimeTests
     test_evolution_source_ownership
     test_ability_source_ownership
     test_species_source_ownership
+    test_saved_run_migration
+    test_saved_run_migration_source_ownership
+    test_saved_run_migration_decline_returns_to_load_screen
     File.binwrite(OUTPUT_PATH, "generator-metadata tests passed\n")
   rescue Exception => exception
     File.binwrite(

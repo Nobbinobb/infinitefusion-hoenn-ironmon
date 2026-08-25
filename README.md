@@ -36,7 +36,7 @@ access, Favorite Clause, and the randomization safeguards from the 0.7 series.
 See
 `docs/IRONMON_MECHANICS.html` for the complete behavior reference,
 `docs/ROADMAP.md` for cumulative scope, and `docs/guides/INSTALLATION.md` for
-installation steps.
+installation steps and the current and legacy version compatibility table.
 
 This repository is maintained independently from the official Pokemon Infinite
 Fusion game repository.

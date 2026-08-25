@@ -215,15 +215,6 @@ try {
   Remove-Item -LiteralPath $generatedPlayerFusionWorkerCatalog -Force -ErrorAction SilentlyContinue
 }
 
-& dotnet test (Join-Path $projectRoot "tracker\tests\Ironmon.Tracker.Tests\Ironmon.Tracker.Tests.csproj") `
-  --configuration Release `
-  --maxcpucount:1
-if ($LASTEXITCODE -ne 0) {
-  throw "Tracker tests failed."
-}
-
-& (Join-Path $PSScriptRoot "Test-GameRuntime.ps1") -GameRoot $gameRoot
-
 $generationStarted = [DateTime]::UtcNow.AddSeconds(-2)
 try {
   & (Join-Path $PSScriptRoot "generation\Generate-Area-Catalog.ps1") `
@@ -278,6 +269,15 @@ try {
     -Force `
     -ErrorAction SilentlyContinue
 }
+
+& dotnet test (Join-Path $projectRoot "tracker\tests\Ironmon.Tracker.Tests\Ironmon.Tracker.Tests.csproj") `
+  --configuration Release `
+  --maxcpucount:1
+if ($LASTEXITCODE -ne 0) {
+  throw "Tracker tests failed."
+}
+
+& (Join-Path $PSScriptRoot "Test-GameRuntime.ps1") -GameRoot $gameRoot
 
 & (Join-Path $PSScriptRoot "Build-Distribution.ps1")
 & (Join-Path $PSScriptRoot "Publish-Tracker.ps1") -DeploymentMode SelfContained

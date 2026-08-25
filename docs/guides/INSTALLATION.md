@@ -1,8 +1,29 @@
 # Installing Ironmon 0.8.0
 
-Ironmon `0.8.0` targets Pokemon Infinite Fusion 2 version 6.8.0.
+Ironmon `0.8.0` targets Pokemon Infinite Fusion 2 version 6.8.2.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
+
+## Version compatibility
+
+Use an Ironmon release only with the Infinite Fusion version listed for it.
+The game scripts and tracker must come from the same Ironmon archive.
+
+| Ironmon version | Infinite Fusion 2 version | Status |
+| --- | --- | --- |
+| 0.8.0 | 6.8.2 | Current |
+| 0.2.1–0.7.9 | 6.8.0 | Legacy |
+
+The documented release history begins with Ironmon 0.2.1. Legacy packages are
+kept for matching older Infinite Fusion installations; they are not compatible
+packages for the current game version.
+
+When an Ironmon save from an older game-data catalog is opened, Ironmon lists
+all affected randomization systems and asks once whether to migrate it. Choosing
+**No** returns to save selection without changing the save file. Choosing
+**Yes** refreshes the incompatible in-memory generator metadata for the current
+game version; generated results in the listed systems may change. The migration
+is written to disk only when the game is saved normally afterward.
 
 ## Install from the release archive
 

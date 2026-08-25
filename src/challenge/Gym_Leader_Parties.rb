@@ -5,7 +5,7 @@
 module Ironmon
   GYM_LEADER_SCHEMA_VERSION = 1
   GYM_LEADER_TYPES_BY_GAME_VERSION = {
-    "6.8.0" => [
+    "6.8.2" => [
       :LEADER_Roxanne,
       :LEADER_Brawly,
       :LEADER_Wattson,
