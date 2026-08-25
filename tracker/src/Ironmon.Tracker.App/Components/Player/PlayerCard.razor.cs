@@ -8,8 +8,6 @@ namespace Ironmon.Tracker.App.Components.Player;
 /// </summary>
 public partial class PlayerCard
 {
-    private string? _spriteKey;
-    private string? _spriteSource;
     private AbilitySnapshot? _selectedAbility;
     private bool _itemsOpen;
 
@@ -54,19 +52,6 @@ public partial class PlayerCard
     /// </summary>
     [Parameter]
     public int? TargetPosition { get; set; }
-
-    /// <summary>
-    /// Refreshes the local sprite when the active Pokemon or game changes.
-    /// </summary>
-    protected override void OnParametersSet()
-    {
-        string? key = GameRoot is null || Player?.SpritePath is null ? null : $"{GameRoot}|{Player.SpritePath}";
-        if (key == _spriteKey)
-            return;
-
-        _spriteKey = key;
-        _spriteSource = LocalSpriteLoader.Load(GameRoot, Player?.SpritePath);
-    }
 
     /// <summary>
     /// Gets the visible player name or waiting label.

@@ -56,11 +56,4 @@ public partial class StarterSelection
             : identity;
     }
 
-    /// <summary>
-    /// Loads the revealed starter's local sprite.
-    /// </summary>
-    /// <param name="choice">The represented starter slot.</param>
-    /// <returns>The WebView sprite source, or null when unavailable.</returns>
-    private string? GetSpriteSource(StarterChoiceSnapshot choice)
-        => LocalSpriteLoader.Load(GameRoot, choice.SpritePath);
 }

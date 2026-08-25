@@ -83,6 +83,50 @@
         </div>
     </details>
 
+    <details class="settings-group">
+        <summary>
+            <span>
+                <strong>@Text["Settings.Sprites.Group"]</strong>
+                <small>@Text["Settings.Sprites.GroupDescription"]</small>
+            </span>
+        </summary>
+        <div class="settings-group-content">
+            <section class="sprite-download-card">
+                <span>
+                    <strong>@Text["Settings.Sprites.DownloadCustom"]</strong>
+                    <small>@Text["Settings.Sprites.DownloadDescription"]</small>
+                    <small class="settings-warning">@Text["Settings.Sprites.DownloadWarning"]</small>
+                </span>
+
+                @if (_spriteInstallRunning && _spriteInstallProgress is not null)
+                {
+                    <progress max="@Math.Max(1, _spriteInstallProgress.TotalSheetCount)" value="@_spriteInstallProgress.CompletedSheetCount"></progress>
+                    <small>@Text["Settings.Sprites.Progress", _spriteInstallProgress.CompletedSheetCount, _spriteInstallProgress.TotalSheetCount, FormatBytes(_spriteInstallProgress.DownloadedBytes), _spriteInstallProgress.FailedSheetCount]</small>
+                    <button type="button" class="secondary" @onclick="CancelSpriteInstall">@Text["Settings.Sprites.Cancel"]</button>
+                }
+                else if (_showSpriteInstallConfirmation && _spriteInstallPlan is not null)
+                {
+                    <div class="sprite-download-confirmation">
+                        <p>@Text["Settings.Sprites.Confirmation", _spriteInstallPlan.PendingSheetCount, _spriteInstallPlan.ExistingSheetCount, _spriteInstallPlan.TotalSheetCount]</p>
+                        <div>
+                            <button type="button" @onclick="StartSpriteInstallAsync">@Text["Settings.Sprites.Start"]</button>
+                            <button type="button" class="secondary" @onclick="CancelSpriteReview">@Text["Settings.Sprites.Cancel"]</button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <button type="button" disabled="@_spriteInstallPreparing" @onclick="ReviewSpriteInstallAsync">@(_spriteInstallPreparing ? Text["Settings.Sprites.Preparing"] : Text["Settings.Sprites.Review"])</button>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_spriteInstallStatus))
+                {
+                    <p class="settings-status" role="status">@_spriteInstallStatus</p>
+                }
+            </section>
+        </div>
+    </details>
+
     <details class="settings-group favorite-settings">
         <summary>
             <span>

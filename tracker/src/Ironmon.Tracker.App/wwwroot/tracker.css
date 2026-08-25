@@ -6,6 +6,78 @@
     display: none;
 }
 
+.pokemon-sprite-host {
+    display: contents;
+}
+
+.pokemon-sprite {
+    padding: 0;
+    font: inherit;
+    cursor: zoom-in;
+}
+
+.pokemon-sprite:disabled {
+    cursor: default;
+}
+
+.pokemon-sprite-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.pokemon-sprite-modal {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: grid;
+    padding: 1rem;
+    place-items: center;
+    background: rgb(10 8 16 / 78%);
+}
+
+.pokemon-sprite-dialog {
+    position: relative;
+    display: grid;
+    gap: 0.65rem;
+    width: min(20rem, 85vw);
+    padding: 1rem;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    color: var(--text);
+    background: var(--surface-raised);
+    box-shadow: 0 1rem 3rem rgb(0 0 0 / 45%);
+}
+
+.pokemon-sprite-dialog .pokemon-sprite-image {
+    max-width: 70vw;
+    max-height: 70vh;
+}
+
+.pokemon-sprite-dialog strong {
+    font-size: 0.85rem;
+}
+
+.pokemon-sprite-close {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.45rem;
+    display: grid;
+    width: 1.8rem;
+    height: 1.8rem;
+    padding: 0;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--text);
+    background: var(--surface-soft);
+    font: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
 .tracker-shell {
     display: grid;
     grid-template-rows: auto auto minmax(0, 1fr);
@@ -471,6 +543,42 @@ h1 {
     color: var(--accent-soft);
 }
 
+.sprite-download-card,
+.sprite-download-card > span,
+.sprite-download-confirmation {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.sprite-download-card > span small,
+.sprite-download-confirmation p,
+.sprite-download-card > small {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.66rem;
+    line-height: 1.45;
+}
+
+.sprite-download-card .settings-warning {
+    color: var(--warning, #f0bd68);
+}
+
+.sprite-download-card progress {
+    width: 100%;
+    accent-color: var(--accent-soft);
+}
+
+.sprite-download-card > button,
+.sprite-download-confirmation button {
+    justify-self: start;
+}
+
+.sprite-download-confirmation > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
 .diagnostic-access {
     overflow: auto;
 }
@@ -896,13 +1004,8 @@ details.access-grants {
     color: var(--accent-soft);
     font-size: 1.65rem;
     font-weight: 800;
-}
-
-.starter-sprite img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    image-rendering: pixelated;
+    border: 0;
+    background: transparent;
 }
 
 .starter-choice strong {
@@ -1017,12 +1120,6 @@ details.access-grants {
     border-style: solid;
 }
 
-.sprite-placeholder img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    image-rendering: pixelated;
-}
 
 .identity-placeholder h2 small {
     color: var(--muted-strong);
@@ -2457,12 +2554,6 @@ button.move-placeholder:hover {
     cursor: default;
 }
 
-.area-trainer-sprite img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    image-rendering: pixelated;
-}
 
 .area-trainer-pokemon.unknown {
     border-style: dashed;
@@ -2524,65 +2615,6 @@ button.move-placeholder:hover {
     cursor: zoom-in;
 }
 
-.area-encounter-sprite img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    image-rendering: pixelated;
-}
-
-.area-sprite-modal {
-    position: fixed;
-    z-index: 1000;
-    inset: 0;
-    display: grid;
-    padding: 1rem;
-    place-items: center;
-    background: rgb(10 8 16 / 78%);
-}
-
-.area-sprite-dialog {
-    position: relative;
-    display: grid;
-    gap: 0.65rem;
-    width: min(16rem, 85vw);
-    padding: 1rem;
-    place-items: center;
-    border: 1px solid var(--border);
-    border-radius: 0.75rem;
-    color: var(--text);
-    background: var(--surface-raised);
-    box-shadow: 0 1rem 3rem rgb(0 0 0 / 45%);
-}
-
-.area-sprite-dialog img {
-    width: min(12rem, 70vw);
-    height: min(12rem, 70vw);
-    object-fit: contain;
-    image-rendering: pixelated;
-}
-
-.area-sprite-dialog strong {
-    font-size: 0.85rem;
-}
-
-.area-sprite-close {
-    position: absolute;
-    top: 0.45rem;
-    right: 0.45rem;
-    display: grid;
-    width: 1.8rem;
-    height: 1.8rem;
-    padding: 0;
-    place-items: center;
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    color: var(--text);
-    background: var(--surface-soft);
-    font: inherit;
-    font-size: 1rem;
-    cursor: pointer;
-}
 
 .lookup-controls {
     display: grid;
@@ -3176,7 +3208,6 @@ button.move-placeholder:hover {
     box-shadow: 0 0.4rem 1rem rgb(0 0 0 / 26%);
     font: inherit;
     text-align: left;
-    cursor: pointer;
     transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 }
 
@@ -3203,11 +3234,20 @@ button.move-placeholder:hover {
     background: radial-gradient(circle, rgb(177 137 255 / 14%), rgb(10 7 15 / 22%));
 }
 
-.evolution-target-sprite img {
+.evolution-target-action {
+    position: relative;
+    display: grid;
+    align-items: center;
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    image-rendering: pixelated;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
 }
 
 .evolution-target-copy {
@@ -3217,13 +3257,13 @@ button.move-placeholder:hover {
     padding-right: 0.7rem;
 }
 
-.evolution-target > .pokemon-obtainability-mark {
+.evolution-target-action > .pokemon-obtainability-mark {
     position: absolute;
     top: 0.42rem;
     right: 0.6rem;
 }
 
-.evolution-target-shell:has(.evolution-target-open) .evolution-target > .pokemon-obtainability-mark {
+.evolution-target-shell:has(.evolution-target-open) .evolution-target-action > .pokemon-obtainability-mark {
     right: 2.05rem;
 }
 
@@ -3405,7 +3445,6 @@ button.move-placeholder:hover {
     background: var(--surface-soft);
     font: inherit;
     text-align: left;
-    cursor: pointer;
 }
 
 .lookup-relation:hover {
@@ -3418,15 +3457,25 @@ button.move-placeholder:hover {
     width: 3rem;
     height: 3rem;
     border-radius: 0.45rem;
+    border: 0;
     color: var(--accent-soft);
     background: var(--surface-raised);
 }
 
-.lookup-relation-sprite img {
+.lookup-relation-action {
+    position: relative;
+    display: grid;
+    align-items: center;
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    image-rendering: pixelated;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
 }
 
 .lookup-relation-copy {
@@ -3436,7 +3485,7 @@ button.move-placeholder:hover {
     padding-right: 0.65rem;
 }
 
-.lookup-relation > .pokemon-obtainability-mark {
+.lookup-relation-action > .pokemon-obtainability-mark {
     position: absolute;
     top: 0.42rem;
     right: 0.48rem;

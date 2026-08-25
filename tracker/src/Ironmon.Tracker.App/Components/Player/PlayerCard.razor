@@ -1,15 +1,10 @@
 <section class="pokemon-card" role="tabpanel" aria-label="@Text["Player.Card.PlayerPokemon"]">
     <div class="card-heading action-heading">
-        <div class="sprite-placeholder @(Player is null ? string.Empty : "live")" aria-hidden="true">
-            @if (_spriteSource is not null)
-            {
-                <img src="@_spriteSource" alt="" />
-            }
-            else
-            {
-                <span>?</span>
-            }
-        </div>
+        <PokemonSprite GameRoot="@GameRoot"
+                       SpritePath="@Player?.SpritePath"
+                       Label="@(Player?.SpeciesName ?? Text["Player.Card.WaitingForPlayer"])"
+                       Size="80"
+                       CssClass="@(Player is null ? "sprite-placeholder" : "sprite-placeholder live")" />
         <div class="identity-placeholder">
             <p class="card-kicker">@Text["Player.Card.ActivePokemon"]</p>
             <h2 class="identity-name">

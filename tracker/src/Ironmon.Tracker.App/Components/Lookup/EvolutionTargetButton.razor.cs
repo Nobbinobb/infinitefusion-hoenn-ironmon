@@ -7,9 +7,6 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class EvolutionTargetButton
 {
-    private string? _spriteKey;
-    private string? _spriteSource;
-
     /// <summary>
     /// Gets or sets the generated destination.
     /// </summary>
@@ -39,19 +36,6 @@ public partial class EvolutionTargetButton
     /// </summary>
     [Parameter]
     public bool IsFocused { get; set; }
-
-    /// <summary>
-    /// Refreshes the local sprite when the target changes.
-    /// </summary>
-    protected override void OnParametersSet()
-    {
-        string? key = GameRoot is null || Target.SpritePath is null ? null : $"{GameRoot}|{Target.SpritePath}";
-        if (key == _spriteKey)
-            return;
-
-        _spriteKey = key;
-        _spriteSource = LocalSpriteLoader.Load(GameRoot, Target.SpritePath);
-    }
 
     /// <summary>
     /// Navigates to the generated destination.

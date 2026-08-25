@@ -7,9 +7,6 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class EvolutionCandidateButton
 {
-    private string? _spriteKey;
-    private string? _spriteSource;
-
     /// <summary>
     /// Gets or sets the valid destination candidate.
     /// </summary>
@@ -27,19 +24,6 @@ public partial class EvolutionCandidateButton
     /// </summary>
     [Parameter]
     public EventCallback<string> Selected { get; set; }
-
-    /// <summary>
-    /// Refreshes the local sprite when the candidate changes.
-    /// </summary>
-    protected override void OnParametersSet()
-    {
-        string? key = GameRoot is null || Candidate.SpritePath is null ? null : $"{GameRoot}|{Candidate.SpritePath}";
-        if (key == _spriteKey)
-            return;
-
-        _spriteKey = key;
-        _spriteSource = LocalSpriteLoader.Load(GameRoot, Candidate.SpritePath);
-    }
 
     /// <summary>
     /// Navigates to the selected candidate.

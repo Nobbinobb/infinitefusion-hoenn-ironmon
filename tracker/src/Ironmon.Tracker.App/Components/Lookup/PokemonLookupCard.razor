@@ -18,16 +18,7 @@
         else
         {
             <div class="card-heading action-heading">
-                <div class="sprite-placeholder live" aria-hidden="true">
-                    @if (_spriteSource is not null)
-                    {
-                        <img src="@_spriteSource" alt="" />
-                    }
-                    else
-                    {
-                        <span>?</span>
-                    }
-                </div>
+                <PokemonSprite GameRoot="@GameRoot" SpritePath="@Pokemon.Identity.SpritePath" Label="@Pokemon.Identity.SpeciesName" Size="80" CssClass="sprite-placeholder live" />
                 <div class="identity-placeholder">
                     <p class="card-kicker">@(DebugMode ? "ACTIVE DEBUG RUN" : "POST-RUN DATA")</p>
                     <h2 class="identity-name">

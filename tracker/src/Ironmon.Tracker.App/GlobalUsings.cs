@@ -14,6 +14,7 @@ global using Ironmon.Tracker.Connection.Diagnostics;
 global using Ironmon.Tracker.Connection.Knowledge;
 global using Ironmon.Tracker.Connection.RunState;
 global using Ironmon.Tracker.Connection.Settings;
+global using Ironmon.Tracker.Connection.Sprites;
 global using Ironmon.Tracker.Connection.Transport;
 global using Ironmon.Tracker.Core;
 global using Ironmon.Tracker.Core.Coverage;

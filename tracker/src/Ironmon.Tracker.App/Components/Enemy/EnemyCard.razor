@@ -12,16 +12,11 @@
     }
 
     <div class="card-heading action-heading">
-        <div class="sprite-placeholder enemy @(SelectedEnemy is null ? string.Empty : "live")" aria-hidden="true">
-            @if (_spriteSource is not null)
-            {
-                <img src="@_spriteSource" alt="" />
-            }
-            else
-            {
-                <span>?</span>
-            }
-        </div>
+        <PokemonSprite GameRoot="@GameRoot"
+                       SpritePath="@SelectedEnemy?.SpritePath"
+                       Label="@(SelectedEnemy?.SpeciesName ?? Text["Enemy.Card.OpposingPokemonHeading"])"
+                       Size="80"
+                       CssClass="@(SelectedEnemy is null ? "sprite-placeholder enemy" : "sprite-placeholder enemy live")" />
         <div class="identity-placeholder">
             <p class="card-kicker">@Text["Enemy.Card.OpposingPokemonHeading"]</p>
             <h2 class="identity-name">

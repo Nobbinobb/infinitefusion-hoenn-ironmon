@@ -8,16 +8,24 @@ namespace Ironmon.Tracker.App.Components.Settings;
 public partial class TrackerSettingsPage : IDisposable
 {
     private const int FavoritePageSize = 8;
+    private const string MegabyteUnit = "MB";
     private CancellationTokenSource? _searchCancellation;
+    private CancellationTokenSource? _spriteInstallCancellation;
     private IReadOnlyList<PokemonSearchMatch> _favorites = [];
     private IReadOnlyList<PokemonSearchMatch> _matches = [];
+    private CustomSpriteInstallPlan? _spriteInstallPlan;
+    private CustomSpriteInstallProgress? _spriteInstallProgress;
     private string _query = string.Empty;
     private string? _graphDepthError;
     private string? _nodesPerRowError;
     private string? _searchError;
     private string? _maximumBstError;
+    private string? _spriteInstallStatus;
     private int _favoritePage;
     private bool _searching;
+    private bool _showSpriteInstallConfirmation;
+    private bool _spriteInstallPreparing;
+    private bool _spriteInstallRunning;
 
     /// <summary>
     /// Gets or initializes the persisted favorite-Pokemon store.
@@ -36,6 +44,18 @@ public partial class TrackerSettingsPage : IDisposable
     /// </summary>
     [Inject]
     private EvolutionGraphSettings EvolutionGraphSettings { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or initializes the custom sprite-sheet installer.
+    /// </summary>
+    [Inject]
+    private CustomSpriteSheetInstaller SpriteInstaller { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or initializes the current game connection state.
+    /// </summary>
+    [Inject]
+    private TrackerConnectionState ConnectionState { get; set; } = null!;
 
     /// <summary>
     /// Gets or initializes whether starter selection is controlled automatically.
@@ -155,6 +175,116 @@ public partial class TrackerSettingsPage : IDisposable
     }
 
     /// <summary>
+    /// Inspects the installed sprite library before asking for download confirmation.
+    /// </summary>
+    /// <returns>A task representing local manifest inspection.</returns>
+    private async Task ReviewSpriteInstallAsync()
+    {
+        _spriteInstallPreparing = true;
+        _spriteInstallStatus = null;
+        _spriteInstallPlan = null;
+        _showSpriteInstallConfirmation = false;
+        try
+        {
+            if (ConnectionState.Snapshot.Status == TrackerConnectionStatus.Connected)
+            {
+                _spriteInstallStatus = Text["Settings.Sprites.CloseGame"];
+                return;
+            }
+
+            string? gameRoot = ConnectionState.Snapshot.Game?.GameRoot;
+            _spriteInstallPlan = await Task.Run(() => SpriteInstaller.CreatePlan(gameRoot));
+            if (_spriteInstallPlan.PendingSheetCount == 0)
+            {
+                _spriteInstallStatus = Text["Settings.Sprites.CompleteAlready", _spriteInstallPlan.TotalSheetCount];
+                return;
+            }
+
+            _showSpriteInstallConfirmation = true;
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            _spriteInstallStatus = Text["Settings.Sprites.InstallationNotFound"];
+        }
+        finally
+        {
+            _spriteInstallPreparing = false;
+        }
+    }
+
+    /// <summary>
+    /// Starts the confirmed resumable custom sprite-sheet installation.
+    /// </summary>
+    /// <returns>A task representing the download.</returns>
+    private async Task StartSpriteInstallAsync()
+    {
+        if (_spriteInstallPlan is null || _spriteInstallRunning)
+            return;
+
+        _showSpriteInstallConfirmation = false;
+        _spriteInstallStatus = null;
+        _spriteInstallProgress = new CustomSpriteInstallProgress(0, _spriteInstallPlan.PendingSheetCount, 0, 0);
+        _spriteInstallCancellation = new CancellationTokenSource();
+        CancellationToken cancellationToken = _spriteInstallCancellation.Token;
+        _spriteInstallRunning = true;
+        Progress<CustomSpriteInstallProgress> progress = new(value =>
+        {
+            _spriteInstallProgress = value;
+            _ = InvokeAsync(StateHasChanged);
+        });
+        try
+        {
+            CustomSpriteInstallResult result = await SpriteInstaller.InstallAsync(_spriteInstallPlan, progress, cancellationToken);
+            _spriteInstallStatus = result.FailedSheetCount == 0
+                ? Text["Settings.Sprites.Complete", result.DownloadedSheetCount, FormatBytes(result.DownloadedBytes)]
+                : Text["Settings.Sprites.Partial", result.DownloadedSheetCount, result.FailedSheetCount];
+
+            _spriteInstallPlan = null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            _spriteInstallStatus = Text["Settings.Sprites.Cancelled"];
+        }
+        catch (InvalidOperationException)
+        {
+            _spriteInstallStatus = Text["Settings.Sprites.CloseGame"];
+        }
+        catch (Exception exception) when (exception is HttpRequestException or IOException or UnauthorizedAccessException)
+        {
+            _spriteInstallStatus = Text["Settings.Sprites.DownloadError"];
+        }
+        finally
+        {
+            _spriteInstallRunning = false;
+            _spriteInstallCancellation.Dispose();
+            _spriteInstallCancellation = null;
+        }
+    }
+
+    /// <summary>
+    /// Hides the prepared download confirmation.
+    /// </summary>
+    private void CancelSpriteReview()
+    {
+        _showSpriteInstallConfirmation = false;
+        _spriteInstallPlan = null;
+    }
+
+    /// <summary>
+    /// Cancels the active sprite-sheet download.
+    /// </summary>
+    private void CancelSpriteInstall()
+        => _spriteInstallCancellation?.Cancel();
+
+    /// <summary>
+    /// Formats downloaded bytes for the compact progress display.
+    /// </summary>
+    /// <param name="bytes">The downloaded byte count.</param>
+    /// <returns>The localized-scale megabyte display.</returns>
+    private static string FormatBytes(long bytes)
+        => $"{bytes / (1024d * 1024d):N1} {MegabyteUnit}";
+
+    /// <summary>
     /// Debounces user input and requests normal-Pokemon suggestions.
     /// </summary>
     /// <param name="args">The search input event.</param>
@@ -250,5 +380,7 @@ public partial class TrackerSettingsPage : IDisposable
     {
         _searchCancellation?.Cancel();
         _searchCancellation?.Dispose();
+        _spriteInstallCancellation?.Cancel();
+        _spriteInstallCancellation?.Dispose();
     }
 }

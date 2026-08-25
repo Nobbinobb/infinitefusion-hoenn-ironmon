@@ -123,8 +123,7 @@ module Ironmon
     return cached if tracker_sprite_paths.key?(species.id)
     loader = BattleSpriteLoader.new
     pif_sprite = loader.get_pif_sprite_from_species(species.id)
-    path = loader.check_for_local_sprite(pif_sprite)
-    tracker_sprite_paths[species.id] = path ? path.tr("\\", "/") : nil
+    tracker_sprite_paths[species.id] = tracker_resolved_sprite_path(pif_sprite)
     return tracker_sprite_paths[species.id]
   rescue Exception
     tracker_sprite_paths[species.id] = nil if species

@@ -8,8 +8,6 @@ namespace Ironmon.Tracker.App.Components.Enemy;
 /// </summary>
 public partial class EnemyCard : IDisposable
 {
-    private string? _spriteKey;
-    private string? _spriteSource;
     private AbilitySnapshot? _selectedAbility;
 
     /// <summary>
@@ -70,19 +68,6 @@ public partial class EnemyCard : IDisposable
     /// Subscribes the card to remembered-knowledge changes.
     /// </summary>
     protected override void OnInitialized() => Knowledge.Changed += HandleKnowledgeChanged;
-
-    /// <summary>
-    /// Refreshes the local sprite when the selected enemy or game changes.
-    /// </summary>
-    protected override void OnParametersSet()
-    {
-        string? key = GameRoot is null || SelectedEnemy?.SpritePath is null ? null : $"{GameRoot}|{SelectedEnemy.SpritePath}";
-        if (key == _spriteKey)
-            return;
-
-        _spriteKey = key;
-        _spriteSource = LocalSpriteLoader.Load(GameRoot, SelectedEnemy?.SpritePath);
-    }
 
     /// <summary>
     /// Selects one active opposing Pokemon.

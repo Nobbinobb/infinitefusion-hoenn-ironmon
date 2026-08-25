@@ -1,0 +1,6 @@
+namespace Ironmon.Tracker.Connection.Sprites;
+
+/// <summary>
+/// Reports custom sprite-sheet installation progress.
+/// </summary>
+public sealed record CustomSpriteInstallProgress(int CompletedSheetCount, int TotalSheetCount, long DownloadedBytes, int FailedSheetCount);

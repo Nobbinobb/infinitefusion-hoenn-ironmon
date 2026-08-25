@@ -1545,3 +1545,29 @@ Status: **Implemented and released**
   SHA-256 `2fddfa1b0f223078ad7fb7aa3f6233fc94a2801dff28f74e5382f5e3b2d88f32`;
   the runtime-required archive has SHA-256
   `994f0161b618791befa280e3b433891e0739cb365cc321cf62b83d20b9d6bb94`.
+
+## Ironmon 0.8.1 shared sprites and custom library installer
+
+Status: **Implemented and released**
+
+- Replaced view-specific tracker sprite rendering with one size-configurable
+  component across live, archive, diagnostic, starter, area, Lookup, relation,
+  candidate, and generated-graph presentations.
+- Added a single enlarged-sprite dialog at the application layout level so it
+  remains above graph nodes without creating hover-driven repaint flicker.
+- Resolved sprites from both exact manually installed files and the local
+  sheets populated by Infinite Fusion's normal download path, retaining the
+  existing fallback behavior when a custom variant is unavailable.
+- Added a tracker Settings action which downloads only missing official custom
+  fusion sheets with four concurrent transfers, retry and backoff, PNG
+  validation, atomic installation, cancellation, and resume behavior.
+- Required Infinite Fusion to remain closed for the complete custom-library
+  operation. Starting the game cancels active transfers and prevents partial
+  sheets from being installed.
+- Documented the expected cold-cache delays without changing Infinite Fusion's
+  `Download data` setting, normal download allowance, or graph request policy.
+- All 250 tracker tests pass with zero build warnings.
+- Released equivalent Windows x64 packages: the self-contained archive has
+  SHA-256 `2c09ae4696e79dc03f637a8b782b7e71ba77aa293b56b667cfa61b76ab3f5ab0`;
+  the runtime-required archive has SHA-256
+  `8249ab3c66f22d7bb0b8ab7811e019bd0a1268a6f12965025f9835030d81e515`.

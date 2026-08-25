@@ -1,6 +1,6 @@
-# Installing Ironmon 0.8.0
+# Installing Ironmon 0.8.1
 
-Ironmon `0.8.0` targets Pokemon Infinite Fusion 2 version 6.8.2.
+Ironmon `0.8.1` targets Pokemon Infinite Fusion 2 version 6.8.2.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
 
@@ -11,7 +11,8 @@ The game scripts and tracker must come from the same Ironmon archive.
 
 | Ironmon version | Infinite Fusion 2 version | Status |
 | --- | --- | --- |
-| 0.8.0 | 6.8.2 | Current |
+| 0.8.1 | 6.8.2 | Current |
+| 0.8.0 | 6.8.2 | Legacy |
 | 0.2.1–0.7.9 | 6.8.0 | Legacy |
 
 The documented release history begins with Ironmon 0.2.1. Legacy packages are
@@ -31,9 +32,9 @@ is written to disk only when the game is saved normally afterward.
 2. Keep a backup of saves you care about.
 3. Choose and extract one release archive into the game's root directory—the
    directory containing `InfiniteFusion2.exe`:
-   - `Ironmon-v0.8.0-win-x64.zip` is self-contained and includes the .NET
+   - `Ironmon-v0.8.1-win-x64.zip` is self-contained and includes the .NET
      runtime.
-   - `Ironmon-v0.8.0-win-x64-runtime-required.zip` is smaller and
+   - `Ironmon-v0.8.1-win-x64-runtime-required.zip` is smaller and
      requires the Windows x64 .NET 10 Runtime to be installed.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
    directory. The package installs Ruby files under
@@ -43,10 +44,15 @@ is written to disk only when the game is saved normally afterward.
    requires the Windows x64 .NET 10 Runtime, but not the SDK or MAUI
    workload. Starting the game first also works.
 6. Leave `Download data` enabled in Gameplay Options so missing sprites are
-   downloaded automatically. You can optionally install the current Infinite
-   Fusion spritepack to reduce downloads during play. Disable `Download data`
-   only if sprite loading causes performance problems; if you disable it,
-   install and update the spritepack manually to keep sprites current.
+   downloaded automatically. On a new or reinstalled game, the first tracker
+   views containing many Pokemon—especially evolution graphs—can take longer
+   while Infinite Fusion downloads missing sprite sheets. Some custom sprites
+   may be absent or temporarily use a fallback until the game's local download
+   allowance resets. This improves naturally as the local sprite cache fills.
+   To prepare the custom fusion library in advance, fully close Infinite Fusion and use
+   **Settings > Custom sprite library** in the tracker. This is a large download
+   and can require significant time and disk space. The tracker does not change
+   Infinite Fusion's `Download data` setting or its normal download limit.
 7. Start the game and select Ironmon when beginning a supported Hoenn run.
 
 ## Activate diagnostic access

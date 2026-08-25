@@ -26,13 +26,13 @@ and a fast reset to starter selection.
 - `tools/generation/` contains release-data generators and their runtime bridge.
 
 Milestone 6 is on hold while optional quality-of-life features are developed.
-Version `0.8.0` adds run-aware Pokémon obtainability throughout Lookup and the
-evolution graph, moves seed-specific fusion closure and reverse-index work into
-the native tracker, and substantially improves cold graph, evolution, and
-fusion-material loading. It also provides equivalent
-self-contained and runtime-required Windows distributions while retaining
-seeded-run sharing, battle-item control, type coverage, signed diagnostic
-access, Favorite Clause, and the randomization safeguards from the 0.7 series.
+Version `0.8.1` unifies sprite presentation throughout the tracker, adds an
+enlarged sprite dialog that remains above generated graph nodes, supports both
+manually installed sprites and sheets downloaded by Infinite Fusion, and adds
+an optional resumable custom-sprite-library download in tracker Settings. It
+retains run-aware obtainability, native fusion closure, seeded-run sharing,
+battle-item control, type coverage, signed diagnostic access, Favorite Clause,
+and the randomization safeguards from earlier releases.
 See
 `docs/IRONMON_MECHANICS.html` for the complete behavior reference,
 `docs/ROADMAP.md` for cumulative scope, and `docs/guides/INSTALLATION.md` for

@@ -1,17 +1,10 @@
-<button class="lookup-relation" type="button" @onclick="SelectAsync">
-    <span class="lookup-relation-sprite" aria-hidden="true">
-        @if (_spriteSource is not null)
-        {
-            <img src="@_spriteSource" alt="" />
-        }
-        else
-        {
-            <span>?</span>
-        }
-    </span>
-    <span class="lookup-relation-copy">
-        <strong>@Relation.SpeciesName</strong>
-        <small>@Relation.Label</small>
-    </span>
-    <PokemonObtainabilityMark Status="@Relation.ObtainabilityStatus" />
-</button>
+<div class="lookup-relation">
+    <PokemonSprite GameRoot="@GameRoot" SpritePath="@Relation.SpritePath" Label="@Relation.SpeciesName" Size="48" CssClass="lookup-relation-sprite" />
+    <button class="lookup-relation-action" type="button" @onclick="SelectAsync">
+        <span class="lookup-relation-copy">
+            <strong>@Relation.SpeciesName</strong>
+            <small>@Relation.Label</small>
+        </span>
+        <PokemonObtainabilityMark Status="@Relation.ObtainabilityStatus" />
+    </button>
+</div>

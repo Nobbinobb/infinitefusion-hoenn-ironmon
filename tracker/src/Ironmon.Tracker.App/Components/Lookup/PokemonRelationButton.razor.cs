@@ -7,9 +7,6 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class PokemonRelationButton
 {
-    private string? _spriteKey;
-    private string? _spriteSource;
-
     /// <summary>
     /// Gets or sets the related Pokemon.
     /// </summary>
@@ -27,19 +24,6 @@ public partial class PokemonRelationButton
     /// </summary>
     [Parameter]
     public EventCallback<string> Selected { get; set; }
-
-    /// <summary>
-    /// Refreshes the local sprite when the relation changes.
-    /// </summary>
-    protected override void OnParametersSet()
-    {
-        string? key = GameRoot is null || Relation.SpritePath is null ? null : $"{GameRoot}|{Relation.SpritePath}";
-        if (key == _spriteKey)
-            return;
-
-        _spriteKey = key;
-        _spriteSource = LocalSpriteLoader.Load(GameRoot, Relation.SpritePath);
-    }
 
     /// <summary>
     /// Navigates to the related Pokemon.

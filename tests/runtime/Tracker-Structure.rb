@@ -67,6 +67,40 @@ module IronmonTrackerStructureRuntimeTests
       "tracker user commands"
     )
     assert_source(
+      Ironmon.method(:tracker_resolved_sprite_path),
+      "023_Sprite_Performance_Fixes.rb",
+      "tracker sprite materialization"
+    )
+    manual_sprite = PIFSprite.new(:AUTOGEN, 1, 1, "")
+    manual_sprite.local_path = Settings::DEFAULT_SPRITE_PATH
+    manual_sprite_path = Ironmon.tracker_resolved_sprite_path(manual_sprite)
+    assert(
+      manual_sprite_path && File.file?(manual_sprite_path),
+      "tracker sprites preserve an existing game-local individual image"
+    )
+    materialized_sprite = PIFSprite.new(:AUTOGEN, 1, 0, "")
+    materialized_sprite.local_path =
+      "Graphics/CustomBattlers/local_sprites/indexed/missing.png"
+    test_sprite_cache_path = Ironmon.tracker_materialized_sprite_path(
+      materialized_sprite
+    )
+    File.delete(test_sprite_cache_path) if File.file?(test_sprite_cache_path)
+    begin
+      materialized_sprite_path = Ironmon.tracker_resolved_sprite_path(
+        materialized_sprite
+      )
+      assert(
+        materialized_sprite_path == test_sprite_cache_path &&
+          File.file?(materialized_sprite_path),
+        "tracker sprites recover from a stale local path through the game loader"
+      )
+    ensure
+      File.delete(test_sprite_cache_path) if File.file?(test_sprite_cache_path)
+      cache_folder = Ironmon::TRACKER_SPRITE_CACHE_FOLDER
+      Dir.rmdir(cache_folder) if
+        Dir.exist?(cache_folder) && Dir.children(cache_folder).empty?
+    end
+    assert_source(
       IronmonTrackerBattleHooks.instance_method(:pbStartBattle),
       "018_Tracker_Z_Runtime_Integration.rb",
       "tracker engine integration"

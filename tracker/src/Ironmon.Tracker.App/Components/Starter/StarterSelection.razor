@@ -23,16 +23,11 @@
                 {
                     <span class="starter-eligibility">@(choice.BstEligible ? Text["Starter.Selection.Eligible"] : Text["Starter.Selection.Ineligible"])</span>
                 }
-                <div class="starter-sprite" aria-hidden="true">
-                    @if (choice.Revealed && GetSpriteSource(choice) is string spriteSource)
-                    {
-                        <img src="@spriteSource" alt="" />
-                    }
-                    else
-                    {
-                        <span>?</span>
-                    }
-                </div>
+                <PokemonSprite GameRoot="@GameRoot"
+                               SpritePath="@(choice.Revealed ? choice.SpritePath : null)"
+                               Label="@(choice.SpeciesName ?? Text["Starter.Selection.Hidden"])"
+                               Size="86"
+                               CssClass="starter-sprite" />
                 @if (choice.Revealed)
                 {
                     <strong>@choice.SpeciesName</strong>

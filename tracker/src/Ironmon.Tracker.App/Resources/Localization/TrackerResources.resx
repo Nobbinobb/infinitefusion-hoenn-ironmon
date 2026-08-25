@@ -1316,8 +1316,8 @@
   <data name="Lookup.Areas.HiddenItem" xml:space="preserve"><value>Hidden item · marked in game</value></data>
   <data name="Lookup.Areas.GroundItem" xml:space="preserve"><value>Ground item</value></data>
   <data name="Lookup.Areas.UnknownItem" xml:space="preserve"><value>Unknown item</value></data>
-  <data name="Lookup.Areas.EnlargePokemon" xml:space="preserve"><value>Enlarge {0} image</value></data>
-  <data name="Lookup.Areas.CloseImage" xml:space="preserve"><value>Close enlarged image</value></data>
+  <data name="PokemonSprite.Enlarge" xml:space="preserve"><value>Enlarge {0} image</value></data>
+  <data name="PokemonSprite.Close" xml:space="preserve"><value>Close enlarged image</value></data>
   <data name="Lookup.Runs.RunLookup" xml:space="preserve"><value>Run lookup</value></data>
   <data name="Lookup.Runs.LookupHeading" xml:space="preserve"><value>RUN DATA</value></data>
   <data name="Lookup.Runs.CurrentRun" xml:space="preserve"><value>Current run</value></data>
@@ -1500,6 +1500,24 @@
   <data name="Settings.EvolutionGraph.NodesPerRow" xml:space="preserve"><value>Maximum nodes per row</value></data>
   <data name="Settings.EvolutionGraph.NodesPerRowDescription" xml:space="preserve"><value>Wrap a logical level into another row after this many Pokémon.</value></data>
   <data name="Settings.EvolutionGraph.NodesPerRowValidation" xml:space="preserve"><value>Choose between {0} and {1} Pokémon per row.</value></data>
+  <data name="Settings.Sprites.Group" xml:space="preserve"><value>Custom sprite library</value></data>
+  <data name="Settings.Sprites.GroupDescription" xml:space="preserve"><value>Prepare missing custom fusion sprites before they are needed.</value></data>
+  <data name="Settings.Sprites.DownloadCustom" xml:space="preserve"><value>Download custom sprites</value></data>
+  <data name="Settings.Sprites.DownloadDescription" xml:space="preserve"><value>Download missing official custom-fusion sprite sheets into this Infinite Fusion installation. Existing valid sheets are kept.</value></data>
+  <data name="Settings.Sprites.DownloadWarning" xml:space="preserve"><value>Keep Infinite Fusion closed. The complete library can require gigabytes of storage and significant time. The tracker uses four concurrent downloads with retry backoff; it does not change the game's Download data option or rate limit.</value></data>
+  <data name="Settings.Sprites.Review" xml:space="preserve"><value>Review download</value></data>
+  <data name="Settings.Sprites.Preparing" xml:space="preserve"><value>Checking installed sprites…</value></data>
+  <data name="Settings.Sprites.Confirmation" xml:space="preserve"><value>Download {0} missing sheets? {1} of {2} sheets are already installed. You can cancel and resume later.</value></data>
+  <data name="Settings.Sprites.Start" xml:space="preserve"><value>Start download</value></data>
+  <data name="Settings.Sprites.Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Settings.Sprites.Progress" xml:space="preserve"><value>{0} of {1} sheets · {2} downloaded · {3} failed</value></data>
+  <data name="Settings.Sprites.Complete" xml:space="preserve"><value>Downloaded {0} custom sprite sheets ({1}).</value></data>
+  <data name="Settings.Sprites.CompleteAlready" xml:space="preserve"><value>All {0} custom sprite sheets from the installed manifest are already available.</value></data>
+  <data name="Settings.Sprites.Partial" xml:space="preserve"><value>Downloaded {0} sheets; {1} could not be downloaded. Review again to retry the missing files.</value></data>
+  <data name="Settings.Sprites.Cancelled" xml:space="preserve"><value>Download cancelled. Installed sheets were kept; review again to resume.</value></data>
+  <data name="Settings.Sprites.CloseGame" xml:space="preserve"><value>Close Infinite Fusion before downloading the custom sprite library.</value></data>
+  <data name="Settings.Sprites.InstallationNotFound" xml:space="preserve"><value>The tracker could not find a valid Infinite Fusion installation and custom-sprite manifest.</value></data>
+  <data name="Settings.Sprites.DownloadError" xml:space="preserve"><value>The custom sprite download stopped because the server or installation could not be accessed. Review again to resume.</value></data>
   <data name="Lookup.Graph.LoadingNeighborhood" xml:space="preserve"><value>Loading up to {0} layers… {1} of {2} loaded Pokémon shown · {3} connections loaded</value></data>
   <data name="Lookup.Graph.LoadedNeighborhood" xml:space="preserve"><value>Neighborhood loaded · {0} of {1} loaded Pokémon shown · {2} connections · select a branch to load up to {3} layers around it</value></data>
   <data name="Lookup.Graph.SelectNode" xml:space="preserve"><value>Select branch</value></data>

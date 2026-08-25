@@ -25,6 +25,8 @@ public static class MauiProgram
         builder.Services.AddSingleton(static services => new DiagnosticAccessService(services.GetRequiredService<TrackerKnowledgeOptions>(), services.GetRequiredService<DiagnosticAccessTokenValidator>(), IsDiagnosticAccessDeveloperOverride(), services.GetRequiredService<TimeProvider>()));
         builder.Services.AddSingleton<FavoritePokemonStore>();
         builder.Services.AddSingleton<EvolutionGraphSettings>();
+        builder.Services.AddSingleton<PokemonSpriteDialogService>();
+        builder.Services.AddSingleton<CustomSpriteSheetInstaller>();
         builder.Services.AddSingleton(static services => CreateConnectionOptions(services.GetRequiredService<FavoritePokemonStore>()));
         builder.Services.AddSingleton<TrackerDiagnosticsStore>();
         builder.Services.AddSingleton<TrackerConnectionState>();

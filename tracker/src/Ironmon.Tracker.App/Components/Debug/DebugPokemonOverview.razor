@@ -1,15 +1,6 @@
 <article class="debug-overview" aria-label="@Text["Debug.Overview.InspectedPokemonOverview"]">
     <div class="card-heading action-heading">
-        <div class="sprite-placeholder live" aria-hidden="true">
-            @if (_spriteSource is not null)
-            {
-                <img src="@_spriteSource" alt="" />
-            }
-            else
-            {
-                <span>?</span>
-            }
-        </div>
+        <PokemonSprite GameRoot="@GameRoot" SpritePath="@Pokemon.SpritePath" Label="@Pokemon.SpeciesName" Size="80" CssClass="sprite-placeholder live" />
         <div class="identity-placeholder">
             <p class="card-kicker">@(Pokemon.Fusion ? "FUSION" : "NORMAL POKEMON")</p>
             <h2 class="identity-name">

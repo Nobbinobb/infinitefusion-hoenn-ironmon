@@ -84,20 +84,7 @@
                                                             @foreach (AreaTrainerPokemonPayload pokemon in trainer.Party)
                                                             {
                                                                 <div class="area-trainer-pokemon">
-                                                                    <button class="area-trainer-sprite"
-                                                                            type="button"
-                                                                            disabled="@(GetTrainerSpriteSource(trainer, pokemon) is null)"
-                                                                            aria-label="@Text["Lookup.Areas.EnlargePokemon", pokemon.SpeciesName]"
-                                                                            @onclick="() => OpenSprite(GetTrainerSpriteSource(trainer, pokemon), pokemon.SpeciesName)">
-                                                                        @if (GetTrainerSpriteSource(trainer, pokemon) is string trainerSpriteSource)
-                                                                        {
-                                                                            <img src="@trainerSpriteSource" alt="" />
-                                                                        }
-                                                                        else
-                                                                        {
-                                                                            <span>?</span>
-                                                                        }
-                                                                    </button>
+                                                                    <PokemonSprite GameRoot="@GameRoot" SpritePath="@pokemon.SpritePath" Label="@pokemon.SpeciesName" Size="45" CssClass="area-trainer-sprite" />
                                                                     <div>
                                                                         <strong>@pokemon.SpeciesName</strong>
                                                                         <small>@Text["Lookup.Areas.Level", pokemon.Level]</small>
@@ -144,19 +131,7 @@
                                                     </div>
                                                     @if (encounter.DetailsRevealed)
                                                     {
-                                                        <button class="area-encounter-sprite"
-                                                                type="button"
-                                                                aria-label="@Text["Lookup.Areas.EnlargePokemon", GetEncounterIdentity(encounter)]"
-                                                                @onclick="() => OpenEncounterSprite(encounter)">
-                                                            @if (GetEncounterSpriteSource(encounter) is string spriteSource)
-                                                            {
-                                                                <img src="@spriteSource" alt="" />
-                                                            }
-                                                            else
-                                                            {
-                                                                <span>?</span>
-                                                            }
-                                                        </button>
+                                                        <PokemonSprite GameRoot="@GameRoot" SpritePath="@encounter.SpritePath" Label="@GetEncounterIdentity(encounter)" Size="45" CssClass="area-encounter-sprite" />
                                                     }
                                                 </article>
                                             }
@@ -211,21 +186,4 @@
         }
     }
 
-    @if (_enlargedSpriteSource is not null && _enlargedSpriteLabel is not null)
-    {
-        <div class="area-sprite-modal" role="presentation" @onclick="CloseSprite">
-            <div class="area-sprite-dialog"
-                 role="dialog"
-                 aria-modal="true"
-                 aria-label="@_enlargedSpriteLabel"
-                 tabindex="0"
-                 @onkeydown="HandleSpriteDialogKeyDown"
-                 @onkeydown:stopPropagation="true"
-                 @onclick:stopPropagation="true">
-                <button class="area-sprite-close" type="button" aria-label="@Text["Lookup.Areas.CloseImage"]" @onclick="CloseSprite">×</button>
-                <img src="@_enlargedSpriteSource" alt="@_enlargedSpriteLabel" />
-                <strong>@_enlargedSpriteLabel</strong>
-            </div>
-        </div>
-    }
 </section>

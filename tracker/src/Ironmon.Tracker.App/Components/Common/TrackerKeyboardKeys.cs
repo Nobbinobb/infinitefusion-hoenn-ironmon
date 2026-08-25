@@ -11,6 +11,11 @@ internal static class TrackerKeyboardKeys
     internal const string Enter = "Enter";
 
     /// <summary>
+    /// Gets the Escape key identifier.
+    /// </summary>
+    internal const string Escape = "Escape";
+
+    /// <summary>
     /// Gets the player-view numeric shortcut.
     /// </summary>
     internal const string PlayerNumber = "1";

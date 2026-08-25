@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 
 namespace Ironmon.Tracker.App.Components.Lookup;
 
@@ -14,16 +13,12 @@ public partial class AreaLookupExplorer : IDisposable
     private readonly Dictionary<string, AreaLookupDetailResponsePayload> _details = [];
     private readonly Dictionary<string, PaginationState> _detailPagination = [];
     private readonly Dictionary<string, string> _detailErrors = [];
-    private readonly Dictionary<string, string?> _encounterSpriteSources = [];
-    private readonly Dictionary<string, string?> _trainerSpriteSources = [];
     private readonly HashSet<string> _expandedAreas = [];
     private readonly HashSet<string> _loadingDetails = [];
     private readonly LatestRequestCoordinator<string> _detailRequests = new();
     private readonly LatestRequestCoordinator<string> _summaryRequests = new();
     private readonly PaginationState _areaPagination = new(_pageSize);
     private IReadOnlyList<AreaSummaryPayload> _areas = [];
-    private string? _enlargedSpriteLabel;
-    private string? _enlargedSpriteSource;
     private AreaContentCategory _selectedCategory = AreaContentCategory.Trainer;
     private string? _observedSourceKey;
     private string? _error;
@@ -118,8 +113,6 @@ public partial class AreaLookupExplorer : IDisposable
             _details.Clear();
             _detailPagination.Clear();
             _detailErrors.Clear();
-            _encounterSpriteSources.Clear();
-            _trainerSpriteSources.Clear();
         }
         else if (categoryChanged)
         {
@@ -190,14 +183,6 @@ public partial class AreaLookupExplorer : IDisposable
 
             _details[key] = response;
             GetDetailPagination(areaId).Clamp(GetDetailEntryCount(response));
-            foreach (AreaEncounterEntryPayload encounter in response.Encounters.Where(encounter => encounter.DetailsRevealed))
-                _encounterSpriteSources[encounter.EntryId] = LocalSpriteLoader.Load(GameRoot, encounter.SpritePath);
-
-            foreach (AreaTrainerEntryPayload trainer in response.Trainers.Where(trainer => trainer.DetailsRevealed))
-            {
-                foreach (AreaTrainerPokemonPayload pokemon in trainer.Party)
-                    _trainerSpriteSources[GetTrainerPokemonKey(trainer, pokemon)] = LocalSpriteLoader.Load(GameRoot, pokemon.SpritePath);
-            }
         }
         catch (OperationCanceledException) when (request.CancellationToken.IsCancellationRequested)
         {
@@ -305,8 +290,6 @@ public partial class AreaLookupExplorer : IDisposable
         _details.Clear();
         _detailPagination.Clear();
         _detailErrors.Clear();
-        _encounterSpriteSources.Clear();
-        _trainerSpriteSources.Clear();
         _expandedAreas.Clear();
         _ = InvokeAsync(StateHasChanged);
     }
@@ -496,74 +479,6 @@ public partial class AreaLookupExplorer : IDisposable
     /// <returns>The species name or stable species identifier.</returns>
     private static string GetEncounterIdentity(AreaEncounterEntryPayload encounter)
         => encounter.SpeciesName ?? encounter.SpeciesId ?? "—";
-
-    /// <summary>
-    /// Gets the locally loaded icon for a disclosed encounter.
-    /// </summary>
-    /// <param name="encounter">The disclosed encounter entry.</param>
-    /// <returns>The WebView sprite source, or null.</returns>
-    private string? GetEncounterSpriteSource(AreaEncounterEntryPayload encounter)
-        => _encounterSpriteSources.GetValueOrDefault(encounter.EntryId);
-
-    /// <summary>
-    /// Builds the local sprite-cache key for a disclosed trainer party slot.
-    /// </summary>
-    /// <param name="trainer">The owning trainer entry.</param>
-    /// <param name="pokemon">The disclosed party slot.</param>
-    /// <returns>The stable in-memory cache key.</returns>
-    private static string GetTrainerPokemonKey(AreaTrainerEntryPayload trainer, AreaTrainerPokemonPayload pokemon)
-        => $"{trainer.EntryId}:{pokemon.Slot}";
-
-    /// <summary>
-    /// Gets the locally loaded icon for a disclosed trainer party slot.
-    /// </summary>
-    /// <param name="trainer">The owning trainer entry.</param>
-    /// <param name="pokemon">The disclosed party slot.</param>
-    /// <returns>The WebView sprite source, or null.</returns>
-    private string? GetTrainerSpriteSource(AreaTrainerEntryPayload trainer, AreaTrainerPokemonPayload pokemon)
-        => _trainerSpriteSources.GetValueOrDefault(GetTrainerPokemonKey(trainer, pokemon));
-
-    /// <summary>
-    /// Opens the enlarged local sprite for one disclosed encounter.
-    /// </summary>
-    /// <param name="encounter">The disclosed encounter entry.</param>
-    private void OpenEncounterSprite(AreaEncounterEntryPayload encounter)
-    {
-        OpenSprite(GetEncounterSpriteSource(encounter), GetEncounterIdentity(encounter));
-    }
-
-    /// <summary>
-    /// Opens the enlarged sprite dialog.
-    /// </summary>
-    /// <param name="source">The loaded sprite source.</param>
-    /// <param name="label">The accessible Pokemon label.</param>
-    private void OpenSprite(string? source, string label)
-    {
-        if (source is null)
-            return;
-
-        _enlargedSpriteSource = source;
-        _enlargedSpriteLabel = label;
-    }
-
-    /// <summary>
-    /// Closes the enlarged Pokemon sprite.
-    /// </summary>
-    private void CloseSprite()
-    {
-        _enlargedSpriteSource = null;
-        _enlargedSpriteLabel = null;
-    }
-
-    /// <summary>
-    /// Closes the enlarged sprite when Escape is pressed.
-    /// </summary>
-    /// <param name="args">The keyboard event.</param>
-    private void HandleSpriteDialogKeyDown(KeyboardEventArgs args)
-    {
-        if (args.Key == "Escape")
-            CloseSprite();
-    }
 
     /// <summary>
     /// Gets whether an exception represents an expected lookup request failure.

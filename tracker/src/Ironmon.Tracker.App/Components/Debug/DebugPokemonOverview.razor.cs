@@ -7,9 +7,6 @@ namespace Ironmon.Tracker.App.Components.Debug;
 /// </summary>
 public partial class DebugPokemonOverview
 {
-    private string? _spriteKey;
-    private string? _spriteSource;
-
     /// <summary>
     /// Gets or sets the game-owned inspector snapshot.
     /// </summary>
@@ -33,19 +30,6 @@ public partial class DebugPokemonOverview
     /// </summary>
     [Parameter]
     public string? GameRoot { get; set; }
-
-    /// <summary>
-    /// Refreshes the local sprite when the inspected Pokemon changes.
-    /// </summary>
-    protected override void OnParametersSet()
-    {
-        string? key = GameRoot is null || Pokemon.SpritePath is null ? null : $"{GameRoot}|{Pokemon.SpritePath}";
-        if (key == _spriteKey)
-            return;
-
-        _spriteKey = key;
-        _spriteSource = LocalSpriteLoader.Load(GameRoot, Pokemon.SpritePath);
-    }
 
     /// <summary>
     /// Formats the numeric form and optional localized name.

@@ -12,8 +12,6 @@ public partial class PokemonLookupCard
     private PokemonInformationPage? _loadingPage;
     private string? _observedSpeciesId;
     private string? _sectionError;
-    private string? _spriteKey;
-    private string? _spriteSource;
     private AbilitySnapshot? _selectedAbility;
     private PokemonObtainabilitySnapshot _obtainability = new();
     private bool _evolutionGraphOpen;
@@ -101,12 +99,6 @@ public partial class PokemonLookupCard
         _sections[receivedPage] = Pokemon;
         if (_loadingPage == receivedPage)
             _loadingPage = null;
-        string? key = GameRoot is null || Pokemon.Identity.SpritePath is null ? null : $"{GameRoot}|{Pokemon.Identity.SpritePath}";
-        if (key != _spriteKey)
-        {
-            _spriteKey = key;
-            _spriteSource = LocalSpriteLoader.Load(GameRoot, Pokemon.Identity.SpritePath);
-        }
 
         if (speciesChanged && !_sections.ContainsKey(_selectedPage))
             await LoadSectionAsync(_selectedPage);

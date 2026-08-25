@@ -1,0 +1,18 @@
+@if (Dialog.Current is { } request)
+{
+    <div class="pokemon-sprite-modal" role="presentation" @onclick="CloseDialog">
+        <div class="pokemon-sprite-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-label="@request.Label"
+             tabindex="-1"
+             @ref="_dialogElement"
+             @onkeydown="HandleKeyDown"
+             @onkeydown:stopPropagation="true"
+             @onclick:stopPropagation="true">
+            <button class="pokemon-sprite-close" type="button" aria-label="@Text[_closeLocalizationKey]" @onclick="CloseDialog">×</button>
+            <img class="pokemon-sprite-image" style="@GetSizeStyle(request.Size)" src="@request.Source" alt="@request.Label" />
+            <strong>@request.Label</strong>
+        </div>
+    </div>
+}
