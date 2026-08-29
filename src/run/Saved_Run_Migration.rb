@@ -111,7 +111,21 @@ module Ironmon
     return issue.to_s
   end
 
-  def self.confirm_saved_run_migration(save_data, issues)
+  def self.saved_run_migration_issue_explanation(issue)
+    if issue == :custom_fusion_pool
+      return _INTL(
+        "Custom fusion pool: the eligible custom-sprite catalog changed. " +
+        "This usually happens after Infinite Fusion updates CUSTOM_SPRITES " +
+        "or Sprite_Credits.csv."
+      )
+    end
+    return _INTL(
+      "{1}: the installed source data or generator rules changed.",
+      saved_run_migration_issue_label(issue)
+    )
+  end
+
+  def self.saved_run_migration_message(save_data, issues)
     saved_version = save_data[:game_version].to_s
     saved_version = _INTL("an older version") if saved_version.empty?
     current_version = if defined?(Settings::GAME_VERSION_NUMBER)
@@ -119,24 +133,46 @@ module Ironmon
                       else
                         _INTL("the current version")
                       end
-    labels = issues.map do |issue|
-      saved_run_migration_issue_label(issue)
-    end.join(", ")
-    message = _INTL(
-      "This Ironmon save uses game data from {1} that is incompatible with Infinite Fusion {2}.\n\nAffected systems: {3}\n\nMigrate this save for the current game version? Generated results in the affected systems may change. Choosing No returns to save selection without changing the save file.",
-      saved_version, current_version, labels
+    version_context = if saved_version == current_version
+                        _INTL(
+                          "The game version is still {1}; an underlying " +
+                          "data catalog changed.", current_version
+                        )
+                      else
+                        _INTL(
+                          "The save was created with game version {1}; the " +
+                          "installed version is {2}.", saved_version,
+                          current_version
+                        )
+                      end
+    explanations = issues.map do |issue|
+      "- #{saved_run_migration_issue_explanation(issue)}"
+    end.join("\n")
+    return _INTL(
+      "This Ironmon save no longer matches the installed generation data.\n\n{1}\n\nAffected systems:\n{2}\n\nMigrate the affected systems to the currently installed data? Generated results in those systems may change. Choosing No returns to save selection without changing the save file.",
+      version_context, explanations
     )
-    return pbConfirmMessageSerious(message)
+  end
+
+  def self.confirm_saved_run_migration(save_data, issues)
+    return pbConfirmMessageSerious(
+      saved_run_migration_message(save_data, issues)
+    )
   end
 
   def self.begin_saved_run_migration(save_data)
-    issues = saved_run_migration_issues(save_data)
     @approved_saved_run_migration = nil
+    return true if checkpoint_reset_loading?
+    issues = saved_run_migration_issues(save_data)
     return true if issues.empty?
     if !confirm_saved_run_migration(save_data, issues)
       raise SavedRunMigrationDeclined
     end
     @approved_saved_run_migration = issues
+    if issues.include?(:custom_fusion_pool)
+      reset_fusion_predecessor_index_cache
+      fusion_predecessor_index
+    end
     echoln _INTL(
       "Ironmon approved saved-run migration for: {1}.",
       issues.map { |issue| saved_run_migration_issue_label(issue) }.join(", ")

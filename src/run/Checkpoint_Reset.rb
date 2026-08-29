@@ -131,7 +131,10 @@ module Ironmon
     if recipe
       begin
         tracker_connection.send_event(
-          "run_completed", recipe, transaction["source_run_id"],
+          "run_completed", {
+            "recipe" => recipe,
+            "request_archive_selection" => true
+          }, transaction["source_run_id"],
           transaction["source_sequence"] + 1
         )
       rescue Exception => e

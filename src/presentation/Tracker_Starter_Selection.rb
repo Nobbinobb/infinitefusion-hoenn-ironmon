@@ -10,7 +10,8 @@ module Ironmon
   def self.begin_tracker_starter_selection(pokemon)
     return if !active? || !pokemon || pokemon.empty?
     random_pick = tracker_starter_random_pick(pokemon.length)
-    if tracker_auto_select_starter?
+    auto_select = tracker_auto_select_starter?
+    if auto_select
       ceiling = tracker_maximum_starter_base_stat_total
       if ceiling
         eligible = pokemon.each_index.select do |index|
@@ -28,11 +29,15 @@ module Ironmon
     end
     @tracker_starter_selection = {
       :pokemon => pokemon,
-      :sprites => Array.new(pokemon.length),
+      :sprites => if auto_select
+                    tracker_select_starter_sprites(pokemon)
+                  else
+                    Array.new(pokemon.length)
+                  end,
       :revealed => Array.new(pokemon.length, false),
       :random_pick_index => random_pick
     }
-    if tracker_auto_select_starter?
+    if auto_select
       @tracker_starter_selection[:revealed] = Array.new(pokemon.length, true)
     end
     tracker_connection.send_event(
@@ -47,7 +52,7 @@ module Ironmon
     selection = @tracker_starter_selection
     return if !selection || index.nil? || index < 0
     return if index >= selection[:pokemon].length
-    selection[:sprites][index] = sprite if sprite
+    selection[:sprites][index] ||= sprite if sprite
     return if selection[:revealed][index]
     selection[:revealed][index] = true
     tracker_connection.send_event(
@@ -55,6 +60,44 @@ module Ironmon
     )
   rescue Exception => e
     echoln "Ironmon tracker starter reveal failed safely: #{e.message}"
+  end
+
+  def self.tracker_select_starter_sprites(pokemon)
+    loader = BattleSpriteLoader.new
+    return pokemon.map do |candidate|
+      begin
+        loader.get_pif_sprite_from_species(candidate.species)
+      rescue Exception => e
+        echoln "Ironmon tracker starter sprite selection failed safely: #{e.message}"
+        nil
+      end
+    end
+  end
+
+  def self.tracker_starter_sprite(index)
+    selection = @tracker_starter_selection
+    return nil if !selection || index.nil? || index < 0
+    return selection[:sprites][index]
+  end
+
+  def self.with_tracker_starter_sprite(index)
+    sprite = tracker_starter_sprite(index)
+    return yield if !sprite || !$PokemonSystem
+    substitutions = $PokemonSystem.alt_sprite_substitutions
+    return yield if !substitutions
+    substitution_id = get_sprite_substitution_id_from_dex_number(sprite.species)
+    previous_present = substitutions.key?(substitution_id)
+    previous = substitutions[substitution_id]
+    substitutions[substitution_id] = sprite
+    return yield
+  ensure
+    if substitutions && substitution_id
+      if previous_present
+        substitutions[substitution_id] = previous
+      else
+        substitutions.delete(substitution_id)
+      end
+    end
   end
 
   def self.end_tracker_starter_selection
@@ -247,7 +290,9 @@ class StartersSelectionScene
 
   alias ironmon_tracker_original_update_starter_selection_graphics updateStarterSelectionGraphics
   def updateStarterSelectionGraphics
-    result = ironmon_tracker_original_update_starter_selection_graphics
+    result = Ironmon.with_tracker_starter_sprite(@index) do
+      ironmon_tracker_original_update_starter_selection_graphics
+    end
     if self.class == StartersSelectionScene && Ironmon.starter_acquisition?
       Ironmon.reveal_tracker_starter(@index, @pif_sprite)
     end

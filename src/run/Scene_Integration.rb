@@ -3,6 +3,12 @@
 #===============================================================================
 
 class Scene_Map
+  alias ironmon_original_spriteset spriteset
+  def spriteset
+    return nil if !@spritesets
+    return ironmon_original_spriteset
+  end
+
   alias ironmon_original_create_spritesets createSpritesets
   def createSpritesets
     Ironmon.pause_tracker_obtainability_for_map
@@ -29,6 +35,10 @@ class Scene_Map
       end
     end
     result = ironmon_original_update
+    if Ironmon.active? &&
+       !Ironmon.tracker_obtainability_game_work_pending?
+      Ironmon.advance_player_fusion_pairing
+    end
     Ironmon.mark_tracker_obtainability_map_ready(self)
     return result
   end

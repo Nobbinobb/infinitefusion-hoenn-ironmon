@@ -2,6 +2,33 @@
 # Ironmon game-mode menu and preset activation
 #===============================================================================
 
+module Ironmon
+  MODE_ENTRY_MAP_ID = 295
+  MODE_ENTRY_EVENT_ID = 1
+  MODE_ENTRY_EVENT_NAME = "Intro"
+  MODE_ENTRY_SELECTION_SCRIPT = "select_game_mode"
+  MODE_ENTRY_CONDITION_SCRIPT =
+    "Ironmon.mode_available? || $game_switches[SWITCH_NEW_GAME_PLUS]"
+
+  def self.patch_mode_entry_map(map_id, map)
+    return false if map_id != MODE_ENTRY_MAP_ID || !map || !map.events
+    event = map.events[MODE_ENTRY_EVENT_ID]
+    return false if !event || event.name != MODE_ENTRY_EVENT_NAME ||
+                    event.pages.empty?
+    commands = event.pages[0].list
+    selection_index = commands.index do |command|
+      command.code == 355 &&
+        command.parameters[0] == MODE_ENTRY_SELECTION_SCRIPT
+    end
+    return false if !selection_index || selection_index == 0
+    condition = commands[selection_index - 1]
+    return false if condition.code != 111 ||
+                    condition.parameters != [0, SWITCH_NEW_GAME_PLUS, 0]
+    condition.parameters = [12, MODE_ENTRY_CONDITION_SCRIPT]
+    return true
+  end
+end
+
 def select_game_mode
   if Ironmon.consume_mode_selection_skip
     return :IRONMON
@@ -17,7 +44,7 @@ def select_game_mode
 
   commands = [cmd_mode_classic]
   commands << cmd_mode_remix if Settings::KANTO
-  commands << cmd_mode_random if Ironmon.mode_available?
+  commands << cmd_mode_random if Ironmon.randomized_mode_available?
   commands << cmd_mode_ironmon if Ironmon.mode_available?
   commands << cmd_mode_legendary if Settings::KANTO && $Trainer.new_game_plus_unlocked
 
@@ -81,4 +108,8 @@ def apply_game_mode(game_mode)
     return
   end
   ironmon_original_apply_game_mode(game_mode)
+end
+
+Events.onMapCreate += proc do |_sender, event|
+  Ironmon.patch_mode_entry_map(event[0], event[1])
 end

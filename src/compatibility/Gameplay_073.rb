@@ -93,7 +93,9 @@ end
 
 alias ironmon_073_original_hoenn_select_starter hoennSelectStarter
 def hoennSelectStarter
-  return ironmon_073_original_hoenn_select_starter
+  starter = ironmon_073_original_hoenn_select_starter
+  Ironmon.arm_starter_rescue_battle if Ironmon.active? && starter
+  return starter
 rescue Ironmon::StarterBstCeilingExceeded
   Ironmon.queue_starter_bst_reset
   return nil
@@ -101,17 +103,27 @@ end
 
 alias ironmon_073_original_hoenn_select_custom_starter hoennSelectCustomStarter
 def hoennSelectCustomStarter
-  return ironmon_073_original_hoenn_select_custom_starter
+  starter = ironmon_073_original_hoenn_select_custom_starter
+  Ironmon.arm_starter_rescue_battle if Ironmon.active? && starter
+  return starter
 end
 
 alias ironmon_073_original_pb_wild_battle pbWildBattle
 def pbWildBattle(*args)
-  starter_encounter = Ironmon.starter_encounter_event?
+  starter_encounter = Ironmon.starter_rescue_battle_pending? ||
+    Ironmon.starter_encounter_event?
   won = ironmon_073_original_pb_wild_battle(*args)
+  Ironmon.finish_starter_rescue_battle if starter_encounter
+  reset_started = Ironmon.reset_after_early_game_loss(
+    won, starter_encounter
+  )
+  Ironmon.queue_early_game_conditional_event_abort if
+    !won && starter_encounter
   if won && starter_encounter
     Ironmon.heal_pokemon_fully(pbGet(VAR_HOENN_STARTER))
     Ironmon.grant_starter_encounter_item
   end
+  return false if reset_started
   return won
 end
 
@@ -137,8 +149,13 @@ end
 alias ironmon_073_original_hoenn_rival_battle hoennRivalBattle
 def hoennRivalBattle(loseDialog = "...", canLose = false, items = [])
   first_battle = Ironmon.first_rival_battle_active?
-  won = ironmon_073_original_hoenn_rival_battle(loseDialog, canLose, items)
+  won = ironmon_073_original_hoenn_rival_battle(
+    loseDialog, canLose, items
+  )
+  reset_started = Ironmon.reset_after_early_game_loss(won, first_battle)
+  Ironmon.abort_current_early_game_event if !won && first_battle
   Ironmon.heal_after_first_rival_victory(won, first_battle)
+  return false if reset_started
   return won
 end
 
@@ -156,6 +173,15 @@ def pbReceiveItem(item, quantity = 1, item_name = "", music = nil,
 end
 
 class Interpreter
+  alias ironmon_073_original_command_111 command_111
+  def command_111
+    result = ironmon_073_original_command_111
+    return result if
+      !Ironmon.consume_queued_early_game_conditional_event_abort
+    Ironmon.abort_current_early_game_event
+    return false
+  end
+
   alias ironmon_073_original_command_101 command_101
   def command_101
     return ironmon_073_original_command_101 if

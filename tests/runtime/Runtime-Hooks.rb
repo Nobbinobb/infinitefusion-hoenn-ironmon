@@ -13,6 +13,14 @@ module IronmonRuntimeHookTests
     end
   end
 
+  class ModeAvailabilityTrainer
+    attr_accessor :new_game_plus_unlocked
+
+    def initialize(new_game_plus_unlocked)
+      @new_game_plus_unlocked = new_game_plus_unlocked
+    end
+  end
+
   def self.assert(condition, message)
     raise "Runtime-hook test failed: #{message}" if !condition
   end
@@ -41,11 +49,116 @@ module IronmonRuntimeHookTests
       Ironmon.graphics_update_hook_names == [
         :run_lifecycle,
         :challenge_statistics,
+        :early_game_loss_reset,
         :tracker,
         :starter_bst_reset
       ],
       "frame callbacks retain their established execution order"
     )
+  end
+
+  def self.test_fresh_game_mode_availability
+    original_trainer = $Trainer
+    $Trainer = nil
+    assert(
+      Ironmon.mode_available?,
+      "Ironmon is available when no save file or Trainer exists"
+    )
+    assert(
+      Ironmon.randomized_mode_available? == Settings::KANTO,
+      "the base randomized mode retains its region-specific fresh-game gate"
+    )
+
+    $Trainer = ModeAvailabilityTrainer.new(false)
+    assert(
+      Ironmon.mode_available?,
+      "Ironmon is available before New Game Plus is unlocked"
+    )
+    assert(
+      !Ironmon.randomized_mode_available?,
+      "Hoenn Randomized Mode remains locked before New Game Plus"
+    ) if Settings::HOENN
+  ensure
+    $Trainer = original_trainer
+  end
+
+  def self.test_uninitialized_map_scene_spriteset
+    scene = Scene_Map.allocate
+    assert(
+      scene.spriteset.nil?,
+      "an uninitialized reset map scene has no spriteset yet"
+    )
+  end
+
+  def self.test_fresh_game_mode_entry
+    map = load_data("Data/Map295.rxdata")
+    assert(
+      Ironmon.patch_mode_entry_map(295, map),
+      "the authored Hoenn fresh-start map exposes game-mode selection"
+    )
+    commands = map.events[1].pages[0].list
+    selection_index = commands.index do |command|
+      command.code == 355 && command.parameters[0] == "select_game_mode"
+    end
+    condition = commands[selection_index - 1]
+    assert(
+      condition.parameters == [12, Ironmon::MODE_ENTRY_CONDITION_SCRIPT],
+      "fresh-start mode selection no longer depends on an existing save"
+    )
+    assert(
+      !Ironmon.patch_mode_entry_map(1, map),
+      "the mode-entry patch does not alter unrelated maps"
+    )
+  end
+
+  def self.test_defeat_start_over_suppression
+    singleton = class << Ironmon; self; end
+    singleton.send(
+      :alias_method, :runtime_hook_original_active,
+      :active?
+    )
+    singleton.send(:define_method, :active?) { true }
+    start_over_calls = []
+    define_singleton_method(:ironmon_failure_original_start_over) do |gameover|
+      start_over_calls << gameover
+    end
+
+    assert(
+      !Ironmon.defeat_start_over_suppressed?,
+      "ordinary overworld start-over behavior is initially available"
+    )
+    Ironmon.with_defeat_start_over_suppressed(2) do
+      assert(
+        Ironmon.defeat_start_over_suppressed?,
+        "a battle loss suppresses the native blackout revival"
+      )
+      pbStartOver
+    end
+    Ironmon.with_defeat_start_over_suppressed(5) do
+      assert(
+        Ironmon.defeat_start_over_suppressed?,
+        "a battle draw suppresses the native blackout revival"
+      )
+    end
+    Ironmon.with_defeat_start_over_suppressed(1) do
+      assert(
+        !Ironmon.defeat_start_over_suppressed?,
+        "a battle victory retains ordinary start-over behavior"
+      )
+    end
+    assert(
+      start_over_calls.empty?,
+      "the loss path does not reach the native 1 HP safeguard"
+    )
+  ensure
+    if singleton && singleton.method_defined?(:runtime_hook_original_active)
+      singleton.send(:alias_method, :active?, :runtime_hook_original_active)
+      singleton.send(:remove_method, :runtime_hook_original_active)
+    end
+    singleton_class.send(
+      :remove_method, :ironmon_failure_original_start_over
+    ) if respond_to?(:ironmon_failure_original_start_over, true)
+    Ironmon.instance_variable_set(:@defeat_start_over_suppressed, nil)
   end
 
   def self.test_encounter_hook_source_ownership
@@ -420,6 +533,10 @@ module IronmonRuntimeHookTests
 
   def self.run
     test_registered_hook_order
+    test_fresh_game_mode_availability
+    test_uninitialized_map_scene_spriteset
+    test_fresh_game_mode_entry
+    test_defeat_start_over_suppression
     test_encounter_hook_source_ownership
     test_statistics_source_ownership
     test_pivot_source_ownership
