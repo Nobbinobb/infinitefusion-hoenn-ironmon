@@ -52,6 +52,33 @@ module IronmonDiagnosticAccessRuntimeTests
       end
     end
 
+    original_services = Ironmon.instance_variable_get(
+      :@tracker_obtainability_services
+    )
+    unavailable_service = Object.new
+    def unavailable_service.tracker_closure_unavailable?
+      return true
+    end
+    healthy_service = Object.new
+    def healthy_service.tracker_closure_unavailable?
+      return false
+    end
+    Ironmon.instance_variable_set(
+      :@tracker_obtainability_services,
+      { "unavailable" => unavailable_service, "healthy" => healthy_service }
+    )
+    connection.send(
+      :handle_message, event("tracker_connected", ["run.seed"])
+    )
+    assert(
+      Ironmon.tracker_obtainability_services ==
+        { "healthy" => healthy_service },
+      "tracker reconnect retries only cached worker-unavailable calculations"
+    )
+    Ironmon.instance_variable_set(
+      :@tracker_obtainability_services, original_services
+    )
+
     connection.send(
       :handle_message,
       event("diagnostic_access_changed", ["run.seed", "run.seed"])

@@ -63,7 +63,7 @@ public sealed class TypeCoverageContextPayloadTests
     [InlineData("future_policy", TypeCoveragePolicy.Unknown)]
     public void ContextFactoryMapsTrainerPolicy(string policy, TypeCoveragePolicy expected)
     {
-        GameHandshakePayload game = new("6.8.0", "0.7.5", true, false, "C:\\Game", "run-7", null);
+        GameHandshakePayload game = new("6.8.0", "0.7.5", true, false, TrackerTestPaths.GameRoot, "run-7", null);
         TypeCoverageContextPayload coverage = new()
         {
             TrainerPolicy = policy,

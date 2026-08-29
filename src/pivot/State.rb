@@ -20,7 +20,7 @@ module Ironmon
   ].freeze
 
   class PivotState
-    SCHEMA_VERSION = 3
+    SCHEMA_VERSION = 5
 
     attr_reader :schema_version
     attr_reader :pending_pivot

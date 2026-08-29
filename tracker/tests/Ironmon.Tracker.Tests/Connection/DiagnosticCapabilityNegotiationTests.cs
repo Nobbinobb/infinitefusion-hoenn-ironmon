@@ -51,7 +51,7 @@ public sealed class DiagnosticCapabilityNegotiationTests : IAsyncLifetime
         NetworkStream stream = client.GetStream();
         using TrackerMessageReader reader = new(stream, leaveOpen: true);
         await using TrackerMessageWriter writer = new(stream, leaveOpen: true);
-        GameHandshakePayload game = new("6.8.0", "0.7.4", true, false, @"C:\Game", "run-1", null, [DiagnosticCapabilities.RunSeed, DiagnosticCapabilities.PokemonCurrentPlayer, DiagnosticCapabilities.EvolutionCandidates, DiagnosticCapabilities.EvolutionResults]);
+        GameHandshakePayload game = new("6.8.0", "0.7.4", true, false, TrackerTestPaths.GameRoot, "run-1", null, [DiagnosticCapabilities.RunSeed, DiagnosticCapabilities.PokemonCurrentPlayer, DiagnosticCapabilities.EvolutionCandidates, DiagnosticCapabilities.EvolutionResults]);
         await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.GameConnected, 0, game));
 
         TrackerMessage trackerHandshake = await ReadRequiredAsync(reader);

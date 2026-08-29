@@ -261,6 +261,17 @@ module IronmonGeneratorMetadataRuntimeTests
       issues == [:custom_fusion_pool, :evolution_randomization],
       "saved-run inspection reports all incompatible catalogs once"
     )
+    sprite_message = Ironmon.saved_run_migration_message(
+      save_data.merge(:game_version => Settings::GAME_VERSION_NUMBER),
+      [:custom_fusion_pool]
+    )
+    assert(
+      sprite_message.include?("game version is still") &&
+        sprite_message.include?("CUSTOM_SPRITES") &&
+        sprite_message.include?("Sprite_Credits.csv") &&
+        !sprite_message.include?("incompatible with Infinite Fusion"),
+      "same-version sprite-pool migration names its actual cause"
+    )
     assert(
       before_detection == [
         metadata.ironmon_custom_fusion_pool_size,

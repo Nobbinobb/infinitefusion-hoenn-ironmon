@@ -604,7 +604,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "ability_generator_version": 3,
   "base_stat_generator_version": 1,
   "move_access_generator_version": 6,
-  "player_fusion_generator_version": 3,
+  "player_fusion_generator_version": 5,
   "species_pool_fingerprint": "...",
   "ability_pool_fingerprint": "...",
   "base_stat_source_fingerprint": "...",
@@ -750,7 +750,11 @@ their occurrences are available only while that run's save is loaded.
 
 `fusion_preview` accepts two normal species identifiers and the same recipe.
 It returns the two ordered results, first-species body plus second-species head
-and the reversed orientation. Identical materials produce one distinct result.
+and the reversed orientation. Those results are one global reverse pair: wild
+or player-created instances of either species resolve the other species when
+reversed. The pair's allowed BST separation is derived from the widest legal
+material interval produced by the continuous fusion formula, not from its
+40-BST lower-bound breakpoint. Identical materials produce one distinct result.
 The tracker uses normal-only paged search to select the second material; it
 does not enumerate every possible fusion containing the selected species.
 
@@ -812,6 +816,14 @@ Active area detail uses `world.wild_encounters`, `world.trainer_parties`, or
 `world.items` for its selected category. Without that grant, ordinary
 discovery filtering remains in force. Completed-run reconstruction is
 unchanged.
+
+Encounter area detail is game-paged. `area_lookup_detail` carries a zero-based
+`offset` and a `limit` from 1 through 50; the tracker uses pages of 10. The game
+returns only that encounter slice together with echoed `offset` and `limit` and
+the route-wide `total_count`. Species generation, fusion resolution, sprite
+lookup, serialization, and transport therefore apply only to the requested
+page. Trainer and item detail retain their complete category payloads and use
+tracker-local paging.
 
 `debug_inspect_pokemon` accepts a target of `player` or `enemy`. Enemy targets
 include `enemy_position`. The game resolves the actual current Pokemon and

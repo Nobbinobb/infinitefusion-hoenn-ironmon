@@ -3,12 +3,51 @@
 #===============================================================================
 
 module Ironmon
+  TRACKER_DEBUG_SEARCH_TRACE_PATH = if defined?(SaveData::SAVE_DIR) &&
+                                       SaveData::SAVE_DIR
+                                      File.join(
+                                        SaveData::SAVE_DIR,
+                                        "debug_pokemon_search_trace.log"
+                                      )
+                                    else
+                                      "debug_pokemon_search_trace.log"
+                                    end
+
+  def self.tracker_debug_search_trace(stage)
+    if stage == "received"
+      @tracker_debug_search_trace_started_at = tracker_uptime_seconds
+      mode = "wb"
+    else
+      return if !@tracker_debug_search_trace_started_at
+      mode = "ab"
+    end
+    elapsed = tracker_uptime_seconds - @tracker_debug_search_trace_started_at
+    File.open(TRACKER_DEBUG_SEARCH_TRACE_PATH, mode) do |file|
+      file.write("#{(elapsed * 1_000).round}|#{stage}\n")
+    end
+  rescue Exception
+  end
+
+  def self.finish_tracker_debug_search_trace
+    @tracker_debug_search_trace_started_at = nil
+  end
+
   def self.tracker_debug_pokemon_search(payload)
+    tracker_debug_search_trace("received")
     tracker_validate_debug_context(["pokemon.all_active"])
-    return tracker_pokemon_search_for_recipe(
-      payload || {}, tracker_debug_active_recipe,
-      tracker_debug_lookup_visibility
+    tracker_debug_search_trace("authorized")
+    recipe = tracker_debug_active_recipe
+    tracker_debug_search_trace("recipe_ready")
+    visibility = tracker_debug_lookup_visibility
+    tracker_debug_search_trace("visibility_ready")
+    result = tracker_pokemon_search_for_recipe(
+      payload || {}, recipe, visibility
     )
+    tracker_debug_search_trace("search_ready")
+    return result
+  rescue Exception
+    tracker_debug_search_trace("failed")
+    raise
   end
 
   def self.tracker_debug_pokemon_lookup(payload)
@@ -117,9 +156,13 @@ module Ironmon
 
     availability = tracker_debug_availability_capability(result["target"])
     tracker_validate_debug_context([availability])
+    requested_species_id = result["species_id"].to_s
     result["species_id"] = tracker_species_id(
       tracker_debug_resolve_pokemon(result)
     )
+    if result["material_assignments"].is_a?(Array)
+      result["material_assignment_species_id"] = requested_species_id
+    end
     return result
   end
 

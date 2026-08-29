@@ -44,6 +44,22 @@ public sealed class CompletedRunRecipePayload : RunReproductionRecipePayload
 }
 
 /// <summary>
+/// Carries a completed-run recipe and whether it should become the foreground Archive selection.
+/// </summary>
+public sealed class RunCompletedEventPayload
+{
+    /// <summary>
+    /// Gets or initializes the completed-run recipe to persist.
+    /// </summary>
+    public required CompletedRunRecipePayload Recipe { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether the tracker should open and prepare this archived run.
+    /// </summary>
+    public bool RequestArchiveSelection { get; init; } = true;
+}
+
+/// <summary>
 /// Describes deterministic item-slot pools, bans, and shop policy.
 /// </summary>
 public sealed class ItemGeneratorRecipePayload

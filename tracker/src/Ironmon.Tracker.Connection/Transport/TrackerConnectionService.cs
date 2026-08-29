@@ -279,7 +279,17 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                 && Requests.HasDiagnosticCapability(DiagnosticCapabilities.WorldItems)
                 && Requests.HasDiagnosticCapability(DiagnosticCapabilities.WorldWildEncounters);
 
-            if (authorized && snapshot.CurrentState?.IronmonActive == true && !string.IsNullOrWhiteSpace(runId) && runId != completedRunId && !Requests.ArchiveObtainabilityPrecalculationSelected)
+            bool runCompleted = snapshot.CurrentState?.CompletedRun is not null;
+            bool precalculationEligible = IsActiveRunObtainabilityPrecalculationEligible(
+                authorized,
+                snapshot.CurrentState?.IronmonActive == true,
+                snapshot.CurrentState?.ActiveRunPreparationReady == true,
+                runCompleted,
+                runId,
+                completedRunId,
+                Requests.ArchiveObtainabilityPrecalculationSelected);
+
+            if (precalculationEligible)
             {
                 try
                 {
@@ -310,6 +320,29 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(response);
         return response.Complete || response.BackgroundComplete;
+    }
+
+    /// <summary>
+    /// Determines whether the connected active run may receive automatic background preparation.
+    /// </summary>
+    /// <param name="authorized">Whether all required diagnostic capabilities are authorized.</param>
+    /// <param name="ironmonActive">Whether the connected game reports an active Ironmon mode.</param>
+    /// <param name="preparationReady">Whether the game has reached the safe background-preparation boundary.</param>
+    /// <param name="runCompleted">Whether the current run has already completed.</param>
+    /// <param name="runId">The connected run identifier.</param>
+    /// <param name="preparedRunId">The run identifier already prepared by this loop.</param>
+    /// <param name="archiveSelected">Whether an explicitly expanded archived run owns preparation.</param>
+    /// <returns>True when active-run background preparation may advance; otherwise false.</returns>
+    internal static bool IsActiveRunObtainabilityPrecalculationEligible(bool authorized, bool ironmonActive, bool preparationReady, bool runCompleted, string? runId, string? preparedRunId, bool archiveSelected)
+    {
+        return authorized
+            && ironmonActive
+            && preparationReady
+            && !runCompleted
+            && !string.IsNullOrWhiteSpace(runId)
+            && runId != preparedRunId
+            && !archiveSelected;
+
     }
 
     /// <summary>

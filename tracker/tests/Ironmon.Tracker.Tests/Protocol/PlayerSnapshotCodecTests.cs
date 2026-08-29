@@ -26,6 +26,10 @@ public sealed class PlayerSnapshotCodecTests
         Assert.Contains("\"current_hp\":18", json, StringComparison.Ordinal);
         Assert.Contains("\"total_pp\":10", json, StringComparison.Ordinal);
         Assert.Equal("Psychic", Assert.Single(restored.Moves).Name);
+        MovePowerPresentationSnapshot powerPresentation = Assert.IsType<MovePowerPresentationSnapshot>(Assert.Single(restored.Moves).PowerPresentation);
+        Assert.Equal("125", powerPresentation.Display);
+        Assert.Equal(MovePowerIndicator.MultiHit, powerPresentation.Indicator);
+        Assert.Equal(5, Assert.Single(powerPresentation.Outcomes).Hits);
         Assert.Equal(125, restored.Healing.Percentage);
         Assert.Equal("female", restored.Gender);
         Assert.True(restored.Confused);
@@ -76,13 +80,14 @@ public sealed class PlayerSnapshotCodecTests
             TargetPoolSize = 10,
             TargetPoolFingerprint = "targets"
         };
-        GameCurrentStatePayload state = new(true, "run-1", null, 9, fusionAssignments: recipe);
+        GameCurrentStatePayload state = new(true, "run-1", null, 9, fusionAssignments: recipe, activeRunPreparationReady: true);
 
         GameCurrentStatePayload restored = TrackerJson.DeserializePayload<GameCurrentStatePayload>(TrackerJson.SerializePayload(state));
 
         Assert.Equal(42, restored.FusionAssignments?.Seed);
         Assert.Equal(3, restored.FusionAssignments?.PlayerFusionGeneratorVersion);
         Assert.Equal("targets", restored.FusionAssignments?.TargetPoolFingerprint);
+        Assert.True(restored.ActiveRunPreparationReady);
     }
 
     /// <summary>
@@ -118,7 +123,23 @@ public sealed class PlayerSnapshotCodecTests
             CurrentPp = 8,
             TotalPp = 10,
             Power = 90,
-            Accuracy = 100
+            Accuracy = 100,
+            PowerPresentation = new MovePowerPresentationSnapshot
+            {
+                Display = "125",
+                Indicator = MovePowerIndicator.MultiHit,
+                DetailsKind = MovePowerDetailsKind.Outcomes,
+                Outcomes =
+                [
+                    new MovePowerOutcomeSnapshot
+                    {
+                        Kind = MovePowerOutcomeKind.Hits,
+                        Hits = 5,
+                        Power = 125,
+                        ChancePercent = 100
+                    }
+                ]
+            }
         };
 
         return new PlayerPokemonSnapshot

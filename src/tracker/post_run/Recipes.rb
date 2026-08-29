@@ -24,13 +24,18 @@ module Ironmon
     recipe = tracker_completed_run_recipe
     if recipe
       run_ledger["last_completed_recipe"] = Marshal.load(Marshal.dump(recipe))
-      tracker_connection.send_event("run_completed", recipe)
+      tracker_connection.send_event("run_completed", {
+        "recipe" => recipe,
+        "request_archive_selection" => true
+      })
     end
   rescue Exception => e
     echoln "Ironmon tracker could not complete the run recipe: #{e.message}"
   end
 
   def self.tracker_recoverable_completed_run_recipe
+    attempt = current_run_attempt if respond_to?(:current_run_attempt)
+    return nil if attempt && attempt["result"] == "active"
     recipe = tracker_completed_run_recipe
     return recipe if recipe
     stored = run_ledger["last_completed_recipe"]

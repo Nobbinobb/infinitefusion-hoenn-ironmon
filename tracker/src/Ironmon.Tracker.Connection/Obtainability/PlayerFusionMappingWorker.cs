@@ -4,7 +4,7 @@ using System.Text;
 namespace Ironmon.Tracker.Connection.Obtainability;
 
 /// <summary>
-/// Reproduces schema-3 player-fusion mappings in parallel outside the game runtime.
+/// Reproduces schema-5 player-fusion mappings in parallel outside the game runtime.
 /// </summary>
 internal sealed class PlayerFusionMappingWorker
 {
@@ -12,8 +12,9 @@ internal sealed class PlayerFusionMappingWorker
     private const ulong FnvPrime = 1_099_511_628_211;
     private const int MaterialIdBits = 10;
     private const int MaterialIdMask = (1 << MaterialIdBits) - 1;
-    private const int PreferredMinimumPercent = 90;
-    private const int PreferredMaximumPercent = 115;
+    private const int GuaranteedNonWeakerGap = 40;
+    private const int MaximumBonusBasis = 500;
+    private const int MaximumLossPoints = 80;
     private const int MaximumCachedStates = 2;
     private readonly PlayerFusionMappingWorkerCatalog _catalog;
     private readonly ConcurrentDictionary<PlayerFusionStateKey, Lazy<WorkerState>> _states = new();
@@ -68,7 +69,35 @@ internal sealed class PlayerFusionMappingWorker
                 mappings[outputIndex++] = new PlayerFusionMappedPair(first, second, firstResult, secondResult);
             }
         });
+
         return mappings;
+    }
+
+    /// <summary>
+    /// Reports the global reverse-pair quality for regression tests and diagnostics.
+    /// </summary>
+    internal PlayerFusionPairingAudit AuditPairing(long seed, int generatorVersion)
+    {
+        WorkerState state = GetState(seed, generatorVersion);
+        int maximumBstDifference = state.Pairs.Max(pair => Math.Abs(pair.First.Bst - pair.Second.Bst));
+        int pairsWithoutSharedType = state.Pairs.Count(pair => (pair.First.TypeMask & pair.Second.TypeMask) == 0);
+        return new PlayerFusionPairingAudit(state.Pairs.Count, maximumBstDifference, pairsWithoutSharedType, state.MaximumLegalRangeWidth);
+    }
+
+    /// <summary>
+    /// Returns the seed-specific global reverse partner for one custom fusion.
+    /// </summary>
+    /// <param name="seed">The Ironmon run seed.</param>
+    /// <param name="generatorVersion">The player-fusion generator schema version.</param>
+    /// <param name="resultId">The numeric custom-fusion identifier.</param>
+    /// <returns>The numeric identifier of the paired reverse fusion.</returns>
+    internal int ReversePartner(long seed, int generatorVersion, int resultId)
+    {
+        WorkerState state = GetState(seed, generatorVersion);
+        if (resultId <= _catalog.NormalSpeciesCount || resultId >= state.ReversePartners.Count || state.ReversePartners[resultId] == 0)
+            throw new ArgumentOutOfRangeException(nameof(resultId), "The result must belong to the paired custom-fusion pool.");
+
+        return state.ReversePartners[resultId];
     }
 
     /// <summary>
@@ -105,7 +134,7 @@ internal sealed class PlayerFusionMappingWorker
         => checked(firstIndex * materialCount - firstIndex * (firstIndex - 1) / 2);
 
     /// <summary>
-    /// Builds the seed-specific randomized stats and disjoint reverse-result pairs.
+    /// Builds the seed-specific randomized stats, global reverse pairs, and BST index.
     /// </summary>
     private WorkerState BuildState(long seed, int generatorVersion, CancellationToken cancellationToken)
     {
@@ -119,8 +148,18 @@ internal sealed class PlayerFusionMappingWorker
         }
 
         TargetData[] targets = [.. _catalog.CustomFusionPool.Select(target => CreateTargetData(target, stats))];
-        TargetPair[] pairs = BuildTargetPairs(seed, generatorVersion, targets, cancellationToken);
-        return new WorkerState(seed, generatorVersion, stats, types, pairs);
+        int maximumLegalRangeWidth = MaximumFusionRangeWidth(stats);
+        TargetPair[] pairs = BuildTargetPairs(seed, generatorVersion, targets, maximumLegalRangeWidth, cancellationToken);
+        IReadOnlyDictionary<int, IReadOnlyList<OrientedTarget>> bstIndex = BuildBstIndex(pairs);
+        int maximumSpeciesId = checked(_catalog.NormalSpeciesCount * _catalog.NormalSpeciesCount + _catalog.NormalSpeciesCount);
+        int[] reversePartners = new int[maximumSpeciesId + 1];
+        foreach (TargetPair pair in pairs)
+        {
+            reversePartners[pair.First.Id] = pair.Second.Id;
+            reversePartners[pair.Second.Id] = pair.First.Id;
+        }
+
+        return new WorkerState(seed, generatorVersion, stats, types, pairs, bstIndex, reversePartners, bstIndex.Keys.Min(), bstIndex.Keys.Max(), maximumLegalRangeWidth);
     }
 
     /// <summary>
@@ -187,57 +226,111 @@ internal sealed class PlayerFusionMappingWorker
     }
 
     /// <summary>
-    /// Builds the seed-specific disjoint reverse-result pair roster.
+    /// Builds one global strength-aware, type-aware reverse pairing.
     /// </summary>
-    private static TargetPair[] BuildTargetPairs(long seed, int generatorVersion, IReadOnlyList<TargetData> targets, CancellationToken cancellationToken)
+    private static TargetPair[] BuildTargetPairs(long seed, int generatorVersion, IReadOnlyList<TargetData> targets, int maximumPairDifference, CancellationToken cancellationToken)
     {
+        int bestMaximumBstDifference = int.MaxValue;
         for (int attempt = 0; attempt < 16; attempt++)
         {
-            TargetData[] shuffled = DeterministicShuffle(seed, generatorVersion, targets, attempt);
+            TargetData[] ordered = [.. targets
+                .OrderBy(target => target.Bst)
+                .ThenBy(target => DeterministicValue(generatorVersion, seed, "player_fusion", "pairing_rank", attempt, target.Id))];
             List<TargetPair> pairs = [];
             bool failed = false;
-            for (int position = 0; position < shuffled.Length; position += 2)
+            for (int position = 0; position < ordered.Length; position += 2)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                int partner = position + 1;
-                while (partner < shuffled.Length && SharesComponent(shuffled[position], shuffled[partner]))
-                    partner++;
+                int partner = FindStrengthPartner(ordered, position, true, maximumPairDifference);
+                if (partner < 0)
+                    partner = FindStrengthPartner(ordered, position, false, maximumPairDifference);
 
-                if (partner >= shuffled.Length)
+                if (partner < 0)
                 {
+                    bool repaired = position == ordered.Length - 2 && RepairFinalStrengthPair(pairs, ordered[position], ordered[position + 1], maximumPairDifference);
+                    if (repaired)
+                        break;
+
                     failed = true;
                     break;
                 }
 
-                (shuffled[position + 1], shuffled[partner]) = (shuffled[partner], shuffled[position + 1]);
-                pairs.Add(new TargetPair(shuffled[position], shuffled[position + 1]));
+                (ordered[position + 1], ordered[partner]) = (ordered[partner], ordered[position + 1]);
+                pairs.Add(new TargetPair(ordered[position], ordered[position + 1]));
             }
-
             if (!failed)
-                return [.. pairs];
+            {
+                int maximumBstDifference = pairs.Max(pair => Math.Abs(pair.First.Bst - pair.Second.Bst));
+                bestMaximumBstDifference = Math.Min(bestMaximumBstDifference, maximumBstDifference);
+                if (maximumBstDifference <= maximumPairDifference)
+                    return [.. pairs];
+            }
         }
-        throw new InvalidOperationException("The custom fusion pool could not form disjoint reverse pairs.");
+
+        throw new InvalidOperationException($"The custom fusion pool could not form strength-matched reverse pairs; the best maximum difference was {bestMaximumBstDifference} BST.");
     }
 
     /// <summary>
-    /// Reproduces the schema pairing shuffle.
+    /// Finds the nearest remaining disjoint partner, preferring at least one shared type.
     /// </summary>
-    private static TargetData[] DeterministicShuffle(long seed, int generatorVersion, IReadOnlyList<TargetData> targets, int attempt)
+    private static int FindStrengthPartner(IReadOnlyList<TargetData> ordered, int position, bool requireSharedType, int maximumPairDifference)
     {
-        TargetData[] shuffled = [.. targets];
-        ulong state = DeterministicValue(generatorVersion, seed, "player_fusion", "pairing", attempt);
-        if (state == 0)
-            state = FnvOffsetBasis;
-
-        for (int index = shuffled.Length - 1; index > 0; index--)
+        TargetData first = ordered[position];
+        for (int candidatePosition = position + 1; candidatePosition < ordered.Count; candidatePosition++)
         {
-            state ^= state << 13;
-            state ^= state >> 7;
-            state ^= state << 17;
-            int swapIndex = (int)(state % (ulong)(index + 1));
-            (shuffled[index], shuffled[swapIndex]) = (shuffled[swapIndex], shuffled[index]);
+            TargetData second = ordered[candidatePosition];
+            if (second.Bst - first.Bst > maximumPairDifference)
+                break;
+
+            if (SharesComponent(first, second))
+                continue;
+
+            if (requireSharedType && (first.TypeMask & second.TypeMask) == 0)
+                continue;
+
+            return candidatePosition;
         }
-        return shuffled;
+        return -1;
+    }
+
+    /// <summary>
+    /// Re-pairs the final two targets with the best compatible earlier pair.
+    /// </summary>
+    private static bool RepairFinalStrengthPair(List<TargetPair> pairs, TargetData currentFirst, TargetData currentSecond, int maximumPairDifference)
+    {
+        ((int Distance, int TypePenalty, int PairIndex) Score, int PairIndex, TargetPair First, TargetPair Second)? best = null;
+        for (int pairIndex = 0; pairIndex < pairs.Count; pairIndex++)
+        {
+            TargetPair previous = pairs[pairIndex];
+            for (int orientation = 0; orientation < 2; orientation++)
+            {
+                TargetData previousFirst = orientation == 0 ? previous.First : previous.Second;
+                TargetData previousSecond = orientation == 0 ? previous.Second : previous.First;
+                TargetPair first = new(currentFirst, previousFirst);
+                TargetPair second = new(currentSecond, previousSecond);
+                if (SharesComponent(first.First, first.Second) || SharesComponent(second.First, second.Second))
+                    continue;
+
+                if (Math.Abs(first.First.Bst - first.Second.Bst) > maximumPairDifference || Math.Abs(second.First.Bst - second.Second.Bst) > maximumPairDifference)
+                    continue;
+
+                int typePenalty = ((first.First.TypeMask & first.Second.TypeMask) == 0 ? 1 : 0)
+                    + ((second.First.TypeMask & second.Second.TypeMask) == 0 ? 1 : 0);
+
+                int distance = Math.Abs(first.First.Bst - first.Second.Bst) + Math.Abs(second.First.Bst - second.Second.Bst);
+                (int Distance, int TypePenalty, int PairIndex) score = (distance, typePenalty, pairIndex);
+                if (best is null || score.CompareTo(best.Value.Score) < 0)
+                    best = (score, pairIndex, first, second);
+            }
+        }
+
+        if (best is null)
+            return false;
+
+        pairs.RemoveAt(best.Value.PairIndex);
+        pairs.Add(best.Value.First);
+        pairs.Add(best.Value.Second);
+        return true;
     }
 
     /// <summary>
@@ -247,113 +340,143 @@ internal sealed class PlayerFusionMappingWorker
         => first.BodyId == second.BodyId || first.BodyId == second.HeadId || first.HeadId == second.BodyId || first.HeadId == second.HeadId;
 
     /// <summary>
+    /// Indexes both orientations of every global reverse pair by the first BST.
+    /// </summary>
+    private static IReadOnlyDictionary<int, IReadOnlyList<OrientedTarget>> BuildBstIndex(IReadOnlyList<TargetPair> pairs)
+    {
+        Dictionary<int, List<OrientedTarget>> mutable = [];
+        for (int position = 0; position < pairs.Count; position++)
+        {
+            AddBstIndexEntry(mutable, pairs[position].First.Bst, new OrientedTarget(position, false));
+            AddBstIndexEntry(mutable, pairs[position].Second.Bst, new OrientedTarget(position, true));
+        }
+
+        return mutable.ToDictionary(entry => entry.Key, entry => (IReadOnlyList<OrientedTarget>)[.. entry.Value]);
+    }
+
+    /// <summary>
+    /// Adds one oriented reverse-pair position to the mutable BST index.
+    /// </summary>
+    private static void AddBstIndexEntry(Dictionary<int, List<OrientedTarget>> index, int bst, OrientedTarget target)
+    {
+        if (!index.TryGetValue(bst, out List<OrientedTarget>? entries))
+        {
+            entries = [];
+            index.Add(bst, entries);
+        }
+
+        entries.Add(target);
+    }
+
+    /// <summary>
     /// Selects both deterministic result orientations for one unordered material pair.
     /// </summary>
     private static (int First, int Second) SelectResults(WorkerState state, int firstId, int secondId)
     {
         ulong sourceTypes = state.Types[firstId] | state.Types[secondId];
-        int forwardBst = FusedBst(state.Stats[firstId], state.Stats[secondId]);
-        int reverseBst = FusedBst(state.Stats[secondId], state.Stats[firstId]);
-        int forwardMinimum = DivideRoundUp(forwardBst * PreferredMinimumPercent, 100);
-        int forwardMaximum = forwardBst * PreferredMaximumPercent / 100;
-        int reverseMinimum = DivideRoundUp(reverseBst * PreferredMinimumPercent, 100);
-        int reverseMaximum = reverseBst * PreferredMaximumPercent / 100;
-        int start = (int)(DeterministicResultValue(state.GeneratorVersion, state.Seed, firstId, secondId) % (ulong)state.Pairs.Count);
-        bool reverseFirst = (DeterministicValue(state.GeneratorVersion, state.Seed, "player_fusion", "orientation", firstId, secondId) & 1) == 1;
-        for (int offset = 0; offset < state.Pairs.Count; offset++)
-        {
-            TargetPair pair = state.Pairs[(start + offset) % state.Pairs.Count];
-            if (reverseFirst)
-            {
-                if (Matches(pair.Second, sourceTypes, forwardMinimum, forwardMaximum) && Matches(pair.First, sourceTypes, reverseMinimum, reverseMaximum))
-                    return (pair.Second.Id, pair.First.Id);
-
-                if (Matches(pair.First, sourceTypes, forwardMinimum, forwardMaximum) && Matches(pair.Second, sourceTypes, reverseMinimum, reverseMaximum))
-                    return (pair.First.Id, pair.Second.Id);
-            }
-            else
-            {
-                if (Matches(pair.First, sourceTypes, forwardMinimum, forwardMaximum) && Matches(pair.Second, sourceTypes, reverseMinimum, reverseMaximum))
-                    return (pair.First.Id, pair.Second.Id);
-
-                if (Matches(pair.Second, sourceTypes, forwardMinimum, forwardMaximum) && Matches(pair.First, sourceTypes, reverseMinimum, reverseMaximum))
-                    return (pair.Second.Id, pair.First.Id);
-            }
-        }
-        return ClosestResults(state, firstId, secondId, sourceTypes, forwardBst, reverseBst, reverseFirst);
+        int firstBst = state.Stats[firstId].Sum();
+        int secondBst = state.Stats[secondId].Sum();
+        (int minimum, int maximum) = FusionBstRange(firstBst, secondBst);
+        int target = minimum + (int)(DeterministicValue(state.GeneratorVersion, state.Seed, "player_fusion", "bst_target", firstId, secondId) % (ulong)(maximum - minimum + 1));
+        (int First, int Second)? result = ClosestResults(state, firstId, secondId, sourceTypes, target, minimum, maximum);
+        result ??= ClosestResults(state, firstId, secondId, sourceTypes, target, state.MinimumTargetBst, state.MaximumTargetBst);
+        return result ?? throw new InvalidOperationException($"No custom fusion pair satisfies the BST and type rules for {firstId}+{secondId} in {minimum}-{maximum}.");
     }
 
     /// <summary>
-    /// Selects the deterministic closest-result fallback when no preferred pair exists.
+    /// Calculates the inclusive schema-5 BST range from the stronger and weaker materials.
     /// </summary>
-    private static (int First, int Second) ClosestResults(WorkerState state, int firstId, int secondId, ulong sourceTypes, int forwardBst, int reverseBst, bool reverseFirst)
+    internal static (int Minimum, int Maximum) FusionBstRange(int firstBst, int secondBst)
+    {
+        int higher = Math.Max(firstBst, secondBst);
+        int lower = Math.Min(firstBst, secondBst);
+        int gap = higher - lower;
+        int bonusBasis = Math.Min(higher, MaximumBonusBasis);
+        int maximum = higher + 10 * bonusBasis / (100 + gap);
+        if (gap <= GuaranteedNonWeakerGap)
+            return (higher, maximum);
+
+        int curveLoss = bonusBasis * (gap - GuaranteedNonWeakerGap) / (4 * (100 + gap));
+        int loss = Math.Min(MaximumLossPoints, Math.Min(3 * higher / 20, curveLoss));
+        int minimum = Math.Max(lower, higher - loss);
+        return (minimum, maximum);
+    }
+
+    /// <summary>
+    /// Calculates the widest legal result interval produced by any two normal-material BSTs.
+    /// </summary>
+    private static int MaximumFusionRangeWidth(IReadOnlyList<int[]> stats)
+    {
+        int[] values = [.. stats.Skip(1).Where(value => value is not null).Select(value => value.Sum()).Distinct()];
+        int maximum = 0;
+        foreach (int first in values)
+        {
+            foreach (int second in values)
+            {
+                (int minimum, int upper) = FusionBstRange(first, second);
+                maximum = Math.Max(maximum, upper - minimum);
+            }
+        }
+        return maximum;
+    }
+
+    /// <summary>
+    /// Finds the compatible global reverse pair closest to the rolled target.
+    /// </summary>
+    private static (int First, int Second)? ClosestResults(WorkerState state, int firstId, int secondId, ulong sourceTypes, int targetBst, int minimum, int maximum)
     {
         (int Score, ulong Rank, int First, int Second)? best = null;
-        foreach (TargetPair pair in state.Pairs)
+        int maximumDistance = Math.Max(Math.Abs(targetBst - state.MinimumTargetBst), Math.Abs(state.MaximumTargetBst - targetBst));
+        for (int distance = 0; distance <= maximumDistance; distance++)
         {
-            if (reverseFirst)
-            {
-                best = ClosestCandidate(state, firstId, secondId, sourceTypes, forwardBst, reverseBst, pair.Second, pair.First, best);
-                best = ClosestCandidate(state, firstId, secondId, sourceTypes, forwardBst, reverseBst, pair.First, pair.Second, best);
-            }
-            else
-            {
-                best = ClosestCandidate(state, firstId, secondId, sourceTypes, forwardBst, reverseBst, pair.First, pair.Second, best);
-                best = ClosestCandidate(state, firstId, secondId, sourceTypes, forwardBst, reverseBst, pair.Second, pair.First, best);
-            }
-        }
+            if (best is not null && distance > best.Value.Score)
+                break;
 
-        (int _, ulong _, int first, int second) = best ?? throw new InvalidOperationException("No custom fusion pair shares a consumed Pokémon type.");
-        return (first, second);
+            best = ClosestResultsAtBst(state, firstId, secondId, sourceTypes, targetBst, targetBst - distance, minimum, maximum, best);
+            if (distance > 0)
+                best = ClosestResultsAtBst(state, firstId, secondId, sourceTypes, targetBst, targetBst + distance, minimum, maximum, best);
+        }
+        return best is null ? null : (best.Value.First, best.Value.Second);
     }
 
     /// <summary>
-    /// Compares one closest-result fallback orientation with the current best candidate.
+    /// Compares every oriented global pair at one first-result BST.
     /// </summary>
-    private static (int Score, ulong Rank, int First, int Second)? ClosestCandidate(WorkerState state, int firstId, int secondId, ulong sourceTypes, int forwardBst, int reverseBst, TargetData first, TargetData second, (int Score, ulong Rank, int First, int Second)? best)
+    private static (int Score, ulong Rank, int First, int Second)? ClosestResultsAtBst(WorkerState state, int firstId, int secondId, ulong sourceTypes, int targetBst, int firstBst, int minimum, int maximum, (int Score, ulong Rank, int First, int Second)? best)
     {
-        if ((first.TypeMask & sourceTypes) == 0 || (second.TypeMask & sourceTypes) == 0)
+        if (firstBst < minimum || firstBst > maximum)
             return best;
 
-        int score = Math.Abs(first.Bst - forwardBst) + Math.Abs(second.Bst - reverseBst);
-        if (best is not null && score > best.Value.Score)
+        if (!state.BstIndex.TryGetValue(firstBst, out IReadOnlyList<OrientedTarget>? entries))
             return best;
 
-        ulong rank = DeterministicValue(state.GeneratorVersion, state.Seed, "player_fusion", "fallback", firstId, secondId, first.Id, second.Id);
-        if (best is null || score < best.Value.Score || score == best.Value.Score && rank < best.Value.Rank)
-            return (score, rank, first.Id, second.Id);
+        foreach (OrientedTarget entry in entries)
+        {
+            TargetPair pair = state.Pairs[entry.PairPosition];
+            TargetData first = entry.Reversed ? pair.Second : pair.First;
+            TargetData second = entry.Reversed ? pair.First : pair.Second;
+            if ((first.TypeMask & sourceTypes) == 0 || (second.TypeMask & sourceTypes) == 0)
+                continue;
 
+            if (second.Bst < minimum || second.Bst > maximum)
+                continue;
+
+            int score = Math.Abs(firstBst - targetBst) + Math.Abs(second.Bst - targetBst);
+            if (best is not null && score > best.Value.Score)
+                continue;
+
+            ulong rank = DeterministicValue(state.GeneratorVersion, state.Seed, "player_fusion", "target_match", firstId, secondId, first.Id, second.Id);
+            if (best is null || score < best.Value.Score || score == best.Value.Score && rank < best.Value.Rank)
+                best = (score, rank, first.Id, second.Id);
+        }
         return best;
     }
-
-    /// <summary>
-    /// Tests one custom target against the consumed types and preferred BST interval.
-    /// </summary>
-    private static bool Matches(TargetData target, ulong sourceTypes, int minimum, int maximum)
-        => (target.TypeMask & sourceTypes) != 0 && target.Bst >= minimum && target.Bst <= maximum;
 
     /// <summary>
     /// Calculates an oriented fusion BST from six generated component stats.
     /// </summary>
     private static int FusedBst(IReadOnlyList<int> body, IReadOnlyList<int> head)
         => 2 * head[0] / 3 + body[0] / 3 + 2 * body[1] / 3 + head[1] / 3 + 2 * body[2] / 3 + head[2] / 3 + 2 * head[3] / 3 + body[3] / 3 + 2 * head[4] / 3 + body[4] / 3 + 2 * body[5] / 3 + head[5] / 3;
-
-    /// <summary>
-    /// Divides positive integers while rounding upward.
-    /// </summary>
-    private static int DivideRoundUp(int value, int divisor)
-        => (value + divisor - 1) / divisor;
-
-    /// <summary>
-    /// Computes the optimized deterministic result-position hash.
-    /// </summary>
-    private static ulong DeterministicResultValue(int generatorVersion, long seed, int firstId, int secondId)
-    {
-        ulong value = Fnv1a($"{generatorVersion}|{seed}|player_fusion|result|");
-        value = Fnv1a(firstId.ToString(), value);
-        value = Fnv1a("|", value);
-        return Fnv1a(secondId.ToString(), value);
-    }
 
     /// <summary>
     /// Computes a delimiter-joined deterministic FNV-1a value.
@@ -383,8 +506,13 @@ internal sealed class PlayerFusionMappingWorker
     /// <param name="GeneratorVersion">The player-fusion schema version.</param>
     /// <param name="Stats">The generated normal-species stat arrays.</param>
     /// <param name="Types">The normal-species type masks.</param>
-    /// <param name="Pairs">The ordered disjoint custom-result pairs.</param>
-    private sealed record WorkerState(long Seed, int GeneratorVersion, IReadOnlyList<int[]> Stats, IReadOnlyList<ulong> Types, IReadOnlyList<TargetPair> Pairs);
+    /// <param name="Pairs">The global strength-aware reverse pairs.</param>
+    /// <param name="BstIndex">Both pair orientations indexed by first-result BST.</param>
+    /// <param name="ReversePartners">The numeric reverse partner indexed by custom-fusion identifier.</param>
+    /// <param name="MinimumTargetBst">The smallest custom-result BST.</param>
+    /// <param name="MaximumTargetBst">The largest custom-result BST.</param>
+    /// <param name="MaximumLegalRangeWidth">The widest result interval allowed by the material formula.</param>
+    private sealed record WorkerState(long Seed, int GeneratorVersion, IReadOnlyList<int[]> Stats, IReadOnlyList<ulong> Types, IReadOnlyList<TargetPair> Pairs, IReadOnlyDictionary<int, IReadOnlyList<OrientedTarget>> BstIndex, IReadOnlyList<int> ReversePartners, int MinimumTargetBst, int MaximumTargetBst, int MaximumLegalRangeWidth);
 
     /// <summary>
     /// Stores one custom result's seed-specific metrics and components.
@@ -397,11 +525,19 @@ internal sealed class PlayerFusionMappingWorker
     private sealed record TargetData(int Id, int BodyId, int HeadId, int Bst, ulong TypeMask);
 
     /// <summary>
-    /// Stores one disjoint pair of reversible custom results.
+    /// Stores one global, reversible pair of custom fusion results.
     /// </summary>
-    /// <param name="First">The first result orientation.</param>
-    /// <param name="Second">The paired reverse result.</param>
+    /// <param name="First">The first custom result.</param>
+    /// <param name="Second">The result's unique global reverse partner.</param>
     private sealed record TargetPair(TargetData First, TargetData Second);
+
+    /// <summary>
+    /// Locates one orientation of a global reverse pair.
+    /// </summary>
+    /// <param name="PairPosition">The pair's stable position.</param>
+    /// <param name="Reversed">Whether the pair's second result comes first.</param>
+    private sealed record OrientedTarget(int PairPosition, bool Reversed);
+
 }
 
 /// <summary>
@@ -419,3 +555,12 @@ internal sealed record PlayerFusionMappedPair(int FirstMaterialId, int SecondMat
 /// <param name="Seed">The Ironmon run seed.</param>
 /// <param name="GeneratorVersion">The player-fusion generator schema version.</param>
 internal sealed record PlayerFusionStateKey(long Seed, int GeneratorVersion);
+
+/// <summary>
+/// Summarizes the strength and type quality of one global reverse pairing.
+/// </summary>
+/// <param name="PairCount">The number of global reverse pairs.</param>
+/// <param name="MaximumBstDifference">The largest BST gap within one global reverse pair.</param>
+/// <param name="PairsWithoutSharedType">The number of pairs whose results share no type.</param>
+/// <param name="MaximumLegalRangeWidth">The widest result interval allowed by the material formula.</param>
+internal sealed record PlayerFusionPairingAudit(int PairCount, int MaximumBstDifference, int PairsWithoutSharedType, int MaximumLegalRangeWidth);

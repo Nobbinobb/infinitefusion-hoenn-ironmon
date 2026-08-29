@@ -258,6 +258,16 @@ public sealed class PlayerFusionClosureWorkPayload
     public IReadOnlyList<int> ExcludedPairOffsets { get; init; } = [];
 
     /// <summary>
+    /// Gets or initializes the unordered pair offsets that can be encountered directly as wild fusions.
+    /// </summary>
+    public IReadOnlyList<int> DirectPairOffsets { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes the directly caught fusion identifiers whose global reverse partners are obtainable.
+    /// </summary>
+    public IReadOnlyList<int> ReversibleFusionIds { get; init; } = [];
+
+    /// <summary>
     /// Gets the compact normal and caught-fusion proof states that seed tracker-owned closure.
     /// </summary>
     public IReadOnlyList<PlayerFusionProofSpeciesPayload> BaseProofs { get; init; } = [];

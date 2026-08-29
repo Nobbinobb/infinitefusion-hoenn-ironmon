@@ -57,6 +57,9 @@ internal sealed class TrackerGameEventProcessor
     {
         ArgumentNullException.ThrowIfNull(game);
         ArgumentNullException.ThrowIfNull(state);
+        if (!state.ActiveRunPreparationReady)
+            _requestClient.ObtainabilityProgress.Reset();
+
         _requestClient.PrepareActiveFusionAssignments(state);
         _knowledge.SelectRun(state.RunId);
         _state.Publish(TrackerConnectionStatus.Connected, game, state);
@@ -80,15 +83,17 @@ internal sealed class TrackerGameEventProcessor
         if (message.Type != TrackerMessageType.Event)
             throw new ArgumentException("The game event processor requires an event message.", nameof(message));
 
-        if(message.Event == TrackerEvents.RunStarted)
+        if (message.Event is TrackerEvents.RunStarted or TrackerEvents.ActiveRunPreparationReady)
         {
             RecoverCurrentState(game, TrackerJson.DeserializePayload<GameCurrentStatePayload>(message.Payload));
             return;
         }
 
-        if(message.Event == TrackerEvents.RunCompleted)
+        if (message.Event == TrackerEvents.RunCompleted)
         {
-            _completedRuns.Store(TrackerJson.DeserializePayload<CompletedRunRecipePayload>(message.Payload));
+            RunCompletedEventPayload completion = TrackerJson.DeserializePayload<RunCompletedEventPayload>(message.Payload);
+            _completedRuns.Store(completion.Recipe, completion.RequestArchiveSelection);
+            PublishCompletedRunState(message, game, completion.Recipe);
             return;
         }
 
@@ -99,6 +104,23 @@ internal sealed class TrackerGameEventProcessor
         }
 
         ApplyLiveEvent(message);
+    }
+
+    /// <summary>
+    /// Publishes final attempt totals immediately when the connected run completes.
+    /// </summary>
+    /// <param name="message">The completion event envelope.</param>
+    /// <param name="game">The connected game handshake.</param>
+    /// <param name="recipe">The completed run recipe.</param>
+    private void PublishCompletedRunState(TrackerMessage message, GameHandshakePayload game, CompletedRunRecipePayload recipe)
+    {
+        GameCurrentStatePayload? current = _state.Snapshot.CurrentState;
+        if (current is null || !string.Equals(current.RunId, recipe.RunId, StringComparison.Ordinal))
+            return;
+
+        RunStatisticsPayload? statistics = recipe.Statistics ?? current.AttemptStatistics;
+        GameCurrentStatePayload completed = new(current.IronmonActive, current.RunId, current.BattleId, message.Sequence ?? current.Sequence, current.Battle, current.Player, current.Enemies, current.StarterSelection, statistics, recipe, current.TypeCoverage, current.FusionAssignments, current.ActiveRunPreparationReady);
+        _state.Publish(TrackerConnectionStatus.Connected, game, completed);
     }
 
     /// <summary>

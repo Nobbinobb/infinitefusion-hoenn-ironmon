@@ -101,5 +101,5 @@ public sealed class TrackerDiagnosticAuthorizerTests
     /// <param name="capabilities">The diagnostic capabilities supported by the game.</param>
     /// <returns>The game handshake.</returns>
     private static GameHandshakePayload CreateGame(bool debugAvailable, IReadOnlyList<string>? capabilities = null)
-        => new("test", "test", true, debugAvailable, @"C:\Game", "run", null, capabilities);
+        => new("test", "test", true, debugAvailable, TrackerTestPaths.GameRoot, "run", null, capabilities);
 }

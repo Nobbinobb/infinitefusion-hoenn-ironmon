@@ -21,19 +21,26 @@ module Ironmon
     end
     normalized_query = query.downcase
     normal_only = payload["normal_only"] == true
+    tracker_debug_search_trace("matching_started") if
+      respond_to?(:tracker_debug_search_trace)
     matches = tracker_search_matches(recipe, normalized_query, normal_only)
+    tracker_debug_search_trace("matching_ready") if
+      respond_to?(:tracker_debug_search_trace)
     page = matches.slice(offset, limit) || []
     if !visibility || visibility[:obtainability]
-      page = page.map do |match|
+      page = page.each_with_index.map do |match, index|
+        tracker_debug_search_trace("annotation_#{index}_started") if
+          respond_to?(:tracker_debug_search_trace)
         species_key = match["species_id"].to_s.split(":", 2)[0]
-        species = GameData::Species.try_get(species_key.to_sym)
-        next match if !species
+        status = tracker_obtainability_identity_status(species_key, recipe)
+        next match if !status
         match.merge(
-          "obtainability_status" =>
-            tracker_obtainability_status(species, recipe)
+          "obtainability_status" => status
         )
       end
     end
+    tracker_debug_search_trace("annotation_ready") if
+      respond_to?(:tracker_debug_search_trace)
     return {
       "matches" => page,
       "total" => matches.length
@@ -132,11 +139,25 @@ module Ironmon
     assignments = payload["material_assignments"]
     assignment_total = payload["material_assignment_total"]
     if assignments.is_a?(Array) && !assignment_total.nil?
+      assignment_species_id = payload["material_assignment_species_id"]
+      if assignment_species_id && assignment_species_id != species_id
+        raise TrackerLookupError.new(
+          "fusion_material_target_mismatch",
+          "The tracker material page does not match the represented Pokemon."
+        )
+      end
       return tracker_lookup_fusion_material_assignments(
         assignments, assignment_total.to_i, recipe, obtainability
       )
     end
     mapper = tracker_post_run_fusion_mapper(recipe)
+    if mapper.respond_to?(:material_pair_assignments_required?) &&
+       mapper.material_pair_assignments_required?
+      raise TrackerLookupError.new(
+        "fusion_material_assignments_required",
+        "The tracker fusion-material worker has not supplied this page."
+      )
+    end
     return tracker_lookup_fusion_materials(
       species, mapper, offset, limit, recipe, obtainability
     )

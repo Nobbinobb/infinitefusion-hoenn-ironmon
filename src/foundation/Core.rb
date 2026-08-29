@@ -25,8 +25,12 @@ module Ironmon
   end
 
   def self.mode_available?
+    return true
+  end
+
+  def self.randomized_mode_available?
     return true if Settings::KANTO
-    return $Trainer && $Trainer.new_game_plus_unlocked
+    return !!($Trainer && $Trainer.new_game_plus_unlocked)
   end
 
   def self.compatible?
@@ -104,6 +108,7 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_pivot_state
   attr_accessor :ironmon_run_id
   attr_accessor :ironmon_tracker_sequence
+  attr_accessor :ironmon_tracker_active_run_preparation_run_id
   attr_accessor :ironmon_run_result
   attr_accessor :ironmon_run_ledger
   attr_accessor :ironmon_item_generator_version

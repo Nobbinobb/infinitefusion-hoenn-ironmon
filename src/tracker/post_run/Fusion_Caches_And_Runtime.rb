@@ -162,6 +162,7 @@ module Ironmon
   def self.reset_tracker_post_run_cache
     @tracker_search_indexes = nil
     @tracker_search_result_cache = nil
+    @tracker_search_fusion_name_parts = nil
     @tracker_lookup_cache = nil
     @tracker_wild_fusion_tables = nil
     @tracker_fusion_mappers = nil

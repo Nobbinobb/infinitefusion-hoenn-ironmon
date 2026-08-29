@@ -11,6 +11,7 @@ module Ironmon
   TRACKER_RECONNECT_SECONDS = 2.0
   TRACKER_UPTIME_UNITS_PER_SECOND = 1_000_000.0
   TRACKER_MAXIMUM_MESSAGE_BYTES = 1_048_576
+  TRACKER_OUTPUT_WRITE_BYTES = 65_536
   TRACKER_DIAGNOSTIC_CAPABILITIES = [
     "evolution.candidates",
     "evolution.generator_details",
@@ -265,9 +266,13 @@ module Ironmon
     def flush_output
       return if @output_buffer.empty?
       return if !IO.select(nil, [@socket], nil, 0)
-      written = @socket.write(@output_buffer)
+      output = @output_buffer.byteslice(0, TRACKER_OUTPUT_WRITE_BYTES)
+      written = @socket.write_nonblock(output, exception: false)
+      return if written == :wait_writable
       @output_buffer = @output_buffer.byteslice(written, @output_buffer.bytesize) || ""
-    rescue Errno::ECONNRESET, Errno::EPIPE, IOError
+    rescue IO::WaitWritable
+      return
+    rescue Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE, IOError
       disconnect
     end
 

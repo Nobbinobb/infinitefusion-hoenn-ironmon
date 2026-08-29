@@ -194,6 +194,7 @@ module Ironmon
     ledger["current_attempt"] = attempt
     ledger["next_attempt_number"] = number + 1
     ledger["attempts_started"] += 1
+    $PokemonGlobal.ironmon_tracker_active_run_preparation_run_id = nil
     $PokemonGlobal.ironmon_run_result = nil
     reset_failed_run_runtime_state
     resume_run_duration

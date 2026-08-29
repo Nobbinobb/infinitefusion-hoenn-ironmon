@@ -57,6 +57,69 @@ module IronmonRunTransitionRuntimeTests
     )
   end
 
+  def self.test_active_attempt_does_not_recover_completed_recipe
+    with_active_run_runtime do
+      ledger = ledger_fixture
+      completed_recipe = { "run_id" => "run-three", "result" => "lost" }
+      ledger["last_completed_recipe"] = completed_recipe
+      $PokemonGlobal.ironmon_run_ledger = ledger
+      assert(
+        Ironmon.tracker_recoverable_completed_run_recipe.nil?,
+        "an active attempt does not masquerade as the prior completed run"
+      )
+      ledger["current_attempt"] = nil
+      assert(
+        Ironmon.tracker_recoverable_completed_run_recipe == completed_recipe,
+        "a completed recipe remains recoverable when no attempt is active"
+      )
+    end
+  end
+
+  def self.test_active_run_preparation_boundary
+    with_active_run_runtime do
+      $PokemonGlobal.ironmon_run_ledger = ledger_fixture
+      $PokemonGlobal.ironmon_tracker_active_run_preparation_run_id = nil
+      assert(
+        !Ironmon.tracker_active_run_preparation_ready?,
+        "an unset run marker cannot inherit stale story progression"
+      )
+      assert(
+        Ironmon.tracker_active_fusion_assignment_recipe.nil?,
+        "fusion assignment preparation is absent before the rival victory"
+      )
+      $PokemonGlobal.ironmon_tracker_active_run_preparation_run_id = "run-four"
+      assert(
+        Ironmon.tracker_active_run_preparation_ready?,
+        "background preparation becomes ready after the first rival victory"
+      )
+      $PokemonGlobal.ironmon_tracker_active_run_preparation_run_id = "old-run"
+      assert(
+        !Ironmon.tracker_active_run_preparation_ready?,
+        "a new attempt cannot inherit another run's preparation marker"
+      )
+      $PokemonGlobal.ironmon_tracker_active_run_preparation_run_id = "run-four"
+      $PokemonGlobal.ironmon_run_ledger = Ironmon.default_run_ledger
+      Ironmon.begin_run_attempt(123)
+      assert(
+        !Ironmon.tracker_active_run_preparation_ready?,
+        "beginning an attempt clears preparation inherited from the prior run"
+      )
+    end
+  end
+
+  def self.with_active_run_runtime
+    original_global = $PokemonGlobal
+    original_switches = $game_switches
+    $PokemonGlobal = PokemonGlobalMetadata.new
+    $PokemonGlobal.ironmon_mode = true
+    $PokemonGlobal.ironmon_configuration = Ironmon::Configuration.new
+    $game_switches = []
+    return yield
+  ensure
+    $PokemonGlobal = original_global
+    $game_switches = original_switches
+  end
+
   def self.with_reset_stubs(generation_result, save_result)
     ironmon_singleton = class << Ironmon; self; end
     game_singleton = class << Game; self; end
@@ -195,7 +258,10 @@ module IronmonRunTransitionRuntimeTests
         events == [
           :generate, [:save, ["File B"]],
           [:publish, [
-            "run_completed", { "run_id" => "old-run" }, "old-run", 10
+            "run_completed", {
+              "recipe" => { "run_id" => "old-run" },
+              "request_archive_selection" => true
+            }, "old-run", 10
           ]],
           :start_tracker
         ],
@@ -323,14 +389,61 @@ module IronmonRunTransitionRuntimeTests
     )
   end
 
+  def self.test_checkpoint_load_skips_saved_run_migration
+    ironmon_singleton = class << Ironmon; self; end
+    ironmon_singleton.send(
+      :alias_method, :run_transition_original_migration_issues,
+      :saved_run_migration_issues
+    )
+    ironmon_singleton.send(
+      :alias_method, :run_transition_original_migration_confirmation,
+      :confirm_saved_run_migration
+    )
+    calls = []
+    ironmon_singleton.send(:define_method, :saved_run_migration_issues) do |_data|
+      calls << :issues
+      [:ability_randomization]
+    end
+    ironmon_singleton.send(:define_method, :confirm_saved_run_migration) do |*|
+      calls << :confirmation
+      true
+    end
+    result = Ironmon.with_checkpoint_reset_load do
+      Ironmon.begin_saved_run_migration({ :checkpoint => true })
+    end
+    assert(result, "internal checkpoint loading permits the baseline save")
+    assert(
+      calls.empty?,
+      "internal checkpoint loading does not evaluate or display migration"
+    )
+  ensure
+    ironmon_singleton.send(
+      :alias_method, :saved_run_migration_issues,
+      :run_transition_original_migration_issues
+    )
+    ironmon_singleton.send(
+      :remove_method, :run_transition_original_migration_issues
+    )
+    ironmon_singleton.send(
+      :alias_method, :confirm_saved_run_migration,
+      :run_transition_original_migration_confirmation
+    )
+    ironmon_singleton.send(
+      :remove_method, :run_transition_original_migration_confirmation
+    )
+  end
+
   def self.run
     test_ledger_completion_staging
+    test_active_attempt_does_not_recover_completed_recipe
+    test_active_run_preparation_boundary
     test_generation_failure_rollback
     test_save_failure_rollback
     test_successful_reset_commit_order
     test_automatic_reset_does_not_republish_loss
     test_live_snapshot_restore_uses_normal_load
     test_checkpoint_load_failure_is_caught
+    test_checkpoint_load_skips_saved_run_migration
     File.binwrite(OUTPUT_PATH, "run-transition runtime tests passed\n")
   rescue Exception => exception
     File.binwrite(

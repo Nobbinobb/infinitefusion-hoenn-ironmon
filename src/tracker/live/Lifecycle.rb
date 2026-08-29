@@ -25,6 +25,7 @@ module Ironmon
                                       new_tracker_run_id
                                     end
     $PokemonGlobal.ironmon_tracker_sequence = 0
+    $PokemonGlobal.ironmon_tracker_active_run_preparation_run_id = nil
     $PokemonGlobal.ironmon_run_result = nil
     tracker_connection.reset_area_discoveries
     @tracker_battle = nil
@@ -48,6 +49,16 @@ module Ironmon
   def self.refresh_tracker_run_after_load
     return if checkpoint_reset_loading?
     tracker_connection.send_run_started
+  end
+
+  def self.announce_tracker_active_run_preparation_ready
+    return false if !$PokemonGlobal
+    $PokemonGlobal.ironmon_tracker_active_run_preparation_run_id =
+      ensure_tracker_run_id
+    tracker_connection.send_event(
+      "active_run_preparation_ready", tracker_current_state
+    )
+    return true
   end
 
   def self.start_tracker_battle(battle)
@@ -188,7 +199,9 @@ module Ironmon
     return if !active? || !@tracker_battle_id || !battler || !move_id
     battle_move = battler.moves.find { |move| move.id == move_id }
     pp_after_use = battle_move && battle_move.pp >= 0 ? battle_move.pp : nil
-    move = tracker_observed_move(battler.pokemon, move_id, "enemy_use", pp_after_use)
+    move = tracker_observed_move(
+      battler.pokemon, move_id, "enemy_use", pp_after_use, battler, true
+    )
     payload = {
       "enemy_id" => tracker_enemy_id(battler.pokemon),
       "species_id" => tracker_species_id(battler.pokemon),

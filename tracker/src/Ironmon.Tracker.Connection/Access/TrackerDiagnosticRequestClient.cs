@@ -200,9 +200,7 @@ internal sealed class TrackerDiagnosticRequestClient
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
         _authorization.EnsurePokemonSource(target);
         _authorization.EnsureAll(DiagnosticCapabilities.FusionMaterialPairs);
-        PlayerFusionMaterialPage? assignments = target is null
-            ? await _fusionMappings.GetActiveFusionMaterialAssignmentsAsync(runId, speciesId, offset, TrackerProtocol.FusionMaterialPageSize, cancellationToken).ConfigureAwait(false)
-            : null;
+        PlayerFusionMaterialPage? assignments = await _fusionMappings.GetActiveFusionMaterialAssignmentsAsync(runId, speciesId, offset, TrackerProtocol.FusionMaterialPageSize, cancellationToken).ConfigureAwait(false);
 
         DebugFusionMaterialSearchRequestPayload request = new()
         {

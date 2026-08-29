@@ -16,6 +16,7 @@ module Ironmon
     FOREGROUND_MILLISECONDS = 250.0
     BACKGROUND_LEASE_SECONDS = 1.0
     FOREGROUND_LEASE_SECONDS = 2.0
+    PLAYER_FUSION_LEASE_SECONDS = 60.0
     EXCLUDED_MAP_NAME = /\A(?:EVENT_TEMPLATES|QUEST_TEMPLATES|testing)\z|\Aquest_/i
     SCRIPTED_ACQUISITION_METHODS = [
       "pbAddPokemon", "pbAddPokemonSilent", "pbAddToParty",
@@ -46,6 +47,8 @@ module Ironmon
       @plans = Hash.new { |hash, key| hash[key] = [] }
       @obtainable_count = 0
       @direct_caught_fusions = {}
+      @direct_fusion_material_pairs = {}
+      @direct_fusion_pair_offsets = []
       @unresolved_sources = []
       @unresolved_resources = []
       @authored_variable_species = Hash.new do |hash, key|
@@ -67,8 +70,8 @@ module Ironmon
       @tracker_obtainable_fusion_words = nil
       @tracker_executable_evolution_edges = nil
       @fusion_mapping_complete = false
+      @failure_reason = nil
       @normal_generator = nil
-      @fusion_mapper = nil
       @encounter_tables = nil
       @encounter_table_index = 0
       @authored_catalog_entries = nil
@@ -76,6 +79,7 @@ module Ironmon
       @authored_sources_complete = false
       @foreground_until = 0.0
       @background_until = 0.0
+      @player_fusion_until = 0.0
       @tracker_base_proof_snapshot = nil
       @tracker_resource_supply_snapshot = nil
       @caught_fusion_entries = nil
@@ -132,6 +136,11 @@ module Ironmon
       return @phase == :complete
     end
 
+    def tracker_closure_unavailable?
+      return @phase == :failed &&
+        @failure_reason == :tracker_closure_unavailable
+    end
+
     def background_advance_allowed?
       return ![:complete, :failed].include?(@phase)
     end
@@ -139,6 +148,14 @@ module Ironmon
     def background_requested?
       return scheduled_advance_allowed? &&
         Ironmon.tracker_uptime_seconds < @background_until
+    end
+
+    def game_work_priority_requested?
+      return false if !background_advance_allowed?
+      now = Ironmon.tracker_uptime_seconds
+      return true if @phase == :player_fusions &&
+        now < @player_fusion_until
+      return now < @foreground_until || now < @background_until
     end
 
     def scheduled_advance_allowed?
@@ -279,6 +296,7 @@ module Ironmon
 
     def report_tracker_closure_unavailable
       @phase = :failed if !@fusion_mapping_complete
+      @failure_reason = :tracker_closure_unavailable if @phase == :failed
       @failure_message =
         "The parallel tracker obtainability worker is unavailable." if
         @phase == :failed
@@ -346,6 +364,17 @@ module Ironmon
       return target_snapshot(species)
     end
 
+    def passive_identity_status(identity, fusion_number = nil)
+      raise_if_failed
+      plans = @plans.key?(identity) ? @plans[identity] : nil
+      return "obtainable" if plans && !plans.empty?
+      return "calculating" if !@fusion_mapping_complete
+      if fusion_number && tracker_fusion_obtainable_number?(fusion_number)
+        return "obtainable"
+      end
+      return "unobtainable"
+    end
+
     private
 
     def obtainable_identity?(identity)
@@ -400,6 +429,8 @@ module Ironmon
     def fusion_closure_work_snapshot
       return nil if !@material_pairs_prepared ||
         @fusion_mapping_complete
+      @player_fusion_until = Ironmon.tracker_uptime_seconds +
+        PLAYER_FUSION_LEASE_SECONDS
       info = Ironmon.custom_fusion_pool_info
       return {
         "job_id" => fusion_closure_job_id,
@@ -417,6 +448,10 @@ module Ironmon
         end,
         "total_pairs" => @pair_count,
         "excluded_pair_offsets" => @excluded_material_pair_offsets,
+        "direct_pair_offsets" => @direct_fusion_pair_offsets,
+        "reversible_fusion_ids" => @direct_caught_fusions.keys.map do |identity|
+          GameData::Species.get(identity).id_number
+        end.sort,
         "base_proofs" => tracker_base_proof_snapshot,
         "resource_supply" => tracker_resource_supply_snapshot,
         "fusion_evolution_generator_version" =>
@@ -438,7 +473,14 @@ module Ironmon
         GameData::Species.get(identity).id_number
       end
       fingerprint = Ironmon.fnv1a_64_fingerprint(
-        material_numbers + @excluded_material_pair_offsets
+        [material_numbers.length] + material_numbers +
+          [@excluded_material_pair_offsets.length] +
+          @excluded_material_pair_offsets +
+          [@direct_fusion_pair_offsets.length] + @direct_fusion_pair_offsets +
+          [@direct_caught_fusions.length] +
+          @direct_caught_fusions.keys.map do |identity|
+            GameData::Species.get(identity).id_number
+          end.sort
       )
       @fusion_closure_job_id = [
         @recipe["run_id"], @recipe["seed"],
@@ -556,12 +598,8 @@ module Ironmon
     end
 
     def prepare_generators
-      checkpoint = proc { cooperative_checkpoint }
       @configuration ||= Configuration.from(@recipe["configuration"])
       @normal_generator ||= Ironmon.tracker_normal_evolution_generator(@recipe)
-      @fusion_mapper ||= Ironmon.tracker_obtainability_fusion_mapper(
-        @recipe, checkpoint
-      )
       @phase = :prepare_encounters
     end
 
@@ -605,15 +643,14 @@ module Ironmon
         Configuration::POLICY_NORMAL_ONLY
       mapped.each do |body|
         mapped.each do |head|
-          begin
-            fusion = @fusion_mapper.species(body, head)
-            add_direct_source(
-              fusion, "Wild encounter fusion",
-              "A fused encounter assembled from two #{encounter_type} rows",
-              nil, true
-            )
-          rescue PlayerFusionMappingError
-          end
+          body_species = GameData::Species.try_get(body)
+          head_species = GameData::Species.try_get(head)
+          next if !body_species || !head_species ||
+            body_species.is_a?(GameData::FusedSpecies) ||
+            head_species.is_a?(GameData::FusedSpecies)
+          first = [body_species.id_number, head_species.id_number].min
+          second = [body_species.id_number, head_species.id_number].max
+          @direct_fusion_material_pairs[(first << 10) | second] = true
         end
       end
     end
@@ -657,6 +694,7 @@ module Ironmon
       end
       if !@unresolved_sources.empty? || !@unresolved_resources.empty?
         @phase = :failed
+        @failure_reason = :unresolved_catalog_source
         first_unresolved = (@unresolved_sources + @unresolved_resources).first
         @failure_message =
           "Run obtainability could not classify every acquisition source " +
@@ -1369,14 +1407,6 @@ module Ironmon
 
     def apply_caught_fusion_transformation(identity, plan)
       species = GameData::Species.get(identity)
-      reverse = GameData::Species.get(@fusion_mapper.paired_species(species.id))
-      reverse_plan = clone_plan(plan)
-      reverse_plan[:reason] = "Caught-fusion reversal"
-      reverse_plan[:path] = path_step(
-        plan[:path], nil, "Reverse the caught fusion into #{reverse.name}"
-      )
-      reverse_plan[:path_length] = plan[:path_length].to_i + 1
-      add_plan(reverse.id, reverse_plan)
       components = [species.body_pokemon, species.head_pokemon]
       if @configuration.unfusion_setting !=
          Configuration::UNFUSION_PLAYER_CHOICE
@@ -1419,12 +1449,18 @@ module Ironmon
       end.sort_by { |identity| GameData::Species.get(identity).id_number }
       @pair_count = (@material_ids.length * (@material_ids.length + 1)) / 2
       @excluded_material_pair_offsets = []
+      @direct_fusion_pair_offsets = []
       pair_offset = 0
       @material_ids.each_with_index do |first, first_index|
         (first_index...@material_ids.length).each do |second_index|
           second = @material_ids[second_index]
           @excluded_material_pair_offsets << pair_offset if
             !compatible_material_pair?(first, second)
+          first_number = GameData::Species.get(first).id_number
+          second_number = GameData::Species.get(second).id_number
+          pair_code = (first_number << 10) | second_number
+          @direct_fusion_pair_offsets << pair_offset if
+            @direct_fusion_material_pairs[pair_code]
           pair_offset += 1
         end
       end
@@ -1739,6 +1775,21 @@ module Ironmon
     return tracker_obtainability_snapshot(species, recipe)["status"]
   end
 
+  def self.tracker_obtainability_identity_status(species_id, recipe)
+    identity = species_id.to_s.split(":", 2)[0]
+    fusion = /\AB(\d+)H(\d+)\z/.match(identity)
+    fusion_number = nil
+    if fusion
+      fusion_number = (fusion[1].to_i * NB_POKEMON) + fusion[2].to_i
+    else
+      species = GameData::Species.try_get(identity.to_sym)
+      return nil if !species
+      identity = species.id.to_s
+    end
+    service = tracker_obtainability_service(recipe)
+    return service.passive_identity_status(identity.to_sym, fusion_number)
+  end
+
   def self.update_tracker_obtainability
     return if !tracker_obtainability_runtime_ready?
     foreground = tracker_obtainability_services.values.select do |service|
@@ -1760,6 +1811,22 @@ module Ironmon
     )
   rescue Exception => e
     echoln "Ironmon obtainability background update failed: #{e.message}"
+  end
+
+  def self.tracker_obtainability_game_work_pending?
+    return false if !@tracker_obtainability_services
+    return tracker_obtainability_services.values.any? do |service|
+      service.game_work_priority_requested?
+    end
+  end
+
+  def self.reset_tracker_obtainability_worker_failures
+    return false if !@tracker_obtainability_services
+    original_count = @tracker_obtainability_services.length
+    @tracker_obtainability_services.delete_if do |_key, service|
+      service.tracker_closure_unavailable?
+    end
+    return @tracker_obtainability_services.length != original_count
   end
 
   def self.mark_tracker_obtainability_map_ready(scene)

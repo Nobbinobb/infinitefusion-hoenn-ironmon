@@ -227,7 +227,10 @@ module Ironmon
       completed_recipe = transaction["completed_recipe"]
       if completed_recipe
         tracker_connection.send_event(
-          "run_completed", completed_recipe, transaction["source_run_id"],
+          "run_completed", {
+            "recipe" => completed_recipe,
+            "request_archive_selection" => true
+          }, transaction["source_run_id"],
           transaction["source_sequence"] + 1
         )
       end

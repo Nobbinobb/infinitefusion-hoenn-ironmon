@@ -9,11 +9,53 @@ namespace Ironmon.Tracker.Tests.Connection;
 public sealed class PlayerFusionMappingWorkerTests
 {
     private const string DefaultFormSuffix = ":0";
+    private const string DirectProofJobId = "direct-proof-job";
     private const string FusionBodyPrefix = "B";
     private const string FusionHeadSeparator = "H";
     private const string MismatchedSourceCatalogFingerprint = "0000000000000000";
     private const string WorkerRunId = "worker-run";
     private const string WildMappingKind = "wild";
+
+    /// <summary>
+    /// Verifies the continuous range's breakpoint and both upside and downside caps.
+    /// </summary>
+    [Theory]
+    [InlineData(700, 700, 700, 750)]
+    [InlineData(600, 560, 600, 635)]
+    [InlineData(600, 559, 600, 635)]
+    [InlineData(600, 550, 592, 633)]
+    [InlineData(600, 500, 563, 625)]
+    [InlineData(600, 200, 520, 610)]
+    [InlineData(600, 100, 520, 608)]
+    [InlineData(300, 100, 260, 310)]
+    public void FusionBstRangeMatchesContinuousRule(int firstBst, int secondBst, int expectedMinimum, int expectedMaximum)
+    {
+        (int minimum, int maximum) = PlayerFusionMappingWorker.FusionBstRange(firstBst, secondBst);
+
+        Assert.Equal(expectedMinimum, minimum);
+        Assert.Equal(expectedMaximum, maximum);
+    }
+
+    /// <summary>
+    /// Verifies global reverse pairs remain close in strength across representative seeds.
+    /// </summary>
+    [Theory]
+    [InlineData(1_187_411_801)]
+    [InlineData(1_792_136_788)]
+    [InlineData(1_689)]
+    [InlineData(2_895)]
+    public void GlobalReversePairsRemainStrengthCompatible(long seed)
+    {
+        PlayerFusionMappingWorkerCatalog catalog = PlayerFusionMappingWorkerCatalog.Load();
+        PlayerFusionMappingWorker worker = new(catalog);
+
+        PlayerFusionPairingAudit audit = worker.AuditPairing(seed, catalog.PlayerFusionGeneratorVersion);
+
+        Assert.Equal(catalog.CustomFusionPool.Count / 2, audit.PairCount);
+        Assert.True(audit.MaximumLegalRangeWidth > 0);
+        Assert.True(audit.MaximumBstDifference <= audit.MaximumLegalRangeWidth, $"Seed {seed} has a global reverse pair differing by {audit.MaximumBstDifference} BST, while the widest legal material interval is {audit.MaximumLegalRangeWidth} BST.");
+        Assert.True(audit.PairsWithoutSharedType <= audit.PairCount / 100, $"Seed {seed} has {audit.PairsWithoutSharedType} global reverse pairs without a shared type.");
+    }
 
     /// <summary>
     /// Verifies the tracker can consume the same generated semantic source catalog as the game.
@@ -62,15 +104,120 @@ public sealed class PlayerFusionMappingWorkerTests
     {
         PlayerFusionMappingWorkerCatalog catalog = PlayerFusionMappingWorkerCatalog.Load();
         PlayerFusionMappingWorker worker = new(catalog);
-        int[] materials = [.. Enumerable.Range(1, 519)];
+        int[] materials = [.. Enumerable.Range(1, catalog.NormalSpeciesCount)];
         Stopwatch stopwatch = Stopwatch.StartNew();
 
         IReadOnlyList<PlayerFusionMappedPair> mappings = worker.MapAll(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, materials);
 
         stopwatch.Stop();
-        Assert.Equal(134_940, mappings.Count);
+        Assert.Equal(catalog.NormalSpeciesCount * (catalog.NormalSpeciesCount + 1) / 2, mappings.Count);
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(15), $"Parallel player-fusion mapping took {stopwatch.Elapsed.TotalSeconds:F3} seconds.");
+
+        Dictionary<int, int> reversePartners = [];
+        foreach (PlayerFusionMappedPair mapping in mappings)
+        {
+            Assert.NotEqual(mapping.FirstResultId, mapping.SecondResultId);
+            AssertPartner(reversePartners, mapping.FirstResultId, mapping.SecondResultId);
+            AssertPartner(reversePartners, mapping.SecondResultId, mapping.FirstResultId);
+        }
+
+        PlayerFusionPairingAudit audit = worker.AuditPairing(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion);
+        Assert.Equal(catalog.CustomFusionPool.Count / 2, audit.PairCount);
+        Assert.True(audit.MaximumBstDifference <= audit.MaximumLegalRangeWidth, $"The widest global reverse pair differs by {audit.MaximumBstDifference} BST, while the widest legal material interval is {audit.MaximumLegalRangeWidth} BST.");
+        Assert.True(audit.PairsWithoutSharedType <= audit.PairCount / 100, $"{audit.PairsWithoutSharedType} global reverse pairs do not share a type.");
     }
+
+    /// <summary>
+    /// Verifies one result always has the same global reverse partner.
+    /// </summary>
+    private static void AssertPartner(Dictionary<int, int> partners, int resultId, int expectedPartnerId)
+    {
+        if (partners.TryGetValue(resultId, out int actualPartnerId))
+        {
+            Assert.Equal(expectedPartnerId, actualPartnerId);
+        }
+        else
+        {
+            partners.Add(resultId, expectedPartnerId);
+        }
+    }
+
+    /// <summary>
+    /// Verifies every mapped result exposes the same seed-specific global reverse partner as Ruby.
+    /// </summary>
+    [Fact]
+    public void ReversePartnerMatchesRubyReferenceMapping()
+    {
+        PlayerFusionMappingWorkerCatalog catalog = PlayerFusionMappingWorkerCatalog.Load();
+        PlayerFusionMappingWorker worker = new(catalog);
+        PlayerFusionReferenceMapping reference = catalog.VerificationMappings[0];
+
+        Assert.Equal(reference.SecondResultId, worker.ReversePartner(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, reference.FirstResultId));
+        Assert.Equal(reference.FirstResultId, worker.ReversePartner(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, reference.SecondResultId));
+    }
+
+    /// <summary>
+    /// Verifies direct wild pairs and caught-fusion reversals remain provable when ordinary material fusion is excluded.
+    /// </summary>
+    [Fact]
+    public async Task CoordinatorIncludesDirectAndReversedFusionProofs()
+    {
+        PlayerFusionMappingWorkerCatalog catalog = PlayerFusionMappingWorkerCatalog.Load();
+        PlayerFusionReferenceMapping directReference = catalog.VerificationMappings.First(mapping => mapping.FirstMaterialId != mapping.SecondMaterialId);
+        PlayerFusionReferenceMapping caughtReference = catalog.VerificationMappings.First(mapping => mapping.FirstResultId != directReference.FirstResultId && mapping.FirstResultId != directReference.SecondResultId);
+        int[] materials = [directReference.FirstMaterialId, directReference.SecondMaterialId];
+        PlayerFusionClosureWorkPayload work = new()
+        {
+            JobId = DirectProofJobId,
+            SourceCatalogFingerprint = ObtainabilitySourceCatalog.Load().Fingerprint,
+            Seed = catalog.VerificationSeed,
+            GeneratorVersion = catalog.PlayerFusionGeneratorVersion,
+            BaseStatSourceFingerprint = catalog.BaseStatSourceFingerprint,
+            CustomFusionPoolVersion = catalog.CustomFusionPoolVersion,
+            CustomFusionPoolSize = catalog.CustomFusionPool.Count,
+            CustomFusionPoolFingerprint = catalog.CustomFusionPoolFingerprint,
+            FusionEvolutionGeneratorVersion = catalog.FusionEvolutionGeneratorVersion,
+            FusionEvolutionRulesVersion = catalog.FusionEvolutionRulesVersion,
+            EvolutionSourceFingerprint = catalog.EvolutionSourceFingerprint,
+            EvolutionTaxonomyFingerprint = catalog.EvolutionTaxonomyFingerprint,
+            EvolutionMethodFingerprint = catalog.EvolutionMethodFingerprint,
+            MaterialIds = materials,
+            TotalPairs = 3,
+            ExcludedPairOffsets = [0, 1, 2],
+            DirectPairOffsets = [1],
+            ReversibleFusionIds = [caughtReference.FirstResultId],
+            BaseProofs =
+            [
+                .. materials.Select(id => new PlayerFusionProofSpeciesPayload
+                {
+                    SpeciesId = id,
+                    Plans = [new PlayerFusionProofPlanPayload { PathLength = 1 }]
+                }),
+                new PlayerFusionProofSpeciesPayload
+                {
+                    SpeciesId = caughtReference.FirstResultId,
+                    Plans = [new PlayerFusionProofPlanPayload { PathLength = 1 }]
+                }
+            ]
+        };
+        PlayerFusionMappingCoordinator coordinator = new();
+
+        PlayerFusionClosureResultPayload result = await coordinator.CreateResultAsync(work, CancellationToken.None)
+            ?? throw new InvalidOperationException("The compatible direct-proof worker result was not created.");
+
+        Assert.True(IsObtainable(result, directReference.FirstResultId));
+        Assert.True(IsObtainable(result, directReference.SecondResultId));
+        Assert.True(IsObtainable(result, caughtReference.SecondResultId));
+    }
+
+    /// <summary>
+    /// Reads one numeric fusion membership bit from a compact worker result.
+    /// </summary>
+    /// <param name="result">The compact closure result.</param>
+    /// <param name="speciesId">The numeric fusion identifier.</param>
+    /// <returns>True when the result marks the fusion obtainable.</returns>
+    private static bool IsObtainable(PlayerFusionClosureResultPayload result, int speciesId)
+        => (result.ObtainableFusionWords[speciesId >> 5] & 1U << (speciesId & 31)) != 0;
 
     /// <summary>
     /// Verifies the tracker returns one compact final closure summary.

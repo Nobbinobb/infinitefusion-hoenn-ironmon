@@ -18,7 +18,7 @@ public sealed class DiagnosticCapabilityProtocolTests
     [Fact]
     public void HandshakeCapabilityListsRoundTrip()
     {
-        GameHandshakePayload game = new("6.8.0", "0.7.4", true, false, @"C:\Game", "run-1", null, [DiagnosticCapabilities.RunSeed]);
+        GameHandshakePayload game = new("6.8.0", "0.7.4", true, false, TrackerTestPaths.GameRoot, "run-1", null, [DiagnosticCapabilities.RunSeed]);
         TrackerHandshakePayload tracker = new("0.7.4", false, diagnosticCapabilities: [DiagnosticCapabilities.RunSeed]);
 
         GameHandshakePayload restoredGame = TrackerJson.DeserializePayload<GameHandshakePayload>(TrackerJson.SerializePayload(game));
@@ -40,7 +40,7 @@ public sealed class DiagnosticCapabilityProtocolTests
             ironmon_version = "0.7.3",
             ironmon_active = true,
             debug_available = false,
-            game_root = @"C:\Game",
+            game_root = TrackerTestPaths.GameRoot,
             run_id = (string?)null,
             battle_id = (string?)null
         };
@@ -63,7 +63,7 @@ public sealed class DiagnosticCapabilityProtocolTests
         string[] oversized = [.. Enumerable.Repeat(DiagnosticCapabilities.RunSeed, DiagnosticCapabilityProtocolConstants.MaximumCapabilityCount + 1)];
         string longIdentifier = new('x', DiagnosticCapabilityProtocolConstants.MaximumCapabilityIdLength + 1);
 
-        Assert.Throws<ArgumentException>(() => new GameHandshakePayload("6.8.0", "0.7.4", true, false, @"C:\Game", null, null, duplicate));
+        Assert.Throws<ArgumentException>(() => new GameHandshakePayload("6.8.0", "0.7.4", true, false, TrackerTestPaths.GameRoot, null, null, duplicate));
         Assert.Throws<ArgumentOutOfRangeException>(() => new TrackerHandshakePayload("0.7.4", false, diagnosticCapabilities: oversized));
         Assert.Throws<ArgumentOutOfRangeException>(() => new TrackerHandshakePayload("0.7.4", false, diagnosticCapabilities: [longIdentifier]));
     }

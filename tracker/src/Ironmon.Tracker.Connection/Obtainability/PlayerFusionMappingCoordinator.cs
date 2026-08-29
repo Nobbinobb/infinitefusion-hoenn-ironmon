@@ -639,19 +639,82 @@ internal sealed class PlayerFusionMappingCoordinator
         if (excludedOffsets.Any(offset => offset < 0 || offset >= mappings.Count))
             throw new InvalidDataException("The player-fusion mapping job contains an invalid excluded pair offset.");
 
+        HashSet<int> directOffsets = [.. work.DirectPairOffsets];
+        if (directOffsets.Any(offset => offset < 0 || offset >= mappings.Count))
+            throw new InvalidDataException("The player-fusion mapping job contains an invalid direct pair offset.");
+
         Dictionary<int, List<PlayerFusionProofPlan>> plansBySpecies = BuildBasePlans(work.BaseProofs, out long nextPlanOrder);
+        AddCaughtFusionReversalProofs(work, plansBySpecies, ref nextPlanOrder);
         for (int index = 0; index < mappings.Count; index++)
         {
+            PlayerFusionMappedPair mapping = mappings[index];
+            if (directOffsets.Contains(index))
+            {
+                AddDirectEncounterProof(plansBySpecies, mapping.FirstResultId, ref nextPlanOrder);
+                if (mapping.FirstMaterialId != mapping.SecondMaterialId)
+                    AddDirectEncounterProof(plansBySpecies, mapping.SecondResultId, ref nextPlanOrder);
+            }
+
             if (excludedOffsets.Contains(index))
                 continue;
 
-            PlayerFusionMappedPair mapping = mappings[index];
             AddDirectFusionProof(plansBySpecies, mapping.FirstResultId, mapping.FirstMaterialId, mapping.SecondMaterialId, work.ResourceSupply, ref nextPlanOrder);
             if (mapping.FirstMaterialId != mapping.SecondMaterialId)
                 AddDirectFusionProof(plansBySpecies, mapping.SecondResultId, mapping.SecondMaterialId, mapping.FirstMaterialId, work.ResourceSupply, ref nextPlanOrder);
         }
 
         return new PlayerFusionDirectProofResult(plansBySpecies, nextPlanOrder);
+    }
+
+    /// <summary>
+    /// Adds the global reverse partner of every directly caught fusion without consuming another source or item.
+    /// </summary>
+    /// <param name="work">The game-owned closure input.</param>
+    /// <param name="plansBySpecies">The mutable run-wide proof states.</param>
+    /// <param name="nextPlanOrder">The next stable plan order.</param>
+    private void AddCaughtFusionReversalProofs(PlayerFusionClosureWorkPayload work, Dictionary<int, List<PlayerFusionProofPlan>> plansBySpecies, ref long nextPlanOrder)
+    {
+        if (work.ReversibleFusionIds.Count != work.ReversibleFusionIds.Distinct().Count())
+            throw new InvalidDataException("The caught-fusion reversal list contains duplicate species.");
+
+        Dictionary<int, PlayerFusionProofPlan[]> seedPlans = [];
+        foreach (int sourceId in work.ReversibleFusionIds)
+        {
+            if (!plansBySpecies.TryGetValue(sourceId, out List<PlayerFusionProofPlan>? plans))
+                throw new InvalidDataException("A caught fusion marked for reversal has no base proof.");
+
+            seedPlans.Add(sourceId, [.. plans]);
+        }
+
+        foreach ((int sourceId, PlayerFusionProofPlan[] plans) in seedPlans)
+        {
+            int reverseId = _worker.ReversePartner(work.Seed, work.GeneratorVersion, sourceId);
+            foreach (PlayerFusionProofPlan plan in plans)
+            {
+                PlayerFusionProofPlan reversed = new(
+                    plan.Items.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal),
+                    plan.Constraints.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal),
+                    plan.SourceUses.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal),
+                    checked(plan.PathLength + 1), nextPlanOrder++);
+                AddPlan(plansBySpecies, reverseId, reversed);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Adds one source-free proof for a fusion available directly in a wild encounter table.
+    /// </summary>
+    /// <param name="plansBySpecies">The mutable run-wide proof states.</param>
+    /// <param name="resultId">The mapped wild-fusion result identifier.</param>
+    /// <param name="nextPlanOrder">The next stable plan order.</param>
+    private static void AddDirectEncounterProof(Dictionary<int, List<PlayerFusionProofPlan>> plansBySpecies, int resultId, ref long nextPlanOrder)
+    {
+        PlayerFusionProofPlan plan = new(
+            new Dictionary<string, int>(StringComparer.Ordinal),
+            new Dictionary<string, string>(StringComparer.Ordinal),
+            new Dictionary<string, int>(StringComparer.Ordinal),
+            1, nextPlanOrder++);
+        AddPlan(plansBySpecies, resultId, plan);
     }
 
     /// <summary>

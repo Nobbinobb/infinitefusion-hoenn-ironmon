@@ -32,7 +32,7 @@ public sealed class TrackerGameEventProcessorTests
             using TrackerRequestSession requestSession = new(diagnostics);
             TrackerRequestClient requestClient = new(requestSession, options, connectionState, areaDiscoveries);
             TrackerGameEventProcessor processor = new(connectionState, runState, knowledge, areaDiscoveries, completedRuns, requestSession, requestClient);
-            GameHandshakePayload game = new("6.8.0", "0.7.8", true, false, @"C:\Game", "run-1", "battle-1");
+            GameHandshakePayload game = new("6.8.0", "0.7.8", true, false, TrackerTestPaths.GameRoot, "run-1", "battle-1");
             ObservedMoveSnapshot move = new()
             {
                 Id = "ABSORB",
@@ -57,12 +57,27 @@ public sealed class TrackerGameEventProcessorTests
             };
 
             GameCurrentStatePayload recovered = new(true, "run-1", "battle-1", 4, new BattleSnapshot { BattleId = "battle-1" }, enemies: [enemy]);
+            requestClient.ObtainabilityProgress.Begin("previous-run", TrackerObtainabilityProgressScope.ActiveRun);
             processor.RecoverCurrentState(game, recovered);
 
             Assert.Same(recovered, connectionState.Snapshot.CurrentState);
+            Assert.Same(TrackerObtainabilityProgressSnapshot.Idle, requestClient.ObtainabilityProgress.Snapshot);
             Assert.Same(enemy, Assert.Single(runState.Snapshot.Enemies));
             Assert.Equal(12, knowledge.GetHighestLevel("BELLOSSOM:0"));
             Assert.Equal("ABSORB", Assert.Single(knowledge.GetDisplayedMoves("BELLOSSOM:0", 12)).Id);
+
+            FusionAssignmentRecipePayload assignmentRecipe = new()
+            {
+                SourceFingerprint = string.Empty,
+                TaxonomyFingerprint = string.Empty,
+                MethodFingerprint = string.Empty,
+                BaseStatSourceFingerprint = string.Empty,
+                TargetPoolFingerprint = string.Empty
+            };
+            GameCurrentStatePayload prematureAssignments = new(true, game.RunId, null, 4, fusionAssignments: assignmentRecipe);
+            GameCurrentStatePayload readyAssignments = new(true, game.RunId, null, 4, fusionAssignments: assignmentRecipe, activeRunPreparationReady: true);
+            Assert.False(TrackerRequestClient.IsActiveFusionAssignmentPreparationEligible(prematureAssignments));
+            Assert.True(TrackerRequestClient.IsActiveFusionAssignmentPreparationEligible(readyAssignments));
 
             SeededRunImportStatusPayload? publishedStatus = null;
             requestClient.SeededRunImportStatusChanged += status => publishedStatus = status;
@@ -70,20 +85,34 @@ public sealed class TrackerGameEventProcessorTests
             await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.SeededRunImportStatus, 5, status, "run-1"), game, CancellationToken.None);
             Assert.Equal(status.TokenId, publishedStatus?.TokenId);
 
+            int completedRunSelections = 0;
+            completedRuns.SelectionRequested += (_, _) => completedRunSelections++;
+            CompletedRunRecipePayload completedRecipe = CreateCompletedRecipe("run-1");
+            RunCompletedEventPayload completion = new() { Recipe = completedRecipe, RequestArchiveSelection = false };
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.RunCompleted, 6, completion, "run-1"), game, CancellationToken.None);
+            Assert.Equal("run-1", Assert.Single(completedRuns.Recipes).RunId);
+            Assert.Equal(0, completedRunSelections);
+            Assert.Equal(completedRecipe.Statistics?.SaveSlot, connectionState.Snapshot.CurrentState?.AttemptStatistics?.SaveSlot);
+            Assert.Equal(1, connectionState.Snapshot.CurrentState?.AttemptStatistics?.AttemptsLost);
+
+            GameCurrentStatePayload preparationReady = new(true, "run-1", null, 7, activeRunPreparationReady: true);
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.ActiveRunPreparationReady, 7, preparationReady, "run-1"), game, CancellationToken.None);
+            Assert.True(connectionState.Snapshot.CurrentState?.ActiveRunPreparationReady);
+
             EnemyAbilityRevealedPayload ability = new()
             {
                 EnemyId = "enemy-1",
                 SpeciesId = "BELLOSSOM:0",
                 Ability = new AbilitySnapshot { Id = "CHLOROPHYLL", Name = "Chlorophyll", Description = "Boosts Speed in sunshine." }
             };
-            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.EnemyAbilityRevealed, 6, ability, "run-1"), game, CancellationToken.None);
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.EnemyAbilityRevealed, 7, ability, "run-1"), game, CancellationToken.None);
             Assert.Equal("CHLOROPHYLL", Assert.Single(knowledge.GetAbilities("BELLOSSOM:0")).Id);
 
             PlayerMoveMenuOpenedPayload moveMenu = new() { PokemonId = "player-1" };
-            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.PlayerMoveMenuOpened, 7, moveMenu, "run-1", "battle-1"), game, CancellationToken.None);
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.PlayerMoveMenuOpened, 8, moveMenu, "run-1", "battle-1"), game, CancellationToken.None);
             Assert.Equal("player-1", runState.Snapshot.MoveMenuPokemonId);
 
-            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.EnemyStateChanged, 8, enemy, "run-1", "battle-1"), game, CancellationToken.None);
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.EnemyStateChanged, 9, enemy, "run-1", "battle-1"), game, CancellationToken.None);
             Assert.Equal("player-1", runState.Snapshot.MoveMenuPokemonId);
             EnemyPokemonSnapshot replacement = new()
             {
@@ -94,11 +123,11 @@ public sealed class TrackerGameEventProcessorTests
                 Level = 14
             };
 
-            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.EnemySentOut, 9, replacement, "run-1", "battle-1"), game, CancellationToken.None);
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.EnemySentOut, 10, replacement, "run-1", "battle-1"), game, CancellationToken.None);
             Assert.Null(runState.Snapshot.MoveMenuPokemonId);
             Assert.Equal("enemy-2", Assert.Single(runState.Snapshot.Enemies).EnemyId);
 
-            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.PlayerMoveMenuOpened, 10, moveMenu, "run-1", "battle-1"), game, CancellationToken.None);
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.PlayerMoveMenuOpened, 11, moveMenu, "run-1", "battle-1"), game, CancellationToken.None);
             Assert.Equal("player-1", runState.Snapshot.MoveMenuPokemonId);
 
             Dictionary<string, object?> requestPayload = [];
@@ -111,4 +140,46 @@ public sealed class TrackerGameEventProcessorTests
                 Directory.Delete(root, true);
         }
     }
+
+    /// <summary>
+    /// Creates a minimal valid completed-run recipe for event routing.
+    /// </summary>
+    /// <param name="runId">The completed run identifier.</param>
+    /// <returns>The completed-run recipe.</returns>
+    private static CompletedRunRecipePayload CreateCompletedRecipe(string runId) => new()
+    {
+        SchemaVersion = 1,
+        RunId = runId,
+        Seed = 123,
+        Result = "lost",
+        GameVersion = "6.8.0",
+        IronmonVersion = "0.7.8",
+        Configuration = new RunConfigurationPayload { SchemaVersion = 1, WildPolicy = "mixed", TrainerPolicy = "mixed", UnfusionSetting = "random_component" },
+        SpeciesGenerator = new SpeciesGeneratorRecipePayload { Version = 1, PoolFingerprint = "species" },
+        AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 3, PoolSize = 100, PoolFingerprint = "abilities" },
+        BaseStatGenerator = new BaseStatGeneratorRecipePayload { Version = 1, SourceFingerprint = "base-stats" },
+        PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 100, PoolFingerprint = "fusions" },
+        ItemGenerator = new ItemGeneratorRecipePayload
+        {
+            Version = 1,
+            RulesVersion = 1,
+            GroundPoolSize = 600,
+            GroundTotalWeight = 600,
+            GroundPoolFingerprint = "ground-items",
+            TmPoolSize = 124,
+            TmPoolFingerprint = "tm-items",
+            ResultBans = ["DNASPLICERS"],
+            ResultBanFingerprint = "item-bans",
+            ShopPolicyVersion = 1
+        },
+        Statistics = new RunStatisticsPayload
+        {
+            SchemaVersion = 1,
+            AttemptNumber = 1,
+            SaveSlot = "File A",
+            Result = "lost",
+            AttemptsStarted = 1,
+            AttemptsLost = 1
+        }
+    };
 }

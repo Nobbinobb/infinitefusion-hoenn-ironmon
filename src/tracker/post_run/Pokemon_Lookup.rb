@@ -16,7 +16,7 @@ module Ironmon
     cache_key = "#{index_key}|#{normalized_query}"
     cached = tracker_search_result_cache[cache_key]
     return cached if cached
-    matches = tracker_search_index(recipe, normal_only).map do |entry|
+    matches = tracker_search_index(recipe, true).map do |entry|
       next if !entry[2].include?(normalized_query)
       {
         "species_id" => entry[0],
@@ -24,6 +24,9 @@ module Ironmon
         "fusion" => entry[3]
       }
     end.compact
+    append_tracker_fusion_search_matches(
+      matches, normalized_query
+    ) if !normal_only
     matches.sort_by! do |match|
       name = match["species_name"].downcase
       [name.start_with?(normalized_query) ? 0 : 1, name]
@@ -32,10 +35,36 @@ module Ironmon
     return matches
   end
 
+  def self.append_tracker_fusion_search_matches(matches, normalized_query)
+    identity_query = /\A(?:b\d*(?:h\d*)?|\d+h\d*|h\d+|\d+)\z/.match?(
+      normalized_query
+    )
+    custom_fusion_pool_numbers.each do |species_number|
+      body_id = (species_number - 1) / NB_POKEMON
+      head_id = species_number - (body_id * NB_POKEMON)
+      name = tracker_search_fusion_name(body_id, head_id)
+      next if !name
+      identity = nil
+      name_match = name.downcase.include?(normalized_query)
+      if !name_match && identity_query
+        identity = "B#{body_id}H#{head_id}"
+        next if !identity.downcase.include?(normalized_query)
+      elsif !name_match
+        next
+      end
+      identity ||= "B#{body_id}H#{head_id}"
+      matches << {
+        "species_id" => "#{identity}:0",
+        "species_name" => name,
+        "fusion" => true
+      }
+    end
+  end
+
   def self.tracker_search_index(recipe, normal_only)
     key = tracker_search_index_key(recipe, normal_only)
     return tracker_search_indexes[key] if tracker_search_indexes[key]
-    species_pool = normal_only ? normal_species_pool : tracker_lookup_species_pool(recipe)
+    species_pool = normal_species_pool
     index = species_pool.map do |species_id|
       name = tracker_search_species_name(species_id)
       next if !name
@@ -60,15 +89,33 @@ module Ironmon
   end
 
   def self.tracker_search_fusion_name(body_id, head_id)
-    body_dex = GameData::NAT_DEX_MAPPING[body_id] || body_id
-    head_dex = GameData::NAT_DEX_MAPPING[head_id] || head_id
-    prefix = GameData::SPLIT_NAMES[head_dex][0].dup
-    suffix = GameData::SPLIT_NAMES[body_dex][1]
+    prefixes, suffixes = tracker_search_fusion_name_parts
+    prefix = prefixes[head_id]
+    suffix = suffixes[body_id]
+    return nil if !prefix || !suffix
     prefix = prefix[0..-2] if prefix[-1] == suffix[0]
     suffix = suffix.capitalize if prefix.end_with?(" ")
     return prefix + suffix
   rescue Exception
     return nil
+  end
+
+  def self.tracker_search_fusion_name_parts
+    return @tracker_search_fusion_name_parts if
+      @tracker_search_fusion_name_parts
+    prefixes = []
+    suffixes = []
+    (1..NB_POKEMON).each do |species_id|
+      dex = GameData::NAT_DEX_MAPPING[species_id] || species_id
+      split = GameData::SPLIT_NAMES[dex]
+      next if !split
+      prefixes[species_id] = split[0]
+      suffixes[species_id] = split[1]
+    end
+    @tracker_search_fusion_name_parts = [
+      prefixes.freeze, suffixes.freeze
+    ].freeze
+    return @tracker_search_fusion_name_parts
   end
 
   def self.tracker_lookup_species_available?(species)

@@ -1,7 +1,7 @@
 module IronmonSeededRunImportRuntimeTests
   OUTPUT_PATH = $ironmon_seeded_run_import_test_output_path.to_s
   EXPECTED_WORLD_SNAPSHOT_SHA256 =
-    "37c9abf6f6b65f1df3d243f835d02a310f59326ca1200851c3bf5c43c9a7f4a1"
+    "445ae131d085abb29bfeb2fdc44beac05a4588fda4d83ccb6e7a9d117a1190d4"
 
   def self.assert(condition, message)
     raise "Seeded-run import runtime test failed: #{message}" if !condition
@@ -297,6 +297,29 @@ module IronmonSeededRunImportRuntimeTests
         generated_preset,
         "the imported preset generates successfully: #{generation_error}"
       )
+      preparation = Ironmon.instance_variable_get(
+        :@player_fusion_preparation_fiber
+      )
+      assert(
+        preparation && preparation.alive?,
+        "preset application defers global player-fusion pairing"
+      )
+      preparation_steps = 0
+      maximum_preparation_slice = 0.0
+      while preparation.alive?
+        started_at = System.uptime
+        Ironmon.advance_player_fusion_pairing
+        elapsed = (System.uptime - started_at).to_f / 1_000_000.0
+        maximum_preparation_slice = elapsed if
+          elapsed > maximum_preparation_slice
+        preparation_steps += 1
+      end
+      assert(
+        preparation_steps > 1 && maximum_preparation_slice < 0.25,
+        "global player-fusion pairing advances in bounded map-frame slices: " +
+          "#{preparation_steps} slices, " +
+          "#{maximum_preparation_slice.round(3)} seconds maximum"
+      )
 
       species = [:BULBASAUR, :CHARMANDER, :SQUIRTLE].map do |id|
         GameData::Species.get(id)
@@ -428,23 +451,92 @@ module IronmonSeededRunImportRuntimeTests
       $game_temp = Game_Temp.new
       Game.load_sprites_list_caches
       Ironmon.reset_custom_fusion_pool_cache
-      seed = 987_654_321
+      seed = 1_006_359_419
+      range_examples = {
+        [700, 700] => (700..750),
+        [600, 560] => (600..635),
+        [600, 559] => (600..635),
+        [600, 550] => (592..633),
+        [600, 500] => (563..625),
+        [600, 200] => (520..610),
+        [600, 100] => (520..608),
+        [300, 100] => (260..310)
+      }
       preview_mapper = Ironmon::PlayerFusionMapper.new(
         seed, Ironmon.custom_fusion_pool, {}, {},
         Ironmon::BaseStatGenerator.new(
           seed, Ironmon.base_stat_source_fingerprint
         )
       )
+      range_examples.each do |materials, expected|
+        actual = preview_mapper.send(
+          :fusion_bst_range, materials[0], materials[1]
+        )
+        assert(
+          actual == expected,
+          "schema-5 fusion BST range for #{materials.inspect} is " +
+            "#{expected.inspect}: #{actual.inspect}"
+        )
+      end
       mudkip = GameData::Species.get(:MUDKIP)
       mewtwo = GameData::Species.get(:MEWTWO)
+      pairing_started = System.uptime
       forward = preview_mapper.species(mudkip, mewtwo)
+      pairing_seconds = (System.uptime - pairing_started).to_f / 1_000_000.0
+      @player_fusion_pairing_milliseconds =
+        (pairing_seconds * 1_000).round
       reverse = preview_mapper.species(mewtwo, mudkip)
+      assert(
+        pairing_seconds < 15.0,
+        "schema-5 global player-fusion pairing completes in seconds: " +
+          "#{pairing_seconds.round(3)} seconds"
+      )
+      assert(
+        preview_mapper.paired_species(forward) == reverse &&
+          preview_mapper.paired_species(reverse) == forward,
+        "schema-5 player orientations are the same global reverse pair"
+      )
+      material_range = preview_mapper.send(
+        :fusion_bst_range,
+        preview_mapper.send(:normal_bst, mudkip),
+        preview_mapper.send(:normal_bst, mewtwo)
+      )
+      [forward, reverse].each do |result|
+        result_bst = preview_mapper.send(
+          :target_bst, GameData::Species.get(result).id_number
+        )
+        assert(
+          material_range.include?(result_bst),
+          "schema-5 player-fusion result stays inside its rolled BST range"
+        )
+      end
+      stat_probe = Ironmon::BaseStatGenerator.new(
+        seed, Ironmon.base_stat_source_fingerprint
+      )
+      sample_step = [Ironmon.custom_fusion_pool.length / 8, 1].max
+      Ironmon.custom_fusion_pool.each_with_index do |identity, index|
+        next if (index % sample_step) != 0
+        species = GameData::Species.get(identity)
+        expected_bst = stat_probe.fusion_stats_for(species).values.inject(
+          0
+        ) { |sum, value| sum + value.to_i }
+        expected_types = preview_mapper.send(
+          :type_mask, [species.type1, species.type2].compact.uniq
+        )
+        assert(
+          preview_mapper.send(:target_bst, species.id_number) == expected_bst &&
+            preview_mapper.send(:target_type_mask, species.id_number) ==
+              expected_types,
+          "compact fusion pairing metrics match full fused-species data for " +
+            identity.to_s
+        )
+      end
       indexed_mapper = Ironmon::PlayerFusionMapper.new(
         seed, Ironmon.custom_fusion_pool, {}, {},
         Ironmon::BaseStatGenerator.new(
           seed, Ironmon.base_stat_source_fingerprint
         ),
-        Ironmon::PlayerFusionMapper::SCHEMA_VERSION, nil, true
+        Ironmon::PlayerFusionMapper::PREVIOUS_SCHEMA_VERSION, nil, true
       )
       indexed_mapper.prepare
       sample_ids = [1, 4, 7, 25, 94, 150, 251, 384, 493, NB_POKEMON]
@@ -470,13 +562,13 @@ module IronmonSeededRunImportRuntimeTests
       forward_materials = reverse_mapper.material_pairs_for(forward)
       assert(
         forward_materials.include?([mudkip.id_number, mewtwo.id_number]),
-        "schema-3 reverse materials include the pair used by its preview"
+        "schema-5 reverse materials include the pair used by its preview"
       )
       assert(
         reverse_mapper.material_pairs_for(reverse).include?(
           [mewtwo.id_number, mudkip.id_number]
         ),
-        "schema-3 reverse materials preserve the preview orientation"
+        "schema-5 reverse materials preserve the preview orientation"
       )
     ensure
       Ironmon.reset_custom_fusion_pool_cache
@@ -619,7 +711,12 @@ module IronmonSeededRunImportRuntimeTests
     test_preset_failure_rollback
     test_repeated_import_determinism
     test_player_fusion_reverse_materials
-    File.binwrite(OUTPUT_PATH, "seeded-run import runtime tests passed\n")
+    File.binwrite(
+      OUTPUT_PATH,
+      "seeded-run import runtime tests passed\n" +
+        "player_fusion_pairing_milliseconds=" +
+        @player_fusion_pairing_milliseconds.to_i.to_s + "\n"
+    )
   rescue Exception => exception
     File.binwrite(
       OUTPUT_PATH,

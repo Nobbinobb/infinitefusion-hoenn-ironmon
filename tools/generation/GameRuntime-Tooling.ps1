@@ -179,7 +179,7 @@ function Restore-IronmonGameRuntimeArchive {
     Assert-IronmonNormalScriptsArchive -ArchiveBytes $backupBytes
     [IO.File]::WriteAllBytes($scriptsArchive, $backupBytes)
     $restoredBytes = [IO.File]::ReadAllBytes($scriptsArchive)
-    if (-not [Linq.Enumerable]::SequenceEqual[byte](
+    if (-not [Linq.Enumerable]::SequenceEqual(
         $backupBytes,
         $restoredBytes
     )) {

@@ -20,8 +20,9 @@ public sealed class GameCurrentStatePayload
     /// <param name="completedRun">The completed-run recipe when the active save's run has ended.</param>
     /// <param name="typeCoverage">The non-sensitive type-coverage compatibility context when supported.</param>
     /// <param name="fusionAssignments">The authorized active-run recipe for early native fusion assignment preparation.</param>
+    /// <param name="activeRunPreparationReady">Whether the active run has reached the safe background-preparation boundary.</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when sequence is negative.</exception>
-    public GameCurrentStatePayload(bool ironmonActive, string? runId, string? battleId, long sequence, BattleSnapshot? battle = null, PlayerPokemonSnapshot? player = null, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null, StarterSelectionSnapshot? starterSelection = null, RunStatisticsPayload? attemptStatistics = null, CompletedRunRecipePayload? completedRun = null, TypeCoverageContextPayload? typeCoverage = null, FusionAssignmentRecipePayload? fusionAssignments = null)
+    public GameCurrentStatePayload(bool ironmonActive, string? runId, string? battleId, long sequence, BattleSnapshot? battle = null, PlayerPokemonSnapshot? player = null, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null, StarterSelectionSnapshot? starterSelection = null, RunStatisticsPayload? attemptStatistics = null, CompletedRunRecipePayload? completedRun = null, TypeCoverageContextPayload? typeCoverage = null, FusionAssignmentRecipePayload? fusionAssignments = null, bool activeRunPreparationReady = false)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(sequence);
         IronmonActive = ironmonActive;
@@ -36,6 +37,7 @@ public sealed class GameCurrentStatePayload
         CompletedRun = completedRun;
         TypeCoverage = typeCoverage;
         FusionAssignments = fusionAssignments;
+        ActiveRunPreparationReady = activeRunPreparationReady;
     }
 
     /// <summary>
@@ -97,4 +99,9 @@ public sealed class GameCurrentStatePayload
     /// Gets the authorized active-run recipe used to prepare exact fusion assignments before graph or material requests.
     /// </summary>
     public FusionAssignmentRecipePayload? FusionAssignments { get; }
+
+    /// <summary>
+    /// Gets whether the active run has reached the safe background-preparation boundary.
+    /// </summary>
+    public bool ActiveRunPreparationReady { get; }
 }

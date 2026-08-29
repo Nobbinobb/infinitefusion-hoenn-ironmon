@@ -46,6 +46,44 @@ module IronmonTrackerStructureRuntimeTests
       ),
       "tracker request routing remains private"
     )
+    transport_server = TCPServer.new(Ironmon::TRACKER_HOST, 0)
+    transport_client = TCPSocket.new(
+      Ironmon::TRACKER_HOST, transport_server.addr[1]
+    )
+    transport_peer = transport_server.accept
+    begin
+      transport_connection = Ironmon::TrackerConnection.new
+      transport_connection.instance_variable_set(:@socket, transport_client)
+      transport_output = "x" * (Ironmon::TRACKER_OUTPUT_WRITE_BYTES + 1)
+      transport_connection.instance_variable_set(
+        :@output_buffer, transport_output
+      )
+      offered_output_bytes = nil
+      transport_client.define_singleton_method(:write_nonblock) do |output, exception: true|
+        offered_output_bytes = output.bytesize
+        :wait_writable
+      end
+      transport_connection.send(:flush_output)
+      assert(
+        offered_output_bytes == Ironmon::TRACKER_OUTPUT_WRITE_BYTES &&
+          transport_connection.instance_variable_get(:@output_buffer) ==
+            transport_output,
+        "tracker transport never blocks the game thread on a full socket"
+      )
+      transport_client.define_singleton_method(:write_nonblock) do |output, exception: true|
+        output.bytesize / 2
+      end
+      transport_connection.send(:flush_output)
+      assert(
+        transport_connection.instance_variable_get(:@output_buffer).bytesize ==
+          transport_output.bytesize - Ironmon::TRACKER_OUTPUT_WRITE_BYTES / 2,
+        "tracker transport preserves output after a partial nonblocking write"
+      )
+    ensure
+      transport_client.close
+      transport_peer.close
+      transport_server.close
+    end
     assert_source(
       Ironmon.method(:start_tracker_run),
       "018_Tracker_Lifecycle.rb",
@@ -71,6 +109,86 @@ module IronmonTrackerStructureRuntimeTests
       "023_Sprite_Performance_Fixes.rb",
       "tracker sprite materialization"
     )
+    original_live_game_temp = $game_temp
+    original_live_pokemon_temp = $PokemonTemp
+    begin
+      $game_temp = Game_Temp.new
+      $PokemonTemp = PokemonTemp.new
+      live_pokemon = Pokemon.new(:B1H2, 5)
+      live_pokemon.pif_sprite = nil
+      first_live_sprite = Ironmon.tracker_live_pif_sprite(live_pokemon)
+      second_live_sprite = Ironmon.tracker_live_pif_sprite(live_pokemon)
+      assert(
+        first_live_sprite && first_live_sprite.equal?(second_live_sprite) &&
+          live_pokemon.pif_sprite.equal?(first_live_sprite),
+        "tracker snapshots retain one sprite variant after a live fusion"
+      )
+      stale_live_sprite = PIFSprite.new(:BASE, 1, nil, "")
+      live_pokemon.pif_sprite = stale_live_sprite
+      repaired_live_sprite = Ironmon.tracker_live_pif_sprite(live_pokemon)
+      assert(
+        !repaired_live_sprite.equal?(stale_live_sprite) &&
+          repaired_live_sprite.species == live_pokemon.species_data.species &&
+          live_pokemon.pif_sprite.equal?(repaired_live_sprite),
+        "tracker snapshots replace a sprite left stale by a species change"
+      )
+    ensure
+      $game_temp = original_live_game_temp
+      $PokemonTemp = original_live_pokemon_temp
+    end
+    assert_source(
+      Ironmon.method(:with_tracker_starter_sprite),
+      "023_Tracker_Starter_Selection.rb",
+      "stable tracker starter sprite selection"
+    )
+    starter_sprite = PIFSprite.new(:CUSTOM, 1, 2, "a")
+    starter_sprite_key = [1, 2]
+    original_pokemon_system = $PokemonSystem
+    $PokemonSystem = PokemonSystem.new if !$PokemonSystem
+    $PokemonSystem.alt_sprite_substitutions ||= {}
+    substitutions = $PokemonSystem.alt_sprite_substitutions
+    previous_selection_present = Ironmon.instance_variable_defined?(
+      :@tracker_starter_selection
+    )
+    previous_selection = Ironmon.instance_variable_get(
+      :@tracker_starter_selection
+    )
+    previous_substitution_present = substitutions.key?(starter_sprite_key)
+    previous_substitution = substitutions[starter_sprite_key]
+    begin
+      Ironmon.instance_variable_set(
+        :@tracker_starter_selection,
+        { :sprites => [starter_sprite] }
+      )
+      yielded_sprite = Ironmon.with_tracker_starter_sprite(0) do
+        substitutions[starter_sprite_key]
+      end
+      assert(
+        yielded_sprite.equal?(starter_sprite),
+        "starter graphics reuse the tracker-selected sprite variant"
+      )
+      assert(
+        substitutions.key?(starter_sprite_key) ==
+          previous_substitution_present &&
+          substitutions[starter_sprite_key].equal?(previous_substitution),
+        "temporary starter sprite substitution restores prior game state"
+      )
+    ensure
+      if previous_selection_present
+        Ironmon.instance_variable_set(
+          :@tracker_starter_selection, previous_selection
+        )
+      else
+        Ironmon.remove_instance_variable(:@tracker_starter_selection) if
+          Ironmon.instance_variable_defined?(:@tracker_starter_selection)
+      end
+      if previous_substitution_present
+        substitutions[starter_sprite_key] = previous_substitution
+      else
+        substitutions.delete(starter_sprite_key)
+      end
+      $PokemonSystem = original_pokemon_system
+    end
     manual_sprite = PIFSprite.new(:AUTOGEN, 1, 1, "")
     manual_sprite.local_path = Settings::DEFAULT_SPRITE_PATH
     manual_sprite_path = Ironmon.tracker_resolved_sprite_path(manual_sprite)
@@ -419,6 +537,8 @@ module IronmonTrackerStructureRuntimeTests
         initial_obtainability["unresolved_source_count"] == 0 &&
         initial_obtainability["unresolved_resource_count"] == 0 &&
         closure_work.is_a?(Hash) &&
+        closure_work["direct_pair_offsets"].is_a?(Array) &&
+        closure_work["reversible_fusion_ids"].is_a?(Array) &&
         closure_work["source_catalog_fingerprint"] ==
           source_catalog["fingerprint"],
       "obtainability classifies every audited source and resource before " +
@@ -493,6 +613,38 @@ module IronmonTrackerStructureRuntimeTests
     ]
     obtainability_services[obtainability_recipe["run_id"]] =
       integrated_obtainability
+    Ironmon.instance_variable_set(:@tracker_search_indexes, nil)
+    Ironmon.instance_variable_set(:@tracker_search_result_cache, nil)
+    cold_search_started = System.uptime
+    cold_search_response = Ironmon.tracker_pokemon_search_for_recipe(
+      {
+        "query" => "beevee",
+        "offset" => 0,
+        "limit" => 20,
+        "normal_only" => false
+      },
+      obtainability_recipe
+    )
+    cold_search_seconds =
+      (System.uptime - cold_search_started).to_f / 1_000_000.0
+    @cold_fusion_search_milliseconds = (cold_search_seconds * 1_000).round
+    assert(
+      cold_search_seconds < 5.0,
+      "a cold full-pool Pokemon search completes without blocking tracker " +
+        "transport: #{cold_search_seconds.round(3)} seconds"
+    )
+    cold_search_matches = cold_search_response["matches"]
+    cold_search_matches_valid = cold_search_matches.all? do |match|
+      match["species_name"].downcase.include?("beevee") &&
+        !match["obtainability_status"].to_s.empty?
+    end
+    assert(
+      cold_search_response["total"].to_i > 0 &&
+        !cold_search_matches.empty? &&
+        cold_search_matches.length <= 20 &&
+        cold_search_matches_valid,
+      "the exact cold beevee search returns annotated, paged fusion rows"
+    )
     search_species = GameData::Species.get(Ironmon.normal_species_pool.first)
     search_response = Ironmon.tracker_pokemon_search_for_recipe(
       {
@@ -564,10 +716,59 @@ module IronmonTrackerStructureRuntimeTests
     material_ids = integrated_obtainability.instance_variable_get(:@material_ids)
     first_material = material_ids[0]
     second_material = material_ids[1]
-    mapped_results = integrated_obtainability.instance_variable_get(
-      :@fusion_mapper
-    ).species_pair(first_material, second_material)
+    mapping_probe = Ironmon.tracker_obtainability_fusion_mapper(
+      obtainability_recipe
+    )
+    mapped_results = mapping_probe.species_pair(first_material, second_material)
     mapped_result = GameData::Species.get(mapped_results[0])
+    first_material_id = GameData::Species.get(first_material).id_number
+    second_material_id = GameData::Species.get(second_material).id_number
+    material_page = Ironmon.tracker_fusion_material_search_for_recipe(
+      {
+        "species_id" => "#{mapped_result.id}:0",
+        "offset" => 0,
+        "limit" => 10,
+        "material_assignments" => [
+          {
+            "body_id" => first_material_id,
+            "head_id" => second_material_id
+          }
+        ],
+        "material_assignment_total" => 1
+      },
+      obtainability_recipe,
+      false
+    )
+    assert(
+      material_page["total"] == 1 && material_page["matches"].length == 1,
+      "tracker-generated fusion-material pages bypass the game-wide reverse " +
+        "index"
+    )
+    missing_material_page_error = nil
+    missing_material_page_started = System.uptime
+    begin
+      Ironmon.tracker_fusion_material_search_for_recipe(
+        {
+          "species_id" => "#{mapped_result.id}:0",
+          "offset" => 0,
+          "limit" => 10
+        },
+        obtainability_recipe,
+        false
+      )
+    rescue Ironmon::TrackerLookupError => error
+      missing_material_page_error = error
+    end
+    missing_material_page_seconds =
+      (System.uptime - missing_material_page_started).to_f / 1_000_000.0
+    assert(
+      missing_material_page_error &&
+        missing_material_page_error.code ==
+          "fusion_material_assignments_required" &&
+        missing_material_page_seconds < 1.0,
+      "a missing tracker material page fails immediately instead of building " +
+        "the reverse index on the game thread"
+    )
     pair_proven = integrated_obtainability.prove_player_fusion_pair(
       first_material, second_material, mapped_result
     )
@@ -709,6 +910,70 @@ module IronmonTrackerStructureRuntimeTests
         ),
         "diagnostic obtainability reuses the loaded evolution generators"
       )
+      active_services = Ironmon.tracker_obtainability_services
+      previous_active_service = active_services[active_recipe["run_id"]]
+      active_services[active_recipe["run_id"]] = integrated_obtainability
+      live_connection = Ironmon.tracker_connection
+      previous_debug = $DEBUG
+      previous_debug_requested = live_connection.instance_variable_get(
+        :@debug_requested
+      )
+      previous_output_buffer = live_connection.instance_variable_get(
+        :@output_buffer
+      )
+      begin
+        $DEBUG = true
+        live_connection.instance_variable_set(:@debug_requested, true)
+        live_connection.instance_variable_set(:@output_buffer, "")
+        Ironmon.instance_variable_set(:@tracker_search_indexes, nil)
+        Ironmon.instance_variable_set(:@tracker_search_result_cache, nil)
+        live_search_started = System.uptime
+        live_connection.send(
+          :handle_request,
+          {
+            "schema_version" => Ironmon::TRACKER_SCHEMA_VERSION,
+            "type" => "request",
+            "command" => "debug_pokemon_search",
+            "request_id" => "runtime-live-beevee-search",
+            "run_id" => active_recipe["run_id"],
+            "payload" => {
+              "query" => "beevee",
+              "offset" => 0,
+              "limit" => 20,
+              "normal_only" => false
+            }
+          }
+        )
+        live_search_seconds =
+          (System.uptime - live_search_started).to_f / 1_000_000.0
+        serialized_response = live_connection.instance_variable_get(
+          :@output_buffer
+        )
+        assert(
+          live_search_seconds < 5.0 &&
+            serialized_response.include?("\"success\":true") &&
+            serialized_response.include?("Beevee") &&
+            serialized_response.include?("\"obtainability_status\":"),
+          "the live debug request route builds, annotates, and serializes the " +
+            "exact Beevee search without blocking"
+        )
+      ensure
+        $DEBUG = previous_debug
+        live_connection.instance_variable_set(
+          :@debug_requested, previous_debug_requested
+        )
+        live_connection.instance_variable_set(
+          :@output_buffer, previous_output_buffer
+        )
+        Ironmon.finish_tracker_debug_search_trace
+        File.delete(Ironmon::TRACKER_DEBUG_SEARCH_TRACE_PATH) if
+          File.file?(Ironmon::TRACKER_DEBUG_SEARCH_TRACE_PATH)
+        if previous_active_service
+          active_services[active_recipe["run_id"]] = previous_active_service
+        else
+          active_services.delete(active_recipe["run_id"])
+        end
+      end
       Ironmon.mark_tracker_obtainability_map_ready(Object.new)
       Ironmon.reset_tracker_post_run_cache
       assert(
@@ -731,17 +996,44 @@ module IronmonTrackerStructureRuntimeTests
       )
       assert(
         active_service.foreground_requested? &&
-          active_service.background_requested?,
+          active_service.background_requested? &&
+          active_service.game_work_priority_requested?,
         "diagnostic obtainability requests renew foreground and background " +
           "calculation priority"
+      )
+      assert(
+        Ironmon.tracker_obtainability_game_work_pending?,
+        "active game-side obtainability work pauses global fusion pairing"
       )
       active_service.instance_variable_set(:@phase, :player_fusions)
       assert(
         !active_service.foreground_requested? &&
           !active_service.background_requested? &&
           !active_service.scheduled_advance_allowed? &&
-          active_service.background_advance_allowed?,
+          active_service.background_advance_allowed? &&
+          active_service.game_work_priority_requested?,
         "tracker mapping waits without burning a game-thread work slice"
+      )
+      assert(
+        Ironmon.tracker_obtainability_game_work_pending?,
+        "tracker-side fusion closure retains priority over global fusion pairing"
+      )
+      active_service.instance_variable_set(:@foreground_until, 0.0)
+      active_service.instance_variable_set(:@background_until, 0.0)
+      active_service.instance_variable_set(
+        :@player_fusion_until,
+        Ironmon.tracker_uptime_seconds +
+          Ironmon::TrackerObtainabilityService::PLAYER_FUSION_LEASE_SECONDS
+      )
+      assert(
+        Ironmon.tracker_obtainability_game_work_pending?,
+        "an in-flight tracker closure keeps global fusion pairing paused after " +
+          "the request lease expires"
+      )
+      active_service.instance_variable_set(:@player_fusion_until, 0.0)
+      assert(
+        !Ironmon.tracker_obtainability_game_work_pending?,
+        "expired tracker closure work lets global fusion pairing resume"
       )
       waiting_started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       active_service.advance_for_milliseconds(
@@ -756,10 +1048,9 @@ module IronmonTrackerStructureRuntimeTests
       active_service.instance_variable_set(:@phase, :prepare_generators)
       active_service.send(:advance_work_unit)
       assert(
-        !active_service.instance_variable_get(:@fusion_mapper).equal?(
-          Ironmon.player_fusion_mapper
-        ),
-        "obtainability keeps speculative fusion mappings out of live gameplay state"
+        !active_service.instance_variable_defined?(:@fusion_mapper),
+        "obtainability defers seeded fusion mapping entirely to the parallel " +
+          "tracker closure"
       )
       assert(
         !active_service.instance_variable_defined?(:@fusion_generator),
@@ -779,7 +1070,12 @@ module IronmonTrackerStructureRuntimeTests
       "diagnostic Pokemon snapshots"
     )
     $game_temp = original_game_temp
-    File.binwrite(OUTPUT_PATH, "tracker structure tests passed\n")
+    File.binwrite(
+      OUTPUT_PATH,
+      "tracker structure tests passed\n" +
+        "cold_fusion_search_milliseconds=" +
+        @cold_fusion_search_milliseconds.to_i.to_s + "\n"
+    )
   rescue Exception => exception
     File.binwrite(
       OUTPUT_PATH,

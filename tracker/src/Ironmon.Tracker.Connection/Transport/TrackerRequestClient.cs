@@ -127,8 +127,23 @@ public sealed class TrackerRequestClient
     internal void PrepareActiveFusionAssignments(GameCurrentStatePayload state)
     {
         ArgumentNullException.ThrowIfNull(state);
-        if (!string.IsNullOrWhiteSpace(state.RunId) && state.FusionAssignments is not null)
-            _fusionMappings.PrepareActiveFusionAssignments(state.RunId, state.FusionAssignments);
+        if (!IsActiveFusionAssignmentPreparationEligible(state))
+            return;
+
+        _fusionMappings.PrepareActiveFusionAssignments(state.RunId!, state.FusionAssignments!);
+    }
+
+    /// <summary>
+    /// Determines whether recovered state may start tracker-owned active-run assignment work.
+    /// </summary>
+    /// <param name="state">The recovered authoritative game state.</param>
+    /// <returns>True when the run is ready and includes its assignment recipe; otherwise false.</returns>
+    internal static bool IsActiveFusionAssignmentPreparationEligible(GameCurrentStatePayload state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        return state.ActiveRunPreparationReady
+            && !string.IsNullOrWhiteSpace(state.RunId)
+            && state.FusionAssignments is not null;
     }
 
     /// <summary>
@@ -244,9 +259,11 @@ public sealed class TrackerRequestClient
     /// <param name="recipe">The archived run recipe, or null for the active run.</param>
     /// <param name="forceRefresh">Whether to bypass a previously cached response.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <param name="offset">The zero-based encounter-entry offset.</param>
+    /// <param name="limit">The maximum number of encounter entries to return.</param>
     /// <returns>The requested area category.</returns>
-    public Task<AreaLookupDetailResponsePayload> GetAreaDetailsAsync(string areaId, AreaContentCategory category, CompletedRunRecipePayload? recipe = null, bool forceRefresh = false, CancellationToken cancellationToken = default)
-        => _areaRequests.GetDetailsAsync(areaId, category, recipe, GetConnectedRunId(), forceRefresh, cancellationToken);
+    public Task<AreaLookupDetailResponsePayload> GetAreaDetailsAsync(string areaId, AreaContentCategory category, CompletedRunRecipePayload? recipe = null, bool forceRefresh = false, CancellationToken cancellationToken = default, int offset = 0, int limit = TrackerProtocol.AreaLookupPageSize)
+        => _areaRequests.GetDetailsAsync(areaId, category, recipe, GetConnectedRunId(), forceRefresh, offset, limit, cancellationToken);
 
     /// <summary>
     /// Searches the connected game for Pokémon names compatible with one completed-run recipe.

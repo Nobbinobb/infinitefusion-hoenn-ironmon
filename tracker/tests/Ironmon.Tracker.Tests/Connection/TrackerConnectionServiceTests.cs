@@ -1,3 +1,4 @@
+using Ironmon.Tracker.Connection.Obtainability;
 using System.Net;
 using System.Net.Sockets;
 
@@ -6,13 +7,31 @@ namespace Ironmon.Tracker.Tests.Connection;
 /// <summary>
 /// Verifies persistent loopback connection, handshake, recovery, and error behavior.
 /// </summary>
-public sealed class TrackerConnectionServiceTests
+public sealed class TrackerConnectionServiceTests : IDisposable
 {
+    private const string _activeRunId = "active-run";
+    private const string _preparationTestGameVersion = "6.8.0";
+    private const string _preparationTestIronmonVersion = "0.8.2";
+    private const string _preparationTestTrackerVersion = "0.1.0";
+    private readonly List<string> _roots = [];
+
     /// <summary>
     /// Initializes the tracker connection service tests.
     /// </summary>
     public TrackerConnectionServiceTests()
     {
+    }
+
+    /// <summary>
+    /// Removes every temporary persistence root owned by the current test.
+    /// </summary>
+    public void Dispose()
+    {
+        foreach (string root in _roots)
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, true);
+        }
     }
 
     /// <summary>
@@ -42,6 +61,88 @@ public sealed class TrackerConnectionServiceTests
     }
 
     /// <summary>
+    /// Verifies that a completed current run cannot restart automatic background preparation.
+    /// </summary>
+    [Theory]
+    [InlineData(true, false, false, true)]
+    [InlineData(false, false, false, false)]
+    [InlineData(true, true, false, false)]
+    [InlineData(true, false, true, false)]
+    public void ActiveRunPrecalculationRequiresAReadyIncompleteUnclaimedRun(bool preparationReady, bool runCompleted, bool archiveSelected, bool expected)
+    {
+        bool eligible = TrackerConnectionService.IsActiveRunObtainabilityPrecalculationEligible(
+            authorized: true,
+            ironmonActive: true,
+            preparationReady: preparationReady,
+            runCompleted: runCompleted,
+            runId: _activeRunId,
+            preparedRunId: null,
+            archiveSelected: archiveSelected);
+
+        Assert.Equal(expected, eligible);
+    }
+
+    /// <summary>
+    /// Verifies connecting to a ready active run starts background preparation without opening Lookup.
+    /// </summary>
+    [Fact]
+    public async Task ReadyActiveRunStartsObtainabilityPrecalculationOnConnect()
+    {
+        TrackerConnectionState state = new();
+        TrackerConnectionOptions options = new(0, _preparationTestTrackerVersion, true, TimeSpan.FromSeconds(2));
+        await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, new TrackerRunState(), CreateKnowledgeStore(), CreateAreaDiscoveryStore(), CreateCompletedRunArchive());
+        service.Start();
+
+        using TcpClient client = new();
+        await client.ConnectAsync(IPAddress.Loopback, service.BoundPort);
+        NetworkStream stream = client.GetStream();
+        using TrackerMessageReader reader = new(stream, leaveOpen: true);
+        await using TrackerMessageWriter writer = new(stream, leaveOpen: true);
+        GameHandshakePayload game = new(_preparationTestGameVersion, _preparationTestIronmonVersion, true, true, TrackerTestPaths.GameRoot, _activeRunId, null);
+        await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.GameConnected, 0, game, _activeRunId));
+
+        _ = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        TrackerMessage currentStateRequest = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2)));
+        GameCurrentStatePayload currentState = new(true, _activeRunId, null, 0, activeRunPreparationReady: true);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(currentStateRequest.RequestId!, currentState, _activeRunId));
+
+        TrackerMessage preparationRequest = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(4)));
+        Assert.Equal(TrackerCommands.DebugPokemonObtainability, preparationRequest.Command);
+        PokemonObtainabilityResponsePayload completed = new() { BackgroundComplete = true };
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(preparationRequest.RequestId!, completed, _activeRunId));
+    }
+
+    /// <summary>
+    /// Verifies connecting to an active run before its preparation boundary starts no background request or progress indicator.
+    /// </summary>
+    [Fact]
+    public async Task UnreadyActiveRunRemainsIdleOnConnect()
+    {
+        TrackerConnectionState state = new();
+        TrackerConnectionOptions options = new(0, _preparationTestTrackerVersion, true, TimeSpan.FromSeconds(2));
+        await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, new TrackerRunState(), CreateKnowledgeStore(), CreateAreaDiscoveryStore(), CreateCompletedRunArchive());
+        service.Start();
+
+        using TcpClient client = new();
+        await client.ConnectAsync(IPAddress.Loopback, service.BoundPort);
+        NetworkStream stream = client.GetStream();
+        using TrackerMessageReader reader = new(stream, leaveOpen: true);
+        await using TrackerMessageWriter writer = new(stream, leaveOpen: true);
+        GameHandshakePayload game = new(_preparationTestGameVersion, _preparationTestIronmonVersion, true, true, TrackerTestPaths.GameRoot, _activeRunId, null);
+        await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.GameConnected, 0, game, _activeRunId));
+
+        _ = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        TrackerMessage currentStateRequest = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2)));
+        GameCurrentStatePayload currentState = new(true, _activeRunId, null, 0);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(currentStateRequest.RequestId!, currentState, _activeRunId));
+        await WaitForSnapshotAsync(state, snapshot => snapshot.CurrentState is not null);
+        await Task.Delay(TimeSpan.FromMilliseconds(3_500));
+
+        Assert.False(state.Snapshot.CurrentState?.ActiveRunPreparationReady);
+        Assert.Same(TrackerObtainabilityProgressSnapshot.Idle, service.Requests.ObtainabilityProgress.Snapshot);
+    }
+
+    /// <summary>
     /// Verifies the duplex handshake and current-state recovery request.
     /// </summary>
     [Fact]
@@ -65,7 +166,7 @@ public sealed class TrackerConnectionServiceTests
         using TrackerMessageReader reader = new(stream, leaveOpen: true);
         await using TrackerMessageWriter writer = new(stream, leaveOpen: true);
 
-        GameHandshakePayload game = new("6.8.0", "0.3.3", true, true, @"C:\Game", null, null);
+        GameHandshakePayload game = new("6.8.0", "0.3.3", true, true, TrackerTestPaths.GameRoot, null, null);
         TrackerMessage gameHandshake = TrackerMessageFactory.CreateEvent("game_connected", 0, game);
         await writer.WriteAsync(gameHandshake);
 
@@ -114,7 +215,7 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal(TrackerErrorCodes.PokemonNotFound, staleInspectionException.ErrorCode);
         Assert.Equal($"TrackerProtocolException: {staleInspectionError.Message}", diagnostics.LastProtocolError);
 
-        GameCurrentStatePayload currentState = new(true, "run-1", null, 7);
+        GameCurrentStatePayload currentState = new(true, "run-1", null, 7, fusionAssignments: CreateCompatibleFusionAssignmentRecipe());
         TrackerMessage response = TrackerMessageFactory.CreateResponse(requestId, currentState, "run-1");
         await writer.WriteAsync(response);
 
@@ -123,6 +224,8 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal("6.8.0", connected.Game?.GameVersion);
         Assert.Equal(7, connected.CurrentState?.Sequence);
         Assert.True(service.DebugAuthorized);
+        GameCurrentStatePayload assignmentState = new(true, "run-1", null, 7, fusionAssignments: CreateCompatibleFusionAssignmentRecipe(), activeRunPreparationReady: true);
+        service.Requests.PrepareActiveFusionAssignments(assignmentState);
         Assert.Contains(diagnostics.Entries, entry => entry.Direction == TrackerDiagnosticDirection.Incoming && entry.Name == "game_connected");
         Assert.Contains(diagnostics.Entries, entry => entry.Direction == TrackerDiagnosticDirection.Outgoing && entry.Name == "current_state");
 
@@ -161,6 +264,8 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal("area:4", areaDetailPayload.AreaId);
         Assert.Equal(AreaContentCategory.Trainer, areaDetailPayload.Category);
         Assert.Null(areaDetailPayload.Recipe);
+        Assert.Equal(0, areaDetailPayload.Offset);
+        Assert.Equal(TrackerProtocol.AreaLookupPageSize, areaDetailPayload.Limit);
         AreaLookupDetailResponsePayload areaDetailResponse = new()
         {
             AreaId = "area:4",
@@ -183,6 +288,38 @@ public sealed class TrackerConnectionServiceTests
         AreaLookupDetailResponsePayload receivedAreaDetail = await areaDetailTask;
         Assert.Equal("Ben", Assert.Single(receivedAreaDetail.Trainers).TrainerName);
         Assert.Same(receivedAreaDetail, await service.Requests.GetAreaDetailsAsync("area:4", AreaContentCategory.Trainer));
+
+        Task<AreaLookupDetailResponsePayload> encounterPageTask = service.Requests.GetAreaDetailsAsync("area:4", AreaContentCategory.Encounter, cancellationToken: default, offset: 10);
+        TrackerMessage? encounterPageRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        AreaLookupDetailRequestPayload encounterPagePayload = TrackerJson.DeserializePayload<AreaLookupDetailRequestPayload>(encounterPageRequest!.Payload);
+        Assert.Equal(AreaContentCategory.Encounter, encounterPagePayload.Category);
+        Assert.Equal(10, encounterPagePayload.Offset);
+        Assert.Equal(TrackerProtocol.AreaLookupPageSize, encounterPagePayload.Limit);
+        AreaLookupDetailResponsePayload encounterPageResponse = new()
+        {
+            AreaId = "area:4",
+            Name = "Route 1",
+            Category = AreaContentCategory.Encounter,
+            Offset = 10,
+            Limit = TrackerProtocol.AreaLookupPageSize,
+            TotalCount = 24,
+            Encounters =
+            [
+                new AreaEncounterEntryPayload
+                {
+                    EntryId = "encounter:4:0:Land:11",
+                    MapId = 4,
+                    EncounterType = "Land",
+                    Slot = 11
+                }
+            ]
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(encounterPageRequest.RequestId!, encounterPageResponse, "run-1"));
+        AreaLookupDetailResponsePayload receivedEncounterPage = await encounterPageTask;
+        Assert.Equal(10, receivedEncounterPage.Offset);
+        Assert.Equal(24, receivedEncounterPage.TotalCount);
+        Assert.Same(receivedEncounterPage, await service.Requests.GetAreaDetailsAsync("area:4", AreaContentCategory.Encounter, cancellationToken: default, offset: 10));
 
         AreaDiscoveryPackagePayload discovery = new()
         {
@@ -387,7 +524,8 @@ public sealed class TrackerConnectionServiceTests
         Assert.Equal("Archived Ben", Assert.Single((await archivedAreaDetailTask).Trainers).TrainerName);
         Assert.Equal("Active Ben", Assert.Single((await service.Requests.GetAreaDetailsAsync("area:4", AreaContentCategory.Trainer)).Trainers).TrainerName);
 
-        TrackerMessage runCompleted = TrackerMessageFactory.CreateEvent("run_completed", 1, recipe, "run-1");
+        RunCompletedEventPayload completion = new() { Recipe = recipe };
+        TrackerMessage runCompleted = TrackerMessageFactory.CreateEvent("run_completed", 1, completion, "run-1");
         await writer.WriteAsync(runCompleted);
         await WaitForRecipeAsync(completedRuns, "run-1");
         Assert.Equal("run-1", Assert.Single(completedRuns.Recipes).RunId);
@@ -736,12 +874,15 @@ public sealed class TrackerConnectionServiceTests
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugPredecessorRequest.RequestId!, predecessorResponse, "run-1"));
         Assert.Equal("CYNDAQUIL:0", Assert.Single((await debugPredecessorTask).Matches).SpeciesId);
 
-        Task<FusionMaterialSearchResponsePayload> debugMaterialTask = service.Requests.SearchDebugFusionMaterialsAsync("B445H175:0", 100);
-        TrackerMessage? debugMaterialRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Task<FusionMaterialSearchResponsePayload> debugMaterialTask = service.Requests.SearchDebugFusionMaterialsAsync("B445H175:0", 100, target: DebugPokemonTarget.Player);
+        TrackerMessage? debugMaterialRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Equal("debug_fusion_material_search", debugMaterialRequest?.Command);
         DebugFusionMaterialSearchRequestPayload debugMaterialPayload = TrackerJson.DeserializePayload<DebugFusionMaterialSearchRequestPayload>(debugMaterialRequest!.Payload);
         Assert.Equal(100, debugMaterialPayload.Offset);
         Assert.Equal(10, debugMaterialPayload.Limit);
+        Assert.Equal(DebugPokemonTarget.Player, debugMaterialPayload.Target);
+        Assert.NotNull(debugMaterialPayload.MaterialAssignments);
+        Assert.NotNull(debugMaterialPayload.MaterialAssignmentTotal);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugMaterialRequest.RequestId!, materialResponse, "run-1"));
         Assert.Equal(5_000, (await debugMaterialTask).Total);
 
@@ -1116,9 +1257,10 @@ public sealed class TrackerConnectionServiceTests
     /// Creates an isolated tracker knowledge store for a connection test.
     /// </summary>
     /// <returns>The isolated tracker knowledge store.</returns>
-    private static TrackerKnowledgeStore CreateKnowledgeStore()
+    private TrackerKnowledgeStore CreateKnowledgeStore()
     {
         string path = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
+        _roots.Add(path);
         return new TrackerKnowledgeStore(new TrackerKnowledgeOptions(path));
     }
 
@@ -1126,9 +1268,10 @@ public sealed class TrackerConnectionServiceTests
     /// Creates an isolated tracker-owned area discovery store for a connection test.
     /// </summary>
     /// <returns>The isolated area discovery store.</returns>
-    private static AreaDiscoveryStore CreateAreaDiscoveryStore()
+    private AreaDiscoveryStore CreateAreaDiscoveryStore()
     {
         string path = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
+        _roots.Add(path);
         return new AreaDiscoveryStore(new TrackerKnowledgeOptions(path));
     }
 
@@ -1136,9 +1279,10 @@ public sealed class TrackerConnectionServiceTests
     /// Creates an isolated completed-run archive for a connection test.
     /// </summary>
     /// <returns>The isolated completed-run archive.</returns>
-    private static CompletedRunArchive CreateCompletedRunArchive()
+    private CompletedRunArchive CreateCompletedRunArchive()
     {
         string path = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
+        _roots.Add(path);
         return new CompletedRunArchive(new TrackerKnowledgeOptions(path));
     }
 
@@ -1159,6 +1303,29 @@ public sealed class TrackerConnectionServiceTests
         AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 3, PoolSize = 10, PoolFingerprint = "abilities" },
         PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 10, PoolFingerprint = "fusions" }
     };
+
+    /// <summary>
+    /// Creates an active-run fusion assignment recipe matching the embedded worker catalog.
+    /// </summary>
+    /// <returns>The compatible active-run assignment recipe.</returns>
+    private static FusionAssignmentRecipePayload CreateCompatibleFusionAssignmentRecipe()
+    {
+        PlayerFusionMappingWorkerCatalog catalog = PlayerFusionMappingWorkerCatalog.Load();
+        return new FusionAssignmentRecipePayload
+        {
+            Seed = catalog.VerificationSeed,
+            PlayerFusionGeneratorVersion = catalog.PlayerFusionGeneratorVersion,
+            GeneratorVersion = catalog.FusionEvolutionGeneratorVersion,
+            RulesVersion = catalog.FusionEvolutionRulesVersion,
+            SourceFingerprint = catalog.EvolutionSourceFingerprint,
+            TaxonomyFingerprint = catalog.EvolutionTaxonomyFingerprint,
+            MethodFingerprint = catalog.EvolutionMethodFingerprint,
+            BaseStatSourceFingerprint = catalog.BaseStatSourceFingerprint,
+            TargetPoolVersion = catalog.CustomFusionPoolVersion,
+            TargetPoolSize = catalog.CustomFusionPool.Count,
+            TargetPoolFingerprint = catalog.CustomFusionPoolFingerprint
+        };
+    }
 
     /// <summary>
     /// Creates a valid typed configuration for connection tests.

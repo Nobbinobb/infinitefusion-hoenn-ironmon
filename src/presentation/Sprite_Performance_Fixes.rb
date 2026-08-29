@@ -65,6 +65,23 @@ module Ironmon
     @tracker_live_sprite_paths = nil
   end
 
+  def self.tracker_live_pif_sprite(pokemon, preferred_sprite = nil)
+    return preferred_sprite if preferred_sprite
+    pif_sprite = pokemon.pif_sprite
+    if pif_sprite
+      begin
+        return pif_sprite if pif_sprite.species == pokemon.species_data.species
+      rescue Exception
+      end
+    end
+    pif_sprite = BattleSpriteLoader.new.get_pif_sprite_from_species(
+      pokemon.species
+    )
+    pokemon.pif_sprite = pif_sprite if
+      pif_sprite && pokemon.respond_to?(:pif_sprite=)
+    return pif_sprite
+  end
+
   def self.tracker_materialized_sprite_path(pif_sprite)
     type = pif_sprite.type.to_s.downcase
     body = pif_sprite.body_id || 0
@@ -182,11 +199,7 @@ module Ironmon
   class << self
     alias ironmon_sprite_fix_original_tracker_sprite_path tracker_sprite_path
     def tracker_sprite_path(pokemon, preferred_sprite = nil)
-      pif_sprite = preferred_sprite || pokemon.pif_sprite
-      if !pif_sprite
-        loader = BattleSpriteLoader.new
-        pif_sprite = loader.get_pif_sprite_from_species(pokemon.species)
-      end
+      pif_sprite = tracker_live_pif_sprite(pokemon, preferred_sprite)
       key = tracker_sprite_cache_key(pif_sprite)
       cache = tracker_live_sprite_paths
       return cache[key] if key && cache.key?(key)

@@ -6,6 +6,9 @@ module Ironmon
   FUSION_PREDECESSOR_INDEX_PATH = File.join(
     "Data", "Ironmon", "fusion_predecessor_index.dat"
   )
+  FUSION_PREDECESSOR_INDEX_CACHE_DIRECTORY = File.join(
+    "Data", "Ironmon", "fusion_predecessor_indexes"
+  )
 
   class FusionPredecessorIndexError < StandardError
   end
@@ -113,19 +116,142 @@ module Ironmon
 
   def self.fusion_predecessor_index
     return @fusion_predecessor_index if @fusion_predecessor_index
-    document = File.open(FUSION_PREDECESSOR_INDEX_PATH, "rb") do |file|
-      Marshal.load(file)
+    catalog = evolution_catalog
+    fusion_pool = custom_fusion_pool
+    fusion_pool_info = custom_fusion_pool_info
+    cached_path = runtime_fusion_predecessor_index_path(fusion_pool_info)
+    errors = []
+    [cached_path, FUSION_PREDECESSOR_INDEX_PATH].each do |path|
+      next if !File.file?(path)
+      begin
+        document = File.open(path, "rb") do |file|
+          Marshal.load(file)
+        end
+        @fusion_predecessor_index = FusionPredecessorIndex.new(
+          document, catalog, fusion_pool, fusion_pool_info
+        )
+        return @fusion_predecessor_index
+      rescue Exception => exception
+        errors << "#{File.basename(path)}: #{exception.message}"
+      end
     end
-    @fusion_predecessor_index = FusionPredecessorIndex.new(
-      document, evolution_catalog, custom_fusion_pool,
-      custom_fusion_pool_info
+    reason = errors.empty? ? "no compatible index is installed" :
+      errors.join("; ")
+    echoln "Ironmon is rebuilding its fusion predecessor index for the " +
+      "installed custom-sprite pool: #{reason}"
+    document = build_runtime_fusion_predecessor_index_document(
+      catalog, fusion_pool, fusion_pool_info
     )
+    @fusion_predecessor_index = FusionPredecessorIndex.new(
+      document, catalog, fusion_pool, fusion_pool_info
+    )
+    persist_runtime_fusion_predecessor_index(cached_path, document)
     return @fusion_predecessor_index
-  rescue FusionPredecessorIndexError
-    raise
   rescue Exception => exception
     raise FusionPredecessorIndexError,
-          "The bundled fusion predecessor index is unavailable: #{exception.message}"
+          "The fusion predecessor index is unavailable: #{exception.message}"
+  end
+
+  def self.runtime_fusion_predecessor_index_path(fusion_pool_info)
+    fingerprint = fusion_pool_info[:fingerprint].to_s
+    if fingerprint !~ /\A[0-9a-f]{16}\z/
+      raise FusionPredecessorIndexError,
+            "the custom fusion pool fingerprint is invalid"
+    end
+    return File.join(
+      FUSION_PREDECESSOR_INDEX_CACHE_DIRECTORY,
+      "#{fingerprint}.dat"
+    )
+  end
+
+  def self.persist_runtime_fusion_predecessor_index(path, document)
+    directory = File.dirname(path)
+    Dir.mkdir(directory) if !Dir.exist?(directory)
+    temporary_path = "#{path}.#{Process.pid}.tmp"
+    File.open(temporary_path, "wb") do |file|
+      Marshal.dump(document, file)
+      file.flush
+    end
+    File.delete(path) if File.exist?(path)
+    File.rename(temporary_path, path)
+    return true
+  rescue Exception => exception
+    echoln "Ironmon could not cache its rebuilt fusion predecessor index: " +
+      exception.message
+    return false
+  ensure
+    File.delete(temporary_path) if temporary_path &&
+      File.exist?(temporary_path)
+  end
+
+  def self.build_runtime_fusion_predecessor_index_document(
+    catalog, fusion_pool, fusion_pool_info
+  )
+    taxonomy = {}
+    catalog.taxonomy_catalog.each do |entry|
+      taxonomy[entry[:identity]] = entry
+    end
+    component_signatures = Hash.new { |hash, key| hash[key] = {} }
+    catalog.branch_catalog.each do |branch|
+      component = GameData::Species.get(branch[:source])
+      base_component = GameData::Species.get(component.id_number)
+      next if base_component.id.to_s != branch[:source]
+      role = taxonomy.fetch(branch[:source])[:role]
+      buckets = if role == :intermediate
+                  [:terminal]
+                elsif role == :first_stage
+                  [:continuing, :terminal]
+                else
+                  []
+                end
+      required_types = catalog.required_target_types(component, branch)
+      buckets.each do |bucket|
+        required_types.each do |type|
+          component_signatures[component.id_number][
+            "#{bucket}|#{type}"
+          ] = true
+        end
+      end
+    end
+    signatures = Hash.new { |hash, key| hash[key] = {} }
+    fusion_pool.each do |species_id|
+      match = /\AB(\d+)H(\d+)\z/.match(species_id.to_s)
+      if !match
+        raise FusionPredecessorIndexError,
+              "the custom fusion pool contains an invalid identity"
+      end
+      body_id = match[1].to_i
+      head_id = match[2].to_i
+      source_id = (body_id * NB_POKEMON) + head_id
+      [body_id, head_id].uniq.each do |component_id|
+        component_signatures[component_id].each_key do |signature|
+          signatures[signature][source_id] = true
+        end
+      end
+    end
+    packed_signatures = {}
+    membership_count = 0
+    signatures.keys.sort.each do |signature|
+      source_ids = signatures[signature].keys.sort
+      membership_count += source_ids.length
+      packed_signatures[signature] = source_ids.pack("L<*")
+    end
+    return {
+      "schema_version" => FusionPredecessorIndex::SCHEMA_VERSION,
+      "normal_species_count" => NB_POKEMON,
+      "source_fingerprint" => catalog.source_fingerprint,
+      "taxonomy_fingerprint" => catalog.taxonomy_fingerprint,
+      "method_fingerprint" => catalog.method_fingerprint,
+      "fusion_pool_schema_version" => fusion_pool_info[:schema_version],
+      "fusion_pool_size" => fusion_pool_info[:size],
+      "fusion_pool_fingerprint" => fusion_pool_info[:fingerprint],
+      "excluded_sprite_authors" =>
+        CustomFusionPool::AUTOGENERATED_SPRITE_AUTHORS,
+      "rejected_autogenerated_credit_count" =>
+        fusion_pool_info[:rejected_autogenerated_credits],
+      "membership_count" => membership_count,
+      "signatures" => packed_signatures
+    }
   end
 
   def self.reset_fusion_predecessor_index_cache

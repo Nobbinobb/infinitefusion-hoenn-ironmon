@@ -22,6 +22,7 @@ module Ironmon
     def initialize(sprite_index)
       @sprite_index = sprite_index
       @pool = nil
+      @numbers = nil
       @accepted_by_number = nil
       @source_entry_count = 0
       @rejected_entry_count = 0
@@ -38,6 +39,11 @@ module Ironmon
 
     def size
       return pool.length
+    end
+
+    def numbers
+      pool
+      return @numbers
     end
 
     def info
@@ -128,7 +134,8 @@ module Ironmon
       end
 
       @accepted_by_number = accepted.freeze
-      @pool = accepted.keys.sort.map { |dex_number| accepted[dex_number] }
+      @numbers = accepted.keys.sort.freeze
+      @pool = @numbers.map { |dex_number| accepted[dex_number] }
       @pool.freeze
       @fingerprint = fingerprint_for(@pool)
     end
@@ -201,6 +208,12 @@ module Ironmon
 
   def self.custom_fusion_pool
     return custom_fusion_pool_service.pool
+  end
+
+  def self.custom_fusion_pool_numbers
+    service = custom_fusion_pool_service
+    return service.numbers if service.respond_to?(:numbers)
+    return service.pool
   end
 
   def self.custom_fusion_pool_info
