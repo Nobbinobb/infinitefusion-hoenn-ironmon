@@ -961,12 +961,12 @@ module Ironmon
             ordered, position, false, maximum_pair_difference
           )
           if !partner_position
-            repaired = repair_final_strength_pair(
+            repaired = repair_strength_pair(
               pairs, ordered[position], ordered[position + 1],
               maximum_pair_difference
-            ) if position == ordered.length - 2
+            )
             if repaired
-              break
+              next
             end
             pairing_failed = true
             break
@@ -1032,8 +1032,8 @@ module Ironmon
       return nil
     end
 
-    def repair_final_strength_pair(pairs, current_first, current_second,
-                                   maximum_pair_difference)
+    def repair_strength_pair(pairs, current_first, current_second,
+                             maximum_pair_difference)
       @preparation_stage = :strength_repair
       best = nil
       pairs.each_with_index do |previous, pair_index|

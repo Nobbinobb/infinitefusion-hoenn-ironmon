@@ -496,6 +496,18 @@ module IronmonSeededRunImportRuntimeTests
           preview_mapper.paired_species(reverse) == forward,
         "schema-5 player orientations are the same global reverse pair"
       )
+      blocked_seed = 1_851_036_422
+      blocked_seed_mapper = Ironmon::PlayerFusionMapper.new(
+        blocked_seed, Ironmon.custom_fusion_pool, {}, {},
+        Ironmon::BaseStatGenerator.new(
+          blocked_seed, Ironmon.base_stat_source_fingerprint
+        )
+      )
+      blocked_seed_mapper.prepare
+      assert(
+        blocked_seed_mapper.paired_species(forward),
+        "schema-5 repairs a blocked strength pairing before retrying the seed"
+      )
       material_range = preview_mapper.send(
         :fusion_bst_range,
         preview_mapper.send(:normal_bst, mudkip),

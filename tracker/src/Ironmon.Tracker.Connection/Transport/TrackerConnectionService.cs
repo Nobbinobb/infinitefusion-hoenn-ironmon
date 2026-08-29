@@ -297,12 +297,12 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                     if (IsObtainabilityPrecalculationFinished(response))
                         completedRunId = runId;
                 }
-                catch (TrackerProtocolException exception) when (IsObtainabilityPrecalculationTerminalFailure(exception))
+                catch (Exception exception) when (IsObtainabilityPrecalculationTerminalFailure(exception))
                 {
                     _diagnostics.RecordError(exception);
                     completedRunId = runId;
                 }
-                catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
+                catch (Exception exception) when (exception is IOException or TimeoutException or TrackerProtocolException)
                 {
                     _diagnostics.RecordError(exception);
                 }
@@ -348,12 +348,13 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// <summary>
     /// Determines whether a rejected obtainability request represents a terminal adapter failure for the run.
     /// </summary>
-    /// <param name="exception">The rejected tracker request.</param>
+    /// <param name="exception">The rejected tracker request or deterministic native-worker failure.</param>
     /// <returns>True when polling the same run cannot make further progress.</returns>
-    internal static bool IsObtainabilityPrecalculationTerminalFailure(TrackerProtocolException exception)
+    internal static bool IsObtainabilityPrecalculationTerminalFailure(Exception exception)
     {
         ArgumentNullException.ThrowIfNull(exception);
-        return exception.ErrorCode == ObtainabilityIncompleteErrorCode;
+        return exception is InvalidOperationException
+            || exception is TrackerProtocolException protocolException && protocolException.ErrorCode == ObtainabilityIncompleteErrorCode;
     }
 
     /// <summary>

@@ -247,9 +247,9 @@ internal sealed class PlayerFusionMappingWorker
 
                 if (partner < 0)
                 {
-                    bool repaired = position == ordered.Length - 2 && RepairFinalStrengthPair(pairs, ordered[position], ordered[position + 1], maximumPairDifference);
+                    bool repaired = RepairStrengthPair(pairs, ordered[position], ordered[position + 1], maximumPairDifference);
                     if (repaired)
-                        break;
+                        continue;
 
                     failed = true;
                     break;
@@ -294,9 +294,9 @@ internal sealed class PlayerFusionMappingWorker
     }
 
     /// <summary>
-    /// Re-pairs the final two targets with the best compatible earlier pair.
+    /// Re-pairs two blocked targets with the best compatible earlier pair.
     /// </summary>
-    private static bool RepairFinalStrengthPair(List<TargetPair> pairs, TargetData currentFirst, TargetData currentSecond, int maximumPairDifference)
+    private static bool RepairStrengthPair(List<TargetPair> pairs, TargetData currentFirst, TargetData currentSecond, int maximumPairDifference)
     {
         ((int Distance, int TypePenalty, int PairIndex) Score, int PairIndex, TargetPair First, TargetPair Second)? best = null;
         for (int pairIndex = 0; pairIndex < pairs.Count; pairIndex++)

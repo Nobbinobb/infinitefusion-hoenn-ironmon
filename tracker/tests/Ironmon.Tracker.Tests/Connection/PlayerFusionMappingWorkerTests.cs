@@ -9,6 +9,8 @@ namespace Ironmon.Tracker.Tests.Connection;
 public sealed class PlayerFusionMappingWorkerTests
 {
     private const string DefaultFormSuffix = ":0";
+    private const string ColdStartJobId = "cold-start-worker-job";
+    private const string ColdStartRunId = "cold-start-worker-run";
     private const string DirectProofJobId = "direct-proof-job";
     private const string FusionBodyPrefix = "B";
     private const string FusionHeadSeparator = "H";
@@ -218,6 +220,62 @@ public sealed class PlayerFusionMappingWorkerTests
     /// <returns>True when the result marks the fusion obtainable.</returns>
     private static bool IsObtainable(PlayerFusionClosureResultPayload result, int speciesId)
         => (result.ObtainableFusionWords[speciesId >> 5] & 1U << (speciesId & 31)) != 0;
+
+    /// <summary>
+    /// Verifies a cold full-material closure cannot deadlock with the concurrently prepared evolution index.
+    /// </summary>
+    [Fact]
+    public async Task CoordinatorColdStartCompletesConcurrentWorkerPreparation()
+    {
+        PlayerFusionMappingWorkerCatalog catalog = PlayerFusionMappingWorkerCatalog.Load();
+        PlayerFusionMappingCoordinator coordinator = new();
+        int[] materials = [.. Enumerable.Range(1, catalog.NormalSpeciesCount)];
+        PlayerFusionClosureWorkPayload work = new()
+        {
+            JobId = ColdStartJobId,
+            SourceCatalogFingerprint = ObtainabilitySourceCatalog.Load().Fingerprint,
+            Seed = 1_851_036_422,
+            GeneratorVersion = catalog.PlayerFusionGeneratorVersion,
+            BaseStatSourceFingerprint = catalog.BaseStatSourceFingerprint,
+            CustomFusionPoolVersion = catalog.CustomFusionPoolVersion,
+            CustomFusionPoolSize = catalog.CustomFusionPool.Count,
+            CustomFusionPoolFingerprint = catalog.CustomFusionPoolFingerprint,
+            FusionEvolutionGeneratorVersion = catalog.FusionEvolutionGeneratorVersion,
+            FusionEvolutionRulesVersion = catalog.FusionEvolutionRulesVersion,
+            EvolutionSourceFingerprint = catalog.EvolutionSourceFingerprint,
+            EvolutionTaxonomyFingerprint = catalog.EvolutionTaxonomyFingerprint,
+            EvolutionMethodFingerprint = catalog.EvolutionMethodFingerprint,
+            MaterialIds = materials,
+            BaseProofs = [.. materials.Select(id => new PlayerFusionProofSpeciesPayload
+            {
+                SpeciesId = id,
+                Plans = [new PlayerFusionProofPlanPayload { PathLength = 1 }]
+            })],
+            TotalPairs = materials.Length * (materials.Length + 1) / 2
+        };
+
+        FusionAssignmentRecipePayload assignmentRecipe = new()
+        {
+            Seed = work.Seed,
+            PlayerFusionGeneratorVersion = catalog.PlayerFusionGeneratorVersion,
+            GeneratorVersion = catalog.FusionEvolutionGeneratorVersion,
+            RulesVersion = catalog.FusionEvolutionRulesVersion,
+            SourceFingerprint = catalog.EvolutionSourceFingerprint,
+            TaxonomyFingerprint = catalog.EvolutionTaxonomyFingerprint,
+            MethodFingerprint = catalog.EvolutionMethodFingerprint,
+            BaseStatSourceFingerprint = catalog.BaseStatSourceFingerprint,
+            TargetPoolVersion = catalog.CustomFusionPoolVersion,
+            TargetPoolSize = catalog.CustomFusionPool.Count,
+            TargetPoolFingerprint = catalog.CustomFusionPoolFingerprint
+        };
+
+        Assert.True(coordinator.PrepareActiveFusionAssignments(ColdStartRunId, assignmentRecipe));
+        PlayerFusionClosureResultPayload? result = await coordinator.CreateResultAsync(work, CancellationToken.None, ColdStartRunId).WaitAsync(TimeSpan.FromSeconds(20));
+
+        Assert.NotNull(result);
+        Assert.NotEmpty(result.ObtainableFusionWords);
+        Assert.Equal(0, coordinator.CachedJobCount);
+    }
 
     /// <summary>
     /// Verifies the tracker returns one compact final closure summary.

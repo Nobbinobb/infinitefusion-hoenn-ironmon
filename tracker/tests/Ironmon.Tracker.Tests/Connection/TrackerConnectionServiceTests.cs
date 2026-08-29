@@ -57,6 +57,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         TrackerProtocolException exception = new("obtainability_incomplete", "An acquisition source could not be classified.");
 
         Assert.True(TrackerConnectionService.IsObtainabilityPrecalculationTerminalFailure(exception));
+        Assert.True(TrackerConnectionService.IsObtainabilityPrecalculationTerminalFailure(new InvalidOperationException("Deterministic worker failure.")));
         Assert.False(TrackerConnectionService.IsObtainabilityPrecalculationTerminalFailure(new TrackerProtocolException("timeout", "Try again.")));
     }
 

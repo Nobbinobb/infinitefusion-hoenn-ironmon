@@ -80,17 +80,23 @@ internal sealed class PlayerFusionMappingCoordinator
         if (!string.IsNullOrWhiteSpace(runId))
             _runEvolutionKeys[runId] = evolutionKey;
 
-        Task<PlayerFusionWorkerResult> job = _jobs.GetOrAdd(work.JobId, _ => Task.Run(() => BuildResult(work, evolutionKey), CancellationToken.None));
-        PlayerFusionWorkerResult result = await job.WaitAsync(cancellationToken).ConfigureAwait(false);
-        _jobs.TryRemove(work.JobId, out _);
-
-        return new PlayerFusionClosureResultPayload
+        Task<PlayerFusionWorkerResult> job = _jobs.GetOrAdd(work.JobId, _ => BuildResultAsync(work, evolutionKey));
+        try
         {
-            JobId = work.JobId,
-            ObtainableFusionWords = result.ObtainableFusionWords,
-            PackedExecutableEvolutionEdges = result.PackedExecutableEvolutionEdges,
-            ObtainableCount = result.ObtainableCount
-        };
+            PlayerFusionWorkerResult result = await job.WaitAsync(cancellationToken).ConfigureAwait(false);
+            return new PlayerFusionClosureResultPayload
+            {
+                JobId = work.JobId,
+                ObtainableFusionWords = result.ObtainableFusionWords,
+                PackedExecutableEvolutionEdges = result.PackedExecutableEvolutionEdges,
+                ObtainableCount = result.ObtainableCount
+            };
+        }
+        finally
+        {
+            if (job.IsCompleted && _jobs.TryGetValue(work.JobId, out Task<PlayerFusionWorkerResult>? retainedJob) && ReferenceEquals(retainedJob, job))
+                _jobs.TryRemove(work.JobId, out _);
+        }
     }
 
     /// <summary>
@@ -247,24 +253,20 @@ internal sealed class PlayerFusionMappingCoordinator
     }
 
     /// <summary>
-    /// Builds the compact run-wide worker result.
+    /// Builds the compact run-wide worker result without synchronously waiting between parallel worker jobs.
     /// </summary>
     /// <param name="work">The validated game-owned job description.</param>
     /// <param name="evolutionKey">The compatible deterministic assignment identity.</param>
     /// <returns>The final obtainability membership and executable-edge indexes.</returns>
-    private PlayerFusionWorkerResult BuildResult(PlayerFusionClosureWorkPayload work, EvolutionAssignmentKey evolutionKey)
+    private async Task<PlayerFusionWorkerResult> BuildResultAsync(PlayerFusionClosureWorkPayload work, EvolutionAssignmentKey evolutionKey)
     {
-        PlayerFusionDirectProofResult? directProof = null;
-        FusionEvolutionAssignmentIndex? evolutionIndex = null;
-        void buildDirectProof() => directProof = BuildDirectProof(work);
-        void loadEvolutionIndex() => evolutionIndex = GetEvolutionAssignmentIndex(evolutionKey).GetAwaiter().GetResult();
-        Parallel.Invoke(buildDirectProof, loadEvolutionIndex);
+        Task<PlayerFusionDirectProofResult> directProofJob = Task.Run(() => BuildDirectProof(work), CancellationToken.None);
+        Task<FusionEvolutionAssignmentIndex> evolutionJob = GetEvolutionAssignmentIndex(evolutionKey);
+        Task firstCompletedJob = await Task.WhenAny(directProofJob, evolutionJob).ConfigureAwait(false);
+        await firstCompletedJob.ConfigureAwait(false);
 
-        PlayerFusionDirectProofResult provenDirect = directProof
-            ?? throw new InvalidDataException("The direct fusion worker did not return a result.");
-
-        IReadOnlyList<FusionEvolutionSourceAssignment> generatedAssignments = evolutionIndex?.Assignments
-            ?? throw new InvalidDataException("The fusion-evolution worker did not return a result.");
+        PlayerFusionDirectProofResult provenDirect = await directProofJob.ConfigureAwait(false);
+        IReadOnlyList<FusionEvolutionSourceAssignment> generatedAssignments = (await evolutionJob.ConfigureAwait(false)).Assignments;
 
         IReadOnlyList<FusionEvolutionSourceAssignment> executableAssignments = CloseFusionEvolutions(provenDirect.PlansBySpecies, generatedAssignments, work.ResourceSupply, provenDirect.NextPlanOrder);
         uint[] obtainableFusionWords = BuildObtainableFusionWords(provenDirect.PlansBySpecies);
