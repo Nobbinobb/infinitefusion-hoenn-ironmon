@@ -385,11 +385,62 @@ module IronmonAreaProgressRuntimeTests
         end
       end
 
+      $PokemonGlobal.ironmon_wild_species_map = {}
+      Ironmon.reset_species_generator_cache
+      paged_encounter_entries = Ironmon.tracker_area_encounter_metadata(
+        area, { "data_mode" => Ironmon.tracker_data_mode }
+      )
+      debug_page = Ironmon.tracker_area_lookup_detail(
+        {
+          "area_id" => area["area_id"],
+          "category" => "encounter",
+          "discovery_keys" => [],
+          "offset" => 0,
+          "limit" => 1
+        },
+        "runtime-test", true
+      )
+      debug_generator = Ironmon.tracker_area_species_generator(
+        active_recipe, :wild
+      )
+      assert(
+        debug_page["encounters"].length == 1 &&
+          debug_page["total_count"] == paged_encounter_entries.length &&
+          debug_generator.mapping.length == 1,
+        "authorized encounter lookup generates only the requested page"
+      )
+      $PokemonGlobal.ironmon_wild_species_map = {}
+      Ironmon.reset_species_generator_cache
+      hidden_detail = Ironmon.tracker_area_lookup_detail(
+        {
+          "area_id" => area["area_id"],
+          "category" => "encounter",
+          "discovery_keys" => [],
+          "offset" => 0,
+          "limit" => 10
+        },
+        "runtime-test", false
+      )
+      hidden_generator = Ironmon.tracker_area_species_generator(
+        active_recipe, :wild
+      )
+      assert(
+        hidden_generator.mapping.empty?,
+        "concealed encounter rows are not generated during lookup"
+      )
+      assert(
+        hidden_detail["encounters"].all? do |entry|
+          !entry["details_revealed"] && !entry["independent_fusion"]
+        end,
+        "concealed encounter rows expose metadata only"
+      )
       detail = Ironmon.tracker_area_lookup_detail(
         {
           "area_id" => area["area_id"],
           "category" => "encounter",
-          "discovery_keys" => [independent_id]
+          "discovery_keys" => [independent_id],
+          "offset" => 0,
+          "limit" => 10
         },
         "runtime-test", false
       )
@@ -399,6 +450,10 @@ module IronmonAreaProgressRuntimeTests
       hidden = detail["encounters"].find do |entry|
         entry["entry_id"] == decoy_id
       end
+      assert(
+        hidden_generator.mapping.length == 1,
+        "lookup generates only the disclosed encounter row"
+      )
       assert(revealed["details_revealed"], "requested discovery is revealed")
       assert(!hidden["details_revealed"], "unknown live slot remains hidden")
       trainer_detail = Ironmon.tracker_area_lookup_detail(
@@ -423,7 +478,9 @@ module IronmonAreaProgressRuntimeTests
           {
             "area_id" => area["area_id"],
             "category" => "encounter",
-            "discovery_keys" => ["encounter:999:0:Land:1"]
+            "discovery_keys" => ["encounter:999:0:Land:1"],
+            "offset" => 0,
+            "limit" => 10
           },
           "runtime-test", false
         )
@@ -440,12 +497,26 @@ module IronmonAreaProgressRuntimeTests
       def marker_event.active?
         return @active
       end
+      marker_key = [
+        hidden_item["map_id"].to_i,
+        hidden_item["event_id"].to_i,
+        "A"
+      ]
+      $game_self_switches[marker_key] = false
       assert(
         Ironmon.hidden_area_item_marker_visible?(
           marker_event, hidden_item["entry_id"]
         ),
-        "active hidden item marker"
+        "uncollected active hidden item marker"
       )
+      $game_self_switches[marker_key] = true
+      assert(
+        !Ironmon.hidden_area_item_marker_visible?(
+          marker_event, hidden_item["entry_id"]
+        ),
+        "collected hidden item marker disappears while its empty page is active"
+      )
+      $game_self_switches[marker_key] = false
       marker_event.instance_variable_set(:@active, false)
       assert(
         !Ironmon.hidden_area_item_marker_visible?(

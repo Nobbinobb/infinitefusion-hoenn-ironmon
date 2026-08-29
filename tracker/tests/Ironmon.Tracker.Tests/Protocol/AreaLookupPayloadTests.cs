@@ -59,6 +59,9 @@ public sealed class AreaLookupPayloadTests
             Name = "Route 102",
             Category = AreaContentCategory.Encounter,
             Revision = 0,
+            Offset = 10,
+            Limit = TrackerProtocol.AreaLookupPageSize,
+            TotalCount = 28,
             Encounters =
             [
                 new AreaEncounterEntryPayload
@@ -79,6 +82,9 @@ public sealed class AreaLookupPayloadTests
         JsonElement encounter = json.GetProperty("encounters")[0];
 
         Assert.Equal("encounter", json.GetProperty("category").GetString());
+        Assert.Equal(10, json.GetProperty("offset").GetInt32());
+        Assert.Equal(10, json.GetProperty("limit").GetInt32());
+        Assert.Equal(28, json.GetProperty("total_count").GetInt32());
         Assert.Equal(40, encounter.GetProperty("probability_percent").GetDouble());
         Assert.Equal(3, encounter.GetProperty("minimum_level").GetInt32());
         Assert.False(encounter.TryGetProperty("species_id", out _));

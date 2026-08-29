@@ -66,17 +66,14 @@ module Ironmon
   end
 
   def self.tracker_area_encounter_entries(area, recipe, discoveries,
-                                          full_details)
-    generator = tracker_area_species_generator(recipe, :wild)
-    return tracker_area_encounter_metadata(area, recipe).map do |entry|
+                                          full_details, offset = 0,
+                                          limit = nil)
+    generator = nil
+    metadata = tracker_area_encounter_metadata(area, recipe)
+    metadata = metadata.slice(offset, limit) || [] if limit
+    return metadata.map do |entry|
       encountered = discoveries.key?(entry["entry_id"])
       revealed = full_details || encountered
-      mapped = generator.map(
-        entry["source_species"],
-        [:table, entry["mode_name"], entry["map_id"], entry["version"],
-         entry["encounter_type"].to_sym, entry["context_slot"]]
-      )
-      species = GameData::Species.get(mapped)
       result = {
         "entry_id" => entry["entry_id"],
         "map_id" => entry["map_id"],
@@ -88,12 +85,20 @@ module Ironmon
         "maximum_level" => entry["maximum_level"],
         "encountered" => encountered,
         "details_revealed" => revealed,
-        "independent_fusion" => species.id_number > NB_POKEMON
+        "independent_fusion" => false
       }
       if revealed
+        generator ||= tracker_area_species_generator(recipe, :wild)
+        mapped = generator.map(
+          entry["source_species"],
+          [:table, entry["mode_name"], entry["map_id"], entry["version"],
+           entry["encounter_type"].to_sym, entry["context_slot"]]
+        )
+        species = GameData::Species.get(mapped)
         result["species_id"] = "#{species.id}:0"
         result["species_name"] = species.name
         result["sprite_path"] = tracker_lookup_sprite_path(species)
+        result["independent_fusion"] = species.id_number > NB_POKEMON
       end
       result
     end

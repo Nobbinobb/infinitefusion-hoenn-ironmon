@@ -107,7 +107,8 @@
     }
     else
     {
-        <ArchiveView GameRoot="@_connection.Game?.GameRoot" />
+        <ArchiveView GameRoot="@_connection.Game?.GameRoot"
+                     CurrentStatistics="@_connection.CurrentState?.AttemptStatistics" />
     }
 
 </main>

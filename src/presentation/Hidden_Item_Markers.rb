@@ -5,6 +5,9 @@
 module Ironmon
   def self.hidden_area_item_marker_visible?(event, entry_id)
     return false if !active? || !event || !event.active?
+    components = entry_id.to_s.split(":", 3)
+    return false if components.length == 3 && $game_self_switches &&
+      $game_self_switches[[components[1].to_i, components[2].to_i, "A"]]
     return true
   end
 end

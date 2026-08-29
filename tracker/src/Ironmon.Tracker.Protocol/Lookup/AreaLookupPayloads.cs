@@ -161,6 +161,16 @@ public sealed class AreaLookupDetailRequestPayload
     /// Gets or initializes the tracker-owned discovery keys for the requested area and category.
     /// </summary>
     public IReadOnlyList<string> DiscoveryKeys { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes the zero-based encounter-entry offset.
+    /// </summary>
+    public int Offset { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the maximum number of encounter entries to return.
+    /// </summary>
+    public int Limit { get; init; } = TrackerProtocol.AreaLookupPageSize;
 }
 
 /// <summary>
@@ -194,6 +204,21 @@ public sealed class AreaLookupDetailResponsePayload
     /// Gets or initializes the progress revision represented by the response.
     /// </summary>
     public long Revision { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the zero-based entry offset represented by the response.
+    /// </summary>
+    public int Offset { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the maximum requested page size.
+    /// </summary>
+    public int Limit { get; init; } = TrackerProtocol.AreaLookupPageSize;
+
+    /// <summary>
+    /// Gets or initializes the total number of entries in the selected category.
+    /// </summary>
+    public int TotalCount { get; init; }
 
     /// <summary>
     /// Gets or initializes trainer entries when the trainer category was requested.

@@ -67,6 +67,14 @@ module Ironmon
       raise TrackerLookupError.new("area_not_found", "The selected area is unavailable.")
     end
     category = payload["category"].to_s
+    offset = payload["offset"].to_i
+    limit = payload["limit"].to_i
+    if category == "encounter" &&
+       (offset < 0 || limit < 1 || limit > 50)
+      raise TrackerLookupError.new(
+        "invalid_area_page", "The selected encounter page is invalid."
+      )
+    end
     discovery_keys = tracker_validate_area_discovery_keys(
       area, category, recipe, payload["discovery_keys"]
     )
@@ -76,6 +84,9 @@ module Ironmon
       "name" => area["name"],
       "category" => category,
       "revision" => 0,
+      "offset" => category == "encounter" ? offset : 0,
+      "limit" => category == "encounter" ? limit : 0,
+      "total_count" => 0,
       "trainers" => [],
       "encounters" => [],
       "items" => []
@@ -85,14 +96,19 @@ module Ironmon
       result["trainers"] = tracker_area_trainer_entries(
         area, recipe, discovery_keys, full_details, archived
       )
+      result["total_count"] = result["trainers"].length
     when "encounter"
+      result["total_count"] = tracker_area_encounter_metadata(
+        area, recipe
+      ).length
       result["encounters"] = tracker_area_encounter_entries(
-        area, recipe, discovery_keys, full_details
+        area, recipe, discovery_keys, full_details, offset, limit
       )
     when "item"
       result["items"] = tracker_area_item_entries(
         area, recipe, discovery_keys, full_details, archived
       )
+      result["total_count"] = result["items"].length
     else
       raise TrackerLookupError.new(
         "invalid_area_category", "The selected area category is invalid."

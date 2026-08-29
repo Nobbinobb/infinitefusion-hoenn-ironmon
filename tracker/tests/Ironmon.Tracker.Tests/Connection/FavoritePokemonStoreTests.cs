@@ -19,15 +19,23 @@ public sealed class FavoritePokemonStoreTests
     public void FavoritesPersistWithoutDuplicates()
     {
         string root = Path.Combine(Path.GetTempPath(), $"ironmon-favorites-{Guid.NewGuid():N}");
-        FavoritePokemonStore store = new(new TrackerKnowledgeOptions(root));
+        try
+        {
+            FavoritePokemonStore store = new(new TrackerKnowledgeOptions(root));
 
-        Assert.True(store.Add(new PokemonSearchMatch { SpeciesId = "SQUIRTLE:0", SpeciesName = "Squirtle" }));
-        Assert.True(store.Add(new PokemonSearchMatch { SpeciesId = "BULBASAUR:0", SpeciesName = "Bulbasaur" }));
-        Assert.False(store.Add(new PokemonSearchMatch { SpeciesId = "bulbasaur:0", SpeciesName = "Bulbasaur" }));
+            Assert.True(store.Add(new PokemonSearchMatch { SpeciesId = "SQUIRTLE:0", SpeciesName = "Squirtle" }));
+            Assert.True(store.Add(new PokemonSearchMatch { SpeciesId = "BULBASAUR:0", SpeciesName = "Bulbasaur" }));
+            Assert.False(store.Add(new PokemonSearchMatch { SpeciesId = "bulbasaur:0", SpeciesName = "Bulbasaur" }));
 
-        FavoritePokemonStore reloaded = new(new TrackerKnowledgeOptions(root));
-        Assert.Equal(["Bulbasaur", "Squirtle"], reloaded.Favorites.Select(favorite => favorite.SpeciesName));
-        Assert.True(reloaded.Remove("BULBASAUR:0"));
-        Assert.Equal("Squirtle", Assert.Single(new FavoritePokemonStore(new TrackerKnowledgeOptions(root)).Favorites).SpeciesName);
+            FavoritePokemonStore reloaded = new(new TrackerKnowledgeOptions(root));
+            Assert.Equal(["Bulbasaur", "Squirtle"], reloaded.Favorites.Select(favorite => favorite.SpeciesName));
+            Assert.True(reloaded.Remove("BULBASAUR:0"));
+            Assert.Equal("Squirtle", Assert.Single(new FavoritePokemonStore(new TrackerKnowledgeOptions(root)).Favorites).SpeciesName);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, true);
+        }
     }
 }

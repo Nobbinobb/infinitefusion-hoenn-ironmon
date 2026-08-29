@@ -64,20 +64,25 @@ internal sealed class TrackerAreaRequestClient
     /// <param name="recipe">The archived run recipe, or null for the active run.</param>
     /// <param name="connectedRunId">The active connected run identifier when available.</param>
     /// <param name="forceRefresh">Whether to bypass a previously cached response.</param>
+    /// <param name="offset">The zero-based encounter-entry offset.</param>
+    /// <param name="limit">The maximum number of encounter entries to return.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The requested area category.</returns>
-    internal async Task<AreaLookupDetailResponsePayload> GetDetailsAsync(string areaId, AreaContentCategory category, CompletedRunRecipePayload? recipe, string? connectedRunId, bool forceRefresh, CancellationToken cancellationToken)
+    internal async Task<AreaLookupDetailResponsePayload> GetDetailsAsync(string areaId, AreaContentCategory category, CompletedRunRecipePayload? recipe, string? connectedRunId, bool forceRefresh, int offset, int limit, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(areaId);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, TrackerProtocol.MinimumSearchPageSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, TrackerProtocol.MaximumSearchPageSize);
         string runId = recipe?.RunId ?? connectedRunId ?? throw new InvalidOperationException("No Ironmon run is connected.");
         long revision = _discoveries.GetRevision(runId);
         string source = recipe is null ? "active" : "archive";
         bool diagnosticAccess = recipe is null && _authorization.HasAreaDetails(category);
-        string cacheKey = $"{source}|{runId}|{revision}|{diagnosticAccess}|{category}|{areaId}";
+        string cacheKey = $"{source}|{runId}|{revision}|{diagnosticAccess}|{category}|{areaId}|{offset}|{limit}";
         if (!forceRefresh && _cache.TryGet(TrackerCommands.AreaLookupDetail, cacheKey, out AreaLookupDetailResponsePayload cached))
             return cached;
 
-        AreaLookupDetailRequestPayload request = new() { AreaId = areaId, Category = category, Recipe = recipe, DiscoveryKeys = _discoveries.GetKeys(runId, areaId, category) };
+        AreaLookupDetailRequestPayload request = new() { AreaId = areaId, Category = category, Recipe = recipe, DiscoveryKeys = _discoveries.GetKeys(runId, areaId, category), Offset = offset, Limit = limit };
         AreaLookupDetailResponsePayload gameResponse = await _session.SendAsync<AreaLookupDetailRequestPayload, AreaLookupDetailResponsePayload>(TrackerCommands.AreaLookupDetail, request, runId, cancellationToken);
         if (recipe is null)
         {
@@ -92,7 +97,7 @@ internal sealed class TrackerAreaRequestClient
         }
 
         AreaLookupDetailResponsePayload response = WithTrackerRevision(runId, gameResponse);
-        _cache.Set(TrackerCommands.AreaLookupDetail, $"{source}|{runId}|{response.Revision}|{diagnosticAccess}|{category}|{areaId}", response);
+        _cache.Set(TrackerCommands.AreaLookupDetail, $"{source}|{runId}|{response.Revision}|{diagnosticAccess}|{category}|{areaId}|{offset}|{limit}", response);
         return response;
     }
 
@@ -135,6 +140,9 @@ internal sealed class TrackerAreaRequestClient
             Name = response.Name,
             Category = response.Category,
             Revision = _discoveries.GetRevision(runId),
+            Offset = response.Offset,
+            Limit = response.Limit,
+            TotalCount = response.TotalCount,
             Trainers = response.Trainers,
             Encounters = response.Encounters,
             Items = response.Items

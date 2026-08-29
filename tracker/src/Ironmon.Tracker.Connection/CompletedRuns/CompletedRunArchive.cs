@@ -64,17 +64,46 @@ public sealed class CompletedRunArchive
     }
 
     /// <summary>
+    /// Gets the newest authoritative cumulative totals for each represented save slot.
+    /// </summary>
+    /// <param name="currentStatistics">The connected game's current save-slot totals, when available.</param>
+    /// <returns>Save slots and their authoritative totals, ordered by slot name.</returns>
+    public IReadOnlyList<KeyValuePair<string, RunStatisticsPayload>> GetLatestSaveSlotStatistics(RunStatisticsPayload? currentStatistics)
+    {
+        List<RunStatisticsPayload> statistics;
+        lock (_sync)
+        {
+            statistics = [.. _recipes
+                .Select(recipe => recipe.Statistics)
+                .OfType<RunStatisticsPayload>()
+                .Where(entry => !string.IsNullOrWhiteSpace(entry.SaveSlot))];
+        }
+
+        if (!string.IsNullOrWhiteSpace(currentStatistics?.SaveSlot))
+        {
+            statistics.RemoveAll(entry => string.Equals(entry.SaveSlot, currentStatistics.SaveSlot, StringComparison.OrdinalIgnoreCase));
+            statistics.Insert(0, currentStatistics);
+        }
+
+        return [.. statistics
+            .GroupBy(entry => entry.SaveSlot!, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(group => new KeyValuePair<string, RunStatisticsPayload>(group.Key, group.First()))];
+    }
+
+    /// <summary>
     /// Adds or replaces one completed-run recipe and persists it atomically.
     /// </summary>
     /// <param name="recipe">The compact deterministic recipe.</param>
-    public void Store(CompletedRunRecipePayload recipe)
+    /// <param name="requestSelection">Whether a new recipe should request foreground Archive selection.</param>
+    public void Store(CompletedRunRecipePayload recipe, bool requestSelection = true)
     {
         ArgumentNullException.ThrowIfNull(recipe);
         CompletedRunRecipeValidator.Validate(recipe);
         bool selectionRequested;
         lock (_sync)
         {
-            selectionRequested = _recipes.All(candidate => candidate.RunId != recipe.RunId);
+            selectionRequested = requestSelection && _recipes.All(candidate => candidate.RunId != recipe.RunId);
             string path = GetRecipePath(recipe.RunId);
             try
             {

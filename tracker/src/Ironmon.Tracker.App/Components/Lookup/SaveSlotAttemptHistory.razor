@@ -1,6 +1,6 @@
 @if (_slots.Count > 0)
 {
-    <details class="archive-disclosure save-slot-history">
+    <details class="archive-disclosure save-slot-history" open>
         <summary>
             <span>
                 <small>@Text["Archive.SaveSlots.Kicker"]</small>
@@ -14,7 +14,7 @@
                 <button type="button"
                         class="@GetTabClass(slot.Key)"
                         role="tab"
-                        aria-selected="@(slot.Key == _selectedSlot)"
+                        aria-selected="@(slot.Key == _selection.SelectedSaveSlot)"
                         @onclick="() => SelectSlot(slot.Key)">
                     @slot.Key
                 </button>

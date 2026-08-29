@@ -7,7 +7,7 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class AreaLookupExplorer : IDisposable
 {
-    private const int _pageSize = 10;
+    private const int _pageSize = TrackerProtocol.AreaLookupPageSize;
     private const string _summaryRequestKey = "summary";
     private static readonly AreaContentCategory[] Categories = [AreaContentCategory.Trainer, AreaContentCategory.Encounter, AreaContentCategory.Item];
     private readonly Dictionary<string, AreaLookupDetailResponsePayload> _details = [];
@@ -177,7 +177,8 @@ public partial class AreaLookupExplorer : IDisposable
         _detailErrors.Remove(key);
         try
         {
-            AreaLookupDetailResponsePayload response = await Connection.GetAreaDetailsAsync(areaId, category, recipe, forceRefresh, request.CancellationToken);
+            int offset = category == AreaContentCategory.Encounter ? GetDetailPagination(areaId).Offset : 0;
+            AreaLookupDetailResponsePayload response = await Connection.GetAreaDetailsAsync(areaId, category, recipe, forceRefresh, request.CancellationToken, offset, _pageSize);
             if (!request.IsCurrent)
                 return;
 
@@ -317,7 +318,12 @@ public partial class AreaLookupExplorer : IDisposable
     /// <param name="entries">All entries in the selected category.</param>
     /// <returns>The entries on the selected page.</returns>
     private IReadOnlyList<T> GetPagedEntries<T>(string areaId, IReadOnlyList<T> entries)
-        => GetDetailPagination(areaId).GetPage(entries);
+    {
+        if (_selectedCategory == AreaContentCategory.Encounter && entries.Count <= _pageSize)
+            return entries;
+
+        return GetDetailPagination(areaId).GetPage(entries);
+    }
 
     /// <summary>
     /// Selects the previous area-summary page.
@@ -336,16 +342,24 @@ public partial class AreaLookupExplorer : IDisposable
     /// Selects the previous entry page for one expanded area.
     /// </summary>
     /// <param name="areaId">The stable logical area identifier.</param>
-    private void PreviousDetailPage(string areaId)
-        => GetDetailPagination(areaId).Previous();
+    private async Task PreviousDetailPage(string areaId)
+    {
+        GetDetailPagination(areaId).Previous();
+        if (_selectedCategory == AreaContentCategory.Encounter)
+            await LoadAreaDetailsAsync(areaId, false);
+    }
 
     /// <summary>
     /// Selects the next entry page for one expanded area.
     /// </summary>
     /// <param name="areaId">The stable logical area identifier.</param>
     /// <param name="entryCount">The total entry count.</param>
-    private void NextDetailPage(string areaId, int entryCount)
-        => GetDetailPagination(areaId).Next(entryCount);
+    private async Task NextDetailPage(string areaId, int entryCount)
+    {
+        GetDetailPagination(areaId).Next(entryCount);
+        if (_selectedCategory == AreaContentCategory.Encounter)
+            await LoadAreaDetailsAsync(areaId, false);
+    }
 
     /// <summary>
     /// Gets or creates pagination for one area and selected category.
@@ -370,9 +384,9 @@ public partial class AreaLookupExplorer : IDisposable
     /// <returns>The selected category's entry count.</returns>
     private static int GetDetailEntryCount(AreaLookupDetailResponsePayload detail) => detail.Category switch
     {
-        AreaContentCategory.Trainer => detail.Trainers.Count,
-        AreaContentCategory.Encounter => detail.Encounters.Count,
-        AreaContentCategory.Item => detail.Items.Count,
+        AreaContentCategory.Trainer => detail.TotalCount > 0 ? detail.TotalCount : detail.Trainers.Count,
+        AreaContentCategory.Encounter => detail.TotalCount > 0 ? detail.TotalCount : detail.Encounters.Count,
+        AreaContentCategory.Item => detail.TotalCount > 0 ? detail.TotalCount : detail.Items.Count,
         _ => 0
     };
 

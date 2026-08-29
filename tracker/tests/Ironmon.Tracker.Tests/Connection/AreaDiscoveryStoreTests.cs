@@ -3,13 +3,27 @@ namespace Ironmon.Tracker.Tests.Connection;
 /// <summary>
 /// Verifies tracker-owned area discovery persistence and idempotency.
 /// </summary>
-public sealed class AreaDiscoveryStoreTests
+public sealed class AreaDiscoveryStoreTests : IDisposable
 {
+    private readonly List<string> _roots = [];
+
     /// <summary>
     /// Initializes area discovery store tests.
     /// </summary>
     public AreaDiscoveryStoreTests()
     {
+    }
+
+    /// <summary>
+    /// Removes every temporary discovery root owned by the current test.
+    /// </summary>
+    public void Dispose()
+    {
+        foreach (string root in _roots)
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, true);
+        }
     }
 
     /// <summary>
@@ -300,6 +314,10 @@ public sealed class AreaDiscoveryStoreTests
     /// Creates an isolated persistence root.
     /// </summary>
     /// <returns>The isolated directory path.</returns>
-    private static string CreateRoot()
-        => Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
+    private string CreateRoot()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
+        _roots.Add(root);
+        return root;
+    }
 }

@@ -18,6 +18,11 @@ public sealed class ArchiveRunSelectionState
     public string? SelectedRunId { get; private set; }
 
     /// <summary>
+    /// Gets whether completed-run details are explicitly expanded.
+    /// </summary>
+    public bool IsExpanded { get; private set; }
+
+    /// <summary>
     /// Gets whether the current selection was chosen as an availability fallback.
     /// </summary>
     public bool IsAutomatic { get; private set; } = true;
@@ -31,6 +36,13 @@ public sealed class ArchiveRunSelectionState
         SelectedRunId = runId;
         IsAutomatic = false;
     }
+
+    /// <summary>
+    /// Records whether completed-run details are explicitly expanded.
+    /// </summary>
+    /// <param name="expanded">Whether the completed-run disclosure is open.</param>
+    public void SetExpanded(bool expanded)
+        => IsExpanded = expanded;
 
     /// <summary>
     /// Reconciles the selection with current archive availability.

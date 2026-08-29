@@ -40,6 +40,12 @@ public partial class ArchiveView : IDisposable
     public string? GameRoot { get; set; }
 
     /// <summary>
+    /// Gets or sets the current game's authoritative attempt statistics.
+    /// </summary>
+    [Parameter]
+    public RunStatisticsPayload? CurrentStatistics { get; set; }
+
+    /// <summary>
     /// Loads available recipes and subscribes to archive changes.
     /// </summary>
     protected override void OnInitialized()
@@ -49,7 +55,18 @@ public partial class ArchiveView : IDisposable
         CompletedRuns.Changed += HandleCompletedRunsChanged;
         CompletedRuns.SelectionRequested += HandleCompletedRunSelectionRequested;
         ConnectionState.Changed += HandleConnectionChanged;
-        RestartObtainabilityPrecalculation();
+    }
+
+    /// <summary>
+    /// Opens or closes completed-run details and their optional background preparation.
+    /// </summary>
+    private void ToggleCompletedRuns()
+    {
+        _selection.SetExpanded(!_selection.IsExpanded);
+        if (_selection.IsExpanded)
+            RestartObtainabilityPrecalculation();
+        else
+            StopObtainabilityPrecalculation();
     }
 
     /// <summary>
@@ -121,6 +138,9 @@ public partial class ArchiveView : IDisposable
     private void RestartObtainabilityPrecalculation()
     {
         StopObtainabilityPrecalculation();
+        if (!_selection.IsExpanded)
+            return;
+
         CompletedRunRecipePayload? recipe = GetSelectedRecipe();
         if (recipe is null || _connectionStatus != TrackerConnectionStatus.Connected)
             return;
@@ -191,8 +211,24 @@ public partial class ArchiveView : IDisposable
     /// <param name="args">The change event arguments.</param>
     private void HandleCompletedRunsChanged(object? sender, EventArgs args)
     {
-        RefreshRecipes();
-        RestartObtainabilityPrecalculation();
+        string? requestedRunId = CompletedRuns.RequestedRunId;
+        bool newlyRequestedRun = requestedRunId is not null
+            && !string.Equals(
+                requestedRunId,
+                _selection.SelectedRunId,
+                StringComparison.Ordinal);
+        if (newlyRequestedRun)
+        {
+            _selection.SetExpanded(false);
+            StopObtainabilityPrecalculation();
+            RefreshRecipes(requestedRunId);
+        }
+        else
+        {
+            RefreshRecipes();
+            RestartObtainabilityPrecalculation();
+        }
+
         _ = InvokeAsync(StateHasChanged);
     }
 
@@ -203,8 +239,9 @@ public partial class ArchiveView : IDisposable
     /// <param name="args">The selection event arguments.</param>
     private void HandleCompletedRunSelectionRequested(object? sender, EventArgs args)
     {
+        _selection.SetExpanded(false);
+        StopObtainabilityPrecalculation();
         RefreshRecipes(CompletedRuns.RequestedRunId);
-        RestartObtainabilityPrecalculation();
         _ = InvokeAsync(StateHasChanged);
     }
 

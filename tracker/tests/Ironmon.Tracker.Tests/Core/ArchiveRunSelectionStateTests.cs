@@ -58,4 +58,22 @@ public sealed class ArchiveRunSelectionStateTests
         Assert.Equal("run-new", selection.SelectedRunId);
         Assert.False(selection.IsAutomatic);
     }
+
+    /// <summary>
+    /// Verifies that selecting a completed run does not implicitly start its expanded work.
+    /// </summary>
+    [Fact]
+    public void CompletedRunSelectionRemainsCollapsedUntilExplicitlyExpanded()
+    {
+        ArchiveRunSelectionState selection = new();
+
+        selection.Refresh(["run-new"], "run-new");
+
+        Assert.Equal("run-new", selection.SelectedRunId);
+        Assert.False(selection.IsExpanded);
+
+        selection.SetExpanded(true);
+
+        Assert.True(selection.IsExpanded);
+    }
 }

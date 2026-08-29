@@ -3,13 +3,27 @@ namespace Ironmon.Tracker.Tests.Connection;
 /// <summary>
 /// Verifies compact completed-run recipe persistence.
 /// </summary>
-public sealed class CompletedRunArchiveTests
+public sealed class CompletedRunArchiveTests : IDisposable
 {
+    private readonly List<string> _roots = [];
+
     /// <summary>
     /// Initializes completed-run archive tests.
     /// </summary>
     public CompletedRunArchiveTests()
     {
+    }
+
+    /// <summary>
+    /// Removes every temporary archive root owned by the current test.
+    /// </summary>
+    public void Dispose()
+    {
+        foreach (string root in _roots)
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, true);
+        }
     }
 
     /// <summary>
@@ -76,6 +90,63 @@ public sealed class CompletedRunArchiveTests
         Assert.Equal("run-second", archive.RequestedRunId);
         Assert.Equal("run-second", archive.Recipes[0].RunId);
         Assert.Equal(2, requests);
+    }
+
+    /// <summary>
+    /// Verifies that automatic resets archive a completed run without selecting it for preparation.
+    /// </summary>
+    [Fact]
+    public void StoreCanSuppressCompletedRunSelection()
+    {
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
+        int requests = 0;
+        archive.SelectionRequested += (_, _) => requests++;
+
+        archive.Store(CreateRecipe("run-automatic-reset"), requestSelection: false);
+
+        Assert.Equal("run-automatic-reset", Assert.Single(archive.Recipes).RunId);
+        Assert.Null(archive.RequestedRunId);
+        Assert.Equal(0, requests);
+    }
+
+    /// <summary>
+    /// Verifies connected save-slot totals override an older archived lineage using the same slot name.
+    /// </summary>
+    [Fact]
+    public void CurrentSaveSlotTotalsOverrideOlderArchiveTotals()
+    {
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
+        archive.Store(CreateRecipe("old-file-a"));
+        RunStatisticsPayload recreatedSaveCompletion = new()
+        {
+            SchemaVersion = 1,
+            AttemptNumber = 2,
+            SaveSlot = "File A",
+            Result = "lost",
+            AttemptsStarted = 2,
+            AttemptsLost = 1
+        };
+        archive.Store(CreateRecipe("new-file-a", statistics: recreatedSaveCompletion));
+
+        KeyValuePair<string, RunStatisticsPayload> archivedSlot = Assert.Single(archive.GetLatestSaveSlotStatistics(null));
+
+        Assert.Same(recreatedSaveCompletion, archivedSlot.Value);
+        RunStatisticsPayload current = new()
+        {
+            SchemaVersion = 1,
+            AttemptNumber = 3,
+            SaveSlot = "File A",
+            Result = "active",
+            AttemptsStarted = 3,
+            AttemptsLost = 2
+        };
+
+        KeyValuePair<string, RunStatisticsPayload> slot = Assert.Single(archive.GetLatestSaveSlotStatistics(current));
+
+        Assert.Equal("File A", slot.Key);
+        Assert.Same(current, slot.Value);
+        Assert.Equal(3, slot.Value.AttemptsStarted);
+        Assert.Equal(2, slot.Value.AttemptsLost);
     }
 
     /// <summary>
@@ -171,8 +242,12 @@ public sealed class CompletedRunArchiveTests
     /// Creates a unique archive root.
     /// </summary>
     /// <returns>The temporary root.</returns>
-    private static string CreateRoot()
-        => Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
+    private string CreateRoot()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "IronmonTrackerTests", Guid.NewGuid().ToString("N"));
+        _roots.Add(root);
+        return root;
+    }
 
     /// <summary>
     /// Creates a valid nested completed-run recipe.
@@ -184,8 +259,9 @@ public sealed class CompletedRunArchiveTests
     /// <param name="statisticsSchemaVersion">The authoritative statistics schema version.</param>
     /// <param name="itemRulesVersion">The item pool rules version.</param>
     /// <param name="itemGroundTotalWeight">An optional ground-selection ticket total.</param>
+    /// <param name="statistics">Optional authoritative attempt statistics.</param>
     /// <returns>The recipe.</returns>
-    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, bool includeMoveGenerator = true, bool includeEvolutionGenerator = true, int statisticsSchemaVersion = 1, int itemRulesVersion = 1, int? itemGroundTotalWeight = null) => new()
+    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, bool includeMoveGenerator = true, bool includeEvolutionGenerator = true, int statisticsSchemaVersion = 1, int itemRulesVersion = 1, int? itemGroundTotalWeight = null, RunStatisticsPayload? statistics = null) => new()
     {
         SchemaVersion = schemaVersion,
         RunId = runId,
@@ -215,7 +291,7 @@ public sealed class CompletedRunArchiveTests
         },
         ItemMappings = new Dictionary<string, string> { ["POTION"] = "HYPERPOTION" },
         TmMappings = new Dictionary<string, string> { ["TM01"] = "TM02" },
-        Statistics = CreateStatistics(statisticsSchemaVersion)
+        Statistics = statistics ?? CreateStatistics(statisticsSchemaVersion)
     };
 
     /// <summary>

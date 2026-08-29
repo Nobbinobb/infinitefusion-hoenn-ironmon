@@ -157,6 +157,9 @@ public sealed class AreaDiscoveryStore
                 Name = response.Name,
                 Category = response.Category,
                 Revision = response.Revision,
+                Offset = response.Offset,
+                Limit = response.Limit,
+                TotalCount = response.TotalCount,
                 Trainers = trainers,
                 Encounters = encounters,
                 Items = items
