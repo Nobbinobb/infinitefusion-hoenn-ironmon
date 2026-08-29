@@ -213,6 +213,30 @@
   <data name="Common.Move.CloseMoveInformation" xml:space="preserve">
     <value>Close move information</value>
   </data>
+  <data name="Common.Move.Chance" xml:space="preserve">
+    <value>Chance</value>
+  </data>
+  <data name="Common.Move.ConditionalPower" xml:space="preserve">
+    <value>Power changes when its battle condition is met</value>
+  </data>
+  <data name="Common.Move.CumulativePower" xml:space="preserve">
+    <value>Power</value>
+  </data>
+  <data name="Common.Move.DamageRange" xml:space="preserve">
+    <value>Damage range</value>
+  </data>
+  <data name="Common.Move.FixedDamage" xml:space="preserve">
+    <value>Direct HP damage rather than base power</value>
+  </data>
+  <data name="Common.Move.HealTarget" xml:space="preserve">
+    <value>Heal target</value>
+  </data>
+  <data name="Common.Move.HitsOutcome" xml:space="preserve">
+    <value>{0} hit(s)</value>
+  </data>
+  <data name="Common.Move.HpRange" xml:space="preserve">
+    <value>{0}–{1} HP</value>
+  </data>
   <data name="Common.Move.Learned" xml:space="preserve">
     <value>Learned</value>
   </data>
@@ -221,6 +245,12 @@
   </data>
   <data name="Common.Move.MoveInformation" xml:space="preserve">
     <value>MOVE INFORMATION</value>
+  </data>
+  <data name="Common.Move.MissOutcome" xml:space="preserve">
+    <value>Miss</value>
+  </data>
+  <data name="Common.Move.MultiHitPower" xml:space="preserve">
+    <value>Variable number of hits</value>
   </data>
   <data name="Common.Move.NoDescriptionAvailable" xml:space="preserve">
     <value>No description is available.</value>
@@ -234,6 +264,9 @@
   <data name="Common.Move.NormallyEffective" xml:space="preserve">
     <value>Normally effective</value>
   </data>
+  <data name="Common.Move.Outcome" xml:space="preserve">
+    <value>Outcome</value>
+  </data>
   <data name="Common.Move.NotVeryEffectiveHalf" xml:space="preserve">
     <value>Not very effective (0.5×)</value>
   </data>
@@ -245,6 +278,9 @@
   </data>
   <data name="Common.Move.Power" xml:space="preserve">
     <value>Power</value>
+  </data>
+  <data name="Common.Move.PowerOutcome" xml:space="preserve">
+    <value>Damage</value>
   </data>
   <data name="Common.Move.PowerHeader" xml:space="preserve">
     <value>POW</value>
@@ -263,6 +299,9 @@
   </data>
   <data name="Common.Move.StabDescription" xml:space="preserve">
     <value>Same-type attack bonus</value>
+  </data>
+  <data name="Common.Move.TargetHpPercent" xml:space="preserve">
+    <value>{0}% target HP</value>
   </data>
   <data name="Common.Move.PpHeader" xml:space="preserve">
     <value>PP</value>

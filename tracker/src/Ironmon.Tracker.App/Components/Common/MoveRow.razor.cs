@@ -8,6 +8,8 @@ namespace Ironmon.Tracker.App.Components.Common;
 /// </summary>
 public partial class MoveRow
 {
+    private const string UnknownPowerText = "???";
+
     /// <summary>
     /// Gets or sets the move name.
     /// </summary>
@@ -63,6 +65,12 @@ public partial class MoveRow
     public int Power { get; set; }
 
     /// <summary>
+    /// Gets or sets the calculated display for conditional or nonstandard power.
+    /// </summary>
+    [Parameter]
+    public MovePowerPresentationSnapshot? PowerPresentation { get; set; }
+
+    /// <summary>
     /// Gets or sets move accuracy.
     /// </summary>
     [Parameter]
@@ -91,7 +99,30 @@ public partial class MoveRow
     /// </summary>
     /// <returns>The move-power value.</returns>
     private string FormatPower()
-        => Power == MoveDataConstants.NoBasePower ? "—" : Power.ToString(CultureInfo.InvariantCulture);
+        => PowerPresentation?.Display ?? (Power == MoveDataConstants.NoBasePower ? "—" : Power.ToString(CultureInfo.InvariantCulture));
+
+    /// <summary>
+    /// Determines whether the compact leading power marker should be visible.
+    /// </summary>
+    /// <returns>True when a known value has a semantic power marker.</returns>
+    private bool ShouldShowPowerIndicator()
+    {
+        return PowerPresentation is not null
+            && PowerPresentation.Indicator != MovePowerIndicator.None
+            && !string.Equals(PowerPresentation.Display, UnknownPowerText, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Gets localized accessible text for the move-power semantic indicator.
+    /// </summary>
+    /// <returns>The indicator description.</returns>
+    private string GetPowerIndicatorTitle() => PowerPresentation?.Indicator switch
+    {
+        MovePowerIndicator.Conditional => Text["Common.Move.ConditionalPower"],
+        MovePowerIndicator.MultiHit => Text["Common.Move.MultiHitPower"],
+        MovePowerIndicator.FixedDamage => Text["Common.Move.FixedDamage"],
+        _ => string.Empty
+    };
 
     /// <summary>
     /// Formats move accuracy for its labeled column.

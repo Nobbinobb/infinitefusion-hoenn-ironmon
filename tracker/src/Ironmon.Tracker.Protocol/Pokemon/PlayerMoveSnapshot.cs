@@ -53,6 +53,11 @@ public sealed class PlayerMoveSnapshot
     public int Power { get; init; }
 
     /// <summary>
+    /// Gets or initializes the calculated display for conditional or nonstandard power.
+    /// </summary>
+    public MovePowerPresentationSnapshot? PowerPresentation { get; init; }
+
+    /// <summary>
     /// Gets or initializes the accuracy, where zero represents an always-hit move.
     /// </summary>
     public int Accuracy { get; init; }

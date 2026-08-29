@@ -63,6 +63,11 @@ public sealed class ObservedMoveSnapshot
     public int Power { get; init; }
 
     /// <summary>
+    /// Gets or initializes the privacy-safe display for conditional or nonstandard power.
+    /// </summary>
+    public MovePowerPresentationSnapshot? PowerPresentation { get; init; }
+
+    /// <summary>
     /// Gets or initializes the move's accuracy.
     /// </summary>
     public int Accuracy { get; init; }

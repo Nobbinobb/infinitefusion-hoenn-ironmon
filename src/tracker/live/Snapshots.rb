@@ -37,7 +37,9 @@ module Ironmon
                               else
                                 nil
                               end,
-      "completed_run" => tracker_recoverable_completed_run_recipe
+      "completed_run" => tracker_recoverable_completed_run_recipe,
+      "active_run_preparation_ready" =>
+        tracker_active_run_preparation_ready?
     }
     coverage = tracker_type_coverage_context
     payload["type_coverage"] = coverage if coverage
@@ -46,7 +48,17 @@ module Ironmon
     return payload
   end
 
+  def self.tracker_active_run_preparation_ready?
+    return false if !active? || !$PokemonGlobal
+    attempt = current_run_attempt if respond_to?(:current_run_attempt)
+    return false if !attempt || attempt["result"] != "active"
+    ready_run_id =
+      $PokemonGlobal.ironmon_tracker_active_run_preparation_run_id.to_s
+    return !ready_run_id.empty? && ready_run_id == attempt["run_id"].to_s
+  end
+
   def self.tracker_active_fusion_assignment_recipe
+    return nil if !tracker_active_run_preparation_ready?
     return nil if !active? || !$PokemonGlobal
     return nil if !tracker_connection.diagnostic_capabilities?(
       *TRACKER_OBTAINABILITY_DIAGNOSTIC_CAPABILITIES
@@ -103,6 +115,15 @@ module Ironmon
     return { "battle_id" => @tracker_battle_id }
   end
 
+  def self.tracker_active_types(pokemon, battler = nil)
+    types = if battler && battler.respond_to?(:pbTypes)
+              battler.pbTypes(true)
+            else
+              pokemon.types
+            end
+    return types.compact.uniq.map { |type| type.to_s }
+  end
+
   def self.tracker_player_snapshot
     pokemon = @tracker_player_pokemon
     species = pokemon.species_data
@@ -121,7 +142,7 @@ module Ironmon
       "maximum_hp" => pokemon.totalhp,
       "status" => pokemon.status.to_s,
       "confused" => tracker_player_confused?,
-      "types" => pokemon.types.map { |type| type.to_s },
+      "types" => tracker_active_types(pokemon, @tracker_player_battler),
       "ability" => ability ? ability.name : "None",
       "ability_details" => ability ? tracker_ability_snapshot(ability) : nil,
       "held_item" => held_item ? held_item.name : nil,
@@ -163,7 +184,7 @@ module Ironmon
       "species_name" => species.name,
       "sprite_path" => tracker_sprite_path(pokemon),
       "level" => battler.level,
-      "types" => pokemon.types.map { |type| type.to_s },
+      "types" => tracker_active_types(pokemon, battler),
       "base_stat_total" => pokemon.baseStats.values.inject(0) { |sum, value| sum + value },
       "stat_stages" => tracker_battler_stat_stages(battler),
       "last_move" => tracker_enemy_last_move(battler),
@@ -183,7 +204,9 @@ module Ironmon
     return nil if !move_id
     battle_move = battler.moves.find { |move| move.id == move_id }
     pp_after_use = battle_move ? battle_move.pp : nil
-    return tracker_observed_move(battler.pokemon, move_id, "enemy_use", pp_after_use)
+    return tracker_observed_move(
+      battler.pokemon, move_id, "enemy_use", pp_after_use, battler, true
+    )
   end
 
   def self.tracker_battler_stat_stages(battler)
@@ -205,8 +228,14 @@ module Ironmon
     end.select { |move| move["source"] == "level_up" }
   end
 
-  def self.tracker_observed_move(pokemon, move_id, origin, pp_after_use)
+  def self.tracker_observed_move(pokemon, move_id, origin, pp_after_use,
+                                 battler = nil, enemy = false)
     move_data = GameData::Move.get(move_id)
+    pokemon_move = Pokemon::Move.new(move_data.id)
+    pokemon_move.pp = pp_after_use if pp_after_use
+    presentation = tracker_move_power_presentation(
+      pokemon_move, pokemon, battler, enemy
+    )
     learned_level = 0
     learn_order = 0
     found = false
@@ -225,13 +254,15 @@ module Ironmon
       "learn_order" => learn_order,
       "source" => source,
       "origin" => origin,
-      "type" => move_data.type.to_s,
+      "type" => presentation && presentation["type"] ?
+        presentation["type"] : move_data.type.to_s,
       "category" => tracker_move_category(move_data),
       "description" => move_data.description,
       "power" => move_data.base_damage || 0,
       "accuracy" => move_data.accuracy || 0,
       "total_pp" => move_data.total_pp,
-      "pp_after_use" => pp_after_use
+      "pp_after_use" => pp_after_use,
+      "power_presentation" => presentation
     }
   end
 
@@ -250,16 +281,21 @@ module Ironmon
   end
 
   def self.tracker_move_snapshot(move)
+    presentation = tracker_move_power_presentation(
+      move, @tracker_player_pokemon, @tracker_player_battler, false
+    )
     return {
       "id" => move.id.to_s,
       "name" => move.name,
-      "type" => move.type.to_s,
+      "type" => presentation && presentation["type"] ?
+        presentation["type"] : move.type.to_s,
       "category" => tracker_move_category(GameData::Move.get(move.id)),
       "description" => GameData::Move.get(move.id).description,
       "current_pp" => move.pp,
       "total_pp" => move.total_pp,
       "power" => move.base_damage || 0,
-      "accuracy" => move.accuracy || 0
+      "accuracy" => move.accuracy || 0,
+      "power_presentation" => presentation
     }
   end
 

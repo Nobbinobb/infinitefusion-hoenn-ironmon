@@ -66,6 +66,11 @@ public static class TrackerProtocol
     public const int OccurrencePageSize = 50;
 
     /// <summary>
+    /// Gets the number of area entries requested from the game at once.
+    /// </summary>
+    public const int AreaLookupPageSize = 10;
+
+    /// <summary>
     /// Gets the fixed lookup level retained for compatibility with earlier game scripts.
     /// </summary>
     public const int CompatibilityLookupLevel = 100;

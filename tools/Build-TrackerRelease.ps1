@@ -37,6 +37,7 @@ $coverageAudit = Join-Path $projectRoot "docs\audits\generated\TYPE_COVERAGE_GEN
 $itemAudit = Join-Path $projectRoot "docs\audits\generated\ITEM_RANDOMIZATION_GENERATED.csv"
 $obtainabilityAudit = Join-Path $projectRoot "docs\audits\generated\OBTAINABILITY_FOUNDATION_GENERATED.csv"
 $obtainabilitySourceCatalog = Join-Path $projectRoot "data\obtainability_source_catalog.json"
+$movePowerPresentationCatalog = Join-Path $projectRoot "data\move_power_presentation.json"
 $generatedAreaCatalog = "$areaCatalog.release.tmp"
 $generatedFusionPredecessorIndex = "$fusionPredecessorIndex.release.tmp"
 $generatedAreaAudit = "$areaAudit.release.tmp"
@@ -60,6 +61,12 @@ function Test-PlayerDistribution {
       (Get-FileHash -LiteralPath $distributedObtainabilitySourceCatalog -Algorithm SHA256).Hash -ne
         (Get-FileHash -LiteralPath $obtainabilitySourceCatalog -Algorithm SHA256).Hash) {
     throw "The player distribution does not contain the freshly generated obtainability source catalog."
+  }
+  $distributedMovePowerPresentationCatalog = Join-Path $DistributionPath "Data\Ironmon\move_power_presentation.json"
+  if (-not (Test-Path -LiteralPath $distributedMovePowerPresentationCatalog) -or
+      (Get-FileHash -LiteralPath $distributedMovePowerPresentationCatalog -Algorithm SHA256).Hash -ne
+        (Get-FileHash -LiteralPath $movePowerPresentationCatalog -Algorithm SHA256).Hash) {
+    throw "The player distribution does not contain the freshly generated move-power presentation catalog."
   }
   $distributedFusionPredecessorIndex = Join-Path $DistributionPath "Data\Ironmon\fusion_predecessor_index.dat"
   if (-not (Test-Path -LiteralPath $distributedFusionPredecessorIndex) -or

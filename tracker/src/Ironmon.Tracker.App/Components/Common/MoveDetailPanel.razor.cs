@@ -8,6 +8,10 @@ namespace Ironmon.Tracker.App.Components.Common;
 /// </summary>
 public partial class MoveDetailPanel
 {
+    private const string DashText = "—";
+    private const string ZeroPowerText = "0";
+    private const string ChanceNumberFormat = "0.##";
+
     /// <summary>
     /// Gets or sets the localized move name.
     /// </summary>
@@ -39,10 +43,28 @@ public partial class MoveDetailPanel
     public int Power { get; set; }
 
     /// <summary>
+    /// Gets or sets the calculated display for conditional or nonstandard power.
+    /// </summary>
+    [Parameter]
+    public MovePowerPresentationSnapshot? PowerPresentation { get; set; }
+
+    /// <summary>
     /// Gets or sets move accuracy.
     /// </summary>
     [Parameter]
     public int Accuracy { get; set; }
+
+    /// <summary>
+    /// Gets or sets the move user's current accuracy stage.
+    /// </summary>
+    [Parameter]
+    public int AccuracyStage { get; set; }
+
+    /// <summary>
+    /// Gets or sets the target's current evasion stage.
+    /// </summary>
+    [Parameter]
+    public int TargetEvasionStage { get; set; }
 
     /// <summary>
     /// Gets or sets the formatted PP information.
@@ -92,7 +114,86 @@ public partial class MoveDetailPanel
     /// </summary>
     /// <returns>The move power or a dash for status moves.</returns>
     private string GetPowerText()
-        => Power == 0 ? "—" : Power.ToString(CultureInfo.InvariantCulture);
+        => PowerPresentation?.Display ?? (Power == 0 ? "—" : Power.ToString(CultureInfo.InvariantCulture));
+
+    /// <summary>
+    /// Builds the structured move-power rows for the current presentation.
+    /// </summary>
+    /// <returns>The formatted outcome, cumulative value, and probability rows.</returns>
+    private IReadOnlyList<(string Outcome, string Value, string Chance)> GetPowerDetailRows()
+    {
+        if (PowerPresentation is null)
+            return [];
+
+        if (PowerPresentation.DetailsKind == MovePowerDetailsKind.TripleKick)
+            return GetTripleKickDetailRows();
+
+        return [.. PowerPresentation.Outcomes.Select(FormatPowerOutcome)];
+    }
+
+    /// <summary>
+    /// Calculates sequential Triple Kick outcomes from the currently displayed accuracy.
+    /// </summary>
+    /// <returns>The miss and cumulative-hit outcome rows.</returns>
+    private IReadOnlyList<(string Outcome, string Value, string Chance)> GetTripleKickDetailRows()
+    {
+        if (PowerPresentation is null || PowerPresentation.Outcomes.Count < 3)
+            return [];
+
+        decimal hitChance = Accuracy == MoveDataConstants.AlwaysHitsAccuracy
+            ? 1m
+            : MovePresentation.CalculateAdjustedAccuracy(Accuracy, AccuracyStage, TargetEvasionStage) / 100m;
+
+        decimal missChance = 1m - hitChance;
+        List<(string Outcome, string Value, string Chance)> rows = [(Text["Common.Move.MissOutcome"], ZeroPowerText, FormatChance(missChance * 100m))];
+        if (!PowerPresentation.AccuracyCheckedPerHit)
+        {
+            MovePowerOutcomeSnapshot finalOutcome = PowerPresentation.Outcomes[2];
+            rows.Add((Text["Common.Move.HitsOutcome", 3], FormatPowerValue(finalOutcome.Power), FormatChance(hitChance * 100m)));
+            return rows;
+        }
+
+        decimal firstOnly = hitChance * missChance;
+        decimal firstTwo = hitChance * hitChance * missChance;
+        decimal allThree = hitChance * hitChance * hitChance;
+        rows.Add((Text["Common.Move.HitsOutcome", 1], FormatPowerValue(PowerPresentation.Outcomes[0].Power), FormatChance(firstOnly * 100m)));
+        rows.Add((Text["Common.Move.HitsOutcome", 2], FormatPowerValue(PowerPresentation.Outcomes[1].Power), FormatChance(firstTwo * 100m)));
+        rows.Add((Text["Common.Move.HitsOutcome", 3], FormatPowerValue(PowerPresentation.Outcomes[2].Power), FormatChance(allThree * 100m)));
+        return rows;
+    }
+
+    /// <summary>
+    /// Formats one tracker-provided move-power outcome.
+    /// </summary>
+    /// <param name="outcome">The outcome to format.</param>
+    /// <returns>The formatted table row.</returns>
+    private (string Outcome, string Value, string Chance) FormatPowerOutcome(MovePowerOutcomeSnapshot outcome)
+    {
+        string chance = outcome.ChancePercent is null ? DashText : FormatChance(outcome.ChancePercent.Value);
+        return outcome.Kind switch
+        {
+            MovePowerOutcomeKind.Healing => (Text["Common.Move.HealTarget"], Text["Common.Move.TargetHpPercent", outcome.HealingPercent ?? 0], chance),
+            MovePowerOutcomeKind.Range => (Text["Common.Move.DamageRange"], Text["Common.Move.HpRange", outcome.Minimum ?? 0, outcome.Maximum ?? 0], chance),
+            MovePowerOutcomeKind.Hits => (Text["Common.Move.HitsOutcome", outcome.Hits ?? 0], FormatPowerValue(outcome.Power), chance),
+            _ => (Text["Common.Move.PowerOutcome"], FormatPowerValue(outcome.Power), chance)
+        };
+    }
+
+    /// <summary>
+    /// Formats a nullable cumulative power value.
+    /// </summary>
+    /// <param name="power">The cumulative power.</param>
+    /// <returns>The power text.</returns>
+    private static string FormatPowerValue(int? power)
+        => power?.ToString(CultureInfo.InvariantCulture) ?? DashText;
+
+    /// <summary>
+    /// Formats an outcome percentage without unnecessary trailing zeroes.
+    /// </summary>
+    /// <param name="chance">The percentage value.</param>
+    /// <returns>The formatted percentage.</returns>
+    private static string FormatChance(decimal chance)
+        => $"{chance.ToString(ChanceNumberFormat, CultureInfo.InvariantCulture)}%";
 
     /// <summary>
     /// Gets move accuracy for display.

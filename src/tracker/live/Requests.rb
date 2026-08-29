@@ -48,6 +48,7 @@ module Ironmon
         @favorite_species_ids = normalize_favorite_species_ids(
           payload["favorite_species_ids"]
         )
+        Ironmon.reset_tracker_obtainability_worker_failures
       elsif message["type"] == "event" &&
             message["event"] == "diagnostic_access_changed"
         payload = message["payload"] || {}
@@ -226,7 +227,10 @@ module Ironmon
       elsif message["command"] == "debug_pokemon_search"
         require_diagnostic_capabilities(["pokemon.all_active"])
         payload = Ironmon.tracker_debug_pokemon_search(message["payload"])
+        Ironmon.tracker_debug_search_trace("queue_started")
         queue_message(success_response(request_id, payload, message["run_id"]))
+        Ironmon.tracker_debug_search_trace("queue_ready")
+        Ironmon.finish_tracker_debug_search_trace
       elsif message["command"] == "debug_pokemon_lookup"
         section = (message["payload"] || {})["section"].to_s
         require_diagnostic_capabilities([

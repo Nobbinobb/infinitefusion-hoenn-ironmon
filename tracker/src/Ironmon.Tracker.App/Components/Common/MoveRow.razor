@@ -17,7 +17,18 @@
         }
     </div>
     <div class="move-stats">
-        <span class="@GetPowerClass()">@FormatPower()</span>
+        <span class="@GetPowerClass()">
+            @if (ShouldShowPowerIndicator() && PowerPresentation!.Indicator != MovePowerIndicator.MultiHit)
+            {
+                <span class="move-power-indicator" title="@GetPowerIndicatorTitle()" aria-label="@GetPowerIndicatorTitle()">
+                    <MovePowerIndicatorIcon Indicator="@PowerPresentation!.Indicator" />
+                </span>
+            }
+            <span class="move-power-value">@if (ShouldShowPowerIndicator() && PowerPresentation!.Indicator == MovePowerIndicator.MultiHit)
+                {
+                    <span class="move-power-multi-hit-mark" title="@GetPowerIndicatorTitle()" aria-label="@GetPowerIndicatorTitle()">x</span>
+                }@FormatPower()</span>
+        </span>
         <span class="@GetPpClass()" title="@GetPpTitle()">@PpText</span>
         <span class="@GetAccuracyClass()" title="@GetAccuracyTitle()">@FormatAccuracy()</span>
     </div>

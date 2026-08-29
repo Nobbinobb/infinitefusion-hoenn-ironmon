@@ -29,6 +29,7 @@
                      CurrentPp="@move.CurrentPp"
                      TotalPp="@move.TotalPp"
                      Power="@move.Power"
+                     PowerPresentation="@move.PowerPresentation"
                      Accuracy="@move.Accuracy"
                      AccuracyStage="@(Player?.StatStages.Accuracy ?? 0)"
                      TargetEvasionStage="@TargetEvasionStage"
@@ -44,7 +45,10 @@
                      Category="@_selectedMove.Category"
                      Description="@_selectedMove.Description"
                      Power="@_selectedMove.Power"
+                     PowerPresentation="@_selectedMove.PowerPresentation"
                      Accuracy="@_selectedMove.Accuracy"
+                     AccuracyStage="@(Player?.StatStages.Accuracy ?? 0)"
+                     TargetEvasionStage="@TargetEvasionStage"
                      PpText="@($"{_selectedMove.CurrentPp} / {_selectedMove.TotalPp}")"
                      Effectiveness="@MovePresentation.CalculateEffectiveness(_selectedMove.Type, _selectedMove.Category, TargetTypes)"
                      Closed="CloseMove" />

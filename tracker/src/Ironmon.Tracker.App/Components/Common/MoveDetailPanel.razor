@@ -35,6 +35,29 @@
             }
         </dl>
 
+        @if (PowerPresentation is not null && PowerPresentation.DetailsKind != MovePowerDetailsKind.None)
+        {
+            <table class="move-power-details">
+                <thead>
+                    <tr>
+                        <th scope="col">@Text["Common.Move.Outcome"]</th>
+                        <th scope="col">@Text["Common.Move.CumulativePower"]</th>
+                        <th scope="col">@Text["Common.Move.Chance"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ((string Outcome, string Value, string Chance) row in GetPowerDetailRows())
+                    {
+                        <tr>
+                            <th scope="row">@row.Outcome</th>
+                            <td>@row.Value</td>
+                            <td>@row.Chance</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
         <p class="detail-description">@GetDescription()</p>
     </section>
 </div>

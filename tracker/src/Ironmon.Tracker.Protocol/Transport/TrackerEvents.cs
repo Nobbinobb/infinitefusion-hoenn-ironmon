@@ -26,6 +26,11 @@ public static class TrackerEvents
     public const string RunStarted = "run_started";
 
     /// <summary>
+    /// Gets the event announcing that an active run may begin background preparation.
+    /// </summary>
+    public const string ActiveRunPreparationReady = "active_run_preparation_ready";
+
+    /// <summary>
     /// Gets the completed-run event.
     /// </summary>
     public const string RunCompleted = "run_completed";

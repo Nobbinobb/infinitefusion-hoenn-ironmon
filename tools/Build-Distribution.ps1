@@ -8,15 +8,25 @@ $sourceRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot "src"))
 $sourceManifest = Join-Path $sourceRoot "load_order.json"
 $catalog = Join-Path $projectRoot "data\area_catalog.dat"
 $obtainabilitySourceCatalog = Join-Path $projectRoot "data\obtainability_source_catalog.json"
+$movePowerPresentationCatalog = Join-Path $projectRoot "data\move_power_presentation.json"
 $fusionPredecessorIndex = Join-Path $projectRoot "data\fusion_predecessor_index.dat"
+$battleMoveColorSource = Join-Path $projectRoot "data\graphics\Battle"
 $distribution = Join-Path $projectRoot "dist\Data\Scripts\997_Ironmon"
 $distributionData = Join-Path $projectRoot "dist\Data\Ironmon"
+$distributionBattleGraphics = Join-Path $distributionData "graphics\Battle"
 $distributionRoot = Join-Path $projectRoot "dist"
 $distributionReadme = Join-Path $projectRoot "packaging\README.md"
 $installationGuide = Join-Path $projectRoot "docs\guides\INSTALLATION.md"
 $releaseNotes = Join-Path $projectRoot "docs\releases\RELEASE_NOTES_0.8.1.md"
 $installation = Join-Path $gameRoot "Data\Scripts\997_Ironmon"
 $installationData = Join-Path $gameRoot "Data\Ironmon"
+$installationBattleGraphics = Join-Path $installationData "graphics\Battle"
+
+& (Join-Path $PSScriptRoot "generation\Generate-Move-Power-Presentation.ps1") `
+    -OutputPath $movePowerPresentationCatalog
+& (Join-Path $PSScriptRoot "generation\Generate-Battle-Move-Type-Colors.ps1") `
+    -GameRoot $gameRoot `
+    -OutputDirectory $battleMoveColorSource
 
 $manifestDocument = Get-Content -LiteralPath $sourceManifest -Raw |
     ConvertFrom-Json
@@ -102,6 +112,8 @@ New-Item -ItemType Directory -Force -Path $distribution | Out-Null
 New-Item -ItemType Directory -Force -Path $distributionData | Out-Null
 New-Item -ItemType Directory -Force -Path $installation | Out-Null
 New-Item -ItemType Directory -Force -Path $installationData | Out-Null
+New-Item -ItemType Directory -Force -Path $distributionBattleGraphics | Out-Null
+New-Item -ItemType Directory -Force -Path $installationBattleGraphics | Out-Null
 
 Get-ChildItem -LiteralPath $distribution -Filter "*.rb" | Remove-Item -Force
 Get-ChildItem -LiteralPath $installation -Filter "*.rb" | Remove-Item -Force
@@ -136,8 +148,22 @@ Copy-Item -LiteralPath $catalog -Destination (Join-Path $distributionData "area_
 Copy-Item -LiteralPath $catalog -Destination (Join-Path $installationData "area_catalog.dat")
 Copy-Item -LiteralPath $obtainabilitySourceCatalog -Destination (Join-Path $distributionData "obtainability_source_catalog.json")
 Copy-Item -LiteralPath $obtainabilitySourceCatalog -Destination (Join-Path $installationData "obtainability_source_catalog.json")
+Copy-Item -LiteralPath $movePowerPresentationCatalog -Destination (Join-Path $distributionData "move_power_presentation.json")
+Copy-Item -LiteralPath $movePowerPresentationCatalog -Destination (Join-Path $installationData "move_power_presentation.json")
 Copy-Item -LiteralPath $fusionPredecessorIndex -Destination (Join-Path $distributionData "fusion_predecessor_index.dat")
 Copy-Item -LiteralPath $fusionPredecessorIndex -Destination (Join-Path $installationData "fusion_predecessor_index.dat")
+foreach ($battleMoveSheet in "cursor_fight.png", "cursor_fight_dark.png") {
+    $sourceSheet = Join-Path $battleMoveColorSource $battleMoveSheet
+    $distributionSheet = Join-Path $distributionBattleGraphics $battleMoveSheet
+    $installationSheet = Join-Path $installationBattleGraphics $battleMoveSheet
+    Copy-Item -LiteralPath $sourceSheet -Destination $distributionSheet
+    Copy-Item -LiteralPath $sourceSheet -Destination $installationSheet
+    $sourceHash = (Get-FileHash -LiteralPath $sourceSheet).Hash
+    if ($sourceHash -ne (Get-FileHash -LiteralPath $distributionSheet).Hash -or
+        $sourceHash -ne (Get-FileHash -LiteralPath $installationSheet).Hash) {
+        throw "Generated battle move sheet '$battleMoveSheet' was not copied exactly."
+    }
+}
 Copy-Item -LiteralPath $distributionReadme -Destination (Join-Path $distributionRoot "README.md")
 Copy-Item -LiteralPath $installationGuide -Destination (Join-Path $distributionRoot "INSTALLATION.md")
 Copy-Item -LiteralPath $releaseNotes -Destination (Join-Path $distributionRoot "RELEASE_NOTES.md")

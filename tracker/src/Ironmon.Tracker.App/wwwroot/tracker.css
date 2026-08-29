@@ -1486,7 +1486,7 @@ button.move-placeholder:hover {
 
 .live-move {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 2.6rem 3.8rem 2.8rem;
+    grid-template-columns: minmax(0, 1fr) 3.4rem 3.8rem 2.8rem;
     column-gap: 0.35rem;
 }
 
@@ -1541,6 +1541,53 @@ button.move-placeholder:hover {
     white-space: nowrap;
 }
 
+.move-stats .move-power-indicator {
+    display: inline-grid;
+    place-items: center;
+    width: 0.96rem;
+    height: 0.96rem;
+    color: currentcolor;
+    opacity: 0.78;
+}
+
+.move-power-icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    fill: none;
+    stroke: currentcolor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+
+.move-power-icon.fixed-damage {
+    width: 0.7rem;
+    height: 0.7rem;
+}
+
+.move-stats .move-power-multi-hit-mark {
+    font-size: 0.9em;
+    font-weight: 500;
+    line-height: 1;
+    text-transform: none;
+}
+
+.move-stats .move-power {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.16rem;
+}
+
+.move-stats .move-power-value {
+    color: inherit;
+    font: inherit;
+    text-transform: inherit;
+}
+
 .move-power.increased,
 .live-move .move-accuracy.increased {
     color: #32ed91;
@@ -1558,7 +1605,7 @@ button.move-placeholder:hover {
 
 .move-table-heading {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 2.6rem 3.8rem 2.8rem;
+    grid-template-columns: minmax(0, 1fr) 3.4rem 3.8rem 2.8rem;
     align-items: end;
     column-gap: 0.35rem;
     padding: 0 0.72rem 0.08rem 0.1rem;
@@ -1606,16 +1653,17 @@ button.move-placeholder:hover {
 .type-rock { --move-type: #afa981; }
 .type-bug { --move-type: #91a119; }
 .type-ghost { --move-type: #704170; }
-.type-steel { --move-type: #60a1b8; }
+.type-steel { --move-type: #6f8fad; }
 .type-fire { --move-type: #e62829; }
 .type-water { --move-type: #2980ef; }
 .type-grass { --move-type: #3fa129; }
 .type-electric { --move-type: #fac000; }
 .type-psychic { --move-type: #ef4179; }
 .type-ice { --move-type: #3dcef3; }
-.type-dragon { --move-type: #5060e1; }
+.type-dragon { --move-type: #6858d0; }
 .type-dark { --move-type: #624d4e; }
 .type-fairy { --move-type: #ef70ef; }
+.type-qmarks { --move-type: #a86888; }
 
 .effectiveness {
     position: relative;
@@ -1941,6 +1989,44 @@ button.move-placeholder:hover {
     color: var(--text);
     font-size: 0.74rem;
     font-weight: 700;
+}
+
+.move-power-details {
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-collapse: collapse;
+    border-radius: 0.5rem;
+    color: var(--muted-strong);
+    background: var(--surface-soft);
+    font-size: 0.7rem;
+}
+
+.move-power-details th,
+.move-power-details td {
+    padding: 0.42rem 0.55rem;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+}
+
+.move-power-details th:first-child {
+    text-align: left;
+}
+
+.move-power-details thead th {
+    color: var(--muted);
+    font-size: 0.58rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.move-power-details tbody th {
+    color: var(--text);
+    font-weight: 650;
+}
+
+.move-power-details tbody tr:last-child > * {
+    border-bottom: 0;
 }
 
 .detail-description {

@@ -1,0 +1,20 @@
+[
+  { "type": "NORMAL",   "row": 0,  "color": "#9fa19f" },
+  { "type": "FIGHTING", "row": 1,  "color": "#ff8000" },
+  { "type": "FLYING",   "row": 2,  "color": "#81b9ef" },
+  { "type": "POISON",   "row": 3,  "color": "#9141cb" },
+  { "type": "GROUND",   "row": 4,  "color": "#915121" },
+  { "type": "ROCK",     "row": 5,  "color": "#afa981" },
+  { "type": "BUG",      "row": 6,  "color": "#91a119" },
+  { "type": "GHOST",    "row": 7,  "color": "#704170" },
+  { "type": "STEEL",    "row": 8,  "color": "#6f8fad" },
+  { "type": "FIRE",     "row": 10, "color": "#e62829" },
+  { "type": "WATER",    "row": 11, "color": "#2980ef" },
+  { "type": "GRASS",    "row": 12, "color": "#3fa129" },
+  { "type": "ELECTRIC", "row": 13, "color": "#fac000" },
+  { "type": "PSYCHIC",  "row": 14, "color": "#ef4179" },
+  { "type": "ICE",      "row": 15, "color": "#3dcef3" },
+  { "type": "DRAGON",   "row": 16, "color": "#6858d0" },
+  { "type": "DARK",     "row": 17, "color": "#624d4e" },
+  { "type": "FAIRY",    "row": 18, "color": "#ef70ef" }
+]
