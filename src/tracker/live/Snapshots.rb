@@ -112,7 +112,10 @@ module Ironmon
 
   def self.tracker_battle_snapshot
     return nil if !@tracker_battle_id
-    return { "battle_id" => @tracker_battle_id }
+    return {
+      "battle_id" => @tracker_battle_id,
+      "selected_target_position" => @tracker_selected_target_position
+    }
   end
 
   def self.tracker_active_types(pokemon, battler = nil)
@@ -180,6 +183,7 @@ module Ironmon
     snapshot = {
       "enemy_id" => tracker_enemy_id(pokemon),
       "position" => battler.index,
+      "party_index" => battler.pokemonIndex,
       "species_id" => tracker_species_id(pokemon),
       "species_name" => species.name,
       "sprite_path" => tracker_sprite_path(pokemon),

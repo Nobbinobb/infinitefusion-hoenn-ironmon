@@ -105,6 +105,7 @@ public partial class Home : IDisposable
         RunState.Changed += HandleRunChanged;
         CompletedRuns.SelectionRequested += HandleCompletedRunSelectionRequested;
         ShortcutService.ViewRequested += HandleGlobalViewRequested;
+        ShortcutService.EnemyCycleRequested += HandleGlobalEnemyCycleRequested;
     }
 
     /// <summary>
@@ -298,6 +299,35 @@ public partial class Home : IDisposable
     }
 
     /// <summary>
+    /// Opens the opposing card or advances to the next active opposing battler.
+    /// </summary>
+    private void HandleGlobalEnemyCycleRequested()
+    {
+        _ = InvokeAsync(() =>
+        {
+            IReadOnlyList<EnemyPokemonSnapshot> enemies = [.. _run.Enemies.OrderBy(enemy => enemy.Position)];
+            bool cycleExistingSelection = _selectedView == TrackerView.Enemy;
+            SelectView(TrackerView.Enemy);
+            if (enemies.Count == 0)
+            {
+                _selectedEnemyId = null;
+            }
+            else if (!cycleExistingSelection)
+            {
+                _selectedEnemyId = enemies[0].EnemyId;
+            }
+            else
+            {
+                int selectedIndex = enemies.ToList().FindIndex(enemy => enemy.EnemyId == _selectedEnemyId);
+                int nextIndex = selectedIndex < 0 ? 0 : (selectedIndex + 1) % enemies.Count;
+                _selectedEnemyId = enemies[nextIndex].EnemyId;
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    /// <summary>
     /// Gets the CSS class for a primary tracker tab.
     /// </summary>
     /// <param name="view">The tab's tracker view.</param>
@@ -424,6 +454,19 @@ public partial class Home : IDisposable
     }
 
     /// <summary>
+    /// Gets the target used for move effectiveness while the native target menu is open.
+    /// </summary>
+    /// <returns>The highlighted battle target, or the tracker-selected enemy as a fallback.</returns>
+    private EnemyPokemonSnapshot? GetMoveTargetEnemy()
+    {
+        int? targetPosition = _run.Battle?.SelectedTargetPosition;
+        EnemyPokemonSnapshot? target = targetPosition is null
+            ? null
+            : _run.Enemies.FirstOrDefault(enemy => enemy.Position == targetPosition);
+        return target ?? GetSelectedEnemy();
+    }
+
+    /// <summary>
     /// Refreshes the shell after a background connection change.
     /// </summary>
     /// <param name="sender">The connection state raising the event.</param>
@@ -520,5 +563,6 @@ public partial class Home : IDisposable
         RunState.Changed -= HandleRunChanged;
         CompletedRuns.SelectionRequested -= HandleCompletedRunSelectionRequested;
         ShortcutService.ViewRequested -= HandleGlobalViewRequested;
+        ShortcutService.EnemyCycleRequested -= HandleGlobalEnemyCycleRequested;
     }
 }

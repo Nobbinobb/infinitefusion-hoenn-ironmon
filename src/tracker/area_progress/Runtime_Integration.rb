@@ -168,6 +168,23 @@ rescue Exception
   raise
 end
 
+alias ironmon_area_progress_original_pb_multi_trainer_battle pbMultiTrainerBattle
+def pbMultiTrainerBattle(trainers_array, canLose = false, outcomeVar = 1)
+  if Ironmon.active? && trainers_array.size == 2
+    map_id = $game_map ? $game_map.map_id : nil
+    entry_ids = trainers_array.map do |trainer|
+      Ironmon.current_area_event_entry_id("trainers", trainer[2], map_id)
+    end
+    Ironmon.queue_area_trainer_entries(entry_ids)
+  end
+  return ironmon_area_progress_original_pb_multi_trainer_battle(
+    trainers_array, canLose, outcomeVar
+  )
+rescue Exception
+  Ironmon.cancel_area_trainer_event
+  raise
+end
+
 alias ironmon_area_progress_original_pb_item_ball pbItemBall
 def pbItemBall(item, quantity = 1, item_name = "", canRandom = true)
   entry_id = Ironmon.current_area_event_entry_id("items")

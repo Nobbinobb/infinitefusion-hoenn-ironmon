@@ -108,11 +108,21 @@ public sealed class TrackerGameEventProcessorTests
             await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.EnemyAbilityRevealed, 7, ability, "run-1"), game, CancellationToken.None);
             Assert.Equal("CHLOROPHYLL", Assert.Single(knowledge.GetAbilities("BELLOSSOM:0")).Id);
 
+            BattleSnapshot activeBattle = new() { BattleId = "battle-1" };
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.BattleStarted, 8, activeBattle, "run-1", "battle-1"), game, CancellationToken.None);
+
             PlayerMoveMenuOpenedPayload moveMenu = new() { PokemonId = "player-1" };
-            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.PlayerMoveMenuOpened, 8, moveMenu, "run-1", "battle-1"), game, CancellationToken.None);
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.PlayerMoveMenuOpened, 9, moveMenu, "run-1", "battle-1"), game, CancellationToken.None);
             Assert.Equal("player-1", runState.Snapshot.MoveMenuPokemonId);
 
-            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.EnemyStateChanged, 9, enemy, "run-1", "battle-1"), game, CancellationToken.None);
+            PlayerTargetChangedPayload target = new() { Position = 3 };
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.PlayerTargetChanged, 10, target, "run-1", "battle-1"), game, CancellationToken.None);
+            Assert.Equal(3, runState.Snapshot.Battle?.SelectedTargetPosition);
+
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.PlayerTargetChanged, 11, new PlayerTargetChangedPayload(), "run-1", "battle-1"), game, CancellationToken.None);
+            Assert.Null(runState.Snapshot.Battle?.SelectedTargetPosition);
+
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.EnemyStateChanged, 12, enemy, "run-1", "battle-1"), game, CancellationToken.None);
             Assert.Equal("player-1", runState.Snapshot.MoveMenuPokemonId);
             EnemyPokemonSnapshot replacement = new()
             {
@@ -123,11 +133,11 @@ public sealed class TrackerGameEventProcessorTests
                 Level = 14
             };
 
-            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.EnemySentOut, 10, replacement, "run-1", "battle-1"), game, CancellationToken.None);
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.EnemySentOut, 13, replacement, "run-1", "battle-1"), game, CancellationToken.None);
             Assert.Null(runState.Snapshot.MoveMenuPokemonId);
             Assert.Equal("enemy-2", Assert.Single(runState.Snapshot.Enemies).EnemyId);
 
-            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.PlayerMoveMenuOpened, 11, moveMenu, "run-1", "battle-1"), game, CancellationToken.None);
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.PlayerMoveMenuOpened, 14, moveMenu, "run-1", "battle-1"), game, CancellationToken.None);
             Assert.Equal("player-1", runState.Snapshot.MoveMenuPokemonId);
 
             Dictionary<string, object?> requestPayload = [];

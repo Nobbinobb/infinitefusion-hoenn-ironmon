@@ -24,6 +24,12 @@ public partial class EnemyMoveList
     public EnemyPokemonSnapshot? Enemy { get; set; }
 
     /// <summary>
+    /// Gets or sets the active battle identifier.
+    /// </summary>
+    [Parameter]
+    public string? BattleId { get; set; }
+
+    /// <summary>
     /// Gets or sets legally visible player types used for effectiveness.
     /// </summary>
     [Parameter]
@@ -40,7 +46,7 @@ public partial class EnemyMoveList
     /// </summary>
     /// <returns>The selected enemy's remembered moves.</returns>
     private IReadOnlyList<ObservedMoveSnapshot> GetMoves()
-        => Enemy is null ? [] : Knowledge.GetDisplayedMoves(Enemy.SpeciesId, Enemy.Level);
+        => Enemy is null ? [] : Knowledge.GetDisplayedMoves(Enemy.SpeciesId, Enemy.Level, BattleId, Enemy.EnemyId, Enemy.Position, Enemy.PartyIndex);
 
     /// <summary>
     /// Formats observed enemy PP without implying unknown starting PP usage.

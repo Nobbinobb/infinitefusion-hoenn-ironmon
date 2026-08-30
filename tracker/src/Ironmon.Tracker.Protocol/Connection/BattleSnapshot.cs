@@ -16,4 +16,9 @@ public sealed class BattleSnapshot
     /// Gets or initializes the stable identifier for this battle.
     /// </summary>
     public required string BattleId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the opposing battler position currently highlighted by the player.
+    /// </summary>
+    public int? SelectedTargetPosition { get; init; }
 }

@@ -71,10 +71,12 @@ module Ironmon
     end
     return party if !gym_leader?(trainer) || party.length >= 6
 
-    leader_level = party.map { |pokemon| pokemon["level"] }.max || 1
+    authored_levels = party.map { |pokemon| pokemon["level"] }
+    authored_party_size = party.length
     trainer_name = trainer.name.to_s
     while party.length < 6
       slot = party.length
+      addition_index = slot - authored_party_size
       source = gym_leader_source_species_for(
         recipe["seed"], trainer.trainer_type, trainer_name, slot
       )
@@ -84,7 +86,9 @@ module Ironmon
       )
       party << {
         "species" => GameData::Species.get(mapped),
-        "level" => leader_level
+        "level" => gym_leader_addition_level(
+          authored_levels, addition_index
+        )
       }
     end
     return party

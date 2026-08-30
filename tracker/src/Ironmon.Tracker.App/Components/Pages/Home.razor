@@ -86,8 +86,8 @@
         {
             <PlayerCard Player="@_run.Player"
                         GameRoot="@_connection.Game?.GameRoot"
-                        TargetTypes="@GetSelectedEnemy()?.Types"
-                        TargetEvasionStage="@(GetSelectedEnemy()?.StatStages.Evasion ?? 0)"
+                        TargetTypes="@GetMoveTargetEnemy()?.Types"
+                        TargetEvasionStage="@(GetMoveTargetEnemy()?.StatStages.Evasion ?? 0)"
                         InBattle="@(_run.Battle is not null)"
                         BattleId="@_run.Battle?.BattleId"
                         TargetPosition="@GetSelectedEnemy()?.Position" />
@@ -96,6 +96,7 @@
     else if (_selectedView == TrackerView.Enemy)
     {
         <EnemyCard Enemies="@_run.Enemies"
+                   BattleId="@_run.Battle?.BattleId"
                    PlayerTypes="@_run.Player?.Types"
                    PlayerEvasionStage="@(_run.Player?.StatStages.Evasion ?? 0)"
                    GameRoot="@_connection.Game?.GameRoot"

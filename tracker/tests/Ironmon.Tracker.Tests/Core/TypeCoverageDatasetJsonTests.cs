@@ -68,7 +68,7 @@ public sealed class TypeCoverageDatasetJsonTests
 
         Assert.Equal("6.8.2", dataset.GameVersion);
         Assert.Equal(576, dataset.NormalPoolSize);
-        Assert.Equal(171_396, dataset.FusionPoolSize);
+        Assert.Equal(174_346, dataset.FusionPoolSize);
         Assert.Equal(170, dataset.Profiles.Count);
     }
 

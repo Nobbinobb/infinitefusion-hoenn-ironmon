@@ -148,6 +148,20 @@ module Ironmon
       custom_fusion_species?(species_data.id)
   end
 
+  def self.mark_persistent_trainer_species(pokemon)
+    return pokemon if !pokemon
+    pokemon.instance_variable_set(:@ironmon_persistent_trainer_species, true)
+    return pokemon
+  end
+
+  def self.persistent_trainer_species?(pokemon)
+    return pokemon && pokemon.instance_variable_get(
+      :@ironmon_persistent_trainer_species
+    ) == true
+  rescue Exception
+    return false
+  end
+
   # This is a final boundary check for trainer paths owned by the base game.
   # Most parties have already been mapped, so policy-valid entries are left
   # untouched. Any original or story-created species which bypassed that path
@@ -173,16 +187,17 @@ module Ironmon
     return trainer
   end
 
-  # Dynamic Hoenn trainers (the rival, Wally, and rematch trainers) keep a
-  # story-owned team which may catch, fuse, unfuse, reverse, or evolve between
-  # battles. Map clones at the battle boundary so those story operations remain
-  # intact while every species actually battled obeys the trainer policy.
+  # Dynamic Hoenn trainers keep story-owned teams which may change between
+  # battles. Map their battle clones through the trainer policy. A marked
+  # policy-valid story Pokemon keeps its persistent species instead.
   def self.trainer_battle_party(party, party_context = [:dynamic])
     return party if !active?
     return party.each_with_index.map do |entry, slot|
       context = [*party_context, slot]
       if entry.is_a?(Pokemon)
         mapped = entry.clone
+        next mapped if persistent_trainer_species?(entry) &&
+          trainer_species_allowed?(entry.species)
         mapped_species = trainer_species_for(entry.species, context)
         if mapped.species != mapped_species
           mapped.species = mapped_species
@@ -202,7 +217,7 @@ module Ironmon
   # NPC story scripts sometimes combine Pokemon which Ironmon has already
   # presented as fusions. Reduce each input to the component matching its role
   # so the story always creates one legal two-base fusion, never a fusion of
-  # fusions. The trainer generator still controls what is shown in battle.
+  # fusions.
   def self.npc_fusion_component(species, role)
     species_data = GameData::Species.try_get(species)
     if !species_data

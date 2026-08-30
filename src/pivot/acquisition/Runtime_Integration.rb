@@ -28,6 +28,8 @@ end
 alias ironmon_pivot_original_pb_add_pokemon pbAddPokemon
 def pbAddPokemon(pokemon, level = 1, see_form = true, dontRandomize = false,
                  variableToSave = nil)
+  return false if Ironmon.block_failed_run_action
+  return false if !Ironmon.confirm_gift_acquisition(pokemon)
   return Ironmon.with_acquisition_source(:gift_or_static) do
     ironmon_pivot_original_pb_add_pokemon(
       pokemon, level, see_form, dontRandomize, variableToSave
@@ -37,6 +39,8 @@ end
 
 alias ironmon_pivot_original_pb_add_to_party pbAddToParty
 def pbAddToParty(pokemon, level = 1, see_form = true, dontRandomize = false)
+  return false if Ironmon.block_failed_run_action
+  return false if !Ironmon.confirm_gift_acquisition(pokemon)
   return Ironmon.with_acquisition_source(:gift_or_static) do
     ironmon_pivot_original_pb_add_to_party(
       pokemon, level, see_form, dontRandomize
@@ -51,6 +55,7 @@ def pbAddPokemonSilent(pokemon, level = 1, see_form = true)
     pokemon, level, see_form
   ) if !Ironmon.active?
   return false if !pokemon
+  return false if !Ironmon.confirm_gift_acquisition(pokemon)
   pokemon = Pokemon.new(pokemon, level) if !pokemon.is_a?(Pokemon)
   Ironmon.mark_starter_pokemon(pokemon) if
     Ironmon.starter_acquisition?
@@ -76,6 +81,7 @@ def pbAddToPartySilent(pokemon, level = nil, see_form = true)
     pokemon, level, see_form
   ) if !Ironmon.active?
   return false if !pokemon
+  return false if !Ironmon.confirm_gift_acquisition(pokemon)
   pokemon = Pokemon.new(pokemon, level) if !pokemon.is_a?(Pokemon)
   if Ironmon.current_acquisition_exclusion
     Ironmon.record_excluded_acquisition(
@@ -89,6 +95,18 @@ def pbAddToPartySilent(pokemon, level = nil, see_form = true)
   $Trainer.pokedex.set_owned(pokemon.species)
   pokemon.record_first_moves
   return Ironmon.intercept_acquisition(pokemon, :gift_or_static)
+end
+
+alias ironmon_pivot_original_pb_add_foreign_pokemon pbAddForeignPokemon
+def pbAddForeignPokemon(pokemon, level = 1, owner_name = nil,
+                        nickname = nil, owner_gender = 0, see_form = true)
+  return false if Ironmon.block_failed_run_action
+  return false if !Ironmon.confirm_gift_acquisition(pokemon)
+  return Ironmon.with_acquisition_source(:gift_or_static) do
+    ironmon_pivot_original_pb_add_foreign_pokemon(
+      pokemon, level, owner_name, nickname, owner_gender, see_form
+    )
+  end
 end
 
 alias ironmon_pivot_original_pb_add_rental_pokemon pbAddRentalPokemon

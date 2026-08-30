@@ -70,6 +70,24 @@ module Ironmon
     return @acquisition_exclusion
   end
 
+  def self.gift_acquisition_confirmation_required?(pokemon)
+    return false if !active? || !pokemon
+    return false if starter_acquisition? || starter_pokemon?(pokemon)
+    return false if current_acquisition_exclusion
+    return false if pokemon.is_a?(Pokemon) && pokemon.egg?
+    return true
+  end
+
+  def self.confirm_gift_acquisition(pokemon)
+    return true if !gift_acquisition_confirmation_required?(pokemon)
+    return pbConfirmMessageSerious(
+      _INTL("Accept this gifted Pokemon? Accepting starts a mandatory pivot.")
+    )
+  rescue Exception => error
+    echoln "Ironmon gift confirmation failed: #{error.message}"
+    return false
+  end
+
   def self.party_excluded_pokemon?(pokemon)
     return true if !pokemon
     return true if pokemon.egg?

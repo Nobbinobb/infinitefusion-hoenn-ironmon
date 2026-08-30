@@ -23,6 +23,11 @@ public sealed class EnemyPokemonSnapshot
     public int Position { get; init; }
 
     /// <summary>
+    /// Gets or initializes the zero-based position in the opposing trainer's party.
+    /// </summary>
+    public int PartyIndex { get; init; }
+
+    /// <summary>
     /// Gets or initializes the stable species and form identifier.
     /// </summary>
     public required string SpeciesId { get; init; }

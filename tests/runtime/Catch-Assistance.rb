@@ -44,7 +44,7 @@ module IronmonCatchAssistanceRuntimeTests
         "assistance preserves catch-rate ordering"
       )
       assert_close(
-        90.2, assisted_rates[2], 0.1,
+        160.8, assisted_rates[2], 0.1,
         "rate 45 reaches the calibrated assisted rate"
       )
       assert_close(
@@ -59,8 +59,28 @@ module IronmonCatchAssistanceRuntimeTests
         assisted_rates[2], 100, 30, :NONE
       )
       assert_close(
-        38.7, chance, 0.05,
+        59.6, chance, 0.05,
         "ordinary Poke Ball chance matches the calibrated curve"
+      )
+      difficult_rate = Ironmon.assisted_catch_rate(3, 100, 50)
+      difficult_chance = Ironmon.capture_success_chance_percent(
+        difficult_rate, 100, 50, :NONE
+      )
+      assert_close(
+        50.7, difficult_chance, 0.05,
+        "half HP gives a very low-rate encounter about a 50 percent chance"
+      )
+      assert_close(
+        94.4, Ironmon.assisted_catch_rate(3, 100, 80), 0.1,
+        "assistance rises quickly during early damage"
+      )
+      assert_close(
+        difficult_rate, Ironmon.assisted_catch_rate(3, 300, 200), 0.001,
+        "assistance reaches its maximum after one-third HP is removed"
+      )
+      assert_close(
+        difficult_rate, Ironmon.assisted_catch_rate(3, 100, 30), 0.001,
+        "additional damage does not increase the assistance past its maximum"
       )
       File.binwrite(OUTPUT_PATH, "catch assistance runtime tests passed\n")
     ensure

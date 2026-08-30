@@ -45,10 +45,21 @@ module IronmonTrackerBattleSceneItemHooks
   end
 
   def pbChooseTarget(idxBattler, target_data, visibleSprites = nil)
-    return super if !Ironmon.tracker_battle_item_menu_active?
+    Ironmon.begin_tracker_player_target_selection
+    if !Ironmon.tracker_battle_item_menu_active?
+      return super
+    end
     return catch(:ironmon_tracker_battle_item) do
       Ironmon.with_tracker_battle_item_interrupt { super }
     end
+  ensure
+    Ironmon.end_tracker_player_target_selection
+  end
+
+  def pbSelectBattler(idxBattler, selectMode = 1)
+    result = super
+    Ironmon.tracker_player_target_changed(idxBattler)
+    return result
   end
 end
 
@@ -87,6 +98,37 @@ module IronmonTrackerPartySceneItemHooks
 end
 
 PokemonParty_Scene.prepend(IronmonTrackerPartySceneItemHooks)
+
+module Ironmon
+  def self.begin_tracker_player_target_selection
+    @tracker_player_target_selection_active = true
+    publish_tracker_player_target(nil)
+  end
+
+  def self.tracker_player_target_changed(position)
+    return if !@tracker_player_target_selection_active
+    opponent_position = if position.is_a?(Integer) && position >= 0 && position.odd?
+                          position
+                        else
+                          nil
+                        end
+    publish_tracker_player_target(opponent_position)
+  end
+
+  def self.end_tracker_player_target_selection
+    publish_tracker_player_target(nil)
+    @tracker_player_target_selection_active = false
+  end
+
+  def self.publish_tracker_player_target(position)
+    return if @tracker_selected_target_position == position
+    @tracker_selected_target_position = position
+    return if !active? || !@tracker_battle_id
+    tracker_connection.send_event(
+      "player_target_changed", { "position" => position }
+    )
+  end
+end
 
 module IronmonTrackerBattleHooks
   def pbStartBattle

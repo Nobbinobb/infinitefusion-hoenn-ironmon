@@ -42,6 +42,8 @@ module Ironmon
     @tracker_next_enemy_state_at = 0.0
     @tracker_pending_battle_item = nil
     @tracker_battle_command = nil
+    @tracker_player_target_selection_active = false
+    @tracker_selected_target_position = nil
     @tracker_starter_selection = nil
     tracker_connection.send_run_started
   end
@@ -78,6 +80,8 @@ module Ironmon
     @tracker_next_state_at = 0.0
     @tracker_pending_battle_item = nil
     @tracker_battle_command = nil
+    @tracker_player_target_selection_active = false
+    @tracker_selected_target_position = nil
     tracker_connection.send_event("battle_started", tracker_battle_snapshot)
   end
 
@@ -95,6 +99,8 @@ module Ironmon
     @tracker_enemy_abilities = {}
     @tracker_pending_battle_item = nil
     @tracker_battle_command = nil
+    @tracker_player_target_selection_active = false
+    @tracker_selected_target_position = nil
   end
 
   def self.tracker_player_sent_out(battler)
@@ -204,6 +210,8 @@ module Ironmon
     )
     payload = {
       "enemy_id" => tracker_enemy_id(battler.pokemon),
+      "position" => battler.index,
+      "party_index" => battler.pokemonIndex,
       "species_id" => tracker_species_id(battler.pokemon),
       "enemy_level" => battler.level,
       "move" => move

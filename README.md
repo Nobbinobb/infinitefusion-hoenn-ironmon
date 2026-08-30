@@ -26,13 +26,13 @@ and a fast reset to starter selection.
 - `tools/generation/` contains release-data generators and their runtime bridge.
 
 Milestone 6 is on hold while optional quality-of-life features are developed.
-Version `0.8.1` unifies sprite presentation throughout the tracker, adds an
-enlarged sprite dialog that remains above generated graph nodes, supports both
-manually installed sprites and sheets downloaded by Infinite Fusion, and adds
-an optional resumable custom-sprite-library download in tracker Settings. It
-retains run-aware obtainability, native fusion closure, seeded-run sharing,
-battle-item control, type coverage, signed diagnostic access, Favorite Clause,
-and the randomization safeguards from earlier releases.
+Version `0.8.2` applies effective battle-level scaling consistently in the game
+and lookup, preserves authored multi-trainer encounters, strengthens early
+Hoenn acquisition, healing, and catching safeguards, and makes the live tracker
+follow the selected opponent with encounter-specific PP. It retains unified
+sprite presentation, run-aware obtainability, native fusion closure, seeded-run
+sharing, battle-item control, type coverage, signed diagnostic access, Favorite
+Clause, and the randomization safeguards from earlier releases.
 See
 `docs/IRONMON_MECHANICS.html` for the complete behavior reference,
 `docs/ROADMAP.md` for cumulative scope, and `docs/guides/INSTALLATION.md` for

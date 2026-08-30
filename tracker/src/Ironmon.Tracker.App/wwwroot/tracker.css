@@ -1646,6 +1646,7 @@ button.move-placeholder:hover {
 }
 
 .type-normal { --move-type: #9fa19f; }
+.type-neutral { --move-type: #9fa19f; }
 .type-fighting { --move-type: #ff8000; }
 .type-flying { --move-type: #81b9ef; }
 .type-poison { --move-type: #9141cb; }

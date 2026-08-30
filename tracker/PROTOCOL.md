@@ -1,6 +1,6 @@
 # Ironmon Tracker protocol v1
 
-This document records the implemented protocol through the 0.8.1 tracker UI,
+This document records the implemented protocol through the 0.8.2 tracker UI,
 native fusion closure, and run-aware evolution additions. Later parts extend
 the payload catalog without changing the common envelope or transport.
 
@@ -41,7 +41,7 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.2",
-    "ironmon_version": "0.8.1",
+    "ironmon_version": "0.8.2",
     "ironmon_active": false,
     "debug_available": true,
     "supported_diagnostic_capabilities": ["pokemon.current_player", "run.seed"],
@@ -241,7 +241,7 @@ action path. Non-cancellable nested screens such as Summary reject the request
 until closed. The native battle checks, turn consumption, item consumption, and
 effect handlers remain authoritative.
 
-An active 0.8.1 run also includes optional aggregate type-coverage context:
+An active 0.8.2 run also includes optional aggregate type-coverage context:
 
 ```json
 {
@@ -250,8 +250,8 @@ An active 0.8.1 run also includes optional aggregate type-coverage context:
     "normal_pool_size": 576,
     "normal_pool_fingerprint": "5ab45fb7fa469aa5",
     "fusion_pool_schema_version": 2,
-    "fusion_pool_size": 171396,
-    "fusion_pool_fingerprint": "a71c6c1c12491b47"
+    "fusion_pool_size": 174346,
+    "fusion_pool_fingerprint": "4eda2dd4c6b08231"
   }
 }
 ```
@@ -591,7 +591,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "seed": 918273645,
   "result": "lost",
   "game_version": "6.8.2",
-  "ironmon_version": "0.8.1",
+  "ironmon_version": "0.8.2",
   "configuration": {
     "schema_version": 3,
     "wild_policy": "mixed",

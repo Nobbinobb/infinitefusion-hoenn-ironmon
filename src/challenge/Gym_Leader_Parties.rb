@@ -82,17 +82,31 @@ module Ironmon
     return species
   end
 
+  def self.gym_leader_addition_level(levels, addition_index)
+    party_levels = levels.map { |level| level.to_i }.select { |level| level > 0 }
+    return 1 if party_levels.empty?
+    lowest = party_levels.min
+    highest = party_levels.max
+    highest_excluded = [highest - 1, 1].max
+    return highest_excluded if highest_excluded < lowest
+    level_count = highest_excluded - lowest + 1
+    return lowest + (addition_index.to_i % level_count)
+  end
+
   def self.expand_gym_leader_party(trainer)
     return trainer if !active? || !gym_leader?(trainer)
     return trainer if !trainer.party || trainer.party.length >= 6
-    leader_level = trainer.party.map { |pokemon| pokemon.level }.max || 1
+    authored_levels = trainer.party.map { |pokemon| pokemon.level }
+    authored_party_size = trainer.party.length
 
     while trainer.party.length < 6
       slot = trainer.party.length
       species = gym_leader_species_for_slot(trainer, slot)
-      pokemon = Pokemon.new(species, leader_level, trainer)
+      addition_index = slot - authored_party_size
+      level = gym_leader_addition_level(authored_levels, addition_index)
+      pokemon = Pokemon.new(species, level, trainer)
       # Existing members have already passed Step 1.6's boundary scaler. The
-      # added member is created directly at that displayed leader level.
+      # added member is created directly in their displayed level range.
       pokemon.instance_variable_set(:@ironmon_level_scaled, true)
       trainer.party << pokemon
     end

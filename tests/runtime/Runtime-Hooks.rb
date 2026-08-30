@@ -479,7 +479,8 @@ module IronmonRuntimeHookTests
     singleton.send(:define_method, :tracker_enemy_snapshot) do |battler|
       {
         "enemy_id" => tracker_enemy_id(battler.pokemon),
-        "position" => battler.index
+        "position" => battler.index,
+        "party_index" => battler.pokemonIndex
       }
     end
     connection = TrackerLifecycleConnection.new
@@ -492,13 +493,16 @@ module IronmonRuntimeHookTests
     Ironmon.instance_variable_set(:@tracker_enemy_move_signatures, {})
     Ironmon.instance_variable_set(:@tracker_enemy_abilities, {})
     pokemon = Struct.new(:personalID)
-    battler = Struct.new(:index, :pokemon).new(1, pokemon.new(101))
+    battler = Struct.new(:index, :pokemon, :pokemonIndex).new(
+      1, pokemon.new(101), 0
+    )
 
     Ironmon.tracker_enemy_sent_out(battler)
     Ironmon.tracker_player_move_menu_opened(
       Struct.new(:pokemon).new(pokemon.new(201))
     )
     battler.pokemon = pokemon.new(102)
+    battler.pokemonIndex = 1
     Ironmon.tracker_enemy_sent_out(battler)
     Ironmon.tracker_player_move_menu_opened(
       Struct.new(:pokemon).new(pokemon.new(201))
@@ -512,6 +516,11 @@ module IronmonRuntimeHookTests
         "player_move_menu_opened"
       ],
       "a reused enemy battle slot resets repeated Fight-menu navigation"
+    )
+    assert(
+      connection.events.select { |event| event[0] == "enemy_sent_out" }
+        .map { |event| event[1]["party_index"] } == [0, 1],
+      "enemy snapshots distinguish duplicate species by trainer-party slot"
     )
   ensure
     if original_methods

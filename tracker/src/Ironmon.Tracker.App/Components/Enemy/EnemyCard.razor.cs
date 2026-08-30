@@ -23,6 +23,12 @@ public partial class EnemyCard : IDisposable
     public IReadOnlyList<EnemyPokemonSnapshot> Enemies { get; set; } = [];
 
     /// <summary>
+    /// Gets or sets the active battle identifier.
+    /// </summary>
+    [Parameter]
+    public string? BattleId { get; set; }
+
+    /// <summary>
     /// Gets or sets the selected opposing Pokemon identifier.
     /// </summary>
     [Parameter]

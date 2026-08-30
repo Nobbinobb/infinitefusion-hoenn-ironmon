@@ -284,7 +284,9 @@ if ($LASTEXITCODE -ne 0) {
   throw "Tracker tests failed."
 }
 
-& (Join-Path $PSScriptRoot "Test-GameRuntime.ps1") -GameRoot $gameRoot
+& (Join-Path $PSScriptRoot "Test-GameRuntime.ps1") `
+  -GameRoot $gameRoot `
+  -TimeoutSeconds 300
 
 & (Join-Path $PSScriptRoot "Build-Distribution.ps1")
 & (Join-Path $PSScriptRoot "Publish-Tracker.ps1") -DeploymentMode SelfContained

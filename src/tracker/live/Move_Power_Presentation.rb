@@ -116,7 +116,9 @@ module Ironmon
                                    battler, sensitive)
     return move.type if !definition["dynamic_type"] || sensitive
     return move.type if !battler && !definition["offline_native"]
-    return native_move.pbBaseType(user)
+    type = native_move.pbBaseType(user)
+    return :NEUTRAL if Settings::TRIPLE_TYPES.include?(type)
+    return type
   rescue Exception
     return move.type
   end

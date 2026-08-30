@@ -48,12 +48,12 @@ public sealed class WildPokemonOccurrenceSnapshot
     public int? SecondarySlot { get; init; }
 
     /// <summary>
-    /// Gets or initializes the minimum authored encounter level.
+    /// Gets or initializes the minimum effective Ironmon encounter level.
     /// </summary>
     public int MinimumLevel { get; init; }
 
     /// <summary>
-    /// Gets or initializes the maximum authored encounter level.
+    /// Gets or initializes the maximum effective Ironmon encounter level.
     /// </summary>
     public int MaximumLevel { get; init; }
 

@@ -13,7 +13,7 @@ public sealed class TrackerKnowledgeStoreTests
     }
 
     /// <summary>
-    /// Verifies newest-four projection, PP updates, player assistance, and reload.
+    /// Verifies newest-four projection, encounter PP updates, player assistance, and reload.
     /// </summary>
     [Fact]
     public void StorePersistsApplicableRememberedMoves()
@@ -24,24 +24,28 @@ public sealed class TrackerKnowledgeStoreTests
             TrackerKnowledgeOptions options = new(root);
             TrackerKnowledgeStore store = new(options);
             store.SelectRun("run-knowledge");
+            store.StartBattle("battle-1");
             store.ObservePlayer(CreatePlayer([CreateMove("MOVE1", 1, 0), CreateMove("MOVE2", 5, 1)]));
             ObservedMoveSnapshot[] enemyMoves = [CreateMove("MOVE3", 10, 2), CreateMove("MOVE4", 15, 3), CreateMove("MOVE5", 20, 4)];
             foreach (ObservedMoveSnapshot move in enemyMoves)
-                store.ObserveEnemyMove(CreateEnemyUse(move));
+                store.ObserveEnemyMove("battle-1", CreateEnemyUse(move));
 
             ObservedMoveSnapshot repeated = CreateMove("MOVE5", 20, 4, 7);
-            store.ObserveEnemyMove(CreateEnemyUse(repeated));
+            store.ObserveEnemyMove("battle-1", CreateEnemyUse(repeated));
 
-            IReadOnlyList<ObservedMoveSnapshot> displayed = store.GetDisplayedMoves("BELLOSSOM:0", 25);
+            IReadOnlyList<ObservedMoveSnapshot> displayed = store.GetDisplayedMoves("BELLOSSOM:0", 25, "battle-1", "enemy-1", 1, 0);
             Assert.Equal(["MOVE2", "MOVE3", "MOVE4", "MOVE5"], displayed.Select(move => move.Id));
             Assert.Equal(7, displayed[^1].PpAfterUse);
+            Assert.All(store.GetDisplayedMoves("BELLOSSOM:0", 25), move => Assert.Null(move.PpAfterUse));
             TrackerKnowledgeSnapshot snapshot = store.GetDiagnosticSnapshot();
             Assert.Equal("run-knowledge", snapshot.RunId);
             Assert.Equal(6, snapshot.Moves["BELLOSSOM:0"].Count);
+            Assert.All(snapshot.Moves["BELLOSSOM:0"], move => Assert.Null(move.PpAfterUse));
 
             TrackerKnowledgeStore restored = new(options);
             restored.SelectRun("run-knowledge");
             Assert.Equal(displayed.Select(move => move.Id), restored.GetDisplayedMoves("BELLOSSOM:0", 25).Select(move => move.Id));
+            Assert.All(restored.GetDisplayedMoves("BELLOSSOM:0", 25), move => Assert.Null(move.PpAfterUse));
         }
         finally
         {
@@ -60,9 +64,10 @@ public sealed class TrackerKnowledgeStoreTests
         {
             TrackerKnowledgeStore store = new(new TrackerKnowledgeOptions(root));
             store.SelectRun("run-observed-move");
+            store.StartBattle("battle-observed-move");
             ObservedMoveSnapshot move = CreateMove("UNKNOWN_SOURCE", 0, 0, 9, "unknown");
 
-            store.ObserveEnemyMove(CreateEnemyUse(move));
+            store.ObserveEnemyMove("battle-observed-move", CreateEnemyUse(move));
             Assert.Equal("UNKNOWN_SOURCE", Assert.Single(store.GetDisplayedMoves("BELLOSSOM:0", 25)).Id);
         }
         finally
@@ -111,6 +116,7 @@ public sealed class TrackerKnowledgeStoreTests
         {
             TrackerKnowledgeStore store = new(new TrackerKnowledgeOptions(root));
             store.SelectRun("run-equivalence");
+            store.StartBattle("battle-equivalence");
             int changes = 0;
             store.Changed += (_, _) => changes++;
 
@@ -121,12 +127,44 @@ public sealed class TrackerKnowledgeStoreTests
             store.ObserveEnemy(CreateEnemy(18, CreateAbility("FRISK", "Frisk", "Updated description")));
             Assert.Equal(2, changes);
 
-            store.ObserveEnemyMove(CreateEnemyUse(CreateMove("MOVE1", 10, 1, 8)));
+            store.ObserveEnemyMove("battle-equivalence", CreateEnemyUse(CreateMove("MOVE1", 10, 1, 8)));
             Assert.Equal(3, changes);
-            store.ObserveEnemyMove(CreateEnemyUse(CreateMove("MOVE1", 10, 1, 8)));
+            store.ObserveEnemyMove("battle-equivalence", CreateEnemyUse(CreateMove("MOVE1", 10, 1, 8)));
             Assert.Equal(3, changes);
-            store.ObserveEnemyMove(CreateEnemyUse(CreateMove("MOVE1", 10, 1, 8, description: "Updated description")));
+            store.ObserveEnemyMove("battle-equivalence", CreateEnemyUse(CreateMove("MOVE1", 10, 1, 8, description: "Updated description")));
             Assert.Equal(4, changes);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    /// <summary>
+    /// Verifies remaining PP is isolated by battle, battler position, and trainer-party slot.
+    /// </summary>
+    [Fact]
+    public void StoreScopesEnemyPpToEncounterAndPartySlot()
+    {
+        string root = CreateRoot();
+        try
+        {
+            TrackerKnowledgeStore store = new(new TrackerKnowledgeOptions(root));
+            store.SelectRun("run-pp-scope");
+            store.StartBattle("battle-1");
+            EnemyMoveUsedPayload firstSlot = CreateEnemyUse(CreateMove("MOVE1", 10, 1, 8));
+            store.ObserveEnemyMove("battle-1", firstSlot);
+
+            Assert.Equal(8, Assert.Single(store.GetDisplayedMoves("BELLOSSOM:0", 25, "battle-1", "enemy-1", 1, 0)).PpAfterUse);
+            Assert.Null(Assert.Single(store.GetDisplayedMoves("BELLOSSOM:0", 25, "battle-1", "enemy-2", 1, 1)).PpAfterUse);
+
+            store.StartBattle("battle-2");
+            Assert.Null(Assert.Single(store.GetDisplayedMoves("BELLOSSOM:0", 25, "battle-2", "enemy-1", 1, 0)).PpAfterUse);
+
+            EnemyMoveUsedPayload secondSlot = CreateEnemyUse(CreateMove("MOVE1", 10, 1, 14), "enemy-2", 1);
+            store.ObserveEnemyMove("battle-2", secondSlot);
+            Assert.Equal(14, Assert.Single(store.GetDisplayedMoves("BELLOSSOM:0", 25, "battle-2", "enemy-2", 1, 1)).PpAfterUse);
+            Assert.Null(Assert.Single(store.GetDisplayedMoves("BELLOSSOM:0", 25, "battle-2", "enemy-1", 1, 0)).PpAfterUse);
         }
         finally
         {
@@ -222,10 +260,14 @@ public sealed class TrackerKnowledgeStoreTests
     /// Creates one enemy move-use observation.
     /// </summary>
     /// <param name="move">The observed move.</param>
+    /// <param name="enemyId">The battle-stable enemy identifier.</param>
+    /// <param name="partyIndex">The position in the opposing trainer's party.</param>
     /// <returns>The enemy move-use payload.</returns>
-    private static EnemyMoveUsedPayload CreateEnemyUse(ObservedMoveSnapshot move) => new()
+    private static EnemyMoveUsedPayload CreateEnemyUse(ObservedMoveSnapshot move, string enemyId = "enemy-1", int partyIndex = 0) => new()
     {
-        EnemyId = "enemy-1",
+        EnemyId = enemyId,
+        Position = 1,
+        PartyIndex = partyIndex,
         SpeciesId = "BELLOSSOM:0",
         EnemyLevel = 25,
         Move = move

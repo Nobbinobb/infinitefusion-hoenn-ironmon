@@ -50,6 +50,12 @@ module Ironmon
     @current_area_trainer_entry = entry_id
   end
 
+  def self.queue_area_trainer_entries(entry_ids)
+    @pending_area_trainer_entries ||= []
+    @pending_area_trainer_entries.concat(entry_ids.compact)
+    @pending_area_trainer_entries.uniq!
+  end
+
   def self.finish_area_trainer_event(won, waiting)
     entry_id = @current_area_trainer_entry
     @current_area_trainer_entry = nil

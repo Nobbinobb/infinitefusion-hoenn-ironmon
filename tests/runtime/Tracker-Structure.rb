@@ -224,6 +224,45 @@ module IronmonTrackerStructureRuntimeTests
       "tracker engine integration"
     )
     assert_source(
+      IronmonTrackerBattleSceneItemHooks.instance_method(:pbChooseTarget),
+      "018_Tracker_Z_Runtime_Integration.rb",
+      "tracker battle target integration"
+    )
+    previous_battle_id = Ironmon.instance_variable_get(:@tracker_battle_id)
+    previous_target = Ironmon.instance_variable_get(
+      :@tracker_selected_target_position
+    )
+    previous_target_active = Ironmon.instance_variable_get(
+      :@tracker_player_target_selection_active
+    )
+    begin
+      Ironmon.instance_variable_set(:@tracker_battle_id, nil)
+      Ironmon.begin_tracker_player_target_selection
+      Ironmon.tracker_player_target_changed(3)
+      assert(
+        Ironmon.instance_variable_get(:@tracker_selected_target_position) == 3,
+        "tracker target selection follows an opposing battler position"
+      )
+      Ironmon.tracker_player_target_changed(2)
+      assert(
+        Ironmon.instance_variable_get(:@tracker_selected_target_position).nil?,
+        "tracker target selection ignores the player's side"
+      )
+      Ironmon.end_tracker_player_target_selection
+      assert(
+        !Ironmon.instance_variable_get(:@tracker_player_target_selection_active),
+        "tracker target selection clears after the native menu closes"
+      )
+    ensure
+      Ironmon.instance_variable_set(:@tracker_battle_id, previous_battle_id)
+      Ironmon.instance_variable_set(
+        :@tracker_selected_target_position, previous_target
+      )
+      Ironmon.instance_variable_set(
+        :@tracker_player_target_selection_active, previous_target_active
+      )
+    end
+    assert_source(
       Ironmon.method(:tracker_area_catalog),
       "010_Tracker_Area_Lookup.rb",
       "tracker area catalog"

@@ -9,7 +9,9 @@ public sealed class TrackerKnowledgeStore
 {
     private readonly TrackerKnowledgeOptions _options;
     private readonly Lock _sync = new();
+    private readonly Dictionary<(string BattleId, string EnemyId, int Position, int PartyIndex), List<ObservedMoveSnapshot>> _encounterMoves = [];
     private PersistedRunKnowledge _knowledge = new();
+    private string? _activeBattleId;
     private string? _runId;
 
     /// <summary>
@@ -57,6 +59,8 @@ public sealed class TrackerKnowledgeStore
                 return;
             _runId = runId;
             _knowledge = Load(runId);
+            _activeBattleId = null;
+            _encounterMoves.Clear();
         }
 
         Changed?.Invoke(this, EventArgs.Empty);
@@ -116,13 +120,53 @@ public sealed class TrackerKnowledgeStore
     }
 
     /// <summary>
+    /// Starts a fresh battle scope for opponent-specific PP observations.
+    /// </summary>
+    /// <param name="battleId">The newly active battle identifier.</param>
+    public void StartBattle(string battleId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(battleId);
+        lock (_sync)
+        {
+            if (string.Equals(_activeBattleId, battleId, StringComparison.Ordinal))
+                return;
+
+            _activeBattleId = battleId;
+            _encounterMoves.Clear();
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Ends the active battle scope for opponent-specific PP observations.
+    /// </summary>
+    public void EndBattle()
+    {
+        lock (_sync)
+        {
+            if (_activeBattleId is null && _encounterMoves.Count == 0)
+                return;
+
+            _activeBattleId = null;
+            _encounterMoves.Clear();
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
     /// Records a move made observable by enemy use.
     /// </summary>
+    /// <param name="battleId">The active battle identifier.</param>
     /// <param name="observation">The enemy move-use observation.</param>
-    public void ObserveEnemyMove(EnemyMoveUsedPayload observation)
+    public void ObserveEnemyMove(string? battleId, EnemyMoveUsedPayload observation)
     {
         ArgumentNullException.ThrowIfNull(observation);
-        ObserveMoves(observation.SpeciesId, [observation.Move]);
+        bool discoveryChanged = ObserveMoves(observation.SpeciesId, [CopyWithPp(observation.Move, null)], false);
+        bool encounterChanged = ObserveEncounterMove(battleId, observation);
+        if (discoveryChanged || encounterChanged)
+            Changed?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -141,7 +185,36 @@ public sealed class TrackerKnowledgeStore
                 return [];
 
             IReadOnlyList<DiscoveredMove> selected = MoveDiscoveryRules.SelectDisplayedMoves(moves.Select(ToCoreDiscovery), level);
-            return selected.Select(discovery => SelectObservation(moves, discovery)).ToArray();
+            return [.. selected.Select(discovery => CopyWithPp(SelectObservation(moves, discovery), null))];
+        }
+    }
+
+    /// <summary>
+    /// Gets remembered moves with PP observations belonging only to one opposing Pokemon encounter.
+    /// </summary>
+    /// <param name="speciesId">The stable species and form identifier.</param>
+    /// <param name="level">The enemy's visible level.</param>
+    /// <param name="battleId">The active battle identifier.</param>
+    /// <param name="enemyId">The battle-stable enemy identifier.</param>
+    /// <param name="position">The opposing battler position.</param>
+    /// <param name="partyIndex">The position in the opposing trainer's party.</param>
+    /// <returns>The remembered moves with only this opponent's observed PP.</returns>
+    public IReadOnlyList<ObservedMoveSnapshot> GetDisplayedMoves(string speciesId, int level, string? battleId, string enemyId, int position, int partyIndex)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        ArgumentOutOfRangeException.ThrowIfLessThan(level, 1);
+        ArgumentException.ThrowIfNullOrWhiteSpace(enemyId);
+        lock (_sync)
+        {
+            if (!_knowledge.Moves.TryGetValue(speciesId, out List<ObservedMoveSnapshot>? moves))
+                return [];
+
+            IReadOnlyList<DiscoveredMove> selected = MoveDiscoveryRules.SelectDisplayedMoves(moves.Select(ToCoreDiscovery), level);
+            List<ObservedMoveSnapshot>? encounterMoves = null;
+            if (!string.IsNullOrWhiteSpace(battleId))
+                _encounterMoves.TryGetValue((battleId, enemyId, position, partyIndex), out encounterMoves);
+
+            return [.. selected.Select(discovery => SelectEncounterObservation(moves, encounterMoves, discovery))];
         }
     }
 
@@ -233,13 +306,15 @@ public sealed class TrackerKnowledgeStore
     /// </summary>
     /// <param name="speciesId">The stable species and form identifier.</param>
     /// <param name="observations">The legal move observations.</param>
-    private void ObserveMoves(string speciesId, IEnumerable<ObservedMoveSnapshot> observations)
+    /// <param name="publishChange">Whether to publish a change event immediately.</param>
+    /// <returns>True when persisted discovery data changed.</returns>
+    private bool ObserveMoves(string speciesId, IEnumerable<ObservedMoveSnapshot> observations, bool publishChange = true)
     {
         bool changed = false;
         lock (_sync)
         {
             if (_runId is null)
-                return;
+                return false;
 
             List<ObservedMoveSnapshot> moves = GetOrCreateMoves(speciesId);
             foreach (ObservedMoveSnapshot observation in observations)
@@ -264,8 +339,52 @@ public sealed class TrackerKnowledgeStore
                 Save();
         }
 
-        if (changed)
+        if (changed && publishChange)
             Changed?.Invoke(this, EventArgs.Empty);
+        return changed;
+    }
+
+    /// <summary>
+    /// Records the remaining PP observed for one specific opposing Pokemon.
+    /// </summary>
+    /// <param name="battleId">The active battle identifier.</param>
+    /// <param name="observation">The enemy move-use observation.</param>
+    /// <returns>True when encounter-specific PP state changed.</returns>
+    private bool ObserveEncounterMove(string? battleId, EnemyMoveUsedPayload observation)
+    {
+        if (string.IsNullOrWhiteSpace(battleId))
+            return false;
+
+        bool changed = false;
+        lock (_sync)
+        {
+            if (_runId is null || !string.Equals(_activeBattleId, battleId, StringComparison.Ordinal))
+                return false;
+
+            var key = (battleId, observation.EnemyId, observation.Position, observation.PartyIndex);
+            if (!_encounterMoves.TryGetValue(key, out List<ObservedMoveSnapshot>? moves))
+            {
+                moves = [];
+                _encounterMoves.Add(key, moves);
+            }
+
+            int index = moves.FindIndex(move => MatchesMove(move, observation.Move));
+            if (index >= 0 && TrackerKnowledgeSnapshotComparer.AreEquivalent(moves[index], observation.Move))
+                return false;
+
+            if (index >= 0)
+            {
+                moves[index] = observation.Move;
+            }
+            else
+            {
+                moves.Add(observation.Move);
+            }
+
+            changed = true;
+        }
+
+        return changed;
     }
 
     /// <summary>
@@ -369,12 +488,30 @@ public sealed class TrackerKnowledgeStore
             if (!File.Exists(path))
                 return new PersistedRunKnowledge();
 
-            return JsonSerializer.Deserialize<PersistedRunKnowledge>(File.ReadAllText(path), TrackerJson.Options) ?? new PersistedRunKnowledge();
+            PersistedRunKnowledge knowledge = JsonSerializer.Deserialize<PersistedRunKnowledge>(File.ReadAllText(path), TrackerJson.Options) ?? new PersistedRunKnowledge();
+            RemovePersistedPp(knowledge);
+            return knowledge;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
             LastError = exception.Message;
             return new PersistedRunKnowledge();
+        }
+    }
+
+    /// <summary>
+    /// Removes legacy species-level PP values that predate encounter-scoped tracking.
+    /// </summary>
+    /// <param name="knowledge">The loaded mutable run knowledge.</param>
+    private static void RemovePersistedPp(PersistedRunKnowledge knowledge)
+    {
+        foreach (List<ObservedMoveSnapshot> moves in knowledge.Moves.Values)
+        {
+            for (int index = 0; index < moves.Count; index++)
+            {
+                if (moves[index].PpAfterUse.HasValue)
+                    moves[index] = CopyWithPp(moves[index], null);
+            }
         }
     }
 
@@ -453,6 +590,53 @@ public sealed class TrackerKnowledgeStore
             .OrderByDescending(move => move.PpAfterUse.HasValue)
             .First();
     }
+
+    /// <summary>
+    /// Selects display metadata and overlays PP only from the requested opponent encounter.
+    /// </summary>
+    /// <param name="discoveries">All retained species-level discoveries.</param>
+    /// <param name="encounterMoves">Move observations for the requested opponent.</param>
+    /// <param name="discovery">The selected core discovery.</param>
+    /// <returns>The move display snapshot.</returns>
+    private static ObservedMoveSnapshot SelectEncounterObservation(IEnumerable<ObservedMoveSnapshot> discoveries, IEnumerable<ObservedMoveSnapshot>? encounterMoves, DiscoveredMove discovery)
+    {
+        ObservedMoveSnapshot persisted = SelectObservation(discoveries, discovery);
+        ObservedMoveSnapshot? encounter = encounterMoves?.LastOrDefault(move => MatchesMove(move, persisted));
+        return encounter ?? CopyWithPp(persisted, null);
+    }
+
+    /// <summary>
+    /// Determines whether two observations describe the same move in one opponent's moveset.
+    /// </summary>
+    /// <param name="left">The first observation.</param>
+    /// <param name="right">The second observation.</param>
+    /// <returns>True when the move identity and learnset position match.</returns>
+    private static bool MatchesMove(ObservedMoveSnapshot left, ObservedMoveSnapshot right)
+        => left.Id == right.Id && left.LearnedLevel == right.LearnedLevel && left.LearnOrder == right.LearnOrder;
+
+    /// <summary>
+    /// Copies one move observation with the requested remaining PP value.
+    /// </summary>
+    /// <param name="move">The source observation.</param>
+    /// <param name="ppAfterUse">The remaining PP value.</param>
+    /// <returns>The copied observation.</returns>
+    private static ObservedMoveSnapshot CopyWithPp(ObservedMoveSnapshot move, int? ppAfterUse) => new()
+    {
+        Id = move.Id,
+        Name = move.Name,
+        LearnedLevel = move.LearnedLevel,
+        LearnOrder = move.LearnOrder,
+        Source = move.Source,
+        Origin = move.Origin,
+        Type = move.Type,
+        Category = move.Category,
+        Description = move.Description,
+        Power = move.Power,
+        PowerPresentation = move.PowerPresentation,
+        Accuracy = move.Accuracy,
+        TotalPp = move.TotalPp,
+        PpAfterUse = ppAfterUse
+    };
 
     /// <summary>
     /// Cycles an annotation in the requested direction.

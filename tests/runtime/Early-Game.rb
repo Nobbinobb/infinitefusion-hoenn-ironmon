@@ -194,9 +194,9 @@ module IronmonEarlyGameRuntimeTests
     assert(patched_gym, "the supported Petalburg Gym event is patched")
     assert(
       script_commands(gym_page).include?(
-        "Ironmon.run_wally_gym_gift_sequence"
+        "Ironmon.run_wally_gym_sequence"
       ),
-      "the gym event delegates Wally's gift to Ironmon"
+      "the gym event delegates Wally's tutorial to Ironmon"
     )
     assert(
       gym_page.list.any? do |command|
@@ -229,9 +229,10 @@ module IronmonEarlyGameRuntimeTests
       "Wally's quest is accepted without the broken quest-icon lookup"
     )
     assert(
-      runtime_source.include?(
-        "$game_player.moveto(\n      EARLY_GAME_WALLY_RETURN_PLAYER_X"
-      ) && runtime_source.include?(
+      runtime_source.include?("$game_player.moveto(") &&
+        runtime_source.include?("EARLY_GAME_WALLY_RETURN_PLAYER_X") &&
+        runtime_source.include?("EARLY_GAME_WALLY_RETURN_PLAYER_Y") &&
+        runtime_source.include?(
         "$game_player.direction = EARLY_GAME_WALLY_RETURN_PLAYER_DIRECTION"
       ),
       "the in-Gym catch aligns the player for the original follow-up route"

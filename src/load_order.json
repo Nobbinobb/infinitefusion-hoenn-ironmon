@@ -64,6 +64,7 @@
   { "source": "pivot/Caught_Fusion_Transformations.rb", "output": "013_Caught_Fusion_Transformations.rb" },
   { "source": "pivot/Runtime_Integration.rb", "output": "015_Pivot_Integration.rb" },
   { "source": "progression/Early_Game.rb", "output": "016_Progression_Early_Game.rb" },
+  { "source": "progression/Healing_NPCs.rb", "output": "016_Progression_Healing_NPCs.rb" },
   { "source": "progression/Support.rb", "output": "016_Progression_Support.rb" },
   { "source": "progression/Catch_Assistance.rb", "output": "017_Catch_Assistance.rb" },
   { "source": "progression/HM_Tools.rb", "output": "017_HM_Tools.rb" },

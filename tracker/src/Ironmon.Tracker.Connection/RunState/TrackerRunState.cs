@@ -93,6 +93,21 @@ public sealed class TrackerRunState
     }
 
     /// <summary>
+    /// Replaces or clears the opposing battler currently highlighted by the player.
+    /// </summary>
+    /// <param name="payload">The latest battle-target navigation state.</param>
+    internal void UpdatePlayerTarget(PlayerTargetChangedPayload payload)
+    {
+        ArgumentNullException.ThrowIfNull(payload);
+        BattleSnapshot? current = Snapshot.Battle;
+        if (current is null)
+            return;
+
+        BattleSnapshot battle = new() { BattleId = current.BattleId, SelectedTargetPosition = payload.Position };
+        Publish(battle, Snapshot.Player, Snapshot.Enemies, Snapshot.MoveMenuPokemonId, Snapshot.StarterSelection);
+    }
+
+    /// <summary>
     /// Replaces or clears the current starter-selection view.
     /// </summary>
     /// <param name="selection">The latest starter-selection snapshot.</param>

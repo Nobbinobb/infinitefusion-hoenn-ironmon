@@ -81,8 +81,8 @@ module Ironmon
         "encounter_type" => entry["encounter_type"],
         "slot" => entry["slot"],
         "probability_percent" => entry["probability_percent"],
-        "minimum_level" => entry["minimum_level"],
-        "maximum_level" => entry["maximum_level"],
+        "minimum_level" => scaled_level(entry["minimum_level"]),
+        "maximum_level" => scaled_level(entry["maximum_level"]),
         "encountered" => encountered,
         "details_revealed" => revealed,
         "independent_fusion" => false

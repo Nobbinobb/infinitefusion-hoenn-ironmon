@@ -146,11 +146,22 @@ module IronmonMovePowerPresentationRuntimeTests
     )
     expected_hidden_power_type = pbHiddenPower(
       pokemon, pokemon.hiddenPowerType
-    )[0].to_s
+    )[0]
+    expected_hidden_power_type = :NEUTRAL if
+      Settings::TRIPLE_TYPES.include?(expected_hidden_power_type)
     assert(
-      hidden_power["type"] == expected_hidden_power_type,
+      hidden_power["type"] == expected_hidden_power_type.to_s,
       "Hidden Power resolves its current type outside battle"
     )
+    pokemon.hiddenPowerType = :ICEFIREELECTRIC
+    neutral_hidden_power = Ironmon.tracker_move_power_presentation(
+      Pokemon::Move.new(:HIDDENPOWER), pokemon
+    )
+    assert(
+      neutral_hidden_power["type"] == "NEUTRAL",
+      "composite Hidden Power types use the game's single Neutral label"
+    )
+    pokemon.hiddenPowerType = nil
     counterfeit = nil
     GameData::Move.each do |move_data|
       counterfeit = move_data if move_data.name == "Counterfeit"

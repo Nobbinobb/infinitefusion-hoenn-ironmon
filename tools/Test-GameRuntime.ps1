@@ -26,6 +26,11 @@ $battleRunHotkeyTestPath = Join-Path $projectRoot "tests\runtime\Battle-Run-Hotk
 $battleMoveTypeColorTestPath = Join-Path $projectRoot "tests\runtime\Battle-Move-Type-Colors.rb"
 $movePowerPresentationTestPath = Join-Path $projectRoot "tests\runtime\Move-Power-Presentation.rb"
 $trainerRematchTestPath = Join-Path $projectRoot "tests\runtime\Trainer-Rematches.rb"
+$trainerBattleTestPath = Join-Path $projectRoot "tests\runtime\Trainer-Battles.rb"
+$difficultyScalingTestPath = Join-Path $projectRoot "tests\runtime\Difficulty-Scaling.rb"
+$newPlayerProtectionTestPath = Join-Path $projectRoot "tests\runtime\New-Player-Protections.rb"
+$healingNpcTestPath = Join-Path $projectRoot "tests\runtime\Healing-NPCs.rb"
+$wallyTutorialTestPath = Join-Path $projectRoot "tests\runtime\Wally-Tutorial.rb"
 $repelOverlayTestPath = Join-Path $projectRoot "tests\runtime\Repel-Overlay.rb"
 $itemRandomizationTestPath = Join-Path $projectRoot "tests\runtime\Item-Randomization.rb"
 $seededRunImportTestPath = Join-Path $projectRoot "tests\runtime\Seeded-Run-Import.rb"
@@ -45,6 +50,11 @@ $battleRunHotkeyResultPath = Join-Path $projectRoot "runtime-battle-run-hotkey.t
 $battleMoveTypeColorResultPath = Join-Path $projectRoot "runtime-battle-move-type-colors.tests"
 $movePowerPresentationResultPath = Join-Path $projectRoot "runtime-move-power-presentation.tests"
 $trainerRematchResultPath = Join-Path $projectRoot "runtime-trainer-rematches.tests"
+$trainerBattleResultPath = Join-Path $projectRoot "runtime-trainer-battles.tests"
+$difficultyScalingResultPath = Join-Path $projectRoot "runtime-difficulty-scaling.tests"
+$newPlayerProtectionResultPath = Join-Path $projectRoot "runtime-new-player-protections.tests"
+$healingNpcResultPath = Join-Path $projectRoot "runtime-healing-npcs.tests"
+$wallyTutorialResultPath = Join-Path $projectRoot "runtime-wally-tutorial.tests"
 $repelOverlayResultPath = Join-Path $projectRoot "runtime-repel-overlay.tests"
 $itemRandomizationResultPath = Join-Path $projectRoot "runtime-item-randomization.tests"
 $seededRunImportResultPath = Join-Path $projectRoot "runtime-seeded-run-import.tests"
@@ -103,6 +113,26 @@ $trainerRematchTestSource = [IO.File]::ReadAllText(
     $trainerRematchTestPath,
     [Text.Encoding]::UTF8
 )
+$trainerBattleTestSource = [IO.File]::ReadAllText(
+    $trainerBattleTestPath,
+    [Text.Encoding]::UTF8
+)
+$difficultyScalingTestSource = [IO.File]::ReadAllText(
+    $difficultyScalingTestPath,
+    [Text.Encoding]::UTF8
+)
+$newPlayerProtectionTestSource = [IO.File]::ReadAllText(
+    $newPlayerProtectionTestPath,
+    [Text.Encoding]::UTF8
+)
+$healingNpcTestSource = [IO.File]::ReadAllText(
+    $healingNpcTestPath,
+    [Text.Encoding]::UTF8
+)
+$wallyTutorialTestSource = [IO.File]::ReadAllText(
+    $wallyTutorialTestPath,
+    [Text.Encoding]::UTF8
+)
 $repelOverlayTestSource = [IO.File]::ReadAllText(
     $repelOverlayTestPath,
     [Text.Encoding]::UTF8
@@ -158,6 +188,11 @@ $rubyBattleRunHotkeyResultPath = $battleRunHotkeyResultPath.Replace('\', '/')
 $rubyBattleMoveTypeColorResultPath = $battleMoveTypeColorResultPath.Replace('\', '/')
 $rubyMovePowerPresentationResultPath = $movePowerPresentationResultPath.Replace('\', '/')
 $rubyTrainerRematchResultPath = $trainerRematchResultPath.Replace('\', '/')
+$rubyTrainerBattleResultPath = $trainerBattleResultPath.Replace('\', '/')
+$rubyDifficultyScalingResultPath = $difficultyScalingResultPath.Replace('\', '/')
+$rubyNewPlayerProtectionResultPath = $newPlayerProtectionResultPath.Replace('\', '/')
+$rubyHealingNpcResultPath = $healingNpcResultPath.Replace('\', '/')
+$rubyWallyTutorialResultPath = $wallyTutorialResultPath.Replace('\', '/')
 $rubyRepelOverlayResultPath = $repelOverlayResultPath.Replace('\', '/')
 $rubyItemRandomizationResultPath = $itemRandomizationResultPath.Replace('\', '/')
 $rubySeededRunImportResultPath = $seededRunImportResultPath.Replace('\', '/')
@@ -179,6 +214,11 @@ $bootstrapSource = @(
     "`$ironmon_battle_move_type_color_test_output_path = `"$rubyBattleMoveTypeColorResultPath`""
     "`$ironmon_move_power_presentation_test_output_path = `"$rubyMovePowerPresentationResultPath`""
     "`$ironmon_trainer_rematch_test_output_path = `"$rubyTrainerRematchResultPath`""
+    "`$ironmon_trainer_battle_test_output_path = `"$rubyTrainerBattleResultPath`""
+    "`$ironmon_difficulty_scaling_test_output_path = `"$rubyDifficultyScalingResultPath`""
+    "`$ironmon_new_player_protection_test_output_path = `"$rubyNewPlayerProtectionResultPath`""
+    "`$ironmon_healing_npc_test_output_path = `"$rubyHealingNpcResultPath`""
+    "`$ironmon_wally_tutorial_test_output_path = `"$rubyWallyTutorialResultPath`""
     "`$ironmon_repel_overlay_test_output_path = `"$rubyRepelOverlayResultPath`""
     "`$ironmon_item_randomization_test_output_path = `"$rubyItemRandomizationResultPath`""
     "`$ironmon_seeded_run_import_test_output_path = `"$rubySeededRunImportResultPath`""
@@ -202,6 +242,11 @@ $bootstrapSource = @(
     $battleMoveTypeColorTestSource
     $movePowerPresentationTestSource
     $trainerRematchTestSource
+    $trainerBattleTestSource
+    $difficultyScalingTestSource
+    $newPlayerProtectionTestSource
+    $healingNpcTestSource
+    $wallyTutorialTestSource
     $repelOverlayTestSource
     $itemRandomizationTestSource
     $seededRunImportTestSource
@@ -222,7 +267,7 @@ $bootstrapSource = @(
     "exit! 1"
     "end"
 ) -join "`n"
-Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $battleMoveTypeColorResultPath, $movePowerPresentationResultPath, $trainerRematchResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
+Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $battleMoveTypeColorResultPath, $movePowerPresentationResultPath, $trainerRematchResultPath, $trainerBattleResultPath, $difficultyScalingResultPath, $newPlayerProtectionResultPath, $healingNpcResultPath, $wallyTutorialResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
     -Force `
     -ErrorAction SilentlyContinue
 try {
@@ -268,6 +313,31 @@ try {
         (Get-Content -LiteralPath $trainerRematchResultPath -Raw).Trim() -ne
             "trainer rematch runtime tests passed") {
         throw "The bundled runtime did not complete the trainer rematch tests."
+    }
+    if (-not (Test-Path -LiteralPath $trainerBattleResultPath) -or
+        (Get-Content -LiteralPath $trainerBattleResultPath -Raw).Trim() -ne
+            "trainer battle runtime tests passed") {
+        throw "The bundled runtime did not complete the trainer battle tests."
+    }
+    if (-not (Test-Path -LiteralPath $difficultyScalingResultPath) -or
+        (Get-Content -LiteralPath $difficultyScalingResultPath -Raw).Trim() -ne
+            "difficulty scaling runtime tests passed") {
+        throw "The bundled runtime did not complete the difficulty scaling tests."
+    }
+    if (-not (Test-Path -LiteralPath $newPlayerProtectionResultPath) -or
+        (Get-Content -LiteralPath $newPlayerProtectionResultPath -Raw).Trim() -ne
+            "new-player protection runtime tests passed") {
+        throw "The bundled runtime did not complete the new-player protection tests."
+    }
+    if (-not (Test-Path -LiteralPath $healingNpcResultPath) -or
+        (Get-Content -LiteralPath $healingNpcResultPath -Raw).Trim() -ne
+            "healing NPC runtime tests passed") {
+        throw "The bundled runtime did not complete the healing NPC tests."
+    }
+    if (-not (Test-Path -LiteralPath $wallyTutorialResultPath) -or
+        (Get-Content -LiteralPath $wallyTutorialResultPath -Raw).Trim() -ne
+            "Wally tutorial runtime tests passed") {
+        throw "The bundled runtime did not complete the Wally tutorial tests."
     }
     if (-not (Test-Path -LiteralPath $repelOverlayResultPath) -or
         (Get-Content -LiteralPath $repelOverlayResultPath -Raw).Trim() -ne
@@ -380,7 +450,7 @@ try {
     )
 }
 finally {
-    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $battleMoveTypeColorResultPath, $movePowerPresentationResultPath, $trainerRematchResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath, $debugPokemonSearchTracePath, $playerFusionPreparationTracePath `
+    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $movePowerPresentationResultPath, $battleMoveTypeColorResultPath, $trainerRematchResultPath, $trainerBattleResultPath, $difficultyScalingResultPath, $newPlayerProtectionResultPath, $healingNpcResultPath, $wallyTutorialResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath, $debugPokemonSearchTracePath, $playerFusionPreparationTracePath `
         -Force `
         -ErrorAction SilentlyContinue
 }
@@ -391,4 +461,4 @@ if ($evolutionPredecessorDiagnostic) {
 if ($fusionPredecessorBenchmarkOutput.Count -gt 1) {
     $fusionPredecessorBenchmarkOutput | Select-Object -Skip 1
 }
-Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, battle item, battle Run hotkey, battle move type color, move-power presentation, trainer rematch, Repel overlay, item randomization, seeded-run import, run-transition, early-game, runtime-hook, deterministic-hashing, generator-metadata, evolution upward-expansion, move-access structure, and tracker structure tests passed."
+Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, battle item, battle Run hotkey, battle move type color, move-power presentation, trainer rematch, trainer battle, difficulty scaling, new-player protection, healing NPC, Wally tutorial, Repel overlay, item randomization, seeded-run import, run-transition, early-game, runtime-hook, deterministic-hashing, generator-metadata, evolution upward-expansion, move-access structure, and tracker structure tests passed."

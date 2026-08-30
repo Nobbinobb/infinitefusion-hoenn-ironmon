@@ -81,6 +81,11 @@ public static class TrackerEvents
     public const string PlayerMoveMenuOpened = "player_move_menu_opened";
 
     /// <summary>
+    /// Gets the player battle-target navigation event.
+    /// </summary>
+    public const string PlayerTargetChanged = "player_target_changed";
+
+    /// <summary>
     /// Gets the initial enemy send-out event.
     /// </summary>
     public const string EnemySentOut = "enemy_sent_out";

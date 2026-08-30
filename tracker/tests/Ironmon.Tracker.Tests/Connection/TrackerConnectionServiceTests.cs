@@ -947,6 +947,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         {
             EnemyId = "enemy-1",
             Position = 1,
+            PartyIndex = 2,
             SpeciesId = "BELLOSSOM:0",
             SpeciesName = "Bellossom",
             Level = 5,
@@ -986,6 +987,8 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         EnemyMoveUsedPayload moveUsed = new()
         {
             EnemyId = "enemy-1",
+            Position = 1,
+            PartyIndex = 2,
             SpeciesId = "BELLOSSOM:0",
             EnemyLevel = 5,
             Move = new ObservedMoveSnapshot
@@ -1007,6 +1010,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         await writer.WriteAsync(enemyMoveUsed);
         await WaitForKnowledgeMoveAsync(knowledge, "BELLOSSOM:0", 5, "ABSORB");
         Assert.Contains(knowledge.GetDisplayedMoves("BELLOSSOM:0", 5), move => move.Id == "ABSORB");
+        Assert.Equal(24, knowledge.GetDisplayedMoves("BELLOSSOM:0", 5, "battle-1", "enemy-1", 1, 2).Single(move => move.Id == "ABSORB").PpAfterUse);
 
         PlayerPokemonSnapshot player = CreatePlayerSnapshot(24, 24, 2);
         TrackerMessage sentOut = TrackerMessageFactory.CreateEvent("player_sent_out", 5, player, "run-2", "battle-1");

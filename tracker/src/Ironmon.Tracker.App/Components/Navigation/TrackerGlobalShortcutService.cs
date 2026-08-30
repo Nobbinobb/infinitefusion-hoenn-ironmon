@@ -51,6 +51,11 @@ public sealed partial class TrackerGlobalShortcutService
     public event Action<TrackerView>? ViewRequested;
 
     /// <summary>
+    /// Occurs when the controller's Enemy shortcut requests the next active opposing card.
+    /// </summary>
+    public event Action? EnemyCycleRequested;
+
+    /// <summary>
     /// Starts monitoring keyboard and controller state.
     /// </summary>
     public void Start()
@@ -189,7 +194,16 @@ public sealed partial class TrackerGlobalShortcutService
 
         TrackerView? direction = chordPressed && !resetPressed ? ResolveRightStickDirection(gamepad.RightThumbX, gamepad.RightThumbY) : null;
         if (direction is not null && direction != _controllerDirections[index])
-            ViewRequested?.Invoke(direction.Value);
+        {
+            if (direction == TrackerView.Enemy)
+            {
+                EnemyCycleRequested?.Invoke();
+            }
+            else
+            {
+                ViewRequested?.Invoke(direction.Value);
+            }
+        }
 
         _controllerDirections[index] = direction;
     }

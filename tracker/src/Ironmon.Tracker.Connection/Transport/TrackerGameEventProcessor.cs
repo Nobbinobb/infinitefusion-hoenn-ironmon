@@ -62,6 +62,15 @@ internal sealed class TrackerGameEventProcessor
 
         _requestClient.PrepareActiveFusionAssignments(state);
         _knowledge.SelectRun(state.RunId);
+        if (state.Battle is not null)
+        {
+            _knowledge.StartBattle(state.Battle.BattleId);
+        }
+        else
+        {
+            _knowledge.EndBattle();
+        }
+
         _state.Publish(TrackerConnectionStatus.Connected, game, state);
         _runState.Recover(state);
         ObserveRecoveredKnowledge(state);
@@ -159,20 +168,41 @@ internal sealed class TrackerGameEventProcessor
         _knowledge.SelectRun(message.RunId);
         Action apply = message.Event switch
         {
-            TrackerEvents.BattleStarted => () => _runState.StartBattle(TrackerJson.DeserializePayload<BattleSnapshot>(message.Payload)),
-            TrackerEvents.BattleEnded => _runState.EndBattle,
+            TrackerEvents.BattleStarted => () => ApplyBattleStarted(message),
+            TrackerEvents.BattleEnded => ApplyBattleEnded,
             TrackerEvents.StarterSelectionChanged => () => _runState.UpdateStarterSelection(TrackerJson.DeserializePayload<StarterSelectionSnapshot>(message.Payload)),
             TrackerEvents.SeededRunImportStatus => () => _requestClient.PublishSeededRunImportStatus(TrackerJson.DeserializePayload<SeededRunImportStatusPayload>(message.Payload)),
             TrackerEvents.PlayerSentOut or TrackerEvents.PlayerStateChanged => () => ApplyPlayerUpdate(message),
             TrackerEvents.PlayerMoveMenuOpened => () => _runState.OpenPlayerMoveMenu(TrackerJson.DeserializePayload<PlayerMoveMenuOpenedPayload>(message.Payload)),
+            TrackerEvents.PlayerTargetChanged => () => _runState.UpdatePlayerTarget(TrackerJson.DeserializePayload<PlayerTargetChangedPayload>(message.Payload)),
             TrackerEvents.EnemySentOut => () => ApplyEnemyUpdate(message, true),
             TrackerEvents.EnemyStateChanged => () => ApplyEnemyUpdate(message, false),
-            TrackerEvents.EnemyMoveUsed => () => _knowledge.ObserveEnemyMove(TrackerJson.DeserializePayload<EnemyMoveUsedPayload>(message.Payload)),
+            TrackerEvents.EnemyMoveUsed => () => _knowledge.ObserveEnemyMove(message.BattleId, TrackerJson.DeserializePayload<EnemyMoveUsedPayload>(message.Payload)),
             TrackerEvents.EnemyAbilityRevealed => () => _knowledge.ObserveEnemyAbility(TrackerJson.DeserializePayload<EnemyAbilityRevealedPayload>(message.Payload)),
             _ => () => { }
         };
 
         apply();
+    }
+
+    /// <summary>
+    /// Starts live battle state and a fresh encounter-specific enemy PP scope.
+    /// </summary>
+    /// <param name="message">The battle-start event.</param>
+    private void ApplyBattleStarted(TrackerMessage message)
+    {
+        BattleSnapshot battle = TrackerJson.DeserializePayload<BattleSnapshot>(message.Payload);
+        _runState.StartBattle(battle);
+        _knowledge.StartBattle(battle.BattleId);
+    }
+
+    /// <summary>
+    /// Ends live battle state and releases encounter-specific enemy PP observations.
+    /// </summary>
+    private void ApplyBattleEnded()
+    {
+        _runState.EndBattle();
+        _knowledge.EndBattle();
     }
 
     /// <summary>
@@ -196,7 +226,7 @@ internal sealed class TrackerGameEventProcessor
         EnemyPokemonSnapshot enemy = TrackerJson.DeserializePayload<EnemyPokemonSnapshot>(message.Payload);
         _runState.UpdateEnemy(enemy, sentOut);
         _knowledge.ObserveEnemy(enemy);
-        ObserveEnemyMove(enemy);
+        ObserveEnemyMove(message.BattleId, enemy);
     }
 
     /// <summary>
@@ -211,7 +241,7 @@ internal sealed class TrackerGameEventProcessor
         foreach (EnemyPokemonSnapshot enemy in state.Enemies)
         {
             _knowledge.ObserveEnemy(enemy);
-            ObserveEnemyMove(enemy);
+            ObserveEnemyMove(state.BattleId, enemy);
         }
     }
 
@@ -228,8 +258,9 @@ internal sealed class TrackerGameEventProcessor
     /// <summary>
     /// Remembers a move included in an enemy snapshot when one is present.
     /// </summary>
+    /// <param name="battleId">The active battle identifier.</param>
     /// <param name="enemy">The complete legal enemy snapshot.</param>
-    private void ObserveEnemyMove(EnemyPokemonSnapshot enemy)
+    private void ObserveEnemyMove(string? battleId, EnemyPokemonSnapshot enemy)
     {
         if (enemy.LastMove is null)
             return;
@@ -237,11 +268,13 @@ internal sealed class TrackerGameEventProcessor
         EnemyMoveUsedPayload observation = new()
         {
             EnemyId = enemy.EnemyId,
+            Position = enemy.Position,
+            PartyIndex = enemy.PartyIndex,
             SpeciesId = enemy.SpeciesId,
             EnemyLevel = enemy.Level,
             Move = enemy.LastMove
         };
 
-        _knowledge.ObserveEnemyMove(observation);
+        _knowledge.ObserveEnemyMove(battleId, observation);
     }
 }

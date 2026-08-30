@@ -138,7 +138,7 @@ module Ironmon
     opening = commands[0, 9]
     entrance = commands[wally_entrance...post_entrance]
     page.list = opening + entrance + early_game_script_event_list(
-      "Ironmon.run_wally_gym_gift_sequence"
+      "Ironmon.run_wally_gym_sequence"
     )
     pokemon_event = RPG::Event.new(
       EARLY_GAME_PETALBURG_GYM_POKEMON_X,
@@ -158,16 +158,39 @@ module Ironmon
   def self.patch_wally_return_dialogue(map)
     event = map.events[9]
     return false if !event || event.pages.empty?
+    page = event.pages[0]
+    changed = false
+    if !wally_tutorial_uses_fusion?
+      gift_line = page.list.index do |command|
+        [101, 401].include?(command.code) &&
+          command.parameters[0] ==
+            "And I can't forget about the \\V[1] you gave me too!"
+      end
+      farewell = page.list.index do |command|
+        command.code == 101 && command.parameters[0] ==
+          "I hope we'll meet again, \\PN. And you too, Mr. "
+      end
+      if gift_line && farewell
+        first = gift_line > 0 && page.list[gift_line - 1].code == 355 ?
+          gift_line - 1 : gift_line
+        last = farewell > 0 && page.list[farewell - 1].code == 355 ?
+          farewell - 1 : farewell
+        page.list.slice!(first...last)
+        changed = true
+      end
+    end
     replacements = {
       "went and caught another all on my own! " =>
         "caught it all on my own!",
       "that I was able to catch Ralts. " =>
-        "that I was able to catch \\V[2]. ",
-      "And I can't forget about the \\V[1] you gave me too!" =>
-        "And I can't forget the \\V[1] you gave me, Mr. Norman!"
+        "that I was able to catch \\V[2]. "
     }
-    changed = false
-    event.pages[0].list.each do |command|
+    if wally_tutorial_uses_fusion?
+      replacements[
+        "And I can't forget about the \\V[1] you gave me too!"
+      ] = "And I can't forget the \\V[1] you gave me, Mr. Norman!"
+    end
+    page.list.each do |command|
       next if ![101, 401].include?(command.code)
       text = command.parameters[0]
       if text.include?("showed me how to catch")
@@ -356,14 +379,74 @@ module Ironmon
   end
 
   def self.generate_wally_story_pokemon(context, level, excluded_species = [])
-    return generate_progression_pokemon({
-      :level => level,
-      :fusion => false,
-      :context => context,
-      :filter => proc do |pokemon|
-        !excluded_species.include?(pokemon.species)
-      end
-    })
+    pool = normal_species_pool
+    start = progression_random_value(context, 0) % pool.length
+    pool.length.times do |offset|
+      species = pool[(start + offset) % pool.length]
+      next if excluded_species.include?(species)
+      return build_wally_story_pokemon(species, level)
+    end
+    raise SpeciesGenerationError,
+          "no normal Pokemon is available for Wally's story team"
+  end
+
+  def self.wally_tutorial_uses_fusion?
+    return configuration.trainer_policy != Configuration::POLICY_NORMAL_ONLY
+  end
+
+  def self.wally_tutorial_fusion_plan
+    pool = normal_species_pool
+    if !pool || pool.length < 2
+      raise SpeciesGenerationError,
+            "Wally's tutorial needs two normal material species"
+    end
+    mapper = player_fusion_mapper
+    body_index = progression_random_value(
+      :wally_tutorial_fusion_body, 0
+    ) % pool.length
+    head_index = progression_random_value(
+      :wally_tutorial_fusion_head, 0
+    ) % (pool.length - 1)
+    head_index += 1 if head_index >= body_index
+    body = GameData::Species.get(pool[body_index])
+    head = GameData::Species.get(pool[head_index])
+    fusion = GameData::Species.get(mapper.species(body.id, head.id))
+    if !custom_fusion_species?(fusion.id)
+      raise SpeciesGenerationError,
+            "Wally's Ironmon materials did not produce a custom fusion"
+    end
+    return {
+      :fusion => fusion.id,
+      :body => body.id,
+      :head => head.id
+    }
+  rescue PlayerFusionMappingError => e
+    raise SpeciesGenerationError,
+          "Wally's Ironmon fusion materials are unavailable: #{e.message}"
+  end
+
+  def self.build_wally_story_pokemon(species, level)
+    pokemon = Pokemon.new(species, level)
+    pokemon.obtain_method = 0
+    pokemon.record_first_moves
+    return pokemon
+  end
+
+  def self.wally_tutorial_catch_pokemon(fusion_plan = nil)
+    if wally_tutorial_uses_fusion?
+      fusion_plan ||= wally_tutorial_fusion_plan
+      return build_wally_story_pokemon(fusion_plan[:body], 10)
+    end
+    pokemon = generate_wally_story_pokemon(:wally_quick_catch, 10)
+    return mark_persistent_trainer_species(pokemon)
+  end
+
+  def self.build_wally_tutorial_fusion(body_pokemon, head_pokemon,
+                                       fusion_plan = nil)
+    fusion_plan ||= wally_tutorial_fusion_plan
+    level = (body_pokemon.level + head_pokemon.level) / 2
+    pokemon = Pokemon.new(fusion_plan[:fusion], level)
+    return mark_persistent_trainer_species(pokemon)
   end
 
   def self.accept_early_game_quest(id, show_description = false)
@@ -383,24 +466,32 @@ module Ironmon
     return true
   end
 
-  def self.run_wally_gym_gift_sequence
+  def self.run_wally_gym_sequence
     wally_initialize
-    pokemon = generate_wally_story_pokemon(:wally_norman_gift, 5)
-    wally_add_pokemon_directly(pokemon)
-    pbSet(1, pokemon.name)
+    fusion_plan = nil
+    if wally_tutorial_uses_fusion?
+      fusion_plan = wally_tutorial_fusion_plan
+      pokemon = build_wally_story_pokemon(fusion_plan[:head], 5)
+      wally_add_pokemon_directly(pokemon)
+      pbSet(1, pokemon.name)
 
-    pbCallBubDown(2, 5)
-    pbMessage(_INTL(
-      "Wally, take this {1}. It needs a trainer as much as you need a partner.",
-      pokemon.name
-    ))
-    pbCallBubUp(2, EARLY_GAME_PETALBURG_GYM_WALLY_EVENT_ID)
-    pbMessage(_INTL("Th-thank you, Mr. Norman!"))
+      pbCallBubDown(2, 5)
+      pbMessage(_INTL(
+        "Wally, take this {1}. It needs a trainer as much as you need a partner.",
+        pokemon.name
+      ))
+      pbCallBubUp(2, EARLY_GAME_PETALBURG_GYM_WALLY_EVENT_ID)
+      pbMessage(_INTL("Th-thank you, Mr. Norman!"))
+    end
 
     finishQuest("main_dad", true)
     accept_early_game_quest("main_wally")
     $game_switches[SWITCH_WALLY_CATCHING_POKEMON] = true
-    return run_wally_quick_catch_sequence
+    return run_wally_quick_catch_sequence(fusion_plan)
+  end
+
+  def self.run_wally_gym_gift_sequence
+    return run_wally_gym_sequence
   end
 
   def self.show_wally_quick_catch_pokemon(pokemon)
@@ -427,12 +518,8 @@ module Ironmon
     wait_for_early_game_movement(event)
   end
 
-  def self.run_wally_quick_catch_sequence
-    trainer = getWallyTrainer
-    existing = trainer ? trainer.currentTeam.map { |pokemon| pokemon.species } : []
-    pokemon = generate_wally_story_pokemon(
-      :wally_quick_catch, 10, existing
-    )
+  def self.run_wally_quick_catch_sequence(fusion_plan = nil)
+    pokemon = wally_tutorial_catch_pokemon(fusion_plan)
     pbSet(2, pokemon.name)
     show_wally_quick_catch_pokemon(pokemon)
     playCry(pokemon.species)

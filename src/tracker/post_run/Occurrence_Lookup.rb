@@ -46,8 +46,8 @@ module Ironmon
               "encounter_version" => data.version,
               "encounter_type" => encounter_type.to_s,
               "slot" => slot + 1,
-              "minimum_level" => entry[2].to_i,
-              "maximum_level" => (entry[3] || entry[2]).to_i,
+              "minimum_level" => scaled_level(entry[2]),
+              "maximum_level" => scaled_level(entry[3] || entry[2]),
               "source_species_id" => "#{source.id}:0",
               "source_species_name" => source.name,
               "chance_percent" => chance,
@@ -94,8 +94,8 @@ module Ironmon
             "encounter_version" => data.version,
             "encounter_type" => encounter_type.to_s,
             "slot" => slot + 1,
-            "minimum_level" => entry[2].to_i,
-            "maximum_level" => (entry[3] || entry[2]).to_i,
+            "minimum_level" => scaled_level(entry[2]),
+            "maximum_level" => scaled_level(entry[3] || entry[2]),
             "source_species_id" => "#{source.id}:0",
             "source_species_name" => source.name,
             "chance_percent" => chance,
@@ -135,8 +135,8 @@ module Ironmon
           "encounter_type" => encounter_type.to_s,
           "slot" => body_slot + 1,
           "secondary_slot" => head_slot + 1,
-          "minimum_level" => body_entry[2].to_i,
-          "maximum_level" => (body_entry[3] || body_entry[2]).to_i,
+          "minimum_level" => scaled_level(body_entry[2]),
+          "maximum_level" => scaled_level(body_entry[3] || body_entry[2]),
           "source_species_id" => "#{body_source.id}:0",
           "source_species_name" => body_source.name,
           "secondary_source_species_id" => "#{head_source.id}:0",
@@ -208,7 +208,7 @@ module Ironmon
           "trainer_type" => trainer_type ? trainer_type.name :
             trainer.trainer_type.to_s,
           "slot" => slot + 1,
-          "level" => pokemon[:level].to_i,
+          "level" => scaled_level(pokemon[:level]),
           "source_species_id" => "#{source.id}:0",
           "source_species_name" => source.name
         }
@@ -240,7 +240,7 @@ module Ironmon
           "trainer_type" => trainer_type ? trainer_type.name :
             trainer.trainer_type.to_s,
           "slot" => slot + 1,
-          "level" => pokemon[:level].to_i,
+          "level" => scaled_level(pokemon[:level]),
           "source_species_id" => "#{source.id}:0",
           "source_species_name" => source.name
         }

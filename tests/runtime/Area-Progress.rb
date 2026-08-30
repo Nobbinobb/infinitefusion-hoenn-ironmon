@@ -58,6 +58,8 @@ module IronmonAreaProgressRuntimeTests
       $PokemonGlobal.ironmon_configuration = Ironmon::Configuration.new(
         :normal_only, :normal_only
       )
+      $PokemonGlobal.ironmon_species_generator_version =
+        Ironmon::SpeciesGenerator::SCHEMA_VERSION
       $PokemonGlobal.encounter_version = 0
       $game_switches = []
       $game_self_switches = {}
@@ -68,6 +70,9 @@ module IronmonAreaProgressRuntimeTests
       end
       def $Trainer.make_foreign_ID
         return 1
+      end
+      def $Trainer.name
+        return "Runtime Test"
       end
       ledger = Ironmon.default_run_ledger
       ledger["current_attempt"] = active_attempt
@@ -186,6 +191,59 @@ module IronmonAreaProgressRuntimeTests
       )
       encounter_entries = Ironmon.tracker_area_encounter_metadata(
         area, { "data_mode" => Ironmon.tracker_data_mode }
+      )
+      occurrence_source = encounter_entries[0]
+      occurrence_generator = Ironmon.tracker_area_species_generator(
+        active_recipe, :wild
+      )
+      occurrence_target = occurrence_generator.map(
+        occurrence_source["source_species"],
+        [:table, occurrence_source["mode_name"],
+         occurrence_source["map_id"], occurrence_source["version"],
+         occurrence_source["encounter_type"].to_sym,
+         occurrence_source["context_slot"]]
+      )
+      wild_occurrences = Ironmon.tracker_lookup_wild_occurrences(
+        GameData::Species.get(occurrence_target), active_recipe
+      )
+      wild_occurrence = wild_occurrences.find do |entry|
+        entry["map_id"] == occurrence_source["map_id"] &&
+          entry["encounter_version"] == occurrence_source["version"] &&
+          entry["encounter_type"] == occurrence_source["encounter_type"] &&
+          entry["slot"] == occurrence_source["slot"]
+      end
+      assert(
+        wild_occurrence &&
+          wild_occurrence["minimum_level"] ==
+            Ironmon.scaled_level(occurrence_source["minimum_level"]) &&
+          wild_occurrence["maximum_level"] ==
+            Ironmon.scaled_level(occurrence_source["maximum_level"]),
+        "Pokemon lookup reports effective scaled wild levels: " +
+          "source=#{occurrence_source.inspect}, " +
+          "target=#{occurrence_target.inspect}, " +
+          "occurrences=#{wild_occurrences.first(3).inspect}"
+      )
+      trainer_source = trainer_data.pokemon[0]
+      trainer_generator = Ironmon.tracker_area_species_generator(
+        active_recipe, :trainer
+      )
+      trainer_target = trainer_generator.map(
+        trainer_source[:species], [:pbs, trainer_data.id, 0]
+      )
+      trainer_occurrence = Ironmon.tracker_lookup_trainer_occurrences(
+        GameData::Species.get(trainer_target), active_recipe
+      ).find do |entry|
+        entry["trainer_id"] ==
+          Ironmon.tracker_lookup_trainer_id(trainer_data) &&
+          entry["slot"] == 1
+      end
+      assert(
+        trainer_occurrence &&
+          trainer_occurrence["level"] ==
+            Ironmon.scaled_level(trainer_source[:level]),
+        "Pokemon lookup reports effective scaled trainer levels: " +
+          "source=#{trainer_source.inspect}, " +
+          "occurrence=#{trainer_occurrence.inspect}"
       )
       independent_id = encounter_entries[0]["entry_id"]
       decoy_id = encounter_entries[1]["entry_id"]
@@ -408,6 +466,15 @@ module IronmonAreaProgressRuntimeTests
           debug_page["total_count"] == paged_encounter_entries.length &&
           debug_generator.mapping.length == 1,
         "authorized encounter lookup generates only the requested page"
+      )
+      debug_source = paged_encounter_entries[0]
+      debug_encounter = debug_page["encounters"][0]
+      assert(
+        debug_encounter["minimum_level"] ==
+          Ironmon.scaled_level(debug_source["minimum_level"]) &&
+          debug_encounter["maximum_level"] ==
+            Ironmon.scaled_level(debug_source["maximum_level"]),
+        "area lookup reports effective scaled wild levels"
       )
       $PokemonGlobal.ironmon_wild_species_map = {}
       Ironmon.reset_species_generator_cache
