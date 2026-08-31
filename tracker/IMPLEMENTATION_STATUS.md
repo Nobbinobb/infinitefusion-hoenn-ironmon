@@ -1,12 +1,12 @@
 # Ironmon Tracker implementation status
 
-This document records reviewed implementation parts and explicitly marked local additions. The stable
+This document records reviewed implementation parts and release additions. The stable
 product behavior is defined by the
 [Ironmon Mechanics Manual](../docs/IRONMON_MECHANICS.html#tracker).
 
-## Local defensive overview changes
+## Defensive overview in 0.8.3
 
-Status: **Implemented locally; not released**
+Status: **Included in release 0.8.3**
 
 - Both live cards open the selected Pokemon's defense view from its type text.
 - Game-derived combined factors retain fractional values and conditional ranges;
@@ -34,7 +34,7 @@ Status: **Implemented locally; not released**
   checks verify that recovery amounts start hidden and toggle on click.
 
 See the [mechanics manual](../docs/IRONMON_MECHANICS.html#tracker-defense-view)
-and [protocol reference](PROTOCOL.md#defensive-overview). This local feature does
+and [protocol reference](PROTOCOL.md#defensive-overview). This feature does
 not change the historical review or release statuses below.
 
 ## Part overview

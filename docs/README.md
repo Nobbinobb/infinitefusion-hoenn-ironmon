@@ -19,8 +19,10 @@ also suitable for saving as PDF.
 
 ## Audits
 
-- `audits/generated/` contains the current release-generated area-catalog and
-  type-coverage audits.
+- `audits/generated/` contains the current release-generated area, type coverage,
+  item randomization, obtainability, and defense presentation audits.
+- [Defense audit workflow](audits/WEAKNESS_MODIFIERS_AUDIT.md#defense-catalog-generation)
+  describes the reviewed defense rules and release-generated informational data.
 - `audits/area-content/` contains the detailed area-content snapshot used while
   the area catalog was designed.
 

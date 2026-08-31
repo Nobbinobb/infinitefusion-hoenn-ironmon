@@ -311,6 +311,9 @@ if ($LASTEXITCODE -ne 0) {
   -GameRoot $gameRoot `
   -TimeoutSeconds 300
 
+& (Join-Path $PSScriptRoot "Test-DefenseOverview.ps1")
+& (Join-Path $PSScriptRoot "Test-AreaEncounterLookup.ps1") -GameRoot $gameRoot
+
 & (Join-Path $PSScriptRoot "Build-Distribution.ps1")
 & (Join-Path $PSScriptRoot "Publish-Tracker.ps1") -DeploymentMode SelfContained
 

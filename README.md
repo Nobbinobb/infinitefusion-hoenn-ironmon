@@ -26,10 +26,11 @@ and a fast reset to starter selection.
 - `tools/generation/` contains release-data generators and their runtime bridge.
 
 Milestone 6 is on hold while optional quality-of-life features are developed.
-Version `0.8.2` applies effective battle-level scaling consistently in the game
-and lookup, preserves authored multi-trainer encounters, strengthens early
-Hoenn acquisition, healing, and catching safeguards, and makes the live tracker
-follow the selected opponent with encounter-specific PP. It retains unified
+Version `0.8.3` adds compact live defensive overviews, including passive recovery
+and pending healing states. It aligns derived wild fusions with encounter lookup,
+adds shared lookup preparation, makes basic Repels available from Petalburg,
+and remembers unavailable sprite downloads with an explicit recheck option.
+It retains effective battle-level scaling, early-Hoenn safeguards, unified
 sprite presentation, run-aware obtainability, native fusion closure, seeded-run
 sharing, battle-item control, type coverage, signed diagnostic access, Favorite
 Clause, and the randomization safeguards from earlier releases.
