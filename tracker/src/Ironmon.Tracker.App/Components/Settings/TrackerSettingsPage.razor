@@ -101,13 +101,17 @@
                 @if (_spriteInstallRunning && _spriteInstallProgress is not null)
                 {
                     <progress max="@Math.Max(1, _spriteInstallProgress.TotalSheetCount)" value="@_spriteInstallProgress.CompletedSheetCount"></progress>
-                    <small>@Text["Settings.Sprites.Progress", _spriteInstallProgress.CompletedSheetCount, _spriteInstallProgress.TotalSheetCount, FormatBytes(_spriteInstallProgress.DownloadedBytes), _spriteInstallProgress.FailedSheetCount]</small>
+                    <small>@Text["Settings.Sprites.Progress", _spriteInstallProgress.CompletedSheetCount, _spriteInstallProgress.TotalSheetCount, FormatBytes(_spriteInstallProgress.DownloadedBytes), _spriteInstallProgress.FailedSheetCount, _spriteInstallProgress.UnavailableSheetCount]</small>
                     <button type="button" class="secondary" @onclick="CancelSpriteInstall">@Text["Settings.Sprites.Cancel"]</button>
                 }
                 else if (_showSpriteInstallConfirmation && _spriteInstallPlan is not null)
                 {
                     <div class="sprite-download-confirmation">
                         <p>@Text["Settings.Sprites.Confirmation", _spriteInstallPlan.PendingSheetCount, _spriteInstallPlan.ExistingSheetCount, _spriteInstallPlan.TotalSheetCount]</p>
+                        @if (_spriteInstallPlan.UnavailableSheetCount > 0)
+                        {
+                            <p>@Text["Settings.Sprites.SkippedUnavailable", _spriteInstallPlan.UnavailableSheetCount]</p>
+                        }
                         <div>
                             <button type="button" @onclick="StartSpriteInstallAsync">@Text["Settings.Sprites.Start"]</button>
                             <button type="button" class="secondary" @onclick="CancelSpriteReview">@Text["Settings.Sprites.Cancel"]</button>
@@ -117,6 +121,8 @@
                 else
                 {
                     <button type="button" disabled="@_spriteInstallPreparing" @onclick="ReviewSpriteInstallAsync">@(_spriteInstallPreparing ? Text["Settings.Sprites.Preparing"] : Text["Settings.Sprites.Review"])</button>
+                    <button type="button" class="secondary" disabled="@_spriteInstallPreparing" @onclick="ReviewUnavailableSpritesAsync">@Text["Settings.Sprites.RecheckUnavailable"]</button>
+                    <small>@Text["Settings.Sprites.RecheckDescription"]</small>
                 }
 
                 @if (!string.IsNullOrWhiteSpace(_spriteInstallStatus))

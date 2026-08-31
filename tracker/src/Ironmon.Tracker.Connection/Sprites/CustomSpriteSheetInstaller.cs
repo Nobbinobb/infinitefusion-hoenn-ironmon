@@ -157,11 +157,12 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
     /// Builds a resumable installation plan from the game's current custom-sprite manifest.
     /// </summary>
     /// <param name="gameRoot">The connected game root, or <see langword="null"/> to locate it beside the tracker.</param>
+    /// <param name="includeUnavailable">Whether to also retry missing resources previously confirmed as HTTP 404.</param>
     /// <returns>The sheets already present and still missing.</returns>
     /// <exception cref="InvalidOperationException">The game root or custom-sprite manifest cannot be located.</exception>
     /// <exception cref="IOException">The manifest or an existing candidate sheet cannot be read.</exception>
     /// <exception cref="UnauthorizedAccessException">The installation does not permit local inspection.</exception>
-    public CustomSpriteInstallPlan CreatePlan(string? gameRoot = null)
+    public CustomSpriteInstallPlan CreatePlan(string? gameRoot = null, bool includeUnavailable = false)
     {
         string resolvedRoot = ResolveGameRoot(gameRoot);
         string manifestPath = Path.Combine(resolvedRoot, CustomSpriteManifestRelativePath);
@@ -177,8 +178,10 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
             .OrderBy(static target => target.RelativePath, StringComparer.OrdinalIgnoreCase)
             .Select(target => target with { DestinationPath = Path.Combine(destinationRoot, target.RelativePath.Replace('/', Path.DirectorySeparatorChar)) })];
 
-        IReadOnlyList<CustomSpriteSheetTarget> pendingSheets = allSheets.Where(static target => !IsValidPng(target.DestinationPath)).ToArray();
-        return new CustomSpriteInstallPlan(resolvedRoot, pendingSheets, allSheets.Count);
+        HashSet<string> unavailable = CustomSpriteUnavailableStore.Read(resolvedRoot);
+        List<CustomSpriteSheetTarget> missingSheets = [.. allSheets.Where(static target => !IsValidPng(target.DestinationPath))];
+        List<CustomSpriteSheetTarget> pendingSheets = [.. missingSheets.Where(target => includeUnavailable || !unavailable.Contains(new Uri(CustomSpriteSheetBaseUri, target.RelativePath).AbsoluteUri))];
+        return new CustomSpriteInstallPlan(resolvedRoot, pendingSheets, allSheets.Count, missingSheets.Count - pendingSheets.Count);
     }
 
     /// <summary>
@@ -197,6 +200,7 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
         if (_gameRunning(plan.GameRoot))
             throw new InvalidOperationException(GameRunningMessage);
 
+        HashSet<string> previouslyUnavailable = CustomSpriteUnavailableStore.Read(plan.GameRoot);
         using CancellationTokenSource downloadCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         int gameStarted = 0;
         bool StopIfGameStarted()
@@ -213,22 +217,40 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
         int completed = 0;
         int downloaded = 0;
         int failed = 0;
+        int unavailable = plan.UnavailableSheetCount;
         long downloadedBytes = 0;
-        progress?.Report(new CustomSpriteInstallProgress(0, plan.PendingSheetCount, 0, 0));
+        progress?.Report(new CustomSpriteInstallProgress(0, plan.PendingSheetCount, 0, 0, unavailable));
         ParallelOptions options = new() { CancellationToken = downloadCancellation.Token, MaxDegreeOfParallelism = _parallelDownloads };
         try
         {
             await Parallel.ForEachAsync(plan.PendingSheets, options, async (target, token) =>
             {
+                Uri resource = new(CustomSpriteSheetBaseUri, target.RelativePath);
                 try
                 {
-                    long bytes = await DownloadSheetAsync(target, StopIfGameStarted, token).ConfigureAwait(false);
-                    Interlocked.Add(ref downloadedBytes, bytes);
-                    Interlocked.Increment(ref downloaded);
+                    token.ThrowIfCancellationRequested();
+                    if (previouslyUnavailable.Contains(resource.AbsoluteUri))
+                        CustomSpriteUnavailableStore.SetUnavailable(plan.GameRoot, resource, false);
+
+                    try
+                    {
+                        long bytes = await DownloadSheetAsync(target, StopIfGameStarted, token).ConfigureAwait(false);
+                        Interlocked.Add(ref downloadedBytes, bytes);
+                        Interlocked.Increment(ref downloaded);
+                    }
+                    catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        CustomSpriteUnavailableStore.SetUnavailable(plan.GameRoot, resource, true);
+                        Interlocked.Increment(ref unavailable);
+                    }
                 }
                 catch (OperationCanceledException) when (token.IsCancellationRequested)
                 {
                     throw;
+                }
+                catch (OperationCanceledException)
+                {
+                    Interlocked.Increment(ref failed);
                 }
                 catch (Exception exception) when (exception is HttpRequestException or IOException or UnauthorizedAccessException)
                 {
@@ -237,7 +259,7 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
                 finally
                 {
                     int currentCompleted = Interlocked.Increment(ref completed);
-                    progress?.Report(new CustomSpriteInstallProgress(currentCompleted, plan.PendingSheetCount, Interlocked.Read(ref downloadedBytes), Volatile.Read(ref failed)));
+                    progress?.Report(new CustomSpriteInstallProgress(currentCompleted, plan.PendingSheetCount, Interlocked.Read(ref downloadedBytes), Volatile.Read(ref failed), Volatile.Read(ref unavailable)));
                 }
             }).ConfigureAwait(false);
         }
@@ -257,7 +279,7 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
             }
         }
 
-        return new CustomSpriteInstallResult(downloaded, failed, downloadedBytes);
+        return new CustomSpriteInstallResult(downloaded, failed, downloadedBytes, unavailable);
     }
 
     /// <summary>

@@ -9,6 +9,8 @@ public partial class TrackerSettingsPage : IDisposable
 {
     private const int FavoritePageSize = 8;
     private const string MegabyteUnit = "MB";
+    private const string AvailableSpritesCompleteKey = "Settings.Sprites.AvailableComplete";
+    private const string SpriteDownloadWithUnavailableKey = "Settings.Sprites.CompleteWithUnavailable";
     private CancellationTokenSource? _searchCancellation;
     private CancellationTokenSource? _spriteInstallCancellation;
     private IReadOnlyList<PokemonSearchMatch> _favorites = [];
@@ -178,8 +180,26 @@ public partial class TrackerSettingsPage : IDisposable
     /// Inspects the installed sprite library before asking for download confirmation.
     /// </summary>
     /// <returns>A task representing local manifest inspection.</returns>
-    private async Task ReviewSpriteInstallAsync()
+    private Task ReviewSpriteInstallAsync()
+        => PrepareSpriteInstallAsync(false);
+
+    /// <summary>
+    /// Reviews a fresh plan that includes previously unavailable resources without clearing their saved status.
+    /// </summary>
+    /// <returns>A task representing local manifest inspection.</returns>
+    private Task ReviewUnavailableSpritesAsync()
+        => PrepareSpriteInstallAsync(true);
+
+    /// <summary>
+    /// Inspects missing sheets and optionally includes remembered HTTP 404 resources for an explicit retry.
+    /// </summary>
+    /// <param name="includeUnavailable">Whether previously unavailable resources should be retried.</param>
+    /// <returns>A task representing local manifest inspection.</returns>
+    private async Task PrepareSpriteInstallAsync(bool includeUnavailable)
     {
+        if (_spriteInstallPreparing || _spriteInstallRunning)
+            return;
+
         _spriteInstallPreparing = true;
         _spriteInstallStatus = null;
         _spriteInstallPlan = null;
@@ -193,10 +213,12 @@ public partial class TrackerSettingsPage : IDisposable
             }
 
             string? gameRoot = ConnectionState.Snapshot.Game?.GameRoot;
-            _spriteInstallPlan = await Task.Run(() => SpriteInstaller.CreatePlan(gameRoot));
+            _spriteInstallPlan = await Task.Run(() => SpriteInstaller.CreatePlan(gameRoot, includeUnavailable));
             if (_spriteInstallPlan.PendingSheetCount == 0)
             {
-                _spriteInstallStatus = Text["Settings.Sprites.CompleteAlready", _spriteInstallPlan.TotalSheetCount];
+                _spriteInstallStatus = _spriteInstallPlan.UnavailableSheetCount == 0
+                    ? Text["Settings.Sprites.CompleteAlready", _spriteInstallPlan.TotalSheetCount]
+                    : Text[AvailableSpritesCompleteKey, _spriteInstallPlan.ExistingSheetCount, _spriteInstallPlan.UnavailableSheetCount];
                 return;
             }
 
@@ -223,7 +245,7 @@ public partial class TrackerSettingsPage : IDisposable
 
         _showSpriteInstallConfirmation = false;
         _spriteInstallStatus = null;
-        _spriteInstallProgress = new CustomSpriteInstallProgress(0, _spriteInstallPlan.PendingSheetCount, 0, 0);
+        _spriteInstallProgress = new CustomSpriteInstallProgress(0, _spriteInstallPlan.PendingSheetCount, 0, 0, _spriteInstallPlan.UnavailableSheetCount);
         _spriteInstallCancellation = new CancellationTokenSource();
         CancellationToken cancellationToken = _spriteInstallCancellation.Token;
         _spriteInstallRunning = true;
@@ -235,9 +257,12 @@ public partial class TrackerSettingsPage : IDisposable
         try
         {
             CustomSpriteInstallResult result = await SpriteInstaller.InstallAsync(_spriteInstallPlan, progress, cancellationToken);
-            _spriteInstallStatus = result.FailedSheetCount == 0
-                ? Text["Settings.Sprites.Complete", result.DownloadedSheetCount, FormatBytes(result.DownloadedBytes)]
-                : Text["Settings.Sprites.Partial", result.DownloadedSheetCount, result.FailedSheetCount];
+            _spriteInstallStatus = result switch
+            {
+                { FailedSheetCount: > 0 } => Text["Settings.Sprites.Partial", result.DownloadedSheetCount, result.FailedSheetCount, result.UnavailableSheetCount],
+                { UnavailableSheetCount: > 0 } => Text[SpriteDownloadWithUnavailableKey, result.DownloadedSheetCount, FormatBytes(result.DownloadedBytes), result.UnavailableSheetCount],
+                _ => Text["Settings.Sprites.Complete", result.DownloadedSheetCount, FormatBytes(result.DownloadedBytes)]
+            };
 
             _spriteInstallPlan = null;
         }

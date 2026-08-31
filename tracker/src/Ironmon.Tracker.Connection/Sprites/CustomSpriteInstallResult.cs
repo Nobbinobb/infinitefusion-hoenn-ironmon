@@ -3,4 +3,4 @@ namespace Ironmon.Tracker.Connection.Sprites;
 /// <summary>
 /// Summarizes one completed custom sprite-sheet installation attempt.
 /// </summary>
-public sealed record CustomSpriteInstallResult(int DownloadedSheetCount, int FailedSheetCount, long DownloadedBytes);
+public sealed record CustomSpriteInstallResult(int DownloadedSheetCount, int FailedSheetCount, long DownloadedBytes, int UnavailableSheetCount = 0);

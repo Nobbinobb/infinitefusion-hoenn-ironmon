@@ -1549,10 +1549,15 @@
   <data name="Settings.Sprites.Confirmation" xml:space="preserve"><value>Download {0} missing sheets? {1} of {2} sheets are already installed. You can cancel and resume later.</value></data>
   <data name="Settings.Sprites.Start" xml:space="preserve"><value>Start download</value></data>
   <data name="Settings.Sprites.Cancel" xml:space="preserve"><value>Cancel</value></data>
-  <data name="Settings.Sprites.Progress" xml:space="preserve"><value>{0} of {1} sheets · {2} downloaded · {3} failed</value></data>
+  <data name="Settings.Sprites.Progress" xml:space="preserve"><value>{0} of {1} sheets · {2} downloaded · {3} failed · {4} unavailable (404)</value></data>
   <data name="Settings.Sprites.Complete" xml:space="preserve"><value>Downloaded {0} custom sprite sheets ({1}).</value></data>
   <data name="Settings.Sprites.CompleteAlready" xml:space="preserve"><value>All {0} custom sprite sheets from the installed manifest are already available.</value></data>
-  <data name="Settings.Sprites.Partial" xml:space="preserve"><value>Downloaded {0} sheets; {1} could not be downloaded. Review again to retry the missing files.</value></data>
+  <data name="Settings.Sprites.Partial" xml:space="preserve"><value>Downloaded {0} sheets; {1} failed and remain retryable. {2} unavailable files (404) are skipped. Review again to retry failures, or recheck unavailable files to include them too.</value></data>
+  <data name="Settings.Sprites.RecheckUnavailable" xml:space="preserve"><value>Recheck unavailable files</value></data>
+  <data name="Settings.Sprites.RecheckDescription" xml:space="preserve"><value>Files returning 404 are remembered and skipped in normal downloads. Recheck includes them in a new download review; other failures always remain retryable.</value></data>
+  <data name="Settings.Sprites.SkippedUnavailable" xml:space="preserve"><value>{0} unavailable files (404) are excluded from this download. They are not counted as installed.</value></data>
+  <data name="Settings.Sprites.AvailableComplete" xml:space="preserve"><value>{0} sheets are installed. The remaining {1} files returned 404 and are skipped. Use Recheck unavailable files to try them again.</value></data>
+  <data name="Settings.Sprites.CompleteWithUnavailable" xml:space="preserve"><value>Downloaded {0} sheets ({1}). {2} files returned 404 and will be skipped in normal downloads. Use Recheck unavailable files to try them again.</value></data>
   <data name="Settings.Sprites.Cancelled" xml:space="preserve"><value>Download cancelled. Installed sheets were kept; review again to resume.</value></data>
   <data name="Settings.Sprites.CloseGame" xml:space="preserve"><value>Close Infinite Fusion before downloading the custom sprite library.</value></data>
   <data name="Settings.Sprites.InstallationNotFound" xml:space="preserve"><value>The tracker could not find a valid Infinite Fusion installation and custom-sprite manifest.</value></data>

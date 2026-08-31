@@ -12,11 +12,13 @@ public sealed class CustomSpriteInstallPlan
     /// <param name="gameRoot">The normalized Infinite Fusion installation directory.</param>
     /// <param name="pendingSheets">The distinct manifest-backed sheets still missing locally.</param>
     /// <param name="totalSheetCount">The total number of distinct sheets represented by the manifest.</param>
-    internal CustomSpriteInstallPlan(string gameRoot, IReadOnlyList<CustomSpriteSheetTarget> pendingSheets, int totalSheetCount)
+    /// <param name="unavailableSheetCount">The missing sheets excluded because the server previously returned 404.</param>
+    internal CustomSpriteInstallPlan(string gameRoot, IReadOnlyList<CustomSpriteSheetTarget> pendingSheets, int totalSheetCount, int unavailableSheetCount = 0)
     {
         GameRoot = gameRoot;
         PendingSheets = pendingSheets;
         TotalSheetCount = totalSheetCount;
+        UnavailableSheetCount = unavailableSheetCount;
     }
 
     /// <summary>
@@ -32,7 +34,12 @@ public sealed class CustomSpriteInstallPlan
     /// <summary>
     /// Gets the number of valid sheets already present locally.
     /// </summary>
-    public int ExistingSheetCount => TotalSheetCount - PendingSheets.Count;
+    public int ExistingSheetCount => TotalSheetCount - PendingSheets.Count - UnavailableSheetCount;
+
+    /// <summary>
+    /// Gets the number of missing sheets skipped because their endpoint previously returned HTTP 404.
+    /// </summary>
+    public int UnavailableSheetCount { get; }
 
     /// <summary>
     /// Gets the number of sheets that still need to be downloaded.

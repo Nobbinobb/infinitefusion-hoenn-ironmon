@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RootNamespace>Ironmon.Tracker.App.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <WindowsPackageType>None</WindowsPackageType>
+    <!-- The test host consumes the compiled app without generating its own MAUI assets. -->
+    <EnableMauiAssetProcessing>false</EnableMauiAssetProcessing>
+    <EnableMauiSplashScreenProcessing>false</EnableMauiSplashScreenProcessing>
+    <EnableMauiFontProcessing>false</EnableMauiFontProcessing>
+    <EnableMauiImageProcessing>false</EnableMauiImageProcessing>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

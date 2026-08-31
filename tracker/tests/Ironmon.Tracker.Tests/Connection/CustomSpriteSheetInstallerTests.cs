@@ -7,7 +7,7 @@ namespace Ironmon.Tracker.Tests.Connection;
 /// <summary>
 /// Verifies resumable installation of Infinite Fusion custom sprite sheets.
 /// </summary>
-public sealed class CustomSpriteSheetInstallerTests : IDisposable
+public sealed partial class CustomSpriteSheetInstallerTests : IDisposable
 {
     /// <summary>
     /// Defines the executable marker required by installation-root validation.

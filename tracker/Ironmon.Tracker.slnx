@@ -8,6 +8,7 @@
     <Project Path="src/Ironmon.Tracker.Seeds/Ironmon.Tracker.Seeds.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj" />
     <Project Path="tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">

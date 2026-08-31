@@ -17,6 +17,9 @@ in `PROTOCOL.md`.
 - `src/Ironmon.Tracker.Protocol/` groups transport envelopes, connection
   payloads, live snapshots, lookup payloads, Pokémon data, and debug payloads.
 - `tests/Ironmon.Tracker.Tests/` mirrors the production project areas.
+- `tests/Ironmon.Tracker.App.Tests/` contains Windows-only UI tests that reference
+  the compiled desktop app. App components and localization resources stay in
+  the app project; no source files are linked or copied into the tests.
 
 User-visible tracker text uses standard .NET resources. See
 [`LOCALIZATION.md`](LOCALIZATION.md) for the translation workflow and resource
@@ -95,9 +98,18 @@ developer override authorizes them.
   -p:UseSharedCompilation=false
 ```
 
-Building the shell requires the Windows-only `maui-windows` workload during
-development. The standard end-user package is self-contained. A smaller
-runtime-required package requires the Windows x64 .NET 10 Runtime,
+Run the desktop UI tests on Windows:
+
+```powershell
+& 'C:\Program Files\dotnet\dotnet.exe' test `
+  'tests\Ironmon.Tracker.App.Tests\Ironmon.Tracker.App.Tests.csproj' `
+  --nologo --disable-build-servers -m:1 `
+  -p:UseSharedCompilation=false
+```
+
+Building the shell or running its UI tests requires the Windows-only
+`maui-windows` workload during development. The standard end-user package is
+self-contained. A smaller runtime-required package requires the Windows x64 .NET 10 Runtime,
 but neither package requires the SDK or MAUI workload.
 
 ## Publish the release tracker

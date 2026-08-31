@@ -284,6 +284,13 @@ if ($LASTEXITCODE -ne 0) {
   throw "Tracker tests failed."
 }
 
+& dotnet test (Join-Path $projectRoot "tracker\tests\Ironmon.Tracker.App.Tests\Ironmon.Tracker.App.Tests.csproj") `
+  --configuration Release `
+  --maxcpucount:1
+if ($LASTEXITCODE -ne 0) {
+  throw "Tracker app tests failed."
+}
+
 & (Join-Path $PSScriptRoot "Test-GameRuntime.ps1") `
   -GameRoot $gameRoot `
   -TimeoutSeconds 300
