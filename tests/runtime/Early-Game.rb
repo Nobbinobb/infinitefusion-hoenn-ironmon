@@ -449,6 +449,7 @@ module IronmonEarlyGameRuntimeTests
   end
 
   def self.run
+    test_early_mart_repels
     test_lab_patch
     test_rival_appearance_assets
     test_starter_rescue_battle_boundary
@@ -460,6 +461,82 @@ module IronmonEarlyGameRuntimeTests
     test_conditional_event_abort_queue
     test_starter_loss_conditional_interpreter_boundary
     File.binwrite(OUTPUT_PATH, "early-game runtime tests passed")
+  end
+
+  def self.test_early_mart_repels
+    original_global = $PokemonGlobal
+    original_map = $game_map
+    original_variables = $game_variables
+    original_temp = $game_temp
+    original_trainer = $Trainer
+    original_ready = Ironmon.instance_variable_get(:@item_randomization_ready)
+    original_mart = Object.instance_method(:ironmon_item_original_pb_pokemon_mart)
+    captured = nil
+    Object.send(:define_method, :ironmon_item_original_pb_pokemon_mart) do |*args|
+      captured = args
+    end
+    Object.send(:private, :ironmon_item_original_pb_pokemon_mart)
+    $PokemonGlobal = PokemonGlobalMetadata.new
+    $PokemonGlobal.ironmon_mode = true
+    Ironmon.instance_variable_set(:@item_randomization_ready, true)
+    $game_variables = []
+    $game_temp = Game_Temp.new
+    $game_map = Game_Map.new
+    $game_map.instance_variable_set(:@map_id, POKEMART_MAP_ID)
+    badge_count = 0
+    $Trainer = Object.new
+    $Trainer.define_singleton_method(:numbadges) { badge_count }
+    commands = load_data("Data/CommonEvents.rxdata")[13].list
+    [:OLDALE, :PETALBURG, :RUSTBORO, :DEWFORD, :SLATEPORT].each do |city|
+      $game_variables[VAR_CURRENT_CITY] = city
+      [0, 1, 2].each do |badges|
+        badge_count = badges
+        captured = nil
+        interpreter = Interpreter.new
+        interpreter.setup(commands, 0, POKEMART_MAP_ID)
+        interpreter.update
+        assert(captured && !interpreter.running?,
+               "#{city} shop event completes with #{badges} badges")
+        stock = captured[0]
+        expected_repels = city == :OLDALE && badges < 2 ? 0 : 1
+        assert(stock.count(:REPEL) == expected_repels,
+               "#{city} has #{expected_repels} basic Repels with #{badges} badges")
+        assert(stock.include?(:POKEBALL) && !stock.include?(:POTION),
+               "the actual shop event still passes through the Ironmon item filter")
+        assert((stock & [:SUPERREPEL, :MAXREPEL, :FUSIONREPEL]).empty?,
+               "stronger Repels are not unlocked early")
+      end
+    end
+    $game_variables[VAR_CURRENT_CITY] = :PETALBURG
+    authored = [:POKEBALL, :POTION, :DNASPLICERS].freeze
+    pbPokemonMart(authored, "welcome", false, "bye", "again")
+    assert(captured == [[:POKEBALL, :REPEL], "welcome", false, "bye", "again"],
+           "the early stock addition preserves shop arguments and authored input")
+    specialty = get_mart_exclusive_items_hoenn(:PETALBURG)
+    pbPokemonMart(specialty)
+    assert(captured[0] == [:NESTBALL], "the specialty counter gains no Repels")
+    pbPokemonMart(authored, nil, true)
+    assert(captured[0] == authored, "non-selling shops are unchanged")
+    $game_map.instance_variable_set(:@map_id, 7)
+    pbPokemonMart(authored)
+    assert(captured[0] == [:POKEBALL], "other maps do not inherit the mart city")
+    $game_map.instance_variable_set(:@map_id, POKEMART_MAP_ID)
+    $game_variables[VAR_CURRENT_CITY] = 0
+    pbPokemonMart(authored)
+    assert(captured[0] == [:POKEBALL], "unknown cities do not gain Repels")
+    $game_variables[VAR_CURRENT_CITY] = :PETALBURG
+    $PokemonGlobal.ironmon_mode = false
+    pbPokemonMart(authored)
+    assert(captured[0] == authored, "non-Ironmon shops retain their native stock")
+  ensure
+    Object.send(:define_method, :ironmon_item_original_pb_pokemon_mart, original_mart) if original_mart
+    Object.send(:private, :ironmon_item_original_pb_pokemon_mart) if original_mart
+    Ironmon.instance_variable_set(:@item_randomization_ready, original_ready)
+    $PokemonGlobal = original_global
+    $game_map = original_map
+    $game_variables = original_variables
+    $game_temp = original_temp
+    $Trainer = original_trainer
   end
 end
 

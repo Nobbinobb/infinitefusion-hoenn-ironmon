@@ -31,6 +31,18 @@ module Ironmon
   EARLY_GAME_RIVAL_CHARACTER_FOLDER = "Graphics/Characters/Ironmon"
   EARLY_GAME_RIVAL_CHARACTER_PREFIX = "Ironmon/early_game_rival"
 
+  def self.early_game_mart_stock(stock)
+    return stock if !active? || Settings::GAME_ID != :IF_HOENN
+    return stock if !$game_map || $game_map.map_id != POKEMART_MAP_ID
+    return stock if !stock.is_a?(Array)
+    city = get_city_numerical_id_hoenn(pbGet(VAR_CURRENT_CITY))
+    return stock if !city || city < get_city_numerical_id_hoenn(:PETALBURG)
+    item_ids = stock.map { |item| GameData::Item.try_get(item)&.id }
+    return stock if !item_ids.include?(:POKEBALL) ||
+                    !item_ids.include?(:POTION) || item_ids.include?(:REPEL)
+    return stock + [:REPEL]
+  end
+
   def self.early_game_script_event_list(script)
     return [
       RPG::EventCommand.new(355, 0, [script]),
@@ -559,6 +571,15 @@ module Ironmon
     return false if !failed_run_locked?
     return queue_early_game_loss_reset
   end
+end
+
+alias ironmon_early_game_original_pb_pokemon_mart pbPokemonMart
+def pbPokemonMart(stock, speech_welcome = nil, cantsell = false,
+                  speech_bye = nil, speech_what_else = nil)
+  stock = Ironmon.early_game_mart_stock(stock) if !cantsell
+  return ironmon_early_game_original_pb_pokemon_mart(
+    stock, speech_welcome, cantsell, speech_bye, speech_what_else
+  )
 end
 
 Ironmon.register_graphics_update_hook(
