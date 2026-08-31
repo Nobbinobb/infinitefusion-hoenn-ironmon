@@ -46,6 +46,8 @@ public sealed class PlayerFusionMappingWorkerTests
     [InlineData(1_792_136_788)]
     [InlineData(1_689)]
     [InlineData(2_895)]
+    [InlineData(116_872_428)]
+    [InlineData(1_851_036_422)]
     public void GlobalReversePairsRemainStrengthCompatible(long seed)
     {
         PlayerFusionMappingWorkerCatalog catalog = PlayerFusionMappingWorkerCatalog.Load();
@@ -95,6 +97,9 @@ public sealed class PlayerFusionMappingWorkerTests
             PlayerFusionMappedPair mapping = actual[(expected.FirstMaterialId, expected.SecondMaterialId)];
             Assert.Equal(expected.FirstResultId, mapping.FirstResultId);
             Assert.Equal(expected.SecondResultId, mapping.SecondResultId);
+            Assert.Equal(expected.FirstResultId, worker.MapOrderedPair(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, expected.FirstMaterialId, expected.SecondMaterialId));
+            if (expected.FirstMaterialId != expected.SecondMaterialId)
+                Assert.Equal(expected.SecondResultId, worker.MapOrderedPair(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, expected.SecondMaterialId, expected.FirstMaterialId));
         }
     }
 
@@ -275,6 +280,16 @@ public sealed class PlayerFusionMappingWorkerTests
         Assert.NotNull(result);
         Assert.NotEmpty(result.ObtainableFusionWords);
         Assert.Equal(0, coordinator.CachedJobCount);
+
+        Stopwatch pageClock = Stopwatch.StartNew();
+        IReadOnlyList<AreaFusionResultPayload>? page = await coordinator.MapAreaFusionsAsync(ColdStartRunId, null,
+            [new FusionMaterialAssignmentPayload { BodyId = 25, HeadId = 4 }, new FusionMaterialAssignmentPayload { BodyId = 4, HeadId = 25 }], CancellationToken.None);
+        Assert.NotNull(page);
+        Assert.Equal(2, page.Count);
+        Assert.All(page, entry => Assert.True(IsObtainable(result, entry.SpeciesNumber)));
+        Assert.NotEqual(page[0].SpeciesNumber, page[1].SpeciesNumber);
+        Assert.True(pageClock.Elapsed < TimeSpan.FromSeconds(1));
+        Assert.Null(await coordinator.MapAreaFusionsAsync(WorkerRunId, null, [], CancellationToken.None));
     }
 
     /// <summary>
@@ -337,6 +352,19 @@ public sealed class PlayerFusionMappingWorkerTests
         PlayerFusionMaterialPage? materialPage = await coordinator.GetActiveFusionMaterialAssignmentsAsync(WorkerRunId, $"{FusionBodyPrefix}{materialTargetBodyId}{FusionHeadSeparator}{materialTargetHeadId}{DefaultFormSuffix}", 0, int.MaxValue, CancellationToken.None);
         Assert.NotNull(materialPage);
         Assert.Contains(materialPage.Assignments, assignment => assignment.BodyId == materialReference.FirstMaterialId && assignment.HeadId == materialReference.SecondMaterialId);
+
+        byte[]? membership = await coordinator.GetOccurrenceFusionMaterialsAsync(WorkerRunId, null, $"{FusionBodyPrefix}{materialTargetBodyId}{FusionHeadSeparator}{materialTargetHeadId}{DefaultFormSuffix}", CancellationToken.None);
+        Assert.NotNull(membership);
+        Assert.Equal((catalog.NormalSpeciesCount * catalog.NormalSpeciesCount + 7) / 8, membership.Length);
+        int bitCount = membership.Sum(value => System.Numerics.BitOperations.PopCount((uint)value));
+        Assert.Equal(materialPage.Total, bitCount);
+        foreach (FusionMaterialAssignmentPayload assignment in materialPage.Assignments)
+        {
+            int position = (assignment.BodyId - 1) * catalog.NormalSpeciesCount + assignment.HeadId - 1;
+            Assert.NotEqual(0, membership[position / 8] & (1 << (position % 8)));
+        }
+
+        Assert.Null(await coordinator.GetOccurrenceFusionMaterialsAsync(null, null, $"{FusionBodyPrefix}{materialTargetBodyId}{FusionHeadSeparator}{materialTargetHeadId}{DefaultFormSuffix}", CancellationToken.None));
 
         PlayerFusionEvolutionReferenceMapping reference = catalog.EvolutionVerificationMappings.First(mapping => mapping.Seed == catalog.VerificationSeed && mapping.Branches.Count > 0);
         int targetId = reference.Branches[0].TargetId;

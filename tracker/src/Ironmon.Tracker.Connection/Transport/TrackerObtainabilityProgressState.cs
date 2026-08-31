@@ -118,7 +118,10 @@ public sealed class TrackerObtainabilityProgressSnapshot(TrackerObtainabilityPro
 public sealed class TrackerObtainabilityProgressState
 {
     private const string _completePhase = "complete";
+    private const int _maximumPreparedRuns = 4;
     private readonly Lock _sync = new();
+    private readonly Dictionary<string, TrackerObtainabilityProgressSnapshot> _preparedActiveRuns = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _startedActiveRuns = new(StringComparer.Ordinal);
     private string? _activeRunId;
     private TrackerObtainabilityProgressScope _scope;
     private string _phase = string.Empty;
@@ -151,6 +154,27 @@ public sealed class TrackerObtainabilityProgressState
     }
 
     /// <summary>
+    /// Gets active-run preparation progress without borrowing an archive's status or losing completed preparation when another surface owns progress.
+    /// </summary>
+    /// <param name="runId">The currently displayed active run identifier.</param>
+    /// <returns>The matching active progress, retained completion, or idle state.</returns>
+    public TrackerObtainabilityProgressSnapshot GetActiveRunSnapshot(string? runId)
+    {
+        lock (_sync)
+        {
+            if (string.IsNullOrWhiteSpace(runId))
+                return TrackerObtainabilityProgressSnapshot.Idle;
+
+            if (_preparedActiveRuns.TryGetValue(runId, out TrackerObtainabilityProgressSnapshot? prepared))
+                return prepared;
+
+            return _scope == TrackerObtainabilityProgressScope.ActiveRun && string.Equals(_activeRunId, runId, StringComparison.Ordinal)
+                ? _snapshot
+                : TrackerObtainabilityProgressSnapshot.Idle;
+        }
+    }
+
+    /// <summary>
     /// Marks one run's shared calculation as active.
     /// </summary>
     /// <param name="runId">The active run identifier.</param>
@@ -160,6 +184,9 @@ public sealed class TrackerObtainabilityProgressState
         bool changed;
         lock (_sync)
         {
+            if (scope == TrackerObtainabilityProgressScope.ActiveRun && !string.IsNullOrWhiteSpace(runId))
+                _startedActiveRuns.Add(runId);
+
             if (string.Equals(_activeRunId, runId, StringComparison.Ordinal) && _scope == scope
                 && _snapshot.Status is TrackerObtainabilityProgressStatus.Running or TrackerObtainabilityProgressStatus.Complete)
             {
@@ -191,21 +218,32 @@ public sealed class TrackerObtainabilityProgressState
         ArgumentNullException.ThrowIfNull(response);
         lock (_sync)
         {
-            if (!string.Equals(_activeRunId, runId, StringComparison.Ordinal) || _scope != scope)
+            bool ownsProgress = string.Equals(_activeRunId, runId, StringComparison.Ordinal) && _scope == scope;
+            bool prepared = response.BackgroundComplete || string.Equals(response.Phase, _completePhase, StringComparison.Ordinal);
+            if (!ownsProgress && !(prepared && scope == TrackerObtainabilityProgressScope.ActiveRun && runId is not null && _startedActiveRuns.Contains(runId)))
                 return;
 
             long now = Stopwatch.GetTimestamp();
-            if (!string.Equals(_phase, response.Phase, StringComparison.Ordinal))
+            if (ownsProgress && !string.Equals(_phase, response.Phase, StringComparison.Ordinal))
             {
                 _phase = response.Phase;
                 _phaseStartedTimestamp = now;
             }
 
-            TrackerObtainabilityProgressStatus status = response.BackgroundComplete || string.Equals(response.Phase, _completePhase, StringComparison.Ordinal)
+            TrackerObtainabilityProgressStatus status = prepared
                 ? TrackerObtainabilityProgressStatus.Complete
                 : TrackerObtainabilityProgressStatus.Running;
 
-            _snapshot = new TrackerObtainabilityProgressSnapshot(status, _scope, response.Phase, response.ProcessedPairs, response.TotalPairs, response.ObtainableCount, Stopwatch.GetElapsedTime(_startedTimestamp, now), Stopwatch.GetElapsedTime(_phaseStartedTimestamp, now), null);
+            TrackerObtainabilityProgressSnapshot progress = new(status, scope, response.Phase, response.ProcessedPairs, response.TotalPairs, response.ObtainableCount, ownsProgress ? Stopwatch.GetElapsedTime(_startedTimestamp, now) : TimeSpan.Zero, ownsProgress ? Stopwatch.GetElapsedTime(_phaseStartedTimestamp, now) : TimeSpan.Zero, null);
+            if (ownsProgress)
+                _snapshot = progress;
+
+            if (prepared && scope == TrackerObtainabilityProgressScope.ActiveRun && !string.IsNullOrWhiteSpace(runId))
+            {
+                _preparedActiveRuns[runId] = progress;
+                if (_preparedActiveRuns.Count > _maximumPreparedRuns)
+                    _preparedActiveRuns.Remove(_preparedActiveRuns.Keys.First());
+            }
         }
 
         Changed?.Invoke(this, EventArgs.Empty);
@@ -263,6 +301,8 @@ public sealed class TrackerObtainabilityProgressState
         {
             _activeRunId = null;
             _scope = TrackerObtainabilityProgressScope.ActiveRun;
+            _preparedActiveRuns.Clear();
+            _startedActiveRuns.Clear();
             _phase = string.Empty;
             _startedTimestamp = 0;
             _phaseStartedTimestamp = 0;

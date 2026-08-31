@@ -7,6 +7,12 @@ namespace Ironmon.Tracker.Connection.Areas;
 /// </summary>
 public sealed class AreaDiscoveryStore
 {
+    private const string _encounterPrefix = "encounter:";
+    private const string _fusionPrefix = "encounter_fusion:";
+    private const string _standardSameOrigin = "standard_same";
+    private const string _standardCrossOrigin = "standard_cross";
+    private const string _overworldSameOrigin = "overworld_same";
+    private const string _overworldCrossOrigin = "overworld_cross";
     private readonly Dictionary<string, PersistedAreaDiscoveries> _runs = [];
     private readonly TrackerKnowledgeOptions _options;
     private readonly Lock _sync = new();
@@ -97,9 +103,37 @@ public sealed class AreaDiscoveryStore
     /// <param name="runId">The owning run identifier.</param>
     /// <param name="areaId">The stable area identifier.</param>
     /// <param name="category">The requested category.</param>
-    /// <returns>The number of distinct discovery keys.</returns>
-    public int GetCount(string runId, string areaId, AreaContentCategory category)
-        => GetKeys(runId, areaId, category).Count;
+    /// <param name="overworldEncounters">The active encounter mode, or null to include both archived mechanics.</param>
+    /// <returns>The number of distinct discovery keys for the displayed mechanic.</returns>
+    public int GetCount(string runId, string areaId, AreaContentCategory category, bool? overworldEncounters = null)
+    {
+        IReadOnlyList<string> keys = GetKeys(runId, areaId, category);
+        return category == AreaContentCategory.Encounter
+            ? keys.Count(key => IsEncounterCounted(key, overworldEncounters))
+            : keys.Count;
+    }
+
+    /// <summary>
+    /// Matches authored slots and encountered fusion possibilities against the displayed mechanic.
+    /// </summary>
+    /// <param name="key">The persisted discovery key.</param>
+    /// <param name="overworldEncounters">The active mode, or null for both archived mechanics.</param>
+    /// <returns>Whether the discovery belongs in the displayed encountered count.</returns>
+    private static bool IsEncounterCounted(string key, bool? overworldEncounters)
+    {
+        if (key.StartsWith(_encounterPrefix, StringComparison.Ordinal))
+            return true;
+
+        if (!key.StartsWith(_fusionPrefix, StringComparison.Ordinal))
+            return false;
+
+        string[] parts = key.Split(':');
+        if (parts.Length != 9)
+            return false;
+
+        return (overworldEncounters != true && parts[2] is _standardSameOrigin or _standardCrossOrigin)
+            || (overworldEncounters != false && parts[2] is _overworldSameOrigin or _overworldCrossOrigin);
+    }
 
     /// <summary>
     /// Gets the tracker-owned discovery revision for one run.
@@ -160,8 +194,13 @@ public sealed class AreaDiscoveryStore
                 Offset = response.Offset,
                 Limit = response.Limit,
                 TotalCount = response.TotalCount,
+                Pending = response.Pending,
+                OverworldEncounters = response.OverworldEncounters,
+                EncounterEnvironment = response.EncounterEnvironment,
+                EncounterEnvironments = response.EncounterEnvironments,
                 Trainers = trainers,
                 Encounters = encounters,
+                EncounterFusions = response.EncounterFusions,
                 Items = items
             };
         }

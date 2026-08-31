@@ -114,26 +114,90 @@
                                         </div>
                                         break;
                                     case AreaContentCategory.Encounter:
-                                        <div class="area-entry-list">
-                                            @foreach (AreaEncounterEntryPayload encounter in GetPagedEntries(area.AreaId, detail.Encounters))
+                                        <div class="area-environment-list">
+                                            @foreach (AreaEncounterEnvironmentPayload environment in detail.EncounterEnvironments)
                                             {
-                                                <article class="area-entry area-encounter-entry @(encounter.Encountered ? "completed" : null)">
-                                                    <header>
-                                                        <strong>@encounter.EncounterType · @Text["Lookup.Areas.Slot", encounter.Slot]</strong>
-                                                        <span>@(encounter.Encountered ? Text["Lookup.Areas.Encountered"] : Text["Lookup.Areas.NotEncountered"])</span>
-                                                    </header>
-                                                    <div class="area-encounter-copy">
-                                                        <p>@FormatEncounterRange(encounter) · @Text["Lookup.Areas.Probability", encounter.ProbabilityPercent]</p>
-                                                        @if (encounter.DetailsRevealed)
-                                                        {
-                                                            <p class="area-entry-identity">@GetEncounterIdentity(encounter)@(encounter.IndependentFusion ? $" · {Text["Lookup.Areas.IndependentFusion"]}" : null)</p>
-                                                        }
-                                                    </div>
-                                                    @if (encounter.DetailsRevealed)
+                                                bool environmentExpanded = IsEnvironmentExpanded(area.AreaId, environment.Key);
+                                                string environmentDetailKey = GetDetailKey(area.AreaId, environment.Key);
+                                                <section class="area-environment-group">
+                                                    <button type="button"
+                                                            class="area-environment-summary"
+                                                            aria-expanded="@environmentExpanded"
+                                                            @onclick="() => ToggleEnvironmentAsync(area.AreaId, environment.Key)">
+                                                        <span class="area-group-chevron" aria-hidden="true">@(environmentExpanded ? "−" : "+")</span>
+                                                        <strong>@GetEnvironmentName(environment.Key)</strong>
+                                                    </button>
+                                                    @if (environmentExpanded)
                                                     {
-                                                        <PokemonSprite GameRoot="@GameRoot" SpritePath="@encounter.SpritePath" Label="@GetEncounterIdentity(encounter)" Size="45" CssClass="area-encounter-sprite" />
+                                                        <div class="area-environment-details">
+                                                            @if (_loadingDetails.Contains(environmentDetailKey))
+                                                            {
+                                                                <p class="lookup-message">@Text["Lookup.Areas.LoadingDetails"]</p>
+                                                            }
+                                                            else if (_detailErrors.TryGetValue(environmentDetailKey, out string? environmentError))
+                                                            {
+                                                                <p class="lookup-error" role="alert">@environmentError</p>
+                                                            }
+                                                            else if (_details.TryGetValue(environmentDetailKey, out AreaLookupDetailResponsePayload? environmentDetail))
+                                                            {
+                                                                @foreach (EncounterSubsection subsection in GetEncounterSubsections(environmentDetail))
+                                                                {
+                                                                    <section class="area-encounter-subsection">
+                                                                        <h4>@subsection.Name</h4>
+                                                                        <div class="area-entry-list">
+                                                                            @foreach (AreaEncounterEntryPayload encounter in subsection.Encounters)
+                                                                            {
+                                                                                <article class="area-entry area-encounter-entry @(encounter.Encountered ? "completed" : null)">
+                                                                                    <header>
+                                                                                        <strong>@Text["Lookup.Areas.Slot", encounter.Slot]</strong>
+                                                                                        <span>@(encounter.Encountered ? Text["Lookup.Areas.Encountered"] : Text["Lookup.Areas.NotEncountered"])</span>
+                                                                                    </header>
+                                                                                    <div class="area-encounter-copy">
+                                                                                        <p>@FormatEncounterRange(encounter) · @Text["Lookup.Areas.Probability", encounter.ProbabilityPercent]</p>
+                                                                                        @if (encounter.DetailsRevealed)
+                                                                                        {
+                                                                                            <p class="area-entry-identity">@GetEncounterIdentity(encounter)@(encounter.IndependentFusion ? $" · {Text["Lookup.Areas.IndependentFusion"]}" : null)</p>
+                                                                                        }
+                                                                                    </div>
+                                                                                    @if (encounter.DetailsRevealed)
+                                                                                    {
+                                                                                        <PokemonSprite GameRoot="@GameRoot" SpritePath="@encounter.SpritePath" Label="@GetEncounterIdentity(encounter)" Size="45" CssClass="area-encounter-sprite" />
+                                                                                    }
+                                                                                </article>
+                                                                            }
+                                                                            @foreach (AreaEncounterFusionEntryPayload fusion in subsection.Fusions)
+                                                                            {
+                                                                                <article class="area-entry area-encounter-entry @(fusion.Encountered ? "completed" : null)">
+                                                                                    <header>
+                                                                                        <strong>@(fusion.DetailsRevealed ? fusion.SpeciesName : Text["Lookup.Areas.UnknownPokemon"])</strong>
+                                                                                        <span>@(fusion.Encountered ? Text["Lookup.Areas.EncounteredDerivedFusion"] : Text["Lookup.Areas.DerivedFusion"])</span>
+                                                                                    </header>
+                                                                                    <div class="area-encounter-copy">
+                                                                                        <p>@FormatFusionSources(fusion)</p>
+                                                                                        <p>@FormatFusionRange(fusion) · @FormatFusionOrigin(fusion)</p>
+                                                                                    </div>
+                                                                                    @if (fusion.DetailsRevealed)
+                                                                                    {
+                                                                                        <PokemonSprite GameRoot="@GameRoot" SpritePath="@fusion.SpritePath" Label="@fusion.SpeciesName" Size="45" CssClass="area-encounter-sprite" />
+                                                                                    }
+                                                                                </article>
+                                                                            }
+                                                                        </div>
+                                                                    </section>
+                                                                }
+                                                                @if (environmentDetail.TotalCount > _pageSize)
+                                                                {
+                                                                    PaginationState environmentPagination = GetDetailPagination(area.AreaId, environment.Key);
+                                                                    <nav class="lookup-pager area-entry-pager" aria-label="@Text["Lookup.Areas.EntryPages", GetEnvironmentName(environment.Key)]">
+                                                                        <button type="button" disabled="@(!environmentPagination.HasPrevious)" @onclick="() => PreviousDetailPage(area.AreaId, environment.Key)">@Text["Lookup.Search.Previous"]</button>
+                                                                        <span>@GetPageRangeText(environmentPagination, environmentDetail.TotalCount)</span>
+                                                                        <button type="button" disabled="@(!environmentPagination.HasNext(environmentDetail.TotalCount))" @onclick="() => NextDetailPage(area.AreaId, environmentDetail.TotalCount, environment.Key)">@Text["Lookup.Search.Next"]</button>
+                                                                    </nav>
+                                                                }
+                                                            }
+                                                        </div>
                                                     }
-                                                </article>
+                                                </section>
                                             }
                                         </div>
                                         break;
@@ -161,7 +225,7 @@
                                         break;
                                 }
                                 int detailEntryCount = GetDetailEntryCount(detail);
-                                @if (detailEntryCount > _pageSize)
+                                @if (_selectedCategory != AreaContentCategory.Encounter && detailEntryCount > _pageSize)
                                 {
                                     PaginationState detailPagination = GetDetailPagination(area.AreaId);
                                     <nav class="lookup-pager area-entry-pager" aria-label="@Text["Lookup.Areas.EntryPages", area.Name]">

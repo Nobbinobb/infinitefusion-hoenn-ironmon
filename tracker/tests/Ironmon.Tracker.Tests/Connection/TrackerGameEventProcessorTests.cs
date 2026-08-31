@@ -5,6 +5,7 @@ namespace Ironmon.Tracker.Tests.Connection;
 /// </summary>
 public sealed class TrackerGameEventProcessorTests
 {
+    private const string _preparedRunId = "prepared-run";
     /// <summary>
     /// Initializes inbound game event processor tests.
     /// </summary>
@@ -65,6 +66,15 @@ public sealed class TrackerGameEventProcessorTests
             Assert.Same(enemy, Assert.Single(runState.Snapshot.Enemies));
             Assert.Equal(12, knowledge.GetHighestLevel("BELLOSSOM:0"));
             Assert.Equal("ABSORB", Assert.Single(knowledge.GetDisplayedMoves("BELLOSSOM:0", 12)).Id);
+
+            requestClient.ObtainabilityProgress.Begin(recovered.RunId, TrackerObtainabilityProgressScope.ActiveRun);
+            requestClient.ObtainabilityProgress.Report(recovered.RunId, TrackerObtainabilityProgressScope.ActiveRun, new PokemonObtainabilityResponsePayload { BackgroundComplete = true });
+            processor.RecoverCurrentState(game, recovered);
+            Assert.Equal(TrackerObtainabilityProgressStatus.Complete, requestClient.ObtainabilityProgress.GetActiveRunSnapshot(recovered.RunId).Status);
+            processor.RecoverCurrentState(game, new GameCurrentStatePayload(true, _preparedRunId, null, 4));
+            Assert.Same(TrackerObtainabilityProgressSnapshot.Idle, requestClient.ObtainabilityProgress.GetActiveRunSnapshot(_preparedRunId));
+            Assert.Same(TrackerObtainabilityProgressSnapshot.Idle, requestClient.ObtainabilityProgress.GetActiveRunSnapshot(recovered.RunId));
+            processor.RecoverCurrentState(game, recovered);
 
             FusionAssignmentRecipePayload assignmentRecipe = new()
             {

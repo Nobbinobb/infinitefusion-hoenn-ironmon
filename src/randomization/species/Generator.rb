@@ -59,9 +59,12 @@ module Ironmon
               "the #{@namespace} #{@policy} species pool is empty"
       end
       selected = pool[deterministic_value(source_id, context, "species") % pool.length]
-      selected_data = GameData::Species.get(selected)
-      @mapping[key] = selected_data.id_number
+      @mapping[key] = species_number(selected)
       return @mapping[key]
+    end
+
+    def map_number(species, context)
+      return map_id(species_number(species), context)
     end
 
     private
@@ -70,30 +73,33 @@ module Ironmon
       case @policy
       when Configuration::POLICY_NORMAL_ONLY
         @normal_pool_index ||= pool_index(@normal_pool)
-        return @normal_pool_index[species_id] == true
+        return @normal_pool_index.key?(species_id)
       when Configuration::POLICY_CUSTOM_FUSIONS_ONLY
         @fusion_pool_index ||= pool_index(@fusion_pool)
-        return @fusion_pool_index[species_id] == true
+        return @fusion_pool_index.key?(species_id)
       else
         @normal_pool_index ||= pool_index(@normal_pool)
         @fusion_pool_index ||= pool_index(@fusion_pool)
-        return @normal_pool_index[species_id] == true ||
-               @fusion_pool_index[species_id] == true
+        return @normal_pool_index.key?(species_id) ||
+               @fusion_pool_index.key?(species_id)
       end
     end
 
     def pool_index(pool)
+      shared = Ironmon.cached_custom_fusion_pool_index(pool)
+      return shared if shared
       index = {}
       pool.each do |species|
-        match = /\AB(\d+)H(\d+)\z/.match(species.to_s)
-        species_id = if match
-                       (match[1].to_i * NB_POKEMON) + match[2].to_i
-                     else
-                       GameData::Species.get(species).id_number
-                     end
-        index[species_id] = true
+        index[species_number(species)] = true
       end
       return index
+    end
+
+    def species_number(species)
+      return species if species.is_a?(Integer)
+      match = /\AB(\d+)H(\d+)\z/.match(species.to_s)
+      return (match[1].to_i * NB_POKEMON) + match[2].to_i if match
+      return GameData::Species.get(species).id_number
     end
 
     def select_pool(source_id, context)

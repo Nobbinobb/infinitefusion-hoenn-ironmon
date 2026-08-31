@@ -3,7 +3,69 @@
 #===============================================================================
 
 module Ironmon
-  def self.tracker_lookup_wild_occurrences(target, recipe)
+  class TrackerWildOccurrenceWork
+    WORK_SECONDS = 0.004
+
+    def initialize(target, recipe, materials)
+      @results = nil
+      @error = nil
+      @fiber = Fiber.new do
+        checkpoint = proc do
+          Fiber.yield if Ironmon.tracker_uptime_seconds >= @deadline
+        end
+        @results = Ironmon.tracker_lookup_wild_occurrences(
+          target, recipe, materials, checkpoint
+        )
+      end
+    end
+
+    def advance
+      return if !@fiber || @error
+      @deadline = Ironmon.tracker_uptime_seconds + WORK_SECONDS
+      @fiber.resume
+      @fiber = nil if !@fiber.alive?
+    rescue StandardError => error
+      @error = error
+      @fiber = nil
+      echoln "Ironmon wild location preparation failed: #{error.message}"
+    end
+
+    def results
+      advance
+      if @error
+        raise TrackerLookupError.new(
+          "wild_lookup_failed",
+          "Unable to prepare encounter locations: #{@error.message}"
+        )
+      end
+      return @results
+    end
+  end
+
+  def self.tracker_occurrence_cache_key(recipe, species, kind)
+    return [
+      recipe["run_id"], recipe["seed"], recipe["active_run"],
+      recipe["data_mode"], recipe["configuration"],
+      recipe["species_generator_version"],
+      recipe["player_fusion_generator_version"],
+      recipe["base_stat_source_fingerprint"],
+      recipe["overworld_encounters"], species.id, kind
+    ]
+  end
+
+  def self.tracker_wild_occurrence_work(key, target, recipe, encoded)
+    @tracker_wild_occurrence_work ||= {}
+    return @tracker_wild_occurrence_work[key] if
+      @tracker_wild_occurrence_work.key?(key)
+    work = TrackerWildOccurrenceWork.new(
+      target, recipe, tracker_decode_occurrence_materials(encoded)
+    )
+    tracker_store_bounded(@tracker_wild_occurrence_work, key, work, 4)
+    return work
+  end
+
+  def self.tracker_lookup_wild_occurrences(target, recipe, materials = nil,
+                                           checkpoint = nil)
     if recipe["species_generator_version"] ==
        SpeciesGenerator::LEGACY_SCHEMA_VERSION
       return tracker_lookup_legacy_wild_occurrences(target, recipe)
@@ -11,62 +73,154 @@ module Ironmon
     return [] if !SpeciesGenerator::SLOT_SCHEMA_VERSIONS.include?(
       recipe["species_generator_version"]
     )
-    configuration_value = Configuration.from(recipe["configuration"])
-    generator = if tracker_loaded_recipe?(recipe)
-                  species_generator(:wild)
-                 else
-                  SpeciesGenerator.new(
-                    recipe["seed"], :wild, configuration_value.wild_policy,
-                    normal_species_pool, custom_fusion_pool, {},
-                    recipe["species_generator_version"]
-                  )
-                end
-    modes = if recipe["data_mode"] == "remix" &&
-               defined?(GameData::EncounterModern)
-              [GameData::EncounterModern]
-            else
-              [GameData::Encounter]
-            end
     occurrences = []
-    modes.each do |mode|
-      mode.each do |data|
-        data.types.each do |encounter_type, entries|
-          total = entries.inject(0) { |sum, entry| sum + entry[0].to_i }
-          entries.each_with_index do |entry, slot|
-            context = [:table, mode.name, data.map, data.version,
-                       encounter_type, slot]
-            mapped = generator.map(entry[1], context)
-            next if mapped != target.id
-            source = GameData::Species.get(entry[1])
-            chance = total > 0 ? (entry[0].to_f * 100.0 / total).round(2) : nil
-            occurrences << {
-              "map_id" => data.map,
-              "route_name" => pbGetMapNameFromId(data.map),
-              "mode" => mode == GameData::Encounter ? "Classic" : "Remix",
-              "encounter_version" => data.version,
-              "encounter_type" => encounter_type.to_s,
-              "slot" => slot + 1,
-              "minimum_level" => scaled_level(entry[2]),
-              "maximum_level" => scaled_level(entry[3] || entry[2]),
-              "source_species_id" => "#{source.id}:0",
-              "source_species_name" => source.name,
-              "chance_percent" => chance,
-              "chance_is_conditional" => false
-            }
+    sources = []
+    tracker_wild_occurrence_sources(recipe, checkpoint).each do |entry, mapped|
+      checkpoint.call if checkpoint
+      if mapped > 0 && mapped <= NB_POKEMON
+        sources << { "metadata" => entry, "species" => GameData::Species.get(mapped).id }
+      end
+      next if mapped != target.id_number
+      source = GameData::Species.get(entry["source_species"])
+      occurrences << {
+        "entry_id" => entry["entry_id"],
+        "map_id" => entry["map_id"],
+        "route_name" => pbGetMapNameFromId(entry["map_id"]),
+        "mode" => tracker_area_encounter_mode(recipe) == GameData::Encounter ? "Classic" : "Remix",
+        "encounter_version" => entry["version"],
+        "encounter_type" => entry["encounter_type"],
+        "slot" => entry["slot"],
+        "minimum_level" => scaled_level(entry["minimum_level"]),
+        "maximum_level" => scaled_level(entry["maximum_level"]),
+        "source_species_id" => "#{source.id}:0",
+        "source_species_name" => source.name,
+        "chance_percent" => entry["probability_percent"],
+        "chance_is_conditional" => false
+      }
+    end
+    if target.id_number > NB_POKEMON
+      tracker_append_derived_wild_occurrences(
+        occurrences, target, recipe, sources, materials, checkpoint
+      )
+    end
+    return occurrences.sort_by do |entry|
+      [entry["route_name"], entry["encounter_type"], entry["slot"],
+       entry["entry_id"].to_s]
+    end
+  end
+
+  def self.tracker_wild_occurrence_sources(recipe, checkpoint)
+    @tracker_wild_occurrence_sources ||= {}
+    key = [recipe["run_id"], recipe["seed"], recipe["active_run"],
+           recipe["data_mode"], recipe["configuration"],
+           recipe["species_generator_version"]]
+    return @tracker_wild_occurrence_sources[key] if
+      @tracker_wild_occurrence_sources.key?(key)
+    generator = tracker_area_species_generator(recipe, :wild)
+    entries = tracker_area_encounter_catalog(recipe).values.flatten(1)
+    sources = entries.map do |entry|
+      checkpoint.call if checkpoint
+      mapped = generator.map_number(entry["source_species"], [
+        :table, entry["mode_name"], entry["map_id"], entry["version"],
+        entry["encounter_type"].to_sym, entry["context_slot"]
+      ])
+      [entry, mapped]
+    end
+    tracker_store_bounded(@tracker_wild_occurrence_sources, key, sources, 2)
+    return sources
+  end
+
+  def self.tracker_decode_occurrence_materials(encoded)
+    return nil if encoded.nil?
+    expected = (NB_POKEMON * NB_POKEMON + 7) / 8
+    if !encoded.is_a?(String) || encoded.length > ((expected + 2) / 3) * 4
+      raise TrackerLookupError.new("invalid_query", "The fusion material membership is malformed.")
+    end
+    bytes = encoded.unpack("m0")[0]
+    if bytes.bytesize != expected
+      raise TrackerLookupError.new("invalid_query", "The fusion material membership has an invalid size.")
+    end
+    pairs = []
+    bytes.each_byte.with_index do |value, index|
+      next if value == 0
+      8.times do |bit|
+        next if (value & (1 << bit)) == 0
+        position = index * 8 + bit
+        next if position >= NB_POKEMON * NB_POKEMON
+        pairs << [position / NB_POKEMON + 1, position % NB_POKEMON + 1]
+      end
+    end
+    return pairs
+  rescue ArgumentError
+    raise TrackerLookupError.new("invalid_query", "The fusion material membership is malformed.")
+  end
+
+  def self.tracker_append_derived_wild_occurrences(occurrences, target, recipe,
+                                                   sources, materials,
+                                                   checkpoint)
+    by_species = sources.group_by { |source| GameData::Species.get(source["species"]).id_number }
+    if materials.nil?
+      mapper = nil
+      materials = []
+      sources.group_by { |source| source["metadata"]["map_id"] }.each_value do |map_sources|
+        ids = map_sources.map { |source| GameData::Species.get(source["species"]).id_number }.uniq
+        ids.each do |body|
+          ids.each do |head|
+            checkpoint.call if checkpoint
+            next if body == head
+            mapper ||= tracker_obtainability_fusion_mapper(recipe, checkpoint)
+            materials << [body, head] if mapper.species_number(body, head) == target.id_number
           end
-          if configuration_value.wild_policy ==
-             Configuration::POLICY_NORMAL_ONLY
-            tracker_lookup_wild_fusion_occurrences(
-              occurrences, target, recipe, generator, mode, data,
-              encounter_type, entries, total
-            )
+        end
+      end
+      materials.uniq!
+    end
+    materials.each do |body, head|
+      next if body == head
+      (by_species[body] || []).each do |body_source|
+        (by_species[head] || []).each do |head_source|
+          checkpoint.call if checkpoint
+          [[body_source, head_source, false], [head_source, body_source, true]].each do |first, second, overworld|
+            next if !recipe["overworld_encounters"].nil? && recipe["overworld_encounters"] != overworld
+            cross = !tracker_area_same_encounter_table?(first, second)
+            next if !tracker_area_encounter_fusion_pair?(first, second, cross)
+            tracker_area_encounter_fusion_origins(first, second, cross, overworld).each do |origin|
+              descriptor = { "first" => first, "second" => second, "origin" => origin }
+              occurrences << tracker_derived_wild_occurrence(descriptor, recipe)
+            end
           end
         end
       end
     end
-    return occurrences.sort_by do |entry|
-      [entry["route_name"], entry["encounter_type"], entry["slot"]]
-    end
+  end
+
+  def self.tracker_derived_wild_occurrence(descriptor, recipe)
+    metadata = tracker_area_encounter_fusion_metadata(descriptor, {})
+    first = descriptor["first"]["metadata"]
+    second = descriptor["second"]["metadata"]
+    first_species = GameData::Species.get(descriptor["first"]["species"])
+    second_species = GameData::Species.get(descriptor["second"]["species"])
+    return {
+      "entry_id" => metadata["entry_id"],
+      "map_id" => first["map_id"],
+      "route_name" => pbGetMapNameFromId(first["map_id"]),
+      "mode" => tracker_area_encounter_mode(recipe) == GameData::Encounter ? "Classic" : "Remix",
+      "encounter_version" => first["version"],
+      "encounter_type" => first["encounter_type"],
+      "slot" => first["slot"],
+      "secondary_encounter_type" => second["encounter_type"],
+      "secondary_encounter_version" => second["version"],
+      "secondary_slot" => second["slot"],
+      "minimum_level" => metadata["minimum_level"],
+      "maximum_level" => metadata["maximum_level"],
+      "source_species_id" => "#{first_species.id}:0",
+      "source_species_name" => first_species.name,
+      "secondary_source_species_id" => "#{second_species.id}:0",
+      "secondary_source_species_name" => second_species.name,
+      "origin" => metadata["origin"],
+      "fusion_chance_percent" => metadata["fusion_chance_percent"],
+      "cross_environment" => metadata["cross_environment"]
+    }
   end
 
   def self.tracker_lookup_legacy_wild_occurrences(target, recipe)
@@ -107,73 +261,6 @@ module Ironmon
     return occurrences.sort_by do |entry|
       [entry["route_name"], entry["encounter_type"], entry["slot"]]
     end
-  end
-
-  def self.tracker_lookup_wild_fusion_occurrences(
-    occurrences, target, recipe, generator, mode, data, encounter_type,
-    entries, total
-  )
-    return if target.id_number <= NB_POKEMON || total <= 0
-    mapper = tracker_post_run_fusion_mapper(recipe)
-    table = tracker_lookup_wild_fusion_table(
-      recipe, generator, mapper, mode, data, encounter_type, entries
-    )
-    return if !table[:target_ids][target.id_number]
-    mapped_entries = table[:mapped_entries]
-    mapped_entries.each do |body_entry, body, body_slot|
-      mapped_entries.each do |head_entry, head, head_slot|
-        next if mapper.species_number(body, head) != target.id_number
-        body_source = GameData::Species.get(body_entry[1])
-        head_source = GameData::Species.get(head_entry[1])
-        chance = body_entry[0].to_f * head_entry[0].to_f * 100.0 /
-          (total * total)
-        occurrences << {
-          "map_id" => data.map,
-          "route_name" => pbGetMapNameFromId(data.map),
-          "mode" => mode == GameData::Encounter ? "Classic" : "Remix",
-          "encounter_version" => data.version,
-          "encounter_type" => encounter_type.to_s,
-          "slot" => body_slot + 1,
-          "secondary_slot" => head_slot + 1,
-          "minimum_level" => scaled_level(body_entry[2]),
-          "maximum_level" => scaled_level(body_entry[3] || body_entry[2]),
-          "source_species_id" => "#{body_source.id}:0",
-          "source_species_name" => body_source.name,
-          "secondary_source_species_id" => "#{head_source.id}:0",
-          "secondary_source_species_name" => head_source.name,
-          "chance_percent" => chance.round(2),
-          "chance_is_conditional" => true
-        }
-      end
-    end
-  rescue PlayerFusionMappingError => e
-    echoln "Ironmon tracker skipped wild fusion occurrences: #{e.message}"
-  end
-
-  def self.tracker_lookup_wild_fusion_table(
-    recipe, generator, mapper, mode, data, encounter_type, entries
-  )
-    key = [recipe["run_id"], mode.name, data.map, data.version,
-           encounter_type]
-    cached = tracker_wild_fusion_tables[key]
-    return cached if cached
-    mapped_entries = entries.each_with_index.map do |entry, slot|
-      context = [:table, mode.name, data.map, data.version,
-                 encounter_type, slot]
-      [entry, generator.map(entry[1], context), slot]
-    end
-    target_ids = {}
-    mapped_entries.each do |_body_entry, body, _body_slot|
-      mapped_entries.each do |_head_entry, head, _head_slot|
-        target_ids[mapper.species_number(body, head)] = true
-      end
-    end
-    table = {
-      :mapped_entries => mapped_entries.freeze,
-      :target_ids => target_ids.freeze
-    }.freeze
-    tracker_wild_fusion_tables[key] = table
-    return table
   end
 
   def self.tracker_lookup_trainer_occurrences(target, recipe)

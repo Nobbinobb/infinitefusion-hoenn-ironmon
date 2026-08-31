@@ -13,6 +13,7 @@ public sealed class TrackerRequestClient
     private readonly TrackerResponseCache _cache = new();
     private readonly TrackerCompletedRunRequestClient _completedRunRequests;
     private readonly TrackerDiagnosticRequestClient _diagnosticRequests;
+    private readonly TrackerRunPreparationClient _runPreparation;
     private readonly SemaphoreSlim _obtainabilityRequestGate = new(1, 1);
     private readonly TrackerConnectionOptions _options;
     private readonly TrackerRequestSession _session;
@@ -43,9 +44,10 @@ public sealed class TrackerRequestClient
         _options = options;
         _state = state;
         _authorization = new TrackerDiagnosticAuthorizer(options, state, diagnosticAccess);
-        _areaRequests = new TrackerAreaRequestClient(session, areaDiscoveries, _authorization, _cache);
+        _areaRequests = new TrackerAreaRequestClient(session, areaDiscoveries, _authorization, _cache, _fusionMappings);
         _completedRunRequests = new TrackerCompletedRunRequestClient(session, _cache, _fusionMappings);
         _diagnosticRequests = new TrackerDiagnosticRequestClient(session, _authorization, _fusionMappings);
+        _runPreparation = new TrackerRunPreparationClient(session, _fusionMappings);
     }
 
     /// <summary>
@@ -249,7 +251,7 @@ public sealed class TrackerRequestClient
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The public area summaries.</returns>
     public Task<AreaLookupSummaryResponsePayload> GetAreaSummariesAsync(AreaContentCategory category, CompletedRunRecipePayload? recipe = null, bool forceRefresh = false, CancellationToken cancellationToken = default)
-        => _areaRequests.GetSummariesAsync(category, recipe, GetConnectedRunId(), forceRefresh, cancellationToken);
+        => _areaRequests.GetSummariesAsync(category, recipe, GetConnectedRunId(), forceRefresh, cancellationToken, _state.Snapshot.CurrentState?.OverworldEncounters);
 
     /// <summary>
     /// Requests one lazily loaded public area category for the active or one archived run.
@@ -259,11 +261,12 @@ public sealed class TrackerRequestClient
     /// <param name="recipe">The archived run recipe, or null for the active run.</param>
     /// <param name="forceRefresh">Whether to bypass a previously cached response.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <param name="encounterEnvironment">The encounter environment to page, or null to request its index.</param>
     /// <param name="offset">The zero-based encounter-entry offset.</param>
     /// <param name="limit">The maximum number of encounter entries to return.</param>
     /// <returns>The requested area category.</returns>
-    public Task<AreaLookupDetailResponsePayload> GetAreaDetailsAsync(string areaId, AreaContentCategory category, CompletedRunRecipePayload? recipe = null, bool forceRefresh = false, CancellationToken cancellationToken = default, int offset = 0, int limit = TrackerProtocol.AreaLookupPageSize)
-        => _areaRequests.GetDetailsAsync(areaId, category, recipe, GetConnectedRunId(), forceRefresh, offset, limit, cancellationToken);
+    public Task<AreaLookupDetailResponsePayload> GetAreaDetailsAsync(string areaId, AreaContentCategory category, CompletedRunRecipePayload? recipe = null, bool forceRefresh = false, CancellationToken cancellationToken = default, string? encounterEnvironment = null, int offset = 0, int limit = TrackerProtocol.AreaLookupPageSize)
+        => _areaRequests.GetDetailsAsync(areaId, category, recipe, GetConnectedRunId(), forceRefresh, encounterEnvironment, offset, limit, cancellationToken, _state.Snapshot.CurrentState?.OverworldEncounters);
 
     /// <summary>
     /// Searches the connected game for Pokémon names compatible with one completed-run recipe.
@@ -310,6 +313,32 @@ public sealed class TrackerRequestClient
         catch (Exception exception) when (exception is IOException or InvalidOperationException or TimeoutException or TrackerProtocolException)
         {
             ObtainabilityProgress.Fail(recipe.RunId, TrackerObtainabilityProgressScope.ArchivedRun, exception.Message);
+            throw;
+        }
+        finally
+        {
+            _obtainabilityRequestGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Advances the full active-run preparation without requiring diagnostic permissions or revealing lookup results.
+    /// </summary>
+    /// <param name="foreground">Whether the user explicitly requested priority calculation.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The current preparation progress.</returns>
+    public async Task<PokemonObtainabilityResponsePayload> AdvanceActiveRunPreparationAsync(bool foreground = false, CancellationToken cancellationToken = default)
+    {
+        string? runId = GetConnectedRunId();
+        ObtainabilityProgress.Begin(runId, TrackerObtainabilityProgressScope.ActiveRun);
+        await _obtainabilityRequestGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await _runPreparation.AdvanceAsync(foreground, response => ObtainabilityProgress.Report(runId, TrackerObtainabilityProgressScope.ActiveRun, response), runId, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException or TimeoutException or TrackerProtocolException)
+        {
+            ObtainabilityProgress.Fail(runId, TrackerObtainabilityProgressScope.ActiveRun, exception.Message);
             throw;
         }
         finally

@@ -78,7 +78,10 @@ internal sealed class PlayerFusionMappingCoordinator
 
         EvolutionAssignmentKey evolutionKey = EvolutionAssignmentKey.From(work);
         if (!string.IsNullOrWhiteSpace(runId))
+        {
             _runEvolutionKeys[runId] = evolutionKey;
+            _runMaterialKeys[runId] = new PlayerFusionMaterialKey(work.Seed, work.GeneratorVersion, work.BaseStatSourceFingerprint, work.CustomFusionPoolFingerprint);
+        }
 
         Task<PlayerFusionWorkerResult> job = _jobs.GetOrAdd(work.JobId, _ => BuildResultAsync(work, evolutionKey));
         try
@@ -97,6 +100,78 @@ internal sealed class PlayerFusionMappingCoordinator
             if (job.IsCompleted && _jobs.TryGetValue(work.JobId, out Task<PlayerFusionWorkerResult>? retainedJob) && ReferenceEquals(retainedJob, job))
                 _jobs.TryRemove(work.JobId, out _);
         }
+    }
+
+    /// <summary>
+    /// Determines whether an area request can share compatible tracker-owned fusion state.
+    /// </summary>
+    /// <param name="runId">The requested run.</param>
+    /// <param name="recipe">The archived recipe, or null for active lookup.</param>
+    /// <returns>Whether native mapping is available without exposing a new active-run recipe.</returns>
+    internal bool CanMapAreaFusions(string runId, CompletedRunRecipePayload? recipe)
+        => recipe is null ? _runMaterialKeys.ContainsKey(runId) : Compatible(recipe);
+
+    /// <summary>
+    /// Reuses the shared reverse index to identify every ordered normal pair producing a location-search target.
+    /// </summary>
+    /// <param name="runId">The active or archived run identifier.</param>
+    /// <param name="recipe">The archived recipe, or null for active lookup.</param>
+    /// <param name="speciesId">The target fusion identity.</param>
+    /// <param name="cancellationToken">The token cancelling this request's wait.</param>
+    /// <returns>A fixed-size material membership bitset, or null when native mapping is unavailable or unnecessary.</returns>
+    internal async Task<byte[]?> GetOccurrenceFusionMaterialsAsync(string? runId, CompletedRunRecipePayload? recipe, string speciesId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(runId) || !TryParseFusionTargetId(speciesId, out int targetId) || !CanMapAreaFusions(runId, recipe))
+            return null;
+
+        PlayerFusionMaterialKey key = recipe is null ? _runMaterialKeys[runId] : PlayerFusionMaterialKey.From(recipe);
+        PlayerFusionMaterialIndex index = await GetMaterialIndex(key).WaitAsync(cancellationToken).ConfigureAwait(false);
+        int count = _catalog.NormalSpeciesCount;
+        byte[] membership = new byte[(count * count + 7) / 8];
+        if (!index.PackedAssignmentsByTarget.TryGetValue(targetId, out IReadOnlyList<uint>? assignments))
+            return membership;
+
+        foreach (uint value in assignments)
+        {
+            int position = ((int)(value >> 10) - 1) * count + (int)(value & 0x3FF) - 1;
+            membership[position / 8] |= (byte)(1 << (position % 8));
+        }
+
+        return membership;
+    }
+
+    /// <summary>
+    /// Resolves only a disclosed area's requested page using the shared obtainability mapping worker.
+    /// </summary>
+    /// <param name="runId">The requested run.</param>
+    /// <param name="recipe">The archived recipe, or null for active lookup.</param>
+    /// <param name="materials">The bounded game-authorized material pairs.</param>
+    /// <param name="cancellationToken">The token cancelling this page's wait.</param>
+    /// <returns>The ordered results, or null when no compatible native recipe is available.</returns>
+    internal async Task<IReadOnlyList<AreaFusionResultPayload>?> MapAreaFusionsAsync(string runId, CompletedRunRecipePayload? recipe, IReadOnlyList<FusionMaterialAssignmentPayload> materials, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(materials);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(materials.Count, TrackerProtocol.MaximumSearchPageSize);
+        if (!CanMapAreaFusions(runId, recipe))
+            return null;
+
+        PlayerFusionMaterialKey key = recipe is null ? _runMaterialKeys[runId] : PlayerFusionMaterialKey.From(recipe);
+        return await Task.Run<IReadOnlyList<AreaFusionResultPayload>>(() =>
+        {
+            List<AreaFusionResultPayload> results = [];
+            foreach (FusionMaterialAssignmentPayload pair in materials)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                results.Add(new AreaFusionResultPayload
+                {
+                    BodyId = pair.BodyId,
+                    HeadId = pair.HeadId,
+                    SpeciesNumber = _worker.MapOrderedPair(key.Seed, key.GeneratorVersion, pair.BodyId, pair.HeadId)
+                });
+            }
+
+            return results;
+        }, cancellationToken).WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -267,6 +342,7 @@ internal sealed class PlayerFusionMappingCoordinator
 
         PlayerFusionDirectProofResult provenDirect = await directProofJob.ConfigureAwait(false);
         IReadOnlyList<FusionEvolutionSourceAssignment> generatedAssignments = (await evolutionJob.ConfigureAwait(false)).Assignments;
+        await GetMaterialIndex(new PlayerFusionMaterialKey(work.Seed, work.GeneratorVersion, work.BaseStatSourceFingerprint, work.CustomFusionPoolFingerprint)).ConfigureAwait(false);
 
         IReadOnlyList<FusionEvolutionSourceAssignment> executableAssignments = CloseFusionEvolutions(provenDirect.PlansBySpecies, generatedAssignments, work.ResourceSupply, provenDirect.NextPlanOrder);
         uint[] obtainableFusionWords = BuildObtainableFusionWords(provenDirect.PlansBySpecies);

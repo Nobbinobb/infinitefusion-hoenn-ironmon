@@ -74,6 +74,28 @@ internal sealed class PlayerFusionMappingWorker
     }
 
     /// <summary>
+    /// Maps one ordered normal-material pair using the same retained state as obtainability preparation.
+    /// </summary>
+    /// <param name="seed">The run seed.</param>
+    /// <param name="generatorVersion">The player-fusion generator schema.</param>
+    /// <param name="bodyId">The normal Body material.</param>
+    /// <param name="headId">The normal Head material.</param>
+    /// <returns>The numeric custom fusion result in the requested orientation.</returns>
+    internal int MapOrderedPair(long seed, int generatorVersion, int bodyId, int headId)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(bodyId, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(bodyId, _catalog.NormalSpeciesCount);
+        ArgumentOutOfRangeException.ThrowIfLessThan(headId, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(headId, _catalog.NormalSpeciesCount);
+        if (generatorVersion != _catalog.PlayerFusionGeneratorVersion)
+            throw new NotSupportedException($"Player-fusion generator {generatorVersion} is unsupported by the worker catalog.");
+
+        WorkerState state = GetState(seed, generatorVersion);
+        (int first, int second) = SelectResults(state, Math.Min(bodyId, headId), Math.Max(bodyId, headId));
+        return bodyId <= headId ? first : second;
+    }
+
+    /// <summary>
     /// Reports the global reverse-pair quality for regression tests and diagnostics.
     /// </summary>
     internal PlayerFusionPairingAudit AuditPairing(long seed, int generatorVersion)
@@ -325,13 +347,63 @@ internal sealed class PlayerFusionMappingWorker
         }
 
         if (best is null)
-            return false;
+            return RepairStrengthChain(pairs, currentFirst, currentSecond, maximumPairDifference);
 
         pairs.RemoveAt(best.Value.PairIndex);
         pairs.Add(best.Value.First);
         pairs.Add(best.Value.Second);
         return true;
     }
+
+    /// <summary>
+    /// Repairs a blocked pair through a deterministic alternating chain without relaxing strength or component eligibility.
+    /// </summary>
+    private static bool RepairStrengthChain(List<TargetPair> pairs, TargetData currentFirst, TargetData currentSecond, int maximumPairDifference)
+    {
+        Queue<(TargetData Current, TargetPair[] Replacements, int[] Removed)> queue = new();
+        queue.Enqueue((currentFirst, [], []));
+        HashSet<int> visited = [currentFirst.Id];
+        while (queue.TryDequeue(out var work))
+        {
+            for (int index = 0; index < pairs.Count; index++)
+            {
+                if (work.Removed.Contains(index))
+                    continue;
+
+                TargetPair previous = pairs[index];
+                for (int orientation = 0; orientation < 2; orientation++)
+                {
+                    TargetData partner = orientation == 0 ? previous.First : previous.Second;
+                    TargetData displaced = orientation == 0 ? previous.Second : previous.First;
+                    if (visited.Contains(displaced.Id) || !StrengthPairCompatible(work.Current, partner, maximumPairDifference))
+                        continue;
+
+                    TargetPair replacement = new(work.Current, partner);
+                    if (StrengthPairCompatible(displaced, currentSecond, maximumPairDifference))
+                    {
+                        foreach (int removed in work.Removed.Append(index).OrderDescending())
+                            pairs.RemoveAt(removed);
+
+                        pairs.AddRange(work.Replacements);
+                        pairs.Add(replacement);
+                        pairs.Add(new TargetPair(displaced, currentSecond));
+                        return true;
+                    }
+
+                    visited.Add(displaced.Id);
+                    queue.Enqueue((displaced, [.. work.Replacements, replacement], [.. work.Removed, index]));
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Determines whether a repair edge preserves the global strength and disjoint-component constraints.
+    /// </summary>
+    private static bool StrengthPairCompatible(TargetData first, TargetData second, int maximumPairDifference)
+        => Math.Abs(first.Bst - second.Bst) <= maximumPairDifference && !SharesComponent(first, second);
 
     /// <summary>
     /// Determines whether two custom targets share either normal component.

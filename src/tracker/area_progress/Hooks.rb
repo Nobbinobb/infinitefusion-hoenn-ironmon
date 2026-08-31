@@ -124,6 +124,7 @@ module Ironmon
 
   def self.begin_area_encounter_sequence
     @pending_area_encounter_entries = []
+    @pending_area_encounter_fusions = []
     @area_encounter_sequence_active = true
   end
 
@@ -146,14 +147,32 @@ module Ironmon
       @pending_area_encounter_entries ||= []
       @pending_area_encounter_entries << @selected_area_encounter_entry
       @pending_area_encounter_entries.uniq!
+      attach_wild_source(result, @selected_area_encounter_entry)
     end
     @area_encounter_selection_active = false
     @selected_area_encounter_entry = nil
     return result
   end
 
+  def self.queue_area_encounter_entry(entry_id)
+    return false if !area_encounter_sequence_active? || !entry_id
+    @pending_area_encounter_entries ||= []
+    @pending_area_encounter_entries << entry_id
+    @pending_area_encounter_entries.uniq!
+    return true
+  end
+
+  def self.queue_area_encounter_fusion(entry_id)
+    return false if !area_encounter_sequence_active? || !entry_id
+    @pending_area_encounter_fusions ||= []
+    @pending_area_encounter_fusions << entry_id
+    @pending_area_encounter_fusions.uniq!
+    return true
+  end
+
   def self.commit_area_encounter_sequence
-    entries = @pending_area_encounter_entries || []
+    entries = (@pending_area_encounter_entries || []) +
+      (@pending_area_encounter_fusions || [])
     record_encountered_area_slots(entries)
     clear_area_encounter_sequence
     return !entries.empty?
@@ -161,6 +180,7 @@ module Ironmon
 
   def self.clear_area_encounter_sequence
     @pending_area_encounter_entries = []
+    @pending_area_encounter_fusions = []
     @area_encounter_sequence_active = false
     @area_encounter_selection_active = false
     @selected_area_encounter_entry = nil

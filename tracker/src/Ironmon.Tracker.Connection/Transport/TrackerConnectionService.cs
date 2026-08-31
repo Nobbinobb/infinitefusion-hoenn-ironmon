@@ -273,15 +273,8 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         {
             TrackerConnectionSnapshot snapshot = _state.Snapshot;
             string? runId = snapshot.CurrentState?.RunId ?? snapshot.Game?.RunId;
-            bool authorized = Requests.HasDiagnosticCapability(DiagnosticCapabilities.EvolutionResults)
-                && Requests.HasDiagnosticCapability(DiagnosticCapabilities.FusionMaterialPairs)
-                && Requests.HasDiagnosticCapability(DiagnosticCapabilities.PokemonAllActive)
-                && Requests.HasDiagnosticCapability(DiagnosticCapabilities.WorldItems)
-                && Requests.HasDiagnosticCapability(DiagnosticCapabilities.WorldWildEncounters);
-
             bool runCompleted = snapshot.CurrentState?.CompletedRun is not null;
             bool precalculationEligible = IsActiveRunObtainabilityPrecalculationEligible(
-                authorized,
                 snapshot.CurrentState?.IronmonActive == true,
                 snapshot.CurrentState?.ActiveRunPreparationReady == true,
                 runCompleted,
@@ -293,7 +286,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             {
                 try
                 {
-                    PokemonObtainabilityResponsePayload response = await Requests.AdvanceDebugPokemonObtainabilityAsync(foreground: false, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    PokemonObtainabilityResponsePayload response = await Requests.AdvanceActiveRunPreparationAsync(foreground: false, cancellationToken: cancellationToken).ConfigureAwait(false);
                     if (IsObtainabilityPrecalculationFinished(response))
                         completedRunId = runId;
                 }
@@ -325,7 +318,6 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// <summary>
     /// Determines whether the connected active run may receive automatic background preparation.
     /// </summary>
-    /// <param name="authorized">Whether all required diagnostic capabilities are authorized.</param>
     /// <param name="ironmonActive">Whether the connected game reports an active Ironmon mode.</param>
     /// <param name="preparationReady">Whether the game has reached the safe background-preparation boundary.</param>
     /// <param name="runCompleted">Whether the current run has already completed.</param>
@@ -333,10 +325,9 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// <param name="preparedRunId">The run identifier already prepared by this loop.</param>
     /// <param name="archiveSelected">Whether an explicitly expanded archived run owns preparation.</param>
     /// <returns>True when active-run background preparation may advance; otherwise false.</returns>
-    internal static bool IsActiveRunObtainabilityPrecalculationEligible(bool authorized, bool ironmonActive, bool preparationReady, bool runCompleted, string? runId, string? preparedRunId, bool archiveSelected)
+    internal static bool IsActiveRunObtainabilityPrecalculationEligible(bool ironmonActive, bool preparationReady, bool runCompleted, string? runId, string? preparedRunId, bool archiveSelected)
     {
-        return authorized
-            && ironmonActive
+        return ironmonActive
             && preparationReady
             && !runCompleted
             && !string.IsNullOrWhiteSpace(runId)

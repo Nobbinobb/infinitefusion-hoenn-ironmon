@@ -7,10 +7,13 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class PokemonLookupSupplementalData : IDisposable
 {
+    private const string _overworldOriginPrefix = "overworld";
     private readonly PaginationState _fusionMaterialPagination = new(TrackerProtocol.FusionMaterialPageSize);
     private readonly PaginationState _trainerOccurrencePagination = new(TrackerProtocol.OccurrencePageSize);
     private readonly PaginationState _wildOccurrencePagination = new(TrackerProtocol.OccurrencePageSize);
     private string? _observedPokemonKey;
+    private bool? _observedOverworldMode;
+    private bool _disposed;
     private FusionMaterialSearchResponsePayload _fusionMaterials = new();
     private TrainerOccurrenceSearchResponsePayload _trainerOccurrences = new();
     private WildOccurrenceSearchResponsePayload _wildOccurrences = new();
@@ -19,6 +22,7 @@ public partial class PokemonLookupSupplementalData : IDisposable
     private bool _loadingWildOccurrences;
     private bool _loadFusionMaterialsAfterRender;
     private CancellationTokenSource? _fusionMaterialCancellation;
+    private CancellationTokenSource? _occurrenceCancellation;
     private string? _fusionMaterialError;
     private string? _trainerOccurrenceError;
     private string? _wildOccurrenceError;
@@ -28,6 +32,41 @@ public partial class PokemonLookupSupplementalData : IDisposable
     /// </summary>
     [Inject]
     private TrackerRequestClient Connection { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the live encounter-option notifications used by diagnostic locations.
+    /// </summary>
+    [Inject]
+    private TrackerConnectionState ConnectionState { get; set; } = null!;
+
+    /// <summary>
+    /// Subscribes to encounter-option changes while this overview remains open.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        ConnectionState.Changed += HandleConnectionChanged;
+    }
+
+    /// <summary>
+    /// Reloads diagnostic locations when the active encounter option changes.
+    /// </summary>
+    /// <param name="sender">The connection state publishing the change.</param>
+    /// <param name="args">The change notification.</param>
+    private void HandleConnectionChanged(object? sender, EventArgs args)
+    {
+        if (_disposed || !DebugMode || ConnectionState.Snapshot.CurrentState?.OverworldEncounters == _observedOverworldMode)
+            return;
+
+        _ = InvokeAsync(async () =>
+        {
+            if (_disposed)
+                return;
+
+            await OnParametersSetAsync();
+            if (!_disposed)
+                StateHasChanged();
+        });
+    }
 
     /// <summary>
     /// Gets the required overview section.
@@ -82,13 +121,17 @@ public partial class PokemonLookupSupplementalData : IDisposable
     /// </summary>
     protected override async Task OnParametersSetAsync()
     {
-        string key = $"{Pokemon.Identity.SpeciesId}|{Pokemon.Overview?.GetHashCode()}|{DebugMode}|{DebugTarget}|{DebugEnemyPosition}";
+        _observedOverworldMode = DebugMode ? ConnectionState.Snapshot.CurrentState?.OverworldEncounters : null;
+        string key = $"{Pokemon.Identity.SpeciesId}|{Pokemon.Overview?.GetHashCode()}|{DebugMode}|{DebugTarget}|{DebugEnemyPosition}|{_observedOverworldMode}";
         if (_observedPokemonKey == key)
             return;
 
         _fusionMaterialCancellation?.Cancel();
         _fusionMaterialCancellation?.Dispose();
         _fusionMaterialCancellation = null;
+        _occurrenceCancellation?.Cancel();
+        _occurrenceCancellation?.Dispose();
+        _occurrenceCancellation = new CancellationTokenSource();
         _observedPokemonKey = key;
         _fusionMaterials = new FusionMaterialSearchResponsePayload();
         _trainerOccurrences = DebugMode ? new TrainerOccurrenceSearchResponsePayload() : Overview.TrainerOccurrences;
@@ -100,20 +143,19 @@ public partial class PokemonLookupSupplementalData : IDisposable
         _trainerOccurrenceError = null;
         _wildOccurrenceError = null;
         _loadingFusionMaterials = false;
+        _loadingWildOccurrences = false;
+        _loadingTrainerOccurrences = false;
         _loadFusionMaterialsAfterRender = Pokemon.Identity.Fusion
             && (!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.FusionMaterialPairs));
 
         if (_loadFusionMaterialsAfterRender)
             _fusionMaterialCancellation = new CancellationTokenSource();
 
-        if (!DebugMode)
-            return;
-
         List<Task> loads = [];
-        if (Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldWildEncounters))
+        if (DebugMode ? Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldWildEncounters) : Overview.WildOccurrences.Pending)
             loads.Add(LoadWildOccurrencePageAsync(0));
 
-        if (Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldTrainerParties))
+        if (DebugMode && Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldTrainerParties))
             loads.Add(LoadTrainerOccurrencePageAsync(0));
 
         await Task.WhenAll(loads);
@@ -144,24 +186,31 @@ public partial class PokemonLookupSupplementalData : IDisposable
         if (_loadingWildOccurrences)
             return;
 
+        CancellationToken cancellationToken = _occurrenceCancellation?.Token ?? CancellationToken.None;
         _loadingWildOccurrences = true;
         _wildOccurrenceError = null;
         try
         {
             int offset = checked(pageIndex * _wildOccurrencePagination.PageSize);
             WildOccurrenceSearchResponsePayload response = DebugMode
-                ? await Connection.SearchDebugWildOccurrencesAsync(Pokemon.Identity.SpeciesId, offset, DebugTarget, DebugEnemyPosition)
-                : await Connection.SearchWildOccurrencesAsync(Recipe ?? throw new InvalidOperationException(Text["Lookup.Fusion.CompletedRunRecipeRequired"]), Pokemon.Identity.SpeciesId, offset);
+                ? await Connection.SearchDebugWildOccurrencesAsync(Pokemon.Identity.SpeciesId, offset, DebugTarget, DebugEnemyPosition, cancellationToken)
+                : await Connection.SearchWildOccurrencesAsync(Recipe ?? throw new InvalidOperationException(Text["Lookup.Fusion.CompletedRunRecipeRequired"]), Pokemon.Identity.SpeciesId, offset, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             _wildOccurrences = response;
             _wildOccurrencePagination.Select(pageIndex);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
         catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
         {
-            _wildOccurrenceError = exception.Message;
+            if (!cancellationToken.IsCancellationRequested)
+                _wildOccurrenceError = exception.Message;
         }
         finally
         {
-            _loadingWildOccurrences = false;
+            if (!cancellationToken.IsCancellationRequested)
+                _loadingWildOccurrences = false;
         }
     }
 
@@ -176,24 +225,31 @@ public partial class PokemonLookupSupplementalData : IDisposable
         if (_loadingTrainerOccurrences)
             return;
 
+        CancellationToken cancellationToken = _occurrenceCancellation?.Token ?? CancellationToken.None;
         _loadingTrainerOccurrences = true;
         _trainerOccurrenceError = null;
         try
         {
             int offset = checked(pageIndex * _trainerOccurrencePagination.PageSize);
             TrainerOccurrenceSearchResponsePayload response = DebugMode
-                ? await Connection.SearchDebugTrainerOccurrencesAsync(Pokemon.Identity.SpeciesId, offset, DebugTarget, DebugEnemyPosition)
-                : await Connection.SearchTrainerOccurrencesAsync(Recipe ?? throw new InvalidOperationException(Text["Lookup.Fusion.CompletedRunRecipeRequired"]), Pokemon.Identity.SpeciesId, offset);
+                ? await Connection.SearchDebugTrainerOccurrencesAsync(Pokemon.Identity.SpeciesId, offset, DebugTarget, DebugEnemyPosition, cancellationToken)
+                : await Connection.SearchTrainerOccurrencesAsync(Recipe ?? throw new InvalidOperationException(Text["Lookup.Fusion.CompletedRunRecipeRequired"]), Pokemon.Identity.SpeciesId, offset, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             _trainerOccurrences = response;
             _trainerOccurrencePagination.Select(pageIndex);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
         catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
         {
-            _trainerOccurrenceError = exception.Message;
+            if (!cancellationToken.IsCancellationRequested)
+                _trainerOccurrenceError = exception.Message;
         }
         finally
         {
-            _loadingTrainerOccurrences = false;
+            if (!cancellationToken.IsCancellationRequested)
+                _loadingTrainerOccurrences = false;
         }
     }
 
@@ -330,6 +386,32 @@ public partial class PokemonLookupSupplementalData : IDisposable
         => occurrence.SecondarySlot is null ? Text["Lookup.Card.SlotNumber", occurrence.Slot] : Text["Lookup.Card.CombinedSlots", occurrence.Slot, occurrence.SecondarySlot];
 
     /// <summary>
+    /// Formats both material tables when an encounter crosses environment, time, or weather tables.
+    /// </summary>
+    /// <param name="occurrence">The represented wild occurrence.</param>
+    /// <returns>The source table or ordered table pair without internal version identifiers.</returns>
+    private static string FormatWildTables(WildPokemonOccurrenceSnapshot occurrence)
+    {
+        return occurrence.CrossEnvironment
+            ? $"{occurrence.EncounterType} + {occurrence.SecondaryEncounterType}"
+            : occurrence.EncounterType;
+    }
+
+    /// <summary>
+    /// Formats the encounter mechanic and its fusion roll without implying a material-pair probability.
+    /// </summary>
+    /// <param name="occurrence">The derived wild occurrence.</param>
+    /// <returns>The localized mechanic and fusion-roll percentage.</returns>
+    private string FormatWildFusionOrigin(WildPokemonOccurrenceSnapshot occurrence)
+    {
+        string mechanic = occurrence.Origin?.StartsWith(_overworldOriginPrefix, StringComparison.Ordinal) == true
+            ? Text["Lookup.Areas.FusionOrigin.Overworld"]
+            : Text["Lookup.Areas.FusionOrigin.Standard"];
+
+        return Text["Lookup.Areas.FusionChance", mechanic, occurrence.FusionChancePercent.GetValueOrDefault()];
+    }
+
+    /// <summary>
     /// Formats one authored wild-encounter level or level range.
     /// </summary>
     /// <param name="minimumLevel">The minimum encounter level.</param>
@@ -343,7 +425,11 @@ public partial class PokemonLookupSupplementalData : IDisposable
     /// </summary>
     public void Dispose()
     {
+        _disposed = true;
+        ConnectionState.Changed -= HandleConnectionChanged;
         _fusionMaterialCancellation?.Cancel();
         _fusionMaterialCancellation?.Dispose();
+        _occurrenceCancellation?.Cancel();
+        _occurrenceCancellation?.Dispose();
     }
 }

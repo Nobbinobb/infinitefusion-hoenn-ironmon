@@ -19,8 +19,11 @@ module Ironmon
     return nil if !AREA_DISCOVERY_CATEGORIES.include?(category) ||
                   entry_id.empty?
     if category == "encounter"
-      components = entry_id.split(":", 4)
-      area_id = components.length == 4 ?
+      components = entry_id.split(":")
+      valid_prefix = ["encounter", "encounter_fusion"].include?(
+        components[0]
+      )
+      area_id = valid_prefix && components.length >= 4 ?
         tracker_area_id_for_map(components[1]) : nil
       return area_id ? [area_id, entry_id] : nil
     end

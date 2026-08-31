@@ -100,14 +100,26 @@ module Ironmon
         "invalid_page", "Occurrence pages must contain between 1 and 50 entries."
       )
     end
-    cache_key = "#{recipe["run_id"]}|#{species.id}|#{kind}_occurrences"
+    membership_species = payload["fusion_membership_species_id"]
+    if kind == :wild && membership_species && membership_species != species_id
+      raise TrackerLookupError.new(
+        "fusion_material_target_mismatch",
+        "The tracker material membership does not match the represented Pokemon."
+      )
+    end
+    cache_key = tracker_occurrence_cache_key(recipe, species, kind)
     occurrences = tracker_lookup_cache[cache_key]
     if !occurrences
       occurrences = if kind == :wild
-                      tracker_lookup_wild_occurrences(species, recipe)
+                      tracker_wild_occurrence_work(
+                        cache_key, species, recipe,
+                        payload["fusion_material_membership"]
+                      ).results
                     else
                       tracker_lookup_trainer_occurrences(species, recipe)
                     end
+      return { "matches" => [], "total" => 0, "pending" => true } if
+        occurrences.nil?
       tracker_store_bounded(tracker_lookup_cache, cache_key, occurrences, 256)
     end
     return {
@@ -289,10 +301,7 @@ module Ironmon
       result["overview"] = {
         "wild_occurrences" => visibility && !visibility[:wild] ?
           { "matches" => [], "total" => 0 } :
-          tracker_occurrence_search_for_recipe(
-            { "species_id" => species_id, "offset" => 0, "limit" => 50 },
-            recipe, :wild
-          ),
+          { "matches" => [], "total" => 0, "pending" => true },
         "trainer_occurrences" => visibility && !visibility[:trainer] ?
           { "matches" => [], "total" => 0 } :
           tracker_occurrence_search_for_recipe(

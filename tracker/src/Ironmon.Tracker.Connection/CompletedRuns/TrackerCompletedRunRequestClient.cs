@@ -8,6 +8,7 @@ namespace Ironmon.Tracker.Connection.CompletedRuns;
 /// </summary>
 internal sealed class TrackerCompletedRunRequestClient
 {
+    private static readonly TimeSpan _occurrencePollInterval = TimeSpan.FromMilliseconds(50);
     private readonly TrackerResponseCache _cache;
     private readonly PlayerFusionMappingCoordinator _fusionMappings;
     private readonly TrackerRequestSession _session;
@@ -247,8 +248,17 @@ internal sealed class TrackerCompletedRunRequestClient
         if (_cache.TryGet(TrackerCommands.WildOccurrenceSearch, cacheKey, out WildOccurrenceSearchResponsePayload cached))
             return cached;
 
-        WildOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset, Recipe = recipe };
-        WildOccurrenceSearchResponsePayload response = await _session.SendAsync<WildOccurrenceSearchRequestPayload, WildOccurrenceSearchResponsePayload>(TrackerCommands.WildOccurrenceSearch, request, recipe.RunId, cancellationToken);
+        byte[]? membership = await _fusionMappings.GetOccurrenceFusionMaterialsAsync(recipe.RunId, recipe, speciesId, cancellationToken);
+        WildOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset, Recipe = recipe, FusionMaterialMembership = membership };
+        WildOccurrenceSearchResponsePayload response;
+        do
+        {
+            response = await _session.SendAsync<WildOccurrenceSearchRequestPayload, WildOccurrenceSearchResponsePayload>(TrackerCommands.WildOccurrenceSearch, request, recipe.RunId, cancellationToken);
+            if (response.Pending)
+                await Task.Delay(_occurrencePollInterval, cancellationToken);
+
+        } while (response.Pending);
+
         _cache.Set(TrackerCommands.WildOccurrenceSearch, cacheKey, response);
         return response;
     }

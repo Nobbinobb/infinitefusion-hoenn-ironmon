@@ -1350,7 +1350,7 @@
   <data name="Lookup.Areas.Level" xml:space="preserve"><value>Lv. {0}</value></data>
   <data name="Lookup.Areas.LevelRange" xml:space="preserve"><value>Lv. {0}–{1}</value></data>
   <data name="Lookup.Areas.Probability" xml:space="preserve"><value>{0:0.##}%</value></data>
-  <data name="Lookup.Areas.IndependentFusion" xml:space="preserve"><value>independent fusion slot</value></data>
+  <data name="Lookup.Areas.IndependentFusion" xml:space="preserve"><value>fusion slot</value></data>
   <data name="Lookup.Areas.Coordinates" xml:space="preserve"><value>Position {0}, {1}</value></data>
   <data name="Lookup.Areas.HiddenItem" xml:space="preserve"><value>Hidden item · marked in game</value></data>
   <data name="Lookup.Areas.GroundItem" xml:space="preserve"><value>Ground item</value></data>
@@ -1362,6 +1362,12 @@
   <data name="Lookup.Runs.CurrentRun" xml:space="preserve"><value>Current run</value></data>
   <data name="Lookup.Live.Kicker" xml:space="preserve"><value>ACTIVE RUN</value></data>
   <data name="Lookup.Live.Title" xml:space="preserve"><value>World lookup</value></data>
+  <data name="Lookup.Live.PrepareDescription" xml:space="preserve"><value>Calculate this run's lookup data to open the world lookup, or keep playing and let it prepare automatically.</value></data>
+  <data name="Lookup.Live.PrepareBackground" xml:space="preserve"><value>Lookup data is preparing in the background. You can prioritize the calculation now.</value></data>
+  <data name="Lookup.Live.PrepareCalculating" xml:space="preserve"><value>Preparing lookup data. The lookup tabs will appear automatically when everything is ready.</value></data>
+  <data name="Lookup.Live.PrepareButton" xml:space="preserve"><value>Calculate lookup data</value></data>
+  <data name="Lookup.Live.PrepareBusyButton" xml:space="preserve"><value>Calculating…</value></data>
+  <data name="Lookup.Live.PrepareRetry" xml:space="preserve"><value>Retry calculation</value></data>
   <data name="Lookup.Live.Sections" xml:space="preserve"><value>Active run lookup sections</value></data>
   <data name="Lookup.Live.NoActiveRun" xml:space="preserve"><value>No active run</value></data>
   <data name="Lookup.Live.NoActiveRunDescription" xml:space="preserve"><value>Start or load an Ironmon run to inspect its world progress.</value></data>
@@ -1592,4 +1598,17 @@
   <data name="Lookup.Obtainability.Phase.Preparing" xml:space="preserve"><value>preparing run sources</value></data>
   <data name="Lookup.Obtainability.Phase.AuthoredSources" xml:space="preserve"><value>finalizing acquisition sources</value></data>
   <data name="Lookup.Obtainability.Phase.Complete" xml:space="preserve"><value>complete</value></data>
+  <data name="Lookup.Areas.Environment.Grass" xml:space="preserve"><value>Grass</value></data>
+  <data name="Lookup.Areas.Environment.Cave" xml:space="preserve"><value>Cave</value></data>
+  <data name="Lookup.Areas.Environment.Water" xml:space="preserve"><value>Water</value></data>
+  <data name="Lookup.Areas.Environment.Fishing" xml:space="preserve"><value>Fishing</value></data>
+  <data name="Lookup.Areas.Environment.Special" xml:space="preserve"><value>Special</value></data>
+  <data name="Lookup.Areas.Environment.Cross" xml:space="preserve"><value>Cross-environment fusions</value></data>
+  <data name="Lookup.Areas.Fusions" xml:space="preserve"><value>Fusions</value></data>
+  <data name="Lookup.Areas.DerivedFusion" xml:space="preserve"><value>Possible fusion</value></data>
+  <data name="Lookup.Areas.EncounteredDerivedFusion" xml:space="preserve"><value>Encountered fusion</value></data>
+  <data name="Lookup.Areas.FusionSources" xml:space="preserve"><value>{0} slot {1} + {2} slot {3}</value></data>
+  <data name="Lookup.Areas.FusionOrigin.Standard" xml:space="preserve"><value>standard encounter</value></data>
+  <data name="Lookup.Areas.FusionOrigin.Overworld" xml:space="preserve"><value>overworld pair</value></data>
+  <data name="Lookup.Areas.FusionChance" xml:space="preserve"><value>{0} · {1}% fusion roll</value></data>
 </root>

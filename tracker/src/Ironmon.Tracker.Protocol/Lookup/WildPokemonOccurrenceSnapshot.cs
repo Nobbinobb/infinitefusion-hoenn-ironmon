@@ -1,10 +1,40 @@
 namespace Ironmon.Tracker.Protocol.Lookup;
 
 /// <summary>
-/// Describes one authored wild-encounter slot which generates a lookup species.
+/// Describes one authored slot or derived wild fusion which generates a lookup species.
 /// </summary>
 public sealed class WildPokemonOccurrenceSnapshot
 {
+    /// <summary>
+    /// Gets or initializes the stable entry identifier shared with area lookup.
+    /// </summary>
+    public string? EntryId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the standard or overworld fusion origin, absent for authored slots.
+    /// </summary>
+    public string? Origin { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the second material's encounter table.
+    /// </summary>
+    public string? SecondaryEncounterType { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the second material's encounter-data version.
+    /// </summary>
+    public int? SecondaryEncounterVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the fusion roll, not the probability of selecting this specific material pair.
+    /// </summary>
+    public decimal? FusionChancePercent { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether the fusion crosses environment, time, or weather tables.
+    /// </summary>
+    public bool CrossEnvironment { get; init; }
+
     /// <summary>
     /// Initializes an empty wild occurrence for protocol serialization.
     /// </summary>

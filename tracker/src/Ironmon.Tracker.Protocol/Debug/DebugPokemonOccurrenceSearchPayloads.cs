@@ -6,6 +6,11 @@ namespace Ironmon.Tracker.Protocol.Debug;
 public sealed class DebugWildOccurrenceSearchRequestPayload
 {
     /// <summary>
+    /// Gets or initializes ordered normal-material membership bound to the submitted species identifier.
+    /// </summary>
+    public byte[]? FusionMaterialMembership { get; init; }
+
+    /// <summary>
     /// Initializes an empty active-run wild-occurrence request for protocol serialization.
     /// </summary>
     public DebugWildOccurrenceSearchRequestPayload()

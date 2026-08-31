@@ -163,6 +163,9 @@ module Ironmon
     if result["material_assignments"].is_a?(Array)
       result["material_assignment_species_id"] = requested_species_id
     end
+    if !result["fusion_material_membership"].nil?
+      result["fusion_membership_species_id"] = requested_species_id
+    end
     return result
   end
 

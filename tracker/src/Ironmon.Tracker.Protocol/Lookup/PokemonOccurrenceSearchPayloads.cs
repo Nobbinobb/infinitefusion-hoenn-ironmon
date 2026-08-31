@@ -31,6 +31,11 @@ public sealed class WildOccurrenceSearchRequestPayload
     /// Gets or initializes the completed-run reconstruction recipe.
     /// </summary>
     public required CompletedRunRecipePayload Recipe { get; init; }
+
+    /// <summary>
+    /// Gets or initializes ordered normal-material membership for this fusion, packed least-significant-bit first by Body then Head.
+    /// </summary>
+    public byte[]? FusionMaterialMembership { get; init; }
 }
 
 /// <summary>
@@ -38,6 +43,11 @@ public sealed class WildOccurrenceSearchRequestPayload
 /// </summary>
 public sealed class WildOccurrenceSearchResponsePayload
 {
+    /// <summary>
+    /// Gets or initializes whether location preparation is still running and this page must be requested again.
+    /// </summary>
+    public bool Pending { get; init; }
+
     /// <summary>
     /// Initializes an empty wild-occurrence response for protocol serialization.
     /// </summary>

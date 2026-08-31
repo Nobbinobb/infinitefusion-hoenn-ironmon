@@ -51,6 +51,11 @@ public static class TrackerCommands
     public const string AreaLookupDetail = "area_lookup_detail";
 
     /// <summary>
+    /// Gets the permission-free active-run calculation command, without diagnostic result queries.
+    /// </summary>
+    public const string PrepareRunLookup = "prepare_run_lookup";
+
+    /// <summary>
     /// Gets the completed-run Pokemon search command.
     /// </summary>
     public const string PokemonSearch = "pokemon_search";

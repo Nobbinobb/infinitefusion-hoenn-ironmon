@@ -21,6 +21,8 @@ module Ironmon
   def self.tracker_current_state
     payload = {
       "ironmon_active" => active?,
+      "overworld_encounters" => !!($PokemonSystem &&
+        $PokemonSystem.overworld_encounters),
       "run_id" => ensure_tracker_run_id,
       "battle_id" => tracker_battle_id,
       "sequence" => $PokemonGlobal ? ($PokemonGlobal.ironmon_tracker_sequence || 0) : 0,

@@ -13,6 +13,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     private const string _preparationTestGameVersion = "6.8.0";
     private const string _preparationTestIronmonVersion = "0.8.2";
     private const string _preparationTestTrackerVersion = "0.1.0";
+    private const string _fusionPreparationFailureCode = "fusion_lookup_failed";
     private readonly List<string> _roots = [];
 
     /// <summary>
@@ -72,7 +73,6 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     public void ActiveRunPrecalculationRequiresAReadyIncompleteUnclaimedRun(bool preparationReady, bool runCompleted, bool archiveSelected, bool expected)
     {
         bool eligible = TrackerConnectionService.IsActiveRunObtainabilityPrecalculationEligible(
-            authorized: true,
             ironmonActive: true,
             preparationReady: preparationReady,
             runCompleted: runCompleted,
@@ -86,11 +86,13 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     /// <summary>
     /// Verifies connecting to a ready active run starts background preparation without opening Lookup.
     /// </summary>
-    [Fact]
-    public async Task ReadyActiveRunStartsObtainabilityPrecalculationOnConnect()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReadyActiveRunStartsObtainabilityPrecalculationOnConnect(bool diagnosticAccess)
     {
         TrackerConnectionState state = new();
-        TrackerConnectionOptions options = new(0, _preparationTestTrackerVersion, true, TimeSpan.FromSeconds(2));
+        TrackerConnectionOptions options = new(0, _preparationTestTrackerVersion, diagnosticAccess, TimeSpan.FromSeconds(2));
         await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, new TrackerRunState(), CreateKnowledgeStore(), CreateAreaDiscoveryStore(), CreateCompletedRunArchive());
         service.Start();
 
@@ -99,7 +101,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         NetworkStream stream = client.GetStream();
         using TrackerMessageReader reader = new(stream, leaveOpen: true);
         await using TrackerMessageWriter writer = new(stream, leaveOpen: true);
-        GameHandshakePayload game = new(_preparationTestGameVersion, _preparationTestIronmonVersion, true, true, TrackerTestPaths.GameRoot, _activeRunId, null);
+        GameHandshakePayload game = new(_preparationTestGameVersion, _preparationTestIronmonVersion, true, diagnosticAccess, TrackerTestPaths.GameRoot, _activeRunId, null);
         await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.GameConnected, 0, game, _activeRunId));
 
         _ = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
@@ -108,19 +110,20 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(currentStateRequest.RequestId!, currentState, _activeRunId));
 
         TrackerMessage preparationRequest = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(4)));
-        Assert.Equal(TrackerCommands.DebugPokemonObtainability, preparationRequest.Command);
+        Assert.Equal(TrackerCommands.PrepareRunLookup, preparationRequest.Command);
+        Assert.False(TrackerJson.DeserializePayload<RunLookupPreparationRequestPayload>(preparationRequest.Payload).Foreground);
         PokemonObtainabilityResponsePayload completed = new() { BackgroundComplete = true };
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(preparationRequest.RequestId!, completed, _activeRunId));
     }
 
     /// <summary>
-    /// Verifies connecting to an active run before its preparation boundary starts no background request or progress indicator.
+    /// Verifies an unready run stays idle until the user requests permission-free foreground preparation.
     /// </summary>
     [Fact]
     public async Task UnreadyActiveRunRemainsIdleOnConnect()
     {
         TrackerConnectionState state = new();
-        TrackerConnectionOptions options = new(0, _preparationTestTrackerVersion, true, TimeSpan.FromSeconds(2));
+        TrackerConnectionOptions options = new(0, _preparationTestTrackerVersion, false, TimeSpan.FromSeconds(2));
         await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, new TrackerRunState(), CreateKnowledgeStore(), CreateAreaDiscoveryStore(), CreateCompletedRunArchive());
         service.Start();
 
@@ -141,6 +144,17 @@ public sealed class TrackerConnectionServiceTests : IDisposable
 
         Assert.False(state.Snapshot.CurrentState?.ActiveRunPreparationReady);
         Assert.Same(TrackerObtainabilityProgressSnapshot.Idle, service.Requests.ObtainabilityProgress.Snapshot);
+
+        Task<PokemonObtainabilityResponsePayload> preparation = service.Requests.AdvanceActiveRunPreparationAsync(foreground: true);
+        TrackerMessage preparationRequest = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2)));
+        Assert.Equal(TrackerCommands.PrepareRunLookup, preparationRequest.Command);
+        Assert.Equal(_activeRunId, preparationRequest.RunId);
+        Assert.True(TrackerJson.DeserializePayload<RunLookupPreparationRequestPayload>(preparationRequest.Payload).Foreground);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(preparationRequest.RequestId!, new PokemonObtainabilityResponsePayload { BackgroundComplete = true }, _activeRunId));
+        await preparation;
+
+        Assert.Equal(TrackerObtainabilityProgressStatus.Complete, service.Requests.ObtainabilityProgress.GetActiveRunSnapshot(_activeRunId).Status);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.Requests.AdvanceDebugPokemonObtainabilityAsync());
     }
 
     /// <summary>
@@ -290,10 +304,11 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         Assert.Equal("Ben", Assert.Single(receivedAreaDetail.Trainers).TrainerName);
         Assert.Same(receivedAreaDetail, await service.Requests.GetAreaDetailsAsync("area:4", AreaContentCategory.Trainer));
 
-        Task<AreaLookupDetailResponsePayload> encounterPageTask = service.Requests.GetAreaDetailsAsync("area:4", AreaContentCategory.Encounter, cancellationToken: default, offset: 10);
+        Task<AreaLookupDetailResponsePayload> encounterPageTask = service.Requests.GetAreaDetailsAsync("area:4", AreaContentCategory.Encounter, cancellationToken: default, encounterEnvironment: "grass", offset: 10);
         TrackerMessage? encounterPageRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
         AreaLookupDetailRequestPayload encounterPagePayload = TrackerJson.DeserializePayload<AreaLookupDetailRequestPayload>(encounterPageRequest!.Payload);
         Assert.Equal(AreaContentCategory.Encounter, encounterPagePayload.Category);
+        Assert.Equal("grass", encounterPagePayload.EncounterEnvironment);
         Assert.Equal(10, encounterPagePayload.Offset);
         Assert.Equal(TrackerProtocol.AreaLookupPageSize, encounterPagePayload.Limit);
         AreaLookupDetailResponsePayload encounterPageResponse = new()
@@ -304,6 +319,8 @@ public sealed class TrackerConnectionServiceTests : IDisposable
             Offset = 10,
             Limit = TrackerProtocol.AreaLookupPageSize,
             TotalCount = 24,
+            EncounterEnvironment = "grass",
+            EncounterEnvironments = [new AreaEncounterEnvironmentPayload { Key = "grass" }],
             Encounters =
             [
                 new AreaEncounterEntryPayload
@@ -316,11 +333,46 @@ public sealed class TrackerConnectionServiceTests : IDisposable
             ]
         };
 
-        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(encounterPageRequest.RequestId!, encounterPageResponse, "run-1"));
+        AreaLookupDetailResponsePayload pendingEncounterPage = new()
+        {
+            AreaId = encounterPageResponse.AreaId,
+            Name = encounterPageResponse.Name,
+            Category = encounterPageResponse.Category,
+            EncounterEnvironment = encounterPageResponse.EncounterEnvironment,
+            Offset = encounterPageResponse.Offset,
+            Limit = encounterPageResponse.Limit,
+            TotalCount = encounterPageResponse.TotalCount,
+            Pending = true
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(encounterPageRequest.RequestId!, pendingEncounterPage, encounterPageRequest.RunId));
+        TrackerMessage? encounterPoll = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.False(encounterPageTask.IsCompleted);
+        Assert.Equal(encounterPageRequest.Payload.GetRawText(), encounterPoll!.Payload.GetRawText());
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(encounterPoll.RequestId!, encounterPageResponse, encounterPoll.RunId));
         AreaLookupDetailResponsePayload receivedEncounterPage = await encounterPageTask;
         Assert.Equal(10, receivedEncounterPage.Offset);
         Assert.Equal(24, receivedEncounterPage.TotalCount);
-        Assert.Same(receivedEncounterPage, await service.Requests.GetAreaDetailsAsync("area:4", AreaContentCategory.Encounter, cancellationToken: default, offset: 10));
+        Assert.Equal("grass", receivedEncounterPage.EncounterEnvironment);
+        Assert.Same(receivedEncounterPage, await service.Requests.GetAreaDetailsAsync("area:4", AreaContentCategory.Encounter, cancellationToken: default, encounterEnvironment: "grass", offset: 10));
+
+        using CancellationTokenSource encounterCancellation = new();
+        Task<AreaLookupDetailResponsePayload> canceledEncounterTask = service.Requests.GetAreaDetailsAsync(encounterPageResponse.AreaId, AreaContentCategory.Encounter, cancellationToken: encounterCancellation.Token, encounterEnvironment: encounterPageResponse.EncounterEnvironment, offset: 20);
+        TrackerMessage? canceledEncounterRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(canceledEncounterRequest!.RequestId!, pendingEncounterPage, canceledEncounterRequest.RunId));
+        TrackerMessage? canceledEncounterPoll = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        encounterCancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceledEncounterTask);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(canceledEncounterPoll!.RequestId!, pendingEncounterPage, canceledEncounterPoll.RunId));
+
+        Task<AreaLookupDetailResponsePayload> failedEncounterTask = service.Requests.GetAreaDetailsAsync(encounterPageResponse.AreaId, AreaContentCategory.Encounter, encounterEnvironment: encounterPageResponse.EncounterEnvironment, offset: 20);
+        TrackerMessage? failedEncounterRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(failedEncounterRequest!.RequestId!, pendingEncounterPage, failedEncounterRequest.RunId));
+        TrackerMessage? failedEncounterPoll = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        TrackerProtocolError fusionPreparationError = new(_fusionPreparationFailureCode, "Unable to prepare encounter fusions.");
+        await writer.WriteAsync(TrackerMessageFactory.CreateErrorResponse(failedEncounterPoll!.RequestId!, fusionPreparationError));
+        TrackerProtocolException fusionPreparationException = await Assert.ThrowsAsync<TrackerProtocolException>(() => failedEncounterTask);
+        Assert.Equal(_fusionPreparationFailureCode, fusionPreparationException.ErrorCode);
 
         AreaDiscoveryPackagePayload discovery = new()
         {
@@ -769,8 +821,13 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         WildOccurrenceSearchRequestPayload wildOccurrencePayload = TrackerJson.DeserializePayload<WildOccurrenceSearchRequestPayload>(wildOccurrenceRequest!.Payload);
         Assert.Equal(50, wildOccurrencePayload.Offset);
         Assert.Equal(TrackerProtocol.OccurrencePageSize, wildOccurrencePayload.Limit);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(wildOccurrenceRequest.RequestId!, new WildOccurrenceSearchResponsePayload { Pending = true }, "run-1"));
+        wildOccurrenceRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.NotNull(wildOccurrenceRequest);
+        Assert.Equal("wild_occurrence_search", wildOccurrenceRequest?.Command);
+        Assert.False(wildOccurrenceTask.IsCompleted);
         WildOccurrenceSearchResponsePayload wildOccurrenceResponse = new() { Matches = lookupResponse.Overview!.WildOccurrences.Matches, Total = 12_000 };
-        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(wildOccurrenceRequest.RequestId!, wildOccurrenceResponse, "run-1"));
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(wildOccurrenceRequest!.RequestId!, wildOccurrenceResponse, "run-1"));
         Assert.Equal(12_000, (await wildOccurrenceTask).Total);
 
         Task<TrainerOccurrenceSearchResponsePayload> trainerOccurrenceTask = service.Requests.SearchTrainerOccurrencesAsync(recipe, "B310H310:0", 100);
@@ -892,7 +949,13 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         Assert.Equal("debug_wild_occurrence_search", debugWildOccurrenceRequest?.Command);
         DebugWildOccurrenceSearchRequestPayload debugWildOccurrencePayload = TrackerJson.DeserializePayload<DebugWildOccurrenceSearchRequestPayload>(debugWildOccurrenceRequest!.Payload);
         Assert.Equal(150, debugWildOccurrencePayload.Offset);
-        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugWildOccurrenceRequest.RequestId!, wildOccurrenceResponse, "run-1"));
+        Assert.NotNull(debugWildOccurrencePayload.FusionMaterialMembership);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugWildOccurrenceRequest.RequestId!, new WildOccurrenceSearchResponsePayload { Pending = true }, "run-1"));
+        debugWildOccurrenceRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.NotNull(debugWildOccurrenceRequest);
+        Assert.Equal("debug_wild_occurrence_search", debugWildOccurrenceRequest?.Command);
+        Assert.False(debugWildOccurrenceTask.IsCompleted);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugWildOccurrenceRequest!.RequestId!, wildOccurrenceResponse, "run-1"));
         Assert.Equal(12_000, (await debugWildOccurrenceTask).Total);
 
         Task<TrainerOccurrenceSearchResponsePayload> debugTrainerOccurrenceTask = service.Requests.SearchDebugTrainerOccurrencesAsync("B310H310:0", 200);

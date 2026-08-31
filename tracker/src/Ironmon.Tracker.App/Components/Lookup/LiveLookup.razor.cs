@@ -19,6 +19,12 @@ public partial class LiveLookup : IDisposable
     private TrackerConnectionState ConnectionState { get; set; } = null!;
 
     /// <summary>
+    /// Gets or initializes the shared request and preparation service.
+    /// </summary>
+    [Inject]
+    private TrackerRequestClient Connection { get; set; } = null!;
+
+    /// <summary>
     /// Gets or initializes the shared live run state.
     /// </summary>
     [Inject]
@@ -40,6 +46,7 @@ public partial class LiveLookup : IDisposable
         UpdateCoverageSelection();
         ConnectionState.Changed += HandleConnectionChanged;
         RunState.Changed += HandleRunChanged;
+        Connection.ObtainabilityProgress.Changed += HandlePreparationChanged;
     }
 
     /// <summary>
@@ -50,6 +57,7 @@ public partial class LiveLookup : IDisposable
     {
         return _connection.Status == TrackerConnectionStatus.Connected
             && _connection.CurrentState?.IronmonActive == true
+            && _connection.CurrentState.CompletedRun is null
             && GetActiveRunId() is not null;
     }
 
@@ -59,6 +67,23 @@ public partial class LiveLookup : IDisposable
     /// <returns>The active run identifier, or null.</returns>
     private string? GetActiveRunId()
         => _connection.CurrentState?.RunId ?? _connection.Game?.RunId;
+
+    /// <summary>
+    /// Gets preparation for this active run, independent of archive selection.
+    /// </summary>
+    /// <returns>The run-specific preparation snapshot.</returns>
+    private TrackerObtainabilityProgressSnapshot GetPreparationProgress()
+        => Connection.ObtainabilityProgress.GetActiveRunSnapshot(GetActiveRunId());
+
+    /// <summary>
+    /// Reveals lookup tabs when automatic or explicit preparation finishes.
+    /// </summary>
+    /// <param name="sender">The shared preparation state.</param>
+    /// <param name="args">The change event arguments.</param>
+    private void HandlePreparationChanged(object? sender, EventArgs args)
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
 
     /// <summary>
     /// Selects one active-run Lookup section.
@@ -143,6 +168,7 @@ public partial class LiveLookup : IDisposable
     {
         ConnectionState.Changed -= HandleConnectionChanged;
         RunState.Changed -= HandleRunChanged;
+        Connection.ObtainabilityProgress.Changed -= HandlePreparationChanged;
         GC.SuppressFinalize(this);
     }
 }

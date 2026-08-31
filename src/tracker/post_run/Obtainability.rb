@@ -548,6 +548,7 @@ module Ironmon
     def advance_work_unit
       case @phase
       when :prepare_generators
+        Ironmon.sprite_credit_catalog(proc { cooperative_checkpoint })
         prepare_generators
       when :prepare_encounters
         prepare_encounter_tables
@@ -1714,6 +1715,34 @@ module Ironmon
     service = TrackerObtainabilityService.new(recipe, true)
     tracker_store_bounded(tracker_obtainability_services, key, service, 4)
     return service
+  end
+
+  # Calculation access is public; target proofs and world discovery stay on
+  # their existing authorized routes. Never forward arbitrary query fields.
+  def self.tracker_run_lookup_preparation(payload, envelope_run_id)
+    attempt = current_run_attempt
+    if !active? || !$PokemonGlobal || !attempt || attempt["result"] != "active"
+      raise TrackerLookupError.new(
+        "run_unavailable", "No active Ironmon run is available for preparation."
+      )
+    end
+    if envelope_run_id.to_s.empty? || envelope_run_id != attempt["run_id"]
+      raise TrackerLookupError.new(
+        "run_mismatch", "The request and active run identify different runs."
+      )
+    end
+    payload ||= {}
+    request = {}
+    ["foreground", "fusion_closure_result", "fusion_closure_worker_unavailable"].each do |key|
+      request[key] = payload[key] if payload.key?(key)
+    end
+    snapshot = tracker_obtainability_for_recipe(request, tracker_debug_active_recipe)
+    response = {}
+    ["phase", "complete", "background_complete", "processed_pairs",
+     "total_pairs", "obtainable_count", "fusion_closure_work"].each do |key|
+      response[key] = snapshot[key] if snapshot.key?(key)
+    end
+    return response
   end
 
   def self.tracker_obtainability(payload, envelope_run_id)

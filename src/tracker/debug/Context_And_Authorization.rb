@@ -6,6 +6,8 @@ module Ironmon
   def self.tracker_debug_active_recipe
     return {
       "active_run" => true,
+      "overworld_encounters" => !!($PokemonSystem &&
+        $PokemonSystem.overworld_encounters),
       "run_id" => ensure_tracker_run_id,
       "seed" => $PokemonGlobal.ironmon_seed || 0,
       "result" => "active_debug",

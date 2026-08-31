@@ -1,0 +1,10 @@
+<div class="lookup-preparation" aria-busy="@_calculating">
+    <p role="status">@Text[_calculating ? _calculatingKey : Progress.Status == TrackerObtainabilityProgressStatus.Running ? _backgroundKey : _descriptionKey]</p>
+    @if (Progress.Status == TrackerObtainabilityProgressStatus.Error)
+    {
+        <p class="lookup-error" role="alert">@Progress.Error</p>
+    }
+    <button type="button" class="live-lookup-tab" disabled="@_calculating" @onclick="CalculateAsync">
+        @Text[_calculating ? _calculatingButtonKey : Progress.Status == TrackerObtainabilityProgressStatus.Error ? _retryKey : _calculateKey]
+    </button>
+</div>

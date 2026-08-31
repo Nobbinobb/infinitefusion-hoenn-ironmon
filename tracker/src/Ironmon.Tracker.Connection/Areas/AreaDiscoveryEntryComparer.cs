@@ -46,6 +46,7 @@ internal static class AreaDiscoveryEntryComparer
             && left.MapId == right.MapId
             && left.Version == right.Version
             && left.EncounterType == right.EncounterType
+            && left.Environment == right.Environment
             && left.Slot == right.Slot
             && left.ProbabilityPercent == right.ProbabilityPercent
             && left.MinimumLevel == right.MinimumLevel

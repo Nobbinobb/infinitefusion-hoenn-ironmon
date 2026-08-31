@@ -2523,6 +2523,76 @@ button.move-placeholder:hover {
     border-top: 1px solid var(--border);
 }
 
+.lookup-preparation {
+    display: grid;
+    gap: 0.65rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+
+.lookup-preparation p {
+    margin: 0;
+}
+
+.lookup-preparation button {
+    justify-self: start;
+    padding-inline: 0.8rem;
+    color: var(--text);
+}
+
+.lookup-preparation button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+.area-environment-list,
+.area-environment-details,
+.area-encounter-subsection {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.area-environment-group {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 0.45rem;
+    background: rgb(255 255 255 / 1.5%);
+}
+
+.area-environment-summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    width: 100%;
+    gap: 0.45rem;
+    padding: 0.55rem 0.6rem;
+    border: 0;
+    color: var(--text);
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.area-environment-summary strong {
+    font-size: 0.71rem;
+}
+
+.area-environment-details {
+    padding: 0.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.area-encounter-subsection h4 {
+    margin: 0.12rem 0 0;
+    color: var(--muted);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
 .area-summary-pager,
 .area-entry-pager {
     margin-top: 0.1rem;

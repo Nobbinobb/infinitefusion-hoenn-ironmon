@@ -508,6 +508,63 @@ module IronmonSeededRunImportRuntimeTests
         blocked_seed_mapper.paired_species(forward),
         "schema-5 repairs a blocked strength pairing before retrying the seed"
       )
+      chained_seed = 116_872_428
+      chained_mapper = Ironmon::PlayerFusionMapper.new(
+        chained_seed, Ironmon.custom_fusion_pool_numbers, {}, {},
+        Ironmon::BaseStatGenerator.new(
+          chained_seed, Ironmon.base_stat_source_fingerprint
+        )
+      )
+      chained_mapper.prepare
+      pairs = chained_mapper.instance_variable_get(:@fusion_pairs)
+      assert(
+        pairs.flatten.uniq.length == Ironmon.custom_fusion_pool_numbers.length,
+        "strength-chain repair covers every custom fusion exactly once"
+      )
+      maximum = chained_mapper.send(:maximum_fusion_range_width)
+      assert(
+        pairs.all? do |first, second|
+          chained_mapper.send(:strength_pair_compatible?, first, second, maximum)
+        end,
+        "strength-chain repair retains BST and disjoint-component constraints"
+      )
+      broken_mapper = Ironmon::PlayerFusionMapper.new(
+        seed, Ironmon.custom_fusion_pool_numbers.first(1), {}, {},
+        Ironmon::BaseStatGenerator.new(seed, Ironmon.base_stat_source_fingerprint)
+      )
+      failure = nil
+      2.times do
+        begin
+          broken_mapper.prepare
+          assert(false, "an odd pool must fail preparation")
+        rescue Ironmon::PlayerFusionMappingError => error
+          assert(!failure || failure.equal?(error),
+                 "failed preparation retains its original terminal error")
+          failure = error
+        end
+      end
+      assert(
+        !broken_mapper.instance_variable_get(:@fusion_pool_ids) &&
+          !broken_mapper.instance_variable_get(:@fusion_pairs),
+        "failed preparation never publishes a partial usable pool"
+      )
+      failed_work = Ironmon::TrackerAreaFusionWork.new({})
+      failed_work.instance_variable_set(:@attempts, 0)
+      def failed_work.build_mapper
+        @attempts += 1
+        raise Ironmon::PlayerFusionMappingError, "invalid test pool"
+      end
+      2.times do
+        begin
+          failed_work.results_for([[:BULBASAUR, :CHARMANDER]])
+          assert(false, "failed fusion page must not look complete")
+        rescue Ironmon::TrackerLookupError => error
+          assert(error.code == "fusion_lookup_failed",
+                 "fusion preparation has a terminal lookup error")
+        end
+      end
+      assert(failed_work.instance_variable_get(:@attempts) == 1,
+             "opening a failed fusion page does not repeat its work")
       material_range = preview_mapper.send(
         :fusion_bst_range,
         preview_mapper.send(:normal_bst, mudkip),

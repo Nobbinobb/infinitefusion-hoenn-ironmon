@@ -8,6 +8,7 @@ namespace Ironmon.Tracker.Connection.Access;
 /// </summary>
 internal sealed class TrackerDiagnosticRequestClient
 {
+    private static readonly TimeSpan _occurrencePollInterval = TimeSpan.FromMilliseconds(50);
     private readonly TrackerDiagnosticAuthorizer _authorization;
     private readonly PlayerFusionMappingCoordinator _fusionMappings;
     private readonly TrackerRequestSession _session;
@@ -225,14 +226,26 @@ internal sealed class TrackerDiagnosticRequestClient
     /// <param name="runId">The active run identifier when available.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The requested wild-occurrence page.</returns>
-    internal Task<WildOccurrenceSearchResponsePayload> SearchWildOccurrencesAsync(string speciesId, int offset, DebugPokemonTarget? target, int? enemyPosition, string? runId, CancellationToken cancellationToken)
+    internal async Task<WildOccurrenceSearchResponsePayload> SearchWildOccurrencesAsync(string speciesId, int offset, DebugPokemonTarget? target, int? enemyPosition, string? runId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
         _authorization.EnsurePokemonSource(target);
         _authorization.EnsureAll(DiagnosticCapabilities.WorldWildEncounters);
-        DebugWildOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset };
-        return _session.SendAsync<DebugWildOccurrenceSearchRequestPayload, WildOccurrenceSearchResponsePayload>(TrackerCommands.DebugWildOccurrenceSearch, request, runId, cancellationToken);
+        byte[]? membership = await _fusionMappings.GetOccurrenceFusionMaterialsAsync(runId, null, speciesId, cancellationToken);
+        DebugWildOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset, FusionMaterialMembership = membership };
+        WildOccurrenceSearchResponsePayload response;
+        do
+        {
+            _authorization.EnsurePokemonSource(target);
+            _authorization.EnsureAll(DiagnosticCapabilities.WorldWildEncounters);
+            response = await _session.SendAsync<DebugWildOccurrenceSearchRequestPayload, WildOccurrenceSearchResponsePayload>(TrackerCommands.DebugWildOccurrenceSearch, request, runId, cancellationToken);
+            if (response.Pending)
+                await Task.Delay(_occurrencePollInterval, cancellationToken);
+
+        } while (response.Pending);
+
+        return response;
     }
 
     /// <summary>

@@ -8,7 +8,7 @@ module Ironmon
   TRACKER_SPRITE_CACHE_FOLDER =
     "Graphics/CustomBattlers/local_sprites/IronmonTracker"
 
-  def self.sprite_credit_catalog
+  def self.sprite_credit_catalog(work_checkpoint = nil)
     path = Settings::CREDITS_FILE_PATH
     signature = [
       SPRITE_CREDIT_CACHE_SCHEMA_VERSION,
@@ -18,14 +18,18 @@ module Ironmon
     return @sprite_credit_catalog if
       @sprite_credit_catalog && @sprite_credit_catalog_signature == signature
     catalog = Hash.new { |hash, key| hash[key] = {} }
-    File.foreach(path) do |line|
+    File.foreach(path).each_with_index do |line, index|
+      work_checkpoint.call if work_checkpoint && index % 128 == 0
       row = line.strip.split(',')
       next if row.length < 3
       match = /\A(\d+(?:\.\d+)?)([a-zA-Z]*)\z/.match(row[0].to_s)
       next if !match
       catalog[match[1]][match[2]] = row[2]
     end
-    catalog.each_value(&:freeze)
+    catalog.each_value do |entries|
+      entries.freeze
+      work_checkpoint.call if work_checkpoint
+    end
     catalog.default_proc = nil
     @sprite_credit_catalog = catalog.freeze
     @sprite_credit_catalog_signature = signature.freeze

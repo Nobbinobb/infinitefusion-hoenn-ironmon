@@ -1,14 +1,22 @@
-@if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldWildEncounters)) && _wildOccurrences.Total > 0)
+@if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldWildEncounters)) && (_wildOccurrences.Total > 0 || _loadingWildOccurrences || _wildOccurrenceError is not null))
 {
     <section class="lookup-occurrences" aria-label="@Text["Lookup.Card.WildEncounterLocations"]">
         <header><p class="section-label">@Text["Lookup.Card.WildLocationsHeading"]</p><span>@Text["Lookup.Card.SlotCount", _wildOccurrences.Total]</span></header>
+        @if (_loadingWildOccurrences)
+        {
+            <p class="lookup-message">@Text["Lookup.Areas.LoadingDetails"]</p>
+        }
         <div class="lookup-occurrence-list">
             @foreach (WildPokemonOccurrenceSnapshot occurrence in _wildOccurrences.Matches)
             {
                 <div class="lookup-occurrence">
                     <div>
                         <strong>@occurrence.RouteName</strong>
-                        <small>@occurrence.Mode · @occurrence.EncounterType · @FormatWildSlots(occurrence) · @FormatLevelRange(occurrence.MinimumLevel, occurrence.MaximumLevel)</small>
+                        <small>@occurrence.Mode · @FormatWildTables(occurrence) · @FormatWildSlots(occurrence) · @FormatLevelRange(occurrence.MinimumLevel, occurrence.MaximumLevel)</small>
+                        @if (occurrence.FusionChancePercent is not null)
+                        {
+                            <small>@FormatWildFusionOrigin(occurrence)</small>
+                        }
                     </div>
                     <button type="button" @onclick="() => PokemonSelected.InvokeAsync(occurrence.SourceSpeciesId)">
                         Source: @occurrence.SourceSpeciesName

@@ -12,6 +12,7 @@ module Ironmon
 
   def self.update_tracker_connection
     tracker_connection.update
+    update_tracker_encounter_mode
   rescue Exception => e
     echoln "Ironmon tracker update failed safely: #{e.message}"
   end
@@ -101,6 +102,17 @@ module Ironmon
     @tracker_battle_command = nil
     @tracker_player_target_selection_active = false
     @tracker_selected_target_position = nil
+  end
+
+  def self.update_tracker_encounter_mode
+    return if !active? || !$PokemonSystem
+    mode = !!$PokemonSystem.overworld_encounters
+    changed = !@tracker_overworld_encounters.nil? &&
+      @tracker_overworld_encounters != mode
+    @tracker_overworld_encounters = mode
+    tracker_connection.send_event(
+      "encounter_mode_changed", tracker_current_state
+    ) if changed
   end
 
   def self.tracker_player_sent_out(battler)

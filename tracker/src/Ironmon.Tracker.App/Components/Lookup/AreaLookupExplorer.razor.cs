@@ -14,6 +14,7 @@ public partial class AreaLookupExplorer : IDisposable
     private readonly Dictionary<string, PaginationState> _detailPagination = [];
     private readonly Dictionary<string, string> _detailErrors = [];
     private readonly HashSet<string> _expandedAreas = [];
+    private readonly HashSet<string> _expandedEnvironments = [];
     private readonly HashSet<string> _loadingDetails = [];
     private readonly LatestRequestCoordinator<string> _detailRequests = new();
     private readonly LatestRequestCoordinator<string> _summaryRequests = new();
@@ -113,6 +114,7 @@ public partial class AreaLookupExplorer : IDisposable
             _details.Clear();
             _detailPagination.Clear();
             _detailErrors.Clear();
+            _expandedEnvironments.Clear();
         }
         else if (categoryChanged)
         {
@@ -123,6 +125,7 @@ public partial class AreaLookupExplorer : IDisposable
         _areaPagination.Reset();
         _detailPagination.Clear();
         _expandedAreas.Clear();
+        _expandedEnvironments.Clear();
         _loadingDetails.Clear();
         await LoadSummariesAsync(true);
     }
@@ -138,6 +141,7 @@ public partial class AreaLookupExplorer : IDisposable
         _areaPagination.Reset();
         _detailPagination.Clear();
         _expandedAreas.Clear();
+        _expandedEnvironments.Clear();
         await LoadSummariesAsync(true);
     }
 
@@ -166,10 +170,11 @@ public partial class AreaLookupExplorer : IDisposable
     /// </summary>
     /// <param name="areaId">The stable logical area identifier.</param>
     /// <param name="forceRefresh">Whether to bypass the connection cache.</param>
+    /// <param name="encounterEnvironment">The encounter environment to page, or null to load its index.</param>
     /// <returns>A task representing detail loading.</returns>
-    private async Task LoadAreaDetailsAsync(string areaId, bool forceRefresh)
+    private async Task LoadAreaDetailsAsync(string areaId, bool forceRefresh, string? encounterEnvironment = null)
     {
-        string key = GetDetailKey(areaId);
+        string key = GetDetailKey(areaId, encounterEnvironment);
         AreaContentCategory category = _selectedCategory;
         CompletedRunRecipePayload? recipe = Recipe;
         LatestRequestLease<string> request = _detailRequests.Begin(key);
@@ -177,13 +182,14 @@ public partial class AreaLookupExplorer : IDisposable
         _detailErrors.Remove(key);
         try
         {
-            int offset = category == AreaContentCategory.Encounter ? GetDetailPagination(areaId).Offset : 0;
-            AreaLookupDetailResponsePayload response = await Connection.GetAreaDetailsAsync(areaId, category, recipe, forceRefresh, request.CancellationToken, offset, _pageSize);
+            int offset = category == AreaContentCategory.Encounter && encounterEnvironment is not null ? GetDetailPagination(areaId, encounterEnvironment).Offset : 0;
+            AreaLookupDetailResponsePayload response = await Connection.GetAreaDetailsAsync(areaId, category, recipe, forceRefresh, request.CancellationToken, encounterEnvironment, offset, _pageSize);
             if (!request.IsCurrent)
                 return;
 
             _details[key] = response;
-            GetDetailPagination(areaId).Clamp(GetDetailEntryCount(response));
+            if (category != AreaContentCategory.Encounter || encounterEnvironment is not null)
+                GetDetailPagination(areaId, encounterEnvironment).Clamp(GetDetailEntryCount(response));
         }
         catch (OperationCanceledException) when (request.CancellationToken.IsCancellationRequested)
         {
@@ -269,9 +275,19 @@ public partial class AreaLookupExplorer : IDisposable
         _ = InvokeAsync(async () =>
         {
             await LoadSummariesAsync(false);
-            if (args.Category == _selectedCategory && _expandedAreas.Contains(args.AreaId)
-                && !_loadingDetails.Contains(GetDetailKey(args.AreaId)))
+            if (args.Category == _selectedCategory && _expandedAreas.Contains(args.AreaId) && !_loadingDetails.Contains(GetDetailKey(args.AreaId)))
+            {
+                RemoveEncounterEnvironmentDetails(args.AreaId);
                 await LoadAreaDetailsAsync(args.AreaId, true);
+                if (_selectedCategory == AreaContentCategory.Encounter && _details.TryGetValue(GetDetailKey(args.AreaId), out AreaLookupDetailResponsePayload? index))
+                {
+                    foreach (AreaEncounterEnvironmentPayload environment in index.EncounterEnvironments)
+                    {
+                        if (IsEnvironmentExpanded(args.AreaId, environment.Key))
+                            await LoadAreaDetailsAsync(args.AreaId, true, environment.Key);
+                    }
+                }
+            }
 
             StateHasChanged();
         });
@@ -292,6 +308,7 @@ public partial class AreaLookupExplorer : IDisposable
         _detailPagination.Clear();
         _detailErrors.Clear();
         _expandedAreas.Clear();
+        _expandedEnvironments.Clear();
         _ = InvokeAsync(StateHasChanged);
     }
 
@@ -319,9 +336,6 @@ public partial class AreaLookupExplorer : IDisposable
     /// <returns>The entries on the selected page.</returns>
     private IReadOnlyList<T> GetPagedEntries<T>(string areaId, IReadOnlyList<T> entries)
     {
-        if (_selectedCategory == AreaContentCategory.Encounter && entries.Count <= _pageSize)
-            return entries;
-
         return GetDetailPagination(areaId).GetPage(entries);
     }
 
@@ -342,11 +356,12 @@ public partial class AreaLookupExplorer : IDisposable
     /// Selects the previous entry page for one expanded area.
     /// </summary>
     /// <param name="areaId">The stable logical area identifier.</param>
-    private async Task PreviousDetailPage(string areaId)
+    /// <param name="encounterEnvironment">The encounter environment being paged, or null for a local category page.</param>
+    private async Task PreviousDetailPage(string areaId, string? encounterEnvironment = null)
     {
-        GetDetailPagination(areaId).Previous();
+        GetDetailPagination(areaId, encounterEnvironment).Previous();
         if (_selectedCategory == AreaContentCategory.Encounter)
-            await LoadAreaDetailsAsync(areaId, false);
+            await LoadAreaDetailsAsync(areaId, false, encounterEnvironment);
     }
 
     /// <summary>
@@ -354,21 +369,23 @@ public partial class AreaLookupExplorer : IDisposable
     /// </summary>
     /// <param name="areaId">The stable logical area identifier.</param>
     /// <param name="entryCount">The total entry count.</param>
-    private async Task NextDetailPage(string areaId, int entryCount)
+    /// <param name="encounterEnvironment">The encounter environment being paged, or null for a local category page.</param>
+    private async Task NextDetailPage(string areaId, int entryCount, string? encounterEnvironment = null)
     {
-        GetDetailPagination(areaId).Next(entryCount);
+        GetDetailPagination(areaId, encounterEnvironment).Next(entryCount);
         if (_selectedCategory == AreaContentCategory.Encounter)
-            await LoadAreaDetailsAsync(areaId, false);
+            await LoadAreaDetailsAsync(areaId, false, encounterEnvironment);
     }
 
     /// <summary>
     /// Gets or creates pagination for one area and selected category.
     /// </summary>
     /// <param name="areaId">The stable logical area identifier.</param>
+    /// <param name="encounterEnvironment">The encounter environment being paged, or null for the category page.</param>
     /// <returns>The area's detail pagination.</returns>
-    private PaginationState GetDetailPagination(string areaId)
+    private PaginationState GetDetailPagination(string areaId, string? encounterEnvironment = null)
     {
-        string key = GetDetailKey(areaId);
+        string key = GetDetailKey(areaId, encounterEnvironment);
         if (_detailPagination.TryGetValue(key, out PaginationState? pagination))
             return pagination;
 
@@ -467,12 +484,99 @@ public partial class AreaLookupExplorer : IDisposable
         => _expandedAreas.Contains(areaId);
 
     /// <summary>
+    /// Expands or collapses one environment within an area.
+    /// </summary>
+    /// <param name="areaId">The stable area identifier.</param>
+    /// <param name="environment">The stable environment key.</param>
+    /// <returns>A task representing optional environment loading.</returns>
+    private async Task ToggleEnvironmentAsync(string areaId, string environment)
+    {
+        string key = GetEnvironmentKey(areaId, environment);
+        if (!_expandedEnvironments.Add(key))
+        {
+            _expandedEnvironments.Remove(key);
+            return;
+        }
+
+        string detailKey = GetDetailKey(areaId, environment);
+        if (!_details.ContainsKey(detailKey) && !_loadingDetails.Contains(detailKey))
+            await LoadAreaDetailsAsync(areaId, Recipe is null, environment);
+    }
+
+    /// <summary>
+    /// Removes environment pages whose possible-fusion set may have changed after a discovery.
+    /// </summary>
+    /// <param name="areaId">The stable area identifier.</param>
+    private void RemoveEncounterEnvironmentDetails(string areaId)
+    {
+        string indexKey = GetDetailKey(areaId);
+        string[] keys = [.. _details.Keys.Where(key => key.StartsWith(indexKey, StringComparison.Ordinal) && key != indexKey)];
+        foreach (string key in keys)
+        {
+            _details.Remove(key);
+            _detailErrors.Remove(key);
+        }
+    }
+
+    /// <summary>
+    /// Gets whether one environment is expanded.
+    /// </summary>
+    /// <param name="areaId">The stable area identifier.</param>
+    /// <param name="environment">The stable environment key.</param>
+    /// <returns>Whether the environment is expanded.</returns>
+    private bool IsEnvironmentExpanded(string areaId, string environment)
+        => _expandedEnvironments.Contains(GetEnvironmentKey(areaId, environment));
+
+    /// <summary>
+    /// Builds the expansion key for one area environment.
+    /// </summary>
+    /// <param name="areaId">The stable area identifier.</param>
+    /// <param name="environment">The stable environment key.</param>
+    /// <returns>The expansion key.</returns>
+    private string GetEnvironmentKey(string areaId, string environment)
+        => $"{SourceKey}:{areaId}:{environment}";
+
+    /// <summary>
+    /// Groups one environment page into ordered, non-collapsible subsections.
+    /// </summary>
+    /// <param name="detail">The current area detail.</param>
+    /// <returns>The page's plain ordered subsections.</returns>
+    private IReadOnlyList<EncounterSubsection> GetEncounterSubsections(AreaLookupDetailResponsePayload detail)
+    {
+        List<EncounterSubsection> subsections = [.. detail.Encounters
+            .GroupBy(entry => entry.EncounterType, StringComparer.Ordinal)
+            .Select(group => new EncounterSubsection(group.Key, [.. group], []))];
+
+        if (detail.EncounterFusions.Count > 0)
+            subsections.Add(new EncounterSubsection(Text["Lookup.Areas.Fusions"], [], detail.EncounterFusions));
+
+
+        return subsections;
+    }
+
+    /// <summary>
+    /// Gets a localized broad environment name.
+    /// </summary>
+    /// <param name="environment">The stable environment key.</param>
+    /// <returns>The localized name.</returns>
+    private string GetEnvironmentName(string environment) => environment switch
+    {
+        "grass" => Text["Lookup.Areas.Environment.Grass"],
+        "cave" => Text["Lookup.Areas.Environment.Cave"],
+        "water" => Text["Lookup.Areas.Environment.Water"],
+        "fishing" => Text["Lookup.Areas.Environment.Fishing"],
+        "cross" => Text["Lookup.Areas.Environment.Cross"],
+        _ => Text["Lookup.Areas.Environment.Special"]
+    };
+
+    /// <summary>
     /// Builds the in-memory detail key for the selected category and area.
     /// </summary>
     /// <param name="areaId">The stable logical area identifier.</param>
+    /// <param name="encounterEnvironment">The encounter environment, or null for the category index.</param>
     /// <returns>The detail key.</returns>
-    private string GetDetailKey(string areaId)
-        => $"{_selectedCategory}:{areaId}";
+    private string GetDetailKey(string areaId, string? encounterEnvironment = null)
+        => $"{_selectedCategory}:{areaId}:{encounterEnvironment}";
 
     /// <summary>
     /// Formats an encounter's level or inclusive level range.
@@ -484,6 +588,40 @@ public partial class AreaLookupExplorer : IDisposable
         return encounter.MinimumLevel == encounter.MaximumLevel
             ? Text["Lookup.Areas.Level", encounter.MinimumLevel]
             : Text["Lookup.Areas.LevelRange", encounter.MinimumLevel, encounter.MaximumLevel];
+    }
+
+    /// <summary>
+    /// Formats a derived fusion's resulting level or inclusive range.
+    /// </summary>
+    /// <param name="fusion">The derived fusion entry.</param>
+    /// <returns>The localized level text.</returns>
+    private string FormatFusionRange(AreaEncounterFusionEntryPayload fusion)
+    {
+        return fusion.MinimumLevel == fusion.MaximumLevel
+            ? Text["Lookup.Areas.Level", fusion.MinimumLevel]
+            : Text["Lookup.Areas.LevelRange", fusion.MinimumLevel, fusion.MaximumLevel];
+    }
+
+    /// <summary>
+    /// Formats both source slots for a derived fusion.
+    /// </summary>
+    /// <param name="fusion">The derived fusion entry.</param>
+    /// <returns>The localized source description.</returns>
+    private string FormatFusionSources(AreaEncounterFusionEntryPayload fusion)
+        => Text["Lookup.Areas.FusionSources", fusion.FirstEncounterType, fusion.FirstSlot, fusion.SecondEncounterType, fusion.SecondSlot];
+
+    /// <summary>
+    /// Gets the localized fusion mechanic and conditional roll chance.
+    /// </summary>
+    /// <param name="fusion">The derived fusion entry.</param>
+    /// <returns>The localized mechanic description.</returns>
+    private string FormatFusionOrigin(AreaEncounterFusionEntryPayload fusion)
+    {
+        string mechanic = fusion.Origin.StartsWith("overworld", StringComparison.Ordinal)
+            ? Text["Lookup.Areas.FusionOrigin.Overworld"]
+            : Text["Lookup.Areas.FusionOrigin.Standard"];
+
+        return Text["Lookup.Areas.FusionChance", mechanic, fusion.FusionChancePercent];
     }
 
     /// <summary>
@@ -501,6 +639,14 @@ public partial class AreaLookupExplorer : IDisposable
     /// <returns>Whether the exception can be displayed in the lookup interface.</returns>
     private static bool IsExpectedRequestException(Exception exception)
         => exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException;
+
+    /// <summary>
+    /// Groups authored encounter slots or possible fusions under one plain subsection heading.
+    /// </summary>
+    /// <param name="Name">The subsection display name.</param>
+    /// <param name="Encounters">The authored encounter slots in the subsection.</param>
+    /// <param name="Fusions">The possible derived fusions in the subsection.</param>
+    private sealed record EncounterSubsection(string Name, IReadOnlyList<AreaEncounterEntryPayload> Encounters, IReadOnlyList<AreaEncounterFusionEntryPayload> Fusions);
 
     /// <summary>
     /// Removes tracker discovery subscriptions when the component is disposed.

@@ -57,7 +57,7 @@ internal sealed class TrackerGameEventProcessor
     {
         ArgumentNullException.ThrowIfNull(game);
         ArgumentNullException.ThrowIfNull(state);
-        if (!state.ActiveRunPreparationReady)
+        if (!state.IronmonActive || !string.Equals(_state.Snapshot.CurrentState?.RunId, state.RunId, StringComparison.Ordinal))
             _requestClient.ObtainabilityProgress.Reset();
 
         _requestClient.PrepareActiveFusionAssignments(state);
@@ -98,6 +98,15 @@ internal sealed class TrackerGameEventProcessor
             return;
         }
 
+        if (message.Event == TrackerEvents.EncounterModeChanged)
+        {
+            GameCurrentStatePayload state = TrackerJson.DeserializePayload<GameCurrentStatePayload>(message.Payload);
+            if (state.RunId == _state.Snapshot.CurrentState?.RunId)
+                _state.Publish(TrackerConnectionStatus.Connected, game, state);
+
+            return;
+        }
+
         if (message.Event == TrackerEvents.RunCompleted)
         {
             RunCompletedEventPayload completion = TrackerJson.DeserializePayload<RunCompletedEventPayload>(message.Payload);
@@ -128,7 +137,7 @@ internal sealed class TrackerGameEventProcessor
             return;
 
         RunStatisticsPayload? statistics = recipe.Statistics ?? current.AttemptStatistics;
-        GameCurrentStatePayload completed = new(current.IronmonActive, current.RunId, current.BattleId, message.Sequence ?? current.Sequence, current.Battle, current.Player, current.Enemies, current.StarterSelection, statistics, recipe, current.TypeCoverage, current.FusionAssignments, current.ActiveRunPreparationReady);
+        GameCurrentStatePayload completed = new(current.IronmonActive, current.RunId, current.BattleId, message.Sequence ?? current.Sequence, current.Battle, current.Player, current.Enemies, current.StarterSelection, statistics, recipe, current.TypeCoverage, current.FusionAssignments, current.ActiveRunPreparationReady, current.OverworldEncounters);
         _state.Publish(TrackerConnectionStatus.Connected, game, completed);
     }
 

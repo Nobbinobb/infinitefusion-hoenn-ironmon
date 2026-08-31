@@ -11,7 +11,7 @@ public enum AreaContentCategory
     Trainer = 0,
 
     /// <summary>
-    /// Authored wild encounter slots in the area.
+    /// Authored wild encounter slots and derived fusion possibilities in the area.
     /// </summary>
     Encounter = 1,
 
@@ -49,6 +49,11 @@ public sealed class AreaLookupSummaryRequestPayload
 /// </summary>
 public sealed class AreaLookupSummaryResponsePayload
 {
+    /// <summary>
+    /// Gets or initializes the active encounter mode used to count possibilities, or null for archives.
+    /// </summary>
+    public bool? OverworldEncounters { get; init; }
+
     /// <summary>
     /// Initializes an empty area-summary response for protocol serialization.
     /// </summary>
@@ -110,12 +115,12 @@ public sealed class AreaSummaryPayload
     public int TrainerDefeated { get; init; }
 
     /// <summary>
-    /// Gets or initializes the number of authored encounter slots.
+    /// Gets or initializes the number of authored slots and eligible derived fusion possibilities.
     /// </summary>
     public int EncounterTotal { get; init; }
 
     /// <summary>
-    /// Gets or initializes the number of encountered authored slots.
+    /// Gets or initializes the number of encountered authored slots and exact derived combinations.
     /// </summary>
     public int Encountered { get; init; }
 
@@ -135,6 +140,16 @@ public sealed class AreaSummaryPayload
 /// </summary>
 public sealed class AreaLookupDetailRequestPayload
 {
+    /// <summary>
+    /// Gets or initializes whether the tracker can resolve requested fusion pairs using its shared native worker.
+    /// </summary>
+    public bool UseNativeFusionMapping { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the native results for the previously requested, disclosed material pairs.
+    /// </summary>
+    public IReadOnlyList<AreaFusionResultPayload> FusionResults { get; init; } = [];
+
     /// <summary>
     /// Initializes an empty area-detail request for protocol serialization.
     /// </summary>
@@ -163,6 +178,11 @@ public sealed class AreaLookupDetailRequestPayload
     public IReadOnlyList<string> DiscoveryKeys { get; init; } = [];
 
     /// <summary>
+    /// Gets or initializes the encounter environment requested for paging, or null to request the environment index.
+    /// </summary>
+    public string? EncounterEnvironment { get; init; }
+
+    /// <summary>
     /// Gets or initializes the zero-based encounter-entry offset.
     /// </summary>
     public int Offset { get; init; }
@@ -178,6 +198,21 @@ public sealed class AreaLookupDetailRequestPayload
 /// </summary>
 public sealed class AreaLookupDetailResponsePayload
 {
+    /// <summary>
+    /// Gets or initializes the actual active encounter mode used for this response, or null for historical recipes.
+    /// </summary>
+    public bool? OverworldEncounters { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the disclosed material pairs needed to finish this page using native mapping.
+    /// </summary>
+    public IReadOnlyList<FusionMaterialAssignmentPayload> RequiredFusionMaterials { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes whether encounter fusion preparation is still running and this page must be requested again.
+    /// </summary>
+    public bool Pending { get; init; }
+
     /// <summary>
     /// Initializes an empty area-detail response for protocol serialization.
     /// </summary>
@@ -221,6 +256,16 @@ public sealed class AreaLookupDetailResponsePayload
     public int TotalCount { get; init; }
 
     /// <summary>
+    /// Gets or initializes the encounter environment represented by this page, or null for the environment index.
+    /// </summary>
+    public string? EncounterEnvironment { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the encounter environments available in the selected area.
+    /// </summary>
+    public IReadOnlyList<AreaEncounterEnvironmentPayload> EncounterEnvironments { get; init; } = [];
+
+    /// <summary>
     /// Gets or initializes trainer entries when the trainer category was requested.
     /// </summary>
     public IReadOnlyList<AreaTrainerEntryPayload> Trainers { get; init; } = [];
@@ -231,9 +276,42 @@ public sealed class AreaLookupDetailResponsePayload
     public IReadOnlyList<AreaEncounterEntryPayload> Encounters { get; init; } = [];
 
     /// <summary>
+    /// Gets or initializes possible fusions derived from two normal encounter slots.
+    /// </summary>
+    public IReadOnlyList<AreaEncounterFusionEntryPayload> EncounterFusions { get; init; } = [];
+
+    /// <summary>
     /// Gets or initializes item entries when the item category was requested.
     /// </summary>
     public IReadOnlyList<AreaItemEntryPayload> Items { get; init; } = [];
+}
+
+/// <summary>
+/// Carries one ordered material pair's deterministic native fusion result.
+/// </summary>
+public sealed class AreaFusionResultPayload
+{
+    /// <summary>
+    /// Initializes an empty result for protocol serialization.
+    /// </summary>
+    public AreaFusionResultPayload()
+    {
+    }
+
+    /// <summary>
+    /// Gets or initializes the normal Body material identifier.
+    /// </summary>
+    public int BodyId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the normal Head material identifier.
+    /// </summary>
+    public int HeadId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the generated custom fusion's numeric identifier.
+    /// </summary>
+    public int SpeciesNumber { get; init; }
 }
 
 /// <summary>
@@ -360,6 +438,11 @@ public sealed class AreaEncounterEntryPayload
     public required string EncounterType { get; init; }
 
     /// <summary>
+    /// Gets or initializes the broad encounter environment.
+    /// </summary>
+    public string Environment { get; init; } = "special";
+
+    /// <summary>
     /// Gets or initializes the one-based authored slot.
     /// </summary>
     public int Slot { get; init; }
@@ -408,6 +491,117 @@ public sealed class AreaEncounterEntryPayload
     /// Gets or initializes whether a fused result belongs independently to this authored slot.
     /// </summary>
     public bool IndependentFusion { get; init; }
+}
+
+/// <summary>
+/// Describes one independently paged encounter environment in an area.
+/// </summary>
+public sealed class AreaEncounterEnvironmentPayload
+{
+    /// <summary>
+    /// Initializes an empty encounter environment for protocol serialization.
+    /// </summary>
+    public AreaEncounterEnvironmentPayload()
+    {
+    }
+
+    /// <summary>
+    /// Gets or initializes the stable environment key.
+    /// </summary>
+    public required string Key { get; init; }
+}
+
+/// <summary>
+/// Describes one possible fusion derived from two normal encounter slots.
+/// </summary>
+public sealed class AreaEncounterFusionEntryPayload
+{
+    /// <summary>
+    /// Initializes an empty derived fusion entry for protocol serialization.
+    /// </summary>
+    public AreaEncounterFusionEntryPayload()
+    {
+    }
+
+    /// <summary>
+    /// Gets or initializes the stable possibility and discovery identifier.
+    /// </summary>
+    public required string EntryId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the mechanic that produced the fusion.
+    /// </summary>
+    public required string Origin { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the primary source environment.
+    /// </summary>
+    public required string Environment { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether the source encounter tables differ.
+    /// </summary>
+    public bool CrossEnvironment { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether the generated fusion identity may be displayed.
+    /// </summary>
+    public bool DetailsRevealed { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether this exact derived fusion has entered battle.
+    /// </summary>
+    public bool Encountered { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the first source encounter method or condition.
+    /// </summary>
+    public required string FirstEncounterType { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the first one-based authored slot.
+    /// </summary>
+    public int FirstSlot { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the second source encounter method or condition.
+    /// </summary>
+    public required string SecondEncounterType { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the second one-based authored slot.
+    /// </summary>
+    public int SecondSlot { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the fusion roll percentage after two eligible normal sources are available.
+    /// </summary>
+    public double FusionChancePercent { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the minimum resulting level.
+    /// </summary>
+    public int MinimumLevel { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the maximum resulting level.
+    /// </summary>
+    public int MaximumLevel { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the generated fusion identifier when its details are revealed.
+    /// </summary>
+    public string? SpeciesId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the generated fusion name when its details are revealed.
+    /// </summary>
+    public string? SpeciesName { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the game-relative local sprite path.
+    /// </summary>
+    public string? SpritePath { get; init; }
 }
 
 /// <summary>

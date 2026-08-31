@@ -70,4 +70,39 @@ public sealed class TrackerObtainabilityProgressStateTests
         state.Reset();
         Assert.Same(TrackerObtainabilityProgressSnapshot.Idle, state.Snapshot);
     }
+
+    /// <summary>
+    /// Verifies only complete background preparation unlocks the matching active run, independently of archive progress.
+    /// </summary>
+    [Fact]
+    public void ActiveReadinessIsRunScopedAndSurvivesArchiveSelection()
+    {
+        TrackerObtainabilityProgressState state = new();
+        state.Begin(_firstRunId, TrackerObtainabilityProgressScope.ActiveRun);
+        state.Report(_firstRunId, TrackerObtainabilityProgressScope.ActiveRun, new PokemonObtainabilityResponsePayload { Phase = _playerFusionsPhase, Complete = true });
+        Assert.Equal(TrackerObtainabilityProgressStatus.Running, state.GetActiveRunSnapshot(_firstRunId).Status);
+        Assert.Same(TrackerObtainabilityProgressSnapshot.Idle, state.GetActiveRunSnapshot(_secondRunId));
+
+        state.Begin(_firstRunId, TrackerObtainabilityProgressScope.ArchivedRun);
+        state.Report(_firstRunId, TrackerObtainabilityProgressScope.ArchivedRun, new PokemonObtainabilityResponsePayload { Phase = _completePhase, BackgroundComplete = true });
+        Assert.Same(TrackerObtainabilityProgressSnapshot.Idle, state.GetActiveRunSnapshot(_firstRunId));
+
+        state.Report(_firstRunId, TrackerObtainabilityProgressScope.ActiveRun, new PokemonObtainabilityResponsePayload { Phase = _completePhase, BackgroundComplete = true });
+        Assert.Equal(TrackerObtainabilityProgressScope.ArchivedRun, state.Snapshot.Scope);
+        Assert.Equal(TrackerObtainabilityProgressStatus.Complete, state.GetActiveRunSnapshot(_firstRunId).Status);
+
+        state.Begin(_secondRunId, TrackerObtainabilityProgressScope.ActiveRun);
+        Assert.Equal(TrackerObtainabilityProgressStatus.Running, state.GetActiveRunSnapshot(_secondRunId).Status);
+        Assert.Equal(TrackerObtainabilityProgressStatus.Complete, state.GetActiveRunSnapshot(_firstRunId).Status);
+
+        state.Fail(_secondRunId, TrackerObtainabilityProgressScope.ActiveRun, "Preparation failed.");
+        Assert.Equal(TrackerObtainabilityProgressStatus.Error, state.GetActiveRunSnapshot(_secondRunId).Status);
+        state.Begin(_secondRunId, TrackerObtainabilityProgressScope.ActiveRun);
+        Assert.Equal(TrackerObtainabilityProgressStatus.Running, state.GetActiveRunSnapshot(_secondRunId).Status);
+
+        state.Reset();
+        state.Report(_firstRunId, TrackerObtainabilityProgressScope.ActiveRun, new PokemonObtainabilityResponsePayload { Phase = _completePhase, BackgroundComplete = true });
+        Assert.Same(TrackerObtainabilityProgressSnapshot.Idle, state.GetActiveRunSnapshot(_firstRunId));
+        Assert.Same(TrackerObtainabilityProgressSnapshot.Idle, state.GetActiveRunSnapshot(_secondRunId));
+    }
 }

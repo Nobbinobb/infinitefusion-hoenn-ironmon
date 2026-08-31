@@ -37,6 +37,7 @@ $seededRunImportTestPath = Join-Path $projectRoot "tests\runtime\Seeded-Run-Impo
 $runTransitionTestPath = Join-Path $projectRoot "tests\runtime\Run-Transitions.rb"
 $earlyGameTestPath = Join-Path $projectRoot "tests\runtime\Early-Game.rb"
 $runtimeHookTestPath = Join-Path $projectRoot "tests\runtime\Runtime-Hooks.rb"
+$wildEncounterFusionTestPath = Join-Path $projectRoot "tests\runtime\Wild-Encounter-Fusions.rb"
 $deterministicHashingTestPath = Join-Path $projectRoot "tests\runtime\Deterministic-Hashing.rb"
 $generatorMetadataTestPath = Join-Path $projectRoot "tests\runtime\Generator-Metadata.rb"
 $evolutionUpwardExpansionTestPath = Join-Path $projectRoot "tests\runtime\Evolution-Upward-Expansion.rb"
@@ -61,6 +62,7 @@ $seededRunImportResultPath = Join-Path $projectRoot "runtime-seeded-run-import.t
 $runTransitionResultPath = Join-Path $projectRoot "runtime-run-transitions.tests"
 $earlyGameResultPath = Join-Path $projectRoot "runtime-early-game.tests"
 $runtimeHookResultPath = Join-Path $projectRoot "runtime-hooks.tests"
+$wildEncounterFusionResultPath = Join-Path $projectRoot "runtime-wild-encounter-fusions.tests"
 $deterministicHashingResultPath = Join-Path $projectRoot "runtime-deterministic-hashing.tests"
 $generatorMetadataResultPath = Join-Path $projectRoot "runtime-generator-metadata.tests"
 $evolutionUpwardExpansionResultPath = Join-Path $projectRoot "runtime-evolution-upward-expansion.tests"
@@ -157,6 +159,10 @@ $runtimeHookTestSource = [IO.File]::ReadAllText(
     $runtimeHookTestPath,
     [Text.Encoding]::UTF8
 )
+$wildEncounterFusionTestSource = [IO.File]::ReadAllText(
+    $wildEncounterFusionTestPath,
+    [Text.Encoding]::UTF8
+)
 $deterministicHashingTestSource = [IO.File]::ReadAllText(
     $deterministicHashingTestPath,
     [Text.Encoding]::UTF8
@@ -199,6 +205,7 @@ $rubySeededRunImportResultPath = $seededRunImportResultPath.Replace('\', '/')
 $rubyRunTransitionResultPath = $runTransitionResultPath.Replace('\', '/')
 $rubyEarlyGameResultPath = $earlyGameResultPath.Replace('\', '/')
 $rubyRuntimeHookResultPath = $runtimeHookResultPath.Replace('\', '/')
+$rubyWildEncounterFusionResultPath = $wildEncounterFusionResultPath.Replace('\', '/')
 $rubyDeterministicHashingResultPath = $deterministicHashingResultPath.Replace('\', '/')
 $rubyGeneratorMetadataResultPath = $generatorMetadataResultPath.Replace('\', '/')
 $rubyEvolutionUpwardExpansionResultPath = $evolutionUpwardExpansionResultPath.Replace('\', '/')
@@ -225,6 +232,7 @@ $bootstrapSource = @(
     "`$ironmon_run_transition_test_output_path = `"$rubyRunTransitionResultPath`""
     "`$ironmon_early_game_test_output_path = `"$rubyEarlyGameResultPath`""
     "`$ironmon_runtime_hook_test_output_path = `"$rubyRuntimeHookResultPath`""
+    "`$ironmon_wild_encounter_fusion_test_output_path = `"$rubyWildEncounterFusionResultPath`""
     "`$ironmon_deterministic_hashing_test_output_path = `"$rubyDeterministicHashingResultPath`""
     "`$ironmon_generator_metadata_test_output_path = `"$rubyGeneratorMetadataResultPath`""
     "`$ironmon_evolution_upward_expansion_test_output_path = `"$rubyEvolutionUpwardExpansionResultPath`""
@@ -253,6 +261,7 @@ $bootstrapSource = @(
     $runTransitionTestSource
     $earlyGameTestSource
     $runtimeHookTestSource
+    $wildEncounterFusionTestSource
     $deterministicHashingTestSource
     $generatorMetadataTestSource
     $evolutionUpwardExpansionTestSource
@@ -267,7 +276,7 @@ $bootstrapSource = @(
     "exit! 1"
     "end"
 ) -join "`n"
-Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $battleMoveTypeColorResultPath, $movePowerPresentationResultPath, $trainerRematchResultPath, $trainerBattleResultPath, $difficultyScalingResultPath, $newPlayerProtectionResultPath, $healingNpcResultPath, $wallyTutorialResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
+Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $battleMoveTypeColorResultPath, $movePowerPresentationResultPath, $trainerRematchResultPath, $trainerBattleResultPath, $difficultyScalingResultPath, $newPlayerProtectionResultPath, $healingNpcResultPath, $wallyTutorialResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $runtimeHookResultPath, $wildEncounterFusionResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
     -Force `
     -ErrorAction SilentlyContinue
 try {
@@ -385,6 +394,11 @@ try {
             "runtime-hook tests passed") {
         throw "The bundled runtime did not complete the runtime-hook tests."
     }
+    if (-not (Test-Path -LiteralPath $wildEncounterFusionResultPath) -or
+        (Get-Content -LiteralPath $wildEncounterFusionResultPath -Raw).Trim() -ne
+            "wild encounter fusion runtime tests passed") {
+        throw "The bundled runtime did not complete the wild encounter fusion tests."
+    }
     if (-not (Test-Path -LiteralPath $deterministicHashingResultPath) -or
         (Get-Content -LiteralPath $deterministicHashingResultPath -Raw).Trim() -ne
             "deterministic-hashing tests passed") {
@@ -450,7 +464,7 @@ try {
     )
 }
 finally {
-    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $movePowerPresentationResultPath, $battleMoveTypeColorResultPath, $trainerRematchResultPath, $trainerBattleResultPath, $difficultyScalingResultPath, $newPlayerProtectionResultPath, $healingNpcResultPath, $wallyTutorialResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $runtimeHookResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath, $debugPokemonSearchTracePath, $playerFusionPreparationTracePath `
+    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $movePowerPresentationResultPath, $battleMoveTypeColorResultPath, $trainerRematchResultPath, $trainerBattleResultPath, $difficultyScalingResultPath, $newPlayerProtectionResultPath, $healingNpcResultPath, $wallyTutorialResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $runtimeHookResultPath, $wildEncounterFusionResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath, $debugPokemonSearchTracePath, $playerFusionPreparationTracePath `
         -Force `
         -ErrorAction SilentlyContinue
 }
@@ -461,4 +475,4 @@ if ($evolutionPredecessorDiagnostic) {
 if ($fusionPredecessorBenchmarkOutput.Count -gt 1) {
     $fusionPredecessorBenchmarkOutput | Select-Object -Skip 1
 }
-Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, battle item, battle Run hotkey, battle move type color, move-power presentation, trainer rematch, trainer battle, difficulty scaling, new-player protection, healing NPC, Wally tutorial, Repel overlay, item randomization, seeded-run import, run-transition, early-game, runtime-hook, deterministic-hashing, generator-metadata, evolution upward-expansion, move-access structure, and tracker structure tests passed."
+Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, battle item, battle Run hotkey, battle move type color, move-power presentation, trainer rematch, trainer battle, difficulty scaling, new-player protection, healing NPC, Wally tutorial, Repel overlay, item randomization, seeded-run import, run-transition, early-game, runtime-hook, wild encounter fusion, deterministic-hashing, generator-metadata, evolution upward-expansion, move-access structure, and tracker structure tests passed."

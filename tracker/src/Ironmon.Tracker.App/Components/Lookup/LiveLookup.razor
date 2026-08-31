@@ -24,32 +24,39 @@ else
             </div>
         </header>
 
-        <nav class="live-lookup-tabs" role="tablist" aria-label="@Text["Lookup.Live.Sections"]">
-            @foreach (LiveLookupSection section in Enum.GetValues<LiveLookupSection>())
-            {
-                <button type="button"
-                        class="@GetSectionTabClass(section)"
-                        role="tab"
-                        aria-selected="@(_selectedSection == section)"
-                        @onclick="() => SelectSection(section)">
-                    @GetSectionName(section)
-                </button>
-            }
-        </nav>
-
-        @if (_selectedSection == LiveLookupSection.TypeCoverage)
+        @if (GetPreparationProgress().Status != TrackerObtainabilityProgressStatus.Complete)
         {
-            <TypeCoveragePanel Game="@_connection.Game" State="@_connection.CurrentState" Selection="@_coverageSelection" />
+            <ActiveRunLookupPreparation @key="activeRunId" Progress="@GetPreparationProgress()" />
         }
         else
         {
-            <AreaLookupExplorer @key="@($"active-areas-{activeRunId}")"
-                                SourceKey="@($"active:{activeRunId}")"
-                                RunId="@activeRunId"
-                                GameRoot="@GameRoot"
-                                FixedCategory="@GetAreaCategory()"
-                                ShowHeading="false"
-                                ShowCategoryTabs="false" />
+            <nav class="live-lookup-tabs" role="tablist" aria-label="@Text["Lookup.Live.Sections"]">
+                @foreach (LiveLookupSection section in Enum.GetValues<LiveLookupSection>())
+                {
+                    <button type="button"
+                            class="@GetSectionTabClass(section)"
+                            role="tab"
+                            aria-selected="@(_selectedSection == section)"
+                            @onclick="() => SelectSection(section)">
+                        @GetSectionName(section)
+                    </button>
+                }
+            </nav>
+
+            @if (_selectedSection == LiveLookupSection.TypeCoverage)
+            {
+                <TypeCoveragePanel Game="@_connection.Game" State="@_connection.CurrentState" Selection="@_coverageSelection" />
+            }
+            else
+            {
+                <AreaLookupExplorer @key="@($"active-areas-{activeRunId}")"
+                                    SourceKey="@($"active:{activeRunId}:{_connection.CurrentState?.OverworldEncounters}")"
+                                    RunId="@activeRunId"
+                                    GameRoot="@GameRoot"
+                                    FixedCategory="@GetAreaCategory()"
+                                    ShowHeading="false"
+                                    ShowCategoryTabs="false" />
+            }
         }
     </section>
 }

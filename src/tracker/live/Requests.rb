@@ -154,6 +154,11 @@ module Ironmon
         payload["normal_only"] = true
         payload = Ironmon.tracker_pokemon_search_for_recipe(payload, nil)
         queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "prepare_run_lookup"
+        payload = Ironmon.tracker_run_lookup_preparation(
+          message["payload"], message["run_id"]
+        )
+        queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "area_lookup_summary"
         payload = Ironmon.tracker_area_lookup_summary(
           message["payload"], message["run_id"]

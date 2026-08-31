@@ -72,6 +72,11 @@ module Ironmon
       return @accepted_by_number.key?(dex_number.to_i)
     end
 
+    def number_index_for(candidate_pool)
+      return nil if !@pool.equal?(candidate_pool)
+      return @accepted_by_number
+    end
+
     private
 
     def build_pool
@@ -214,6 +219,12 @@ module Ironmon
     service = custom_fusion_pool_service
     return service.numbers if service.respond_to?(:numbers)
     return service.pool
+  end
+
+  def self.cached_custom_fusion_pool_index(pool)
+    service = @custom_fusion_pool_service
+    return nil if !service.respond_to?(:number_index_for)
+    return service.number_index_for(pool)
   end
 
   def self.custom_fusion_pool_info

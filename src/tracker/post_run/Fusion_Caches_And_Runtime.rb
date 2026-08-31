@@ -141,10 +141,6 @@ module Ironmon
     @tracker_lookup_cache ||= {}
   end
 
-  def self.tracker_wild_fusion_tables
-    @tracker_wild_fusion_tables ||= {}
-  end
-
   def self.tracker_fusion_mappers
     @tracker_fusion_mappers ||= {}
   end
@@ -164,8 +160,10 @@ module Ironmon
     @tracker_search_result_cache = nil
     @tracker_search_fusion_name_parts = nil
     @tracker_lookup_cache = nil
-    @tracker_wild_fusion_tables = nil
+    @tracker_wild_occurrence_work = nil
+    @tracker_wild_occurrence_sources = nil
     @tracker_fusion_mappers = nil
+    @tracker_area_fusion_work = nil
     @tracker_sprite_paths = nil
     @tracker_evolution_generators = nil
     @tracker_fusion_evolution_generators = nil

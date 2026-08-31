@@ -31,6 +31,11 @@ public static class TrackerEvents
     public const string ActiveRunPreparationReady = "active_run_preparation_ready";
 
     /// <summary>
+    /// Gets the current-state update announcing a changed overworld encounter option.
+    /// </summary>
+    public const string EncounterModeChanged = "encounter_mode_changed";
+
+    /// <summary>
     /// Gets the completed-run event.
     /// </summary>
     public const string RunCompleted = "run_completed";

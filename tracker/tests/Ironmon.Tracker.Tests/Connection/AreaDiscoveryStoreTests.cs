@@ -53,6 +53,35 @@ public sealed class AreaDiscoveryStoreTests : IDisposable
     }
 
     /// <summary>
+    /// Verifies each encountered fusion contributes once to the matching mechanic's progress.
+    /// </summary>
+    [Fact]
+    public void FusionDiscoveryCountsOnlyTheDisplayedEncounterMode()
+    {
+        AreaDiscoveryStore store = new(new TrackerKnowledgeOptions(CreateRoot()));
+        AreaDiscoveryPackagePayload package = new()
+        {
+            PackageId = "package-fusions",
+            AreaId = "area:10",
+            Category = AreaContentCategory.Encounter,
+            EntryKeys =
+            [
+                "encounter:10:0:Land:1",
+                "encounter_fusion:10:overworld_cross:0:Land:1:0:Water:2",
+                "encounter_fusion:10:standard_cross:0:Land:1:0:Water:2",
+                "encounter_fusion:10:standard_same:0:Land:1:0:Land:2"
+            ]
+        };
+
+        Assert.True(store.RecordPackage("run-fusions", package));
+        Assert.True(store.RecordPackage("run-fusions", package));
+        Assert.Equal(4, store.GetKeys("run-fusions", "area:10", AreaContentCategory.Encounter).Count);
+        Assert.Equal(4, store.GetCount("run-fusions", "area:10", AreaContentCategory.Encounter));
+        Assert.Equal(3, store.GetCount("run-fusions", "area:10", AreaContentCategory.Encounter, false));
+        Assert.Equal(2, store.GetCount("run-fusions", "area:10", AreaContentCategory.Encounter, true));
+    }
+
+    /// <summary>
     /// Verifies that newly complete detail entries and base-game completion state are persisted.
     /// </summary>
     [Fact]

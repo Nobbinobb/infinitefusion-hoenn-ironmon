@@ -43,6 +43,7 @@ module Ironmon
               "player fusion schema #{@schema_version} is unsupported"
       end
       @fusion_pool_ids = nil
+      @fusion_pool_error = nil
       @fusion_pool_membership = nil
       @fusion_pairs = nil
       @paired_result_ids = nil
@@ -863,7 +864,8 @@ module Ironmon
     end
 
     def ensure_fusion_pool
-      return if @fusion_pool_ids
+      raise @fusion_pool_error if @fusion_pool_error
+      return if @fusion_pairs && @paired_result_ids
       if !@fusion_pool || @fusion_pool.empty?
         raise PlayerFusionMappingError,
               "the custom fusion pool is empty"
@@ -901,6 +903,13 @@ module Ironmon
               "the custom fusion pool cannot form complete reverse pairs"
       end
       build_fusion_pairs
+    rescue StandardError => error
+      @fusion_pool_ids = nil
+      @fusion_pool_membership = nil
+      @fusion_pairs = nil
+      @paired_result_ids = nil
+      @fusion_pool_error = error
+      raise
     end
 
     def build_fusion_pairs
@@ -1067,10 +1076,61 @@ module Ironmon
             (score <=> best[0]) < 0
         end
       end
-      return false if !best
+      return repair_strength_chain(
+        pairs, current_first, current_second, maximum_pair_difference
+      ) if !best
       pairs.delete_at(best[1])
       pairs.concat(best[2])
       return true
+    end
+
+    def repair_strength_chain(pairs, current_first, current_second, maximum)
+      candidates_by_bst = {}
+      pairs.each_with_index do |pair, index|
+        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+        [pair, pair.reverse].each_with_index do |(partner, displaced), orientation|
+          bst = target_bst(partner)
+          candidates_by_bst[bst] ||= []
+          candidates_by_bst[bst] << [index, orientation, partner, displaced]
+        end
+      end
+      queue = [[current_first, [], []]]
+      visited = { current_first => true }
+      position = 0
+      while position < queue.length
+        current, replacements, removed = queue[position]
+        position += 1
+        bst = target_bst(current)
+        candidates = ((bst - maximum)..(bst + maximum)).flat_map do |value|
+          candidates_by_bst[value] || []
+        end.sort_by { |entry| entry[0] * 2 + entry[1] }
+        candidates.each_with_index do |candidate, candidate_index|
+          @work_checkpoint.call if @work_checkpoint &&
+            (candidate_index % 32).zero?
+          index, _orientation, partner, displaced = candidate
+          next if removed.include?(index)
+          next if visited[displaced] ||
+            !strength_pair_compatible?(current, partner, maximum)
+          if strength_pair_compatible?(displaced, current_second, maximum)
+            (removed + [index]).sort.reverse_each do |removed_index|
+              pairs.delete_at(removed_index)
+            end
+            pairs.concat(replacements + [
+              [current, partner], [displaced, current_second]
+            ])
+            return true
+          end
+          visited[displaced] = true
+          queue << [displaced, replacements + [[current, partner]],
+                    removed + [index]]
+        end
+      end
+      return false
+    end
+
+    def strength_pair_compatible?(first, second, maximum)
+      return (target_bst(first) - target_bst(second)).abs <= maximum &&
+        !shares_component?(first, second)
     end
 
     def maximum_fusion_range_width
@@ -1131,6 +1191,13 @@ module Ironmon
     end
 
     def validate_result_id(species_id)
+      if species_id.is_a?(Integer) && @fusion_pool_membership
+        return species_id if species_id > NB_POKEMON &&
+          species_id < Settings::ZAPMOLCUNO_NB &&
+          @fusion_pool_membership[species_id]
+        raise PlayerFusionMappingError,
+              "a player fusion mapping is no longer a valid custom fusion"
+      end
       species = GameData::Species.try_get(species_id)
       if !species || species.id_number <= NB_POKEMON ||
          species.id_number >= Settings::ZAPMOLCUNO_NB ||

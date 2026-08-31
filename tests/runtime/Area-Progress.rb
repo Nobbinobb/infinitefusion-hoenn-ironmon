@@ -204,7 +204,7 @@ module IronmonAreaProgressRuntimeTests
          occurrence_source["context_slot"]]
       )
       wild_occurrences = Ironmon.tracker_lookup_wild_occurrences(
-        GameData::Species.get(occurrence_target), active_recipe
+        GameData::Species.get(occurrence_target), active_recipe, []
       )
       wild_occurrence = wild_occurrences.find do |entry|
         entry["map_id"] == occurrence_source["map_id"] &&
@@ -443,12 +443,35 @@ module IronmonAreaProgressRuntimeTests
         end
       end
 
+      route_101 = Ironmon.tracker_area_catalog.find do |catalog_area|
+        catalog_area["name"] == "Route 101"
+      end
+      route_101_metadata = Ironmon.tracker_area_encounter_metadata(
+        route_101, { "data_mode" => Ironmon.tracker_data_mode }
+      )
+      route_101_environments = Ironmon.tracker_area_encounter_environment_index(
+        route_101_metadata
+      ).map { |entry| entry["key"] }
+      assert(
+        route_101_environments.include?("grass") &&
+          route_101_environments.include?("cross"),
+        "Route 101 exposes grass and cross-table lookup groups"
+      )
+
       $PokemonGlobal.ironmon_wild_species_map = {}
       Ironmon.reset_species_generator_cache
       paged_encounter_entries = Ironmon.tracker_area_encounter_metadata(
         area, { "data_mode" => Ironmon.tracker_data_mode }
       )
-      debug_page = Ironmon.tracker_area_lookup_detail(
+      debug_environment = Ironmon.tracker_area_encounter_environment(
+        paged_encounter_entries[0]["encounter_type"]
+      )
+      environment_entries = paged_encounter_entries.select do |entry|
+        Ironmon.tracker_area_encounter_environment(
+          entry["encounter_type"]
+        ) == debug_environment
+      end
+      debug_index = Ironmon.tracker_area_lookup_detail(
         {
           "area_id" => area["area_id"],
           "category" => "encounter",
@@ -461,11 +484,30 @@ module IronmonAreaProgressRuntimeTests
       debug_generator = Ironmon.tracker_area_species_generator(
         active_recipe, :wild
       )
+      has_debug_environment = debug_index["encounter_environments"].any? do |entry|
+        entry["key"] == debug_environment
+      end
+      assert(
+        debug_index["encounters"].empty? &&
+          has_debug_environment && debug_generator.mapping.empty?,
+        "encounter environment index does not generate species"
+      )
+      debug_page = Ironmon.tracker_area_lookup_detail(
+        {
+          "area_id" => area["area_id"],
+          "category" => "encounter",
+          "encounter_environment" => debug_environment,
+          "discovery_keys" => [],
+          "offset" => 0,
+          "limit" => 1
+        },
+        "runtime-test", true
+      )
       assert(
         debug_page["encounters"].length == 1 &&
-          debug_page["total_count"] == paged_encounter_entries.length &&
-          debug_generator.mapping.length == 1,
-        "authorized encounter lookup generates only the requested page"
+          debug_page["total_count"] >= environment_entries.length &&
+          debug_generator.mapping.length == environment_entries.length,
+        "authorized encounter lookup generates only the requested environment"
       )
       debug_source = paged_encounter_entries[0]
       debug_encounter = debug_page["encounters"][0]
@@ -482,6 +524,7 @@ module IronmonAreaProgressRuntimeTests
         {
           "area_id" => area["area_id"],
           "category" => "encounter",
+          "encounter_environment" => debug_environment,
           "discovery_keys" => [],
           "offset" => 0,
           "limit" => 10
@@ -505,6 +548,7 @@ module IronmonAreaProgressRuntimeTests
         {
           "area_id" => area["area_id"],
           "category" => "encounter",
+          "encounter_environment" => debug_environment,
           "discovery_keys" => [independent_id],
           "offset" => 0,
           "limit" => 10

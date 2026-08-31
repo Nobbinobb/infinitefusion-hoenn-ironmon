@@ -5,6 +5,93 @@ namespace Ironmon.Tracker.Tests.Protocol;
 /// </summary>
 public sealed class AreaLookupPayloadTests
 {
+    private const string _preparationAreaId = "area:5";
+    private const string _preparationAreaName = "Route 101";
+    private const string _crossEnvironment = "cross";
+    private const string _hiddenFusionJson = """
+        {"entry_id":"encounter_fusion:10:standard_cross:0:Land:1:0:Water:2","origin":"standard_cross","environment":"grass","cross_environment":true,"details_revealed":false,"first_encounter_type":"Land","first_slot":1,"second_encounter_type":"Water","second_slot":2,"fusion_chance_percent":5,"minimum_level":4,"maximum_level":6}
+        """;
+
+    /// <summary>
+    /// Verifies a metadata-only fusion row deserializes without requiring or fabricating identities.
+    /// </summary>
+    [Fact]
+    public void HiddenFusionRetainsSourcesWithoutIdentity()
+    {
+        using JsonDocument document = JsonDocument.Parse(_hiddenFusionJson);
+        AreaEncounterFusionEntryPayload fusion = TrackerJson.DeserializePayload<AreaEncounterFusionEntryPayload>(document.RootElement);
+        Assert.False(fusion.DetailsRevealed);
+        Assert.Null(fusion.SpeciesId);
+        Assert.Null(fusion.SpeciesName);
+        Assert.Null(fusion.SpritePath);
+        Assert.True(fusion.CrossEnvironment);
+        Assert.Equal(5, fusion.FusionChancePercent);
+        Assert.Equal(2, fusion.SecondSlot);
+    }
+
+    /// <summary>
+    /// Verifies an unfinished environment page survives serialization without claiming that its empty rows are final.
+    /// </summary>
+    [Fact]
+    public void PendingEncounterPageRoundTrips()
+    {
+        AreaLookupDetailResponsePayload response = new()
+        {
+            AreaId = _preparationAreaId,
+            Name = _preparationAreaName,
+            Category = AreaContentCategory.Encounter,
+            EncounterEnvironment = _crossEnvironment,
+            TotalCount = 96,
+            Pending = true,
+            OverworldEncounters = false,
+            RequiredFusionMaterials = [new FusionMaterialAssignmentPayload { BodyId = 25, HeadId = 4 }]
+        };
+
+        AreaLookupDetailResponsePayload result = TrackerJson.DeserializePayload<AreaLookupDetailResponsePayload>(TrackerJson.SerializePayload(response));
+
+        Assert.True(result.Pending);
+        Assert.False(result.OverworldEncounters);
+        Assert.Equal(96, result.TotalCount);
+        Assert.Empty(result.EncounterFusions);
+        Assert.Equal(_crossEnvironment, result.EncounterEnvironment);
+        Assert.Equal(25, Assert.Single(result.RequiredFusionMaterials).BodyId);
+    }
+
+    /// <summary>
+    /// Verifies native page assignments preserve their requested orientation and exact numeric result.
+    /// </summary>
+    [Fact]
+    public void NativeEncounterAssignmentsRoundTrip()
+    {
+        AreaLookupDetailRequestPayload request = new()
+        {
+            AreaId = _preparationAreaId,
+            Category = AreaContentCategory.Encounter,
+            EncounterEnvironment = _crossEnvironment,
+            UseNativeFusionMapping = true,
+            FusionResults = [new AreaFusionResultPayload { BodyId = 25, HeadId = 4, SpeciesNumber = 12345 }]
+        };
+        AreaLookupDetailRequestPayload result = TrackerJson.DeserializePayload<AreaLookupDetailRequestPayload>(TrackerJson.SerializePayload(request));
+        Assert.True(result.UseNativeFusionMapping);
+        AreaFusionResultPayload pair = Assert.Single(result.FusionResults);
+        Assert.Equal(25, pair.BodyId);
+        Assert.Equal(4, pair.HeadId);
+        Assert.Equal(12345, pair.SpeciesNumber);
+    }
+
+    /// <summary>
+    /// Verifies recovery and encounter-mode events retain either live option value.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ActiveEncounterModeRoundTrips(bool overworld)
+    {
+        GameCurrentStatePayload state = new(true, null, null, 0, overworldEncounters: overworld);
+        GameCurrentStatePayload result = TrackerJson.DeserializePayload<GameCurrentStatePayload>(TrackerJson.SerializePayload(state));
+        Assert.Equal(overworld, result.OverworldEncounters);
+    }
+
     /// <summary>
     /// Initializes area lookup payload tests.
     /// </summary>
@@ -62,6 +149,8 @@ public sealed class AreaLookupPayloadTests
             Offset = 10,
             Limit = TrackerProtocol.AreaLookupPageSize,
             TotalCount = 28,
+            EncounterEnvironment = "grass",
+            EncounterEnvironments = [new AreaEncounterEnvironmentPayload { Key = "grass" }],
             Encounters =
             [
                 new AreaEncounterEntryPayload
@@ -85,6 +174,8 @@ public sealed class AreaLookupPayloadTests
         Assert.Equal(10, json.GetProperty("offset").GetInt32());
         Assert.Equal(10, json.GetProperty("limit").GetInt32());
         Assert.Equal(28, json.GetProperty("total_count").GetInt32());
+        Assert.Equal("grass", json.GetProperty("encounter_environment").GetString());
+        Assert.Equal("grass", json.GetProperty("encounter_environments")[0].GetProperty("key").GetString());
         Assert.Equal(40, encounter.GetProperty("probability_percent").GetDouble());
         Assert.Equal(3, encounter.GetProperty("minimum_level").GetInt32());
         Assert.False(encounter.TryGetProperty("species_id", out _));
@@ -119,6 +210,43 @@ public sealed class AreaLookupPayloadTests
 
         Assert.Equal("Bulbasaur", result.SpeciesName);
         Assert.Equal("Graphics/Battlers/001.png", result.SpritePath);
+    }
+
+    /// <summary>
+    /// Verifies a discovered derived fusion retains both source tables and its conditional rate.
+    /// </summary>
+    [Fact]
+    public void DerivedEncounterFusionRoundTripsBothSources()
+    {
+        AreaEncounterFusionEntryPayload fusion = new()
+        {
+            EntryId = "encounter_fusion:10:overworld_cross:0:Land:1:0:Water:2",
+            Origin = "overworld_cross",
+            Environment = "grass",
+            CrossEnvironment = true,
+            DetailsRevealed = true,
+            Encountered = true,
+            FirstEncounterType = "Land",
+            FirstSlot = 1,
+            SecondEncounterType = "Water",
+            SecondSlot = 2,
+            FusionChancePercent = 36,
+            MinimumLevel = 4,
+            MaximumLevel = 6,
+            SpeciesId = "B1H2:0",
+            SpeciesName = "Bulbamander",
+            SpritePath = "Graphics/CustomBattlers/indexed/1/1.2.png"
+        };
+
+        JsonElement json = TrackerJson.SerializePayload(fusion);
+        AreaEncounterFusionEntryPayload result = TrackerJson.DeserializePayload<AreaEncounterFusionEntryPayload>(json);
+
+        Assert.True(result.CrossEnvironment);
+        Assert.True(result.DetailsRevealed);
+        Assert.True(result.Encountered);
+        Assert.Equal("Water", result.SecondEncounterType);
+        Assert.Equal(36, result.FusionChancePercent);
+        Assert.Equal("Bulbamander", result.SpeciesName);
     }
 
     /// <summary>

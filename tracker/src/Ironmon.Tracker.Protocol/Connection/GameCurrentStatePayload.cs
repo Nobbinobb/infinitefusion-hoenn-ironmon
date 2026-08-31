@@ -21,8 +21,9 @@ public sealed class GameCurrentStatePayload
     /// <param name="typeCoverage">The non-sensitive type-coverage compatibility context when supported.</param>
     /// <param name="fusionAssignments">The authorized active-run recipe for early native fusion assignment preparation.</param>
     /// <param name="activeRunPreparationReady">Whether the active run has reached the safe background-preparation boundary.</param>
+    /// <param name="overworldEncounters">The current overworld encounter option, or null for older games.</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when sequence is negative.</exception>
-    public GameCurrentStatePayload(bool ironmonActive, string? runId, string? battleId, long sequence, BattleSnapshot? battle = null, PlayerPokemonSnapshot? player = null, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null, StarterSelectionSnapshot? starterSelection = null, RunStatisticsPayload? attemptStatistics = null, CompletedRunRecipePayload? completedRun = null, TypeCoverageContextPayload? typeCoverage = null, FusionAssignmentRecipePayload? fusionAssignments = null, bool activeRunPreparationReady = false)
+    public GameCurrentStatePayload(bool ironmonActive, string? runId, string? battleId, long sequence, BattleSnapshot? battle = null, PlayerPokemonSnapshot? player = null, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null, StarterSelectionSnapshot? starterSelection = null, RunStatisticsPayload? attemptStatistics = null, CompletedRunRecipePayload? completedRun = null, TypeCoverageContextPayload? typeCoverage = null, FusionAssignmentRecipePayload? fusionAssignments = null, bool activeRunPreparationReady = false, bool? overworldEncounters = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(sequence);
         IronmonActive = ironmonActive;
@@ -38,6 +39,7 @@ public sealed class GameCurrentStatePayload
         TypeCoverage = typeCoverage;
         FusionAssignments = fusionAssignments;
         ActiveRunPreparationReady = activeRunPreparationReady;
+        OverworldEncounters = overworldEncounters;
     }
 
     /// <summary>
@@ -104,4 +106,9 @@ public sealed class GameCurrentStatePayload
     /// Gets whether the active run has reached the safe background-preparation boundary.
     /// </summary>
     public bool ActiveRunPreparationReady { get; }
+
+    /// <summary>
+    /// Gets the current overworld encounter option, or null when not reported by the game.
+    /// </summary>
+    public bool? OverworldEncounters { get; }
 }

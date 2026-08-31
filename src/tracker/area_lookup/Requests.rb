@@ -43,7 +43,7 @@ module Ironmon
           area["trainers"].length : 0,
         "trainer_defeated" => trainer_defeated,
         "encounter_total" => category == "encounter" ?
-          encounter_entries.length : 0,
+          tracker_area_encounter_total(encounter_entries, recipe) : 0,
         "encountered" => 0,
         "item_total" => category == "item" ? area["items"].length : 0,
         "items_collected" => items_collected
@@ -52,6 +52,7 @@ module Ironmon
     return {
       "schema_version" => tracker_area_catalog_document["schema_version"],
       "revision" => 0,
+      "overworld_encounters" => recipe["overworld_encounters"],
       "areas" => areas
     }
   end
@@ -67,6 +68,9 @@ module Ironmon
       raise TrackerLookupError.new("area_not_found", "The selected area is unavailable.")
     end
     category = payload["category"].to_s
+    encounter_environment = payload["encounter_environment"]
+    encounter_environment = encounter_environment.to_s if
+      encounter_environment
     offset = payload["offset"].to_i
     limit = payload["limit"].to_i
     if category == "encounter" &&
@@ -83,12 +87,18 @@ module Ironmon
       "area_id" => area["area_id"],
       "name" => area["name"],
       "category" => category,
+      "overworld_encounters" => recipe["overworld_encounters"],
       "revision" => 0,
       "offset" => category == "encounter" ? offset : 0,
       "limit" => category == "encounter" ? limit : 0,
       "total_count" => 0,
+      "encounter_environment" => category == "encounter" ?
+        encounter_environment : nil,
+      "encounter_environments" => [],
       "trainers" => [],
       "encounters" => [],
+      "encounter_fusions" => [],
+      "pending" => false,
       "items" => []
     }
     case category
@@ -98,12 +108,80 @@ module Ironmon
       )
       result["total_count"] = result["trainers"].length
     when "encounter"
-      result["total_count"] = tracker_area_encounter_metadata(
-        area, recipe
-      ).length
-      result["encounters"] = tracker_area_encounter_entries(
-        area, recipe, discovery_keys, full_details, offset, limit
+      metadata = tracker_area_encounter_metadata(area, recipe)
+      environments = tracker_area_encounter_environment_index(
+        metadata, recipe["overworld_encounters"]
       )
+      result["encounter_environments"] = environments
+      if encounter_environment
+        selected = environments.find do |entry|
+          entry["key"] == encounter_environment
+        end
+        if !selected
+          raise TrackerLookupError.new(
+            "invalid_area_environment",
+            "The selected encounter environment is invalid."
+          )
+        end
+        slots = if encounter_environment == "cross"
+                  []
+                else
+                  metadata.select do |entry|
+                    tracker_area_encounter_environment(
+                      entry["encounter_type"]
+                    ) == encounter_environment
+                  end
+                end
+        source_metadata = if encounter_environment == "cross"
+                            metadata.select do |entry|
+                              overworld_encounter_environment?(
+                                entry["encounter_type"]
+                              )
+                            end
+                          else
+                            slots
+                          end
+        sources = tracker_area_normal_encounter_sources(source_metadata, recipe)
+        fusion_count = tracker_area_encounter_fusion_count(
+          sources, encounter_environment == "cross",
+          encounter_environment == "cross" ? nil : encounter_environment,
+          recipe["overworld_encounters"]
+        )
+        result["total_count"] = slots.length + fusion_count
+        slot_page = slots.slice(offset, limit) || []
+        result["encounters"] = tracker_area_encounter_payloads(
+          slot_page, recipe, discovery_keys, full_details
+        )
+        fusion_offset = [offset - slots.length, 0].max
+        fusion_limit = limit - slot_page.length
+        if fusion_limit > 0
+          descriptors = tracker_area_encounter_fusion_descriptors(
+            sources, encounter_environment == "cross", fusion_offset,
+            fusion_limit,
+            encounter_environment == "cross" ? nil : encounter_environment,
+            recipe["overworld_encounters"]
+          )
+          fusions = tracker_area_encounter_fusion_entries(
+            descriptors, recipe, discovery_keys,
+            payload["use_native_fusion_mapping"] == true ?
+              (payload["fusion_results"] || []) : nil,
+            full_details
+          )
+          result["pending"] = fusions.nil?
+          result["encounter_fusions"] = fusions || []
+          if fusions.nil? && payload["use_native_fusion_mapping"] == true
+            revealed = tracker_area_revealed_fusion_descriptors(
+              descriptors, discovery_keys, full_details
+            )
+            result["required_fusion_materials"] =
+              tracker_area_encounter_fusion_materials(revealed).uniq.map do |pair|
+                { "body_id" => pair[0], "head_id" => pair[1] }
+              end
+          end
+        end
+      else
+        result["total_count"] = tracker_area_encounter_total(metadata, recipe)
+      end
     when "item"
       result["items"] = tracker_area_item_entries(
         area, recipe, discovery_keys, full_details, archived
@@ -139,6 +217,8 @@ module Ironmon
   def self.tracker_active_area_recipe(attempt)
     return {
       "active_run" => true,
+      "overworld_encounters" => !!($PokemonSystem &&
+        $PokemonSystem.overworld_encounters),
       "run_id" => attempt["run_id"],
       "seed" => attempt["seed"],
       "result" => attempt["result"],
@@ -152,7 +232,9 @@ module Ironmon
         $PokemonGlobal.randomTMsHash
       ),
       "species_generator_version" =>
-        $PokemonGlobal.ironmon_species_generator_version
+        $PokemonGlobal.ironmon_species_generator_version,
+      "player_fusion_generator_version" => PlayerFusionMapper::SCHEMA_VERSION,
+      "base_stat_source_fingerprint" => base_stat_source_fingerprint
     }
   end
 
@@ -162,8 +244,12 @@ module Ironmon
             when "trainer"
               area["trainers"].map { |entry| entry["entry_id"] }
             when "encounter"
-              tracker_area_encounter_metadata(area, recipe).
+              authored = tracker_area_encounter_metadata(area, recipe).
                 map { |entry| entry["entry_id"] }
+              fusions = keys.select do |key|
+                tracker_valid_area_encounter_fusion_key?(area, recipe, key)
+              end
+              authored + fusions
             when "item"
               area["items"].map { |entry| entry["entry_id"] }
             else
@@ -180,5 +266,29 @@ module Ironmon
       )
     end
     return keys.each_with_object({}) { |key, result| result[key] = true }
+  end
+
+  def self.tracker_valid_area_encounter_fusion_key?(area, recipe, key)
+    parsed = tracker_area_encounter_fusion_key(key)
+    return false if !parsed || !area["map_ids"].include?(parsed["map_id"])
+    metadata = tracker_area_encounter_metadata(area, recipe)
+    first = tracker_area_encounter_fusion_source(
+      metadata, parsed["map_id"], parsed["first_version"],
+      parsed["first_type"], parsed["first_slot"]
+    )
+    second = tracker_area_encounter_fusion_source(
+      metadata, parsed["map_id"], parsed["second_version"],
+      parsed["second_type"], parsed["second_slot"]
+    )
+    return false if !first || !second
+    same = first["version"] == second["version"] &&
+      first["encounter_type"] == second["encounter_type"]
+    return false if parsed["origin"].end_with?("same") != same
+    if parsed["origin"] == "standard_cross"
+      return false if !overworld_encounter_environment?(
+        first["encounter_type"]
+      ) || !overworld_encounter_environment?(second["encounter_type"])
+    end
+    return true
   end
 end
