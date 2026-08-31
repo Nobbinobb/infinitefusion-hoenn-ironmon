@@ -44,6 +44,20 @@ module IronmonAreaEncounterLookupProbe
     end
   end
 
+  def self.assert_concealed_fusion_page(response)
+    entries = response["encounter_fusions"]
+    raise "concealed fusion context is missing" if entries.empty?
+    raise "concealed fusion page started result preparation" if response["pending"]
+    raise "undisclosed fusion identities leaked" if entries.any? do |entry|
+      entry["details_revealed"] ||
+        ["species_id", "species_name", "sprite_path"].any? do |field|
+          entry.key?(field)
+        end
+    end
+    raise "undisclosed fusion materials leaked" if
+      !(response["required_fusion_materials"] || []).empty?
+  end
+
   module AreaMappingTrace
     def build_mapper
       report = IronmonAreaEncounterLookupProbe.report
@@ -98,6 +112,9 @@ module IronmonAreaEncounterLookupProbe
       return
     end
     mappings = Marshal.dump(Ironmon.pivot_state.fusion_mappings)
+    assert_concealed_fusion_page(
+      request("ordinary_cold", payload, run_id, false)
+    )
     raise "cold lookup must defer fusion preparation" if !request("cold", payload, run_id)["pending"]
     raise "repeated pending lookup must resume preparation" if !request("repeat", payload, run_id)["pending"]
     response = complete_request(payload, run_id)
@@ -111,7 +128,10 @@ module IronmonAreaEncounterLookupProbe
     end
     raise "background preparation changed fusion results" if request("after_preparation", payload, run_id)["encounter_fusions"] != expected
     hidden = request("ordinary_live", payload, run_id, false)
-    raise "undisclosed source pairs leaked" if hidden["pending"] || !hidden["encounter_fusions"].empty?
+    assert_concealed_fusion_page(hidden)
+    raise "concealed page changed its public count" if
+      hidden["encounter_fusions"].length != expected.length ||
+      hidden["total_count"] != response["total_count"]
     recipe = Ironmon.tracker_active_area_recipe(Ironmon.current_run_attempt)
     work = Ironmon.tracker_area_fusion_work(recipe)
     work.instance_variable_get(:@results).each do |pair, entry|
@@ -245,10 +265,7 @@ module IronmonAreaEncounterLookupProbe
       "encounter_environment" => "cross", "discovery_keys" => [],
       "offset" => 0, "limit" => 10, "use_native_fusion_mapping" => true
     }, recipe["run_id"], false)
-    raise "native lookup leaked undisclosed materials" if hidden["pending"] ||
-      hidden["encounter_fusions"].empty? ||
-      hidden["encounter_fusions"].any? { |entry| entry["details_revealed"] || entry["species_id"] || entry["species_name"] || entry["sprite_path"] } ||
-      !(hidden["required_fusion_materials"] || []).empty?
+    assert_concealed_fusion_page(hidden)
     work.instance_variable_get(:@results).each do |pair, entry|
       number = Ironmon.player_fusion_mapper.species_number(pair[0], pair[1])
       body = (number - 1) / NB_POKEMON

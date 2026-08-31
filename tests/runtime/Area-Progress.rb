@@ -471,6 +471,10 @@ module IronmonAreaProgressRuntimeTests
           entry["encounter_type"]
         ) == debug_environment
       end
+      fusion_work_before = (
+        Ironmon.instance_variable_get(:@tracker_area_fusion_work) || {}
+      ).dup
+      sprites_before = Ironmon.tracker_sprite_paths.dup
       debug_index = Ironmon.tracker_area_lookup_detail(
         {
           "area_id" => area["area_id"],
@@ -489,9 +493,17 @@ module IronmonAreaProgressRuntimeTests
       end
       assert(
         debug_index["encounters"].empty? &&
-          has_debug_environment && debug_generator.mapping.empty?,
-        "encounter environment index does not generate species"
+          debug_index["encounter_fusions"].empty? && has_debug_environment &&
+          debug_generator.mapping.length == paged_encounter_entries.length,
+        "encounter index counts source slots without disclosing identities"
       )
+      assert(
+        (Ironmon.instance_variable_get(:@tracker_area_fusion_work) || {}) ==
+          fusion_work_before && Ironmon.tracker_sprite_paths == sprites_before,
+        "encounter index does not resolve fusion results or sprites"
+      )
+      $PokemonGlobal.ironmon_wild_species_map = {}
+      Ironmon.reset_species_generator_cache
       debug_page = Ironmon.tracker_area_lookup_detail(
         {
           "area_id" => area["area_id"],
@@ -502,6 +514,9 @@ module IronmonAreaProgressRuntimeTests
           "limit" => 1
         },
         "runtime-test", true
+      )
+      debug_generator = Ironmon.tracker_area_species_generator(
+        active_recipe, :wild
       )
       assert(
         debug_page["encounters"].length == 1 &&
@@ -520,6 +535,7 @@ module IronmonAreaProgressRuntimeTests
       )
       $PokemonGlobal.ironmon_wild_species_map = {}
       Ironmon.reset_species_generator_cache
+      sprites_before = Ironmon.tracker_sprite_paths.dup
       hidden_detail = Ironmon.tracker_area_lookup_detail(
         {
           "area_id" => area["area_id"],
@@ -535,12 +551,19 @@ module IronmonAreaProgressRuntimeTests
         active_recipe, :wild
       )
       assert(
-        hidden_generator.mapping.empty?,
-        "concealed encounter rows are not generated during lookup"
+        hidden_generator.mapping.length == environment_entries.length,
+        "concealed lookup counts only the requested environment's source slots"
+      )
+      assert(
+        (Ironmon.instance_variable_get(:@tracker_area_fusion_work) || {}) ==
+          fusion_work_before && Ironmon.tracker_sprite_paths == sprites_before,
+        "concealed lookup does not resolve fusion results or sprites"
       )
       assert(
         hidden_detail["encounters"].all? do |entry|
-          !entry["details_revealed"] && !entry["independent_fusion"]
+          !entry["details_revealed"] && !entry["independent_fusion"] &&
+            !entry.key?("species_id") && !entry.key?("species_name") &&
+            !entry.key?("sprite_path")
         end,
         "concealed encounter rows expose metadata only"
       )
@@ -562,8 +585,8 @@ module IronmonAreaProgressRuntimeTests
         entry["entry_id"] == decoy_id
       end
       assert(
-        hidden_generator.mapping.length == 1,
-        "lookup generates only the disclosed encounter row"
+        hidden_generator.mapping.length == environment_entries.length,
+        "disclosing a row reuses the environment's counted source slots"
       )
       assert(revealed["details_revealed"], "requested discovery is revealed")
       assert(!hidden["details_revealed"], "unknown live slot remains hidden")
