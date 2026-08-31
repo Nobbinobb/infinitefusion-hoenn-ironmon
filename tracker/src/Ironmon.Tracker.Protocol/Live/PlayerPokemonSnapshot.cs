@@ -33,6 +33,12 @@ public sealed class PlayerPokemonSnapshot
     public required string SpeciesName { get; init; }
 
     /// <summary>
+    /// Gets or initializes whether the game identifies the Pokemon as a fusion.
+    /// Missing values from older game snapshots leave the marker hidden.
+    /// </summary>
+    public bool Fusion { get; init; }
+
+    /// <summary>
     /// Gets or initializes the stable gender identifier.
     /// </summary>
     public required string Gender { get; init; }
@@ -71,6 +77,11 @@ public sealed class PlayerPokemonSnapshot
     /// Gets or initializes the current type identifiers.
     /// </summary>
     public IReadOnlyList<string> Types { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes the privacy-filtered defensive overview.
+    /// </summary>
+    public DefenseOverviewSnapshot? DefensiveOverview { get; init; }
 
     /// <summary>
     /// Gets or initializes the localized ability name.

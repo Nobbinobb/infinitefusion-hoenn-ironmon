@@ -9,6 +9,35 @@ namespace Ironmon.Tracker.App.Components.Player;
 public partial class PlayerCard
 {
     private AbilitySnapshot? _selectedAbility;
+    private bool _defenseOpen;
+    private string? _defensePokemonId;
+
+    /// <summary>
+    /// Returns to the card when the selected individual changes.
+    /// </summary>
+    protected override void OnParametersSet()
+    {
+        string? pokemonId = Player?.PokemonId;
+        if (_defensePokemonId != pokemonId)
+            _defenseOpen = false;
+
+        _defensePokemonId = pokemonId;
+    }
+
+    /// <summary>
+    /// Opens the selected Pokemon's live defense overview.
+    /// </summary>
+    private void OpenDefense()
+    {
+        _selectedAbility = null;
+        _itemsOpen = false;
+        _defenseOpen = true;
+    }
+
+    /// <summary>
+    /// Returns from the defense overview to the Pokemon card.
+    /// </summary>
+    private void CloseDefense() => _defenseOpen = false;
     private bool _itemsOpen;
 
     /// <summary>

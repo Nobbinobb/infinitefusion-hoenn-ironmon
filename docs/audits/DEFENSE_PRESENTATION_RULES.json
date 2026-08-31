@@ -1,0 +1,2145 @@
+{
+  "schema_version": 1,
+  "protection_implications": {
+    "POISON": ["toxic_spikes"],
+    "major_status": ["toxic_spikes"],
+    "major_status_sun": ["toxic_spikes"]
+  },
+  "audit_revision": "2026-08-31",
+  "description": "Reviewed compact defenses from WEAKNESS_MODIFIERS_AUDIT.md and COMPACT_DEFENSE_COVERAGE_AUDIT.md. Passive capabilities and active/pending states only; unused moves are excluded. Older informational data remains usable.",
+  "abilities": {
+    "FLASHFIRE": {
+      "immunity": "FIRE"
+    },
+    "WATERABSORB": {
+      "immunity": "WATER",
+      "recovery": [
+        {
+          "trigger": "water_move",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                4
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "STORMDRAIN": {
+      "immunity": "WATER"
+    },
+    "VOLTABSORB": {
+      "immunity": "ELECTRIC",
+      "recovery": [
+        {
+          "trigger": "electric_move",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                4
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "LIGHTNINGROD": {
+      "immunity": "ELECTRIC"
+    },
+    "MOTORDRIVE": {
+      "immunity": "ELECTRIC"
+    },
+    "SAPSIPPER": {
+      "immunity": "GRASS"
+    },
+    "WONDERGUARD": {
+      "requires_super_effective": true
+    },
+    "LEVITATE": {
+      "section": "move_protections",
+      "condition": "airborne",
+      "airborne": true
+    },
+    "THICKFAT": {
+      "section": "modifiers",
+      "factor": 0.5,
+      "types": [
+        "FIRE",
+        "ICE"
+      ]
+    },
+    "HEATPROOF": {
+      "section": "modifiers",
+      "factor": 0.5,
+      "types": [
+        "FIRE"
+      ],
+      "additional": [
+        {
+          "protections": [
+            "half_burn_damage"
+          ]
+        }
+      ]
+    },
+    "WATERBUBBLE": {
+      "section": "modifiers",
+      "factor": 0.5,
+      "types": [
+        "FIRE"
+      ],
+      "protections": [
+        "BURN"
+      ]
+    },
+    "DRYSKIN": {
+      "section": "modifiers",
+      "factor": {
+        "FIRE": 1.25
+      },
+      "immunity": "WATER",
+      "recovery": [
+        {
+          "trigger": "Rain",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                8
+              ]
+            }
+          ],
+          "per_turn": true
+        },
+        {
+          "trigger": "water_move",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                4
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "FILTER": {
+      "section": "modifiers",
+      "factor": 0.75,
+      "super_effective": true
+    },
+    "SOLIDROCK": {
+      "section": "modifiers",
+      "factor": 0.75,
+      "super_effective": true
+    },
+    "PRISMARMOR": {
+      "section": "modifiers",
+      "factor": 0.75,
+      "super_effective": true
+    },
+    "FLUFFY": {
+      "section": "modifiers",
+      "factor": {
+        "FIRE": 2
+      },
+      "contact_factor": 0.5
+    },
+    "FURCOAT": {
+      "section": "modifiers",
+      "factor": 0.5,
+      "category": "physical"
+    },
+    "MULTISCALE": {
+      "section": "modifiers",
+      "factor": 0.5,
+      "condition": "full_hp"
+    },
+    "SHADOWSHIELD": {
+      "section": "modifiers",
+      "factor": 0.5,
+      "condition": "full_hp"
+    },
+    "MARVELSCALE": {
+      "section": "modifiers",
+      "factor": 0.6666666666666666,
+      "category": "physical",
+      "condition": "major_status"
+    },
+    "GRASSPELT": {
+      "section": "modifiers",
+      "factor": 0.6666666666666666,
+      "condition": "grassy_terrain"
+    },
+    "FLOWERGIFT": {
+      "section": "modifiers",
+      "factor": 0.6666666666666666,
+      "category": "special",
+      "condition": "sun",
+      "allies": true
+    },
+    "FRIENDGUARD": {
+      "ally": {
+        "section": "modifiers",
+        "factor": 0.75
+      }
+    },
+    "DARKAURA": {
+      "aura": "DARK"
+    },
+    "FAIRYAURA": {
+      "aura": "FAIRY"
+    },
+    "IMMUNITY": {
+      "protections": [
+        "POISON"
+      ]
+    },
+    "INSOMNIA": {
+      "protections": [
+        "SLEEP"
+      ]
+    },
+    "VITALSPIRIT": {
+      "protections": [
+        "SLEEP"
+      ]
+    },
+    "SWEETVEIL": {
+      "protections": [
+        "SLEEP"
+      ]
+    },
+    "LIMBER": {
+      "protections": [
+        "PARALYSIS"
+      ]
+    },
+    "MAGMAARMOR": {
+      "protections": [
+        "freeze"
+      ]
+    },
+    "WATERVEIL": {
+      "protections": [
+        "BURN"
+      ]
+    },
+    "OWNTEMPO": {
+      "protections": [
+        "confusion"
+      ]
+    },
+    "OBLIVIOUS": {
+      "protections": [
+        "infatuation"
+      ]
+    },
+    "INNERFOCUS": {
+      "protections": [
+        "flinch"
+      ]
+    },
+    "SHIELDDUST": {
+      "protections": [
+        "secondary_effects"
+      ]
+    },
+    "CLEARBODY": {
+      "protections": [
+        "stat_drops"
+      ]
+    },
+    "WHITESMOKE": {
+      "protections": [
+        "stat_drops"
+      ]
+    },
+    "FULLMETALBODY": {
+      "protections": [
+        "stat_drops"
+      ]
+    },
+    "BIGPECKS": {
+      "protections": [
+        "defense_drops"
+      ]
+    },
+    "HYPERCUTTER": {
+      "protections": [
+        "attack_drops"
+      ]
+    },
+    "KEENEYE": {
+      "protections": [
+        "accuracy_drops"
+      ]
+    },
+    "FLOWERVEIL": {
+      "protections": [
+        "major_status",
+        "stat_drops"
+      ],
+      "condition": "grass_type",
+      "allies": true
+    },
+    "LEAFGUARD": {
+      "protections": [
+        "major_status_sun"
+      ],
+      "condition": "sun"
+    },
+    "COMATOSE": {
+      "protections": [
+        "major_status"
+      ],
+      "condition": "komala"
+    },
+    "SHIELDSDOWN": {
+      "protections": [
+        "major_status"
+      ],
+      "condition": "shields_down"
+    },
+    "AROMAVEIL": {
+      "protections": [
+        "infatuation",
+        "TAUNT",
+        "TORMENT",
+        "ENCORE",
+        "DISABLE",
+        "HEALBLOCK"
+      ],
+      "allies": true
+    },
+    "SUCTIONCUPS": {
+      "protections": [
+        "forced_switching"
+      ]
+    },
+    "STICKYHOLD": {
+      "protections": [
+        "item_removal"
+      ]
+    },
+    "SOUNDPROOF": {
+      "section": "move_protections",
+      "protections": [
+        "sound"
+      ],
+      "move_flag": "k",
+      "ignores_uproar": true
+    },
+    "BULLETPROOF": {
+      "section": "move_protections",
+      "protections": [
+        "ball_bomb"
+      ],
+      "move_flag": "n"
+    },
+    "MAGICBOUNCE": {
+      "section": "move_protections",
+      "protections": [
+        "reflected_moves"
+      ],
+      "move_flag": "c"
+    },
+    "DAMP": {
+      "section": "move_protections",
+      "protections": [
+        "explosions"
+      ],
+      "moves": [
+        "SELFDESTRUCT",
+        "EXPLOSION",
+        "MINDBLOWN"
+      ],
+      "global": {
+        "protections": [
+          "explosions"
+        ],
+        "moves": [
+          "SELFDESTRUCT",
+          "EXPLOSION",
+          "MINDBLOWN"
+        ]
+      }
+    },
+    "TELEPATHY": {
+      "protections": [
+        "ally_attacks"
+      ]
+    },
+    "DAZZLING": {
+      "protections": [
+        "priority_moves"
+      ],
+      "allies": true
+    },
+    "QUEENLYMAJESTY": {
+      "protections": [
+        "priority_moves"
+      ],
+      "allies": true
+    },
+    "BATTLEARMOR": {
+      "protections": [
+        "critical_hits"
+      ]
+    },
+    "SHELLARMOR": {
+      "protections": [
+        "critical_hits"
+      ]
+    },
+    "MAGICGUARD": {
+      "protections": [
+        "indirect_damage",
+        "Sandstorm",
+        "Hail"
+      ],
+      "blocks_indirect_damage": true,
+      "additional": [
+        {
+          "protections": [
+            "stealth_rock",
+            "spikes"
+          ]
+        }
+      ]
+    },
+    "OVERCOAT": {
+      "protections": [
+        "Sandstorm",
+        "Hail"
+      ]
+    },
+    "SANDVEIL": {
+      "protections": [
+        "Sandstorm"
+      ],
+      "additional": [
+        {
+          "condition": "sandstorm",
+          "protections": [
+            "sand_evasion"
+          ]
+        }
+      ]
+    },
+    "SANDRUSH": {
+      "protections": [
+        "Sandstorm"
+      ]
+    },
+    "SANDFORCE": {
+      "protections": [
+        "Sandstorm"
+      ]
+    },
+    "SNOWCLOAK": {
+      "protections": [
+        "Hail"
+      ],
+      "additional": [
+        {
+          "condition": "hail",
+          "protections": [
+            "hail_evasion"
+          ]
+        }
+      ]
+    },
+    "ICEBODY": {
+      "protections": [
+        "Hail"
+      ],
+      "recovery": [
+        {
+          "trigger": "Hail",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                16
+              ]
+            }
+          ],
+          "per_turn": true
+        }
+      ]
+    },
+    "RAINDISH": {
+      "recovery": [
+        {
+          "trigger": "Rain",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                16
+              ]
+            }
+          ],
+          "per_turn": true
+        }
+      ]
+    },
+    "HYDRATION": {
+      "recovery": [
+        {
+          "trigger": "Rain",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "heal_status"
+            }
+          ]
+        }
+      ]
+    },
+    "STURDY": {
+      "protections": [
+        "one_hit_kos"
+      ],
+      "move_filter": {
+        "functions": [
+          "070"
+        ]
+      },
+      "additional": [
+        {
+          "condition": "full_hp",
+          "protections": [
+            "survive_full"
+          ]
+        }
+      ]
+    },
+    "KLUTZ": {
+      "disables_item": true
+    },
+    "CLOUDNINE": {
+      "suppresses_weather": true
+    },
+    "AIRLOCK": {
+      "suppresses_weather": true
+    },
+    "AURABREAK": {
+      "reverses_aura": true
+    },
+    "POISONHEAL": {
+      "protections": [
+        "poison_damage"
+      ],
+      "recovery": [
+        {
+          "trigger": "poisoned",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                8
+              ]
+            }
+          ],
+          "per_turn": true
+        }
+      ]
+    },
+    "REGENERATOR": {
+      "recovery": [
+        {
+          "trigger": "switch_out",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                3
+              ]
+            }
+          ],
+          "ignore_heal_block": true
+        }
+      ]
+    },
+    "NATURALCURE": {
+      "recovery": [
+        {
+          "trigger": "switch_out",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "heal_status"
+            }
+          ]
+        }
+      ]
+    },
+    "SHEDSKIN": {
+      "recovery": [
+        {
+          "trigger": "turn_end",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "heal_status"
+            }
+          ],
+          "chance": 30
+        }
+      ]
+    },
+    "HEALER": {
+      "ally": {
+        "recovery": [
+          {
+            "trigger": "turn_end",
+            "outcomes": [
+              {
+                "kind": "text",
+                "label": "heal_status"
+              }
+            ],
+            "chance": 30
+          }
+        ]
+      }
+    },
+    "CHEEKPOUCH": {
+      "recovery": [
+        {
+          "trigger": "berry_consumed",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                3
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "EARLYBIRD": {
+      "recovery": [
+        {
+          "trigger": "SLEEP",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "half_sleep"
+            }
+          ]
+        }
+      ]
+    },
+    "UNNERVE": {
+      "blocks_berries": true
+    },
+    "LIQUIDOOZE": {
+      "reverses_drain": true
+    },
+    "ROCKHEAD": {
+      "protections": [
+        "recoil"
+      ],
+      "move_filter": {
+        "recoil": true
+      }
+    },
+    "LONGREACH": {
+      "protections": [
+        "contact_effects"
+      ]
+    },
+    "DISGUISE": {
+      "ignores_suppression": true,
+      "condition": "disguise_intact",
+      "protections": [
+        "first_hit_shield"
+      ]
+    },
+    "TANGLEDFEET": {
+      "condition": "confused",
+      "protections": [
+        "half_accuracy"
+      ]
+    },
+    "WONDERSKIN": {
+      "move_filter": { "category": "status", "minimum_accuracy": 51, "targets_foe": true },
+      "protections": [
+        "status_accuracy_cap"
+      ]
+    },
+    "UNAWARE": {
+      "protections": [
+        "ignore_attack_stages",
+        "ignore_accuracy_stages"
+      ]
+    },
+    "CONTRARY": {
+      "protections": [
+        "reverse_stat_changes"
+      ]
+    }
+  },
+  "labels": {
+    "freeze": "Freeze",
+    "confusion": "Confusion",
+    "infatuation": "Infatuation",
+    "flinch": "Flinch",
+    "secondary_effects": "Secondary effects",
+    "stat_drops": "Stat drops",
+    "defense_drops": "Defense drops",
+    "attack_drops": "Attack drops",
+    "accuracy_drops": "Accuracy drops",
+    "major_status": "Major status",
+    "heal_status": "Heals status conditions",
+    "major_status_sun": "Major status (sun)",
+    "forced_switching": "Forced switching",
+    "item_removal": "Item removal",
+    "sound": "Sound",
+    "ball_bomb": "Ball & bomb",
+    "reflected_moves": "Reflected moves",
+    "explosions": "Explosions",
+    "ally_attacks": "Ally attacks",
+    "priority_moves": "Priority moves",
+    "critical_hits": "Critical hits",
+    "indirect_damage": "Indirect damage",
+    "one_hit_kos": "One-hit KOs",
+    "trapping": "Trapping",
+    "spread_moves": "Spread moves",
+    "status_moves": "Status moves",
+    "damaging_moves": "Damaging moves",
+    "turn_end": "Turn end",
+    "water_move": "Water move",
+    "electric_move": "Electric move",
+    "poisoned": "Poisoned",
+    "switch_out": "Switch out",
+    "switch_in": "Switch in",
+    "berry_consumed": "Berry consumed",
+    "half_hp": "HP ≤ 1/2",
+    "super_effective_hit": "Super-effective hit",
+    "damage_dealt": "Damage dealt",
+    "status_or_confusion": "Status / confusion",
+    "stat_drop": "Stat drop",
+    "heal_condition": "Heals condition",
+    "heal_confusion": "Heals confusion",
+    "heal_status_confusion": "Heals status and confusion",
+    "remove_effect": "Removes effect",
+    "restore_stages": "Restores lowered stages",
+    "half_sleep": "Sleep duration ×1/2",
+    "next_turn_end": "Next turn end",
+    "poison_damage": "Poison damage",
+    "recoil": "Recoil",
+    "contact_effects": "Contact effects",
+    "survive_full": "1 HP survival (full HP)",
+    "survive_full_once": "1 HP survival (full HP, once)",
+    "survive_full_chance": "1 HP survival (full HP, 10%)",
+    "survive_hit": "1 HP survival",
+    "first_hit_shield": "First-hit damage shield",
+    "guarded_moves": "Guarded moves",
+    "guarded_damage": "Guarded damaging moves",
+    "shielded_status": "Blocked status moves",
+    "damage_shield": "Damage shield",
+    "spikes": "Spikes",
+    "toxic_spikes": "Toxic Spikes",
+    "sticky_web": "Sticky Web",
+    "stealth_rock": "Stealth Rock",
+    "half_burn_damage": "Burn damage ×0.5",
+    "sand_evasion": "Evasion ×1.25 (sandstorm)",
+    "hail_evasion": "Evasion ×1.25 (hail)",
+    "half_accuracy": "Incoming accuracy ×0.5 (confused)",
+    "status_accuracy_cap": "Foe status-move accuracy ≤50%",
+    "ignore_attack_stages": "Attacker's attack stages ignored",
+    "ignore_accuracy_stages": "Attacker's accuracy stages ignored (damage)",
+    "reverse_stat_changes": "Stat changes reversed",
+    "accuracy_nine_tenths": "Incoming accuracy ×0.9",
+    "half_move_damage": "Move damage ×0.5"
+  },
+  "label_catalogs": {
+    "status": [
+      "POISON",
+      "BURN",
+      "SLEEP",
+      "PARALYSIS"
+    ],
+    "weather": [
+      "Sandstorm",
+      "Hail",
+      "Rain"
+    ],
+    "move": [
+      "LEECHSEED",
+      "POWDER",
+      "TAUNT",
+      "TORMENT",
+      "ENCORE",
+      "DISABLE",
+      "HEALBLOCK"
+    ]
+  },
+  "attack_types": [
+    "NORMAL",
+    "FIRE",
+    "WATER",
+    "ELECTRIC",
+    "GRASS",
+    "ICE",
+    "FIGHTING",
+    "POISON",
+    "GROUND",
+    "FLYING",
+    "PSYCHIC",
+    "BUG",
+    "ROCK",
+    "GHOST",
+    "DRAGON",
+    "DARK",
+    "STEEL",
+    "FAIRY"
+  ],
+  "conditions": {
+    "full_hp": {
+      "op": "equal",
+      "left": {
+        "field": "hp"
+      },
+      "right": {
+        "field": "total_hp"
+      }
+    },
+    "major_status": {
+      "op": "not",
+      "value": {
+        "op": "equal",
+        "left": {
+          "field": "status"
+        },
+        "right": "NONE"
+      }
+    },
+    "sun": {
+      "op": "in",
+      "value": {
+        "field": "weather"
+      },
+      "set": [
+        "Sun",
+        "HarshSun"
+      ],
+      "battle_only": true
+    },
+    "grassy_terrain": {
+      "op": "equal",
+      "left": {
+        "field": "terrain"
+      },
+      "right": "Grassy",
+      "battle_only": true
+    },
+    "grass_type": {
+      "op": "includes",
+      "field": "types",
+      "value": "GRASS"
+    },
+    "poison_type": {
+      "op": "includes",
+      "field": "types",
+      "value": "POISON"
+    },
+    "airborne": {
+      "op": "not",
+      "value": {
+        "field": "grounded"
+      }
+    },
+    "komala": {
+      "op": "species",
+      "id": "KOMALA"
+    },
+    "shields_down": {
+      "op": "all",
+      "values": [
+        {
+          "op": "fusion",
+          "id": "MINIOR_C"
+        },
+        {
+          "op": "less_than",
+          "left": {
+            "field": "form"
+          },
+          "right": 7
+        }
+      ]
+    },
+    "evolvable": {
+      "field": "evolvable"
+    },
+    "ditto": {
+      "op": "all",
+      "values": [
+        {
+          "op": "fusion",
+          "id": "DITTO"
+        },
+        {
+          "op": "not",
+          "value": {
+            "field": "transformed"
+          }
+        }
+      ]
+    },
+    "clamperl": {
+      "op": "species",
+      "id": "CLAMPERL"
+    },
+    "soul_dew": {
+      "op": "all",
+      "values": [
+        {
+          "op": "any",
+          "values": [
+            {
+              "op": "fusion",
+              "id": "LATIAS"
+            },
+            {
+              "op": "fusion",
+              "id": "LATIOS"
+            }
+          ]
+        },
+        {
+          "op": "not",
+          "value": {
+            "field": "soul_dew_clause"
+          }
+        },
+        {
+          "op": "not",
+          "value": {
+            "field": "soul_dew_powers_types"
+          }
+        }
+      ]
+    },
+    "rock_type": {
+      "op": "includes",
+      "field": "types",
+      "value": "ROCK"
+    },
+    "terrain_affected": {
+      "field": "terrain_affected"
+    },
+    "sandstorm": {
+      "op": "equal",
+      "left": {
+        "field": "weather"
+      },
+      "right": "Sandstorm",
+      "battle_only": true
+    },
+    "hail": {
+      "op": "equal",
+      "left": {
+        "field": "weather"
+      },
+      "right": "Hail",
+      "battle_only": true
+    },
+    "airborne_now": {
+      "field": "airborne"
+    },
+    "confused": {
+      "op": "effect",
+      "id": "Confusion"
+    },
+    "disguise_intact": {
+      "op": "all",
+      "values": [
+        {
+          "op": "fusion",
+          "id": "MIMIKYU"
+        },
+        {
+          "op": "equal",
+          "left": {
+            "field": "form"
+          },
+          "right": 0
+        }
+      ]
+    },
+    "underground_underwater": {
+      "op": "in",
+      "value": {
+        "field": "two_turn_function"
+      },
+      "set": [
+        "0CA",
+        "0CB"
+      ]
+    }
+  },
+  "items": {
+    "SHEDSHELL": {
+      "protections": [
+        "trapping"
+      ]
+    },
+    "SAFETYGOGGLES": {
+      "protections": [
+        "Sandstorm",
+        "Hail"
+      ]
+    },
+    "ASSAULTVEST": {
+      "section": "modifiers",
+      "factor": 0.6666666666666666,
+      "category": "special"
+    },
+    "LEFTOVERS": {
+      "recovery": [
+        {
+          "trigger": "turn_end",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                16
+              ]
+            }
+          ],
+          "per_turn": true
+        }
+      ]
+    },
+    "BLACKSLUDGE": {
+      "recovery": [
+        {
+          "trigger": "turn_end",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                16
+              ]
+            }
+          ],
+          "per_turn": true
+        }
+      ],
+      "condition": "poison_type"
+    },
+    "EVIOLITE": {
+      "id": "eviolite",
+      "section": "modifiers",
+      "factor": 0.6666666666666666,
+      "condition": "evolvable"
+    },
+    "METALPOWDER": {
+      "id": "metal_powder",
+      "section": "modifiers",
+      "factor": 0.6666666666666666,
+      "condition": "ditto"
+    },
+    "DEEPSEASCALE": {
+      "id": "deep_sea_scale",
+      "section": "modifiers",
+      "factor": 0.5,
+      "category": "special",
+      "condition": "clamperl"
+    },
+    "SOULDEW": {
+      "id": "soul_dew",
+      "section": "modifiers",
+      "factor": 0.6666666666666666,
+      "category": "special",
+      "condition": "soul_dew"
+    },
+    "AIRBALLOON": {
+      "airborne": true,
+      "condition": "airborne"
+    },
+    "IRONBALL": {
+      "grounds": true,
+      "ground_matchup_override": true
+    },
+    "RINGTARGET": {
+      "removes_chart_immunity": true
+    },
+    "BIGROOT": {
+      "recovery_multiplier": 1.3
+    },
+    "SITRUSBERRY": {
+      "recovery": [
+        {
+          "trigger": "half_hp",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                4
+              ]
+            }
+          ],
+          "once": true,
+          "berry": true
+        }
+      ]
+    },
+    "ORANBERRY": {
+      "recovery": [
+        {
+          "trigger": "half_hp",
+          "outcomes": [
+            {
+              "kind": "hp_flat",
+              "amount": 10
+            }
+          ],
+          "once": true,
+          "berry": true
+        }
+      ]
+    },
+    "BERRYJUICE": {
+      "recovery": [
+        {
+          "trigger": "half_hp",
+          "outcomes": [
+            {
+              "kind": "hp_flat",
+              "amount": 20
+            }
+          ],
+          "once": true,
+          "berry": false
+        }
+      ]
+    },
+    "FIGYBERRY": {
+      "recovery": [
+        {
+          "trigger": "half_hp",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                8
+              ]
+            }
+          ],
+          "once": true,
+          "berry": true,
+          "confusion_flavor": "ATTACK"
+        }
+      ]
+    },
+    "IAPAPABERRY": {
+      "recovery": [
+        {
+          "trigger": "half_hp",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                8
+              ]
+            }
+          ],
+          "once": true,
+          "berry": true,
+          "confusion_flavor": "DEFENSE"
+        }
+      ]
+    },
+    "MAGOBERRY": {
+      "recovery": [
+        {
+          "trigger": "half_hp",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                8
+              ]
+            }
+          ],
+          "once": true,
+          "berry": true,
+          "confusion_flavor": "SPEED"
+        }
+      ]
+    },
+    "WIKIBERRY": {
+      "recovery": [
+        {
+          "trigger": "half_hp",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                8
+              ]
+            }
+          ],
+          "once": true,
+          "berry": true,
+          "confusion_flavor": "SPECIAL_ATTACK"
+        }
+      ]
+    },
+    "AGUAVBERRY": {
+      "recovery": [
+        {
+          "trigger": "half_hp",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                8
+              ]
+            }
+          ],
+          "once": true,
+          "berry": true,
+          "confusion_flavor": "SPECIAL_DEFENSE"
+        }
+      ]
+    },
+    "ENIGMABERRY": {
+      "recovery": [
+        {
+          "trigger": "super_effective_hit",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                4
+              ]
+            }
+          ],
+          "once": true,
+          "berry": true
+        }
+      ]
+    },
+    "SHELLBELL": {
+      "recovery": [
+        {
+          "trigger": "damage_dealt",
+          "outcomes": [
+            {
+              "kind": "hp_damage",
+              "amount": [
+                1,
+                8
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "CHESTOBERRY": {
+      "recovery": [
+        {
+          "trigger": "SLEEP",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "heal_condition"
+            }
+          ],
+          "once": true,
+          "berry": true
+        }
+      ]
+    },
+    "PECHABERRY": {
+      "recovery": [
+        {
+          "trigger": "POISON",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "heal_condition"
+            }
+          ],
+          "once": true,
+          "berry": true
+        }
+      ]
+    },
+    "RAWSTBERRY": {
+      "recovery": [
+        {
+          "trigger": "BURN",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "heal_condition"
+            }
+          ],
+          "once": true,
+          "berry": true
+        }
+      ]
+    },
+    "CHERIBERRY": {
+      "recovery": [
+        {
+          "trigger": "PARALYSIS",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "heal_condition"
+            }
+          ],
+          "once": true,
+          "berry": true
+        }
+      ]
+    },
+    "ASPEARBERRY": {
+      "recovery": [
+        {
+          "trigger": "freeze",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "heal_condition"
+            }
+          ],
+          "once": true,
+          "berry": true
+        }
+      ]
+    },
+    "PERSIMBERRY": {
+      "recovery": [
+        {
+          "trigger": "confusion",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "heal_confusion"
+            }
+          ],
+          "once": true,
+          "berry": true
+        }
+      ]
+    },
+    "LUMBERRY": {
+      "recovery": [
+        {
+          "trigger": "status_or_confusion",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "heal_status_confusion"
+            }
+          ],
+          "once": true,
+          "berry": true
+        }
+      ]
+    },
+    "MENTALHERB": {
+      "recovery": [
+        {
+          "trigger": "infatuation",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "remove_effect"
+            }
+          ],
+          "once": true
+        },
+        {
+          "trigger": "TAUNT",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "remove_effect"
+            }
+          ],
+          "once": true
+        },
+        {
+          "trigger": "ENCORE",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "remove_effect"
+            }
+          ],
+          "once": true
+        },
+        {
+          "trigger": "TORMENT",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "remove_effect"
+            }
+          ],
+          "once": true
+        },
+        {
+          "trigger": "DISABLE",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "remove_effect"
+            }
+          ],
+          "once": true
+        },
+        {
+          "trigger": "HEALBLOCK",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "remove_effect"
+            }
+          ],
+          "once": true
+        }
+      ]
+    },
+    "WHITEHERB": {
+      "recovery": [
+        {
+          "trigger": "stat_drop",
+          "outcomes": [
+            {
+              "kind": "text",
+              "label": "restore_stages"
+            }
+          ],
+          "once": true
+        }
+      ]
+    },
+    "PROTECTIVEPADS": {
+      "protections": [
+        "contact_effects"
+      ]
+    },
+    "FOCUSSASH": {
+      "condition": "full_hp",
+      "protections": [
+        "survive_full_once"
+      ]
+    },
+    "FOCUSBAND": {
+      "condition": "full_hp",
+      "protections": [
+        "survive_full_chance"
+      ]
+    },
+    "BRIGHTPOWDER": {
+      "protections": [
+        "accuracy_nine_tenths"
+      ]
+    },
+    "LAXINCENSE": {
+      "protections": [
+        "accuracy_nine_tenths"
+      ]
+    }
+  },
+  "resist_berries": {
+    "CHILANBERRY": "NORMAL",
+    "OCCABERRY": "FIRE",
+    "PASSHOBERRY": "WATER",
+    "WACANBERRY": "ELECTRIC",
+    "RINDOBERRY": "GRASS",
+    "YACHEBERRY": "ICE",
+    "CHOPLEBERRY": "FIGHTING",
+    "KEBIABERRY": "POISON",
+    "SHUCABERRY": "GROUND",
+    "COBABERRY": "FLYING",
+    "PAYAPABERRY": "PSYCHIC",
+    "TANGABERRY": "BUG",
+    "CHARTIBERRY": "ROCK",
+    "KASIBBERRY": "GHOST",
+    "HABANBERRY": "DRAGON",
+    "COLBURBERRY": "DARK",
+    "BABIRIBERRY": "STEEL",
+    "ROSELIBERRY": "FAIRY"
+  },
+  "resist_berry": {
+    "id": "resist_berry",
+    "section": "modifiers",
+    "factor": 0.5,
+    "allow_resisted_type": "NORMAL",
+    "minimum_matchup": 1
+  },
+  "type_protections": [
+    {
+      "id": "type_poison",
+      "types": [
+        "POISON",
+        "STEEL"
+      ],
+      "protections": [
+        "POISON"
+      ]
+    },
+    {
+      "id": "type_burn",
+      "types": [
+        "FIRE"
+      ],
+      "protections": [
+        "BURN"
+      ]
+    },
+    {
+      "id": "type_freeze",
+      "types": [
+        "ICE"
+      ],
+      "protections": [
+        "freeze"
+      ]
+    },
+    {
+      "id": "type_paralysis",
+      "types": [
+        "ELECTRIC"
+      ],
+      "protections": [
+        "PARALYSIS"
+      ],
+      "more_type_effects": true
+    },
+    {
+      "id": "type_leech_seed",
+      "types": [
+        "GRASS"
+      ],
+      "protections": [
+        "LEECHSEED"
+      ]
+    },
+    {
+      "id": "type_powder",
+      "types": [
+        "GRASS"
+      ],
+      "protections": [
+        "POWDER"
+      ],
+      "move_flag": "l",
+      "more_type_effects": true
+    },
+    {
+      "id": "type_escape",
+      "types": [
+        "GHOST"
+      ],
+      "protections": [
+        "trapping"
+      ],
+      "more_type_effects": true
+    },
+    {
+      "id": "type_sandstorm",
+      "types": [
+        "ROCK",
+        "GROUND",
+        "STEEL"
+      ],
+      "protections": [
+        "Sandstorm"
+      ]
+    },
+    {
+      "id": "type_hail",
+      "types": [
+        "ICE"
+      ],
+      "protections": [
+        "Hail"
+      ]
+    }
+  ],
+  "weather": {
+    "Sun": [
+      {
+        "id": "sun_damage",
+        "section": "modifiers",
+        "factor": {
+          "FIRE": 1.5,
+          "WATER": 0.5
+        }
+      },
+      {
+        "id": "sun_freeze",
+        "protections": [
+          "freeze"
+        ]
+      }
+    ],
+    "HarshSun": [
+      {
+        "id": "sun_damage",
+        "section": "modifiers",
+        "factor": {
+          "FIRE": 1.5,
+          "WATER": 0.5
+        }
+      },
+      {
+        "id": "sun_freeze",
+        "protections": [
+          "freeze"
+        ]
+      }
+    ],
+    "Rain": [
+      {
+        "id": "rain_damage",
+        "section": "modifiers",
+        "factor": {
+          "WATER": 1.5,
+          "FIRE": 0.5
+        }
+      }
+    ],
+    "HeavyRain": [
+      {
+        "id": "rain_damage",
+        "section": "modifiers",
+        "factor": {
+          "WATER": 1.5,
+          "FIRE": 0.5
+        }
+      }
+    ],
+    "Sandstorm": [
+      {
+        "id": "sandstorm_defense",
+        "section": "modifiers",
+        "factor": 0.6666666666666666,
+        "category": "special",
+        "condition": "rock_type"
+      }
+    ]
+  },
+  "terrain": {
+    "Misty": [
+      {
+        "id": "misty_dragon",
+        "section": "modifiers",
+        "factor": 0.5,
+        "types": [
+          "DRAGON"
+        ],
+        "condition": "terrain_affected"
+      },
+      {
+        "id": "misty_status",
+        "protections": [
+          "major_status",
+          "confusion"
+        ],
+        "condition": "terrain_affected"
+      }
+    ],
+    "Electric": [
+      {
+        "id": "electric_sleep",
+        "protections": [
+          "SLEEP"
+        ],
+        "condition": "terrain_affected"
+      },
+      {
+        "id": "terrain_attack_boost",
+        "section": "modifiers",
+        "factor": 1.5,
+        "types": [
+          "ELECTRIC"
+        ],
+        "conditional": true
+      }
+    ],
+    "Psychic": [
+      {
+        "id": "psychic_priority",
+        "protections": [
+          "priority_moves"
+        ],
+        "condition": "terrain_affected"
+      },
+      {
+        "id": "terrain_attack_boost",
+        "section": "modifiers",
+        "factor": 1.5,
+        "types": [
+          "PSYCHIC"
+        ],
+        "conditional": true
+      }
+    ],
+    "Grassy": [
+      {
+        "id": "terrain_attack_boost",
+        "section": "modifiers",
+        "factor": 1.5,
+        "types": [
+          "GRASS"
+        ],
+        "conditional": true
+      },
+      {
+        "id": "grassy_recovery",
+        "condition": "terrain_affected",
+        "recovery": [
+          {
+            "trigger": "turn_end",
+            "outcomes": [
+              {
+                "kind": "hp_fraction",
+                "amount": [
+                  1,
+                  16
+                ]
+              }
+            ],
+            "per_turn": true
+          }
+        ]
+      },
+      {
+        "id": "grassy_move_reduction",
+        "section": "modifiers",
+        "factor": 0.5,
+        "types": [
+          "GROUND"
+        ],
+        "category": "physical",
+        "conditional": true,
+        "protections": [
+          "half_move_damage"
+        ],
+        "moves": [
+          "EARTHQUAKE",
+          "MAGNITUDE",
+          "BULLDOZE"
+        ]
+      }
+    ]
+  },
+  "side": {
+    "Safeguard": {
+      "id": "safeguard",
+      "protections": [
+        "major_status",
+        "confusion"
+      ]
+    },
+    "Mist": {
+      "id": "mist",
+      "protections": [
+        "stat_drops"
+      ]
+    },
+    "LuckyChant": {
+      "id": "lucky_chant",
+      "protections": [
+        "critical_hits"
+      ]
+    },
+    "WideGuard": {
+      "protections": [
+        "spread_moves"
+      ]
+    },
+    "QuickGuard": {
+      "protections": [
+        "priority_moves"
+      ]
+    },
+    "CraftyShield": {
+      "protections": [
+        "status_moves"
+      ]
+    },
+    "MatBlock": {
+      "protections": [
+        "damaging_moves"
+      ]
+    }
+  },
+  "effects": {
+    "Ingrain": {
+      "protections": [
+        "forced_switching"
+      ],
+      "recovery": [
+        {
+          "trigger": "turn_end",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                16
+              ]
+            }
+          ],
+          "per_turn": true,
+          "drain_boost": true
+        }
+      ]
+    },
+    "AquaRing": {
+      "recovery": [
+        {
+          "trigger": "turn_end",
+          "outcomes": [
+            {
+              "kind": "hp_fraction",
+              "amount": [
+                1,
+                16
+              ]
+            }
+          ],
+          "per_turn": true,
+          "drain_boost": true
+        }
+      ]
+    },
+    "Protect": {
+      "protections": [
+        "guarded_moves"
+      ],
+      "move_filter": {
+        "flag": "b"
+      }
+    },
+    "SpikyShield": {
+      "protections": [
+        "guarded_moves"
+      ],
+      "move_filter": {
+        "flag": "b"
+      }
+    },
+    "BanefulBunker": {
+      "protections": [
+        "guarded_moves"
+      ],
+      "move_filter": {
+        "flag": "b"
+      }
+    },
+    "KingsShield": {
+      "protections": [
+        "guarded_damage"
+      ],
+      "move_filter": {
+        "flag": "b",
+        "category": "damaging"
+      }
+    },
+    "Substitute": {
+      "protections": [
+        "shielded_status"
+      ],
+      "move_filter": {
+        "category": "status",
+        "substitute_blocked": true
+      },
+      "additional": [
+        {
+          "protections": [
+            "damage_shield"
+          ]
+        }
+      ]
+    },
+    "Endure": {
+      "protections": [
+        "survive_hit"
+      ]
+    }
+  },
+  "screens": {
+    "AuroraVeil": {},
+    "Reflect": {
+      "category": "physical",
+      "disabled_by": "AuroraVeil"
+    },
+    "LightScreen": {
+      "category": "special",
+      "disabled_by": "AuroraVeil"
+    }
+  },
+  "sports": {
+    "MudSport": {
+      "field": "MudSportField",
+      "type": "ELECTRIC"
+    },
+    "WaterSport": {
+      "field": "WaterSportField",
+      "type": "FIRE"
+    }
+  },
+  "parameters": {
+    "screen_single_factor": 0.5,
+    "screen_multi_factor": 0.6666666666666666,
+    "sport_factor": 0.3333333333333333,
+    "aura_factor": 1.3333333333333333,
+    "aura_break_factor": 0.6666666666666666,
+    "stage_base": 2,
+    "healing_format": "+{1}/{2} HP per turn"
+  },
+  "public_effects": [
+    "GastroAcid",
+    "Ingrain",
+    "SmackDown",
+    "MagnetRise",
+    "Telekinesis",
+    "Roost",
+    "BurnUp",
+    "Foresight",
+    "MiracleEye",
+    "Embargo",
+    "Substitute",
+    "Protect",
+    "KingsShield",
+    "SpikyShield",
+    "BanefulBunker",
+    "Endure",
+    "Minimize",
+    "AquaRing",
+    "Uproar",
+    "HealBlock",
+    "Confusion",
+    "TwoTurnAttack"
+  ],
+  "side_effects": [
+    "Reflect",
+    "LightScreen",
+    "AuroraVeil",
+    "Safeguard",
+    "Mist",
+    "LuckyChant",
+    "WideGuard",
+    "QuickGuard",
+    "CraftyShield",
+    "MatBlock",
+    "StealthRock",
+    "Spikes",
+    "ToxicSpikes"
+  ],
+  "field_effects": [
+    "Gravity",
+    "MagicRoom",
+    "WonderRoom",
+    "MudSportField",
+    "WaterSportField"
+  ],
+  "chart": {
+    "airborne_type": "FLYING",
+    "ground_attack": "GROUND",
+    "grounding_effects": [
+      "Ingrain",
+      "SmackDown"
+    ],
+    "airborne_effects": [
+      "MagnetRise",
+      "Telekinesis"
+    ],
+    "grounding_field": "Gravity",
+    "removed_immunities": [
+      {
+        "effect": "Foresight",
+        "defense_type": "GHOST",
+        "attack_types": [
+          "NORMAL",
+          "FIGHTING"
+        ]
+      },
+      {
+        "effect": "MiracleEye",
+        "defense_type": "DARK",
+        "attack_types": [
+          "PSYCHIC"
+        ]
+      }
+    ],
+    "weather_neutralizes": {
+      "StrongWinds": "FLYING"
+    },
+    "weather_blocks": {
+      "HeavyRain": "FIRE",
+      "HarshSun": "WATER"
+    }
+  },
+  "stages": {
+    "DEFENSE": "physical",
+    "SPECIAL_DEFENSE": "special"
+  },
+  "uproar": {
+    "id": "uproar",
+    "protections": [
+      "SLEEP"
+    ]
+  },
+  "position_recovery": {
+    "Wish": {
+      "countdown": true,
+      "recovery": [
+        {
+          "trigger": "turn_end",
+          "outcomes": [
+            {
+              "kind": "hp_stored",
+              "amount": [
+                1,
+                2
+              ]
+            }
+          ],
+          "once": true
+        }
+      ]
+    },
+    "HealingWish": {
+      "recovery": [
+        {
+          "trigger": "switch_in",
+          "outcomes": [
+            {
+              "kind": "hp_full"
+            },
+            {
+              "kind": "text",
+              "label": "heal_status"
+            }
+          ],
+          "once": true,
+          "ignore_heal_block": true
+        }
+      ]
+    },
+    "LunarDance": {
+      "recovery": [
+        {
+          "trigger": "switch_in",
+          "outcomes": [
+            {
+              "kind": "hp_full"
+            },
+            {
+              "kind": "text",
+              "label": "heal_status"
+            }
+          ],
+          "once": true,
+          "ignore_heal_block": true
+        }
+      ]
+    }
+  },
+  "linked_recovery": {
+    "LeechSeed": {
+      "blocked_by": [
+        "blocks_indirect_damage",
+        "reverses_drain"
+      ],
+      "recovery": [
+        {
+          "trigger": "turn_end",
+          "outcomes": [
+            {
+              "kind": "hp_drain"
+            }
+          ],
+          "per_turn": true,
+          "drain_boost": true
+        }
+      ]
+    }
+  },
+  "state_conditions": [
+    {
+      "id": "airborne_hazards",
+      "condition": "airborne_now",
+      "protections": [
+        "spikes",
+        "toxic_spikes",
+        "sticky_web"
+      ]
+    },
+    {
+      "id": "poison_hazards",
+      "condition": "poison_type",
+      "protections": [
+        "toxic_spikes"
+      ]
+    },
+    {
+      "id": "phase_weather",
+      "condition": "underground_underwater",
+      "protections": [
+        "Hail",
+        "Sandstorm"
+      ]
+    }
+  ],
+  "recovery_formats": {
+    "hp_fraction": "+{1}/{2} HP",
+    "hp_flat": "+{1} HP",
+    "hp_damage": "+{1}/{2} damage dealt as HP",
+    "hp_drain": "+Drained HP",
+    "hp_stored": "+{1}/{2} original max HP",
+    "hp_full": "Full HP",
+    "per_turn": "{1} per turn",
+    "chance": "{1}% chance: {2}",
+    "once": "{1} (once)",
+    "boost": "{1} ×{2}",
+    "confusion_warning": "May cause confusion",
+    "countdown": "In {1} turns",
+    "countdown_labels": {
+      "1": "turn_end",
+      "2": "next_turn_end"
+    }
+  }
+}

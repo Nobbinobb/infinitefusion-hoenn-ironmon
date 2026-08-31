@@ -1,3 +1,9 @@
+@if (_defenseOpen && SelectedEnemy is not null)
+{
+    <PokemonDefenseView Name="@GetName()" Defense="@SelectedEnemy.DefensiveOverview" Closed="CloseDefense" />
+}
+else
+{
 <section class="pokemon-card" role="tabpanel" aria-label="@Text["Enemy.Card.EnemyPokemon"]">
     @if (Enemies.Count > 1)
     {
@@ -18,7 +24,7 @@
                        Size="80"
                        CssClass="@(SelectedEnemy is null ? "sprite-placeholder enemy" : "sprite-placeholder enemy live")" />
         <div class="identity-placeholder">
-            <p class="card-kicker">@Text["Enemy.Card.OpposingPokemonHeading"]</p>
+            <p class="card-kicker">@Text[SelectedEnemy?.Fusion == true ? "Enemy.Card.OpposingFusionHeading" : "Enemy.Card.OpposingPokemonHeading"]</p>
             <h2 class="identity-name">
                 <span>@GetName()</span>
                 @if (SelectedEnemy is not null)
@@ -35,7 +41,7 @@
                 <p class="typing-line">
                     @foreach (string type in SelectedEnemy.Types)
                     {
-                        <span class="typing-type @MovePresentation.GetTypeColorClass(type)">@type</span>
+                        <button type="button" class="typing-type pokemon-type-link @MovePresentation.GetTypeColorClass(type)" title="@Text["Defense.OpenTypes"]" aria-label="@Text["Defense.OpenType", type]" @onclick="OpenDefense">@type</button>
                     }
                 </p>
             }
@@ -89,6 +95,7 @@
 
     <EnemyMoveList Enemy="@SelectedEnemy" BattleId="@BattleId" PlayerTypes="@PlayerTypes" PlayerEvasionStage="@PlayerEvasionStage" />
 </section>
+}
 
 @if (_selectedAbility is not null)
 {

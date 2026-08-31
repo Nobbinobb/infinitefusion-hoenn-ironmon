@@ -9,6 +9,7 @@ $sourceManifest = Join-Path $sourceRoot "load_order.json"
 $catalog = Join-Path $projectRoot "data\area_catalog.dat"
 $obtainabilitySourceCatalog = Join-Path $projectRoot "data\obtainability_source_catalog.json"
 $movePowerPresentationCatalog = Join-Path $projectRoot "data\move_power_presentation.json"
+$defensePresentationCatalog = Join-Path $projectRoot "data\defense_presentation.json"
 $fusionPredecessorIndex = Join-Path $projectRoot "data\fusion_predecessor_index.dat"
 $battleMoveColorSource = Join-Path $projectRoot "data\graphics\Battle"
 $distribution = Join-Path $projectRoot "dist\Data\Scripts\997_Ironmon"
@@ -24,6 +25,9 @@ $installationBattleGraphics = Join-Path $installationData "graphics\Battle"
 
 & (Join-Path $PSScriptRoot "generation\Generate-Move-Power-Presentation.ps1") `
     -OutputPath $movePowerPresentationCatalog
+if (-not (Test-Path -LiteralPath $defensePresentationCatalog)) {
+    & (Join-Path $PSScriptRoot "generation\Generate-Defense-Presentation.ps1") -GameRoot $gameRoot -OutputPath $defensePresentationCatalog
+}
 & (Join-Path $PSScriptRoot "generation\Generate-Battle-Move-Type-Colors.ps1") `
     -GameRoot $gameRoot `
     -OutputDirectory $battleMoveColorSource
@@ -150,6 +154,8 @@ Copy-Item -LiteralPath $obtainabilitySourceCatalog -Destination (Join-Path $dist
 Copy-Item -LiteralPath $obtainabilitySourceCatalog -Destination (Join-Path $installationData "obtainability_source_catalog.json")
 Copy-Item -LiteralPath $movePowerPresentationCatalog -Destination (Join-Path $distributionData "move_power_presentation.json")
 Copy-Item -LiteralPath $movePowerPresentationCatalog -Destination (Join-Path $installationData "move_power_presentation.json")
+Copy-Item -LiteralPath $defensePresentationCatalog -Destination (Join-Path $distributionData "defense_presentation.json")
+Copy-Item -LiteralPath $defensePresentationCatalog -Destination (Join-Path $installationData "defense_presentation.json")
 Copy-Item -LiteralPath $fusionPredecessorIndex -Destination (Join-Path $distributionData "fusion_predecessor_index.dat")
 Copy-Item -LiteralPath $fusionPredecessorIndex -Destination (Join-Path $installationData "fusion_predecessor_index.dat")
 foreach ($battleMoveSheet in "cursor_fight.png", "cursor_fight_dark.png") {

@@ -1,87 +1,94 @@
-<section class="pokemon-card" role="tabpanel" aria-label="@Text["Player.Card.PlayerPokemon"]">
-    <div class="card-heading action-heading">
-        <PokemonSprite GameRoot="@GameRoot"
-                       SpritePath="@Player?.SpritePath"
-                       Label="@(Player?.SpeciesName ?? Text["Player.Card.WaitingForPlayer"])"
-                       Size="80"
-                       CssClass="@(Player is null ? "sprite-placeholder" : "sprite-placeholder live")" />
-        <div class="identity-placeholder">
-            <p class="card-kicker">@Text["Player.Card.ActivePokemon"]</p>
-            <h2 class="identity-name">
-                <span>@GetName()</span>
-                @if (Player is not null)
+@if (_defenseOpen && Player is not null)
+{
+    <PokemonDefenseView Name="@GetName()" Defense="@Player.DefensiveOverview" Closed="CloseDefense" />
+}
+else
+{
+    <section class="pokemon-card" role="tabpanel" aria-label="@Text["Player.Card.PlayerPokemon"]">
+        <div class="card-heading action-heading">
+            <PokemonSprite GameRoot="@GameRoot"
+                           SpritePath="@Player?.SpritePath"
+                           Label="@(Player?.SpeciesName ?? Text["Player.Card.WaitingForPlayer"])"
+                           Size="80"
+                           CssClass="@(Player is null ? "sprite-placeholder" : "sprite-placeholder live")" />
+            <div class="identity-placeholder">
+                <p class="card-kicker">@Text[Player?.Fusion == true ? "Player.Card.ActiveFusion" : "Player.Card.ActivePokemon"]</p>
+                <h2 class="identity-name">
+                    <span>@GetName()</span>
+                    @if (Player is not null)
+                    {
+                        <GenderIcon Gender="@Player.Gender" />
+                        <small>@Text["Player.Card.LevelValue", Player.Level]</small>
+                    }
+                </h2>
+                @if (Player is null)
                 {
-                    <GenderIcon Gender="@Player.Gender" />
-                    <small>@Text["Player.Card.LevelValue", Player.Level]</small>
+                    <p>@Text["Player.Card.PlayerWaitingDescription"]</p>
                 }
-            </h2>
-            @if (Player is null)
-            {
-                <p>@Text["Player.Card.PlayerWaitingDescription"]</p>
-            }
-            else
-            {
-                <p class="typing-line">
-                    @if (HasDistinctNickname())
-                    {
-                        <span class="species-name">@Player.SpeciesName</span>
-                    }
-                    @foreach (string type in Player.Types)
-                    {
-                        <span class="typing-type @MovePresentation.GetTypeColorClass(type)">@type</span>
-                    }
-                </p>
-            }
-        </div>
-        <div class="identity-actions placeholder-content" aria-label="@Text["Player.Card.PokemonDetails"]">
-            @if (Player?.AbilityDetails is not null)
-            {
-                <button class="identity-action-button" type="button" @onclick="() => SelectAbility(Player.AbilityDetails)">@Text["Player.Card.Ability"] <strong>@Player.Ability</strong></button>
-            }
-            else
-            {
-                <span>@Text["Player.Card.Ability"] <strong>@(Player?.Ability ?? "--")</strong></span>
-            }
-            <span>@Text["Player.Card.Item"] <strong>@(Player?.HeldItem ?? (Player is null ? "--" : Text["Player.Card.None"]))</strong></span>
-            @if (Player is not null && Player.Evolutions.Count > 1)
-            {
-                <details class="compact-disclosure">
-                    <summary>@Text["Player.Card.Evolution"] <strong>@Player.Evolutions[0].Requirement</strong><span>+@(Player.Evolutions.Count - 1)</span></summary>
-                    <div class="disclosure-menu">
-                        @foreach (EvolutionSnapshot evolution in Player.Evolutions.Skip(1))
+                else
+                {
+                    <p class="typing-line">
+                        @if (HasDistinctNickname())
                         {
-                            <span>@evolution.Requirement</span>
+                            <span class="species-name">@Player.SpeciesName</span>
                         }
-                    </div>
-                </details>
-            }
-            else
-            {
-                <span>@Text["Player.Card.Evolution"] <strong>@GetEvolutionRequirement()</strong></span>
-            }
+                        @foreach (string type in Player.Types)
+                        {
+                            <button type="button" class="typing-type pokemon-type-link @MovePresentation.GetTypeColorClass(type)" title="@Text["Defense.OpenTypes"]" aria-label="@Text["Defense.OpenType", type]" @onclick="OpenDefense">@type</button>
+                        }
+                    </p>
+                }
+            </div>
+            <div class="identity-actions placeholder-content" aria-label="@Text["Player.Card.PokemonDetails"]">
+                @if (Player?.AbilityDetails is not null)
+                {
+                    <button class="identity-action-button" type="button" @onclick="() => SelectAbility(Player.AbilityDetails)">@Text["Player.Card.Ability"] <strong>@Player.Ability</strong></button>
+                }
+                else
+                {
+                    <span>@Text["Player.Card.Ability"] <strong>@(Player?.Ability ?? "--")</strong></span>
+                }
+                <span>@Text["Player.Card.Item"] <strong>@(Player?.HeldItem ?? (Player is null ? "--" : Text["Player.Card.None"]))</strong></span>
+                @if (Player is not null && Player.Evolutions.Count > 1)
+                {
+                    <details class="compact-disclosure">
+                        <summary>@Text["Player.Card.Evolution"] <strong>@Player.Evolutions[0].Requirement</strong><span>+@(Player.Evolutions.Count - 1)</span></summary>
+                        <div class="disclosure-menu">
+                            @foreach (EvolutionSnapshot evolution in Player.Evolutions.Skip(1))
+                            {
+                                <span>@evolution.Requirement</span>
+                            }
+                        </div>
+                    </details>
+                }
+                else
+                {
+                    <span>@Text["Player.Card.Evolution"] <strong>@GetEvolutionRequirement()</strong></span>
+                }
+            </div>
         </div>
-    </div>
 
-    <div class="hp-block @(Player is null ? "placeholder-content" : string.Empty)">
-        <div><span>HP</span><strong>@GetHpText()</strong></div>
-        <div class="hp-bar @(Player is null ? "unknown" : string.Empty)" aria-label="@GetHpLabel()"><span style="@GetHpStyle()"></span></div>
-    </div>
+        <div class="hp-block @(Player is null ? "placeholder-content" : string.Empty)">
+            <div><span>HP</span><strong>@GetHpText()</strong></div>
+            <div class="hp-bar @(Player is null ? "unknown" : string.Empty)" aria-label="@GetHpLabel()"><span style="@GetHpStyle()"></span></div>
+        </div>
 
-    <div class="detail-strip placeholder-content" aria-label="@Text["Player.Card.PokemonConditionAndHealing"]">
-        <span>@GetConditionText()</span>
-        <button class="healing-summary-button" type="button" disabled="@(Player is null)" @onclick="OpenItems">@Text["Player.Card.Heals"] <strong>@GetHealingText()</strong></button>
-        <span title="@GetNatureTooltip()">@Text["Player.Card.Nature"] <strong>@(Player?.Nature ?? "--")</strong></span>
-    </div>
+        <div class="detail-strip placeholder-content" aria-label="@Text["Player.Card.PokemonConditionAndHealing"]">
+            <span>@GetConditionText()</span>
+            <button class="healing-summary-button" type="button" disabled="@(Player is null)" @onclick="OpenItems">@Text["Player.Card.Heals"] <strong>@GetHealingText()</strong></button>
+            <span title="@GetNatureTooltip()">@Text["Player.Card.Nature"] <strong>@(Player?.Nature ?? "--")</strong></span>
+        </div>
 
-    <PlayerStatGrid Player="@Player" />
+        <PlayerStatGrid Player="@Player" />
 
-    <div class="summary-row placeholder-content" aria-label="@Text["Player.Card.PokemonSummary"]">
-        <span>BST <strong>@(Player?.BaseStatTotal.ToString(CultureInfo.InvariantCulture) ?? "--")</strong></span>
-        <BattleStatStageChips Stages="@Player?.StatStages" />
-    </div>
+        <div class="summary-row placeholder-content" aria-label="@Text["Player.Card.PokemonSummary"]">
+            <span>BST <strong>@(Player?.BaseStatTotal.ToString(CultureInfo.InvariantCulture) ?? "--")</strong></span>
+            <BattleStatStageChips Stages="@Player?.StatStages" />
+        </div>
 
-    <PlayerMoveList Player="@Player" TargetTypes="@TargetTypes" TargetEvasionStage="@TargetEvasionStage" />
-</section>
+        <PlayerMoveList Player="@Player" TargetTypes="@TargetTypes" TargetEvasionStage="@TargetEvasionStage" />
+    </section>
+}
 
 @if (_selectedAbility is not null)
 {

@@ -27,6 +27,21 @@ boundaries.
 
 ## Run the desktop shell
 
+The Player and Enemy cards open a [defensive overview](../docs/IRONMON_MECHANICS.html#tracker-defense-view)
+when a Pokemon's type text is clicked. It combines known damage factors with
+the type matchups and omits neutral results. Protection labels disclose only
+affected move names; Recovery shows a trigger such as **Hail**, with the healing
+amount or status-recovery effect hidden until clicked. Passive and pending healing
+states are included: used Wish shows its remaining turn timing, while unused Wish
+and direct healing moves such as Milk Drink add nothing. Independent stacked heals
+retain their contribution counts. Active guards, survival, hazard avoidance, and
+compact conditional defenses are also represented. The overview does not display ability names,
+effect sources, or explanatory blocks, and never infers concealed enemy state.
+Its informational catalog is regenerated and packaged by the normal release
+build. Ordinary builds reuse existing data, including after base-game updates.
+See the [defense audit workflow](../docs/audits/WEAKNESS_MODIFIERS_AUDIT.md#defense-catalog-generation)
+for the input, generated artifacts, and manual refresh command.
+
 The current review build is a Windows-only .NET 10 Blazor Hybrid application
 with permanent Player, Enemy, live Lookup, and completed-run Archive views.
 Archive includes deterministic Pokemon lookup, fusion exploration, and session

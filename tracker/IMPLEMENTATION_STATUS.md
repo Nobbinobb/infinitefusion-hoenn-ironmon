@@ -1,8 +1,41 @@
 # Ironmon Tracker implementation status
 
-This document records which reviewed implementation parts exist. The stable
+This document records reviewed implementation parts and explicitly marked local additions. The stable
 product behavior is defined by the
 [Ironmon Mechanics Manual](../docs/IRONMON_MECHANICS.html#tracker).
+
+## Local defensive overview changes
+
+Status: **Implemented locally; not released**
+
+- Both live cards open the selected Pokemon's defense view from its type text.
+- Game-derived combined factors retain fractional values and conditional ranges;
+  neutral results are hidden without changing the engine's type classification.
+- Compact Protection entries show effects without sources. Only affected-move
+  catalogs expand; there are no ability names or explanation panels.
+- Recovery shows only the trigger. Clicking Hail, Rain, or Turn end reveals the
+  separate HP amount or status-recovery outcome, and clicking again hides it.
+  The expanded audit coverage includes passive HP/status recovery, held cures,
+  active field/drain healing, and pending position heals. Wish appears only after
+  use and follows its countdown; unused healing moves remain excluded. Independent
+  heals retain their contribution counts, and Heal Block follows per-effect rules.
+- Added compact recoil/contact, hazard, guard/substitute, survival and conditional
+  defenses, with generated move lists and knowledge-filtered global/ally effects.
+- Enemy data is filtered in the game before serialization. Supporting rule data
+  remains separate from compact labels and never becomes a source disclosure.
+- Audited ability, item, field, protection, and recovery definitions live in a
+  data file. The release generator resolves current public metadata and move
+  flags/functions/predicates, packages the catalog, and Ruby applies it to visible live state.
+  Ordinary builds reuse existing data; game updates do not invalidate it.
+  Legacy recovery tuples remain supported. Catalog JSON is decoded without Ruby
+  evaluation, and the generated CSV now inventories nested and state effects too.
+- Runtime and production-component checks cover combined factors, hidden-state
+  invariance, compact effects, navigation, and protocol serialization. Browser
+  checks verify that recovery amounts start hidden and toggle on click.
+
+See the [mechanics manual](../docs/IRONMON_MECHANICS.html#tracker-defense-view)
+and [protocol reference](PROTOCOL.md#defensive-overview). This local feature does
+not change the historical review or release statuses below.
 
 ## Part overview
 

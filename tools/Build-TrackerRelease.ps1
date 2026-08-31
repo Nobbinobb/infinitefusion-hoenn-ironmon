@@ -38,6 +38,10 @@ $itemAudit = Join-Path $projectRoot "docs\audits\generated\ITEM_RANDOMIZATION_GE
 $obtainabilityAudit = Join-Path $projectRoot "docs\audits\generated\OBTAINABILITY_FOUNDATION_GENERATED.csv"
 $obtainabilitySourceCatalog = Join-Path $projectRoot "data\obtainability_source_catalog.json"
 $movePowerPresentationCatalog = Join-Path $projectRoot "data\move_power_presentation.json"
+$defensePresentationCatalog = Join-Path $projectRoot "data\defense_presentation.json"
+$defensePresentationAudit = Join-Path $projectRoot "docs\audits\generated\DEFENSE_PRESENTATION_GENERATED.csv"
+$generatedDefensePresentationCatalog = "$defensePresentationCatalog.release.tmp"
+$generatedDefensePresentationAudit = "$defensePresentationAudit.release.tmp"
 $generatedAreaCatalog = "$areaCatalog.release.tmp"
 $generatedFusionPredecessorIndex = "$fusionPredecessorIndex.release.tmp"
 $generatedAreaAudit = "$areaAudit.release.tmp"
@@ -50,6 +54,12 @@ $generatedObtainabilitySourceCatalog = "$obtainabilitySourceCatalog.release.tmp"
 function Test-PlayerDistribution {
   param([string]$DistributionPath)
 
+  $distributedDefensePresentationCatalog = Join-Path $DistributionPath "Data\Ironmon\defense_presentation.json"
+  if (-not (Test-Path -LiteralPath $distributedDefensePresentationCatalog) -or
+      (Get-FileHash -LiteralPath $distributedDefensePresentationCatalog -Algorithm SHA256).Hash -ne
+        (Get-FileHash -LiteralPath $defensePresentationCatalog -Algorithm SHA256).Hash) {
+    throw "The player distribution does not contain the freshly generated defense presentation catalog."
+  }
   $distributedAreaCatalog = Join-Path $DistributionPath "Data\Ironmon\area_catalog.dat"
   if (-not (Test-Path -LiteralPath $distributedAreaCatalog) -or
       (Get-FileHash -LiteralPath $distributedAreaCatalog -Algorithm SHA256).Hash -ne
@@ -138,9 +148,9 @@ function Test-PlayerDistribution {
   $forbiddenFiles = Get-ChildItem -LiteralPath $DistributionPath -File -Recurse |
     Where-Object {
       $_.Name -match "AccessGenerator|private[-_ ]?key" -or
-      $_.Name -match "Generate-(?:Area-Catalog|Type-Coverage-Dataset|Item-Randomization-Audit|Obtainability-Foundation-Audit|Player-Fusion-Worker-Catalog)" -or
-      $_.Name -match "Export-(?:AreaCatalog|TypeCoverageDataset|ItemRandomizationAudit|ObtainabilityFoundationAudit|PlayerFusionWorkerCatalog)" -or
-      $_.Name -match "(?:AREA_CATALOG|TYPE_COVERAGE|ITEM_RANDOMIZATION|OBTAINABILITY_FOUNDATION)_GENERATED|GameRuntime-Tooling|Script-Loader" -or
+      $_.Name -match "Generate-(?:Area-Catalog|Type-Coverage-Dataset|Item-Randomization-Audit|Obtainability-Foundation-Audit|Player-Fusion-Worker-Catalog|Defense-Presentation)" -or
+      $_.Name -match "Export-(?:AreaCatalog|TypeCoverageDataset|ItemRandomizationAudit|ObtainabilityFoundationAudit|PlayerFusionWorkerCatalog|DefensePresentation)" -or
+      $_.Name -match "(?:AREA_CATALOG|TYPE_COVERAGE|ITEM_RANDOMIZATION|OBTAINABILITY_FOUNDATION|DEFENSE_PRESENTATION)_GENERATED|DEFENSE_PRESENTATION_RULES|GameRuntime-Tooling|Script-Loader" -or
       $_.Name -match "Test-GameRuntime|(?:Area-Progress|Diagnostic-Access)\.rb" -or
       $_.Name -match "\.(?:bootstrap|progress|summary|tests|tmp)$" -or
       $_.Extension -in ".ironmon-access", ".key", ".p8", ".p12", ".pfx", ".pem" -or
@@ -224,6 +234,10 @@ try {
 
 $generationStarted = [DateTime]::UtcNow.AddSeconds(-2)
 try {
+  & (Join-Path $PSScriptRoot "generation\Generate-Defense-Presentation.ps1") `
+    -GameRoot $gameRoot `
+    -OutputPath $generatedDefensePresentationCatalog `
+    -AuditPath $generatedDefensePresentationAudit
   & (Join-Path $PSScriptRoot "generation\Generate-Area-Catalog.ps1") `
     -GameRoot $gameRoot `
     -OutputPath $generatedAreaCatalog `
@@ -243,7 +257,7 @@ try {
     -AreaCatalogPath $generatedAreaCatalog `
     -SourceCatalogPath $generatedObtainabilitySourceCatalog `
     -AuditPath $generatedObtainabilityAudit
-  foreach ($generatedPath in $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit, $generatedObtainabilityAudit, $generatedObtainabilitySourceCatalog) {
+  foreach ($generatedPath in $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit, $generatedObtainabilityAudit, $generatedObtainabilitySourceCatalog, $generatedDefensePresentationCatalog, $generatedDefensePresentationAudit) {
     if (-not (Test-Path -LiteralPath $generatedPath) -or
         (Get-Item -LiteralPath $generatedPath).Length -eq 0) {
       throw "Release generation did not produce '$generatedPath'."
@@ -254,6 +268,8 @@ try {
   }
 
   foreach ($generatedFile in @(
+    @{ Generated = $generatedDefensePresentationCatalog; Canonical = $defensePresentationCatalog },
+    @{ Generated = $generatedDefensePresentationAudit; Canonical = $defensePresentationAudit },
     @{ Generated = $generatedAreaCatalog; Canonical = $areaCatalog },
     @{ Generated = $generatedAreaAudit; Canonical = $areaAudit },
     @{ Generated = $generatedFusionPredecessorIndex; Canonical = $fusionPredecessorIndex },
@@ -272,7 +288,7 @@ try {
     }
   }
 } finally {
-  Remove-Item -LiteralPath $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit, $generatedObtainabilityAudit, $generatedObtainabilitySourceCatalog `
+  Remove-Item -LiteralPath $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit, $generatedObtainabilityAudit, $generatedObtainabilitySourceCatalog, $generatedDefensePresentationCatalog, $generatedDefensePresentationAudit `
     -Force `
     -ErrorAction SilentlyContinue
 }

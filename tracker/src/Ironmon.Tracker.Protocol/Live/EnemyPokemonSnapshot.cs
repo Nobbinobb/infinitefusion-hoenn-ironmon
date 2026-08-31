@@ -38,6 +38,12 @@ public sealed class EnemyPokemonSnapshot
     public required string SpeciesName { get; init; }
 
     /// <summary>
+    /// Gets or initializes whether the game identifies the visible species as a fusion.
+    /// Missing values from older game snapshots leave the marker hidden.
+    /// </summary>
+    public bool Fusion { get; init; }
+
+    /// <summary>
     /// Gets or initializes the resolved sprite path when available.
     /// </summary>
     public string? SpritePath { get; init; }
@@ -51,6 +57,11 @@ public sealed class EnemyPokemonSnapshot
     /// Gets or initializes the visible type identifiers.
     /// </summary>
     public IReadOnlyList<string> Types { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes the privacy-filtered defensive overview.
+    /// </summary>
+    public DefenseOverviewSnapshot? DefensiveOverview { get; init; }
 
     /// <summary>
     /// Gets or initializes the visible base-stat total.

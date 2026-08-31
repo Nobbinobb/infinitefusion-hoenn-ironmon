@@ -476,6 +476,80 @@ The live payload deliberately omits HP, calculated stats, ability, held item,
 nature, and undiscovered moves. The tracker supports multiple positions but
 the first UI displays the lowest active opposing position.
 
+## Fusion marker
+
+Player and enemy snapshots also include `fusion`, a Boolean derived from the
+game's ordinary or triple-fusion classification of the displayed species.
+The live cards use this flag to show Active fusion or Opposing fusion in the
+existing small heading above the Pokemon's name. The sprite component does
+not consume this flag, and no sprite space is reserved for a marker.
+Missing values from older game versions default to false and retain the
+ordinary Pokemon headings.
+This identity field does not reveal concealed abilities, items, or fusion
+material obtainability.
+
+## Defensive overview
+
+Player and enemy snapshots optionally include `defensive_overview`, serialized
+from `DefensiveOverview`. This is distinct from the player's numeric `defense`
+stat. The same optional object travels in state-change events and recovered
+current state; there is no separate defense request. A missing or null object
+produces an unavailable state rather than fabricated defenses.
+
+| Field | Meaning |
+| --- | --- |
+| `in_battle`, `limited_information` | Whether battle context is available and whether concealed enemy state is excluded. |
+| `type_matchups` | Incoming type identifiers/names, `base_multiplier`, and `multiplier` after known immunity/chart overrides. The optional `physical_min`, `physical_max`, `special_min`, and `special_max` fields contain combined relative factors, including conditional ranges. |
+| `protections` | Compact effect objects with `label`, nullable `active`, and public `moves` catalogs. Duplicate labels are merged. |
+| `recovery` | Compact effect objects whose `label` is a passive trigger or active countdown, such as `Rain`, `Switch out`, or `Next turn end`; `healing_amounts` contains HP, cure, duration, or stage-restoration outcomes with applicable chance/one-use qualifiers. Repeated values represent independent contributions and must be preserved. The existing wire name is retained for compatibility. |
+| `modifiers`, `status_protections`, `move_protections`, `other_protections` | Supporting rule identifiers, nullable activity, types, affected moves, and known source metadata from game catalogs. These are not rendered directly by the compact view; summaries and prose conditions are not generated. |
+| `ability_name`, `ability_description`, `ability_suppressed` | Individually known ability metadata retained in the payload, not displayed in this view. |
+
+Compact effects omit source names and prose. An `active` value of `false` hides
+the entry; `null` is conditional rather than confirmed. For recovery, `true`
+means the known effect is available subject to its trigger and healing rules;
+it does not disclose current enemy HP/status or guarantee recovery. Known Heal Block
+removes only the HP recovery it actually blocks; status cures, Regenerator, and
+pending switch-in wishes retain their native exceptions.
+Hydration's Rain entry includes heavy rain and remains listed regardless of
+current weather or concealed status; suppressed or unrevealed abilities add nothing.
+Missing `moves` or `healing_amounts` deserialize to
+empty lists. Protection move lists and recovery amounts are collapsed by
+default and disclosed only on click. The UI groups identical recovery strings
+with a contribution count instead of deduplicating or summing rounded heals.
+
+Recovery includes passive abilities/held items and active field, battler, or
+position states. Unused healing moves do not contribute. Wish's public counter
+selects `Next turn end` or `Turn end`; no WishAmount is read. Its outcome uses
+the original max-HP basis rather than the current recipient's max HP. Leech Seed
+uses the public recipient index, including zero, and a symbolic drained-HP amount;
+source HP, hidden items/status, and unrevealed drain-changing abilities are never
+consulted. Consumed states disappear on the next normal snapshot update.
+
+All 18 type rows, including neutral ones, remain in the payload. The UI omits
+combined neutral results and falls back to `multiplier` when combined factors
+are absent. Supporting `adjustments` and `exceptions` on type rows do not create
+source disclosures; the current producer leaves `exceptions` empty. These
+relative factors are not exact HP-damage predictions.
+
+The game loads audited definitions from the release-generated
+`Data/Ironmon/defense_presentation.json` catalog. Generation resolves public
+names and affected-move lists using flags, functions, categories, and audited
+pure predicates on detached move objects. Ruby evaluates conditions and combines factors
+against the permitted live context. Catalog provenance is not checked against
+the running game, so an older catalog remains usable after a game update.
+Missing or unreadable data fails only this optional overview, not gameplay.
+The UTF-8 catalog is parsed through the native JSON parser, never evaluated as
+Ruby. Recovery definitions support multiple typed events, independent blockers,
+probabilities, single-use outcomes, and pending-state counters. Legacy recovery
+tuples remain readable; there is no game-version or provenance-hash gate.
+
+The game builds enemy defenses only from visible types/effects and the ability
+last revealed for that individual. Hidden held items, HP, status, and actual
+unrevealed abilities are excluded before serialization. Public move catalogs
+describe affected moves, not the enemy's moveset. This extends the existing
+schema-v1 snapshots without adding a command or changing transport framing.
+
 ## Move discovery
 
 `enemy_move_used` is emitted after an opposing Pokemon uses an observable move:

@@ -9,6 +9,35 @@ namespace Ironmon.Tracker.App.Components.Enemy;
 public partial class EnemyCard : IDisposable
 {
     private AbilitySnapshot? _selectedAbility;
+    private bool _defenseOpen;
+    private string? _defensePokemonId;
+
+    /// <summary>
+    /// Returns to the card when the selected individual changes.
+    /// </summary>
+    protected override void OnParametersSet()
+    {
+        string? pokemonId = SelectedEnemy?.EnemyId;
+        if (_defensePokemonId != pokemonId)
+            _defenseOpen = false;
+
+        _defensePokemonId = pokemonId;
+    }
+
+    /// <summary>
+    /// Opens the selected Pokemon's live defense overview.
+    /// </summary>
+    private void OpenDefense()
+    {
+        _selectedAbility = null;
+        _defenseOpen = true;
+    }
+
+    /// <summary>
+    /// Returns from the defense overview to the Pokemon card.
+    /// </summary>
+    private void CloseDefense()
+        => _defenseOpen = false;
 
     /// <summary>
     /// Gets or initializes tracker-owned run knowledge.

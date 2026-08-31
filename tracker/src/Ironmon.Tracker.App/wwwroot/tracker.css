@@ -1,3 +1,36 @@
+.pokemon-type-link {
+    border: 0;
+    padding: 0;
+    background: none;
+    font: inherit;
+    font-weight: inherit;
+    cursor: pointer;
+    text-underline-offset: 0.2rem;
+}
+.pokemon-type-link:hover, .pokemon-type-link:focus-visible { text-decoration: underline; }
+.defense-view { display: grid; gap: 1rem; }
+.defense-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 0.8rem; }
+.defense-heading h2 { margin: 0; font-size: 1.05rem; }
+.defense-heading h2 small { margin-left: 0.4rem; font-size: 0.7rem; font-weight: 400; color: var(--muted); }
+.defense-back { border: 0; padding: 0.15rem 0; background: none; color: var(--muted-strong); font: inherit; font-size: 0.75rem; cursor: pointer; }
+.defense-back:hover { color: var(--text); }
+.defense-view em { margin-left: 0.4rem; color: var(--muted); font-size: 0.68rem; font-style: normal; }
+.defense-view h3 { margin: 0 0 0.45rem; font-size: 0.72rem; font-weight: 600; color: var(--muted); }
+.defense-matchups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem 1.15rem; }
+.defense-matchup { display: flex; align-items: baseline; justify-content: space-between; gap: 0.4rem; font-size: 0.78rem; }
+.defense-protection > summary:hover { color: var(--text); text-decoration: underline; text-underline-offset: 0.2rem; }
+.defense-category-values { display: grid; gap: 0.1rem; text-align: right; font-size: 0.65rem; color: var(--muted); }
+.defense-category-values strong { color: var(--text); font-size: 0.75rem; }
+.defense-protection-section { border-top: 1px solid var(--border); padding-top: 0.8rem; }
+.defense-protections { display: flex; flex-wrap: wrap; gap: 0.45rem 1rem; }
+.defense-protection { max-width: 100%; }
+.defense-protection > summary, .defense-protection-label { font-size: 0.76rem; line-height: 1.5; color: var(--muted-strong); }
+.defense-protection > summary { cursor: pointer; }
+.defense-protection > summary small { margin-left: 0.25rem; color: var(--muted); }
+.defense-protection[open] { flex-basis: 100%; }
+.defense-recovery-amount { margin: 0.35rem 0 0; font-size: 0.73rem; color: var(--muted-strong); }
+.defense-help { margin: 0; color: var(--muted); font-size: 0.7rem; line-height: 1.5; }
+.defense-moves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.15rem 1rem; margin: 0.4rem 0; padding-left: 1rem; font-size: 0.73rem; line-height: 1.55; color: var(--muted-strong); }
 .tracker-shell details > summary {
     list-style: none;
 }

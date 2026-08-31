@@ -1611,4 +1611,21 @@
   <data name="Lookup.Areas.FusionOrigin.Standard" xml:space="preserve"><value>standard encounter</value></data>
   <data name="Lookup.Areas.FusionOrigin.Overworld" xml:space="preserve"><value>overworld pair</value></data>
   <data name="Lookup.Areas.FusionChance" xml:space="preserve"><value>{0} · {1}% fusion roll</value></data>
+  <data name="Defense.Title" xml:space="preserve"><value>Defense</value></data>
+  <data name="Defense.Back" xml:space="preserve"><value>Back</value></data>
+  <data name="Defense.Unavailable" xml:space="preserve"><value>Defense details are not available in this game snapshot. Connect to a game with updated Ironmon scripts.</value></data>
+  <data name="Defense.Weaknesses" xml:space="preserve"><value>Weaknesses</value></data>
+  <data name="Defense.Resistances" xml:space="preserve"><value>Resistances</value></data>
+  <data name="Defense.Immunities" xml:space="preserve"><value>Immunities</value></data>
+  <data name="Defense.Conditional" xml:space="preserve"><value>Conditional</value></data>
+  <data name="Defense.OpenTypes" xml:space="preserve"><value>View defenses</value></data>
+  <data name="Defense.OpenType" xml:space="preserve"><value>View defenses from {0} type</value></data>
+  <data name="Defense.KnownOnly" xml:space="preserve"><value>Known defenses only</value></data>
+  <data name="Defense.Physical" xml:space="preserve"><value>physical</value></data>
+  <data name="Defense.Special" xml:space="preserve"><value>special</value></data>
+  <data name="Defense.Varies" xml:space="preserve"><value>Depends on the hit</value></data>
+  <data name="Defense.Protection" xml:space="preserve"><value>Protection</value></data>
+  <data name="Defense.Recovery" xml:space="preserve"><value>Recovery</value></data>
+  <data name="Player.Card.ActiveFusion" xml:space="preserve"><value>ACTIVE FUSION</value></data>
+  <data name="Enemy.Card.OpposingFusionHeading" xml:space="preserve"><value>OPPOSING FUSION</value></data>
 </root>
