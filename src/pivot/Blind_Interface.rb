@@ -197,6 +197,8 @@ module Ironmon
   def self.build_reversed_caught_result(candidate)
     validate_caught_fusion_right(candidate)
     result = candidate.clone
+    previous_hp = result.hp
+    previous_total_hp = result.totalhp
     reversed_species = paired_custom_fusion_species(result.species)
     result.exp_when_fused_body, result.exp_when_fused_head =
       result.exp_when_fused_head, result.exp_when_fused_body
@@ -205,11 +207,22 @@ module Ironmon
     result.original_body, result.original_head =
       result.original_head, result.original_body
     result.pif_sprite = nil
+    result.hp = result.totalhp
     result.species = reversed_species
     result.name = GameData::Species.get(reversed_species).real_name
     result.calc_stats
+    result.hp = scaled_transformation_hp(
+      previous_hp, previous_total_hp, result.totalhp
+    )
     mark_processed_caught_fusion(result)
     return result
+  end
+
+  def self.scaled_transformation_hp(previous_hp, previous_total_hp,
+                                    new_total_hp)
+    return 0 if previous_hp <= 0 || previous_total_hp <= 0
+    scaled_hp = (previous_hp.to_f * new_total_hp / previous_total_hp).round
+    return [[scaled_hp, 1].max, new_total_hp].min
   end
 
   def self.build_unfused_caught_result(candidate, acquisition_id = nil,

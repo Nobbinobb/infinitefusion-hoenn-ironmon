@@ -278,7 +278,7 @@ module Ironmon
       "section" => section,
       "identity" => {
         "species_id" => "#{species.id}:0",
-        "species_name" => species.name,
+        "species_name" => tracker_species_display_name(species),
         "sprite_path" => tracker_lookup_sprite_path(species),
         "types" => species.types.map { |type| type.to_s },
         "fusion" => !normal_ability_species?(species),
@@ -442,6 +442,18 @@ module Ironmon
     if recipe["schema_version"] != 1
       raise TrackerLookupError.new("invalid_recipe", "The completed-run recipe schema is unsupported.")
     end
+    profile_id = recipe["generation_profile_id"].to_s
+    if !GenerationProfile::SHA256_PATTERN.match?(profile_id)
+      raise TrackerLookupError.new(
+        "invalid_recipe", "The completed-run generation profile is missing."
+      )
+    end
+    if profile_id != active_generation_profile_id
+      raise TrackerLookupError.new(
+        "generation_profile_unavailable",
+        "The completed-run generation profile is not installed."
+      )
+    end
     recipe = tracker_flatten_completed_recipe(recipe)
     if !SpeciesGenerator::SUPPORTED_SCHEMA_VERSIONS.include?(
       recipe["species_generator_version"]
@@ -582,6 +594,7 @@ module Ironmon
       "run_id" => recipe["run_id"],
       "seed" => recipe["seed"],
       "result" => recipe["result"],
+      "generation_profile_id" => recipe["generation_profile_id"],
       "game_version" => recipe["game_version"],
       "ironmon_version" => recipe["ironmon_version"],
       "configuration" => recipe["configuration"],

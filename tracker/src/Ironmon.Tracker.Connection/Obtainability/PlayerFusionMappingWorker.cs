@@ -8,6 +8,7 @@ namespace Ironmon.Tracker.Connection.Obtainability;
 /// </summary>
 internal sealed class PlayerFusionMappingWorker
 {
+    private static readonly int _maximumParallelism = Math.Max(1, Environment.ProcessorCount * 3 / 8);
     private const ulong FnvOffsetBasis = 14_695_981_039_346_656_037;
     private const ulong FnvPrime = 1_099_511_628_211;
     private const int MaterialIdBits = 10;
@@ -38,7 +39,7 @@ internal sealed class PlayerFusionMappingWorker
     }
 
     /// <summary>
-    /// Maps every unordered pair from a bounded normal-material set using all available worker threads.
+    /// Maps every unordered pair from a bounded normal-material set while retaining CPU capacity for the connected game.
     /// </summary>
     /// <param name="seed">The Ironmon run seed.</param>
     /// <param name="generatorVersion">The player-fusion generator schema version.</param>
@@ -58,7 +59,7 @@ internal sealed class PlayerFusionMappingWorker
         WorkerState state = GetState(seed, generatorVersion);
         int pairCount = checked(materials.Length * (materials.Length + 1) / 2);
         PlayerFusionMappedPair[] mappings = new PlayerFusionMappedPair[pairCount];
-        Parallel.For(0, materials.Length, new ParallelOptions { CancellationToken = cancellationToken }, firstIndex =>
+        Parallel.For(0, materials.Length, new ParallelOptions { CancellationToken = cancellationToken, MaxDegreeOfParallelism = _maximumParallelism }, firstIndex =>
         {
             int outputIndex = PairOffset(materials.Length, firstIndex);
             for (int secondIndex = firstIndex; secondIndex < materials.Length; secondIndex++)

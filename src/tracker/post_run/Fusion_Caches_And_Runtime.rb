@@ -89,7 +89,7 @@ module Ironmon
     return PlayerFusionMapper.new(
       recipe["seed"], custom_fusion_pool, {}, {},
       stat_generator,
-      recipe["player_fusion_generator_version"], work_checkpoint, true
+      recipe["player_fusion_generator_version"], work_checkpoint
     )
   end
 
@@ -107,7 +107,7 @@ module Ironmon
                                    obtainability = false)
     result = {
       "species_id" => "#{species.id}:0",
-      "species_name" => species.name,
+      "species_name" => tracker_species_display_name(species),
       "sprite_path" => tracker_lookup_sprite_path(species),
       "label" => label
     }
@@ -119,14 +119,15 @@ module Ironmon
   end
 
   def self.tracker_lookup_sprite_path(species)
-    cached = tracker_sprite_paths[species.id]
-    return cached if tracker_sprite_paths.key?(species.id)
+    cache_key = [active_generation_profile_id, species.id]
+    cached = tracker_sprite_paths[cache_key]
+    return cached if tracker_sprite_paths.key?(cache_key)
     loader = BattleSpriteLoader.new
     pif_sprite = loader.get_pif_sprite_from_species(species.id)
-    tracker_sprite_paths[species.id] = tracker_resolved_sprite_path(pif_sprite)
-    return tracker_sprite_paths[species.id]
+    tracker_sprite_paths[cache_key] = tracker_resolved_sprite_path(pif_sprite)
+    return tracker_sprite_paths[cache_key]
   rescue Exception
-    tracker_sprite_paths[species.id] = nil if species
+    tracker_sprite_paths[cache_key] = nil if species && cache_key
     return nil
   end
   def self.tracker_search_indexes

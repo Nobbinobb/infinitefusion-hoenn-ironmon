@@ -78,7 +78,7 @@ finally {
     }
 }
 $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
-$report | Select-Object passed, seed, pool_size, preparation_milliseconds, maximum_slice_milliseconds, mapping_errors | ConvertTo-Json -Compress
+$report | Select-Object passed, seed, pool_size, preparation_milliseconds, maximum_slice_milliseconds, global_preparation_milliseconds, global_maximum_slice_milliseconds, global_maximum_slice_stage, mapping_errors | ConvertTo-Json -Compress
 $report.requests | Where-Object phase -ne 'poll' | ConvertTo-Json -Compress
 Write-Output "Full request timings: $reportPath"
 if ($Native) {

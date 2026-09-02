@@ -208,6 +208,46 @@ module Ironmon
     end.compact
   end
 
+  def self.tracker_area_derived_fusion_material_pair_codes(metadata, recipe)
+    sources = tracker_area_normal_encounter_sources(metadata, recipe)
+    return [] if sources.empty?
+    tables = Hash.new { |hash, key| hash[key] = {} }
+    sources.each do |source|
+      entry = source["metadata"]
+      number = GameData::Species.get(source["species"]).id_number
+      table = [entry["map_id"], entry["version"], entry["encounter_type"]]
+      tables[table][number] = true
+    end
+    pair_codes = {}
+    tables.each_value do |numbers|
+      numbers.keys.sort.combination(2) do |first, second|
+        pair_codes[(first << 10) | second] = true
+      end
+    end
+    tables_by_map = Hash.new { |hash, key| hash[key] = [] }
+    tables.each do |table, numbers|
+      tables_by_map[table[0]] << [table, numbers.keys.sort]
+    end
+    tables_by_map.each_value do |map_tables|
+      map_tables.each_with_index do |first, first_index|
+        ((first_index + 1)...map_tables.length).each do |second_index|
+          second = map_tables[second_index]
+          overworld_pair = overworld_encounter_environment?(first[0][2]) &&
+            overworld_encounter_environment?(second[0][2])
+          next if !overworld_pair
+          first[1].each do |first_number|
+            second[1].each do |second_number|
+              next if first_number == second_number
+              lower, higher = [first_number, second_number].sort
+              pair_codes[(lower << 10) | higher] = true
+            end
+          end
+        end
+      end
+    end
+    return pair_codes.keys.sort
+  end
+
   def self.tracker_area_same_encounter_table?(first, second)
     first = first["metadata"]
     second = second["metadata"]

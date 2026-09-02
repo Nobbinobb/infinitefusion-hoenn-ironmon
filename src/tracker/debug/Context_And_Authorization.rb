@@ -11,6 +11,7 @@ module Ironmon
       "run_id" => ensure_tracker_run_id,
       "seed" => $PokemonGlobal.ironmon_seed || 0,
       "result" => "active_debug",
+      "generation_profile_id" => pinned_generation_profile_id,
       "game_version" => tracker_game_version,
       "ironmon_version" => VERSION,
       "configuration" => configuration_snapshot,

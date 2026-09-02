@@ -62,9 +62,6 @@ module Ironmon
   def self.tracker_active_fusion_assignment_recipe
     return nil if !tracker_active_run_preparation_ready?
     return nil if !active? || !$PokemonGlobal
-    return nil if !tracker_connection.diagnostic_capabilities?(
-      *TRACKER_OBTAINABILITY_DIAGNOSTIC_CAPABILITIES
-    )
     metadata = [
       $PokemonGlobal.ironmon_seed,
       PlayerFusionMapper::SCHEMA_VERSION,
@@ -90,7 +87,9 @@ module Ironmon
       "base_stat_source_fingerprint" => metadata[7],
       "target_pool_version" => metadata[8],
       "target_pool_size" => metadata[9],
-      "target_pool_fingerprint" => metadata[10]
+      "target_pool_fingerprint" => metadata[10],
+      "packed_custom_fusion_pool" =>
+        [fusion_predecessor_index.packed_pool_membership].pack("m0")
     }
   end
 
@@ -102,7 +101,9 @@ module Ironmon
       "trainer_policy" => configuration.trainer_policy.to_s,
       "normal_pool_size" => normal_pool.length,
       "normal_pool_fingerprint" => species_pool_fingerprint(normal_pool),
-      "fusion_pool_schema_version" => fusion_pool[:schema_version],
+      "fusion_pool_schema_version" => generation_profile_algorithm_version(
+        "custom_fusion_eligibility"
+      ),
       "fusion_pool_size" => fusion_pool[:size],
       "fusion_pool_fingerprint" => fusion_pool[:fingerprint]
     }
@@ -352,8 +353,30 @@ module Ironmon
   end
 
   def self.tracker_evolutions(pokemon)
-    evolutions = pokemon.species_data.get_evolutions(true).map do |evolution|
-      tracker_evolution_snapshot(evolution[1], evolution[2])
+    methods = if evolution_randomization_active? &&
+                 generated_evolution_runtime_species?(pokemon.species_data)
+                branches = if fusion_evolution_runtime_species?(
+                                pokemon.species_data
+                              )
+                             generated_fusion_evolution_branches_for(
+                               pokemon.species_data
+                             )
+                           else
+                             generated_normal_evolution_branches_for(
+                               pokemon.species_data
+                             )
+                           end
+                branches.flat_map { |branch| branch[:effective_methods] }
+              else
+                pokemon.species_data.get_evolutions(true).map do |evolution|
+                  {
+                    :method => evolution[1],
+                    :parameter => evolution[2]
+                  }
+                end
+              end
+    evolutions = methods.map do |method|
+      tracker_evolution_snapshot(method[:method], method[:parameter])
     end
     return evolutions.sort_by { |evolution| evolution["requirement"] }
   end

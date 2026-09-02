@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
 
 namespace Ironmon.Tracker.Connection.Obtainability;
@@ -181,6 +182,110 @@ internal sealed class PlayerFusionMappingWorkerCatalog
         };
 
         result.Validate();
+        return result;
+    }
+
+    /// <summary>
+    /// Replaces only the custom-fusion target pool with membership supplied
+    /// by the game's pinned generation-profile index. All release-stable normal and
+    /// evolution catalogs remain embedded and independently validated.
+    /// </summary>
+    internal PlayerFusionMappingWorkerCatalog WithRuntimeFusionPool(int version, int expectedSize, string expectedFingerprint, string packedMembership)
+    {
+        byte[] membership;
+        try
+        {
+            membership = Convert.FromBase64String(packedMembership);
+        }
+        catch (FormatException exception)
+        {
+            throw new InvalidDataException("The runtime custom-fusion membership is not valid base64.", exception);
+        }
+
+        int bitCount = checked(NormalSpeciesCount * NormalSpeciesCount);
+        int expectedBytes = checked((bitCount + 7) / 8);
+        if (membership.Length != expectedBytes)
+            throw new InvalidDataException("The runtime custom-fusion membership has an invalid size.");
+
+        PlayerFusionNormalSpecies[] normal = [.. NormalSpecies.OrderBy(species => species.Id)];
+        string[] typeNames = [.. TypeNames];
+        int normalType = Array.IndexOf(typeNames, "NORMAL");
+        int flyingType = Array.IndexOf(typeNames, "FLYING");
+        if (normalType < 0 || flyingType < 0)
+            throw new InvalidDataException("The worker type catalog is missing Normal or Flying.");
+
+        List<PlayerFusionTargetSpecies> fusionPool = [];
+        ulong fingerprint = 14_695_981_039_346_656_037;
+        const ulong fnvPrime = 1_099_511_628_211;
+        for (int position = 0; position < bitCount; position++)
+        {
+            if ((membership[position >> 3] & (1 << (position & 7))) == 0)
+                continue;
+
+            int bodyId = position / NormalSpeciesCount + 1;
+            int headId = position % NormalSpeciesCount + 1;
+            int packed = checked(bodyId << 10 | headId);
+            ulong types = FusionTypeMask(normal[bodyId - 1], normal[headId - 1], normalType, flyingType);
+            fusionPool.Add(new PlayerFusionTargetSpecies(packed, types));
+            foreach (byte value in Encoding.UTF8.GetBytes($"B{bodyId}H{headId}"))
+            {
+                fingerprint ^= value;
+                fingerprint = unchecked(fingerprint * fnvPrime);
+            }
+
+            fingerprint = unchecked(fingerprint * fnvPrime);
+        }
+
+        string actualFingerprint = fingerprint.ToString("x16");
+        if (fusionPool.Count != expectedSize || !string.Equals(actualFingerprint, expectedFingerprint, StringComparison.Ordinal))
+            throw new InvalidDataException("The runtime custom-fusion membership does not match its pinned metadata.");
+
+        PlayerFusionMappingWorkerCatalog result = new()
+        {
+            SchemaVersion = SchemaVersion,
+            NormalSpeciesCount = NormalSpeciesCount,
+            BaseStatSourceFingerprint = BaseStatSourceFingerprint,
+            PlayerFusionGeneratorVersion = PlayerFusionGeneratorVersion,
+            FusionEvolutionGeneratorVersion = FusionEvolutionGeneratorVersion,
+            FusionEvolutionRulesVersion = FusionEvolutionRulesVersion,
+            EvolutionSourceFingerprint = EvolutionSourceFingerprint,
+            EvolutionTaxonomyFingerprint = EvolutionTaxonomyFingerprint,
+            EvolutionMethodFingerprint = EvolutionMethodFingerprint,
+            CustomFusionPoolVersion = version,
+            CustomFusionPoolFingerprint = expectedFingerprint,
+            ExcludedSpriteAuthors = ExcludedSpriteAuthors,
+            TypeNames = TypeNames,
+            NormalSpecies = NormalSpecies,
+            CustomFusionPool = fusionPool,
+            EvolutionBranches = EvolutionBranches,
+            VerificationSeed = VerificationSeed,
+            VerificationMappings = VerificationMappings,
+            EvolutionVerificationMappings = EvolutionVerificationMappings
+        };
+
+        result.Validate();
+        return result;
+    }
+
+    /// <summary>
+    /// Calculates Infinite Fusion's ordered displayed type mask for one fusion.
+    /// </summary>
+    /// <param name="body">The normal species used as the fusion body.</param>
+    /// <param name="head">The normal species used as the fusion head.</param>
+    /// <param name="normalType">The Normal type index in the worker type catalog.</param>
+    /// <param name="flyingType">The Flying type index in the worker type catalog.</param>
+    /// <returns>The bit mask containing the fusion's effective displayed types.</returns>
+    private static ulong FusionTypeMask(PlayerFusionNormalSpecies body, PlayerFusionNormalSpecies head, int normalType, int flyingType)
+    {
+        int first = head.PrimaryType == normalType && head.SecondaryType == flyingType
+            ? head.SecondaryType
+            : head.PrimaryType;
+
+        int second = body.SecondaryType == first ? body.PrimaryType : body.SecondaryType;
+        ulong result = 1UL << first;
+        if (second >= 0)
+            result |= 1UL << second;
+
         return result;
     }
 

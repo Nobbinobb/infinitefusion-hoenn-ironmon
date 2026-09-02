@@ -1,5 +1,6 @@
 using Ironmon.Tracker.Connection.Obtainability;
 using System.Diagnostics;
+using System.Text;
 
 namespace Ironmon.Tracker.Tests.Connection;
 
@@ -15,6 +16,8 @@ public sealed class PlayerFusionMappingWorkerTests
     private const string FusionBodyPrefix = "B";
     private const string FusionHeadSeparator = "H";
     private const string MismatchedSourceCatalogFingerprint = "0000000000000000";
+    private const string RuntimePoolEncounterJobId = "runtime-index-pool-encounters";
+    private const string RuntimePoolJobId = "runtime-index-pool-worker";
     private const string WorkerRunId = "worker-run";
     private const string WildMappingKind = "wild";
 
@@ -104,6 +107,148 @@ public sealed class PlayerFusionMappingWorkerTests
     }
 
     /// <summary>
+    /// Verifies a migrated sprite pool can replace the embedded pool while all
+    /// mapping work remains in the parallel tracker worker.
+    /// </summary>
+    [Fact]
+    public async Task RuntimeIndexMembershipBuildsPoolSpecificParallelWorkers()
+    {
+        PlayerFusionMappingWorkerCatalog embedded = PlayerFusionMappingWorkerCatalog.Load();
+        PlayerFusionTargetSpecies[] retained = [.. embedded.CustomFusionPool.Take(embedded.CustomFusionPool.Count - 2)];
+        byte[] membership = new byte[(embedded.NormalSpeciesCount * embedded.NormalSpeciesCount + 7) / 8];
+        foreach (PlayerFusionTargetSpecies target in retained)
+        {
+            int bodyId = target.PackedComponents >> 10;
+            int headId = target.PackedComponents & 0x3FF;
+            int position = (bodyId - 1) * embedded.NormalSpeciesCount + headId - 1;
+            membership[position >> 3] |= (byte)(1 << (position & 7));
+        }
+
+        string fingerprint = FusionPoolFingerprint(retained);
+        PlayerFusionMappingWorkerCatalog runtime = embedded.WithRuntimeFusionPool(embedded.CustomFusionPoolVersion, retained.Length, fingerprint, Convert.ToBase64String(membership));
+        PlayerFusionMappingWorker mappingWorker = new(runtime);
+        FusionEvolutionAssignmentWorker evolutionWorker = new(runtime);
+
+        Assert.Equal(retained.Length, runtime.CustomFusionPool.Count);
+        Assert.Equal(fingerprint, runtime.CustomFusionPoolFingerprint);
+        Assert.Equal(6, mappingWorker.MapAll(runtime.VerificationSeed, runtime.PlayerFusionGeneratorVersion, [1, 4, 7]).Count);
+        FusionEvolutionSourceAssignment assignment = evolutionWorker.Generate(runtime.VerificationSeed, runtime.CustomFusionPool[0].PackedComponents);
+        Assert.NotNull(assignment);
+        Assert.Equal(retained.Length + 2, embedded.CustomFusionPool.Count);
+
+        int[] materials = [.. Enumerable.Range(1, runtime.NormalSpeciesCount)];
+        PlayerFusionClosureWorkPayload work = new()
+        {
+            JobId = RuntimePoolJobId,
+            SourceCatalogFingerprint = ObtainabilitySourceCatalog.Load().Fingerprint,
+            Seed = runtime.VerificationSeed,
+            GeneratorVersion = runtime.PlayerFusionGeneratorVersion,
+            BaseStatSourceFingerprint = runtime.BaseStatSourceFingerprint,
+            CustomFusionPoolVersion = runtime.CustomFusionPoolVersion,
+            CustomFusionPoolSize = runtime.CustomFusionPool.Count,
+            CustomFusionPoolFingerprint = runtime.CustomFusionPoolFingerprint,
+            PackedCustomFusionPool = Convert.ToBase64String(membership),
+            FusionEvolutionGeneratorVersion = runtime.FusionEvolutionGeneratorVersion,
+            FusionEvolutionRulesVersion = runtime.FusionEvolutionRulesVersion,
+            EvolutionSourceFingerprint = runtime.EvolutionSourceFingerprint,
+            EvolutionTaxonomyFingerprint = runtime.EvolutionTaxonomyFingerprint,
+            EvolutionMethodFingerprint = runtime.EvolutionMethodFingerprint,
+            MaterialIds = materials,
+            BaseProofs = [.. materials.Select(id => new PlayerFusionProofSpeciesPayload
+            {
+                SpeciesId = id,
+                Plans = [.. Enumerable.Range(1, 4).Select(pathLength =>
+                    new PlayerFusionProofPlanPayload { PathLength = pathLength })]
+            })],
+            TotalPairs = materials.Length * (materials.Length + 1) / 2
+        };
+
+        PlayerFusionMappingCoordinator coordinator = new();
+        FusionAssignmentRecipePayload assignmentRecipe = new()
+        {
+            Seed = work.Seed,
+            PlayerFusionGeneratorVersion = work.GeneratorVersion,
+            GeneratorVersion = work.FusionEvolutionGeneratorVersion,
+            RulesVersion = work.FusionEvolutionRulesVersion,
+            SourceFingerprint = work.EvolutionSourceFingerprint,
+            TaxonomyFingerprint = work.EvolutionTaxonomyFingerprint,
+            MethodFingerprint = work.EvolutionMethodFingerprint,
+            BaseStatSourceFingerprint = work.BaseStatSourceFingerprint,
+            TargetPoolVersion = work.CustomFusionPoolVersion,
+            TargetPoolSize = work.CustomFusionPoolSize,
+            TargetPoolFingerprint = work.CustomFusionPoolFingerprint,
+            PackedCustomFusionPool = work.PackedCustomFusionPool
+        };
+
+        Assert.True(coordinator.PrepareActiveFusionAssignments(WorkerRunId, assignmentRecipe));
+        PlayerFusionClosureWorkPayload directWork = new()
+        {
+            JobId = RuntimePoolEncounterJobId,
+            SourceCatalogFingerprint = work.SourceCatalogFingerprint,
+            Seed = work.Seed,
+            GeneratorVersion = work.GeneratorVersion,
+            BaseStatSourceFingerprint = work.BaseStatSourceFingerprint,
+            CustomFusionPoolVersion = work.CustomFusionPoolVersion,
+            CustomFusionPoolSize = work.CustomFusionPoolSize,
+            CustomFusionPoolFingerprint = work.CustomFusionPoolFingerprint,
+            PackedCustomFusionPool = work.PackedCustomFusionPool,
+            FusionEvolutionGeneratorVersion = work.FusionEvolutionGeneratorVersion,
+            FusionEvolutionRulesVersion = work.FusionEvolutionRulesVersion,
+            EvolutionSourceFingerprint = work.EvolutionSourceFingerprint,
+            EvolutionTaxonomyFingerprint = work.EvolutionTaxonomyFingerprint,
+            EvolutionMethodFingerprint = work.EvolutionMethodFingerprint,
+            MaterialIds = work.MaterialIds,
+            TotalPairs = work.TotalPairs,
+            DirectPairOffsets = [1],
+            DirectEncounterOnly = true
+        };
+        PlayerFusionClosureResultPayload directResult = await coordinator.CreateResultAsync(directWork, CancellationToken.None)
+            ?? throw new InvalidOperationException("The migrated runtime-pool encounter result was not created.");
+
+        int[] expectedDirect =
+        [
+            mappingWorker.MapOrderedPair(runtime.VerificationSeed, runtime.PlayerFusionGeneratorVersion, 1, 2),
+            mappingWorker.MapOrderedPair(runtime.VerificationSeed, runtime.PlayerFusionGeneratorVersion, 2, 1)
+        ];
+        Array.Sort(expectedDirect);
+        Assert.Equal(expectedDirect, directResult.DirectEncounterFusionIds);
+        Assert.Empty(directResult.ObtainableFusionWords);
+
+        PlayerFusionClosureResultPayload result = await coordinator.CreateResultAsync(work, CancellationToken.None)
+            ?? throw new InvalidOperationException("The migrated runtime-pool worker result was not created.");
+
+        Assert.NotEmpty(result.ObtainableFusionWords);
+        Assert.True(result.ObtainableCount > materials.Length);
+        Assert.Equal(0, coordinator.CachedJobCount);
+    }
+
+    /// <summary>
+    /// Calculates the runtime-compatible fingerprint for an ordered custom-fusion pool.
+    /// </summary>
+    /// <param name="pool">The ordered custom-fusion targets to fingerprint.</param>
+    /// <returns>The lowercase hexadecimal FNV-1a pool fingerprint.</returns>
+    private static string FusionPoolFingerprint(IReadOnlyList<PlayerFusionTargetSpecies> pool)
+    {
+        const ulong offsetBasis = 14_695_981_039_346_656_037;
+        const ulong prime = 1_099_511_628_211;
+        ulong value = offsetBasis;
+        foreach (PlayerFusionTargetSpecies target in pool)
+        {
+            int bodyId = target.PackedComponents >> 10;
+            int headId = target.PackedComponents & 0x3FF;
+            foreach (byte entry in Encoding.UTF8.GetBytes($"B{bodyId}H{headId}"))
+            {
+                value ^= entry;
+                value = unchecked(value * prime);
+            }
+
+            value = unchecked(value * prime);
+        }
+
+        return value.ToString("x16");
+    }
+
+    /// <summary>
     /// Guards the representative full material workload against falling back to game-runtime-scale latency.
     /// </summary>
     [Fact]
@@ -172,7 +317,28 @@ public sealed class PlayerFusionMappingWorkerTests
         PlayerFusionMappingWorkerCatalog catalog = PlayerFusionMappingWorkerCatalog.Load();
         PlayerFusionReferenceMapping directReference = catalog.VerificationMappings.First(mapping => mapping.FirstMaterialId != mapping.SecondMaterialId);
         PlayerFusionReferenceMapping caughtReference = catalog.VerificationMappings.First(mapping => mapping.FirstResultId != directReference.FirstResultId && mapping.FirstResultId != directReference.SecondResultId);
-        int[] materials = [directReference.FirstMaterialId, directReference.SecondMaterialId];
+        int[] materials = [.. new[] { directReference.FirstMaterialId, directReference.SecondMaterialId }.Order()];
+        PlayerFusionClosureWorkPayload directWork = new()
+        {
+            JobId = $"{DirectProofJobId}:encounters",
+            SourceCatalogFingerprint = ObtainabilitySourceCatalog.Load().Fingerprint,
+            Seed = catalog.VerificationSeed,
+            GeneratorVersion = catalog.PlayerFusionGeneratorVersion,
+            BaseStatSourceFingerprint = catalog.BaseStatSourceFingerprint,
+            CustomFusionPoolVersion = catalog.CustomFusionPoolVersion,
+            CustomFusionPoolSize = catalog.CustomFusionPool.Count,
+            CustomFusionPoolFingerprint = catalog.CustomFusionPoolFingerprint,
+            FusionEvolutionGeneratorVersion = catalog.FusionEvolutionGeneratorVersion,
+            FusionEvolutionRulesVersion = catalog.FusionEvolutionRulesVersion,
+            EvolutionSourceFingerprint = catalog.EvolutionSourceFingerprint,
+            EvolutionTaxonomyFingerprint = catalog.EvolutionTaxonomyFingerprint,
+            EvolutionMethodFingerprint = catalog.EvolutionMethodFingerprint,
+            MaterialIds = materials,
+            TotalPairs = 3,
+            DirectPairOffsets = [1],
+            DirectEncounterOnly = true
+        };
+
         PlayerFusionClosureWorkPayload work = new()
         {
             JobId = DirectProofJobId,
@@ -209,12 +375,23 @@ public sealed class PlayerFusionMappingWorkerTests
         };
         PlayerFusionMappingCoordinator coordinator = new();
 
+        PlayerFusionClosureResultPayload directResult = await coordinator.CreateResultAsync(directWork, CancellationToken.None)
+            ?? throw new InvalidOperationException("The compatible derived-encounter worker result was not created.");
+
+        int[] expectedDirectEncounterFusions = [directReference.FirstResultId, directReference.SecondResultId];
+        Array.Sort(expectedDirectEncounterFusions);
+        Assert.Equal(expectedDirectEncounterFusions, directResult.DirectEncounterFusionIds);
+        Assert.Empty(directResult.ObtainableFusionWords);
+        Assert.Empty(directResult.PackedExecutableEvolutionEdges);
+        Assert.Equal(0, directResult.ObtainableCount);
+
         PlayerFusionClosureResultPayload result = await coordinator.CreateResultAsync(work, CancellationToken.None)
             ?? throw new InvalidOperationException("The compatible direct-proof worker result was not created.");
 
         Assert.True(IsObtainable(result, directReference.FirstResultId));
         Assert.True(IsObtainable(result, directReference.SecondResultId));
         Assert.True(IsObtainable(result, caughtReference.SecondResultId));
+        Assert.Equal(expectedDirectEncounterFusions, result.DirectEncounterFusionIds);
     }
 
     /// <summary>

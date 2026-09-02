@@ -20,7 +20,7 @@ module Ironmon
   ].freeze
 
   class PivotState
-    SCHEMA_VERSION = 5
+    SCHEMA_VERSION = 1
 
     attr_reader :schema_version
     attr_reader :pending_pivot
@@ -40,32 +40,6 @@ module Ironmon
       @next_acquisition_sequence = 0
       @quarantined_pokemon = []
       @excluded_acquisition_log = []
-    end
-
-    def migrate!
-      if @schema_version != SCHEMA_VERSION
-        @fusion_mappings = {}
-        @discovered_fusion_mappings = {}
-      end
-      @pending_pivot = nil if !@pending_pivot.is_a?(Hash)
-      @fusion_mappings = {} if !@fusion_mappings.is_a?(Hash)
-      if !@discovered_fusion_mappings.is_a?(Hash)
-        @discovered_fusion_mappings = {}
-      end
-      if !@completed_acquisition_ids.is_a?(Hash)
-        @completed_acquisition_ids = {}
-      end
-      if !@next_acquisition_sequence.is_a?(Integer) ||
-         @next_acquisition_sequence < 0
-        @next_acquisition_sequence = 0
-      end
-      @quarantined_pokemon = [] if !@quarantined_pokemon.is_a?(Array)
-      if !@excluded_acquisition_log.is_a?(Array)
-        @excluded_acquisition_log = []
-      end
-      discard_completed_pending_pivot
-      @schema_version = SCHEMA_VERSION
-      return self
     end
 
     def current?
@@ -144,31 +118,21 @@ module Ironmon
     end
 
     def self.from(value)
-      return value.migrate! if value.is_a?(self)
-      return new
-    rescue Exception => e
-      echoln "Ironmon pivot-state migration failed; using defaults: #{e.message}"
-      return new
+      return new if value.nil?
+      return value if value.is_a?(self) && value.current?
+      raise PlayerFusionMappingError,
+            "the saved pivot state is incompatible"
     end
 
-    private
-
-    def discard_completed_pending_pivot
-      return if !@pending_pivot
-      acquisition_id = @pending_pivot[:acquisition_id]
-      if acquisition_id && @completed_acquisition_ids[acquisition_id.to_s]
-        @pending_pivot = nil
-      end
-    end
   end
 
   def self.pivot_state
     return PivotState.new if !$PokemonGlobal
     stored = $PokemonGlobal.ironmon_pivot_state
     return stored if stored.is_a?(PivotState) && stored.current?
-    migrated = PivotState.from(stored)
-    $PokemonGlobal.ironmon_pivot_state = migrated
-    return migrated
+    state = PivotState.from(stored)
+    $PokemonGlobal.ironmon_pivot_state = state
+    return state
   end
 
   def self.reset_pivot_state

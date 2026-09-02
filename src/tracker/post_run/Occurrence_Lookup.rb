@@ -7,6 +7,7 @@ module Ironmon
     WORK_SECONDS = 0.004
 
     def initialize(target, recipe, materials)
+      @recipe = recipe
       @results = nil
       @error = nil
       @fiber = Fiber.new do
@@ -17,6 +18,10 @@ module Ironmon
           target, recipe, materials, checkpoint
         )
       end
+    end
+
+    def generation_profile_id
+      return @recipe["generation_profile_id"].to_s
     end
 
     def advance
@@ -49,6 +54,7 @@ module Ironmon
       recipe["species_generator_version"],
       recipe["player_fusion_generator_version"],
       recipe["base_stat_source_fingerprint"],
+      recipe["generation_profile_id"],
       recipe["overworld_encounters"], species.id, kind
     ]
   end
@@ -66,10 +72,6 @@ module Ironmon
 
   def self.tracker_lookup_wild_occurrences(target, recipe, materials = nil,
                                            checkpoint = nil)
-    if recipe["species_generator_version"] ==
-       SpeciesGenerator::LEGACY_SCHEMA_VERSION
-      return tracker_lookup_legacy_wild_occurrences(target, recipe)
-    end
     return [] if !SpeciesGenerator::SLOT_SCHEMA_VERSIONS.include?(
       recipe["species_generator_version"]
     )
@@ -223,51 +225,7 @@ module Ironmon
     }
   end
 
-  def self.tracker_lookup_legacy_wild_occurrences(target, recipe)
-    return [] if !tracker_loaded_recipe?(recipe)
-    mapping = $PokemonGlobal.ironmon_wild_species_map
-    return [] if !mapping.is_a?(Hash)
-    mode = if recipe["data_mode"] == "remix" &&
-              defined?(GameData::EncounterModern)
-             GameData::EncounterModern
-           else
-             GameData::Encounter
-           end
-    occurrences = []
-    mode.each do |data|
-      data.types.each do |encounter_type, entries|
-        total = entries.inject(0) { |sum, entry| sum + entry[0].to_i }
-        entries.each_with_index do |entry, slot|
-          source = GameData::Species.get(entry[1])
-          next if mapping[source.id_number].to_i != target.id_number
-          chance = total > 0 ? (entry[0].to_f * 100.0 / total).round(2) : nil
-          occurrences << {
-            "map_id" => data.map,
-            "route_name" => pbGetMapNameFromId(data.map),
-            "mode" => mode == GameData::Encounter ? "Classic" : "Remix",
-            "encounter_version" => data.version,
-            "encounter_type" => encounter_type.to_s,
-            "slot" => slot + 1,
-            "minimum_level" => scaled_level(entry[2]),
-            "maximum_level" => scaled_level(entry[3] || entry[2]),
-            "source_species_id" => "#{source.id}:0",
-            "source_species_name" => source.name,
-            "chance_percent" => chance,
-            "chance_is_conditional" => false
-          }
-        end
-      end
-    end
-    return occurrences.sort_by do |entry|
-      [entry["route_name"], entry["encounter_type"], entry["slot"]]
-    end
-  end
-
   def self.tracker_lookup_trainer_occurrences(target, recipe)
-    if recipe["species_generator_version"] ==
-       SpeciesGenerator::LEGACY_SCHEMA_VERSION
-      return tracker_lookup_legacy_trainer_occurrences(target, recipe)
-    end
     return [] if !SpeciesGenerator::SLOT_SCHEMA_VERSIONS.include?(
       recipe["species_generator_version"]
     )
@@ -288,38 +246,6 @@ module Ironmon
         source = GameData::Species.get(pokemon[:species])
         mapped = generator.map(source.id, [:pbs, trainer.id, slot])
         next if mapped != target.id
-        trainer_type = GameData::TrainerType.try_get(trainer.trainer_type)
-        occurrence = {
-          "trainer_id" => tracker_lookup_trainer_id(trainer),
-          "trainer_name" => trainer.name,
-          "trainer_type" => trainer_type ? trainer_type.name :
-            trainer.trainer_type.to_s,
-          "slot" => slot + 1,
-          "level" => scaled_level(pokemon[:level]),
-          "source_species_id" => "#{source.id}:0",
-          "source_species_name" => source.name
-        }
-        tracker_append_trainer_locations(occurrences, occurrence, trainer)
-      end
-    end
-    occurrences.uniq! do |entry|
-      [entry["trainer_id"], entry["slot"], entry["source_species_id"],
-       entry["map_id"]]
-    end
-    return occurrences.sort_by do |entry|
-      [entry["trainer_type"], entry["trainer_name"], entry["slot"]]
-    end
-  end
-
-  def self.tracker_lookup_legacy_trainer_occurrences(target, recipe)
-    return [] if !tracker_loaded_recipe?(recipe)
-    mapping = $PokemonGlobal.ironmon_trainer_species_map
-    return [] if !mapping.is_a?(Hash)
-    occurrences = []
-    tracker_trainer_data_mode(recipe).list_all.each do |_trainer_id, trainer|
-      trainer.pokemon.each_with_index do |pokemon, slot|
-        source = GameData::Species.get(pokemon[:species])
-        next if mapping[source.id_number].to_i != target.id_number
         trainer_type = GameData::TrainerType.try_get(trainer.trainer_type)
         occurrence = {
           "trainer_id" => tracker_lookup_trainer_id(trainer),

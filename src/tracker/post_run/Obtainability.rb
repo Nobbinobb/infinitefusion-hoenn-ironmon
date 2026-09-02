@@ -74,6 +74,11 @@ module Ironmon
       @normal_generator = nil
       @encounter_tables = nil
       @encounter_table_index = 0
+      @derived_encounter_areas = nil
+      @derived_encounter_area_index = 0
+      @derived_caught_fusion_numbers = nil
+      @derived_caught_fusion_index = 0
+      @derived_caught_fusions_expanded = false
       @authored_catalog_entries = nil
       @authored_catalog_index = 0
       @authored_sources_complete = false
@@ -82,11 +87,16 @@ module Ironmon
       @player_fusion_until = 0.0
       @tracker_base_proof_snapshot = nil
       @tracker_resource_supply_snapshot = nil
+      @tracker_custom_fusion_pool_membership = nil
       @caught_fusion_entries = nil
       @caught_fusion_index = 0
       @work_fiber = nil
       @work_deadline = nil
       advance_until_ready if !deferred
+    end
+
+    def generation_profile_id
+      return @recipe["generation_profile_id"].to_s
     end
 
     def advance_for_milliseconds(milliseconds)
@@ -200,10 +210,57 @@ module Ironmon
       end
       @work_fiber = nil
       @work_deadline = nil
+      direct_fusions = tracker_direct_encounter_fusion_numbers(result)
+      if !@derived_caught_fusions_expanded && !direct_fusions.empty?
+        begin_derived_caught_fusion_expansion(direct_fusions)
+        return false
+      end
+      if @derived_caught_fusions_expanded &&
+         direct_fusions != @derived_caught_fusion_numbers
+        raise TrackerLookupError.new(
+          "invalid_query", "The tracker direct-fusion result changed between closure stages."
+        )
+      end
+      @derived_caught_fusions_expanded = true
+      @derived_caught_fusion_numbers ||= direct_fusions
       apply_tracker_closure_summary(result)
       @fusion_mapping_complete = true
       @phase = :complete
       return true
+    end
+
+    def tracker_direct_encounter_fusion_numbers(result)
+      values = result["direct_encounter_fusion_ids"]
+      if values.nil? && !@direct_fusion_pair_offsets.empty?
+        raise TrackerLookupError.new(
+          "obtainability_incomplete",
+          "The connected tracker does not support derived fusion obtainability."
+        )
+      end
+      values = [] if values.nil?
+      maximum = @direct_fusion_pair_offsets.length * 2
+      invalid_number = values.is_a?(Array) && values.any? do |number|
+        !number.is_a?(Integer) || number <= NB_POKEMON ||
+          !Ironmon.custom_fusion_pool_service.include_number?(number)
+      end
+      if !values.is_a?(Array) || values.length > maximum ||
+         values.uniq.length != values.length || invalid_number ||
+         (values.empty? != @direct_fusion_pair_offsets.empty?)
+        raise TrackerLookupError.new(
+          "invalid_query", "The tracker direct-fusion result is malformed."
+        )
+      end
+      return values.sort
+    end
+
+    def begin_derived_caught_fusion_expansion(numbers)
+      @derived_caught_fusion_numbers = numbers
+      @derived_caught_fusion_index = 0
+      @derived_caught_fusions_expanded = true
+      @material_pairs_prepared = false
+      @fusion_closure_job_id = nil
+      @tracker_base_proof_snapshot = nil
+      @phase = :derived_caught_fusion_transformations
     end
 
     def apply_tracker_closure_summary(batch)
@@ -432,6 +489,8 @@ module Ironmon
       @player_fusion_until = Ironmon.tracker_uptime_seconds +
         PLAYER_FUSION_LEASE_SECONDS
       info = Ironmon.custom_fusion_pool_info
+      direct_encounter_only = !@derived_caught_fusions_expanded &&
+        !@direct_fusion_pair_offsets.empty?
       return {
         "job_id" => fusion_closure_job_id,
         "source_catalog_fingerprint" =>
@@ -443,17 +502,23 @@ module Ironmon
         "custom_fusion_pool_version" => info[:schema_version],
         "custom_fusion_pool_size" => info[:size],
         "custom_fusion_pool_fingerprint" => info[:fingerprint],
+        "packed_custom_fusion_pool" => tracker_custom_fusion_pool_membership,
         "material_ids" => @material_ids.map do |identity|
           GameData::Species.get(identity).id_number
         end,
         "total_pairs" => @pair_count,
-        "excluded_pair_offsets" => @excluded_material_pair_offsets,
+        "excluded_pair_offsets" => direct_encounter_only ? [] :
+          @excluded_material_pair_offsets,
         "direct_pair_offsets" => @direct_fusion_pair_offsets,
-        "reversible_fusion_ids" => @direct_caught_fusions.keys.map do |identity|
-          GameData::Species.get(identity).id_number
-        end.sort,
-        "base_proofs" => tracker_base_proof_snapshot,
-        "resource_supply" => tracker_resource_supply_snapshot,
+        "direct_encounter_only" => direct_encounter_only,
+        "reversible_fusion_ids" => direct_encounter_only ? [] :
+          @direct_caught_fusions.keys.map do |identity|
+            GameData::Species.get(identity).id_number
+          end.sort,
+        "base_proofs" => direct_encounter_only ? [] :
+          tracker_base_proof_snapshot,
+        "resource_supply" => direct_encounter_only ? {} :
+          tracker_resource_supply_snapshot,
         "fusion_evolution_generator_version" =>
           @recipe["fusion_evolution_generator_version"],
         "fusion_evolution_rules_version" =>
@@ -473,7 +538,8 @@ module Ironmon
         GameData::Species.get(identity).id_number
       end
       fingerprint = Ironmon.fnv1a_64_fingerprint(
-        [material_numbers.length] + material_numbers +
+        [@derived_caught_fusions_expanded ? 1 : 0,
+         material_numbers.length] + material_numbers +
           [@excluded_material_pair_offsets.length] +
           @excluded_material_pair_offsets +
           [@direct_fusion_pair_offsets.length] + @direct_fusion_pair_offsets +
@@ -519,6 +585,12 @@ module Ironmon
       return @tracker_resource_supply_snapshot
     end
 
+    def tracker_custom_fusion_pool_membership
+      @tracker_custom_fusion_pool_membership ||=
+        [Ironmon.fusion_predecessor_index.packed_pool_membership].pack("m0")
+      return @tracker_custom_fusion_pool_membership
+    end
+
     def stringify_constraints(values)
       result = {}
       values.each do |key, value|
@@ -557,8 +629,11 @@ module Ironmon
           process_encounter_table(@encounter_tables[@encounter_table_index])
           @encounter_table_index += 1
         else
-          @phase = :starter_sources
+          prepare_derived_encounter_areas
+          @phase = :derived_encounter_sources
         end
+      when :derived_encounter_sources
+        advance_derived_encounter_source_work
       when :starter_sources
         seed_starter_sources
         prepare_authored_map_scan
@@ -581,6 +656,22 @@ module Ironmon
       when :transformation_evolutions
         close_normal_evolutions(1)
         prepare_material_pairs if !normal_evolution_pending?
+      when :derived_caught_fusion_transformations
+        if @derived_caught_fusion_index < @derived_caught_fusion_numbers.length
+          apply_derived_caught_fusion_transformation(
+            @derived_caught_fusion_numbers[@derived_caught_fusion_index]
+          )
+          @derived_caught_fusion_index += 1
+        else
+          @phase = :derived_transformation_evolutions
+        end
+      when :derived_transformation_evolutions
+        close_normal_evolutions(1)
+        if !normal_evolution_pending?
+          @tracker_base_proof_snapshot = nil
+          @fusion_closure_job_id = nil
+          prepare_material_pairs
+        end
       when :player_fusions
         return
       end
@@ -596,6 +687,26 @@ module Ironmon
         end
       end
       @phase = :encounter_sources
+    end
+
+    def prepare_derived_encounter_areas
+      @derived_encounter_areas = Ironmon.tracker_area_catalog
+      @derived_encounter_area_index = 0
+    end
+
+    def advance_derived_encounter_source_work
+      if @derived_encounter_area_index >= @derived_encounter_areas.length
+        @phase = :starter_sources
+        return
+      end
+      area = @derived_encounter_areas[@derived_encounter_area_index]
+      metadata = Ironmon.tracker_area_encounter_metadata(area, @recipe)
+      Ironmon.tracker_area_derived_fusion_material_pair_codes(
+        metadata, @recipe
+      ).each do |pair_code|
+        @direct_fusion_material_pairs[pair_code] = true
+      end
+      @derived_encounter_area_index += 1
     end
 
     def prepare_generators
@@ -639,20 +750,6 @@ module Ironmon
           "(#{encounter_type}, slot #{slot + 1})",
           nil, true
         )
-      end
-      return if @configuration.wild_policy !=
-        Configuration::POLICY_NORMAL_ONLY
-      mapped.each do |body|
-        mapped.each do |head|
-          body_species = GameData::Species.try_get(body)
-          head_species = GameData::Species.try_get(head)
-          next if !body_species || !head_species ||
-            body_species.is_a?(GameData::FusedSpecies) ||
-            head_species.is_a?(GameData::FusedSpecies)
-          first = [body_species.id_number, head_species.id_number].min
-          second = [body_species.id_number, head_species.id_number].max
-          @direct_fusion_material_pairs[(first << 10) | second] = true
-        end
       end
     end
 
@@ -1437,6 +1534,20 @@ module Ironmon
       end
     end
 
+    def apply_derived_caught_fusion_transformation(number)
+      species = GameData::Species.get(number)
+      plan = {
+        :items => {}, :constraints => {}, :source_uses => {},
+        :reason => "Derived wild fusion",
+        :path => path_step(nil, nil, "Catch the derived wild fusion #{species.name}"),
+        :path_length => 1
+      }
+      add_plan(species.id, plan)
+      @direct_caught_fusions[species.id] ||= []
+      @direct_caught_fusions[species.id] << plan
+      apply_caught_fusion_transformation(species.id, plan)
+    end
+
     def caught_unfusion_choice_key(identity, plan)
       sources = plan[:source_uses].keys.map(&:to_s).sort.join("|")
       return "caught_unfusion:#{identity}:#{sources}".to_sym
@@ -1454,6 +1565,7 @@ module Ironmon
       pair_offset = 0
       @material_ids.each_with_index do |first, first_index|
         (first_index...@material_ids.length).each do |second_index|
+          cooperative_checkpoint if (pair_offset % 8).zero?
           second = @material_ids[second_index]
           @excluded_material_pair_offsets << pair_offset if
             !compatible_material_pair?(first, second)
@@ -1825,9 +1937,11 @@ module Ironmon
       service.foreground_requested?
     end.max_by { |service| service.foreground_deadline }
     if foreground
-      foreground.advance_for_milliseconds(
-        TrackerObtainabilityService::FOREGROUND_MILLISECONDS
-      )
+      with_generation_profile(foreground.generation_profile_id) do
+        foreground.advance_for_milliseconds(
+          TrackerObtainabilityService::FOREGROUND_MILLISECONDS
+        )
+      end
       return
     end
     return if !tracker_obtainability_background_safe?
@@ -1835,9 +1949,11 @@ module Ironmon
       candidate.background_requested?
     end.max_by { |candidate| candidate.background_deadline }
     return if !service
-    service.advance_for_milliseconds(
-      TrackerObtainabilityService::BACKGROUND_MILLISECONDS
-    )
+    with_generation_profile(service.generation_profile_id) do
+      service.advance_for_milliseconds(
+        TrackerObtainabilityService::BACKGROUND_MILLISECONDS
+      )
+    end
   rescue Exception => e
     echoln "Ironmon obtainability background update failed: #{e.message}"
   end

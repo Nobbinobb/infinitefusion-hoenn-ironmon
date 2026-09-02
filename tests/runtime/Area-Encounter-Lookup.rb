@@ -84,11 +84,14 @@ module IronmonAreaEncounterLookupProbe
       $PokemonGlobal.ironmon_mode = true
       $PokemonGlobal.ironmon_seed = options["seed"]
       $PokemonGlobal.ironmon_run_id = "run-seed-#{options['seed']}"
+      profile_id = Ironmon.current_generation_profile_id
+      $PokemonGlobal.ironmon_generation_profile_id = profile_id
       $PokemonGlobal.ironmon_configuration = Ironmon::Configuration.new(:mixed, :custom_fusions_only)
       $PokemonGlobal.ironmon_species_generator_version = Ironmon::SpeciesGenerator::SCHEMA_VERSION
       ledger = Ironmon.default_run_ledger
       ledger["current_attempt"] = {
         "run_id" => $PokemonGlobal.ironmon_run_id,
+        "generation_profile_id" => profile_id,
         "seed" => options["seed"], "result" => "active"
       }
       $PokemonGlobal.ironmon_run_ledger = ledger
@@ -123,9 +126,24 @@ module IronmonAreaEncounterLookupProbe
     raise "reopening changed fusion results" if request("reopen", payload, run_id)["encounter_fusions"] != expected
     raise "lookup populated gameplay fusion mappings" if Marshal.dump(Ironmon.pivot_state.fusion_mappings) != mappings
     Ironmon.prepare_player_fusion_pairing
+    global_started = Ironmon.tracker_uptime_seconds
+    global_maximum_slice = 0.0
+    global_maximum_slice_stage = nil
     while Ironmon.instance_variable_get(:@player_fusion_preparation_fiber)
+      mapper = Ironmon.instance_variable_get(:@player_fusion_preparation_mapper)
+      slice_started = Ironmon.tracker_uptime_seconds
       Ironmon.advance_player_fusion_pairing
+      elapsed = Ironmon.tracker_uptime_seconds - slice_started
+      if elapsed > global_maximum_slice
+        global_maximum_slice = elapsed
+        global_maximum_slice_stage = mapper.preparation_stage.to_s
+      end
     end
+    report["global_preparation_milliseconds"] =
+      ((Ironmon.tracker_uptime_seconds - global_started) * 1000).round(2)
+    report["global_maximum_slice_milliseconds"] =
+      (global_maximum_slice * 1000).round(2)
+    report["global_maximum_slice_stage"] = global_maximum_slice_stage
     raise "background preparation changed fusion results" if request("after_preparation", payload, run_id)["encounter_fusions"] != expected
     hidden = request("ordinary_live", payload, run_id, false)
     assert_concealed_fusion_page(hidden)

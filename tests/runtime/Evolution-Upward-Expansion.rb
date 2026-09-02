@@ -42,72 +42,48 @@ module IronmonEvolutionUpwardExpansionRuntimeTests
            "family rejection preserves the uniform permutation order")
   end
 
-  def self.assert_fusion_rules_3_upgrade
+  def self.assert_live_snapshot_uses_effective_methods
     original_global = $PokemonGlobal
     $PokemonGlobal = PokemonGlobalMetadata.new
     $PokemonGlobal.ironmon_mode = true
-    $PokemonGlobal.ironmon_seed = 1_234_567
-    Ironmon.record_generator_metadata({
-      :ironmon_base_stat_generator_version =>
-        Ironmon::BaseStatGenerator::SCHEMA_VERSION,
-      :ironmon_base_stat_source_fingerprint =>
-        Ironmon.base_stat_source_fingerprint
-    })
-    metadata = Ironmon.evolution_metadata_values
-    metadata[:ironmon_evolution_fusion_rules_version] = 3
-    Ironmon.record_generator_metadata(metadata)
+    $PokemonGlobal.ironmon_seed = 7_654_321
     assert(
-      Ironmon.legacy_generated_evolution_rules_version == :fusion_rules_3,
-      "fusion rules version 3 is recognized as an exact upgrade source"
+      Ironmon.prepare_base_stat_randomization,
+      "live evolution snapshot fixture prepares base-stat metadata"
     )
     assert(
-      Ironmon.ensure_evolution_randomization,
-      "fusion rules version 3 upgrades without rejecting the save"
+      Ironmon.prepare_evolution_randomization,
+      "live evolution snapshot fixture prepares evolution metadata"
+    )
+    source_branch = Ironmon.evolution_catalog.branch_catalog.find do |branch|
+      branch[:original_methods].any? do |method|
+        [:HasMove, :HasMoveType].include?(method[:method])
+      end
+    end
+    assert(source_branch, "runtime catalog contains a native Has Move branch")
+    source = GameData::Species.get(source_branch[:source].to_sym)
+    native_methods = source.get_evolutions(true).map { |entry| entry[1] }
+    assert(
+      native_methods.any? { |method| [:HasMove, :HasMoveType].include?(method) },
+      "live evolution snapshot fixture exposes a native Has Move method"
+    )
+    pokemon = Pokemon.new(source.id, 5)
+    snapshots = Ironmon.tracker_evolutions(pokemon)
+    expected = Ironmon.generated_normal_evolution_branches_for(source)
+      .flat_map { |branch| branch[:effective_methods] }
+      .map do |method|
+        Ironmon.tracker_evolution_snapshot(
+          method[:method], method[:parameter]
+        )
+      end
+      .sort_by { |snapshot| snapshot["requirement"] }
+    assert(
+      snapshots == expected,
+      "live Pokemon snapshot uses generated effective evolution methods"
     )
     assert(
-      $PokemonGlobal.ironmon_evolution_fusion_rules_version ==
-        Ironmon::FusionEvolutionGenerator::RULES_VERSION,
-      "fusion rules upgrade records the current version"
-    )
-    assert(
-      Ironmon.evolution_randomization_active?,
-      "fusion rules upgrade leaves evolution randomization ready"
-    )
-    recipe = {
-      "evolution_generator_version" =>
-        metadata[:ironmon_evolution_generator_version],
-      "evolution_rules_version" =>
-        metadata[:ironmon_evolution_rules_version],
-      "evolution_source_fingerprint" =>
-        metadata[:ironmon_evolution_source_fingerprint],
-      "evolution_taxonomy_fingerprint" =>
-        metadata[:ironmon_evolution_taxonomy_fingerprint],
-      "evolution_method_fingerprint" =>
-        metadata[:ironmon_evolution_method_fingerprint],
-      "evolution_target_fingerprint" =>
-        metadata[:ironmon_evolution_target_fingerprint],
-      "evolution_base_stat_generator_version" =>
-        metadata[:ironmon_evolution_base_stat_generator_version],
-      "evolution_base_stat_source_fingerprint" =>
-        metadata[:ironmon_evolution_base_stat_source_fingerprint],
-      "fusion_evolution_generator_version" =>
-        metadata[:ironmon_evolution_fusion_generator_version],
-      "fusion_evolution_rules_version" => 3,
-      "fusion_evolution_target_pool_version" =>
-        metadata[:ironmon_evolution_fusion_target_pool_version],
-      "fusion_evolution_target_pool_size" =>
-        metadata[:ironmon_evolution_fusion_target_pool_size],
-      "fusion_evolution_target_pool_fingerprint" =>
-        metadata[:ironmon_evolution_fusion_target_pool_fingerprint]
-    }
-    assert(
-      Ironmon.tracker_validate_evolution_recipe(recipe),
-      "fusion rules version 3 completed recipes upgrade for lookup"
-    )
-    assert(
-      recipe["fusion_evolution_rules_version"] ==
-        Ironmon::FusionEvolutionGenerator::RULES_VERSION,
-      "completed recipe upgrade records the current fusion rules"
+      snapshots.none? { |snapshot| snapshot["requirement"].include?("Has Move") },
+      "live Pokemon snapshot never exposes converted Has Move methods"
     )
   ensure
     Ironmon.suspend_evolution_randomization
@@ -173,7 +149,7 @@ module IronmonEvolutionUpwardExpansionRuntimeTests
         ),
         "tracker lookup rejects a fusion outside the custom pool"
       )
-      assert_fusion_rules_3_upgrade
+      assert_live_snapshot_uses_effective_methods
       cases = [
         [1689, :B506H10],
         [2895, :B285H506]

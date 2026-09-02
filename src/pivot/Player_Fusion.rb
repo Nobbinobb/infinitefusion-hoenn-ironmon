@@ -10,26 +10,18 @@ module Ironmon
   class PlayerFusionMappingError < StandardError; end
 
   class PlayerFusionMapper
-    SCHEMA_VERSION = 5
-    PREVIOUS_SCHEMA_VERSION = 3
-    LEGACY_SCHEMA_VERSION = 2
-    SUPPORTED_SCHEMA_VERSIONS = [LEGACY_SCHEMA_VERSION,
-                                 PREVIOUS_SCHEMA_VERSION,
-                                 SCHEMA_VERSION].freeze
-    PREFERRED_MINIMUM_PERCENT = 90
-    PREFERRED_MAXIMUM_PERCENT = 115
+    SCHEMA_VERSION = 1
+    SUPPORTED_SCHEMA_VERSIONS = [SCHEMA_VERSION].freeze
     NAMESPACE = "player_fusion"
     MATERIAL_ID_BITS = 10
     MATERIAL_ID_MASK = (1 << MATERIAL_ID_BITS) - 1
-    RESULT_INDEX_BST_BUCKET_SIZE = 32
 
     attr_reader :preparation_stage
     attr_reader :preparation_progress
 
     def initialize(seed, fusion_pool, mappings, discoveries,
                    base_stat_generator = nil,
-                   schema_version = SCHEMA_VERSION, work_checkpoint = nil,
-                   use_result_index = false)
+                   schema_version = SCHEMA_VERSION, work_checkpoint = nil)
       @seed = seed.to_i
       @fusion_pool = fusion_pool
       @mappings = mappings
@@ -37,7 +29,6 @@ module Ironmon
       @base_stat_generator = base_stat_generator || Ironmon.base_stat_generator
       @schema_version = schema_version.to_i
       @work_checkpoint = work_checkpoint
-      @use_result_index = use_result_index
       if !SUPPORTED_SCHEMA_VERSIONS.include?(@schema_version)
         raise PlayerFusionMappingError,
               "player fusion schema #{@schema_version} is unsupported"
@@ -51,11 +42,9 @@ module Ironmon
       @target_type_masks = []
       @result_hash_prefix = nil
       @material_pair_codes = nil
-      @schema_5_material_pair_codes = nil
       @material_pairs = {}
       @type_codes = {}
       @normal_stats = {}
-      @result_candidate_index = nil
       @result_bst_index = nil
       @result_bst_minimum = nil
       @result_bst_maximum = nil
@@ -136,20 +125,6 @@ module Ironmon
         GameData::Species.get(fusion_species).id_number
       )
       return @material_pairs[species_id] if @material_pairs[species_id]
-      if @schema_version == SCHEMA_VERSION
-        ensure_schema_5_material_pair_codes
-        codes = @schema_5_material_pair_codes.fetch(species_id, [])
-        pairs = codes.map do |code|
-          [code >> MATERIAL_ID_BITS, code & MATERIAL_ID_MASK]
-        end.freeze
-        @material_pairs[species_id] = pairs
-        return @material_pairs[species_id]
-      end
-      if @schema_version == PREVIOUS_SCHEMA_VERSION
-        pairs = schema_3_material_pairs_for(species_id).freeze
-        @material_pairs[species_id] = pairs
-        return @material_pairs[species_id]
-      end
       ensure_material_pair_codes
       codes = @material_pair_codes.fetch(species_id, [])
       pairs = codes.map do |code|
@@ -160,8 +135,7 @@ module Ironmon
     end
 
     def material_pair_assignments_required?
-      return @schema_version == SCHEMA_VERSION &&
-        !@schema_5_material_pair_codes
+      return !@material_pair_codes
     end
 
     def prepare
@@ -184,62 +158,9 @@ module Ironmon
       codes = {}
       (1..NB_POKEMON).each do |first_id|
         (first_id..NB_POKEMON).each do |second_id|
-          pair_index = deterministic_result_value(first_id, second_id) %
-                       @fusion_pairs.length
-          result_ids = @fusion_pairs[pair_index]
-          codes[result_ids[0]] ||= []
-          codes[result_ids[0]] << pack_material_pair(first_id, second_id)
-          if first_id != second_id
-            codes[result_ids[1]] ||= []
-            codes[result_ids[1]] << pack_material_pair(second_id, first_id)
-          end
-        end
-      end
-      codes.each_value(&:freeze)
-      @material_pair_codes = codes.freeze
-    end
-
-    def schema_3_material_pairs_for(species_id)
-      fusion_pair_index = @fusion_pairs.index do |fusion_pair|
-        fusion_pair[0] == species_id || fusion_pair[1] == species_id
-      end
-      if !fusion_pair_index
-        raise PlayerFusionMappingError,
-              "a custom fusion has no result-pair position"
-      end
-      pairs = []
-      seen = {}
-      append_cached_material_pairs(species_id, pairs, seen)
-      (1..NB_POKEMON).each do |first_id|
-        (first_id..NB_POKEMON).each do |second_id|
           @work_checkpoint.call if @work_checkpoint &&
             (second_id % 32).zero?
-          pair = [first_id, second_id]
-          result_ids = schema_3_result_ids_at_pair(
-            pair, fusion_pair_index
-          )
-          next if !result_ids
-          append_material_pair(
-            pairs, seen, first_id, second_id
-          ) if result_ids[0] == species_id
-          if first_id != second_id && result_ids[1] == species_id
-            append_material_pair(
-              pairs, seen, second_id, first_id
-            )
-          end
-        end
-      end
-      return pairs.sort
-    end
-
-    def ensure_schema_5_material_pair_codes
-      return if @schema_5_material_pair_codes
-      codes = {}
-      (1..NB_POKEMON).each do |first_id|
-        (first_id..NB_POKEMON).each do |second_id|
-          @work_checkpoint.call if @work_checkpoint &&
-            (second_id % 32).zero?
-          result_ids = select_schema_5_result_ids([first_id, second_id])
+          result_ids = select_result_ids([first_id, second_id])
           codes[result_ids[0]] ||= []
           codes[result_ids[0]] << pack_material_pair(first_id, second_id)
           next if first_id == second_id
@@ -248,104 +169,7 @@ module Ironmon
         end
       end
       codes.each_value { |entries| entries.sort!.freeze }
-      @schema_5_material_pair_codes = codes.freeze
-    end
-
-    def append_cached_material_pairs(species_id, pairs, seen)
-      @mappings.keys.each do |key|
-        match = /\A(\d+):(\d+)\z/.match(key.to_s)
-        next if !match
-        first_id = match[1].to_i
-        second_id = match[2].to_i
-        next if first_id <= 0 || second_id <= 0 ||
-          first_id > NB_POKEMON || second_id > NB_POKEMON
-        result_ids = mapped_result_ids([first_id, second_id].sort)
-        append_material_pair(
-          pairs, seen, first_id, second_id
-        ) if result_ids[0] == species_id
-        if first_id != second_id && result_ids[1] == species_id
-          append_material_pair(
-            pairs, seen, second_id, first_id
-          )
-        end
-      end
-    end
-
-    def append_material_pair(pairs, seen, body_id, head_id)
-      code = pack_material_pair(body_id, head_id)
-      return if seen[code]
-      seen[code] = true
-      pairs << [body_id, head_id]
-    end
-
-    def schema_3_result_ids_at_pair(pair, fusion_pair_index)
-      body = GameData::Species.get(pair[0])
-      head = GameData::Species.get(pair[1])
-      source_type_mask = type_mask([
-        body.type1, body.type2, head.type1, head.type2
-      ].compact.uniq)
-      forward_range = preferred_range(normal_fusion_bst(body, head))
-      reverse_range = preferred_range(normal_fusion_bst(head, body))
-      reverse_first = deterministic_value(
-        "orientation", pair[0], pair[1]
-      ).odd?
-      result_ids = matching_result_orientation(
-        @fusion_pairs[fusion_pair_index], source_type_mask,
-        forward_range, reverse_range, reverse_first
-      )
-      return nil if !result_ids
-      previous_index = fusion_pair_index
-      loop do
-        previous_index -= 1
-        previous_index = @fusion_pairs.length - 1 if previous_index < 0
-        break if previous_index == fusion_pair_index
-        break if result_pair_matches?(
-          @fusion_pairs[previous_index], source_type_mask,
-          forward_range, reverse_range
-        )
-      end
-      return result_ids if previous_index == fusion_pair_index
-      start = deterministic_result_value(pair[0], pair[1]) %
-              @fusion_pairs.length
-      distance_to_result = (fusion_pair_index - start) %
-                           @fusion_pairs.length
-      distance_to_previous = (previous_index - start) %
-                             @fusion_pairs.length
-      return distance_to_result < distance_to_previous ? result_ids : nil
-    end
-
-    def matching_result_orientation(fusion_pair, source_type_mask, forward_range,
-                                    reverse_range, reverse_first)
-      first = fusion_pair
-      second = [fusion_pair[1], fusion_pair[0]]
-      first, second = second, first if reverse_first
-      return first if result_orientation_matches?(
-        first, source_type_mask, forward_range, reverse_range
-      )
-      return second if result_orientation_matches?(
-        second, source_type_mask, forward_range, reverse_range
-      )
-      return nil
-    end
-
-    def result_pair_matches?(fusion_pair, source_type_mask, forward_range,
-                             reverse_range)
-      return true if result_orientation_matches?(
-        fusion_pair, source_type_mask, forward_range, reverse_range
-      )
-      reverse = [fusion_pair[1], fusion_pair[0]]
-      return result_orientation_matches?(
-        reverse, source_type_mask, forward_range, reverse_range
-      )
-    end
-
-    def result_orientation_matches?(orientation, source_type_mask, forward_range,
-                                    reverse_range)
-      return target_matches?(
-        orientation[0], source_type_mask, forward_range
-      ) && target_matches?(
-        orientation[1], source_type_mask, reverse_range
-      )
+      @material_pair_codes = codes.freeze
     end
 
     def pack_material_pair(body_id, head_id)
@@ -389,13 +213,7 @@ module Ironmon
           @discoveries.delete(key)
         end
       end
-      if @schema_version == LEGACY_SCHEMA_VERSION
-        pair_index = deterministic_result_value(pair[0], pair[1]) %
-                     @fusion_pairs.length
-        first_id, second_id = @fusion_pairs[pair_index]
-      else
-        first_id, second_id = select_result_ids(pair)
-      end
+      first_id, second_id = select_result_ids(pair)
       @mappings[key] = [validate_result_id(first_id),
                         validate_result_id(second_id)]
       return @mappings[key]
@@ -424,36 +242,6 @@ module Ironmon
     end
 
     def select_result_ids(pair)
-      return select_schema_5_result_ids(pair) if
-        @schema_version == SCHEMA_VERSION
-      return select_schema_3_result_ids(pair)
-    end
-
-    def select_schema_3_result_ids(pair)
-      return select_result_ids_linear(pair) if !@use_result_index
-      body = GameData::Species.get(pair[0])
-      head = GameData::Species.get(pair[1])
-      source_types = [body.type1, body.type2, head.type1, head.type2].compact.uniq
-      source_type_mask = type_mask(source_types)
-      forward_bst = normal_fusion_bst(body, head)
-      reverse_bst = normal_fusion_bst(head, body)
-      forward_range = preferred_range(forward_bst)
-      reverse_range = preferred_range(reverse_bst)
-      start = deterministic_result_value(pair[0], pair[1]) %
-              @fusion_pairs.length
-      reverse_first = deterministic_value(
-        "orientation", pair[0], pair[1]
-      ).odd?
-      result = indexed_result_ids(
-        start, source_type_mask, forward_range, reverse_range, reverse_first
-      )
-      return result if result
-      return closest_result_ids(
-        pair, source_type_mask, forward_bst, reverse_bst, reverse_first
-      )
-    end
-
-    def select_schema_5_result_ids(pair)
       body = GameData::Species.get(pair[0])
       head = GameData::Species.get(pair[1])
       source_type_mask = type_mask(
@@ -463,12 +251,12 @@ module Ironmon
       target_bst = range.begin + deterministic_value(
         "bst_target", pair[0], pair[1]
       ) % (range.end - range.begin + 1)
-      result_ids = closest_schema_5_result_ids(
+      result_ids = closest_result_ids(
         pair, source_type_mask, target_bst, range
       )
       return result_ids if result_ids
       available_range = @result_bst_minimum..@result_bst_maximum
-      result_ids = closest_schema_5_result_ids(
+      result_ids = closest_result_ids(
         pair, source_type_mask, target_bst, available_range
       )
       return result_ids if result_ids
@@ -489,8 +277,7 @@ module Ironmon
       return minimum..maximum
     end
 
-    def closest_schema_5_result_ids(pair, source_type_mask, target_bst,
-                                    permitted_range)
+    def closest_result_ids(pair, source_type_mask, target_bst, permitted_range)
       ensure_result_bst_index
       best = nil
       maximum_distance = [
@@ -546,229 +333,6 @@ module Ironmon
       bst_values = index.keys
       @result_bst_minimum = bst_values.min
       @result_bst_maximum = bst_values.max
-    end
-
-    def indexed_result_ids(start, source_type_mask, forward_range,
-                           reverse_range, reverse_first)
-      ensure_result_candidate_index
-      states = result_candidate_states(
-        start, source_type_mask, forward_range
-      )
-      while !states.empty?
-        distance = states.map { |state| result_candidate_distance(state, start) }.min
-        position = (start + distance) % @fusion_pairs.length
-        result = matching_indexed_result_at(
-          position, source_type_mask, forward_range, reverse_range,
-          reverse_first
-        )
-        return result if result
-        advance_result_candidate_states(states, position)
-        @work_checkpoint.call if @work_checkpoint
-      end
-      return nil
-    end
-
-    def matching_indexed_result_at(position, source_type_mask, forward_range,
-                                   reverse_range, reverse_first)
-      fusion_pair = @fusion_pairs[position]
-      first_id = fusion_pair[0]
-      second_id = fusion_pair[1]
-      if reverse_first
-        return [second_id, first_id] if
-          target_data_matches?(second_id, source_type_mask, forward_range) &&
-          target_data_matches?(first_id, source_type_mask, reverse_range)
-        return [first_id, second_id] if
-          target_data_matches?(first_id, source_type_mask, forward_range) &&
-          target_data_matches?(second_id, source_type_mask, reverse_range)
-      else
-        return [first_id, second_id] if
-          target_data_matches?(first_id, source_type_mask, forward_range) &&
-          target_data_matches?(second_id, source_type_mask, reverse_range)
-        return [second_id, first_id] if
-          target_data_matches?(second_id, source_type_mask, forward_range) &&
-          target_data_matches?(first_id, source_type_mask, reverse_range)
-      end
-      return nil
-    end
-
-    def result_candidate_states(start, source_type_mask, forward_range)
-      states = []
-      minimum_bucket = forward_range.begin / RESULT_INDEX_BST_BUCKET_SIZE
-      maximum_bucket = forward_range.end / RESULT_INDEX_BST_BUCKET_SIZE
-      each_type_code(source_type_mask) do |type_code|
-        buckets = @result_candidate_index[type_code]
-        next if !buckets
-        (minimum_bucket..maximum_bucket).each do |bucket|
-          entries = buckets[bucket]
-          next if !entries || entries.empty?
-          index = lower_bound(entries, start << 1)
-          index = 0 if index >= entries.length
-          states << {
-            :entries => entries,
-            :index => index,
-            :remaining => entries.length
-          }
-        end
-      end
-      return states
-    end
-
-    def result_candidate_distance(state, start)
-      position = state[:entries][state[:index]] >> 1
-      return (position - start) % @fusion_pairs.length
-    end
-
-    def advance_result_candidate_states(states, position)
-      states.delete_if do |state|
-        while state[:remaining] > 0 &&
-              (state[:entries][state[:index]] >> 1) == position
-          state[:remaining] -= 1
-          state[:index] += 1
-          state[:index] = 0 if state[:index] >= state[:entries].length
-        end
-        state[:remaining] <= 0
-      end
-    end
-
-    def lower_bound(entries, value)
-      low = 0
-      high = entries.length
-      while low < high
-        middle = (low + high) / 2
-        if entries[middle] < value
-          low = middle + 1
-        else
-          high = middle
-        end
-      end
-      return low
-    end
-
-    def each_type_code(mask)
-      code = 0
-      while mask > 0
-        yield code if (mask & 1) == 1
-        mask >>= 1
-        code += 1
-      end
-    end
-
-    def ensure_result_candidate_index
-      return if @result_candidate_index
-      indexes = []
-      @fusion_pairs.each_with_index do |fusion_pair, position|
-        @work_checkpoint.call if @work_checkpoint && (position % 32).zero?
-        fusion_pair.each_with_index do |species_id, orientation|
-          bucket = target_bst(species_id) / RESULT_INDEX_BST_BUCKET_SIZE
-          each_type_code(target_type_mask(species_id)) do |type_code|
-            indexes[type_code] ||= {}
-            indexes[type_code][bucket] ||= []
-            indexes[type_code][bucket] << ((position << 1) | orientation)
-          end
-        end
-      end
-      indexes.each do |buckets|
-        next if !buckets
-        buckets.each_value(&:freeze)
-        buckets.freeze
-      end
-      @result_candidate_index = indexes.freeze
-    end
-
-    def select_result_ids_linear(pair)
-      body = GameData::Species.get(pair[0])
-      head = GameData::Species.get(pair[1])
-      source_type_mask = type_mask(
-        [body.type1, body.type2, head.type1, head.type2].compact.uniq
-      )
-      forward_bst = normal_fusion_bst(body, head)
-      reverse_bst = normal_fusion_bst(head, body)
-      forward_range = preferred_range(forward_bst)
-      reverse_range = preferred_range(reverse_bst)
-      start = deterministic_result_value(pair[0], pair[1]) %
-              @fusion_pairs.length
-      reverse_first = deterministic_value(
-        "orientation", pair[0], pair[1]
-      ).odd?
-      @fusion_pairs.length.times do |offset|
-        result = matching_indexed_result_at(
-          (start + offset) % @fusion_pairs.length, source_type_mask,
-          forward_range, reverse_range, reverse_first
-        )
-        return result if result
-      end
-      return closest_result_ids(
-        pair, source_type_mask, forward_bst, reverse_bst, reverse_first
-      )
-    end
-
-    def preferred_range(reference_bst)
-      minimum = divide_round_up(
-        reference_bst * PREFERRED_MINIMUM_PERCENT, 100
-      )
-      maximum = (reference_bst * PREFERRED_MAXIMUM_PERCENT) / 100
-      return minimum..maximum
-    end
-
-    def target_matches?(species_id, source_type_mask, preferred_range)
-      return target_data_matches?(
-        species_id, source_type_mask, preferred_range
-      )
-    end
-
-    def target_data_matches?(species_id, source_type_mask, preferred_range)
-      return false if (target_type_mask(species_id) & source_type_mask).zero?
-      return preferred_range.include?(target_bst(species_id))
-    end
-
-    def closest_result_ids(pair, source_type_mask, forward_bst, reverse_bst,
-                           reverse_first)
-      best = nil
-      @fusion_pairs.each_with_index do |fusion_pair, index|
-        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
-        first_id = fusion_pair[0]
-        second_id = fusion_pair[1]
-        if reverse_first
-          best = closest_result_candidate(
-            best, pair, source_type_mask, forward_bst, reverse_bst,
-            second_id, first_id
-          )
-          best = closest_result_candidate(
-            best, pair, source_type_mask, forward_bst, reverse_bst,
-            first_id, second_id
-          )
-        else
-          best = closest_result_candidate(
-            best, pair, source_type_mask, forward_bst, reverse_bst,
-            first_id, second_id
-          )
-          best = closest_result_candidate(
-            best, pair, source_type_mask, forward_bst, reverse_bst,
-            second_id, first_id
-          )
-        end
-      end
-      if !best
-        raise PlayerFusionMappingError,
-              "no custom fusion pair shares a consumed Pokemon type"
-      end
-      return [best[2], best[3]]
-    end
-
-    def closest_result_candidate(best, pair, source_type_mask, forward_bst,
-                                 reverse_bst, first_id, second_id)
-      return best if (target_type_mask(first_id) & source_type_mask).zero?
-      return best if (target_type_mask(second_id) & source_type_mask).zero?
-      score = (target_bst(first_id) - forward_bst).abs +
-              (target_bst(second_id) - reverse_bst).abs
-      return best if best && score > best[0]
-      rank = deterministic_value(
-        "fallback", pair[0], pair[1], first_id, second_id
-      )
-      candidate = [score, rank, first_id, second_id]
-      return candidate if !best ||
-        (candidate[0, 2] <=> best[0, 2]) < 0
-      return best
     end
 
     def normal_fusion_bst(body, head)
@@ -845,10 +409,6 @@ module Ironmon
       end
     end
 
-    def divide_round_up(value, divisor)
-      return (value + divisor - 1) / divisor
-    end
-
     def update_deterministic_hash(value, input)
       return Ironmon.fnv1a_64(input, value)
     end
@@ -913,45 +473,6 @@ module Ironmon
     end
 
     def build_fusion_pairs
-      return build_schema_5_fusion_pairs if @schema_version == SCHEMA_VERSION
-      16.times do |attempt|
-        shuffled = deterministic_shuffle(@fusion_pool_ids, attempt)
-        pairs = []
-        partners = {}
-        pairing_failed = false
-        (0...shuffled.length).step(2) do |position|
-          @work_checkpoint.call if @work_checkpoint && (position % 32).zero?
-          partner_position = position + 1
-          while partner_position < shuffled.length &&
-                shares_component?(
-                  shuffled[position], shuffled[partner_position]
-                )
-            @work_checkpoint.call if @work_checkpoint &&
-              (partner_position % 32).zero?
-            partner_position += 1
-          end
-          if partner_position >= shuffled.length
-            pairing_failed = true
-            break
-          end
-          shuffled[position + 1], shuffled[partner_position] =
-            shuffled[partner_position], shuffled[position + 1]
-          first_id = shuffled[position]
-          second_id = shuffled[position + 1]
-          pairs << [first_id, second_id]
-          partners[first_id] = second_id
-          partners[second_id] = first_id
-        end
-        next if pairing_failed
-        @fusion_pairs = pairs.freeze
-        @paired_result_ids = partners.freeze
-        return
-      end
-      raise PlayerFusionMappingError,
-            "the custom fusion pool could not form disjoint reverse pairs"
-    end
-
-    def build_schema_5_fusion_pairs
       maximum_pair_difference = maximum_fusion_range_width
       16.times do |attempt|
         @preparation_stage = :strength_order
@@ -1004,7 +525,7 @@ module Ironmon
     def strength_ordered_fusion_ids(attempt)
       buckets = {}
       @fusion_pool_ids.each_with_index do |species_id, index|
-        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+        @work_checkpoint.call if @work_checkpoint && (index % 4).zero?
         bst = target_bst(species_id)
         buckets[bst] ||= []
         buckets[bst] << [
@@ -1047,7 +568,7 @@ module Ironmon
       best = nil
       pairs.each_with_index do |previous, pair_index|
         @preparation_progress = pair_index
-        @work_checkpoint.call if @work_checkpoint && (pair_index % 32).zero?
+        @work_checkpoint.call if @work_checkpoint && (pair_index % 4).zero?
         [previous, previous.reverse].each do |orientation|
           replacements = [
             [current_first, orientation[0]],
@@ -1085,9 +606,10 @@ module Ironmon
     end
 
     def repair_strength_chain(pairs, current_first, current_second, maximum)
+      @preparation_stage = :strength_repair_chain
       candidates_by_bst = {}
       pairs.each_with_index do |pair, index|
-        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+        @work_checkpoint.call if @work_checkpoint && (index % 4).zero?
         [pair, pair.reverse].each_with_index do |(partner, displaced), orientation|
           bst = target_bst(partner)
           candidates_by_bst[bst] ||= []
@@ -1098,6 +620,7 @@ module Ironmon
       visited = { current_first => true }
       position = 0
       while position < queue.length
+        @work_checkpoint.call if @work_checkpoint
         current, replacements, removed = queue[position]
         position += 1
         bst = target_bst(current)
@@ -1106,7 +629,7 @@ module Ironmon
         end.sort_by { |entry| entry[0] * 2 + entry[1] }
         candidates.each_with_index do |candidate, candidate_index|
           @work_checkpoint.call if @work_checkpoint &&
-            (candidate_index % 32).zero?
+            (candidate_index % 4).zero?
           index, _orientation, partner, displaced = candidate
           next if removed.include?(index)
           next if visited[displaced] ||
@@ -1136,14 +659,20 @@ module Ironmon
     def maximum_fusion_range_width
       return @maximum_fusion_range_width if @maximum_fusion_range_width
       @preparation_stage = :maximum_range
-      values = (1..NB_POKEMON).map do |species_id|
-        normal_bst(GameData::Species.get(species_id))
-      end.uniq
+      values = []
+      (1..NB_POKEMON).each do |species_id|
+        @work_checkpoint.call if @work_checkpoint &&
+          (species_id % 4).zero?
+        values << normal_bst(GameData::Species.get(species_id))
+      end
+      values.uniq!
       maximum = 0
       values.each_with_index do |first_bst, index|
         @preparation_progress = index
         @work_checkpoint.call if @work_checkpoint && (index % 4).zero?
-        values.each do |second_bst|
+        values.each_with_index do |second_bst, second_index|
+          @work_checkpoint.call if @work_checkpoint &&
+            (second_index % 32).zero?
           range = fusion_bst_range(first_bst, second_bst)
           width = range.end - range.begin
           maximum = width if width > maximum
@@ -1281,6 +810,14 @@ module Ironmon
     return true
   end
 
+  def self.player_fusion_preparation_safe?
+    return true if !defined?($game_player) || !$game_player
+    return false if $game_player.respond_to?(:moving?) && $game_player.moving?
+    return false if defined?(Input) && Input.respond_to?(:dir4) &&
+      Input.dir4 != 0
+    return true
+  end
+
   def self.advance_player_fusion_pairing
     fiber = @player_fusion_preparation_fiber
     return false if !fiber
@@ -1292,15 +829,11 @@ module Ironmon
     end
     deadline = player_fusion_preparation_uptime +
       PLAYER_FUSION_PREPARATION_BUDGET_SECONDS
-    write_player_fusion_preparation_trace(
-      @player_fusion_preparation_mapper, "slice_started"
-    )
     fiber.resume while fiber.alive? &&
       player_fusion_preparation_uptime < deadline
     write_player_fusion_preparation_trace(
-      @player_fusion_preparation_mapper,
-      fiber.alive? ? "slice_yielded" : "prepared"
-    )
+      @player_fusion_preparation_mapper, "prepared"
+    ) if !fiber.alive?
     install_prepared_player_fusion_mapper if !fiber.alive?
     return true
   rescue Exception => e

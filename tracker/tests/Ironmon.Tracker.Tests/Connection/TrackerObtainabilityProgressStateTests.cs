@@ -79,17 +79,17 @@ public sealed class TrackerObtainabilityProgressStateTests
     {
         TrackerObtainabilityProgressState state = new();
         state.Begin(_firstRunId, TrackerObtainabilityProgressScope.ActiveRun);
-        state.Report(_firstRunId, TrackerObtainabilityProgressScope.ActiveRun, new PokemonObtainabilityResponsePayload { Phase = _playerFusionsPhase, Complete = true });
-        Assert.Equal(TrackerObtainabilityProgressStatus.Running, state.GetActiveRunSnapshot(_firstRunId).Status);
+        state.Report(_firstRunId, TrackerObtainabilityProgressScope.ActiveRun, new PokemonObtainabilityResponsePayload { Phase = _completePhase, BackgroundComplete = true });
+        TrackerObtainabilityProgressSnapshot activeComplete = state.GetActiveRunSnapshot(_firstRunId);
+        Assert.Equal(TrackerObtainabilityProgressStatus.Complete, activeComplete.Status);
         Assert.Same(TrackerObtainabilityProgressSnapshot.Idle, state.GetActiveRunSnapshot(_secondRunId));
 
-        state.Begin(_firstRunId, TrackerObtainabilityProgressScope.ArchivedRun);
-        state.Report(_firstRunId, TrackerObtainabilityProgressScope.ArchivedRun, new PokemonObtainabilityResponsePayload { Phase = _completePhase, BackgroundComplete = true });
-        Assert.Same(TrackerObtainabilityProgressSnapshot.Idle, state.GetActiveRunSnapshot(_firstRunId));
-
-        state.Report(_firstRunId, TrackerObtainabilityProgressScope.ActiveRun, new PokemonObtainabilityResponsePayload { Phase = _completePhase, BackgroundComplete = true });
+        state.Begin(_secondRunId, TrackerObtainabilityProgressScope.ArchivedRun);
         Assert.Equal(TrackerObtainabilityProgressScope.ArchivedRun, state.Snapshot.Scope);
-        Assert.Equal(TrackerObtainabilityProgressStatus.Complete, state.GetActiveRunSnapshot(_firstRunId).Status);
+        Assert.Same(activeComplete, state.GetActiveRunSnapshot(_firstRunId));
+        state.Report(_secondRunId, TrackerObtainabilityProgressScope.ArchivedRun, new PokemonObtainabilityResponsePayload { Phase = _completePhase, BackgroundComplete = true });
+        state.Cancel(_secondRunId, TrackerObtainabilityProgressScope.ArchivedRun);
+        Assert.Same(activeComplete, state.GetActiveRunSnapshot(_firstRunId));
 
         state.Begin(_secondRunId, TrackerObtainabilityProgressScope.ActiveRun);
         Assert.Equal(TrackerObtainabilityProgressStatus.Running, state.GetActiveRunSnapshot(_secondRunId).Status);

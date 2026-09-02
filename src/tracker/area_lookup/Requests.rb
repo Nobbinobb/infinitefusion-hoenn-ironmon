@@ -222,6 +222,7 @@ module Ironmon
       "run_id" => attempt["run_id"],
       "seed" => attempt["seed"],
       "result" => attempt["result"],
+      "generation_profile_id" => pinned_generation_profile_id,
       "configuration" => configuration_snapshot,
       "data_mode" => tracker_data_mode,
       "item_generator" => item_generator_recipe,

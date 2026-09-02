@@ -38,10 +38,6 @@ module Ironmon
       recipe["fusion_evolution_target_pool_fingerprint"]
     ]
     return true if metadata.compact.empty?
-    if legacy_evolution_metadata_version(*metadata)
-      tracker_upgrade_evolution_recipe(recipe)
-      return true
-    end
     catalog = evolution_catalog
     fusion_pool = custom_fusion_pool_info
     expected = [
@@ -66,30 +62,6 @@ module Ironmon
       )
     end
     return true
-  end
-
-  def self.tracker_upgrade_evolution_recipe(recipe)
-    catalog = evolution_catalog
-    fusion_pool = custom_fusion_pool_info
-    recipe["evolution_generator_version"] =
-      NormalEvolutionGenerator::SCHEMA_VERSION
-    recipe["evolution_rules_version"] = NormalEvolutionGenerator::RULES_VERSION
-    recipe["evolution_source_fingerprint"] = catalog.source_fingerprint
-    recipe["evolution_taxonomy_fingerprint"] = catalog.taxonomy_fingerprint
-    recipe["evolution_method_fingerprint"] = catalog.method_fingerprint
-    recipe["evolution_target_fingerprint"] = catalog.normal_target_fingerprint
-    recipe["evolution_base_stat_generator_version"] =
-      BaseStatGenerator::SCHEMA_VERSION
-    recipe["evolution_base_stat_source_fingerprint"] =
-      base_stat_source_fingerprint
-    recipe["fusion_evolution_generator_version"] =
-      FusionEvolutionGenerator::SCHEMA_VERSION
-    recipe["fusion_evolution_rules_version"] =
-      FusionEvolutionGenerator::RULES_VERSION
-    recipe["fusion_evolution_target_pool_version"] = fusion_pool[:schema_version]
-    recipe["fusion_evolution_target_pool_size"] = fusion_pool[:size]
-    recipe["fusion_evolution_target_pool_fingerprint"] =
-      fusion_pool[:fingerprint]
   end
 
   def self.tracker_lookup_evolution_targets(
@@ -297,7 +269,7 @@ module Ironmon
     target = GameData::Species.get(branch[:target_id])
     result = {
       "species_id" => "#{target.id}:0",
-      "species_name" => target.name,
+      "species_name" => tracker_species_display_name(target),
       "sprite_path" => tracker_lookup_sprite_path(target),
       "base_stat_total" => branch[:target_bst],
       "stage_level" => tracker_evolution_graph_level(target),

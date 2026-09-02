@@ -14,15 +14,16 @@ internal sealed class PlayerFusionMappingCoordinator
     private const int MaximumCachedEvolutionJobs = 2;
     private const int MaximumCachedMaterialJobs = 2;
     private const int MaximumPlansPerSpecies = 8;
+    private static readonly IReadOnlyDictionary<string, string> _emptyConstraints = new Dictionary<string, string>(StringComparer.Ordinal);
+    private static readonly IReadOnlyDictionary<string, int> _emptyCounts = new Dictionary<string, int>(StringComparer.Ordinal);
     private readonly PlayerFusionMappingWorkerCatalog _catalog;
+    private readonly ConcurrentDictionary<string, PlayerFusionWorkerContext> _workerContexts = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<EvolutionAssignmentKey, Lazy<Task<FusionEvolutionAssignmentIndex>>> _evolutionJobs = new();
     private readonly ConcurrentDictionary<PlayerFusionMaterialKey, Lazy<Task<PlayerFusionMaterialIndex>>> _materialJobs = new();
     private readonly ConcurrentDictionary<string, Task<PlayerFusionWorkerResult>> _jobs = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, EvolutionAssignmentKey> _runEvolutionKeys = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, PlayerFusionMaterialKey> _runMaterialKeys = new(StringComparer.Ordinal);
-    private readonly FusionEvolutionAssignmentWorker _evolutionWorker;
     private readonly ObtainabilitySourceCatalog _sourceCatalog;
-    private readonly PlayerFusionMappingWorker _worker;
 
     /// <summary>
     /// Initializes a coordinator from the embedded generated mapping catalog.
@@ -31,8 +32,7 @@ internal sealed class PlayerFusionMappingCoordinator
     {
         _catalog = PlayerFusionMappingWorkerCatalog.Load();
         _sourceCatalog = ObtainabilitySourceCatalog.Load();
-        _worker = new PlayerFusionMappingWorker(_catalog);
-        _evolutionWorker = new FusionEvolutionAssignmentWorker(_catalog);
+        _workerContexts[_catalog.CustomFusionPoolFingerprint] = new PlayerFusionWorkerContext(_catalog);
     }
 
     /// <summary>
@@ -41,7 +41,7 @@ internal sealed class PlayerFusionMappingCoordinator
     internal int CachedJobCount => _jobs.Count;
 
     /// <summary>
-    /// Starts or reuses the exact assignment index as soon as an authorized active run is recovered.
+    /// Starts or reuses both native indexes as soon as an authorized active run is recovered.
     /// </summary>
     /// <param name="runId">The active run identifier.</param>
     /// <param name="recipe">The deterministic assignment recipe supplied by the game.</param>
@@ -50,13 +50,16 @@ internal sealed class PlayerFusionMappingCoordinator
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
         ArgumentNullException.ThrowIfNull(recipe);
-        if (!Compatible(recipe))
+        PlayerFusionWorkerContext? context = ResolveWorkerContext(recipe);
+        if (context is null || !Compatible(recipe, context.Catalog))
             return false;
 
         EvolutionAssignmentKey key = EvolutionAssignmentKey.From(recipe);
+        PlayerFusionMaterialKey materialKey = PlayerFusionMaterialKey.From(recipe);
         _runEvolutionKeys[runId] = key;
-        _runMaterialKeys[runId] = PlayerFusionMaterialKey.From(recipe);
+        _runMaterialKeys[runId] = materialKey;
         _ = GetEvolutionAssignmentIndex(key);
+        _ = GetMaterialIndex(materialKey);
         return true;
     }
 
@@ -73,7 +76,8 @@ internal sealed class PlayerFusionMappingCoordinator
         if (work.SourceCatalogFingerprint != _sourceCatalog.Fingerprint)
             throw new InvalidOperationException("The game and tracker obtainability source catalogs do not match.");
 
-        if (!Compatible(work))
+        PlayerFusionWorkerContext? context = ResolveWorkerContext(work);
+        if (context is null)
             return null;
 
         EvolutionAssignmentKey evolutionKey = EvolutionAssignmentKey.From(work);
@@ -83,7 +87,9 @@ internal sealed class PlayerFusionMappingCoordinator
             _runMaterialKeys[runId] = new PlayerFusionMaterialKey(work.Seed, work.GeneratorVersion, work.BaseStatSourceFingerprint, work.CustomFusionPoolFingerprint);
         }
 
-        Task<PlayerFusionWorkerResult> job = _jobs.GetOrAdd(work.JobId, _ => BuildResultAsync(work, evolutionKey));
+        Task<PlayerFusionWorkerResult> job = _jobs.GetOrAdd(work.JobId, _ => work.DirectEncounterOnly
+            ? BuildDirectEncounterResultAsync(work, evolutionKey, context)
+            : BuildResultAsync(work, evolutionKey, context));
         try
         {
             PlayerFusionWorkerResult result = await job.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -91,6 +97,7 @@ internal sealed class PlayerFusionMappingCoordinator
             {
                 JobId = work.JobId,
                 ObtainableFusionWords = result.ObtainableFusionWords,
+                DirectEncounterFusionIds = result.DirectEncounterFusionIds,
                 PackedExecutableEvolutionEdges = result.PackedExecutableEvolutionEdges,
                 ObtainableCount = result.ObtainableCount
             };
@@ -126,7 +133,8 @@ internal sealed class PlayerFusionMappingCoordinator
 
         PlayerFusionMaterialKey key = recipe is null ? _runMaterialKeys[runId] : PlayerFusionMaterialKey.From(recipe);
         PlayerFusionMaterialIndex index = await GetMaterialIndex(key).WaitAsync(cancellationToken).ConfigureAwait(false);
-        int count = _catalog.NormalSpeciesCount;
+        PlayerFusionWorkerContext context = WorkerContext(key.TargetPoolFingerprint);
+        int count = context.Catalog.NormalSpeciesCount;
         byte[] membership = new byte[(count * count + 7) / 8];
         if (!index.PackedAssignmentsByTarget.TryGetValue(targetId, out IReadOnlyList<uint>? assignments))
             return membership;
@@ -166,7 +174,7 @@ internal sealed class PlayerFusionMappingCoordinator
                 {
                     BodyId = pair.BodyId,
                     HeadId = pair.HeadId,
-                    SpeciesNumber = _worker.MapOrderedPair(key.Seed, key.GeneratorVersion, pair.BodyId, pair.HeadId)
+                    SpeciesNumber = WorkerContext(key.TargetPoolFingerprint).MappingWorker.MapOrderedPair(key.Seed, key.GeneratorVersion, pair.BodyId, pair.HeadId)
                 });
             }
 
@@ -209,7 +217,7 @@ internal sealed class PlayerFusionMappingCoordinator
 
         EvolutionAssignmentKey key = EvolutionAssignmentKey.From(recipe);
         _runEvolutionKeys[recipe.RunId] = key;
-        return CreateTargetPayloads(_evolutionWorker.Generate(key.Seed, PackComponents(bodyId, headId)));
+        return CreateTargetPayloads(WorkerContext(key.TargetPoolFingerprint).EvolutionWorker.Generate(key.Seed, PackComponents(bodyId, headId)));
     }
 
     /// <summary>
@@ -224,7 +232,7 @@ internal sealed class PlayerFusionMappingCoordinator
         if (string.IsNullOrWhiteSpace(runId) || !TryParseFusionComponents(speciesId, out int bodyId, out int headId) || !_runEvolutionKeys.TryGetValue(runId, out EvolutionAssignmentKey? key))
             return null;
 
-        return CreateTargetPayloads(_evolutionWorker.Generate(key.Seed, PackComponents(bodyId, headId)));
+        return CreateTargetPayloads(WorkerContext(key.TargetPoolFingerprint).EvolutionWorker.Generate(key.Seed, PackComponents(bodyId, headId)));
     }
 
     /// <summary>
@@ -243,7 +251,7 @@ internal sealed class PlayerFusionMappingCoordinator
 
         EvolutionAssignmentKey key = EvolutionAssignmentKey.From(recipe);
         _runEvolutionKeys[recipe.RunId] = key;
-        return PackCandidateTargets(_evolutionWorker.GetCandidateTargets(key.Seed, PackComponents(bodyId, headId), componentSide));
+        return PackCandidateTargets(WorkerContext(key.TargetPoolFingerprint).EvolutionWorker.GetCandidateTargets(key.Seed, PackComponents(bodyId, headId), componentSide));
     }
 
     /// <summary>
@@ -263,7 +271,7 @@ internal sealed class PlayerFusionMappingCoordinator
             return null;
         }
 
-        return PackCandidateTargets(_evolutionWorker.GetCandidateTargets(key.Seed, PackComponents(bodyId, headId), componentSide));
+        return PackCandidateTargets(WorkerContext(key.TargetPoolFingerprint).EvolutionWorker.GetCandidateTargets(key.Seed, PackComponents(bodyId, headId), componentSide));
     }
 
     /// <summary>
@@ -332,24 +340,108 @@ internal sealed class PlayerFusionMappingCoordinator
     /// </summary>
     /// <param name="work">The validated game-owned job description.</param>
     /// <param name="evolutionKey">The compatible deterministic assignment identity.</param>
+    /// <param name="context">The workers bound to the pinned target pool.</param>
     /// <returns>The final obtainability membership and executable-edge indexes.</returns>
-    private async Task<PlayerFusionWorkerResult> BuildResultAsync(PlayerFusionClosureWorkPayload work, EvolutionAssignmentKey evolutionKey)
+    private async Task<PlayerFusionWorkerResult> BuildResultAsync(PlayerFusionClosureWorkPayload work, EvolutionAssignmentKey evolutionKey, PlayerFusionWorkerContext context)
     {
-        Task<PlayerFusionDirectProofResult> directProofJob = Task.Run(() => BuildDirectProof(work), CancellationToken.None);
+        PlayerFusionMaterialKey materialKey = new(work.Seed, work.GeneratorVersion, work.BaseStatSourceFingerprint, work.CustomFusionPoolFingerprint);
+        bool mappingsAlreadyPreparing = _materialJobs.TryGetValue(materialKey, out Lazy<Task<PlayerFusionMaterialIndex>>? retainedMaterialJob)
+            && retainedMaterialJob.IsValueCreated;
+        Task<PlayerFusionMaterialIndex> materialJob = GetMaterialIndex(materialKey);
+        Task<PlayerFusionDirectProofResult> directProofJob = mappingsAlreadyPreparing
+            ? BuildDirectProofFromMaterialIndexAsync(work, context, materialJob)
+            : Task.Run(() => BuildDirectProof(work, context), CancellationToken.None);
         Task<FusionEvolutionAssignmentIndex> evolutionJob = GetEvolutionAssignmentIndex(evolutionKey);
         Task firstCompletedJob = await Task.WhenAny(directProofJob, evolutionJob).ConfigureAwait(false);
         await firstCompletedJob.ConfigureAwait(false);
 
         PlayerFusionDirectProofResult provenDirect = await directProofJob.ConfigureAwait(false);
         IReadOnlyList<FusionEvolutionSourceAssignment> generatedAssignments = (await evolutionJob.ConfigureAwait(false)).Assignments;
-        await GetMaterialIndex(new PlayerFusionMaterialKey(work.Seed, work.GeneratorVersion, work.BaseStatSourceFingerprint, work.CustomFusionPoolFingerprint)).ConfigureAwait(false);
+        await materialJob.ConfigureAwait(false);
 
-        IReadOnlyList<FusionEvolutionSourceAssignment> executableAssignments = CloseFusionEvolutions(provenDirect.PlansBySpecies, generatedAssignments, work.ResourceSupply, provenDirect.NextPlanOrder);
+        IReadOnlyList<FusionEvolutionSourceAssignment> executableAssignments = CloseFusionEvolutions(provenDirect.PlansBySpecies, generatedAssignments, work.ResourceSupply, provenDirect.NextPlanOrder, context);
         uint[] obtainableFusionWords = BuildObtainableFusionWords(provenDirect.PlansBySpecies);
         byte[] packedExecutableEdges = PackExecutableEvolutionEdges(executableAssignments);
         int obtainableCount = provenDirect.PlansBySpecies.Count(entry => entry.Value.Count > 0);
 
-        return new PlayerFusionWorkerResult(obtainableFusionWords, packedExecutableEdges, obtainableCount);
+        return new PlayerFusionWorkerResult(obtainableFusionWords, provenDirect.DirectEncounterFusionIds, packedExecutableEdges, obtainableCount);
+    }
+
+    /// <summary>
+    /// Reuses the complete mappings retained by an already-started reverse
+    /// material index before building the final direct proof set.
+    /// </summary>
+    /// <param name="work">The validated game-owned mapping input.</param>
+    /// <param name="context">The workers bound to the pinned target pool.</param>
+    /// <param name="materialJob">The retained reverse material-index task.</param>
+    /// <returns>The proof states needed by tracker-owned closure.</returns>
+    private static async Task<PlayerFusionDirectProofResult> BuildDirectProofFromMaterialIndexAsync(PlayerFusionClosureWorkPayload work, PlayerFusionWorkerContext context, Task<PlayerFusionMaterialIndex> materialJob)
+    {
+        PlayerFusionMaterialIndex materialIndex = await materialJob.ConfigureAwait(false);
+        return await Task.Run(() => BuildDirectProof(work, context, materialIndex), CancellationToken.None).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Maps only the derived wild-encounter pairs needed before game-owned
+    /// caught-fusion transformations, then starts the reusable full indexes
+    /// without delaying delivery of the bounded result.
+    /// </summary>
+    /// <param name="work">The validated first-stage game-owned mapping input.</param>
+    /// <param name="evolutionKey">The compatible deterministic assignment identity.</param>
+    /// <param name="context">The workers bound to the pinned target pool.</param>
+    /// <returns>The derived encounter fusion identifiers without a full closure summary.</returns>
+    private async Task<PlayerFusionWorkerResult> BuildDirectEncounterResultAsync(PlayerFusionClosureWorkPayload work, EvolutionAssignmentKey evolutionKey, PlayerFusionWorkerContext context)
+    {
+        _ = GetEvolutionAssignmentIndex(evolutionKey);
+        _ = GetMaterialIndex(new PlayerFusionMaterialKey(work.Seed, work.GeneratorVersion, work.BaseStatSourceFingerprint, work.CustomFusionPoolFingerprint));
+        IReadOnlyList<int> directEncounterFusionIds = await Task.Run(() => MapDirectEncounterFusions(work, context), CancellationToken.None).ConfigureAwait(false);
+
+        return new PlayerFusionWorkerResult([], directEncounterFusionIds, [], 0);
+    }
+
+    /// <summary>
+    /// Resolves only the triangular material offsets used by derived wild encounters.
+    /// </summary>
+    /// <param name="work">The validated first-stage game-owned mapping input.</param>
+    /// <param name="context">The workers bound to the pinned target pool.</param>
+    /// <returns>The distinct mapped encounter fusion identifiers in numeric order.</returns>
+    private static IReadOnlyList<int> MapDirectEncounterFusions(PlayerFusionClosureWorkPayload work, PlayerFusionWorkerContext context)
+    {
+        int materialCount = work.MaterialIds.Count;
+        int expectedPairCount = checked(materialCount * (materialCount + 1) / 2);
+        if (work.TotalPairs != expectedPairCount)
+            throw new InvalidDataException("The derived-encounter mapping job no longer matches the game-owned pair count.");
+
+        if (!work.MaterialIds.SequenceEqual(work.MaterialIds.Distinct().Order()))
+            throw new InvalidDataException("The derived-encounter material list is not in stable numeric order.");
+
+        HashSet<int> directOffsets = [.. work.DirectPairOffsets];
+        if (directOffsets.Count == 0 || directOffsets.Count != work.DirectPairOffsets.Count
+            || directOffsets.Any(offset => offset < 0 || offset >= expectedPairCount))
+        {
+            throw new InvalidDataException("The derived-encounter mapping job contains invalid pair offsets.");
+        }
+
+        HashSet<int> results = [];
+        int offset = 0;
+        for (int firstIndex = 0; firstIndex < materialCount; firstIndex++)
+        {
+            for (int secondIndex = firstIndex; secondIndex < materialCount; secondIndex++)
+            {
+                if (directOffsets.Contains(offset))
+                {
+                    int first = work.MaterialIds[firstIndex];
+                    int second = work.MaterialIds[secondIndex];
+                    results.Add(context.MappingWorker.MapOrderedPair(work.Seed, work.GeneratorVersion, first, second));
+                    if (first != second)
+                        results.Add(context.MappingWorker.MapOrderedPair(work.Seed, work.GeneratorVersion, second, first));
+                }
+
+                offset++;
+            }
+        }
+
+        return [.. results.Order()];
     }
 
     /// <summary>
@@ -391,8 +483,9 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <returns>The reverse assignment index.</returns>
     private PlayerFusionMaterialIndex BuildMaterialIndex(PlayerFusionMaterialKey key)
     {
-        int[] materialIds = [.. Enumerable.Range(1, _catalog.NormalSpeciesCount)];
-        IReadOnlyList<PlayerFusionMappedPair> mappings = _worker.MapAll(key.Seed, key.GeneratorVersion, materialIds, CancellationToken.None);
+        PlayerFusionWorkerContext context = WorkerContext(key.TargetPoolFingerprint);
+        int[] materialIds = [.. Enumerable.Range(1, context.Catalog.NormalSpeciesCount)];
+        IReadOnlyList<PlayerFusionMappedPair> mappings = context.MappingWorker.MapAll(key.Seed, key.GeneratorVersion, materialIds, CancellationToken.None);
         Dictionary<int, List<uint>> assignments = [];
         foreach (PlayerFusionMappedPair mapping in mappings)
         {
@@ -402,7 +495,7 @@ internal sealed class PlayerFusionMappingCoordinator
         }
 
         Dictionary<int, IReadOnlyList<uint>> orderedAssignments = assignments.ToDictionary(entry => entry.Key, entry => (IReadOnlyList<uint>)[.. entry.Value.Order()]);
-        return new PlayerFusionMaterialIndex(orderedAssignments);
+        return new PlayerFusionMaterialIndex(mappings, orderedAssignments);
     }
 
     /// <summary>
@@ -464,24 +557,26 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <param name="key">The deterministic assignment identity.</param>
     /// <returns>The deferred assignment-index task.</returns>
     private Lazy<Task<FusionEvolutionAssignmentIndex>> CreateEvolutionJob(EvolutionAssignmentKey key)
-        => new(() => Task.Run(() => BuildEvolutionAssignmentIndex(key.Seed), CancellationToken.None), LazyThreadSafetyMode.ExecutionAndPublication);
+        => new(() => Task.Run(() => BuildEvolutionAssignmentIndex(key), CancellationToken.None), LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>
     /// Generates all exact assignments once and builds their reverse target index.
     /// </summary>
-    /// <param name="seed">The run seed.</param>
+    /// <param name="key">The compatible run and target-pool identity.</param>
     /// <returns>The exact assignments and reverse branches grouped by assigned target.</returns>
-    private FusionEvolutionAssignmentIndex BuildEvolutionAssignmentIndex(long seed)
+    private FusionEvolutionAssignmentIndex BuildEvolutionAssignmentIndex(EvolutionAssignmentKey key)
     {
-        int[] packedSources = [.. _catalog.CustomFusionPool.Select(target => target.PackedComponents)];
-        IReadOnlyList<FusionEvolutionSourceAssignment> assignments = _evolutionWorker.GenerateAll(seed, packedSources, CancellationToken.None);
+        PlayerFusionWorkerContext context = WorkerContext(key.TargetPoolFingerprint);
+        PlayerFusionMappingWorkerCatalog catalog = context.Catalog;
+        int[] packedSources = [.. catalog.CustomFusionPool.Select(target => target.PackedComponents)];
+        IReadOnlyList<FusionEvolutionSourceAssignment> assignments = context.EvolutionWorker.GenerateAll(key.Seed, packedSources, CancellationToken.None);
 
-        Dictionary<int, int> bodyRanks = _catalog.NormalSpecies
+        Dictionary<int, int> bodyRanks = catalog.NormalSpecies
             .OrderBy(species => $"{species.Id}{FusionBodyLexicalSuffix}", StringComparer.Ordinal)
             .Select((species, index) => (species.Id, index))
             .ToDictionary(entry => entry.Id, entry => entry.index);
 
-        Dictionary<int, int> headRanks = _catalog.NormalSpecies
+        Dictionary<int, int> headRanks = catalog.NormalSpecies
             .OrderBy(species => species.Id.ToString(), StringComparer.Ordinal)
             .Select((species, index) => (species.Id, index))
             .ToDictionary(entry => entry.Id, entry => entry.index);
@@ -492,8 +587,8 @@ internal sealed class PlayerFusionMappingCoordinator
         {
             int bodyId = assignment.PackedSourceComponents >> 10;
             int headId = assignment.PackedSourceComponents & 0x3FF;
-            int sourceId = checked(bodyId * _catalog.NormalSpeciesCount + headId);
-            int rank = checked(bodyRanks[bodyId] * _catalog.NormalSpeciesCount + headRanks[headId]);
+            int sourceId = checked(bodyId * catalog.NormalSpeciesCount + headId);
+            int rank = checked(bodyRanks[bodyId] * catalog.NormalSpeciesCount + headRanks[headId]);
             for (int branchIndex = 0; branchIndex < assignment.Branches.Count; branchIndex++)
             {
                 FusionEvolutionAssignedBranch branch = assignment.Branches[branchIndex];
@@ -706,10 +801,14 @@ internal sealed class PlayerFusionMappingCoordinator
     /// Maps every material pair once and builds its compatible acquisition proofs.
     /// </summary>
     /// <param name="work">The validated game-owned mapping input.</param>
+    /// <param name="context">The workers bound to the pinned target pool.</param>
+    /// <param name="materialIndex">The optional retained complete mapping index.</param>
     /// <returns>The proof states needed by tracker-owned closure.</returns>
-    private PlayerFusionDirectProofResult BuildDirectProof(PlayerFusionClosureWorkPayload work)
+    private static PlayerFusionDirectProofResult BuildDirectProof(PlayerFusionClosureWorkPayload work, PlayerFusionWorkerContext context, PlayerFusionMaterialIndex? materialIndex = null)
     {
-        IReadOnlyList<PlayerFusionMappedPair> mappings = _worker.MapAll(work.Seed, work.GeneratorVersion, work.MaterialIds, CancellationToken.None);
+        IReadOnlyList<PlayerFusionMappedPair> mappings = materialIndex is null
+            ? context.MappingWorker.MapAll(work.Seed, work.GeneratorVersion, work.MaterialIds, CancellationToken.None)
+            : SelectMaterialMappings(work.MaterialIds, context.Catalog.NormalSpeciesCount, materialIndex.Mappings);
         if (mappings.Count != work.TotalPairs)
             throw new InvalidDataException("The player-fusion mapping job no longer matches the game-owned pair count.");
 
@@ -722,26 +821,69 @@ internal sealed class PlayerFusionMappingCoordinator
             throw new InvalidDataException("The player-fusion mapping job contains an invalid direct pair offset.");
 
         Dictionary<int, List<PlayerFusionProofPlan>> plansBySpecies = BuildBasePlans(work.BaseProofs, out long nextPlanOrder);
-        AddCaughtFusionReversalProofs(work, plansBySpecies, ref nextPlanOrder);
+        HashSet<int> directEncounterFusionIds = [];
+        AddCaughtFusionReversalProofs(work, plansBySpecies, ref nextPlanOrder, context);
+        HashSet<int> itemFreeDirectProofIds =
+        [
+            .. plansBySpecies.Where(entry => entry.Value.Any(plan => plan.Items.Count == 0 && plan.Constraints.Count == 0 && plan.SourceUses.Count == 0)).Select(entry => entry.Key)
+        ];
         for (int index = 0; index < mappings.Count; index++)
         {
             PlayerFusionMappedPair mapping = mappings[index];
             if (directOffsets.Contains(index))
             {
+                directEncounterFusionIds.Add(mapping.FirstResultId);
                 AddDirectEncounterProof(plansBySpecies, mapping.FirstResultId, ref nextPlanOrder);
+                itemFreeDirectProofIds.Add(mapping.FirstResultId);
                 if (mapping.FirstMaterialId != mapping.SecondMaterialId)
+                {
+                    directEncounterFusionIds.Add(mapping.SecondResultId);
                     AddDirectEncounterProof(plansBySpecies, mapping.SecondResultId, ref nextPlanOrder);
+                    itemFreeDirectProofIds.Add(mapping.SecondResultId);
+                }
             }
 
             if (excludedOffsets.Contains(index))
                 continue;
 
-            AddDirectFusionProof(plansBySpecies, mapping.FirstResultId, mapping.FirstMaterialId, mapping.SecondMaterialId, work.ResourceSupply, ref nextPlanOrder);
+            AddDirectFusionProof(plansBySpecies, itemFreeDirectProofIds, mapping.FirstResultId, mapping.FirstMaterialId, mapping.SecondMaterialId, work.ResourceSupply, ref nextPlanOrder);
             if (mapping.FirstMaterialId != mapping.SecondMaterialId)
-                AddDirectFusionProof(plansBySpecies, mapping.SecondResultId, mapping.SecondMaterialId, mapping.FirstMaterialId, work.ResourceSupply, ref nextPlanOrder);
+                AddDirectFusionProof(plansBySpecies, itemFreeDirectProofIds, mapping.SecondResultId, mapping.SecondMaterialId, mapping.FirstMaterialId, work.ResourceSupply, ref nextPlanOrder);
         }
 
-        return new PlayerFusionDirectProofResult(plansBySpecies, nextPlanOrder);
+        return new PlayerFusionDirectProofResult(plansBySpecies, [.. directEncounterFusionIds.Order()], nextPlanOrder);
+    }
+
+    /// <summary>
+    /// Selects one stable triangular material subset from the complete retained mapping index.
+    /// </summary>
+    /// <param name="materialIds">The distinct normal materials in numeric order.</param>
+    /// <param name="normalSpeciesCount">The complete normal-species count.</param>
+    /// <param name="completeMappings">The full triangular mapping index.</param>
+    /// <returns>The requested mappings in subset-triangular order.</returns>
+    private static IReadOnlyList<PlayerFusionMappedPair> SelectMaterialMappings(IReadOnlyList<int> materialIds, int normalSpeciesCount, IReadOnlyList<PlayerFusionMappedPair> completeMappings)
+    {
+        if (!materialIds.SequenceEqual(materialIds.Distinct().Order()) || materialIds.Any(value => value <= 0 || value > normalSpeciesCount))
+            throw new InvalidDataException("The player-fusion material list is not in stable numeric order.");
+
+        int expectedCompleteCount = checked(normalSpeciesCount * (normalSpeciesCount + 1) / 2);
+        if (completeMappings.Count != expectedCompleteCount)
+            throw new InvalidDataException("The retained player-fusion mapping index is incomplete.");
+
+        PlayerFusionMappedPair[] result = new PlayerFusionMappedPair[checked(materialIds.Count * (materialIds.Count + 1) / 2)];
+        int output = 0;
+        for (int firstIndex = 0; firstIndex < materialIds.Count; firstIndex++)
+        {
+            int first = materialIds[firstIndex];
+            int completeRow = checked((first - 1) * normalSpeciesCount - (first - 1) * (first - 2) / 2);
+            for (int secondIndex = firstIndex; secondIndex < materialIds.Count; secondIndex++)
+            {
+                int second = materialIds[secondIndex];
+                result[output++] = completeMappings[checked(completeRow + second - first)];
+            }
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -750,7 +892,8 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <param name="work">The game-owned closure input.</param>
     /// <param name="plansBySpecies">The mutable run-wide proof states.</param>
     /// <param name="nextPlanOrder">The next stable plan order.</param>
-    private void AddCaughtFusionReversalProofs(PlayerFusionClosureWorkPayload work, Dictionary<int, List<PlayerFusionProofPlan>> plansBySpecies, ref long nextPlanOrder)
+    /// <param name="context">The workers bound to the pinned target pool.</param>
+    private static void AddCaughtFusionReversalProofs(PlayerFusionClosureWorkPayload work, Dictionary<int, List<PlayerFusionProofPlan>> plansBySpecies, ref long nextPlanOrder, PlayerFusionWorkerContext context)
     {
         if (work.ReversibleFusionIds.Count != work.ReversibleFusionIds.Distinct().Count())
             throw new InvalidDataException("The caught-fusion reversal list contains duplicate species.");
@@ -766,14 +909,10 @@ internal sealed class PlayerFusionMappingCoordinator
 
         foreach ((int sourceId, PlayerFusionProofPlan[] plans) in seedPlans)
         {
-            int reverseId = _worker.ReversePartner(work.Seed, work.GeneratorVersion, sourceId);
+            int reverseId = context.MappingWorker.ReversePartner(work.Seed, work.GeneratorVersion, sourceId);
             foreach (PlayerFusionProofPlan plan in plans)
             {
-                PlayerFusionProofPlan reversed = new(
-                    plan.Items.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal),
-                    plan.Constraints.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal),
-                    plan.SourceUses.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal),
-                    checked(plan.PathLength + 1), nextPlanOrder++);
+                PlayerFusionProofPlan reversed = new(plan.Items, plan.Constraints, plan.SourceUses, checked(plan.PathLength + 1), nextPlanOrder++);
                 AddPlan(plansBySpecies, reverseId, reversed);
             }
         }
@@ -787,11 +926,7 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <param name="nextPlanOrder">The next stable plan order.</param>
     private static void AddDirectEncounterProof(Dictionary<int, List<PlayerFusionProofPlan>> plansBySpecies, int resultId, ref long nextPlanOrder)
     {
-        PlayerFusionProofPlan plan = new(
-            new Dictionary<string, int>(StringComparer.Ordinal),
-            new Dictionary<string, string>(StringComparer.Ordinal),
-            new Dictionary<string, int>(StringComparer.Ordinal),
-            1, nextPlanOrder++);
+        PlayerFusionProofPlan plan = new(_emptyCounts, _emptyConstraints, _emptyCounts, 1, nextPlanOrder++);
         AddPlan(plansBySpecies, resultId, plan);
     }
 
@@ -838,57 +973,122 @@ internal sealed class PlayerFusionMappingCoordinator
     /// Adds every feasible material-plan combination for one mapped direct fusion result.
     /// </summary>
     /// <param name="plansBySpecies">The mutable run-wide proof states.</param>
+    /// <param name="itemFreeDirectProofIds">Targets already retaining a dominating item-free direct proof.</param>
     /// <param name="resultId">The mapped fusion result identifier.</param>
     /// <param name="bodyId">The body material identifier.</param>
     /// <param name="headId">The head material identifier.</param>
     /// <param name="resourceSupply">The run-wide evolution-item supply.</param>
     /// <param name="nextPlanOrder">The next stable plan order.</param>
-    private static void AddDirectFusionProof(Dictionary<int, List<PlayerFusionProofPlan>> plansBySpecies, int resultId, int bodyId, int headId, IReadOnlyDictionary<string, int> resourceSupply, ref long nextPlanOrder)
+    private static void AddDirectFusionProof(Dictionary<int, List<PlayerFusionProofPlan>> plansBySpecies, HashSet<int> itemFreeDirectProofIds, int resultId, int bodyId, int headId, IReadOnlyDictionary<string, int> resourceSupply, ref long nextPlanOrder)
     {
         if (!plansBySpecies.TryGetValue(bodyId, out List<PlayerFusionProofPlan>? bodyPlans) || !plansBySpecies.TryGetValue(headId, out List<PlayerFusionProofPlan>? headPlans))
             throw new InvalidDataException("A player-fusion material has no base proof.");
+
+        PlayerFusionProofPlan? itemFreeBody = null;
+        PlayerFusionProofPlan? itemFreeHead = null;
+        foreach (PlayerFusionProofPlan bodyPlan in bodyPlans)
+        {
+            if (bodyPlan.Items.Count != 0)
+                continue;
+
+            foreach (PlayerFusionProofPlan headPlan in headPlans)
+            {
+                if (headPlan.Items.Count != 0)
+                    continue;
+
+                if (!MaterialPlansCompatible(bodyPlan, headPlan, resourceSupply))
+                    continue;
+
+                itemFreeBody = bodyPlan;
+                itemFreeHead = headPlan;
+                break;
+            }
+
+            if (itemFreeBody is not null)
+                break;
+        }
+
+        if (itemFreeBody is not null && itemFreeHead is not null)
+        {
+            long order = nextPlanOrder;
+            nextPlanOrder = checked(nextPlanOrder + (long)bodyPlans.Count * headPlans.Count);
+            if (itemFreeDirectProofIds.Add(resultId))
+            {
+                PlayerFusionProofPlan itemFree = new(_emptyCounts, _emptyConstraints, _emptyCounts, checked(itemFreeBody.PathLength + itemFreeHead.PathLength + 1), order);
+                AddPlan(plansBySpecies, resultId, itemFree);
+            }
+
+            return;
+        }
 
         bool feasible = false;
         foreach (PlayerFusionProofPlan bodyPlan in bodyPlans)
         {
             foreach (PlayerFusionProofPlan headPlan in headPlans)
             {
-                PlayerFusionProofPlan? combined = CombineMaterialPlans(bodyPlan, headPlan, resourceSupply, nextPlanOrder);
-                if (combined is null)
+                if (!MaterialPlansCompatible(bodyPlan, headPlan, resourceSupply))
                     continue;
 
                 feasible = true;
-                nextPlanOrder++;
+                long order = nextPlanOrder++;
+                if (bodyPlan.Items.Count == 0 && headPlan.Items.Count == 0 && itemFreeDirectProofIds.Contains(resultId))
+                    continue;
+
+                IReadOnlyDictionary<string, int> items = bodyPlan.Items.Count == 0 && headPlan.Items.Count == 0
+                    ? _emptyCounts
+                    : MergeCounts(bodyPlan.Items, headPlan.Items);
+                PlayerFusionProofPlan combined = new(items, _emptyConstraints, _emptyCounts, checked(bodyPlan.PathLength + headPlan.PathLength + 1), order);
                 AddPlan(plansBySpecies, resultId, combined);
+                if (items.Count == 0)
+                    itemFreeDirectProofIds.Add(resultId);
             }
         }
 
         if (!feasible)
             throw new InvalidDataException("A non-excluded player-fusion pair has no compatible proof state.");
+
     }
 
     /// <summary>
-    /// Combines two normal-material proof states using the game-owned constraint rules.
+    /// Determines whether two normal-material proof states satisfy the game-owned constraint rules.
     /// </summary>
     /// <param name="body">The body proof state.</param>
     /// <param name="head">The head proof state.</param>
     /// <param name="resourceSupply">The run-wide evolution-item supply.</param>
-    /// <param name="order">The stable order for the combined proof.</param>
-    /// <returns>The normalized direct-fusion proof, or null when the inputs conflict.</returns>
-    private static PlayerFusionProofPlan? CombineMaterialPlans(PlayerFusionProofPlan body, PlayerFusionProofPlan head, IReadOnlyDictionary<string, int> resourceSupply, long order)
+    /// <returns>True when the material proof states can be combined.</returns>
+    private static bool MaterialPlansCompatible(PlayerFusionProofPlan body, PlayerFusionProofPlan head, IReadOnlyDictionary<string, int> resourceSupply)
     {
-        if (body.Constraints.Any(entry => head.Constraints.TryGetValue(entry.Key, out string? value) && value != entry.Value))
-            return null;
+        foreach ((string key, string expected) in body.Constraints)
+        {
+            if (head.Constraints.TryGetValue(key, out string? actual) && actual != expected)
+                return false;
+        }
 
-        Dictionary<string, int> items = MergeCounts(body.Items, head.Items);
-        if (!WithinSupply(items, resourceSupply))
-            return null;
+        foreach ((string key, int count) in body.Items)
+        {
+            if (count + head.Items.GetValueOrDefault(key) > resourceSupply.GetValueOrDefault(key))
+                return false;
+        }
 
-        Dictionary<string, int> sourceUses = MergeCounts(body.SourceUses, head.SourceUses);
-        if (sourceUses.Values.Any(count => count > 1))
-            return null;
+        foreach ((string key, int count) in head.Items)
+        {
+            if (!body.Items.ContainsKey(key) && count > resourceSupply.GetValueOrDefault(key))
+                return false;
+        }
 
-        return new PlayerFusionProofPlan(items, new Dictionary<string, string>(StringComparer.Ordinal), new Dictionary<string, int>(StringComparer.Ordinal), checked(body.PathLength + head.PathLength + 1), order);
+        foreach ((string key, int count) in body.SourceUses)
+        {
+            if (count + head.SourceUses.GetValueOrDefault(key) > 1)
+                return false;
+        }
+
+        foreach ((string key, int count) in head.SourceUses)
+        {
+            if (!body.SourceUses.ContainsKey(key) && count > 1)
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -898,16 +1098,22 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <param name="assignments">Every exact generated fusion-evolution assignment.</param>
     /// <param name="resourceSupply">The run-wide evolution-item supply.</param>
     /// <param name="nextPlanOrder">The next stable plan order.</param>
+    /// <param name="context">The workers bound to the pinned target pool.</param>
     /// <returns>Only source branches backed by an executable acquisition proof.</returns>
-    private IReadOnlyList<FusionEvolutionSourceAssignment> CloseFusionEvolutions(Dictionary<int, List<PlayerFusionProofPlan>> plansBySpecies, IReadOnlyList<FusionEvolutionSourceAssignment> assignments, IReadOnlyDictionary<string, int> resourceSupply, long nextPlanOrder)
+    private static IReadOnlyList<FusionEvolutionSourceAssignment> CloseFusionEvolutions(
+        Dictionary<int, List<PlayerFusionProofPlan>> plansBySpecies,
+        IReadOnlyList<FusionEvolutionSourceAssignment> assignments,
+        IReadOnlyDictionary<string, int> resourceSupply, long nextPlanOrder,
+        PlayerFusionWorkerContext context)
     {
-        Dictionary<string, PlayerFusionEvolutionBranch> branchesByIdentity = _catalog.EvolutionBranches.ToDictionary(branch => branch.Identity, StringComparer.Ordinal);
+        PlayerFusionMappingWorkerCatalog catalog = context.Catalog;
+        Dictionary<string, PlayerFusionEvolutionBranch> branchesByIdentity = catalog.EvolutionBranches.ToDictionary(branch => branch.Identity, StringComparer.Ordinal);
         List<FusionEvolutionSourceAssignment> executable = [];
         foreach (FusionEvolutionSourceAssignment assignment in assignments.OrderBy(value => value.SourceBst).ThenBy(value => value.PackedSourceComponents))
         {
             int body = assignment.PackedSourceComponents >> 10;
             int head = assignment.PackedSourceComponents & 0x3FF;
-            int sourceId = checked(body * _catalog.NormalSpeciesCount + head);
+            int sourceId = checked(body * catalog.NormalSpeciesCount + head);
             if (!plansBySpecies.TryGetValue(sourceId, out List<PlayerFusionProofPlan>? sourcePlans) || sourcePlans.Count == 0)
                 continue;
 
@@ -961,7 +1167,7 @@ internal sealed class PlayerFusionMappingCoordinator
         if (!WithinSupply(items, resourceSupply))
             return null;
 
-        return new PlayerFusionProofPlan(items, source.Constraints.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal), source.SourceUses.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal), checked(source.PathLength + 1), order);
+        return new PlayerFusionProofPlan(items, source.Constraints, source.SourceUses, checked(source.PathLength + 1), order);
     }
 
     /// <summary>
@@ -1039,21 +1245,51 @@ internal sealed class PlayerFusionMappingCoordinator
         => items.All(entry => entry.Value <= resourceSupply.GetValueOrDefault(entry.Key));
 
     /// <summary>
-    /// Determines whether one game-owned job matches the embedded generated catalog.
+    /// Resolves the parallel workers for the pinned runtime pool while keeping
+    /// release-stable normal and evolution metadata embedded in the tracker.
     /// </summary>
-    private bool Compatible(PlayerFusionClosureWorkPayload work)
+    private PlayerFusionWorkerContext? ResolveWorkerContext(PlayerFusionClosureWorkPayload work)
     {
-        return work.GeneratorVersion == _catalog.PlayerFusionGeneratorVersion
-            && work.SourceCatalogFingerprint == _sourceCatalog.Fingerprint
-            && work.BaseStatSourceFingerprint == _catalog.BaseStatSourceFingerprint
-            && work.CustomFusionPoolVersion == _catalog.CustomFusionPoolVersion
-            && work.CustomFusionPoolSize == _catalog.CustomFusionPool.Count
-            && work.CustomFusionPoolFingerprint == _catalog.CustomFusionPoolFingerprint
-            && work.FusionEvolutionGeneratorVersion == _catalog.FusionEvolutionGeneratorVersion
-            && work.FusionEvolutionRulesVersion == _catalog.FusionEvolutionRulesVersion
-            && work.EvolutionSourceFingerprint == _catalog.EvolutionSourceFingerprint
-            && work.EvolutionTaxonomyFingerprint == _catalog.EvolutionTaxonomyFingerprint
-            && work.EvolutionMethodFingerprint == _catalog.EvolutionMethodFingerprint;
+        if (work.GeneratorVersion != _catalog.PlayerFusionGeneratorVersion
+            || work.SourceCatalogFingerprint != _sourceCatalog.Fingerprint
+            || work.BaseStatSourceFingerprint != _catalog.BaseStatSourceFingerprint
+            || work.FusionEvolutionGeneratorVersion != _catalog.FusionEvolutionGeneratorVersion
+            || work.FusionEvolutionRulesVersion != _catalog.FusionEvolutionRulesVersion
+            || work.EvolutionSourceFingerprint != _catalog.EvolutionSourceFingerprint
+            || work.EvolutionTaxonomyFingerprint != _catalog.EvolutionTaxonomyFingerprint
+            || work.EvolutionMethodFingerprint != _catalog.EvolutionMethodFingerprint)
+        {
+            return null;
+        }
+
+        if (_workerContexts.TryGetValue(work.CustomFusionPoolFingerprint, out PlayerFusionWorkerContext? retained))
+        {
+            return retained.Catalog.CustomFusionPoolVersion == work.CustomFusionPoolVersion && retained.Catalog.CustomFusionPool.Count == work.CustomFusionPoolSize
+                ? retained
+                : null;
+        }
+
+        if (string.IsNullOrWhiteSpace(work.PackedCustomFusionPool))
+            return null;
+
+        PlayerFusionMappingWorkerCatalog runtimeCatalog = _catalog.WithRuntimeFusionPool(work.CustomFusionPoolVersion, work.CustomFusionPoolSize, work.CustomFusionPoolFingerprint, work.PackedCustomFusionPool);
+        PlayerFusionWorkerContext context = _workerContexts.GetOrAdd(work.CustomFusionPoolFingerprint, _ => new PlayerFusionWorkerContext(runtimeCatalog));
+        return context.Catalog.CustomFusionPoolVersion == work.CustomFusionPoolVersion && context.Catalog.CustomFusionPool.Count == work.CustomFusionPoolSize
+            ? context
+            : null;
+    }
+
+    /// <summary>
+    /// Gets the parallel worker context registered for one custom-fusion pool.
+    /// </summary>
+    /// <param name="fingerprint">The exact custom-fusion pool fingerprint.</param>
+    /// <returns>The worker context bound to the requested pool.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when no compatible worker context has been registered.</exception>
+    private PlayerFusionWorkerContext WorkerContext(string fingerprint)
+    {
+        return _workerContexts.TryGetValue(fingerprint, out PlayerFusionWorkerContext? context)
+            ? context
+            : throw new InvalidOperationException("The pinned custom-fusion worker context is unavailable.");
     }
 
     /// <summary>
@@ -1064,19 +1300,23 @@ internal sealed class PlayerFusionMappingCoordinator
     private bool Compatible(CompletedRunRecipePayload recipe)
     {
         EvolutionGeneratorRecipePayload? evolution = recipe.EvolutionGenerator;
+        if (!_workerContexts.TryGetValue(recipe.PlayerFusionGenerator.PoolFingerprint, out PlayerFusionWorkerContext? context))
+            return false;
+
+        PlayerFusionMappingWorkerCatalog catalog = context.Catalog;
         return evolution is not null
-            && recipe.PlayerFusionGenerator.Version == _catalog.PlayerFusionGeneratorVersion
-            && recipe.PlayerFusionGenerator.PoolSize == _catalog.CustomFusionPool.Count
-            && recipe.PlayerFusionGenerator.PoolFingerprint == _catalog.CustomFusionPoolFingerprint
-            && evolution.Fusion.Version == _catalog.FusionEvolutionGeneratorVersion
-            && evolution.Fusion.RulesVersion == _catalog.FusionEvolutionRulesVersion
-            && evolution.SourceFingerprint == _catalog.EvolutionSourceFingerprint
-            && evolution.TaxonomyFingerprint == _catalog.EvolutionTaxonomyFingerprint
-            && evolution.MethodFingerprint == _catalog.EvolutionMethodFingerprint
-            && evolution.BaseStatGenerator.SourceFingerprint == _catalog.BaseStatSourceFingerprint
-            && evolution.Fusion.TargetPool.Version == _catalog.CustomFusionPoolVersion
-            && evolution.Fusion.TargetPool.Size == _catalog.CustomFusionPool.Count
-            && evolution.Fusion.TargetPool.Fingerprint == _catalog.CustomFusionPoolFingerprint;
+            && recipe.PlayerFusionGenerator.Version == catalog.PlayerFusionGeneratorVersion
+            && recipe.PlayerFusionGenerator.PoolSize == catalog.CustomFusionPool.Count
+            && recipe.PlayerFusionGenerator.PoolFingerprint == catalog.CustomFusionPoolFingerprint
+            && evolution.Fusion.Version == catalog.FusionEvolutionGeneratorVersion
+            && evolution.Fusion.RulesVersion == catalog.FusionEvolutionRulesVersion
+            && evolution.SourceFingerprint == catalog.EvolutionSourceFingerprint
+            && evolution.TaxonomyFingerprint == catalog.EvolutionTaxonomyFingerprint
+            && evolution.MethodFingerprint == catalog.EvolutionMethodFingerprint
+            && evolution.BaseStatGenerator.SourceFingerprint == catalog.BaseStatSourceFingerprint
+            && evolution.Fusion.TargetPool.Version == catalog.CustomFusionPoolVersion
+            && evolution.Fusion.TargetPool.Size == catalog.CustomFusionPool.Count
+            && evolution.Fusion.TargetPool.Fingerprint == catalog.CustomFusionPoolFingerprint;
     }
 
     /// <summary>
@@ -1086,16 +1326,86 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <returns>True when exact tracker-side assignments are safe to prepare.</returns>
     private bool Compatible(FusionAssignmentRecipePayload recipe)
     {
-        return recipe.PlayerFusionGeneratorVersion == _catalog.PlayerFusionGeneratorVersion
-            && recipe.GeneratorVersion == _catalog.FusionEvolutionGeneratorVersion
-            && recipe.RulesVersion == _catalog.FusionEvolutionRulesVersion
-            && recipe.SourceFingerprint == _catalog.EvolutionSourceFingerprint
-            && recipe.TaxonomyFingerprint == _catalog.EvolutionTaxonomyFingerprint
-            && recipe.MethodFingerprint == _catalog.EvolutionMethodFingerprint
-            && recipe.BaseStatSourceFingerprint == _catalog.BaseStatSourceFingerprint
-            && recipe.TargetPoolVersion == _catalog.CustomFusionPoolVersion
-            && recipe.TargetPoolSize == _catalog.CustomFusionPool.Count
-            && recipe.TargetPoolFingerprint == _catalog.CustomFusionPoolFingerprint;
+        if (!_workerContexts.TryGetValue(recipe.TargetPoolFingerprint, out PlayerFusionWorkerContext? context))
+            return false;
+
+        return Compatible(recipe, context.Catalog);
+    }
+
+    /// <summary>
+    /// Determines whether an active-run assignment recipe matches one resolved worker catalog.
+    /// </summary>
+    /// <param name="recipe">The authorized active-run assignment recipe.</param>
+    /// <param name="catalog">The embedded or pinned pool-specific worker catalog.</param>
+    /// <returns>True when exact tracker-side assignments are safe to prepare.</returns>
+    private static bool Compatible(FusionAssignmentRecipePayload recipe, PlayerFusionMappingWorkerCatalog catalog)
+    {
+        return recipe.PlayerFusionGeneratorVersion == catalog.PlayerFusionGeneratorVersion
+            && recipe.GeneratorVersion == catalog.FusionEvolutionGeneratorVersion
+            && recipe.RulesVersion == catalog.FusionEvolutionRulesVersion
+            && recipe.SourceFingerprint == catalog.EvolutionSourceFingerprint
+            && recipe.TaxonomyFingerprint == catalog.EvolutionTaxonomyFingerprint
+            && recipe.MethodFingerprint == catalog.EvolutionMethodFingerprint
+            && recipe.BaseStatSourceFingerprint == catalog.BaseStatSourceFingerprint
+            && recipe.TargetPoolVersion == catalog.CustomFusionPoolVersion
+            && recipe.TargetPoolSize == catalog.CustomFusionPool.Count
+            && recipe.TargetPoolFingerprint == catalog.CustomFusionPoolFingerprint;
+    }
+
+    /// <summary>
+    /// Resolves or constructs the worker context disclosed by active-run recovery.
+    /// </summary>
+    /// <param name="recipe">The authorized active-run assignment recipe and exact pinned pool membership.</param>
+    /// <returns>The matching worker context, or null when the recipe is incompatible.</returns>
+    private PlayerFusionWorkerContext? ResolveWorkerContext(FusionAssignmentRecipePayload recipe)
+    {
+        if (_workerContexts.TryGetValue(recipe.TargetPoolFingerprint, out PlayerFusionWorkerContext? retained))
+        {
+            return retained.Catalog.CustomFusionPoolVersion == recipe.TargetPoolVersion && retained.Catalog.CustomFusionPool.Count == recipe.TargetPoolSize
+                ? retained
+                : null;
+        }
+
+        if (string.IsNullOrWhiteSpace(recipe.PackedCustomFusionPool))
+            return null;
+
+        PlayerFusionMappingWorkerCatalog runtimeCatalog = _catalog.WithRuntimeFusionPool(recipe.TargetPoolVersion, recipe.TargetPoolSize, recipe.TargetPoolFingerprint, recipe.PackedCustomFusionPool);
+        PlayerFusionWorkerContext context = _workerContexts.GetOrAdd(recipe.TargetPoolFingerprint, _ => new PlayerFusionWorkerContext(runtimeCatalog));
+        return context.Catalog.CustomFusionPoolVersion == recipe.TargetPoolVersion && context.Catalog.CustomFusionPool.Count == recipe.TargetPoolSize
+            ? context
+            : null;
+    }
+}
+
+/// <summary>
+/// Groups the validated catalog and native parallel workers for one exact custom-fusion pool.
+/// </summary>
+internal sealed class PlayerFusionWorkerContext
+{
+    /// <summary>
+    /// Gets the validated catalog for this worker context.
+    /// </summary>
+    internal PlayerFusionMappingWorkerCatalog Catalog { get; }
+
+    /// <summary>
+    /// Gets the native player-fusion mapping worker for this pool.
+    /// </summary>
+    internal PlayerFusionMappingWorker MappingWorker { get; }
+
+    /// <summary>
+    /// Gets the native fusion-evolution assignment worker for this pool.
+    /// </summary>
+    internal FusionEvolutionAssignmentWorker EvolutionWorker { get; }
+
+    /// <summary>
+    /// Initializes a worker context from one validated pool-specific catalog.
+    /// </summary>
+    /// <param name="catalog">The validated catalog shared by both native workers.</param>
+    internal PlayerFusionWorkerContext(PlayerFusionMappingWorkerCatalog catalog)
+    {
+        Catalog = catalog;
+        MappingWorker = new PlayerFusionMappingWorker(catalog);
+        EvolutionWorker = new FusionEvolutionAssignmentWorker(catalog);
     }
 }
 
@@ -1176,8 +1486,9 @@ internal sealed record PlayerFusionMaterialKey(long Seed, int GeneratorVersion, 
 /// <summary>
 /// Stores exact ordered normal-material assignments grouped by custom-fusion target.
 /// </summary>
+/// <param name="Mappings">The complete mappings in stable triangular material order.</param>
 /// <param name="PackedAssignmentsByTarget">The packed ordered assignments keyed by numeric target identifier.</param>
-internal sealed record PlayerFusionMaterialIndex(IReadOnlyDictionary<int, IReadOnlyList<uint>> PackedAssignmentsByTarget);
+internal sealed record PlayerFusionMaterialIndex(IReadOnlyList<PlayerFusionMappedPair> Mappings, IReadOnlyDictionary<int, IReadOnlyList<uint>> PackedAssignmentsByTarget);
 
 /// <summary>
 /// Stores one bounded exact material-assignment page.
@@ -1207,8 +1518,9 @@ internal sealed record FusionEvolutionIndexedBranch(FusionEvolutionSourceAssignm
 /// Stores the mutable proof states needed by tracker-owned closure.
 /// </summary>
 /// <param name="PlansBySpecies">The nondominated proof states keyed by numeric species identifier.</param>
+/// <param name="DirectEncounterFusionIds">The mapped fusion results available through derived wild encounters.</param>
 /// <param name="NextPlanOrder">The next stable proof order after direct fusion closure.</param>
-internal sealed record PlayerFusionDirectProofResult(Dictionary<int, List<PlayerFusionProofPlan>> PlansBySpecies, long NextPlanOrder);
+internal sealed record PlayerFusionDirectProofResult(Dictionary<int, List<PlayerFusionProofPlan>> PlansBySpecies, IReadOnlyList<int> DirectEncounterFusionIds, long NextPlanOrder);
 
 /// <summary>
 /// Stores the compact feasibility state of one tracker-owned acquisition proof.
@@ -1224,6 +1536,7 @@ internal sealed record PlayerFusionProofPlan(IReadOnlyDictionary<string, int> It
 /// Stores the compact immutable tracker-computed result for one run.
 /// </summary>
 /// <param name="ObtainableFusionWords">The final numeric custom-fusion membership bitset.</param>
+/// <param name="DirectEncounterFusionIds">The mapped fusion results available through derived wild encounters.</param>
 /// <param name="PackedExecutableEvolutionEdges">The sorted executable source-target edge index.</param>
 /// <param name="ObtainableCount">The final normal and fusion species count.</param>
-internal sealed record PlayerFusionWorkerResult(IReadOnlyList<uint> ObtainableFusionWords, byte[] PackedExecutableEvolutionEdges, int ObtainableCount);
+internal sealed record PlayerFusionWorkerResult(IReadOnlyList<uint> ObtainableFusionWords, IReadOnlyList<int> DirectEncounterFusionIds, byte[] PackedExecutableEvolutionEdges, int ObtainableCount);

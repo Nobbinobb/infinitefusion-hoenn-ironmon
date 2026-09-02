@@ -104,6 +104,16 @@ module Ironmon
     def handle_request(message)
       request_id = message["request_id"]
       raise "Tracker request_id is missing." if !request_id.is_a?(String) || request_id.empty?
+      request_payload = message["payload"]
+      request_recipe = request_payload["recipe"] if request_payload.is_a?(Hash)
+      profile_id = request_recipe["generation_profile_id"].to_s if
+        request_recipe.is_a?(Hash)
+      if profile_id && GenerationProfile::SHA256_PATTERN.match?(profile_id) &&
+         !Ironmon.generation_profile_context?(profile_id)
+        return Ironmon.with_generation_profile(profile_id) do
+          handle_request(message)
+        end
+      end
       if message["command"] == "current_state"
         queue_message(success_response(request_id, Ironmon.tracker_current_state))
       elsif message["command"] == "update_settings"
@@ -300,6 +310,11 @@ module Ironmon
       end
     rescue Ironmon::TrackerLookupError, Ironmon::TrackerDebugError => e
       queue_message(error_response(request_id, e.code, e.message, message["run_id"]))
+    rescue Ironmon::GenerationProfileUnavailable => e
+      queue_message(error_response(
+        request_id, "generation_profile_unavailable", e.message,
+        message["run_id"]
+      ))
     rescue Exception => e
       queue_message(error_response(request_id, "lookup_failed", e.message, message["run_id"]))
     end

@@ -77,8 +77,10 @@ module Ironmon
   end
 
   def self.tracker_search_index_key(recipe, normal_only)
-    return "normal" if normal_only
-    return "all"
+    profile_id = recipe ? recipe["generation_profile_id"] :
+      current_generation_profile_id
+    return "#{profile_id}|normal" if normal_only
+    return "#{profile_id}|all"
   end
 
   def self.tracker_search_species_name(species_id)
@@ -86,6 +88,12 @@ module Ironmon
     return tracker_search_fusion_name(match[1].to_i, match[2].to_i) if match
     species = GameData::Species.try_get(species_id)
     return species ? species.name : nil
+  end
+
+  def self.tracker_species_display_name(species)
+    match = /\AB(\d+)H(\d+)\z/.match(species.id.to_s)
+    return tracker_search_fusion_name(match[1].to_i, match[2].to_i) if match
+    return species.name
   end
 
   def self.tracker_search_fusion_name(body_id, head_id)
@@ -101,8 +109,17 @@ module Ironmon
   end
 
   def self.tracker_search_fusion_name_parts
-    return @tracker_search_fusion_name_parts if
-      @tracker_search_fusion_name_parts
+    @tracker_search_fusion_name_parts ||= {}
+    profile_id = active_generation_profile_id
+    return @tracker_search_fusion_name_parts[profile_id] if
+      @tracker_search_fusion_name_parts[profile_id]
+    if generation_profile_context?
+      archived = generation_profile_fusion_name_parts(profile_id)
+      if archived
+        @tracker_search_fusion_name_parts[profile_id] = archived
+        return archived
+      end
+    end
     prefixes = []
     suffixes = []
     (1..NB_POKEMON).each do |species_id|
@@ -112,10 +129,10 @@ module Ironmon
       prefixes[species_id] = split[0]
       suffixes[species_id] = split[1]
     end
-    @tracker_search_fusion_name_parts = [
+    @tracker_search_fusion_name_parts[profile_id] = [
       prefixes.freeze, suffixes.freeze
     ].freeze
-    return @tracker_search_fusion_name_parts
+    return @tracker_search_fusion_name_parts[profile_id]
   end
 
   def self.tracker_lookup_species_available?(species)

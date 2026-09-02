@@ -14,6 +14,173 @@ module IronmonTrackerStructureRuntimeTests
     )
   end
 
+  def self.material_pair_at_offset(material_ids, requested_offset)
+    offset = 0
+    material_ids.each_with_index do |first, first_index|
+      (first_index...material_ids.length).each do |second_index|
+        return [first, material_ids[second_index]] if offset == requested_offset
+        offset += 1
+      end
+    end
+    raise "Tracker structure test failed: direct fusion offset is outside the material set"
+  end
+
+  def self.closure_result(service, snapshot, direct_fusions)
+    maximum_fusion_number = (NB_POKEMON * NB_POKEMON) + NB_POKEMON
+    return {
+      "job_id" => snapshot["fusion_closure_work"]["job_id"],
+      "obtainable_fusion_words" =>
+        Array.new((maximum_fusion_number >> 5) + 1, 0),
+      "direct_encounter_fusion_ids" => direct_fusions,
+      "packed_executable_evolution_edges" => "",
+      "obtainable_count" => service.instance_variable_get(
+        :@plans
+      ).count { |_identity, plans| !plans.empty? }
+    }
+  end
+
+  def self.validate_grouped_derived_encounter_pairs(recipe)
+    Ironmon.tracker_area_catalog.each do |area|
+      metadata = Ironmon.tracker_area_encounter_metadata(area, recipe)
+      sources = Ironmon.tracker_area_normal_encounter_sources(metadata, recipe)
+      expected = {}
+      sources.each do |first|
+        sources.each do |second|
+          cross = !Ironmon.tracker_area_same_encounter_table?(first, second)
+          next if !Ironmon.tracker_area_encounter_fusion_pair?(
+            first, second, cross
+          )
+          first_number = GameData::Species.get(first["species"]).id_number
+          second_number = GameData::Species.get(second["species"]).id_number
+          lower, higher = [first_number, second_number].sort
+          expected[(lower << 10) | higher] = true
+        end
+      end
+      actual = Ironmon.tracker_area_derived_fusion_material_pair_codes(
+        metadata, recipe
+      )
+      missing = expected.keys - actual
+      extra = actual - expected.keys
+      assert(
+        actual == expected.keys.sort,
+        "grouped derived encounter pairs match ordered slot scanning for " +
+          area["name"].to_s + " (missing #{missing.first(5).inspect}, " +
+          "extra #{extra.first(5).inspect})"
+      )
+    end
+  end
+
+  def self.validate_derived_caught_fusion_obtainability(recipe, policy)
+    configuration = Ironmon::Configuration.new(
+      policy, :normal_only, :random_component
+    )
+    configured_recipe = recipe.merge("configuration" => configuration.to_h)
+    validate_grouped_derived_encounter_pairs(configured_recipe)
+    service = Ironmon::TrackerObtainabilityService.new(configured_recipe)
+    initial = service.snapshot
+    work = initial["fusion_closure_work"]
+    packed_pool = work["packed_custom_fusion_pool"].to_s.unpack("m0")[0]
+    pool_bits = packed_pool.each_byte.inject(0) do |sum, byte|
+      sum + byte.to_s(2).count("1")
+    end
+    assert(
+      !initial["complete"] && !initial["background_complete"] &&
+        initial["total_pairs"] > 0 && initial["processed_pairs"] == 0 &&
+        initial["obtainable_count"] > 0 &&
+        initial["unresolved_source_count"] == 0 &&
+        initial["unresolved_resource_count"] == 0 && work.is_a?(Hash) &&
+        !work["direct_pair_offsets"].empty? &&
+        work["direct_encounter_only"] == true &&
+        work["reversible_fusion_ids"].is_a?(Array) &&
+        packed_pool.bytesize == ((NB_POKEMON * NB_POKEMON) + 7) / 8 &&
+        pool_bits == Ironmon.custom_fusion_pool_info[:size] &&
+        work["source_catalog_fingerprint"] ==
+          Ironmon.tracker_obtainability_source_catalog["fingerprint"],
+      "#{policy} obtainability classifies sources, derived wild pairs, " +
+        "and pinned-profile fusion-index membership"
+    )
+    mapper = Ironmon::PlayerFusionMapper.new(
+      recipe["seed"], Ironmon.custom_fusion_pool_numbers, {}, {},
+      Ironmon.base_stat_generator_for(
+        recipe["seed"], recipe["base_stat_source_fingerprint"]
+      ),
+      recipe["player_fusion_generator_version"]
+    )
+    plans = service.instance_variable_get(:@plans)
+    direct_fusions = nil
+    missing_components = nil
+    work["direct_pair_offsets"].each do |offset|
+      first, second = material_pair_at_offset(
+        service.instance_variable_get(:@material_ids), offset
+      ).map { |identity| GameData::Species.get(identity).id_number }
+      mapped = [mapper.species_number(first, second)]
+      mapped << mapper.species_number(second, first) if first != second
+      mapped.uniq.each do |number|
+        fusion = GameData::Species.get(number)
+        missing = [fusion.body_pokemon, fusion.head_pokemon].uniq.reject do |part|
+          plans.key?(part.id) && !plans[part.id].empty?
+        end
+        next if missing.empty?
+        direct_fusions = mapped.uniq.sort
+        missing_components = missing
+        break
+      end
+      break if direct_fusions
+    end
+    assert(
+      direct_fusions && !missing_components.empty?,
+      "#{policy} fixture contains a derived fusion with a new unfusion component"
+    )
+    legacy_result = closure_result(service, initial, direct_fusions)
+    legacy_result.delete("direct_encounter_fusion_ids")
+    legacy_error = begin
+      service.apply_fusion_closure_result(legacy_result)
+      nil
+    rescue Ironmon::TrackerLookupError => error
+      error
+    end
+    assert(
+      legacy_error && legacy_error.code == "obtainability_incomplete" &&
+        service.snapshot["phase"] == "player_fusions",
+      "#{policy} legacy tracker result stops background retries without " +
+        "mutating the pending closure"
+    )
+    first_job_id = work["job_id"]
+    assert(
+      !service.apply_fusion_closure_result(
+        closure_result(service, initial, direct_fusions)
+      ) && service.snapshot["phase"] ==
+        "derived_caught_fusion_transformations",
+      "#{policy} closure feeds derived catches back into game-owned transformations"
+    )
+    deadline = Ironmon.tracker_uptime_seconds + 30.0
+    while service.snapshot["phase"] != "player_fusions"
+      service.advance_for_milliseconds(250.0)
+      raise "Tracker structure test failed: derived fusion expansion timed out" if
+        Ironmon.tracker_uptime_seconds >= deadline
+    end
+    assert(
+      missing_components.all? do |part|
+        plans.key?(part.id) && !plans[part.id].empty?
+      end,
+      "#{policy} derived caught fusion makes its unfusion components obtainable"
+    )
+    final = service.snapshot
+    final_work = final["fusion_closure_work"]
+    assert(
+      final_work["job_id"] != first_job_id &&
+        final_work["direct_encounter_only"] == false,
+      "#{policy} expanded material set receives one distinct full closure job"
+    )
+    assert(
+      service.apply_fusion_closure_result(
+        closure_result(service, final, direct_fusions)
+      ) && service.complete?,
+      "#{policy} obtainability completes after the expanded final closure"
+    )
+    return service
+  end
+
   def self.run
     assert_source(
       Ironmon::TrackerConnection.instance_method(:update),
@@ -109,6 +276,49 @@ module IronmonTrackerStructureRuntimeTests
       "023_Sprite_Performance_Fixes.rb",
       "tracker sprite materialization"
     )
+    blank_tracker_bitmap = AnimatedBitmap.from_bitmap(Bitmap.new(2, 2))
+    begin
+      assert(
+        !Ironmon.tracker_sprite_bitmap_visible?(blank_tracker_bitmap),
+        "tracker sprite validation rejects fully transparent images"
+      )
+      blank_tracker_bitmap.bitmap.set_pixel(1, 1, Color.new(1, 2, 3, 255))
+      assert(
+        Ironmon.tracker_sprite_bitmap_visible?(blank_tracker_bitmap),
+        "tracker sprite validation accepts images with visible pixels"
+      )
+    ensure
+      blank_tracker_bitmap.dispose
+    end
+    blank_base_extractor = Object.new
+    blank_base_extractor.instance_variable_set(:@variants, [])
+    def blank_base_extractor.load_sprite(pif_sprite)
+      @variants << pif_sprite.alt_letter
+      bitmap = Bitmap.new(2, 2)
+      bitmap.set_pixel(1, 1, Color.new(1, 2, 3, 255)) if
+        pif_sprite.alt_letter.to_s.empty?
+      return AnimatedBitmap.from_bitmap(bitmap)
+    end
+    def blank_base_extractor.variants
+      return @variants
+    end
+    blank_base_loader = Object.new
+    blank_base_loader.instance_variable_set(:@extractor, blank_base_extractor)
+    def blank_base_loader.get_sprite_extractor_instance(_type)
+      return @extractor
+    end
+    base_fallback_sprite = Ironmon.load_tracker_sprite_bitmap(
+      blank_base_loader, PIFSprite.new(:BASE, 303, nil, "s")
+    )
+    begin
+      assert(
+        Ironmon.tracker_sprite_bitmap_visible?(base_fallback_sprite) &&
+          blank_base_extractor.variants == ["s", ""],
+        "tracker sprites replace a blank base variant with its main sprite"
+      )
+    ensure
+      base_fallback_sprite.dispose if base_fallback_sprite
+    end
     original_live_game_temp = $game_temp
     original_live_pokemon_temp = $PokemonTemp
     begin
@@ -196,7 +406,7 @@ module IronmonTrackerStructureRuntimeTests
       manual_sprite_path && File.file?(manual_sprite_path),
       "tracker sprites preserve an existing game-local individual image"
     )
-    materialized_sprite = PIFSprite.new(:AUTOGEN, 1, 0, "")
+    materialized_sprite = PIFSprite.new(:AUTOGEN, 1, 2, "")
     materialized_sprite.local_path =
       "Graphics/CustomBattlers/local_sprites/indexed/missing.png"
     test_sprite_cache_path = Ironmon.tracker_materialized_sprite_path(
@@ -204,13 +414,22 @@ module IronmonTrackerStructureRuntimeTests
     )
     File.delete(test_sprite_cache_path) if File.file?(test_sprite_cache_path)
     begin
+      Ironmon.ensure_tracker_sprite_cache_folder
+      blank_cache_bitmap = Bitmap.new(2, 2)
+      blank_cache_bitmap.save_to_png(test_sprite_cache_path)
+      blank_cache_bitmap.dispose
+      assert(
+        !Ironmon.tracker_cached_sprite_usable?(test_sprite_cache_path),
+        "tracker sprite validation rejects a transparent cached image"
+      )
       materialized_sprite_path = Ironmon.tracker_resolved_sprite_path(
         materialized_sprite
       )
       assert(
         materialized_sprite_path == test_sprite_cache_path &&
-          File.file?(materialized_sprite_path),
-        "tracker sprites recover from a stale local path through the game loader"
+          File.file?(materialized_sprite_path) &&
+          Ironmon.tracker_cached_sprite_usable?(materialized_sprite_path),
+        "tracker sprites replace a transparent cache through the game loader"
       )
     ensure
       File.delete(test_sprite_cache_path) if File.file?(test_sprite_cache_path)
@@ -346,6 +565,31 @@ module IronmonTrackerStructureRuntimeTests
           Ironmon::TrackerObtainabilityService::BACKGROUND_MILLISECONDS,
       "obtainability preserves its background frame budget and faster foreground mode"
     )
+    bounded_material_pairs = Ironmon::TrackerObtainabilityService.allocate
+    plans = {}
+    1.upto([NB_POKEMON, 250].min) do |species_number|
+      identity = GameData::Species.get(species_number).id
+      plans[identity] = [{
+        :items => {}, :constraints => {}, :source_uses => {},
+        :path_length => 0
+      }]
+    end
+    bounded_material_pairs.instance_variable_set(:@phase, :transformation_evolutions)
+    bounded_material_pairs.instance_variable_set(:@plans, plans)
+    bounded_material_pairs.instance_variable_set(:@normal_evolution_queue, [])
+    bounded_material_pairs.instance_variable_set(:@normal_evolution_work, nil)
+    bounded_material_pairs.instance_variable_set(:@queued_normal_evolutions, {})
+    bounded_material_pairs.instance_variable_set(:@material_pairs_prepared, false)
+    bounded_material_pairs.instance_variable_set(:@direct_fusion_material_pairs, {})
+    bounded_material_pairs.instance_variable_set(:@resource_supply, Hash.new(0))
+    bounded_material_pairs.instance_variable_set(:@work_fiber, nil)
+    bounded_material_pairs.instance_variable_set(:@work_deadline, nil)
+    bounded_material_pairs.advance_for_milliseconds(0.1)
+    assert(
+      bounded_material_pairs.instance_variable_get(:@work_fiber).alive? &&
+        !bounded_material_pairs.instance_variable_get(:@material_pairs_prepared),
+      "the late material-pair scan yields before exceeding its frame slice"
+    )
     assert_source(
       Ironmon.method(:update_tracker_obtainability),
       "019_Tracker_Post_Run_5_Obtainability.rb",
@@ -356,6 +600,20 @@ module IronmonTrackerStructureRuntimeTests
       "019_Tracker_Post_Run_5_Obtainability.rb",
       "obtainability startup gate"
     )
+    original_game_player = $game_player
+    moving_player = Object.new
+    def moving_player.moving?
+      return true
+    end
+    begin
+      $game_player = moving_player
+      assert(
+        !Ironmon.player_fusion_preparation_safe?,
+        "global fusion preparation yields every frame in which the player is moving"
+      )
+    ensure
+      $game_player = original_game_player
+    end
     assert(
       Scene_Map.instance_method(:update).source_location[0].end_with?(
         "006_Scene_Hooks.rb"
@@ -563,36 +821,12 @@ module IronmonTrackerStructureRuntimeTests
     )
     Ironmon.tracker_obtainability_services.delete(first_archive_recipe["run_id"])
     Ironmon.tracker_obtainability_services.delete(second_archive_recipe["run_id"])
-    integrated_obtainability =
-      Ironmon::TrackerObtainabilityService.new(obtainability_recipe)
-    initial_obtainability = integrated_obtainability.snapshot
-    closure_work = initial_obtainability["fusion_closure_work"]
-    assert(
-      !initial_obtainability["complete"] &&
-        !initial_obtainability["background_complete"] &&
-        initial_obtainability["total_pairs"] > 0 &&
-        initial_obtainability["processed_pairs"] == 0 &&
-        initial_obtainability["obtainable_count"] > 0 &&
-        initial_obtainability["unresolved_source_count"] == 0 &&
-        initial_obtainability["unresolved_resource_count"] == 0 &&
-        closure_work.is_a?(Hash) &&
-        closure_work["direct_pair_offsets"].is_a?(Array) &&
-        closure_work["reversible_fusion_ids"].is_a?(Array) &&
-        closure_work["source_catalog_fingerprint"] ==
-          source_catalog["fingerprint"],
-      "obtainability classifies every audited source and resource before " +
-        "handing the direct-result index to the parallel tracker worker"
+    validate_derived_caught_fusion_obtainability(
+      obtainability_recipe, :normal_only
     )
-    maximum_fusion_number = (NB_POKEMON * NB_POKEMON) + NB_POKEMON
-    integrated_obtainability.apply_fusion_closure_result({
-      "job_id" => initial_obtainability["fusion_closure_work"]["job_id"],
-      "obtainable_fusion_words" =>
-        Array.new((maximum_fusion_number >> 5) + 1, 0),
-      "packed_executable_evolution_edges" => "",
-      "obtainable_count" => integrated_obtainability.instance_variable_get(
-        :@plans
-      ).count { |_identity, plans| !plans.empty? }
-    })
+    integrated_obtainability = validate_derived_caught_fusion_obtainability(
+      obtainability_recipe, :mixed
+    )
     lazy_evolution_entry = integrated_obtainability.instance_variable_get(
       :@plans
     ).find do |_identity, plans|
@@ -934,11 +1168,15 @@ module IronmonTrackerStructureRuntimeTests
       $PokemonGlobal.ironmon_mode = true
       $PokemonGlobal.ironmon_seed = obtainability_recipe["seed"]
       $PokemonGlobal.ironmon_run_id = "runtime-active-obtainability"
+      $PokemonGlobal.ironmon_generation_profile_id =
+        Ironmon.current_generation_profile_id
       active_recipe = Ironmon.tracker_debug_active_recipe
       assert(
         active_recipe["active_run"] == true &&
-          Ironmon.tracker_loaded_recipe?(active_recipe),
-        "diagnostic obtainability identifies the currently loaded run"
+          Ironmon.tracker_loaded_recipe?(active_recipe) &&
+          active_recipe["generation_profile_id"] ==
+            Ironmon.current_generation_profile_id,
+        "diagnostic obtainability identifies the loaded run and profile"
       )
       assert(
         Ironmon.tracker_normal_evolution_generator(active_recipe).equal?(

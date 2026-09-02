@@ -16,6 +16,10 @@ module Ironmon
       @error = nil
     end
 
+    def generation_profile_id
+      return @recipe["generation_profile_id"].to_s
+    end
+
     def results_for(pairs)
       raise_failure if @error
       pairs.each do |pair|
@@ -111,7 +115,7 @@ module Ironmon
       return PlayerFusionMapper.new(
         @recipe["seed"], Ironmon.custom_fusion_pool_numbers, {}, {},
         generator, @recipe["player_fusion_generator_version"],
-        proc { Fiber.yield }, true
+        proc { Fiber.yield }
       )
     end
 
@@ -141,6 +145,7 @@ module Ironmon
     @tracker_area_fusion_work ||= {}
     key = [
       recipe["run_id"], recipe["seed"], recipe["active_run"],
+      recipe["generation_profile_id"],
       recipe["player_fusion_generator_version"],
       recipe["base_stat_source_fingerprint"],
       tracker_loaded_recipe?(recipe) ? pivot_state.object_id : nil
@@ -154,7 +159,15 @@ module Ironmon
 
   def self.update_tracker_area_fusions
     return if !tracker_obtainability_background_safe?
-    @tracker_area_fusion_work.each_value(&:advance) if @tracker_area_fusion_work
-    @tracker_wild_occurrence_work.each_value(&:advance) if @tracker_wild_occurrence_work
+    if @tracker_area_fusion_work
+      @tracker_area_fusion_work.each_value do |work|
+        with_generation_profile(work.generation_profile_id) { work.advance }
+      end
+    end
+    if @tracker_wild_occurrence_work
+      @tracker_wild_occurrence_work.each_value do |work|
+        with_generation_profile(work.generation_profile_id) { work.advance }
+      end
+    end
   end
 end

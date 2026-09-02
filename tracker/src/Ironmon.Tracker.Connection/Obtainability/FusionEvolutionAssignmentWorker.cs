@@ -8,6 +8,7 @@ namespace Ironmon.Tracker.Connection.Obtainability;
 /// </summary>
 internal sealed class FusionEvolutionAssignmentWorker
 {
+    private static readonly int _maximumParallelism = Math.Max(1, Environment.ProcessorCount * 3 / 8);
     private const ulong FnvOffsetBasis = 14_695_981_039_346_656_037;
     private const ulong FnvPrime = 1_099_511_628_211;
     private const int MaterialIdBits = 10;
@@ -39,7 +40,7 @@ internal sealed class FusionEvolutionAssignmentWorker
     }
 
     /// <summary>
-    /// Generates exact assignments for the supplied custom-fusion sources in parallel.
+    /// Generates exact assignments for the supplied custom-fusion sources in parallel while retaining CPU capacity for the connected game.
     /// </summary>
     /// <param name="seed">The run seed.</param>
     /// <param name="packedSourceComponents">The distinct packed body and head identifiers.</param>
@@ -51,7 +52,7 @@ internal sealed class FusionEvolutionAssignmentWorker
         WorkerState state = GetState(seed);
         int[] sources = [.. packedSourceComponents.Distinct().Order()];
         FusionEvolutionSourceAssignment[] result = new FusionEvolutionSourceAssignment[sources.Length];
-        Parallel.For(0, sources.Length, new ParallelOptions { CancellationToken = cancellationToken }, index =>
+        Parallel.For(0, sources.Length, new ParallelOptions { CancellationToken = cancellationToken, MaxDegreeOfParallelism = _maximumParallelism }, index =>
         {
             result[index] = GenerateSource(state, sources[index]);
         });

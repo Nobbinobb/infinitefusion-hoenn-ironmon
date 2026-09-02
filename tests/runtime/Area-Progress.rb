@@ -32,6 +32,7 @@ module IronmonAreaProgressRuntimeTests
     return {
       "attempt_number" => 1,
       "run_id" => "runtime-test",
+      "generation_profile_id" => Ironmon.current_generation_profile_id,
       "seed" => 1,
       "result" => "active",
       "active_seconds" => 0.0,
@@ -55,6 +56,8 @@ module IronmonAreaProgressRuntimeTests
       $PokemonGlobal.ironmon_mode = true
       $PokemonGlobal.ironmon_seed = 1
       $PokemonGlobal.ironmon_run_id = "runtime-test"
+      $PokemonGlobal.ironmon_generation_profile_id =
+        Ironmon.current_generation_profile_id
       $PokemonGlobal.ironmon_configuration = Ironmon::Configuration.new(
         :normal_only, :normal_only
       )

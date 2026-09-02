@@ -70,6 +70,7 @@ module Ironmon
   def self.tracker_run_reproduction_recipe
     return {
       "seed" => $PokemonGlobal.ironmon_seed || 0,
+      "generation_profile_id" => pinned_generation_profile_id,
       "game_version" => tracker_game_version,
       "ironmon_version" => VERSION,
       "configuration" => configuration_snapshot,
@@ -88,6 +89,7 @@ module Ironmon
     recipe ||= tracker_run_reproduction_recipe
     manifest = {
       "schema_version" => 1,
+      "generation_profile_id" => recipe["generation_profile_id"],
       "game_version" => recipe["game_version"],
       "ironmon_version" => recipe["ironmon_version"],
       "data_mode" => recipe["data_mode"],

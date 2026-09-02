@@ -3,11 +3,6 @@
 #===============================================================================
 
 module Ironmon
-  AREA_CATALOG_PATH = File.join("Data", "Ironmon", "area_catalog.dat")
-  OBTAINABILITY_SOURCE_CATALOG_PATH = File.join(
-    "Data", "Ironmon", "obtainability_source_catalog.json"
-  )
-
   class AreaCatalogError < StandardError
   end
 
@@ -15,13 +10,17 @@ module Ironmon
   end
 
   def self.tracker_area_catalog_document
-    return @tracker_area_catalog_document if @tracker_area_catalog_document
-    document = File.open(AREA_CATALOG_PATH, "rb") do |file|
+    @tracker_area_catalog_documents ||= {}
+    profile_id = active_generation_profile_id
+    return @tracker_area_catalog_documents[profile_id] if
+      @tracker_area_catalog_documents[profile_id]
+    path = generation_profile_component_path("area_catalog", profile_id)
+    document = File.open(path, "rb") do |file|
       Marshal.load(file)
     end
     tracker_validate_area_catalog(document)
-    @tracker_area_catalog_document = document
-    return @tracker_area_catalog_document
+    @tracker_area_catalog_documents[profile_id] = document
+    return document
   rescue Exception => e
     raise AreaCatalogError,
       "The bundled Ironmon area catalog is unavailable: #{e.message}"
@@ -32,14 +31,17 @@ module Ironmon
   end
 
   def self.tracker_obtainability_source_catalog
-    return @tracker_obtainability_source_catalog if
-      @tracker_obtainability_source_catalog
-    document = File.open(OBTAINABILITY_SOURCE_CATALOG_PATH, "rb") do |file|
+    @tracker_obtainability_source_catalogs ||= {}
+    profile_id = active_generation_profile_id
+    return @tracker_obtainability_source_catalogs[profile_id] if
+      @tracker_obtainability_source_catalogs[profile_id]
+    path = generation_profile_component_path("obtainability_sources", profile_id)
+    document = File.open(path, "rb") do |file|
       tracker_stringify_catalog_keys(JSON.parse(file.read))
     end
     tracker_validate_obtainability_source_catalog(document)
-    @tracker_obtainability_source_catalog = document
-    return @tracker_obtainability_source_catalog
+    @tracker_obtainability_source_catalogs[profile_id] = document
+    return document
   rescue Exception => e
     raise ObtainabilitySourceCatalogError,
       "The bundled obtainability source catalog is unavailable: #{e.message}"
@@ -60,7 +62,8 @@ module Ironmon
 
   def self.tracker_area_event_entry_id(category, map_id, event_id)
     @tracker_area_event_entry_indexes ||= {}
-    index = @tracker_area_event_entry_indexes[category]
+    cache_key = [active_generation_profile_id, category]
+    index = @tracker_area_event_entry_indexes[cache_key]
     if !index
       index = {}
       tracker_area_catalog.each do |area|
@@ -70,15 +73,16 @@ module Ironmon
           index[key] = entry["entry_id"]
         end
       end
-      @tracker_area_event_entry_indexes[category] = index
+      @tracker_area_event_entry_indexes[cache_key] = index
     end
     return index[[map_id.to_i, event_id.to_i]]
   end
 
   def self.tracker_area_hidden_items(map_id)
     @tracker_area_hidden_item_indexes ||= {}
-    return @tracker_area_hidden_item_indexes[map_id.to_i] if
-      @tracker_area_hidden_item_indexes.key?(map_id.to_i)
+    cache_key = [active_generation_profile_id, map_id.to_i]
+    return @tracker_area_hidden_item_indexes[cache_key] if
+      @tracker_area_hidden_item_indexes.key?(cache_key)
     entries = []
     tracker_area_catalog.each do |area|
       next if !area["map_ids"].include?(map_id.to_i)
@@ -87,7 +91,7 @@ module Ironmon
       end
       break
     end
-    @tracker_area_hidden_item_indexes[map_id.to_i] = entries
+    @tracker_area_hidden_item_indexes[cache_key] = entries
     return entries
   end
 
