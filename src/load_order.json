@@ -107,5 +107,9 @@
   { "source": "presentation/Tracker_Starter_Selection.rb", "output": "023_Tracker_Starter_Selection.rb" },
   { "source": "compatibility/Gameplay_073.rb", "output": "024_Release_073_Gameplay.rb" },
   { "source": "presentation/Repel_Overlay.rb", "output": "025_Repel_Overlay.rb" },
-  { "source": "run/Seeded_Run_Import.rb", "output": "025_Seeded_Run_Import.rb" }
+  { "source": "run/Seeded_Run_Import.rb", "output": "025_Seeded_Run_Import.rb" },
+  { "source": "cosmetics/Catalog.rb", "output": "026_Cosmetics_Catalog.rb" },
+  { "source": "cosmetics/Profile.rb", "output": "026_Cosmetics_Profile.rb" },
+  { "source": "cosmetics/Runtime.rb", "output": "026_Cosmetics_Runtime.rb" },
+  { "source": "cosmetics/Wardrobe.rb", "output": "026_Cosmetics_Wardrobe.rb" }
 ]

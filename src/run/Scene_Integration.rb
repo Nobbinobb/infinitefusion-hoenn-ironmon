@@ -40,6 +40,8 @@ class Scene_Map
       Ironmon.advance_player_fusion_pairing
     end
     Ironmon.mark_tracker_obtainability_map_ready(self)
+    Ironmon::Cosmetics.check_milestones if defined?(Ironmon::Cosmetics)
+    Ironmon::Cosmetics.show_notice if defined?(Ironmon::Cosmetics)
     return result
   end
 end
