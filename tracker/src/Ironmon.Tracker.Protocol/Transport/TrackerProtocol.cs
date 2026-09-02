@@ -76,11 +76,6 @@ public static class TrackerProtocol
     public const int CompatibilityLookupLevel = 100;
 
     /// <summary>
-    /// Gets the player-fusion generator version assumed by legacy recipe payloads.
-    /// </summary>
-    public const int DefaultPlayerFusionGeneratorVersion = 2;
-
-    /// <summary>
     /// Gets the sequence number used by tracker-originated lifecycle events.
     /// </summary>
     public const long InitialEventSequence = 0;

@@ -7,6 +7,11 @@ namespace Ironmon.Tracker.Tests.Protocol;
 /// </summary>
 public sealed class RunCompatibilityFingerprintTests
 {
+    private const string _alternateGenerationProfileId = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+    private const string _expectedCompatibilityFingerprint = "c7260fe773407fb1764218e81494c95301d56d3ce0aa8b0c85fd2faddcf25b6d";
+    private const string _generationProfilePropertyName = "generation_profile_id";
+    private const string _testGenerationProfileId = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
     /// <summary>
     /// Verifies identical compatibility inputs always produce one lowercase SHA-256 value.
     /// </summary>
@@ -17,7 +22,7 @@ public sealed class RunCompatibilityFingerprintTests
         string second = RunCompatibilityFingerprint.Create(CreateRecipe());
 
         Assert.Equal(first, second);
-        Assert.Equal("b505ea5986d3b34723f2d7e49b840e20468555b78da861e71335fb960ed0bac4", first);
+        Assert.Equal(_expectedCompatibilityFingerprint, first);
     }
 
     /// <summary>
@@ -47,6 +52,7 @@ public sealed class RunCompatibilityFingerprintTests
         [
             CreateRecipe(gameVersion: "6.8.0"),
             CreateRecipe(ironmonVersion: "0.7.7"),
+            CreateRecipe(generationProfileId: _alternateGenerationProfileId),
             CreateRecipe(dataMode: "remix"),
             CreateRecipe(speciesFingerprint: "species-b"),
             CreateRecipe(abilityFingerprint: "abilities-b"),
@@ -69,6 +75,7 @@ public sealed class RunCompatibilityFingerprintTests
         JsonElement json = TrackerJson.SerializePayload(CreateRecipe());
 
         Assert.Equal(123456789, json.GetProperty("seed").GetInt64());
+        Assert.Equal(_testGenerationProfileId, json.GetProperty(_generationProfilePropertyName).GetString());
         Assert.Equal("6.7.2", json.GetProperty("game_version").GetString());
         Assert.Equal("species-a", json.GetProperty("species_generator").GetProperty("pool_fingerprint").GetString());
         Assert.False(json.TryGetProperty("reproduction", out _));
@@ -82,6 +89,7 @@ public sealed class RunCompatibilityFingerprintTests
     /// <param name="result">The completion result.</param>
     /// <param name="gameVersion">The game version.</param>
     /// <param name="ironmonVersion">The Ironmon version.</param>
+    /// <param name="generationProfileId">The pinned immutable generation profile.</param>
     /// <param name="dataMode">The game-data mode.</param>
     /// <param name="wildPolicy">The wild-species policy.</param>
     /// <param name="speciesFingerprint">The species-pool fingerprint.</param>
@@ -92,13 +100,14 @@ public sealed class RunCompatibilityFingerprintTests
     /// <param name="fusionFingerprint">The player-fusion-pool fingerprint.</param>
     /// <param name="itemFingerprint">The ground-item-pool fingerprint.</param>
     /// <returns>A complete completed-run recipe.</returns>
-    private static CompletedRunRecipePayload CreateRecipe(string runId = "run-1", long seed = 123456789, string result = "won", string gameVersion = "6.7.2", string ironmonVersion = "0.7.6", string dataMode = "classic", string wildPolicy = "mixed", string speciesFingerprint = "species-a", string abilityFingerprint = "abilities-a", string baseStatFingerprint = "stats-a", string evolutionFingerprint = "evolutions-a", string moveFingerprint = "moves-a", string fusionFingerprint = "fusions-a", string itemFingerprint = "items-a")
+    private static CompletedRunRecipePayload CreateRecipe(string runId = "run-1", long seed = 123456789, string result = "won", string gameVersion = "6.7.2", string ironmonVersion = "0.7.6", string generationProfileId = _testGenerationProfileId, string dataMode = "classic", string wildPolicy = "mixed", string speciesFingerprint = "species-a", string abilityFingerprint = "abilities-a", string baseStatFingerprint = "stats-a", string evolutionFingerprint = "evolutions-a", string moveFingerprint = "moves-a", string fusionFingerprint = "fusions-a", string itemFingerprint = "items-a")
     {
         return new CompletedRunRecipePayload
         {
             RunId = runId,
             Seed = seed,
             Result = result,
+            GenerationProfileId = generationProfileId,
             GameVersion = gameVersion,
             IronmonVersion = ironmonVersion,
             DataMode = dataMode,
@@ -110,27 +119,27 @@ public sealed class RunCompatibilityFingerprintTests
                 UnfusionSetting = "random_component"
             },
             SpeciesGenerator = new SpeciesGeneratorRecipePayload { Version = 1, PoolFingerprint = speciesFingerprint },
-            AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 3, PoolSize = 310, PoolFingerprint = abilityFingerprint },
-            BaseStatGenerator = new BaseStatGeneratorRecipePayload { Version = 2, SourceFingerprint = baseStatFingerprint },
+            AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 1, PoolSize = 310, PoolFingerprint = abilityFingerprint },
+            BaseStatGenerator = new BaseStatGeneratorRecipePayload { Version = 1, SourceFingerprint = baseStatFingerprint },
             EvolutionGenerator = new EvolutionGeneratorRecipePayload
             {
-                Version = 3,
-                RulesVersion = 3,
+                Version = 1,
+                RulesVersion = 1,
                 SourceFingerprint = evolutionFingerprint,
                 TaxonomyFingerprint = "taxonomy-a",
                 MethodFingerprint = "methods-a",
                 TargetFingerprint = "targets-a",
-                BaseStatGenerator = new BaseStatGeneratorRecipePayload { Version = 2, SourceFingerprint = baseStatFingerprint },
+                BaseStatGenerator = new BaseStatGeneratorRecipePayload { Version = 1, SourceFingerprint = baseStatFingerprint },
                 Fusion = new FusionEvolutionGeneratorRecipePayload
                 {
-                    Version = 2,
-                    RulesVersion = 2,
+                    Version = 1,
+                    RulesVersion = 1,
                     TargetPool = new VersionedPoolRecipePayload { Version = 1, Size = 174348, Fingerprint = fusionFingerprint }
                 }
             },
             MoveAccessGenerator = new MoveAccessGeneratorRecipePayload
             {
-                Version = 2,
+                Version = 1,
                 PoolFingerprint = moveFingerprint,
                 ContextualRestrictionFingerprint = "move-rules-a",
                 LevelUpSourceFingerprint = "level-up-a",
@@ -140,11 +149,11 @@ public sealed class RunCompatibilityFingerprintTests
                 Tutor = new TutorSourceRecipePayload { CatalogFingerprint = "tutor-catalog-a", SourceFingerprint = "tutor-source-a" },
                 FusionTutor = new TutorSourceRecipePayload { CatalogFingerprint = "fusion-tutor-catalog-a", SourceFingerprint = "fusion-tutor-source-a" }
             },
-            PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 174348, PoolFingerprint = fusionFingerprint },
+            PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 1, PoolSize = 174348, PoolFingerprint = fusionFingerprint },
             ItemGenerator = new ItemGeneratorRecipePayload
             {
                 Version = 1,
-                RulesVersion = 3,
+                RulesVersion = 1,
                 GroundPoolSize = 580,
                 GroundTotalWeight = 5253,
                 GroundPoolFingerprint = itemFingerprint,

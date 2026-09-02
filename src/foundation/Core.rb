@@ -61,6 +61,7 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_seed
   attr_accessor :ironmon_checkpoint_id
   attr_accessor :ironmon_configuration
+  attr_accessor :ironmon_generation_profile_id
   attr_accessor :ironmon_custom_fusion_pool_version
   attr_accessor :ironmon_custom_fusion_pool_size
   attr_accessor :ironmon_custom_fusion_pool_fingerprint

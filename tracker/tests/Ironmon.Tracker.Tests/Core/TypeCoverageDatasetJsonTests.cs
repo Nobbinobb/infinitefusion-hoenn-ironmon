@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Ironmon.Tracker.Tests.Core;
@@ -7,6 +9,17 @@ namespace Ironmon.Tracker.Tests.Core;
 /// </summary>
 public sealed class TypeCoverageDatasetJsonTests
 {
+    private const string _coverageFileName = "type_coverage.json";
+    private const string _expectedGameVersion = "6.8.2";
+    private const string _fingerprintFormat = "x16";
+    private const string _fusionBodyPrefix = "B";
+    private const string _fusionComponentFileName = "generation_custom_fusion_pool.bin";
+    private const string _fusionComponentName = "custom_fusion_pool";
+    private const string _fusionHeadSeparator = "H";
+    private const string _profileFileName = "generation_profile.json";
+    private const string _profileIdPropertyName = "profile_id";
+    private const string _profileManifestPropertyName = "manifest";
+
     /// <summary>
     /// Initializes type-coverage dataset tests.
     /// </summary>
@@ -56,20 +69,63 @@ public sealed class TypeCoverageDatasetJsonTests
     }
 
     /// <summary>
-    /// Verifies the generated release artifact through the same strict dataset reader.
+    /// Verifies that generated coverage describes the finalized generation profile.
     /// </summary>
     [Fact]
-    public void GeneratedReleaseDatasetMatchesAuditedPopulation()
+    public void GeneratedReleaseDatasetMatchesGenerationProfileFusionPool()
     {
-        string path = Path.Combine(AppContext.BaseDirectory, "type_coverage.json");
-        using FileStream stream = File.OpenRead(path);
+        string coveragePath = Path.Combine(AppContext.BaseDirectory, _coverageFileName);
+        string poolPath = Path.Combine(AppContext.BaseDirectory, _fusionComponentFileName);
+        string profilePath = Path.Combine(AppContext.BaseDirectory, _profileFileName);
+        using FileStream stream = File.OpenRead(coveragePath);
 
         TypeCoverageDataset dataset = TypeCoverageDatasetJson.Deserialize(stream);
+        byte[] poolBytes = File.ReadAllBytes(poolPath);
+        CustomFusionPoolComponent pool = CustomFusionPoolComponentCodec.Decode(poolBytes);
+        using JsonDocument profileDocument = JsonDocument.Parse(File.ReadAllBytes(profilePath));
+        GenerationProfilePayload profile = TrackerJson.DeserializePayload<GenerationProfilePayload>(profileDocument.RootElement.GetProperty(_profileManifestPropertyName));
+        string profileId = profileDocument.RootElement.GetProperty(_profileIdPropertyName).GetString() ?? string.Empty;
+        GenerationAlgorithmPayload fusionAlgorithm = profile.Algorithms.Single(algorithm => StringComparer.Ordinal.Equals(algorithm.Name, GenerationAlgorithmNames.CustomFusionEligibility));
+        GenerationComponentPayload fusionComponent = profile.Components.Single(component => StringComparer.Ordinal.Equals(component.Name, _fusionComponentName));
 
-        Assert.Equal("6.8.2", dataset.GameVersion);
-        Assert.Equal(576, dataset.NormalPoolSize);
-        Assert.Equal(174_346, dataset.FusionPoolSize);
+        Assert.Equal(_expectedGameVersion, dataset.GameVersion);
+        Assert.Equal(GenerationProfileFingerprint.Create(profile), profileId);
+        Assert.Equal(fusionAlgorithm.Version, dataset.FusionPoolSchemaVersion);
+        Assert.Equal(pool.NormalSpeciesCount, dataset.NormalPoolSize);
+        Assert.Equal(pool.EligibleCount, dataset.FusionPoolSize);
+        Assert.Equal(CreateFusionPoolFingerprint(pool), dataset.FusionPoolFingerprint);
+        Assert.Equal(pool.SchemaVersion, fusionComponent.SchemaVersion);
+        Assert.Equal(poolBytes.LongLength, fusionComponent.ByteLength);
+        Assert.Equal(Convert.ToHexString(SHA256.HashData(poolBytes)).ToLowerInvariant(), fusionComponent.Sha256);
         Assert.Equal(170, dataset.Profiles.Count);
+    }
+
+    /// <summary>
+    /// Reproduces the runtime's FNV-1a fingerprint for the packed fusion pool.
+    /// </summary>
+    /// <param name="pool">The decoded profile fusion pool.</param>
+    /// <returns>The lowercase 64-bit fingerprint.</returns>
+    private static string CreateFusionPoolFingerprint(CustomFusionPoolComponent pool)
+    {
+        const ulong offsetBasis = 14_695_981_039_346_656_037;
+        const ulong prime = 1_099_511_628_211;
+        ulong value = offsetBasis;
+        unchecked
+        {
+            foreach (CustomFusionPair pair in pool.Enumerate())
+            {
+                string identity = FormattableString.Invariant($"{_fusionBodyPrefix}{pair.BodyId}{_fusionHeadSeparator}{pair.HeadId}");
+                foreach (byte character in Encoding.UTF8.GetBytes(identity))
+                {
+                    value ^= character;
+                    value *= prime;
+                }
+
+                value *= prime;
+            }
+        }
+
+        return value.ToString(_fingerprintFormat, CultureInfo.InvariantCulture);
     }
 
     /// <summary>

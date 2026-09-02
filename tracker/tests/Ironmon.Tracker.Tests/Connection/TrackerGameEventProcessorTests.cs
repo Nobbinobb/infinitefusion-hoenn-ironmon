@@ -6,6 +6,8 @@ namespace Ironmon.Tracker.Tests.Connection;
 public sealed class TrackerGameEventProcessorTests
 {
     private const string _preparedRunId = "prepared-run";
+    private const string _testGenerationProfileId = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
     /// <summary>
     /// Initializes inbound game event processor tests.
     /// </summary>
@@ -172,13 +174,14 @@ public sealed class TrackerGameEventProcessorTests
         RunId = runId,
         Seed = 123,
         Result = "lost",
+        GenerationProfileId = _testGenerationProfileId,
         GameVersion = "6.8.0",
         IronmonVersion = "0.7.8",
         Configuration = new RunConfigurationPayload { SchemaVersion = 1, WildPolicy = "mixed", TrainerPolicy = "mixed", UnfusionSetting = "random_component" },
         SpeciesGenerator = new SpeciesGeneratorRecipePayload { Version = 1, PoolFingerprint = "species" },
-        AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 3, PoolSize = 100, PoolFingerprint = "abilities" },
+        AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 1, PoolSize = 100, PoolFingerprint = "abilities" },
         BaseStatGenerator = new BaseStatGeneratorRecipePayload { Version = 1, SourceFingerprint = "base-stats" },
-        PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 100, PoolFingerprint = "fusions" },
+        PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 1, PoolSize = 100, PoolFingerprint = "fusions" },
         ItemGenerator = new ItemGeneratorRecipePayload
         {
             Version = 1,

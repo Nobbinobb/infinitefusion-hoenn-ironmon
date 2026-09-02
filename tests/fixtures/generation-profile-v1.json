@@ -1,0 +1,36 @@
+{
+  "manifest": {
+    "schema_version": 1,
+    "algorithms": [
+      { "name": "species_mapping", "version": 1 },
+      { "name": "progression_support_pokemon", "version": 1 },
+      { "name": "player_fusion_reversal", "version": 1 },
+      { "name": "normal_evolution", "version": 1 },
+      { "name": "move_access", "version": 1 },
+      { "name": "item_slots", "version": 1 },
+      { "name": "hash_contract", "version": 1 },
+      { "name": "gym_party_expansion", "version": 1 },
+      { "name": "fusion_evolution", "version": 1 },
+      { "name": "custom_fusion_eligibility", "version": 1 },
+      { "name": "caught_fusion_component", "version": 1 },
+      { "name": "base_stats", "version": 1 },
+      { "name": "ability_assignment", "version": 1 }
+    ],
+    "components": [
+      {
+        "name": "custom_fusion_pool",
+        "schema_version": 1,
+        "sha256": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+        "byte_length": 41472
+      },
+      {
+        "name": "base_catalog",
+        "schema_version": 1,
+        "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "byte_length": 123456
+      }
+    ]
+  },
+  "canonical_json": "{\"algorithms\":[{\"name\":\"ability_assignment\",\"version\":1},{\"name\":\"base_stats\",\"version\":1},{\"name\":\"caught_fusion_component\",\"version\":1},{\"name\":\"custom_fusion_eligibility\",\"version\":1},{\"name\":\"fusion_evolution\",\"version\":1},{\"name\":\"gym_party_expansion\",\"version\":1},{\"name\":\"hash_contract\",\"version\":1},{\"name\":\"item_slots\",\"version\":1},{\"name\":\"move_access\",\"version\":1},{\"name\":\"normal_evolution\",\"version\":1},{\"name\":\"player_fusion_reversal\",\"version\":1},{\"name\":\"progression_support_pokemon\",\"version\":1},{\"name\":\"species_mapping\",\"version\":1}],\"components\":[{\"byte_length\":123456,\"name\":\"base_catalog\",\"schema_version\":1,\"sha256\":\"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"},{\"byte_length\":41472,\"name\":\"custom_fusion_pool\",\"schema_version\":1,\"sha256\":\"abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789\"}],\"schema_version\":1}",
+  "profile_id": "c3da6819992d7e857fbd7fa520272b8ef09f6350cc2f55f43451522256f51556"
+}

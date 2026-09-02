@@ -5,6 +5,7 @@ namespace Ironmon.Tracker.Tests.Connection;
 /// </summary>
 public sealed class CompletedRunArchiveTests : IDisposable
 {
+    private const string _testGenerationProfileId = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private readonly List<string> _roots = [];
 
     /// <summary>
@@ -40,7 +41,7 @@ public sealed class CompletedRunArchiveTests : IDisposable
 
         Assert.Equal("run-archive", stored.RunId);
         Assert.Equal(98765, stored.Seed);
-        Assert.Equal(6, stored.MoveAccessGenerator!.Version);
+        Assert.Equal(1, stored.MoveAccessGenerator!.Version);
         Assert.Equal("fusion-tutor-source", stored.MoveAccessGenerator.FusionTutor.SourceFingerprint);
         Assert.Equal(1, stored.EvolutionGenerator!.Version);
         Assert.Equal("fusion-evolution-targets", stored.EvolutionGenerator.Fusion.TargetPool.Fingerprint);
@@ -48,7 +49,7 @@ public sealed class CompletedRunArchiveTests : IDisposable
         Assert.Equal("HYPERPOTION", stored.ItemMappings["POTION"]);
         Assert.Equal("TM02", stored.TmMappings["TM01"]);
         Assert.Equal(600, stored.ItemGenerator!.GroundPoolSize);
-        Assert.Equal(600, stored.ItemGenerator.GroundTotalWeight);
+        Assert.Equal(5253, stored.ItemGenerator.GroundTotalWeight);
         Assert.Equal(["DNASPLICERS", "DYNAMITE"], stored.ItemGenerator.ResultBans);
         Assert.Equal("run-archive", archive.RequestedRunId);
         string recipePath = Path.Combine(root, "runs", "run-archive", "recipe.json");
@@ -173,6 +174,17 @@ public sealed class CompletedRunArchiveTests : IDisposable
     }
 
     /// <summary>
+    /// Verifies that an archive cannot persist a recipe without an immutable profile identity.
+    /// </summary>
+    [Fact]
+    public void StoreRejectsMalformedGenerationProfileId()
+    {
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
+
+        Assert.Throws<ArgumentException>(() => archive.Store(CreateRecipe("run-missing-profile", generationProfileId: string.Empty)));
+    }
+
+    /// <summary>
     /// Verifies that malformed item generator metadata is rejected explicitly.
     /// </summary>
     [Fact]
@@ -191,7 +203,7 @@ public sealed class CompletedRunArchiveTests : IDisposable
     {
         CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => archive.Store(CreateRecipe("run-bad-item-weights", itemRulesVersion: 3, itemGroundTotalWeight: 0)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => archive.Store(CreateRecipe("run-bad-item-weights", itemGroundTotalWeight: 0)));
     }
 
     /// <summary>
@@ -260,28 +272,30 @@ public sealed class CompletedRunArchiveTests : IDisposable
     /// <param name="itemRulesVersion">The item pool rules version.</param>
     /// <param name="itemGroundTotalWeight">An optional ground-selection ticket total.</param>
     /// <param name="statistics">Optional authoritative attempt statistics.</param>
+    /// <param name="generationProfileId">The immutable generation profile identity.</param>
     /// <returns>The recipe.</returns>
-    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, bool includeMoveGenerator = true, bool includeEvolutionGenerator = true, int statisticsSchemaVersion = 1, int itemRulesVersion = 1, int? itemGroundTotalWeight = null, RunStatisticsPayload? statistics = null) => new()
+    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, bool includeMoveGenerator = true, bool includeEvolutionGenerator = true, int statisticsSchemaVersion = 1, int itemRulesVersion = 1, int? itemGroundTotalWeight = null, RunStatisticsPayload? statistics = null, string generationProfileId = _testGenerationProfileId) => new()
     {
         SchemaVersion = schemaVersion,
         RunId = runId,
         Seed = 98765,
         Result = "lost",
+        GenerationProfileId = generationProfileId,
         GameVersion = "6.8.0",
         IronmonVersion = "0.3.3",
         Configuration = new RunConfigurationPayload { SchemaVersion = 1, WildPolicy = "mixed", TrainerPolicy = "mixed", UnfusionSetting = "random_component" },
         SpeciesGenerator = new SpeciesGeneratorRecipePayload { Version = 1, PoolFingerprint = "species" },
-        AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 3, PoolSize = 100, PoolFingerprint = "abilities" },
+        AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 1, PoolSize = 100, PoolFingerprint = "abilities" },
         BaseStatGenerator = new BaseStatGeneratorRecipePayload { Version = 1, SourceFingerprint = "base-stats" },
         EvolutionGenerator = includeEvolutionGenerator ? CreateEvolutionGenerator() : null,
         MoveAccessGenerator = includeMoveGenerator ? CreateMoveGenerator() : null,
-        PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 100, PoolFingerprint = "fusions" },
+        PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 1, PoolSize = 100, PoolFingerprint = "fusions" },
         ItemGenerator = new ItemGeneratorRecipePayload
         {
             Version = 1,
             RulesVersion = itemRulesVersion,
             GroundPoolSize = 600,
-            GroundTotalWeight = itemGroundTotalWeight ?? (itemRulesVersion >= 3 ? 5253 : 600),
+            GroundTotalWeight = itemGroundTotalWeight ?? 5253,
             GroundPoolFingerprint = "ground-items",
             TmPoolSize = 124,
             TmPoolFingerprint = "tm-items",
@@ -351,7 +365,7 @@ public sealed class CompletedRunArchiveTests : IDisposable
         {
             Version = 1,
             RulesVersion = 1,
-            TargetPool = new VersionedPoolRecipePayload { Version = 2, Size = 100, Fingerprint = "fusion-evolution-targets" }
+            TargetPool = new VersionedPoolRecipePayload { Version = 1, Size = 100, Fingerprint = "fusion-evolution-targets" }
         }
     };
 
@@ -361,7 +375,7 @@ public sealed class CompletedRunArchiveTests : IDisposable
     /// <returns>The generator metadata.</returns>
     private static MoveAccessGeneratorRecipePayload CreateMoveGenerator() => new()
     {
-        Version = 6,
+        Version = 1,
         PoolFingerprint = "moves",
         ContextualRestrictionFingerprint = "move-restrictions",
         LevelUpSourceFingerprint = "move-source",

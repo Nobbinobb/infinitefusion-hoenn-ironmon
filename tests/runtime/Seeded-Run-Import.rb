@@ -1,7 +1,7 @@
 module IronmonSeededRunImportRuntimeTests
   OUTPUT_PATH = $ironmon_seeded_run_import_test_output_path.to_s
   EXPECTED_WORLD_SNAPSHOT_SHA256 =
-    "445ae131d085abb29bfeb2fdc44beac05a4588fda4d83ccb6e7a9d117a1190d4"
+    "860e4d84e09e98b41be0160b4e37206f0d9582d99bdebdffc544bb51499a78d5"
 
   def self.assert(condition, message)
     raise "Seeded-run import runtime test failed: #{message}" if !condition
@@ -10,6 +10,8 @@ module IronmonSeededRunImportRuntimeTests
   def self.compatibility_fixture
     return {
       "seed" => 123_456_789,
+      "generation_profile_id" =>
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "game_version" => "6.7.2",
       "ironmon_version" => "0.7.6",
       "configuration" => {
@@ -24,28 +26,28 @@ module IronmonSeededRunImportRuntimeTests
         "pool_fingerprint" => "species-a"
       },
       "ability_generator" => {
-        "version" => 3,
+        "version" => 1,
         "pool_size" => 310,
         "pool_fingerprint" => "abilities-a"
       },
       "base_stat_generator" => {
-        "version" => 2,
+        "version" => 1,
         "source_fingerprint" => "stats-a"
       },
       "evolution_generator" => {
-        "version" => 3,
-        "rules_version" => 3,
+        "version" => 1,
+        "rules_version" => 1,
         "source_fingerprint" => "evolutions-a",
         "taxonomy_fingerprint" => "taxonomy-a",
         "method_fingerprint" => "methods-a",
         "target_fingerprint" => "targets-a",
         "base_stat_generator" => {
-          "version" => 2,
+          "version" => 1,
           "source_fingerprint" => "stats-a"
         },
         "fusion" => {
-          "version" => 2,
-          "rules_version" => 2,
+          "version" => 1,
+          "rules_version" => 1,
           "target_pool" => {
             "version" => 1,
             "size" => 174_348,
@@ -54,7 +56,7 @@ module IronmonSeededRunImportRuntimeTests
         }
       },
       "move_access_generator" => {
-        "version" => 2,
+        "version" => 1,
         "pool_fingerprint" => "moves-a",
         "contextual_restriction_fingerprint" => "move-rules-a",
         "level_up_source_fingerprint" => "level-up-a",
@@ -77,13 +79,13 @@ module IronmonSeededRunImportRuntimeTests
         }
       },
       "player_fusion_generator" => {
-        "version" => 2,
+        "version" => 1,
         "pool_size" => 174_348,
         "pool_fingerprint" => "fusions-a"
       },
       "item_generator" => {
         "version" => 1,
-        "rules_version" => 3,
+        "rules_version" => 1,
         "ground_pool_size" => 580,
         "ground_total_weight" => 5_253,
         "ground_pool_fingerprint" => "items-a",
@@ -280,6 +282,9 @@ module IronmonSeededRunImportRuntimeTests
     original_pool_service = Ironmon.instance_variable_get(
       :@custom_fusion_pool_service
     )
+    original_profile_pool_services = Ironmon.instance_variable_get(
+      :@profile_custom_fusion_pool_services
+    )
     begin
       $PokemonGlobal = PokemonGlobalMetadata.new
       $game_switches = []
@@ -287,6 +292,10 @@ module IronmonSeededRunImportRuntimeTests
       pool_service = custom_fusion_pool_fixture
       Ironmon.instance_variable_set(
         :@custom_fusion_pool_service, pool_service
+      )
+      Ironmon.instance_variable_set(
+        :@profile_custom_fusion_pool_services,
+        { Ironmon.current_generation_profile_id => pool_service }
       )
       Ironmon.configuration = transaction_fixture["configuration"]
       generated_preset = Ironmon.apply_preset(:seed_import, seed, false)
@@ -404,6 +413,7 @@ module IronmonSeededRunImportRuntimeTests
         end
       }
     ensure
+      Ironmon.deactivate_run_generation_profile
       Ironmon.suspend_ability_randomization
       Ironmon.suspend_base_stat_randomization
       Ironmon.suspend_evolution_randomization
@@ -413,6 +423,10 @@ module IronmonSeededRunImportRuntimeTests
       Ironmon.reset_player_fusion_mapper_cache
       Ironmon.instance_variable_set(
         :@custom_fusion_pool_service, original_pool_service
+      )
+      Ironmon.instance_variable_set(
+        :@profile_custom_fusion_pool_services,
+        original_profile_pool_services
       )
       $PokemonGlobal = original_global
       $game_switches = original_switches
@@ -474,7 +488,7 @@ module IronmonSeededRunImportRuntimeTests
         )
         assert(
           actual == expected,
-          "schema-5 fusion BST range for #{materials.inspect} is " +
+          "fusion BST range for #{materials.inspect} is " +
             "#{expected.inspect}: #{actual.inspect}"
         )
       end
@@ -488,13 +502,13 @@ module IronmonSeededRunImportRuntimeTests
       reverse = preview_mapper.species(mewtwo, mudkip)
       assert(
         pairing_seconds < 15.0,
-        "schema-5 global player-fusion pairing completes in seconds: " +
+        "global player-fusion pairing completes in seconds: " +
           "#{pairing_seconds.round(3)} seconds"
       )
       assert(
         preview_mapper.paired_species(forward) == reverse &&
           preview_mapper.paired_species(reverse) == forward,
-        "schema-5 player orientations are the same global reverse pair"
+        "player orientations are the same global reverse pair"
       )
       blocked_seed = 1_851_036_422
       blocked_seed_mapper = Ironmon::PlayerFusionMapper.new(
@@ -506,7 +520,7 @@ module IronmonSeededRunImportRuntimeTests
       blocked_seed_mapper.prepare
       assert(
         blocked_seed_mapper.paired_species(forward),
-        "schema-5 repairs a blocked strength pairing before retrying the seed"
+        "the player-fusion mapper repairs a blocked strength pairing"
       )
       chained_seed = 116_872_428
       chained_mapper = Ironmon::PlayerFusionMapper.new(
@@ -576,7 +590,7 @@ module IronmonSeededRunImportRuntimeTests
         )
         assert(
           material_range.include?(result_bst),
-          "schema-5 player-fusion result stays inside its rolled BST range"
+          "the player-fusion result stays inside its rolled BST range"
         )
       end
       stat_probe = Ironmon::BaseStatGenerator.new(
@@ -600,28 +614,6 @@ module IronmonSeededRunImportRuntimeTests
             identity.to_s
         )
       end
-      indexed_mapper = Ironmon::PlayerFusionMapper.new(
-        seed, Ironmon.custom_fusion_pool, {}, {},
-        Ironmon::BaseStatGenerator.new(
-          seed, Ironmon.base_stat_source_fingerprint
-        ),
-        Ironmon::PlayerFusionMapper::PREVIOUS_SCHEMA_VERSION, nil, true
-      )
-      indexed_mapper.prepare
-      sample_ids = [1, 4, 7, 25, 94, 150, 251, 384, 493, NB_POKEMON]
-      sample_ids.each_with_index do |first_id, first_index|
-        sample_ids[first_index..-1].each do |second_id|
-          pair = [first_id, second_id]
-          indexed = indexed_mapper.send(:select_result_ids, pair)
-          linear = indexed_mapper.send(:select_result_ids_linear, pair)
-          assert(
-            indexed == linear,
-            "indexed player-fusion selection matches the schema-3 linear " +
-              "reference for #{pair.inspect}: #{indexed.inspect} != " +
-              linear.inspect
-          )
-        end
-      end
       reverse_mapper = Ironmon::PlayerFusionMapper.new(
         seed, Ironmon.custom_fusion_pool, {}, {},
         Ironmon::BaseStatGenerator.new(
@@ -631,13 +623,13 @@ module IronmonSeededRunImportRuntimeTests
       forward_materials = reverse_mapper.material_pairs_for(forward)
       assert(
         forward_materials.include?([mudkip.id_number, mewtwo.id_number]),
-        "schema-5 reverse materials include the pair used by its preview"
+        "reverse materials include the pair used by its preview"
       )
       assert(
         reverse_mapper.material_pairs_for(reverse).include?(
           [mewtwo.id_number, mudkip.id_number]
         ),
-        "schema-5 reverse materials preserve the preview orientation"
+        "reverse materials preserve the preview orientation"
       )
     ensure
       Ironmon.reset_custom_fusion_pool_cache
@@ -760,8 +752,9 @@ module IronmonSeededRunImportRuntimeTests
     )
     assert(
       fingerprint ==
-        "b505ea5986d3b34723f2d7e49b840e20468555b78da861e71335fb960ed0bac4",
-      "bundled runtime matches the tracker compatibility golden vector"
+        "c7260fe773407fb1764218e81494c95301d56d3ce0aa8b0c85fd2faddcf25b6d",
+      "bundled runtime matches the tracker compatibility golden vector: " +
+        fingerprint.to_s
     )
     ledger = {
       "current_attempt" => { "result" => "active", "attempt_number" => 4 },

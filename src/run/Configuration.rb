@@ -4,7 +4,7 @@
 
 module Ironmon
   class Configuration
-    SCHEMA_VERSION = 3
+    SCHEMA_VERSION = 1
 
     POLICY_MIXED = :mixed
     POLICY_CUSTOM_FUSIONS_ONLY = :custom_fusions_only
@@ -64,15 +64,6 @@ module Ironmon
       @automatic_reset = value == true
     end
 
-    def migrate!
-      self.wild_policy = @wild_policy
-      self.trainer_policy = @trainer_policy
-      self.unfusion_setting = @unfusion_setting
-      self.automatic_reset = @automatic_reset
-      @schema_version = SCHEMA_VERSION
-      return self
-    end
-
     def current?
       return false if @schema_version != SCHEMA_VERSION
       return false if !POLICY_IDS.include?(@wild_policy)
@@ -93,7 +84,10 @@ module Ironmon
     end
 
     def self.from(value)
-      return value.migrate! if value.is_a?(self)
+      return value if value.is_a?(self) && value.current?
+      if value.is_a?(self)
+        raise ArgumentError, "the saved Ironmon configuration is incompatible"
+      end
       if value.is_a?(Hash)
         wild_policy = value[:wild_policy] || value["wild_policy"]
         trainer_policy = value[:trainer_policy] || value["trainer_policy"]
@@ -107,9 +101,6 @@ module Ironmon
         return new(wild_policy, trainer_policy, unfusion_setting,
                    automatic_reset)
       end
-      return new
-    rescue Exception => e
-      echoln "Ironmon configuration migration failed; using defaults: #{e.message}"
       return new
     end
 
@@ -131,10 +122,9 @@ module Ironmon
   def self.configuration
     return Configuration.new if !$PokemonGlobal
     stored = $PokemonGlobal.ironmon_configuration
+    return Configuration.new if stored.nil?
     return stored if stored.is_a?(Configuration) && stored.current?
-    migrated = Configuration.from(stored)
-    $PokemonGlobal.ironmon_configuration = migrated
-    return migrated
+    raise ArgumentError, "the saved Ironmon configuration is incompatible"
   end
 
   def self.configuration=(value)

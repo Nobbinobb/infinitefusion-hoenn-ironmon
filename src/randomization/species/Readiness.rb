@@ -13,25 +13,6 @@ module Ironmon
     return true
   end
 
-  def self.legacy_species_mappings?
-    return $PokemonGlobal &&
-      $PokemonGlobal.ironmon_species_generator_version ==
-        SpeciesGenerator::LEGACY_SCHEMA_VERSION
-  end
-
-  def self.legacy_species_for(species, kind = :wild)
-    return species if !$PokemonGlobal
-    species_data = GameData::Species.try_get(species)
-    return species if !species_data
-    source_id = species_data.id_number
-    mapping = kind == :wild ? $PokemonGlobal.ironmon_wild_species_map :
-      $PokemonGlobal.ironmon_trainer_species_map
-    return species if !mapping.is_a?(Hash)
-    mapped_id = mapping[source_id]
-    mapped = GameData::Species.try_get(mapped_id)
-    return mapped ? mapped.id : species
-  end
-
   def self.generate_species_mappings
     raise SpeciesGenerationError, "run metadata is unavailable" if !$PokemonGlobal
     raise SpeciesGenerationError, "the custom fusion pool is unavailable" if
@@ -72,7 +53,6 @@ module Ironmon
 
   def self.refresh_invalid_species_mappings
     return false if !$PokemonGlobal
-    return true if legacy_species_mappings?
     prepare_wild_encounter_slot_mappings
     refresh_trainer_slot_mappings
     return true
@@ -149,12 +129,8 @@ Ironmon.register_game_load_hook(
   proc do |_save_data, _result|
     next if Ironmon.checkpoint_reset_loading?
     if Ironmon.active? && !Ironmon.current_species_mappings?
-      if !Ironmon.prepare_species_mappings
-        raise Ironmon::SpeciesGenerationError,
-              Ironmon.species_generation_error_message
-      end
-      Ironmon.record_custom_fusion_pool_metadata
-      echoln "Ironmon migrated legacy species mappings to the current generator."
+      raise Ironmon::SpeciesGenerationError,
+            "the saved species generator is incompatible"
     end
     if Ironmon.active?
       Ironmon.prepare_player_fusion_pairing

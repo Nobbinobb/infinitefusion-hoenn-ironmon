@@ -33,7 +33,7 @@ public static class SeedTokenConstants
     /// <summary>
     /// Gets the supported game configuration schema version.
     /// </summary>
-    public const int ConfigurationSchemaVersion = 3;
+    public const int ConfigurationSchemaVersion = 1;
 
     /// <summary>
     /// Gets the token contract-version claim.

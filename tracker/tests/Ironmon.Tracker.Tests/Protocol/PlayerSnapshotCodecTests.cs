@@ -5,6 +5,7 @@ namespace Ironmon.Tracker.Tests.Protocol;
 /// </summary>
 public sealed class PlayerSnapshotCodecTests
 {
+    private const string PackedFusionPool = "AQID";
     /// <summary>
     /// Initializes the player snapshot codec tests.
     /// </summary>
@@ -69,24 +70,26 @@ public sealed class PlayerSnapshotCodecTests
         FusionAssignmentRecipePayload recipe = new()
         {
             Seed = 42,
-            PlayerFusionGeneratorVersion = 3,
-            GeneratorVersion = 4,
-            RulesVersion = 2,
+            PlayerFusionGeneratorVersion = 1,
+            GeneratorVersion = 1,
+            RulesVersion = 1,
             SourceFingerprint = "sources",
             TaxonomyFingerprint = "taxonomy",
             MethodFingerprint = "methods",
             BaseStatSourceFingerprint = "stats",
-            TargetPoolVersion = 3,
+            TargetPoolVersion = 1,
             TargetPoolSize = 10,
-            TargetPoolFingerprint = "targets"
+            TargetPoolFingerprint = "targets",
+            PackedCustomFusionPool = PackedFusionPool
         };
         GameCurrentStatePayload state = new(true, "run-1", null, 9, fusionAssignments: recipe, activeRunPreparationReady: true);
 
         GameCurrentStatePayload restored = TrackerJson.DeserializePayload<GameCurrentStatePayload>(TrackerJson.SerializePayload(state));
 
         Assert.Equal(42, restored.FusionAssignments?.Seed);
-        Assert.Equal(3, restored.FusionAssignments?.PlayerFusionGeneratorVersion);
+        Assert.Equal(1, restored.FusionAssignments?.PlayerFusionGeneratorVersion);
         Assert.Equal("targets", restored.FusionAssignments?.TargetPoolFingerprint);
+        Assert.Equal(PackedFusionPool, restored.FusionAssignments?.PackedCustomFusionPool);
         Assert.True(restored.ActiveRunPreparationReady);
     }
 

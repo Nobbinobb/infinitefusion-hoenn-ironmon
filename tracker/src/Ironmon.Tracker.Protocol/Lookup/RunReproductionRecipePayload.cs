@@ -11,6 +11,11 @@ public abstract class RunReproductionRecipePayload
     public long Seed { get; init; }
 
     /// <summary>
+    /// Gets or initializes the immutable generation profile pinned when the run started.
+    /// </summary>
+    public required string GenerationProfileId { get; init; }
+
+    /// <summary>
     /// Gets or initializes the Infinite Fusion version.
     /// </summary>
     public required string GameVersion { get; init; }

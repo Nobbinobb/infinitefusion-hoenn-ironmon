@@ -95,7 +95,9 @@ The tracker embeds the release's aggregate type-coverage dataset. Type Coverage
 uses current damaging-move types by default and permits hypothetical selections
 across all standard types. The resource stores only defensive profiles and
 their Normal/Fusion population counts, never individual species or
-seed-generated opponents.
+seed-generated opponents. The release build derives it from the finalized
+generation profile's normal catalog and packed custom-fusion pool. Tests compare
+the resource directly with that profile so stale coverage cannot be packaged.
 
 While the connected game owns the foreground window, `Ctrl+1`, `Ctrl+2`,
 `Ctrl+3`, and `Ctrl+4` select Player, Enemy, Lookup, and Archive without focusing
@@ -135,8 +137,8 @@ self-contained `win-x64` application under `dist/Ironmon Tracker`. Pass
 application under `dist-runtime-required/Ironmon Tracker`. Run
 `tools/Build-TrackerRelease.ps1` to rebuild the Ruby distribution, publish both
 tracker variants, and create a deterministic release ZIP and checksum for each.
-The release command first regenerates and validates `area_catalog.dat`, the
-semantic obtainability source catalog, the fusion-predecessor index, the
-coverage dataset, and the item-randomization audit in the bundled game runtime.
-It aborts rather than packaging stale data and excludes the generators and
-audits from both player archives.
+The release command first regenerates the source catalogs and audits, finalizes
+and installs the generation profile, and only then generates its coverage
+dataset in the bundled game runtime. It validates coverage against the finalized
+profile before running the tracker tests. It aborts rather than packaging stale
+data and excludes the generators and audits from both player archives.

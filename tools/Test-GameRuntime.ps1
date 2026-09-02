@@ -29,6 +29,7 @@ $trainerRematchTestPath = Join-Path $projectRoot "tests\runtime\Trainer-Rematche
 $trainerBattleTestPath = Join-Path $projectRoot "tests\runtime\Trainer-Battles.rb"
 $difficultyScalingTestPath = Join-Path $projectRoot "tests\runtime\Difficulty-Scaling.rb"
 $newPlayerProtectionTestPath = Join-Path $projectRoot "tests\runtime\New-Player-Protections.rb"
+$pivotTransformationTestPath = Join-Path $projectRoot "tests\runtime\Pivot-Transformations.rb"
 $healingNpcTestPath = Join-Path $projectRoot "tests\runtime\Healing-NPCs.rb"
 $wallyTutorialTestPath = Join-Path $projectRoot "tests\runtime\Wally-Tutorial.rb"
 $repelOverlayTestPath = Join-Path $projectRoot "tests\runtime\Repel-Overlay.rb"
@@ -54,6 +55,7 @@ $trainerRematchResultPath = Join-Path $projectRoot "runtime-trainer-rematches.te
 $trainerBattleResultPath = Join-Path $projectRoot "runtime-trainer-battles.tests"
 $difficultyScalingResultPath = Join-Path $projectRoot "runtime-difficulty-scaling.tests"
 $newPlayerProtectionResultPath = Join-Path $projectRoot "runtime-new-player-protections.tests"
+$pivotTransformationResultPath = Join-Path $projectRoot "runtime-pivot-transformations.tests"
 $healingNpcResultPath = Join-Path $projectRoot "runtime-healing-npcs.tests"
 $wallyTutorialResultPath = Join-Path $projectRoot "runtime-wally-tutorial.tests"
 $repelOverlayResultPath = Join-Path $projectRoot "runtime-repel-overlay.tests"
@@ -76,6 +78,7 @@ $fusionPredecessorBenchmarkOutput = @()
 . (Join-Path $generationRoot "GameRuntime-Tooling.ps1")
 
 & (Join-Path $PSScriptRoot "Build-Distribution.ps1")
+& (Join-Path $PSScriptRoot "Test-Cosmetics.ps1") -GameRoot $resolvedGameRoot -TimeoutSeconds $TimeoutSeconds -SkipBuild
 & (Join-Path $generationRoot "Generate-Area-Catalog.ps1") `
     -GameRoot $resolvedGameRoot `
     -TimeoutSeconds $TimeoutSeconds `
@@ -125,6 +128,10 @@ $difficultyScalingTestSource = [IO.File]::ReadAllText(
 )
 $newPlayerProtectionTestSource = [IO.File]::ReadAllText(
     $newPlayerProtectionTestPath,
+    [Text.Encoding]::UTF8
+)
+$pivotTransformationTestSource = [IO.File]::ReadAllText(
+    $pivotTransformationTestPath,
     [Text.Encoding]::UTF8
 )
 $healingNpcTestSource = [IO.File]::ReadAllText(
@@ -197,6 +204,7 @@ $rubyTrainerRematchResultPath = $trainerRematchResultPath.Replace('\', '/')
 $rubyTrainerBattleResultPath = $trainerBattleResultPath.Replace('\', '/')
 $rubyDifficultyScalingResultPath = $difficultyScalingResultPath.Replace('\', '/')
 $rubyNewPlayerProtectionResultPath = $newPlayerProtectionResultPath.Replace('\', '/')
+$rubyPivotTransformationResultPath = $pivotTransformationResultPath.Replace('\', '/')
 $rubyHealingNpcResultPath = $healingNpcResultPath.Replace('\', '/')
 $rubyWallyTutorialResultPath = $wallyTutorialResultPath.Replace('\', '/')
 $rubyRepelOverlayResultPath = $repelOverlayResultPath.Replace('\', '/')
@@ -224,6 +232,7 @@ $bootstrapSource = @(
     "`$ironmon_trainer_battle_test_output_path = `"$rubyTrainerBattleResultPath`""
     "`$ironmon_difficulty_scaling_test_output_path = `"$rubyDifficultyScalingResultPath`""
     "`$ironmon_new_player_protection_test_output_path = `"$rubyNewPlayerProtectionResultPath`""
+    "`$ironmon_pivot_transformation_test_output_path = `"$rubyPivotTransformationResultPath`""
     "`$ironmon_healing_npc_test_output_path = `"$rubyHealingNpcResultPath`""
     "`$ironmon_wally_tutorial_test_output_path = `"$rubyWallyTutorialResultPath`""
     "`$ironmon_repel_overlay_test_output_path = `"$rubyRepelOverlayResultPath`""
@@ -244,6 +253,7 @@ $bootstrapSource = @(
     $scriptLoaderSource
     "IronmonScriptLoader.load_directory(`"Data/Scripts`", [/\A(?:998|999)/])"
     "GameData.load_all"
+    "Ironmon::Cosmetics.profile_directory = File.join(File.dirname(`"$rubyResultPath`"), `"data`", `"runtime-suite-cosmetics`")"
     $catchAssistanceTestSource
     $battleItemTestSource
     $battleRunHotkeyTestSource
@@ -253,6 +263,7 @@ $bootstrapSource = @(
     $trainerBattleTestSource
     $difficultyScalingTestSource
     $newPlayerProtectionTestSource
+    $pivotTransformationTestSource
     $healingNpcTestSource
     $wallyTutorialTestSource
     $repelOverlayTestSource
@@ -276,7 +287,7 @@ $bootstrapSource = @(
     "exit! 1"
     "end"
 ) -join "`n"
-Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $battleMoveTypeColorResultPath, $movePowerPresentationResultPath, $trainerRematchResultPath, $trainerBattleResultPath, $difficultyScalingResultPath, $newPlayerProtectionResultPath, $healingNpcResultPath, $wallyTutorialResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $runtimeHookResultPath, $wildEncounterFusionResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
+Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $battleMoveTypeColorResultPath, $movePowerPresentationResultPath, $trainerRematchResultPath, $trainerBattleResultPath, $difficultyScalingResultPath, $newPlayerProtectionResultPath, $pivotTransformationResultPath, $healingNpcResultPath, $wallyTutorialResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $runtimeHookResultPath, $wildEncounterFusionResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
     -Force `
     -ErrorAction SilentlyContinue
 try {
@@ -337,6 +348,11 @@ try {
         (Get-Content -LiteralPath $newPlayerProtectionResultPath -Raw).Trim() -ne
             "new-player protection runtime tests passed") {
         throw "The bundled runtime did not complete the new-player protection tests."
+    }
+    if (-not (Test-Path -LiteralPath $pivotTransformationResultPath) -or
+        (Get-Content -LiteralPath $pivotTransformationResultPath -Raw).Trim() -ne
+            "pivot transformation runtime tests passed") {
+        throw "The bundled runtime did not complete the pivot transformation tests."
     }
     if (-not (Test-Path -LiteralPath $healingNpcResultPath) -or
         (Get-Content -LiteralPath $healingNpcResultPath -Raw).Trim() -ne
@@ -464,7 +480,7 @@ try {
     )
 }
 finally {
-    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $movePowerPresentationResultPath, $battleMoveTypeColorResultPath, $trainerRematchResultPath, $trainerBattleResultPath, $difficultyScalingResultPath, $newPlayerProtectionResultPath, $healingNpcResultPath, $wallyTutorialResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $runtimeHookResultPath, $wildEncounterFusionResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath, $debugPokemonSearchTracePath, $playerFusionPreparationTracePath `
+    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $movePowerPresentationResultPath, $battleMoveTypeColorResultPath, $trainerRematchResultPath, $trainerBattleResultPath, $difficultyScalingResultPath, $newPlayerProtectionResultPath, $pivotTransformationResultPath, $healingNpcResultPath, $wallyTutorialResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $runtimeHookResultPath, $wildEncounterFusionResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath, $debugPokemonSearchTracePath, $playerFusionPreparationTracePath `
         -Force `
         -ErrorAction SilentlyContinue
 }
@@ -475,4 +491,4 @@ if ($evolutionPredecessorDiagnostic) {
 if ($fusionPredecessorBenchmarkOutput.Count -gt 1) {
     $fusionPredecessorBenchmarkOutput | Select-Object -Skip 1
 }
-Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, battle item, battle Run hotkey, battle move type color, move-power presentation, trainer rematch, trainer battle, difficulty scaling, new-player protection, healing NPC, Wally tutorial, Repel overlay, item randomization, seeded-run import, run-transition, early-game, runtime-hook, wild encounter fusion, deterministic-hashing, generator-metadata, evolution upward-expansion, move-access structure, and tracker structure tests passed."
+Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, battle item, battle Run hotkey, battle move type color, move-power presentation, trainer rematch, trainer battle, difficulty scaling, new-player protection, pivot transformation, healing NPC, Wally tutorial, Repel overlay, item randomization, seeded-run import, run-transition, early-game, runtime-hook, wild encounter fusion, deterministic-hashing, generator-metadata, evolution upward-expansion, move-access structure, and tracker structure tests passed."

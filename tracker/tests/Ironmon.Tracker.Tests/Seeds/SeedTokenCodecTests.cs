@@ -8,6 +8,7 @@ namespace Ironmon.Tracker.Tests.Seeds;
 /// </summary>
 public sealed class SeedTokenCodecTests
 {
+    private const string _testGenerationProfileId = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private static readonly byte[] _key = [.. Enumerable.Range(1, SeedTokenConstants.MinimumKeySize).Select(value => (byte)value)];
     private static readonly DateTimeOffset _issuedAt = new(2026, 8, 17, 12, 0, 0, TimeSpan.Zero);
     private readonly SeedTokenCodec _codec = new(_key);
@@ -229,7 +230,7 @@ public sealed class SeedTokenCodecTests
     {
         var missingAutomaticReset = new
         {
-            SchemaVersion = 3,
+            SchemaVersion = SeedTokenConstants.ConfigurationSchemaVersion,
             WildPolicy = "mixed",
             TrainerPolicy = "mixed",
             UnfusionSetting = "random_component"
@@ -237,7 +238,7 @@ public sealed class SeedTokenCodecTests
 
         var unexpectedProperty = new
         {
-            SchemaVersion = 3,
+            SchemaVersion = SeedTokenConstants.ConfigurationSchemaVersion,
             WildPolicy = "mixed",
             TrainerPolicy = "mixed",
             UnfusionSetting = "random_component",
@@ -333,13 +334,14 @@ public sealed class SeedTokenCodecTests
             Seed = seed,
             Result = result,
             ItemMappings = itemMappings ?? new Dictionary<string, string>(),
+            GenerationProfileId = _testGenerationProfileId,
             GameVersion = "6.7.2",
             IronmonVersion = "0.7.7",
             Configuration = CreateConfiguration(),
             DataMode = "classic",
             SpeciesGenerator = new SpeciesGeneratorRecipePayload { Version = 1, PoolFingerprint = "species" },
-            AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 3, PoolSize = 310, PoolFingerprint = "abilities" },
-            PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 174348, PoolFingerprint = "fusions" }
+            AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 1, PoolSize = 310, PoolFingerprint = "abilities" },
+            PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 1, PoolSize = 174348, PoolFingerprint = "fusions" }
         };
     }
 

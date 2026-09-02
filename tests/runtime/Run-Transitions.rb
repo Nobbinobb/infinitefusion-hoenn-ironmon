@@ -110,14 +110,18 @@ module IronmonRunTransitionRuntimeTests
   def self.with_active_run_runtime
     original_global = $PokemonGlobal
     original_switches = $game_switches
+    original_profile_id = Ironmon.run_generation_profile_id
     $PokemonGlobal = PokemonGlobalMetadata.new
     $PokemonGlobal.ironmon_mode = true
     $PokemonGlobal.ironmon_configuration = Ironmon::Configuration.new
     $game_switches = []
     return yield
   ensure
+    Ironmon.deactivate_run_generation_profile
     $PokemonGlobal = original_global
     $game_switches = original_switches
+    Ironmon.activate_run_generation_profile(original_profile_id) if
+      original_profile_id
   end
 
   def self.with_reset_stubs(generation_result, save_result)
@@ -389,50 +393,6 @@ module IronmonRunTransitionRuntimeTests
     )
   end
 
-  def self.test_checkpoint_load_skips_saved_run_migration
-    ironmon_singleton = class << Ironmon; self; end
-    ironmon_singleton.send(
-      :alias_method, :run_transition_original_migration_issues,
-      :saved_run_migration_issues
-    )
-    ironmon_singleton.send(
-      :alias_method, :run_transition_original_migration_confirmation,
-      :confirm_saved_run_migration
-    )
-    calls = []
-    ironmon_singleton.send(:define_method, :saved_run_migration_issues) do |_data|
-      calls << :issues
-      [:ability_randomization]
-    end
-    ironmon_singleton.send(:define_method, :confirm_saved_run_migration) do |*|
-      calls << :confirmation
-      true
-    end
-    result = Ironmon.with_checkpoint_reset_load do
-      Ironmon.begin_saved_run_migration({ :checkpoint => true })
-    end
-    assert(result, "internal checkpoint loading permits the baseline save")
-    assert(
-      calls.empty?,
-      "internal checkpoint loading does not evaluate or display migration"
-    )
-  ensure
-    ironmon_singleton.send(
-      :alias_method, :saved_run_migration_issues,
-      :run_transition_original_migration_issues
-    )
-    ironmon_singleton.send(
-      :remove_method, :run_transition_original_migration_issues
-    )
-    ironmon_singleton.send(
-      :alias_method, :confirm_saved_run_migration,
-      :run_transition_original_migration_confirmation
-    )
-    ironmon_singleton.send(
-      :remove_method, :run_transition_original_migration_confirmation
-    )
-  end
-
   def self.run
     test_ledger_completion_staging
     test_active_attempt_does_not_recover_completed_recipe
@@ -443,7 +403,6 @@ module IronmonRunTransitionRuntimeTests
     test_automatic_reset_does_not_republish_loss
     test_live_snapshot_restore_uses_normal_load
     test_checkpoint_load_failure_is_caught
-    test_checkpoint_load_skips_saved_run_migration
     File.binwrite(OUTPUT_PATH, "run-transition runtime tests passed\n")
   rescue Exception => exception
     File.binwrite(

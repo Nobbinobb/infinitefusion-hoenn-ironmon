@@ -181,63 +181,10 @@ module Ironmon
     return false
   end
 
-  def self.migrate_move_access_randomization_metadata
-    version = $PokemonGlobal.ironmon_move_access_generator_version
-    return false if
-      !MoveAccessGenerator::MIGRATABLE_SCHEMA_VERSIONS.include?(version)
-    return false if $PokemonGlobal.ironmon_move_pool_size !=
-      allowed_level_up_move_pool.length
-    return false if $PokemonGlobal.ironmon_move_pool_fingerprint !=
-      level_up_move_pool_fingerprint
-    return false if
-      $PokemonGlobal.ironmon_move_contextual_restriction_fingerprint !=
-      level_up_move_contextual_fingerprint
-    return false if $PokemonGlobal.ironmon_move_source_fingerprint !=
-      move_access_source_fingerprint
-    saved_egg_fingerprint =
-      $PokemonGlobal.ironmon_egg_move_source_fingerprint
-    return false if saved_egg_fingerprint &&
-      saved_egg_fingerprint != egg_move_access_source_fingerprint
-    optional_fields = MOVE_ACCESS_METADATA_FIELDS.drop(5)
-    optional_checks = move_access_metadata_checks.select do |check|
-      optional_fields.include?(check[0].to_sym)
-    end
-    return false if
-      !generator_metadata_compatible_when_present?(optional_checks)
-    validate_move_access_sources
-    record_generator_metadata(move_access_metadata_values)
-    echoln _INTL(
-      "Ironmon migrated move-access metadata from schema {1} to schema {2}.",
-      version, MoveAccessGenerator::SCHEMA_VERSION
-    )
-    return true
-  rescue Exception => e
-    echoln _INTL(
-      "Ironmon could not migrate move-access metadata: {1}", e.message
-    )
-    return false
-  end
-
   def self.ensure_move_access_randomization
     @move_access_randomization_ready = false
     return false if !$PokemonGlobal
-    if generator_metadata_absent?(MOVE_ACCESS_METADATA_FIELDS)
-      reset_move_access_generator_cache
-      echoln "Ironmon retained original move access for a pre-Step-3.3 run."
-      return true
-    end
-    migrate_move_access_randomization_metadata if
-      $PokemonGlobal.ironmon_move_access_generator_version !=
-      MoveAccessGenerator::SCHEMA_VERSION
     if !current_move_access_randomization?
-      if saved_run_migration_approved?(:move_access_randomization)
-        if !prepare_move_access_randomization
-          raise MoveAccessRandomizationError,
-                move_access_randomization_error_message
-        end
-        echoln "Ironmon migrated saved move-access randomization metadata."
-        return true
-      end
       raise MoveAccessRandomizationError,
             "the saved move-access generator or source data is incompatible"
     end

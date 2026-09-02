@@ -5,7 +5,6 @@
 module Ironmon
   def self.wild_species_for(species, context = nil)
     return species if !active?
-    return legacy_species_for(species, :wild) if legacy_species_mappings?
     context ||= wild_script_context(:unspecified)
     return species_generator(:wild).map(species, context)
   end
@@ -42,8 +41,7 @@ module Ironmon
     mapped_species = pokemon.species
     mapped_fusion = false
     species_data = GameData::Species.try_get(pokemon.species)
-    if !legacy_species_mappings? &&
-       configuration.wild_policy == Configuration::POLICY_NORMAL_ONLY &&
+    if configuration.wild_policy == Configuration::POLICY_NORMAL_ONLY &&
        species_data && species_data.id_number > NB_POKEMON &&
        species_data.id_number < Settings::ZAPMOLCUNO_NB
       mapped_species, mapped_fusion = prepare_wild_table_result(pokemon.species)
@@ -61,7 +59,6 @@ module Ironmon
 
   def self.trainer_species_for(species, context = nil)
     return species if !active?
-    return legacy_species_for(species, :trainer) if legacy_species_mappings?
     context ||= [:unspecified]
     return species_generator(:trainer).map(species, context)
   end
@@ -113,7 +110,7 @@ module Ironmon
   end
 
   def self.prepare_wild_table_result(species)
-    return [species, false] if !active? || legacy_species_mappings?
+    return [species, false] if !active?
     return [species, true] if wild_species_allowed?(species)
     return [species, false] if
       configuration.wild_policy != Configuration::POLICY_NORMAL_ONLY

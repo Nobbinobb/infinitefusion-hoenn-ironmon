@@ -21,6 +21,7 @@ public sealed class PokemonObtainabilityPayloadTests
             {
                 JobId = "run:job",
                 ObtainableFusionWords = [0U, 4U, uint.MaxValue],
+                DirectEncounterFusionIds = [505, 1_009],
                 PackedExecutableEvolutionEdges = [1, 129, 1, 170, 1],
                 ObtainableCount = 104_378
             }
@@ -34,6 +35,7 @@ public sealed class PokemonObtainabilityPayloadTests
         Assert.Equal(["BULBASAUR:0>IVYSAUR:0"], actual.EvolutionEdgeKeys);
         Assert.True(actual.Foreground);
         Assert.Equal([0U, 4U, uint.MaxValue], actual.FusionClosureResult!.ObtainableFusionWords);
+        Assert.Equal([505, 1_009], actual.FusionClosureResult.DirectEncounterFusionIds);
         Assert.Equal([1, 129, 1, 170, 1], actual.FusionClosureResult.PackedExecutableEvolutionEdges);
         Assert.Equal(104_378, actual.FusionClosureResult.ObtainableCount);
         Assert.DoesNotContain("first_material_id", payload.GetRawText(), StringComparison.Ordinal);
@@ -54,6 +56,7 @@ public sealed class PokemonObtainabilityPayloadTests
             {
                 JobId = "run:maximum-foreground-result",
                 ObtainableFusionWords = new uint[10_938],
+                DirectEncounterFusionIds = [.. Enumerable.Range(0, 3_000).Select(index => 502 + index)],
                 PackedExecutableEvolutionEdges = new byte[300_000],
                 ObtainableCount = 104_378
             }
@@ -86,16 +89,18 @@ public sealed class PokemonObtainabilityPayloadTests
                 JobId = "run:job",
                 SourceCatalogFingerprint = "source-catalog",
                 Seed = 123,
-                GeneratorVersion = 3,
+                GeneratorVersion = 1,
                 BaseStatSourceFingerprint = "stats",
-                CustomFusionPoolVersion = 2,
+                CustomFusionPoolVersion = 1,
                 CustomFusionPoolSize = 174_348,
                 CustomFusionPoolFingerprint = "pool",
+                PackedCustomFusionPool = "AQIDBA==",
                 MaterialIds = [1, 4, 7],
                 TotalPairs = 6,
                 ExcludedPairOffsets = [4],
-                FusionEvolutionGeneratorVersion = 4,
-                FusionEvolutionRulesVersion = 2,
+                DirectEncounterOnly = true,
+                FusionEvolutionGeneratorVersion = 1,
+                FusionEvolutionRulesVersion = 1,
                 EvolutionSourceFingerprint = "sources",
                 EvolutionTaxonomyFingerprint = "taxonomy",
                 EvolutionMethodFingerprint = "methods"
@@ -120,13 +125,17 @@ public sealed class PokemonObtainabilityPayloadTests
         Assert.Equal(["BULBASAUR:0>IVYSAUR:0"], actual.ObtainableEvolutionEdgeKeys);
         Assert.Equal([1, 4, 7], actual.FusionClosureWork!.MaterialIds);
         Assert.Equal([4], actual.FusionClosureWork.ExcludedPairOffsets);
-        Assert.Equal(4, actual.FusionClosureWork.FusionEvolutionGeneratorVersion);
-        Assert.Equal(2, actual.FusionClosureWork.FusionEvolutionRulesVersion);
+        Assert.True(actual.FusionClosureWork.DirectEncounterOnly);
+        Assert.Equal("AQIDBA==", actual.FusionClosureWork.PackedCustomFusionPool);
+        Assert.Equal(1, actual.FusionClosureWork.FusionEvolutionGeneratorVersion);
+        Assert.Equal(1, actual.FusionClosureWork.FusionEvolutionRulesVersion);
         Assert.Equal("sources", actual.FusionClosureWork.EvolutionSourceFingerprint);
         Assert.Equal("taxonomy", actual.FusionClosureWork.EvolutionTaxonomyFingerprint);
         Assert.Equal("methods", actual.FusionClosureWork.EvolutionMethodFingerprint);
         Assert.Equal(1, actual.Target.RequiredItems["MOONSTONE"]);
         Assert.Contains("\"status\":\"obtainable\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"packed_custom_fusion_pool\":\"AQIDBA==\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"direct_encounter_only\":true", json, StringComparison.Ordinal);
     }
 
     /// <summary>

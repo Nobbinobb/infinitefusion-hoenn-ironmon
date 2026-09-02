@@ -7,7 +7,7 @@ module Ironmon
 
   class EvolutionCatalog
     SCHEMA_VERSION = 1
-    RULES_VERSION = 3
+    RULES_VERSION = 1
     FIRST_STAGE_FALLBACK_LEVEL = 25
     INTERMEDIATE_FALLBACK_LEVEL = 35
     PRESERVED_METHODS = [
@@ -117,7 +117,7 @@ module Ironmon
     end
 
     def fingerprints_for_rules(rules_version)
-      return fingerprints_for(rules_version, rules_version >= 2)
+      return fingerprints_for(rules_version, true)
     end
 
     def required_target_types(source, branch)

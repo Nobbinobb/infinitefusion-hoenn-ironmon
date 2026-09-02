@@ -2,6 +2,7 @@ param(
     [string]$GameRoot = (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))),
     [string]$OutputPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "data\type_coverage.json"),
     [string]$AuditPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "docs\audits\generated\TYPE_COVERAGE_GENERATED.csv"),
+    [string]$GenerationProfilePath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "data\generation_profile.json"),
     [ValidateRange(1, 600)]
     [int]$TimeoutSeconds = 90,
     [switch]$ShowGameWindow
@@ -15,12 +16,14 @@ $resolvedGameRoot = [IO.Path]::GetFullPath($GameRoot)
 $resolvedProjectRoot = [IO.Path]::GetFullPath($projectRoot)
 $resolvedOutputPath = [IO.Path]::GetFullPath($OutputPath)
 $resolvedAuditPath = [IO.Path]::GetFullPath($AuditPath)
+$resolvedGenerationProfilePath = [IO.Path]::GetFullPath($GenerationProfilePath)
 $resolvedSourcePath = [IO.Path]::GetFullPath((Join-Path $projectRoot "src"))
 $resolvedSourceManifestPath = [IO.Path]::GetFullPath((Join-Path $resolvedSourcePath "load_order.json"))
 $loaderSourcePath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "Script-Loader.rb"))
 $exporterSource = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "Export-TypeCoverageDataset.rb"))
 Assert-PathWithinDirectory -Path $resolvedOutputPath -Directory $resolvedProjectRoot
 Assert-PathWithinDirectory -Path $resolvedAuditPath -Directory $resolvedProjectRoot
+Assert-PathWithinDirectory -Path $resolvedGenerationProfilePath -Directory $resolvedProjectRoot
 Assert-PathWithinDirectory -Path $resolvedSourcePath -Directory $resolvedGameRoot
 Assert-PathWithinDirectory -Path $resolvedSourceManifestPath -Directory $resolvedSourcePath
 Assert-PathWithinDirectory -Path $loaderSourcePath -Directory $resolvedGameRoot
@@ -34,6 +37,19 @@ if (-not (Test-Path -LiteralPath $exporterSource)) {
 if (-not (Test-Path -LiteralPath $resolvedSourceManifestPath)) {
     throw "The Ironmon Ruby source manifest was not found at '$resolvedSourceManifestPath'."
 }
+if (-not (Test-Path -LiteralPath $resolvedGenerationProfilePath)) {
+    throw "The finalized generation profile was not found at '$resolvedGenerationProfilePath'."
+}
+$generationProfile = Get-Content -LiteralPath $resolvedGenerationProfilePath -Raw | ConvertFrom-Json
+if ($generationProfile.profile_id -notmatch '^[0-9a-f]{64}$') {
+    throw "The finalized generation profile has an invalid identity."
+}
+$installedGenerationProfilePath = Join-Path $resolvedGameRoot "Data\Ironmon\generation_profile.json"
+if (-not (Test-Path -LiteralPath $installedGenerationProfilePath) -or
+    (Get-FileHash -LiteralPath $installedGenerationProfilePath -Algorithm SHA256).Hash -ne
+      (Get-FileHash -LiteralPath $resolvedGenerationProfilePath -Algorithm SHA256).Hash) {
+    throw "The bundled game does not contain the finalized generation profile. Run Build-Distribution.ps1 before generating type coverage."
+}
 
 $rubyOutputPath = $resolvedOutputPath.Replace('\', '/')
 $rubyAuditPath = $resolvedAuditPath.Replace('\', '/')
@@ -43,7 +59,7 @@ $rubySourceManifestPath = $resolvedSourceManifestPath.Replace('\', '/')
 $bootstrapMarker = "$rubyOutputPath.bootstrap"
 $loaderCode = [IO.File]::ReadAllText($loaderSourcePath, [Text.Encoding]::UTF8)
 $exporterCode = [IO.File]::ReadAllText($exporterSource, [Text.Encoding]::UTF8)
-$bootstrapSource = "File.binwrite(`"$bootstrapMarker`", `"bootstrap loaded\n`")`n`$ironmon_type_coverage_output_path = `"$rubyOutputPath`"`n`$ironmon_type_coverage_audit_path = `"$rubyAuditPath`"`n`$ironmon_type_coverage_game_root = `"$rubyGameRoot`"`n`$ironmon_type_coverage_source_path = `"$rubySourcePath`"`n`$ironmon_type_coverage_source_manifest_path = `"$rubySourceManifestPath`"`n$loaderCode`n$exporterCode"
+$bootstrapSource = "File.binwrite(`"$bootstrapMarker`", `"bootstrap loaded\n`")`n`$ironmon_type_coverage_output_path = `"$rubyOutputPath`"`n`$ironmon_type_coverage_audit_path = `"$rubyAuditPath`"`n`$ironmon_type_coverage_game_root = `"$rubyGameRoot`"`n`$ironmon_type_coverage_source_path = `"$rubySourcePath`"`n`$ironmon_type_coverage_source_manifest_path = `"$rubySourceManifestPath`"`n`$ironmon_type_coverage_profile_id = `"$($generationProfile.profile_id)`"`n$loaderCode`n$exporterCode"
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $resolvedOutputPath) | Out-Null
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $resolvedAuditPath) | Out-Null

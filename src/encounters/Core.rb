@@ -85,7 +85,6 @@ module Ironmon
     accepted = false
     if table_result
       species, accepted = prepare_wild_table_result(species)
-      accepted = true if legacy_species_mappings?
     end
     return species if accepted
     return wild_species_for(species, context)
@@ -180,7 +179,7 @@ class PokemonEncounters
   alias ironmon_original_setup setup
   def setup(map_id)
     result = ironmon_original_setup(map_id)
-    return result if !Ironmon.active? || Ironmon.legacy_species_mappings?
+    return result if !Ironmon.active?
     mode = getEncounterMode()
     data = mode.get(map_id, $PokemonGlobal.encounter_version)
     data = GameData::Encounter.get(
@@ -261,7 +260,7 @@ end
 
 alias ironmon_original_generate_wild_encounter generateWildEncounter
 def generateWildEncounter(encounter_type)
-  if !Ironmon.active? || Ironmon.legacy_species_mappings?
+  if !Ironmon.active?
     return ironmon_original_generate_wild_encounter(encounter_type)
   end
   if $PokemonSystem && $PokemonSystem.overworld_encounters
@@ -371,7 +370,7 @@ end
 
 alias ironmon_original_trigger_overworld_wild_battle trigger_overworld_wild_battle
 def trigger_overworld_wild_battle
-  if !Ironmon.active? || Ironmon.legacy_species_mappings?
+  if !Ironmon.active?
     return ironmon_original_trigger_overworld_wild_battle
   end
   return if $PokemonTemp.overworld_wild_battle_triggered

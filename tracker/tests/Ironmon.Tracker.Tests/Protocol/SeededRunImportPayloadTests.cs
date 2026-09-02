@@ -20,7 +20,7 @@ public sealed class SeededRunImportPayloadTests
             DataMode = "classic",
             Configuration = new RunConfigurationPayload
             {
-                SchemaVersion = 3,
+                SchemaVersion = 1,
                 WildPolicy = "mixed",
                 TrainerPolicy = "normal_only",
                 UnfusionSetting = "player_choice",

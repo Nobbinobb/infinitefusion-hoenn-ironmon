@@ -21,6 +21,7 @@ public static class RunCompatibilityFingerprint
         var manifest = new
         {
             SchemaVersion = 1,
+            recipe.GenerationProfileId,
             recipe.GameVersion,
             recipe.IronmonVersion,
             recipe.DataMode,

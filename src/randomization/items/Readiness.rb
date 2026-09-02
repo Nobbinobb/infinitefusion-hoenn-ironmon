@@ -67,35 +67,10 @@ module Ironmon
     return false
   end
 
-  def self.legacy_item_randomization?
-    return false if !$PokemonGlobal
-    return false if $PokemonGlobal.ironmon_item_generator_version
-    item_map = $PokemonGlobal.randomItemsHash
-    tm_map = $PokemonGlobal.randomTMsHash
-    return (item_map.is_a?(Hash) && !item_map.empty?) ||
-      (tm_map.is_a?(Hash) && !tm_map.empty?)
-  end
-
   def self.ensure_item_randomization
     @item_randomization_ready = false
     return false if !$PokemonGlobal
-    if legacy_item_randomization?
-      reset_item_generator_cache
-      return true
-    end
-    if generator_metadata_absent?([:ironmon_item_generator_version])
-      disable_base_item_randomization
-      reset_item_generator_cache
-      return true
-    end
     if !current_item_randomization?
-      if saved_run_migration_approved?(:item_randomization)
-        if !prepare_item_randomization
-          raise ItemRandomizationError, item_randomization_error_message
-        end
-        echoln "Ironmon migrated saved item randomization metadata."
-        return true
-      end
       raise ItemRandomizationError,
             "the saved item generator or item pools are incompatible"
     end

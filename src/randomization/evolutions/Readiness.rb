@@ -88,42 +88,18 @@ module Ironmon
     return false
   end
 
-  def self.legacy_evolution_randomization?
-    return false if !$PokemonGlobal
-    return generator_metadata_absent?(EVOLUTION_METADATA_FIELDS)
-  end
-
   def self.ensure_evolution_randomization
     @evolution_randomization_ready = false
     return false if !$PokemonGlobal
-    if legacy_evolution_randomization?
-      reset_evolution_generator_cache
-      echoln "Ironmon retained native evolutions for a pre-Step-3.4 run."
-      return true
+    metadata_missing = EVOLUTION_METADATA_FIELDS.any? do |field_name|
+      $PokemonGlobal.public_send(field_name).nil?
     end
-    legacy_version = legacy_generated_evolution_rules_version
-    if legacy_version
-      if !prepare_evolution_randomization
-        raise EvolutionRandomizationError,
-              evolution_randomization_error_message
-      end
-      if legacy_version == :fusion_rules_3
-        echoln "Ironmon upgraded saved fusion evolution rules from version 3 to version #{FusionEvolutionGenerator::RULES_VERSION}."
-      else
-        echoln "Ironmon upgraded saved evolution rules from version #{legacy_version} to version #{NormalEvolutionGenerator::RULES_VERSION}."
-      end
-      return true
+    if metadata_missing
+      raise EvolutionRandomizationError,
+            "the saved evolution generator metadata is incompatible"
     end
     if !current_evolution_randomization?
       mismatch = evolution_metadata_mismatch
-      if saved_run_migration_approved?(:evolution_randomization)
-        if !prepare_evolution_randomization
-          raise EvolutionRandomizationError,
-                evolution_randomization_error_message
-        end
-        echoln "Ironmon migrated saved evolution randomization metadata."
-        return true
-      end
       raise EvolutionRandomizationError,
             "the saved evolution #{mismatch} is incompatible"
     end
@@ -131,59 +107,6 @@ module Ironmon
     evolution_generator.graph
     @evolution_randomization_ready = true
     return true
-  end
-
-  def self.legacy_generated_evolution_rules_version
-    return nil if !$PokemonGlobal
-    return legacy_evolution_metadata_version(
-      $PokemonGlobal.ironmon_evolution_generator_version,
-      $PokemonGlobal.ironmon_evolution_rules_version,
-      $PokemonGlobal.ironmon_evolution_source_fingerprint,
-      $PokemonGlobal.ironmon_evolution_taxonomy_fingerprint,
-      $PokemonGlobal.ironmon_evolution_method_fingerprint,
-      $PokemonGlobal.ironmon_evolution_target_fingerprint,
-      $PokemonGlobal.ironmon_evolution_base_stat_generator_version,
-      $PokemonGlobal.ironmon_evolution_base_stat_source_fingerprint,
-      $PokemonGlobal.ironmon_evolution_fusion_generator_version,
-      $PokemonGlobal.ironmon_evolution_fusion_rules_version,
-      $PokemonGlobal.ironmon_evolution_fusion_target_pool_version,
-      $PokemonGlobal.ironmon_evolution_fusion_target_pool_size,
-      $PokemonGlobal.ironmon_evolution_fusion_target_pool_fingerprint
-    )
-  end
-
-  def self.legacy_evolution_metadata_version(generator_version, rules_version, source_fingerprint, taxonomy_fingerprint, method_fingerprint, target_fingerprint, stat_version, stat_fingerprint, fusion_generator_version, fusion_rules_version, fusion_pool_version, fusion_pool_size, fusion_pool_fingerprint)
-    catalog = evolution_catalog
-    fusion_pool = custom_fusion_pool_info
-    actual = [generator_version, rules_version, source_fingerprint,
-              taxonomy_fingerprint, method_fingerprint, target_fingerprint,
-              stat_version, stat_fingerprint, fusion_generator_version,
-              fusion_rules_version, fusion_pool_version, fusion_pool_size,
-              fusion_pool_fingerprint]
-    [1, 2].each do |version|
-      legacy = catalog.fingerprints_for_rules(version)
-      expected = [
-        NormalEvolutionGenerator::SCHEMA_VERSION, version, legacy[:source],
-        legacy[:taxonomy], legacy[:method], legacy[:target],
-        BaseStatGenerator::SCHEMA_VERSION, base_stat_source_fingerprint,
-        FusionEvolutionGenerator::SCHEMA_VERSION, version,
-        fusion_pool[:schema_version], fusion_pool[:size],
-        fusion_pool[:fingerprint]
-      ]
-      return version if actual == expected
-    end
-    expected_fusion_rules_3 = [
-      NormalEvolutionGenerator::SCHEMA_VERSION,
-      NormalEvolutionGenerator::RULES_VERSION,
-      catalog.source_fingerprint, catalog.taxonomy_fingerprint,
-      catalog.method_fingerprint, catalog.normal_target_fingerprint,
-      BaseStatGenerator::SCHEMA_VERSION, base_stat_source_fingerprint,
-      FusionEvolutionGenerator::SCHEMA_VERSION, 3,
-      fusion_pool[:schema_version], fusion_pool[:size],
-      fusion_pool[:fingerprint]
-    ]
-    return :fusion_rules_3 if actual == expected_fusion_rules_3
-    return nil
   end
 
   def self.evolution_randomization_active?

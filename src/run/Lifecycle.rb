@@ -61,7 +61,7 @@ module Ironmon
     return nil if number < 1
     seconds = value["active_seconds"].to_f
     seconds = 0.0 if seconds < 0.0
-    return {
+    attempt = {
       "attempt_number" => number,
       "run_id" => value["run_id"].to_s,
       "seed" => value["seed"].to_i,
@@ -73,6 +73,11 @@ module Ironmon
                         value["statistics"]
                       end
     }
+    if value.key?("generation_profile_id")
+      attempt["generation_profile_id"] =
+        value["generation_profile_id"].to_s
+    end
+    return attempt
   end
 
   def self.current_run_attempt
@@ -165,6 +170,8 @@ module Ironmon
     attempt = current_run_attempt
     if attempt
       $PokemonGlobal.ironmon_run_id = attempt["run_id"]
+      $PokemonGlobal.ironmon_generation_profile_id =
+        attempt["generation_profile_id"]
       result = attempt["result"]
       $PokemonGlobal.ironmon_run_result = result == "active" ? nil : result
     end
@@ -177,11 +184,13 @@ module Ironmon
     return nil if ledger["current_attempt"] &&
                   ledger["current_attempt"]["result"] == "active"
     number = ledger["next_attempt_number"]
+    profile_id = pin_current_generation_profile
     $PokemonGlobal.ironmon_seed = seed
     $PokemonGlobal.ironmon_run_id = new_tracker_run_id
     attempt = {
       "attempt_number" => number,
       "run_id" => $PokemonGlobal.ironmon_run_id,
+      "generation_profile_id" => profile_id,
       "seed" => seed.to_i,
       "result" => "active",
       "active_seconds" => 0.0,
@@ -194,6 +203,7 @@ module Ironmon
     ledger["current_attempt"] = attempt
     ledger["next_attempt_number"] = number + 1
     ledger["attempts_started"] += 1
+    activate_run_generation_profile(profile_id)
     $PokemonGlobal.ironmon_tracker_active_run_preparation_run_id = nil
     $PokemonGlobal.ironmon_run_result = nil
     reset_failed_run_runtime_state

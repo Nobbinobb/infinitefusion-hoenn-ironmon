@@ -49,23 +49,7 @@ module Ironmon
   def self.ensure_base_stat_randomization
     @base_stat_randomization_ready = false
     return false if !$PokemonGlobal
-    if generator_metadata_absent?([
-         :ironmon_base_stat_generator_version,
-         :ironmon_base_stat_source_fingerprint
-       ])
-      reset_base_stat_generator_cache
-      echoln "Ironmon retained original base stats for a pre-Step-3.2 run."
-      return true
-    end
     if !current_base_stat_randomization?
-      if saved_run_migration_approved?(:base_stat_randomization)
-        if !prepare_base_stat_randomization
-          raise BaseStatRandomizationError,
-                base_stat_randomization_error_message
-        end
-        echoln "Ironmon migrated saved base-stat randomization metadata."
-        return true
-      end
       raise BaseStatRandomizationError,
             "the saved base-stat generator or source data is incompatible"
     end

@@ -66,4 +66,9 @@ public sealed class FusionAssignmentRecipePayload
     /// Gets or initializes the custom target-pool fingerprint.
     /// </summary>
     public required string TargetPoolFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the packed exact custom-fusion pool membership used to construct a profile-scoped runtime worker.
+    /// </summary>
+    public string? PackedCustomFusionPool { get; init; }
 }

@@ -52,9 +52,8 @@ module Ironmon
   ].freeze
 
   class MoveAccessGenerator
-    SCHEMA_VERSION = 6
-    MIGRATABLE_SCHEMA_VERSIONS = [1, 2, 3, 4, 5].freeze
-    LEVEL_UP_RULES_VERSION = 2
+    SCHEMA_VERSION = 1
+    LEVEL_UP_RULES_VERSION = 1
     EGG_RULES_VERSION = 1
     TM_RULES_VERSION = 1
     TR_RULES_VERSION = 1

@@ -10,10 +10,12 @@ namespace Ironmon.Tracker.Tests.Connection;
 public sealed class TrackerConnectionServiceTests : IDisposable
 {
     private const string _activeRunId = "active-run";
+    private const string _archivedRunId = "archived-run";
     private const string _preparationTestGameVersion = "6.8.0";
     private const string _preparationTestIronmonVersion = "0.8.3";
     private const string _preparationTestTrackerVersion = "0.1.0";
     private const string _fusionPreparationFailureCode = "fusion_lookup_failed";
+    private const string _testGenerationProfileId = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private readonly List<string> _roots = [];
 
     /// <summary>
@@ -58,6 +60,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         TrackerProtocolException exception = new("obtainability_incomplete", "An acquisition source could not be classified.");
 
         Assert.True(TrackerConnectionService.IsObtainabilityPrecalculationTerminalFailure(exception));
+        Assert.True(TrackerConnectionService.IsObtainabilityPrecalculationTerminalFailure(new TrackerProtocolException(TrackerErrorCodes.InvalidQuery, "The worker result is malformed.")));
         Assert.True(TrackerConnectionService.IsObtainabilityPrecalculationTerminalFailure(new InvalidOperationException("Deterministic worker failure.")));
         Assert.False(TrackerConnectionService.IsObtainabilityPrecalculationTerminalFailure(new TrackerProtocolException("timeout", "Try again.")));
     }
@@ -77,14 +80,14 @@ public sealed class TrackerConnectionServiceTests : IDisposable
             preparationReady: preparationReady,
             runCompleted: runCompleted,
             runId: _activeRunId,
-            preparedRunId: null,
+            excludedRunId: null,
             archiveSelected: archiveSelected);
 
         Assert.Equal(expected, eligible);
     }
 
     /// <summary>
-    /// Verifies connecting to a ready active run starts background preparation without opening Lookup.
+    /// Verifies connecting to a ready active run starts background preparation promptly without opening Lookup.
     /// </summary>
     [Theory]
     [InlineData(false)]
@@ -109,11 +112,53 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         GameCurrentStatePayload currentState = new(true, _activeRunId, null, 0, activeRunPreparationReady: true);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(currentStateRequest.RequestId!, currentState, _activeRunId));
 
-        TrackerMessage preparationRequest = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(4)));
+        TrackerMessage preparationRequest = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(1)));
         Assert.Equal(TrackerCommands.PrepareRunLookup, preparationRequest.Command);
         Assert.False(TrackerJson.DeserializePayload<RunLookupPreparationRequestPayload>(preparationRequest.Payload).Foreground);
         PokemonObtainabilityResponsePayload completed = new() { BackgroundComplete = true };
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(preparationRequest.RequestId!, completed, _activeRunId));
+    }
+
+    /// <summary>
+    /// Verifies the background loop restores active-run readiness when archive activity displaced its local marker.
+    /// </summary>
+    [Fact]
+    public async Task ReadyActiveRunAutomaticallyReconfirmsPreparationAfterArchiveMarkerLoss()
+    {
+        TrackerConnectionState state = new();
+        TrackerConnectionOptions options = new(0, _preparationTestTrackerVersion, false, TimeSpan.FromSeconds(2));
+        await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, new TrackerRunState(), CreateKnowledgeStore(), CreateAreaDiscoveryStore(), CreateCompletedRunArchive());
+        service.Start();
+
+        using TcpClient client = new();
+        await client.ConnectAsync(IPAddress.Loopback, service.BoundPort);
+        NetworkStream stream = client.GetStream();
+        using TrackerMessageReader reader = new(stream, leaveOpen: true);
+        await using TrackerMessageWriter writer = new(stream, leaveOpen: true);
+        GameHandshakePayload game = new(_preparationTestGameVersion, _preparationTestIronmonVersion, true, false, TrackerTestPaths.GameRoot, _activeRunId, null);
+        await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.GameConnected, 0, game, _activeRunId));
+
+        _ = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        TrackerMessage currentStateRequest = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2)));
+        GameCurrentStatePayload currentState = new(true, _activeRunId, null, 0, activeRunPreparationReady: true);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(currentStateRequest.RequestId!, currentState, _activeRunId));
+
+        TrackerMessage initialPreparation = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(1)));
+        Assert.Equal(TrackerCommands.PrepareRunLookup, initialPreparation.Command);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(initialPreparation.RequestId!, new PokemonObtainabilityResponsePayload { BackgroundComplete = true }, _activeRunId));
+        await WaitForObtainabilityProgressAsync(service.Requests.ObtainabilityProgress, _activeRunId, TrackerObtainabilityProgressStatus.Complete);
+
+        service.Requests.SelectArchiveObtainabilityPrecalculation(_archivedRunId);
+        service.Requests.ObtainabilityProgress.Reset();
+        service.Requests.ClearArchiveObtainabilityPrecalculation(_archivedRunId);
+
+        TrackerMessage reconfirmation = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(1)));
+        Assert.Equal(TrackerCommands.PrepareRunLookup, reconfirmation.Command);
+        Assert.Equal(_activeRunId, reconfirmation.RunId);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(reconfirmation.RequestId!, new PokemonObtainabilityResponsePayload { BackgroundComplete = true }, _activeRunId));
+
+        TrackerObtainabilityProgressSnapshot restored = await WaitForObtainabilityProgressAsync(service.Requests.ObtainabilityProgress, _activeRunId, TrackerObtainabilityProgressStatus.Complete);
+        Assert.Equal(TrackerObtainabilityProgressScope.ActiveRun, restored.Scope);
     }
 
     /// <summary>
@@ -205,8 +250,8 @@ public sealed class TrackerConnectionServiceTests : IDisposable
             Runtime = CreateRuntimeDiagnostics(),
             Configuration = CreateConfiguration(),
             SpeciesGenerator = new SpeciesGeneratorRecipePayload { Version = 1, PoolFingerprint = "species" },
-            AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 3, PoolSize = 10, PoolFingerprint = "abilities" },
-            PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 10, PoolFingerprint = "fusions" },
+            AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 1, PoolSize = 10, PoolFingerprint = "abilities" },
+            PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 1, PoolSize = 10, PoolFingerprint = "fusions" },
             Mappings = new DebugMappingDiagnosticsSnapshot()
         };
 
@@ -451,7 +496,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
             DataMode = "classic",
             Configuration = new RunConfigurationPayload
             {
-                SchemaVersion = 3,
+                SchemaVersion = 1,
                 WildPolicy = "mixed",
                 TrainerPolicy = "normal_only",
                 UnfusionSetting = "player_choice",
@@ -889,8 +934,8 @@ public sealed class TrackerConnectionServiceTests : IDisposable
             Runtime = CreateRuntimeDiagnostics(),
             Configuration = CreateConfiguration(),
             SpeciesGenerator = new SpeciesGeneratorRecipePayload { Version = 1, PoolFingerprint = "species" },
-            AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 3, PoolSize = 10, PoolFingerprint = "abilities" },
-            PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 10, PoolFingerprint = "fusions" },
+            AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 1, PoolSize = 10, PoolFingerprint = "abilities" },
+            PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 1, PoolSize = 10, PoolFingerprint = "fusions" },
             Mappings = new DebugMappingDiagnosticsSnapshot()
         };
 
@@ -1203,6 +1248,29 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     }
 
     /// <summary>
+    /// Waits for one active run to reach the requested obtainability progress state.
+    /// </summary>
+    /// <param name="state">The shared obtainability progress source.</param>
+    /// <param name="runId">The active run being observed.</param>
+    /// <param name="status">The expected progress state.</param>
+    /// <returns>The first matching progress snapshot.</returns>
+    /// <exception cref="TimeoutException">Thrown when the expected progress is not published.</exception>
+    private static async Task<TrackerObtainabilityProgressSnapshot> WaitForObtainabilityProgressAsync(TrackerObtainabilityProgressState state, string runId, TrackerObtainabilityProgressStatus status)
+    {
+        DateTimeOffset deadline = DateTimeOffset.UtcNow.AddSeconds(3);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            TrackerObtainabilityProgressSnapshot snapshot = state.GetActiveRunSnapshot(runId);
+            if (snapshot.Status == status)
+                return snapshot;
+
+            await Task.Delay(10);
+        }
+
+        throw new TimeoutException("The expected obtainability progress was not published.");
+    }
+
+    /// <summary>
     /// Waits for live run state to satisfy an integration-test condition.
     /// </summary>
     /// <param name="state">The live run state being observed.</param>
@@ -1364,12 +1432,13 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         RunId = runId,
         Seed = 12345,
         Result = "lost",
+        GenerationProfileId = _testGenerationProfileId,
         GameVersion = "6.8.0",
         IronmonVersion = "0.3.3",
         Configuration = CreateConfiguration(),
         SpeciesGenerator = new SpeciesGeneratorRecipePayload { Version = 1, PoolFingerprint = "species" },
-        AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 3, PoolSize = 10, PoolFingerprint = "abilities" },
-        PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 2, PoolSize = 10, PoolFingerprint = "fusions" }
+        AbilityGenerator = new AbilityGeneratorRecipePayload { Version = 1, PoolSize = 10, PoolFingerprint = "abilities" },
+        PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 1, PoolSize = 10, PoolFingerprint = "fusions" }
     };
 
     /// <summary>

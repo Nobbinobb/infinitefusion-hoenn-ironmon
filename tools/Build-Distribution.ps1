@@ -7,6 +7,9 @@ Restore-IronmonGameRuntimeArchive -GameRoot $gameRoot | Out-Null
 $sourceRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot "src"))
 $sourceManifest = Join-Path $sourceRoot "load_order.json"
 $catalog = Join-Path $projectRoot "data\area_catalog.dat"
+$generationProfile = Join-Path $projectRoot "data\generation_profile.json"
+$generationBaseCatalog = Join-Path $projectRoot "data\generation_base_catalog.json"
+$generationCustomFusionPool = Join-Path $projectRoot "data\generation_custom_fusion_pool.bin"
 $obtainabilitySourceCatalog = Join-Path $projectRoot "data\obtainability_source_catalog.json"
 $movePowerPresentationCatalog = Join-Path $projectRoot "data\move_power_presentation.json"
 $defensePresentationCatalog = Join-Path $projectRoot "data\defense_presentation.json"
@@ -22,6 +25,16 @@ $releaseNotes = Join-Path $projectRoot "docs\releases\RELEASE_NOTES_0.8.3.md"
 $installation = Join-Path $gameRoot "Data\Scripts\997_Ironmon"
 $installationData = Join-Path $gameRoot "Data\Ironmon"
 $installationBattleGraphics = Join-Path $installationData "graphics\Battle"
+$generationProfileDocument = Get-Content -LiteralPath $generationProfile -Raw |
+    ConvertFrom-Json
+$generationProfileId = $generationProfileDocument.profile_id.ToString()
+if ($generationProfileId -notmatch '^[0-9a-f]{64}$') {
+    throw "The generated profile identity is invalid."
+}
+$distributionProfileStore = Join-Path $distributionData "generation_profiles"
+$installationProfileStore = Join-Path $installationData "generation_profiles"
+$distributionProfileDirectory = Join-Path $distributionProfileStore $generationProfileId
+$installationProfileDirectory = Join-Path $installationProfileStore $generationProfileId
 
 & (Join-Path $PSScriptRoot "generation\Generate-Move-Power-Presentation.ps1") `
     -OutputPath $movePowerPresentationCatalog
@@ -119,6 +132,23 @@ New-Item -ItemType Directory -Force -Path $installationData | Out-Null
 New-Item -ItemType Directory -Force -Path $distributionBattleGraphics | Out-Null
 New-Item -ItemType Directory -Force -Path $installationBattleGraphics | Out-Null
 
+if (Test-Path -LiteralPath $distributionProfileStore) {
+    $resolvedDistributionData = [IO.Path]::GetFullPath($distributionData).
+        TrimEnd([IO.Path]::DirectorySeparatorChar) +
+        [IO.Path]::DirectorySeparatorChar
+    $resolvedProfileStore = [IO.Path]::GetFullPath($distributionProfileStore)
+    if (!$resolvedProfileStore.StartsWith(
+        $resolvedDistributionData, [StringComparison]::OrdinalIgnoreCase
+    )) {
+        throw "The distribution profile store escapes the distribution data directory."
+    }
+    Remove-Item -LiteralPath $resolvedProfileStore -Recurse -Force
+}
+New-Item -ItemType Directory -Force -Path $distributionProfileDirectory |
+    Out-Null
+New-Item -ItemType Directory -Force -Path $installationProfileDirectory |
+    Out-Null
+
 Get-ChildItem -LiteralPath $distribution -Filter "*.rb" | Remove-Item -Force
 Get-ChildItem -LiteralPath $installation -Filter "*.rb" | Remove-Item -Force
 Remove-Item -LiteralPath (Join-Path $distributionData "area_catalog.json") -Force -ErrorAction SilentlyContinue
@@ -150,8 +180,29 @@ foreach ($runtimeRoot in $distribution, $installation) {
 }
 Copy-Item -LiteralPath $catalog -Destination (Join-Path $distributionData "area_catalog.dat")
 Copy-Item -LiteralPath $catalog -Destination (Join-Path $installationData "area_catalog.dat")
+Copy-Item -LiteralPath $generationProfile -Destination (Join-Path $distributionData "generation_profile.json")
+Copy-Item -LiteralPath $generationProfile -Destination (Join-Path $installationData "generation_profile.json")
+Copy-Item -LiteralPath $generationBaseCatalog -Destination (Join-Path $distributionData "generation_base_catalog.json")
+Copy-Item -LiteralPath $generationBaseCatalog -Destination (Join-Path $installationData "generation_base_catalog.json")
+Copy-Item -LiteralPath $generationCustomFusionPool -Destination (Join-Path $distributionData "generation_custom_fusion_pool.bin")
+Copy-Item -LiteralPath $generationCustomFusionPool -Destination (Join-Path $installationData "generation_custom_fusion_pool.bin")
 Copy-Item -LiteralPath $obtainabilitySourceCatalog -Destination (Join-Path $distributionData "obtainability_source_catalog.json")
 Copy-Item -LiteralPath $obtainabilitySourceCatalog -Destination (Join-Path $installationData "obtainability_source_catalog.json")
+$generationPackageFiles = @(
+    [pscustomobject]@{ Source = $generationProfile; Name = "generation_profile.json" },
+    [pscustomobject]@{ Source = $catalog; Name = "area_catalog.dat" },
+    [pscustomobject]@{ Source = $generationBaseCatalog; Name = "generation_base_catalog.json" },
+    [pscustomobject]@{ Source = $generationCustomFusionPool; Name = "generation_custom_fusion_pool.bin" },
+    [pscustomobject]@{ Source = $obtainabilitySourceCatalog; Name = "obtainability_source_catalog.json" }
+)
+foreach ($packageFile in $generationPackageFiles) {
+    Copy-Item -LiteralPath $packageFile.Source -Destination (
+        Join-Path $distributionProfileDirectory $packageFile.Name
+    )
+    Copy-Item -LiteralPath $packageFile.Source -Destination (
+        Join-Path $installationProfileDirectory $packageFile.Name
+    )
+}
 Copy-Item -LiteralPath $movePowerPresentationCatalog -Destination (Join-Path $distributionData "move_power_presentation.json")
 Copy-Item -LiteralPath $movePowerPresentationCatalog -Destination (Join-Path $installationData "move_power_presentation.json")
 Copy-Item -LiteralPath $defensePresentationCatalog -Destination (Join-Path $distributionData "defense_presentation.json")

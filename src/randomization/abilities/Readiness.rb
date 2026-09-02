@@ -93,52 +93,10 @@ module Ironmon
     return false
   end
 
-  def self.legacy_fusion_fallback_ability_randomization?
-    return false if !$PokemonGlobal
-    return generator_metadata_matches?(ability_metadata_checks(
-      AbilityGenerator::LEGACY_FUSION_FALLBACK_SCHEMA_VERSION
-    ))
-  rescue Exception
-    return false
-  end
-
-  def self.migrate_legacy_fusion_fallback_abilities
-    record_generator_metadata({
-      :ironmon_ability_generator_version => AbilityGenerator::SCHEMA_VERSION
-    })
-    reset_ability_generator_cache
-    ability_generator
-    @ability_randomization_ready = true
-    if $Trainer && $Trainer.party
-      $Trainer.party.each { |pokemon| normalize_ability_index(pokemon) }
-    end
-    echoln "Ironmon migrated fusion abilities to omit missing-slot fallbacks."
-    return true
-  end
-
   def self.ensure_ability_randomization
     @ability_randomization_ready = false
     return false if !$PokemonGlobal
-    if generator_metadata_absent?([
-         :ironmon_ability_generator_version,
-         :ironmon_ability_pool_fingerprint
-       ])
-      generated = prepare_ability_randomization
-      echoln "Ironmon migrated ability randomization metadata." if generated
-      return generated
-    end
-    if legacy_fusion_fallback_ability_randomization?
-      return migrate_legacy_fusion_fallback_abilities
-    end
     if !current_ability_randomization?
-      if saved_run_migration_approved?(:ability_randomization)
-        if !prepare_ability_randomization
-          raise AbilityRandomizationError,
-                ability_randomization_error_message
-        end
-        echoln "Ironmon migrated saved ability randomization metadata."
-        return true
-      end
       raise AbilityRandomizationError,
             "the saved ability generator or allowed pool is incompatible"
     end

@@ -29,7 +29,9 @@ module IronmonTypeCoverageExporter
       "normal_pool_fingerprint" =>
         Ironmon.species_pool_fingerprint(normal_pool),
       "fusion_pool_schema_version" =>
-        Ironmon::CustomFusionPool::SCHEMA_VERSION,
+        Ironmon.generation_profile_algorithm_version(
+          "custom_fusion_eligibility"
+        ),
       "fusion_pool_size" => fusion_pool.length,
       "fusion_pool_fingerprint" => Ironmon.custom_fusion_pool_info[:fingerprint],
       "profiles" => rows
@@ -173,8 +175,9 @@ audit_path = $ironmon_type_coverage_audit_path.to_s
 game_root = $ironmon_type_coverage_game_root.to_s
 source_path = $ironmon_type_coverage_source_path.to_s
 source_manifest_path = $ironmon_type_coverage_source_manifest_path.to_s
+profile_id = $ironmon_type_coverage_profile_id.to_s
 exit! 0 if output_path.empty? || game_root.empty? || source_path.empty? ||
-  source_manifest_path.empty?
+  source_manifest_path.empty? || profile_id.empty?
 begin
   Dir.chdir(game_root)
   File.binwrite("#{output_path}.progress", "exporter loaded\n")
@@ -187,11 +190,15 @@ begin
   end
   GameData.load_all
   $game_temp = Game_Temp.new
-  Game.load_custom_sprites_list_cache
-  File.open("#{output_path}.progress", "ab") do |file|
-    file.write("game data and custom sprite index loaded\n")
+  if Ironmon.current_generation_profile_id != profile_id
+    raise "installed generation profile does not match the requested profile"
   end
-  document = IronmonTypeCoverageExporter.run(output_path, audit_path)
+  File.open("#{output_path}.progress", "ab") do |file|
+    file.write("game data and generation profile loaded\n")
+  end
+  document = Ironmon.with_generation_profile(profile_id) do
+    IronmonTypeCoverageExporter.run(output_path, audit_path)
+  end
   File.binwrite(
     "#{output_path}.summary",
     "profiles=#{document["profiles"].length}\n" \

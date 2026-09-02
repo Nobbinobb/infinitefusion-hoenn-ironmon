@@ -28,6 +28,7 @@ module IronmonRuntimeHookTests
   def self.test_registered_hook_order
     assert(
       Ironmon.game_load_hook_names == [
+        :generation_profile,
         :ability_randomization,
         :base_stat_randomization,
         :evolution_randomization,
@@ -37,12 +38,13 @@ module IronmonRuntimeHookTests
         :species_randomization,
         :difficulty_enforcement,
         :diagnostics,
-        :tracker
+        :tracker,
+        :cosmetics
       ],
       "game-load callbacks retain their established unwind order"
     )
     assert(
-      Ironmon.game_save_hook_names == [:checkpoint, :run_lifecycle],
+      Ironmon.game_save_hook_names == [:checkpoint, :run_lifecycle, :cosmetics],
       "game-save callbacks retain their established wrapper order"
     )
     assert(
@@ -105,10 +107,64 @@ module IronmonRuntimeHookTests
       condition.parameters == [12, Ironmon::MODE_ENTRY_CONDITION_SCRIPT],
       "fresh-start mode selection no longer depends on an existing save"
     )
+    remaining_scripts = commands.map { |command| command.parameters[0] }
+      .select { |script| script.is_a?(String) }
+    Ironmon::MODE_ENTRY_LEGACY_RANDOMIZER_SCRIPTS.each do |script|
+      assert(
+        !remaining_scripts.include?(script),
+        "fresh-start base randomizer setup is deferred until mode selection"
+      )
+    end
     assert(
       !Ironmon.patch_mode_entry_map(1, map),
       "the mode-entry patch does not alter unrelated maps"
     )
+  end
+
+  def self.test_legacy_randomizer_common_event_suppression
+    assert(
+      Ironmon.legacy_randomizer_apply_common_event?(28),
+      "the base-game randomizer application event is identified"
+    )
+    assert(
+      !Ironmon.legacy_randomizer_apply_common_event?(15),
+      "the randomizer configuration event is not suppressed by identity"
+    )
+    assert(
+      !Ironmon.base_randomizer_setup_required?(:IRONMON),
+      "Ironmon does not initialize legacy randomizer hashes"
+    )
+    assert(
+      Ironmon.base_randomizer_setup_required?(:RANDOMIZED),
+      "ordinary Randomized Mode retains its legacy randomizer setup"
+    )
+
+    singleton = class << Ironmon; self; end
+    original_active = singleton.instance_method(:active?)
+    singleton.send(:define_method, :active?) { false }
+    assert(
+      !Ironmon.skip_legacy_randomizer_apply?(28),
+      "ordinary Randomized Mode delegates the base randomizer event"
+    )
+
+    singleton.send(:define_method, :active?) { true }
+    assert(
+      Ironmon.skip_legacy_randomizer_apply?(28),
+      "Ironmon suppresses the base randomizer event"
+    )
+    interpreter = Interpreter.allocate
+    interpreter.instance_variable_set(:@parameters, [28])
+    assert(
+      interpreter.command_117,
+      "Ironmon accepts the skipped legacy randomizer event"
+    )
+    assert(
+      !interpreter.instance_variable_get(:@child_interpreter),
+      "Ironmon does not execute the legacy randomizer event"
+    )
+  ensure
+    singleton.send(:define_method, :active?, original_active) if
+      singleton && original_active
   end
 
   def self.test_defeat_start_over_suppression
@@ -545,6 +601,7 @@ module IronmonRuntimeHookTests
     test_fresh_game_mode_availability
     test_uninitialized_map_scene_spriteset
     test_fresh_game_mode_entry
+    test_legacy_randomizer_common_event_suppression
     test_defeat_start_over_suppression
     test_encounter_hook_source_ownership
     test_statistics_source_ownership

@@ -6,10 +6,9 @@ module Ironmon
   class AbilityRandomizationError < StandardError; end
 
   class AbilityGenerator
-    SCHEMA_VERSION = 3
-    LEGACY_FUSION_FALLBACK_SCHEMA_VERSION = 2
-    ASSIGNMENT_SCHEMA_VERSION = 2
-    POOL_RULES_VERSION = 2
+    SCHEMA_VERSION = 1
+    ASSIGNMENT_SCHEMA_VERSION = 1
+    POOL_RULES_VERSION = 1
     EXACT_SPECIES_ABILITY_RULES = {
       :RKSSYSTEM       => [:SILVALLY],
       :BATTLEBOND      => [:GRENINJA],

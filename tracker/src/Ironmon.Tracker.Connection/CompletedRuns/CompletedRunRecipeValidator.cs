@@ -7,6 +7,9 @@ namespace Ironmon.Tracker.Connection.CompletedRuns;
 /// </summary>
 internal static class CompletedRunRecipeValidator
 {
+    private const string _generationProfilePropertyName = "generation_profile_id";
+    private const int _sha256HexLength = 64;
+
     /// <summary>
     /// Determines whether a JSON document has the required nested recipe contract.
     /// </summary>
@@ -15,6 +18,7 @@ internal static class CompletedRunRecipeValidator
     internal static bool HasRequiredShape(JsonElement root)
     {
         return root.ValueKind == JsonValueKind.Object
+            && HasStringProperty(root, _generationProfilePropertyName)
             && HasObjectProperty(root, "configuration")
             && HasObjectProperty(root, "species_generator")
             && HasObjectProperty(root, "ability_generator")
@@ -31,6 +35,9 @@ internal static class CompletedRunRecipeValidator
         ArgumentOutOfRangeException.ThrowIfNotEqual(recipe.SchemaVersion, 1);
         ArgumentException.ThrowIfNullOrWhiteSpace(recipe.RunId);
         ArgumentException.ThrowIfNullOrWhiteSpace(recipe.Result);
+        if (!IsLowercaseSha256(recipe.GenerationProfileId))
+            throw new ArgumentException("The generation profile ID must be a lowercase SHA-256 value.", nameof(recipe));
+
         ArgumentException.ThrowIfNullOrWhiteSpace(recipe.GameVersion);
         ArgumentException.ThrowIfNullOrWhiteSpace(recipe.IronmonVersion);
         ArgumentNullException.ThrowIfNull(recipe.Configuration);
@@ -82,6 +89,31 @@ internal static class CompletedRunRecipeValidator
         => root.TryGetProperty(propertyName, out JsonElement value) && value.ValueKind == JsonValueKind.Object;
 
     /// <summary>
+    /// Determines whether a JSON object contains one named non-empty string property.
+    /// </summary>
+    /// <param name="root">The containing JSON object.</param>
+    /// <param name="propertyName">The serialized property name.</param>
+    /// <returns><see langword="true"/> when the property exists and contains a non-empty string.</returns>
+    private static bool HasStringProperty(JsonElement root, string propertyName)
+    {
+        return root.TryGetProperty(propertyName, out JsonElement value)
+            && value.ValueKind == JsonValueKind.String
+            && !string.IsNullOrWhiteSpace(value.GetString());
+    }
+
+    /// <summary>
+    /// Determines whether a value is exactly one lowercase hexadecimal SHA-256 digest.
+    /// </summary>
+    /// <param name="value">The value to inspect.</param>
+    /// <returns><see langword="true"/> when the value is a lowercase SHA-256 digest.</returns>
+    private static bool IsLowercaseSha256(string? value)
+    {
+        return value is not null
+            && value.Length == _sha256HexLength
+            && value.All(character => character is >= '0' and <= '9' or >= 'a' and <= 'f');
+    }
+
+    /// <summary>
     /// Validates deterministic item-slot generator metadata.
     /// </summary>
     /// <param name="generator">The item generator metadata to validate.</param>
@@ -90,8 +122,7 @@ internal static class CompletedRunRecipeValidator
         ArgumentOutOfRangeException.ThrowIfLessThan(generator.Version, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(generator.RulesVersion, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(generator.GroundPoolSize, 1);
-        if (generator.RulesVersion >= 3)
-            ArgumentOutOfRangeException.ThrowIfLessThan(generator.GroundTotalWeight, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(generator.GroundTotalWeight, 1);
 
         ArgumentException.ThrowIfNullOrWhiteSpace(generator.GroundPoolFingerprint);
         ArgumentOutOfRangeException.ThrowIfLessThan(generator.TmPoolSize, 1);

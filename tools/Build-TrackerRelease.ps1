@@ -32,6 +32,8 @@ $areaCatalog = Join-Path $projectRoot "data\area_catalog.dat"
 $fusionPredecessorIndex = Join-Path $projectRoot "data\fusion_predecessor_index.dat"
 $playerFusionWorkerCatalog = Join-Path $projectRoot "data\player_fusion_worker_catalog.json"
 $areaAudit = Join-Path $projectRoot "docs\audits\generated\AREA_CATALOG_GENERATED.csv"
+$cosmeticAudit = Join-Path $projectRoot "docs\audits\generated\COSMETICS_GENERATED.json"
+$generatedCosmeticAudit = "$cosmeticAudit.release.tmp"
 $coverageDataset = Join-Path $projectRoot "data\type_coverage.json"
 $coverageAudit = Join-Path $projectRoot "docs\audits\generated\TYPE_COVERAGE_GENERATED.csv"
 $itemAudit = Join-Path $projectRoot "docs\audits\generated\ITEM_RANDOMIZATION_GENERATED.csv"
@@ -148,9 +150,9 @@ function Test-PlayerDistribution {
   $forbiddenFiles = Get-ChildItem -LiteralPath $DistributionPath -File -Recurse |
     Where-Object {
       $_.Name -match "AccessGenerator|private[-_ ]?key" -or
-      $_.Name -match "Generate-(?:Area-Catalog|Type-Coverage-Dataset|Item-Randomization-Audit|Obtainability-Foundation-Audit|Player-Fusion-Worker-Catalog|Defense-Presentation)" -or
-      $_.Name -match "Export-(?:AreaCatalog|TypeCoverageDataset|ItemRandomizationAudit|ObtainabilityFoundationAudit|PlayerFusionWorkerCatalog|DefensePresentation)" -or
-      $_.Name -match "(?:AREA_CATALOG|TYPE_COVERAGE|ITEM_RANDOMIZATION|OBTAINABILITY_FOUNDATION|DEFENSE_PRESENTATION)_GENERATED|DEFENSE_PRESENTATION_RULES|GameRuntime-Tooling|Script-Loader" -or
+      $_.Name -match "Generate-(?:Area-Catalog|Type-Coverage-Dataset|Item-Randomization-Audit|Obtainability-Foundation-Audit|Player-Fusion-Worker-Catalog|Defense-Presentation|Cosmetic-Audit)" -or
+      $_.Name -match "Export-(?:AreaCatalog|TypeCoverageDataset|ItemRandomizationAudit|ObtainabilityFoundationAudit|PlayerFusionWorkerCatalog|DefensePresentation|CosmeticAudit)" -or
+      $_.Name -match "(?:AREA_CATALOG|TYPE_COVERAGE|ITEM_RANDOMIZATION|OBTAINABILITY_FOUNDATION|DEFENSE_PRESENTATION|COSMETICS)_GENERATED|DEFENSE_PRESENTATION_RULES|GameRuntime-Tooling|Script-Loader" -or
       $_.Name -match "Test-GameRuntime|(?:Area-Progress|Diagnostic-Access)\.rb" -or
       $_.Name -match "\.(?:bootstrap|progress|summary|tests|tmp)$" -or
       $_.Extension -in ".ironmon-access", ".key", ".p8", ".p12", ".pfx", ".pem" -or
@@ -234,6 +236,8 @@ try {
 
 $generationStarted = [DateTime]::UtcNow.AddSeconds(-2)
 try {
+  & (Join-Path $PSScriptRoot "generation\Generate-Cosmetic-Audit.ps1") `
+    -GameRoot $gameRoot -OutputPath $generatedCosmeticAudit -PreviousPath $cosmeticAudit
   & (Join-Path $PSScriptRoot "generation\Generate-Defense-Presentation.ps1") `
     -GameRoot $gameRoot `
     -OutputPath $generatedDefensePresentationCatalog `
@@ -242,10 +246,6 @@ try {
     -GameRoot $gameRoot `
     -OutputPath $generatedAreaCatalog `
     -AuditPath $generatedAreaAudit
-  & (Join-Path $PSScriptRoot "generation\Generate-Type-Coverage-Dataset.ps1") `
-    -GameRoot $gameRoot `
-    -OutputPath $generatedCoverageDataset `
-    -AuditPath $generatedCoverageAudit
   & (Join-Path $PSScriptRoot "generation\Generate-Fusion-Predecessor-Index.ps1") `
     -GameRoot $gameRoot `
     -OutputPath $generatedFusionPredecessorIndex
@@ -257,7 +257,7 @@ try {
     -AreaCatalogPath $generatedAreaCatalog `
     -SourceCatalogPath $generatedObtainabilitySourceCatalog `
     -AuditPath $generatedObtainabilityAudit
-  foreach ($generatedPath in $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit, $generatedObtainabilityAudit, $generatedObtainabilitySourceCatalog, $generatedDefensePresentationCatalog, $generatedDefensePresentationAudit) {
+  foreach ($generatedPath in $generatedCosmeticAudit, $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedItemAudit, $generatedObtainabilityAudit, $generatedObtainabilitySourceCatalog, $generatedDefensePresentationCatalog, $generatedDefensePresentationAudit) {
     if (-not (Test-Path -LiteralPath $generatedPath) -or
         (Get-Item -LiteralPath $generatedPath).Length -eq 0) {
       throw "Release generation did not produce '$generatedPath'."
@@ -268,13 +268,12 @@ try {
   }
 
   foreach ($generatedFile in @(
+    @{ Generated = $generatedCosmeticAudit; Canonical = $cosmeticAudit },
     @{ Generated = $generatedDefensePresentationCatalog; Canonical = $defensePresentationCatalog },
     @{ Generated = $generatedDefensePresentationAudit; Canonical = $defensePresentationAudit },
     @{ Generated = $generatedAreaCatalog; Canonical = $areaCatalog },
     @{ Generated = $generatedAreaAudit; Canonical = $areaAudit },
     @{ Generated = $generatedFusionPredecessorIndex; Canonical = $fusionPredecessorIndex },
-    @{ Generated = $generatedCoverageDataset; Canonical = $coverageDataset },
-    @{ Generated = $generatedCoverageAudit; Canonical = $coverageAudit },
     @{ Generated = $generatedItemAudit; Canonical = $itemAudit },
     @{ Generated = $generatedObtainabilityAudit; Canonical = $obtainabilityAudit },
     @{ Generated = $generatedObtainabilitySourceCatalog; Canonical = $obtainabilitySourceCatalog }
@@ -288,7 +287,46 @@ try {
     }
   }
 } finally {
-  Remove-Item -LiteralPath $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedCoverageDataset, $generatedCoverageAudit, $generatedItemAudit, $generatedObtainabilityAudit, $generatedObtainabilitySourceCatalog, $generatedDefensePresentationCatalog, $generatedDefensePresentationAudit `
+  Remove-Item -LiteralPath $generatedCosmeticAudit, $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedItemAudit, $generatedObtainabilityAudit, $generatedObtainabilitySourceCatalog, $generatedDefensePresentationCatalog, $generatedDefensePresentationAudit `
+    -Force `
+    -ErrorAction SilentlyContinue
+}
+
+& (Join-Path $PSScriptRoot "generation\Generate-Generation-Profile.ps1") `
+  -GameRoot $gameRoot
+
+& (Join-Path $PSScriptRoot "Build-Distribution.ps1")
+
+$coverageGenerationStarted = [DateTime]::UtcNow.AddSeconds(-2)
+try {
+  & (Join-Path $PSScriptRoot "generation\Generate-Type-Coverage-Dataset.ps1") `
+    -GameRoot $gameRoot `
+    -OutputPath $generatedCoverageDataset `
+    -AuditPath $generatedCoverageAudit
+  foreach ($generatedPath in $generatedCoverageDataset, $generatedCoverageAudit) {
+    if (-not (Test-Path -LiteralPath $generatedPath) -or
+        (Get-Item -LiteralPath $generatedPath).Length -eq 0) {
+      throw "Release generation did not produce '$generatedPath'."
+    }
+    if ((Get-Item -LiteralPath $generatedPath).LastWriteTimeUtc -lt $coverageGenerationStarted) {
+      throw "Release generation left stale data at '$generatedPath'."
+    }
+  }
+
+  foreach ($generatedFile in @(
+    @{ Generated = $generatedCoverageDataset; Canonical = $coverageDataset },
+    @{ Generated = $generatedCoverageAudit; Canonical = $coverageAudit }
+  )) {
+    $canonicalExists = Test-Path -LiteralPath $generatedFile.Canonical
+    $contentChanged = -not $canonicalExists -or
+      (Get-FileHash -LiteralPath $generatedFile.Generated -Algorithm SHA256).Hash -ne
+        (Get-FileHash -LiteralPath $generatedFile.Canonical -Algorithm SHA256).Hash
+    if ($contentChanged) {
+      Copy-Item -LiteralPath $generatedFile.Generated -Destination $generatedFile.Canonical -Force
+    }
+  }
+} finally {
+  Remove-Item -LiteralPath $generatedCoverageDataset, $generatedCoverageAudit `
     -Force `
     -ErrorAction SilentlyContinue
 }
@@ -307,6 +345,10 @@ if ($LASTEXITCODE -ne 0) {
   throw "Tracker app tests failed."
 }
 
+& (Join-Path $PSScriptRoot "Test-GenerationProfile.ps1") `
+  -GameRoot $gameRoot `
+  -TimeoutSeconds 300
+
 & (Join-Path $PSScriptRoot "Test-GameRuntime.ps1") `
   -GameRoot $gameRoot `
   -TimeoutSeconds 300
@@ -314,7 +356,6 @@ if ($LASTEXITCODE -ne 0) {
 & (Join-Path $PSScriptRoot "Test-DefenseOverview.ps1")
 & (Join-Path $PSScriptRoot "Test-AreaEncounterLookup.ps1") -GameRoot $gameRoot
 
-& (Join-Path $PSScriptRoot "Build-Distribution.ps1")
 & (Join-Path $PSScriptRoot "Publish-Tracker.ps1") -DeploymentMode SelfContained
 
 $resolvedRuntimeRequiredDistribution = [System.IO.Path]::GetFullPath($runtimeRequiredDistribution)

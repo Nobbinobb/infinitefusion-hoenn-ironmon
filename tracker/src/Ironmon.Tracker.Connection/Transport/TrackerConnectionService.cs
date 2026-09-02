@@ -10,7 +10,6 @@ public sealed class TrackerConnectionService : IAsyncDisposable
 {
     private const string ObtainabilityIncompleteErrorCode = "obtainability_incomplete";
     private static readonly TimeSpan ObtainabilityPrecalculationInterval = TimeSpan.FromMilliseconds(250);
-    private static readonly TimeSpan ObtainabilityPrecalculationStartupDelay = TimeSpan.FromSeconds(2);
     private readonly Lock _lifecycleSync = new();
     private readonly TrackerDiagnosticAccessNotifier? _diagnosticAccessNotifier;
     private readonly TrackerDiagnosticsStore _diagnostics;
@@ -267,33 +266,44 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// <returns>A task representing the background polling loop.</returns>
     private async Task RunObtainabilityPrecalculationAsync(CancellationToken cancellationToken)
     {
-        string? completedRunId = null;
-        await Task.Delay(ObtainabilityPrecalculationStartupDelay, cancellationToken).ConfigureAwait(false);
+        string? observedRunId = null;
+        string? terminalFailureRunId = null;
         while (!cancellationToken.IsCancellationRequested)
         {
             TrackerConnectionSnapshot snapshot = _state.Snapshot;
             string? runId = snapshot.CurrentState?.RunId ?? snapshot.Game?.RunId;
+            if (!string.Equals(observedRunId, runId, StringComparison.Ordinal))
+            {
+                observedRunId = runId;
+                terminalFailureRunId = null;
+            }
+
             bool runCompleted = snapshot.CurrentState?.CompletedRun is not null;
+            bool activeRunPrepared = Requests.ObtainabilityProgress
+                .GetActiveRunSnapshot(runId)
+                .Status == TrackerObtainabilityProgressStatus.Complete;
+
+            if (activeRunPrepared && string.Equals(terminalFailureRunId, runId, StringComparison.Ordinal))
+                terminalFailureRunId = null;
+
             bool precalculationEligible = IsActiveRunObtainabilityPrecalculationEligible(
                 snapshot.CurrentState?.IronmonActive == true,
                 snapshot.CurrentState?.ActiveRunPreparationReady == true,
                 runCompleted,
                 runId,
-                completedRunId,
+                activeRunPrepared ? runId : terminalFailureRunId,
                 Requests.ArchiveObtainabilityPrecalculationSelected);
 
             if (precalculationEligible)
             {
                 try
                 {
-                    PokemonObtainabilityResponsePayload response = await Requests.AdvanceActiveRunPreparationAsync(foreground: false, cancellationToken: cancellationToken).ConfigureAwait(false);
-                    if (IsObtainabilityPrecalculationFinished(response))
-                        completedRunId = runId;
+                    await Requests.AdvanceActiveRunPreparationAsync(foreground: false, cancellationToken: cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (IsObtainabilityPrecalculationTerminalFailure(exception))
                 {
                     _diagnostics.RecordError(exception);
-                    completedRunId = runId;
+                    terminalFailureRunId = runId;
                 }
                 catch (Exception exception) when (exception is IOException or TimeoutException or TrackerProtocolException)
                 {
@@ -322,16 +332,16 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// <param name="preparationReady">Whether the game has reached the safe background-preparation boundary.</param>
     /// <param name="runCompleted">Whether the current run has already completed.</param>
     /// <param name="runId">The connected run identifier.</param>
-    /// <param name="preparedRunId">The run identifier already prepared by this loop.</param>
+    /// <param name="excludedRunId">The run identifier already prepared or stopped by a terminal failure.</param>
     /// <param name="archiveSelected">Whether an explicitly expanded archived run owns preparation.</param>
     /// <returns>True when active-run background preparation may advance; otherwise false.</returns>
-    internal static bool IsActiveRunObtainabilityPrecalculationEligible(bool ironmonActive, bool preparationReady, bool runCompleted, string? runId, string? preparedRunId, bool archiveSelected)
+    internal static bool IsActiveRunObtainabilityPrecalculationEligible(bool ironmonActive, bool preparationReady, bool runCompleted, string? runId, string? excludedRunId, bool archiveSelected)
     {
         return ironmonActive
             && preparationReady
             && !runCompleted
             && !string.IsNullOrWhiteSpace(runId)
-            && runId != preparedRunId
+            && runId != excludedRunId
             && !archiveSelected;
 
     }
@@ -345,7 +355,8 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(exception);
         return exception is InvalidOperationException
-            || exception is TrackerProtocolException protocolException && protocolException.ErrorCode == ObtainabilityIncompleteErrorCode;
+            || exception is TrackerProtocolException protocolException
+                && protocolException.ErrorCode is ObtainabilityIncompleteErrorCode or TrackerErrorCodes.InvalidQuery;
     }
 
     /// <summary>

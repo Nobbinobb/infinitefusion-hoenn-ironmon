@@ -6,12 +6,9 @@ module Ironmon
   class SpeciesGenerationError < StandardError; end
 
   class SpeciesGenerator
-    SCHEMA_VERSION = 3
-    PREVIOUS_SCHEMA_VERSION = 2
-    LEGACY_SCHEMA_VERSION = 1
-    SLOT_SCHEMA_VERSIONS = [PREVIOUS_SCHEMA_VERSION, SCHEMA_VERSION].freeze
-    SUPPORTED_SCHEMA_VERSIONS = [LEGACY_SCHEMA_VERSION,
-                                 *SLOT_SCHEMA_VERSIONS].freeze
+    SCHEMA_VERSION = 1
+    SLOT_SCHEMA_VERSIONS = [SCHEMA_VERSION].freeze
+    SUPPORTED_SCHEMA_VERSIONS = SLOT_SCHEMA_VERSIONS
     MIX_MULTIPLIER_ONE = 0xBF58476D1CE4E5B9
     MIX_MULTIPLIER_TWO = 0x94D049BB133111EB
 
@@ -116,7 +113,6 @@ module Ironmon
 
     def deterministic_category(source_id, context)
       value = deterministic_value(source_id, context, "category")
-      return value % 2 if @schema_version == PREVIOUS_SCHEMA_VERSION
       value ^= value >> 30
       value = (value * MIX_MULTIPLIER_ONE) & Ironmon::FNV1A_64_MASK
       value ^= value >> 27

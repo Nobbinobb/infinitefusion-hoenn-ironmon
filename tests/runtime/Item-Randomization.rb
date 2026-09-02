@@ -24,8 +24,8 @@ module IronmonItemRandomizationRuntimeTests
       Ironmon.item_result_bans.each do |item|
         assert(!ground_pool.include?(item), "#{item} is banned from results")
       end
-      assert(Ironmon.item_ground_pool(1).include?(:AIRMAIL),
-             "rules version 1 remains reconstructable")
+      assert(!Ironmon.item_ground_pool(1).include?(:AIRMAIL),
+             "rules version 1 uses the current result bans")
       assert(!ground_pool.include?(:AIRMAIL), "Mail is excluded")
       assert(!ground_pool.include?(:REDAPRICORN), "Apricorns are excluded")
       assert(!ground_pool.include?(:EXPSHARE), "Exp. Share is excluded")
@@ -93,18 +93,6 @@ module IronmonItemRandomizationRuntimeTests
       end
       assert(ticket_results.count(:HEAVY) > ticket_results.count(:LIGHT) * 7,
              "integer tickets increase deterministic selection frequency")
-      historical_generator = Ironmon.build_item_slot_generator(12_345, 2)
-      historical_slot = "map:4|event:7"
-      historical_hash = historical_generator.hash_value(
-        [Ironmon::ItemSlotGenerator::SCHEMA_VERSION, 12_345, "ground",
-         historical_slot].join("|")
-      )
-      assert(
-        historical_generator.ground_item(historical_slot) ==
-          Ironmon.item_ground_pool(2)[historical_hash %
-            Ironmon.item_ground_pool(2).length],
-        "rules version 2 retains uniform selection"
-      )
       begin
         generator.ground_item(nil)
         assert(false, "a missing slot identity must fail")

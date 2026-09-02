@@ -119,7 +119,8 @@ Create token, the tracker sends `export_seeded_run` with an empty payload and
 the active `run_id`. The game accepts only the matching active attempt with no
 pending reset or import, then returns `SeededRunExportPayload`: the shared
 reproduction recipe containing the seed, complete configuration, game and
-Ironmon versions, data mode, and generator compatibility manifests.
+Ironmon versions, data mode, the immutable generation-profile ID pinned when
+the attempt began, and generator compatibility manifests.
 
 The tracker calculates the canonical compatibility fingerprint and creates an
 `ironmon-seed+jwt` compact token with the public ordinary-tracker HS256
@@ -249,18 +250,21 @@ An active 0.8.3 run also includes optional aggregate type-coverage context:
     "trainer_policy": "mixed",
     "normal_pool_size": 576,
     "normal_pool_fingerprint": "5ab45fb7fa469aa5",
-    "fusion_pool_schema_version": 2,
-    "fusion_pool_size": 174346,
-    "fusion_pool_fingerprint": "4eda2dd4c6b08231"
+    "fusion_pool_schema_version": 1,
+    "fusion_pool_size": 176654,
+    "fusion_pool_fingerprint": "68e863503c00d52f"
   }
 }
 ```
 
 The context contains only the selected trainer category policy and release-pool
-compatibility metadata. It contains no run seed, generated species mapping,
-trainer slot, future roster, or species identity. Older game versions omit the
-whole optional object and remain protocol-compatible; the tracker disables only
-type coverage for that connection.
+compatibility metadata. The legacy-named `fusion_pool_schema_version` field is
+the pinned generation profile's `custom_fusion_eligibility` algorithm version;
+the packed component keeps its independently versioned storage schema. The
+context contains no run seed, generated species mapping, trainer slot, future
+roster, or species identity. Older game versions omit the whole optional object
+and remain protocol-compatible; the tracker disables only type coverage for
+that connection.
 
 ## Starter selection
 
@@ -499,7 +503,7 @@ produces an unavailable state rather than fabricated defenses.
 | Field | Meaning |
 | --- | --- |
 | `in_battle`, `limited_information` | Whether battle context is available and whether concealed enemy state is excluded. |
-| `type_matchups` | Incoming type identifiers/names, `base_multiplier`, and `multiplier` after known immunity/chart overrides. The optional `physical_min`, `physical_max`, `special_min`, and `special_max` fields contain combined relative factors, including conditional ranges. |
+| `type_matchups` | Incoming type identifiers/names, `base_multiplier`, and `multiplier` after known immunity/chart overrides. The optional `physical_min`, `physical_max`, `special_min`, and `special_max` fields contain combined relative factors, including conditional ranges but excluding Defense and Special Defense stat stages. |
 | `protections` | Compact effect objects with `label`, nullable `active`, and public `moves` catalogs. Duplicate labels are merged. |
 | `recovery` | Compact effect objects whose `label` is a passive trigger or active countdown, such as `Rain`, `Switch out`, or `Next turn end`; `healing_amounts` contains HP, cure, duration, or stage-restoration outcomes with applicable chance/one-use qualifiers. Repeated values represent independent contributions and must be preserved. The existing wire name is retained for compatibility. |
 | `modifiers`, `status_protections`, `move_protections`, `other_protections` | Supporting rule identifiers, nullable activity, types, affected moves, and known source metadata from game catalogs. These are not rendered directly by the compact view; summaries and prose conditions are not generated. |
@@ -664,39 +668,70 @@ When a run ends, the game persists its result in the save metadata and emits
   "run_id": "run-seed-918273645",
   "seed": 918273645,
   "result": "lost",
+  "generation_profile_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "game_version": "6.8.2",
   "ironmon_version": "0.8.3",
   "configuration": {
-    "schema_version": 3,
+    "schema_version": 1,
     "wild_policy": "mixed",
     "trainer_policy": "mixed",
     "unfusion_setting": "random_component",
     "automatic_reset": false
   },
   "data_mode": "classic",
-  "species_generator_version": 2,
-  "ability_generator_version": 3,
-  "base_stat_generator_version": 1,
-  "move_access_generator_version": 6,
-  "player_fusion_generator_version": 5,
-  "species_pool_fingerprint": "...",
-  "ability_pool_fingerprint": "...",
-  "base_stat_source_fingerprint": "...",
-  "move_pool_fingerprint": "...",
-  "move_contextual_restriction_fingerprint": "...",
-  "move_source_fingerprint": "...",
-  "egg_move_source_fingerprint": "...",
-  "tm_roster_fingerprint": "...",
-  "tm_source_fingerprint": "...",
-  "tr_roster_fingerprint": "...",
-  "tr_source_fingerprint": "...",
-  "tutor_catalog_fingerprint": "...",
-  "tutor_source_fingerprint": "...",
-  "fusion_tutor_catalog_fingerprint": "...",
-  "fusion_tutor_source_fingerprint": "...",
+  "species_generator": {
+    "version": 1,
+    "pool_fingerprint": "..."
+  },
+  "ability_generator": {
+    "version": 1,
+    "pool_size": 250,
+    "pool_fingerprint": "..."
+  },
+  "base_stat_generator": {
+    "version": 1,
+    "source_fingerprint": "..."
+  },
+  "evolution_generator": {
+    "version": 1,
+    "rules_version": 1,
+    "source_fingerprint": "...",
+    "taxonomy_fingerprint": "...",
+    "method_fingerprint": "...",
+    "target_fingerprint": "...",
+    "base_stat_generator": {
+      "version": 1,
+      "source_fingerprint": "..."
+    },
+    "fusion": {
+      "version": 1,
+      "rules_version": 1,
+      "target_pool": {
+        "version": 1,
+        "size": 174346,
+        "fingerprint": "..."
+      }
+    }
+  },
+  "move_access_generator": {
+    "version": 1,
+    "pool_fingerprint": "...",
+    "contextual_restriction_fingerprint": "...",
+    "level_up_source_fingerprint": "...",
+    "egg_source_fingerprint": "...",
+    "tm": { "roster_fingerprint": "...", "source_fingerprint": "..." },
+    "tr": { "roster_fingerprint": "...", "source_fingerprint": "..." },
+    "tutor": { "catalog_fingerprint": "...", "source_fingerprint": "..." },
+    "fusion_tutor": { "catalog_fingerprint": "...", "source_fingerprint": "..." }
+  },
+  "player_fusion_generator": {
+    "version": 1,
+    "pool_size": 174346,
+    "pool_fingerprint": "..."
+  },
   "item_generator": {
     "version": 1,
-    "rules_version": 3,
+    "rules_version": 1,
     "ground_pool_size": 580,
     "ground_total_weight": 5253,
     "ground_pool_fingerprint": "...",
@@ -711,8 +746,7 @@ When a run ends, the game persists its result in the save metadata and emits
   },
   "tm_mappings": {
     "TM01": "TM02"
-  },
-  "fusion_pool_fingerprint": "..."
+  }
 }
 ```
 
@@ -722,16 +756,12 @@ recipes atomically under
 `%LocalAppData%/IronmonTracker/runs/<run-id>/recipe.json`. It never persists
 the reconstructed lookup response.
 
-New recipes use `item_generator` to reconstruct physical-slot rewards from the
-run seed and the versioned pool manifest. Rules version 3 includes the
-exclusive category and integer weight of every ground result in the ground
-pool fingerprint; rules versions 1 and 2 remain uniform. TM gifts continue to
-select uniformly from their TM-only pool. `item_mappings` and `tm_mappings`
-remain optional compatibility fields for completed legacy attempts that used
-Infinite Fusion's runtime-RNG shuffle. Historical recipes with neither
-representation use already persisted area-entry details and leave unknown
-archived item identities concealed rather than consulting the currently loaded
-run.
+Recipes use `item_generator` to reconstruct physical-slot rewards from the run
+seed and the pinned version-1 pool manifest. Its ground-pool fingerprint
+includes the exclusive category and integer weight of every eligible result.
+TM gifts select uniformly from their TM-only pool. Missing or incompatible
+item metadata is rejected; archived lookup never substitutes the currently
+loaded run's mapping or authored item behavior.
 
 ## Deterministic post-run lookup
 
@@ -818,9 +848,10 @@ source species. Their displayed percentage is conditional on the separate
 wild-fusion event triggering because that trigger rate is not part of the
 completed-run recipe.
 
-Schema-version-1 runs reconstruct occurrences from their loaded saved source
-maps. Because those legacy maps are not derivable from the compact recipe,
-their occurrences are available only while that run's save is loaded.
+Occurrence lookup reconstructs mappings from the selected recipe and its pinned
+generation profile. It does not depend on the currently loaded save's source
+maps, so an archived run remains queryable while another compatible run is
+active.
 
 `fusion_preview` accepts two normal species identifiers and the same recipe.
 It returns the two ordered results, first-species body plus second-species head
@@ -832,23 +863,28 @@ material interval produced by the continuous fusion formula, not from its
 The tracker uses normal-only paged search to select the second material; it
 does not enumerate every possible fusion containing the selected species.
 
-Until the planned evolution generator is implemented in Ironmon 0.6.0, the
-evolution relationships describe the game's current natural evolution graph.
-They must not be presented as seeded randomized targets. A fusion's displayed
-body and head are its actual species-owned components; encounter or pivot input
-Pokemon do not replace those components.
+Evolution relationships use the selected run's version-1 deterministic
+evolution recipe and pinned profile. A fusion's displayed body and head are its
+actual species-owned components; encounter or pivot input Pokemon do not replace
+those components.
 
 Before any post-run command returns generated information, the game verifies
-that the run is complete and that the requested species, ability, base-stat,
+that the run is complete, that its recipe contains a lowercase SHA-256
+generation-profile ID, and that the requested species, ability, base-stat,
 move-access, and player-fusion generators plus their recorded source pools and
-catalogs still match. Recipes created before Step 3.3 have no move metadata and
-retain native move-access lookup. A mismatch returns a structured
-error such as `generator_unavailable`, `incompatible_species_pool`,
-`incompatible_ability_pool`, `incompatible_base_stats`, or
-`incompatible_move_access`, or `incompatible_fusion_pool`. A completed lost or
-won run remains available for
-lookup while another Ironmon run is active. A recipe that itself declares an
-active or missing result remains rejected.
+catalogs still match. A missing profile identity returns `invalid_recipe`.
+The runtime selects the content-addressed package named by that identity for
+the complete request, including its historical base data, custom-fusion pool,
+area catalog, and obtainability sources. A missing, damaged, or internally
+inconsistent package returns `generation_profile_unavailable` instead of
+falling back to current data. Other mismatches return a structured error such
+as `generator_unavailable`,
+`incompatible_species_pool`, `incompatible_ability_pool`,
+`incompatible_base_stats`, `incompatible_move_access`, or
+`incompatible_fusion_pool`. A completed lost or won run remains available for
+lookup while another Ironmon run is active when its immutable profile is
+available. A recipe that itself declares an active or missing result remains
+rejected.
 
 ## Authorized diagnostic inspection
 

@@ -243,6 +243,12 @@ public sealed class PlayerFusionClosureWorkPayload
     public required string CustomFusionPoolFingerprint { get; init; }
 
     /// <summary>
+    /// Gets the base64-encoded row-major membership bits from the pinned
+    /// generation-profile fusion index.
+    /// </summary>
+    public string PackedCustomFusionPool { get; init; } = string.Empty;
+
+    /// <summary>
     /// Gets or initializes the ordered normal material identifiers.
     /// </summary>
     public IReadOnlyList<int> MaterialIds { get; init; } = [];
@@ -261,6 +267,12 @@ public sealed class PlayerFusionClosureWorkPayload
     /// Gets or initializes the unordered pair offsets that can be encountered directly as wild fusions.
     /// </summary>
     public IReadOnlyList<int> DirectPairOffsets { get; init; } = [];
+
+    /// <summary>
+    /// Gets whether this stage maps only derived wild-encounter pairs before
+    /// the game expands their caught-fusion transformations.
+    /// </summary>
+    public bool DirectEncounterOnly { get; init; }
 
     /// <summary>
     /// Gets or initializes the directly caught fusion identifiers whose global reverse partners are obtainable.
@@ -360,6 +372,11 @@ public sealed class PlayerFusionClosureResultPayload
     /// Gets the packed final obtainability bitset in numeric custom-fusion order.
     /// </summary>
     public IReadOnlyList<uint> ObtainableFusionWords { get; init; } = [];
+
+    /// <summary>
+    /// Gets the mapped fusion identifiers that can be caught through derived wild encounters.
+    /// </summary>
+    public IReadOnlyList<int> DirectEncounterFusionIds { get; init; } = [];
 
     /// <summary>
     /// Gets sorted executable evolution edges packed as unsigned delta varints.
