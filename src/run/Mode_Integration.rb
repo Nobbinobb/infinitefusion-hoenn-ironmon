@@ -7,8 +7,24 @@ module Ironmon
   MODE_ENTRY_EVENT_ID = 1
   MODE_ENTRY_EVENT_NAME = "Intro"
   MODE_ENTRY_SELECTION_SCRIPT = "select_game_mode"
+  MODE_ENTRY_LEGACY_RANDOMIZER_SCRIPTS = [
+    "pbShuffleItems",
+    "pbShuffleTMs",
+    "Kernel.initRandomTypeArray()"
+  ].freeze
+  MODE_ENTRY_DEFERRED_SCRIPT =
+    "# Ironmon defers the base randomizer setup until its mode is known."
+  LEGACY_RANDOMIZER_APPLY_COMMON_EVENT_ID = 28
   MODE_ENTRY_CONDITION_SCRIPT =
     "Ironmon.mode_available? || $game_switches[SWITCH_NEW_GAME_PLUS]"
+
+  def self.legacy_randomizer_apply_common_event?(common_event_id)
+    return common_event_id == LEGACY_RANDOMIZER_APPLY_COMMON_EVENT_ID
+  end
+
+  def self.skip_legacy_randomizer_apply?(common_event_id)
+    return active? && legacy_randomizer_apply_common_event?(common_event_id)
+  end
 
   def self.patch_mode_entry_map(map_id, map)
     return false if map_id != MODE_ENTRY_MAP_ID || !map || !map.events
@@ -25,7 +41,28 @@ module Ironmon
     return false if condition.code != 111 ||
                     condition.parameters != [0, SWITCH_NEW_GAME_PLUS, 0]
     condition.parameters = [12, MODE_ENTRY_CONDITION_SCRIPT]
+    commands.each do |command|
+      next if ![355, 655].include?(command.code)
+      script = command.parameters[0]
+      next if !script.is_a?(String)
+      next if !MODE_ENTRY_LEGACY_RANDOMIZER_SCRIPTS.include?(script.strip)
+      command.parameters[0] = MODE_ENTRY_DEFERRED_SCRIPT
+    end
     return true
+  end
+
+  def self.base_randomizer_setup_required?(game_mode)
+    return game_mode != :IRONMON
+  end
+end
+
+class Interpreter
+  alias ironmon_mode_original_command_117 command_117
+  def command_117
+    if Ironmon.skip_legacy_randomizer_apply?(@parameters[0])
+      return true
+    end
+    return ironmon_mode_original_command_117
   end
 end
 
@@ -95,6 +132,11 @@ def select_game_mode
     end
   end
 
+  if Ironmon.base_randomizer_setup_required?(game_mode)
+    pbShuffleItems
+    pbShuffleTMs
+    Kernel.initRandomTypeArray
+  end
   apply_game_mode(game_mode)
   return game_mode
 end
