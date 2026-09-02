@@ -19,12 +19,12 @@ The documented release history begins with Ironmon 0.2.1. Legacy packages are
 kept for matching older Infinite Fusion installations; they are not compatible
 packages for the current game version.
 
-When an Ironmon save from an older game-data catalog is opened, Ironmon lists
-all affected randomization systems and asks once whether to migrate it. Choosing
-**No** returns to save selection without changing the save file. Choosing
-**Yes** refreshes the incompatible in-memory generator metadata for the current
-game version; generated results in the listed systems may change. The migration
-is written to disk only when the game is saved normally afterward.
+Every new Ironmon attempt pins an immutable generation-profile package. Normal
+in-place updates retain those content-addressed packages, so active runs and
+completed-run lookup continue to use their original game data, audits, custom
+fusion pool, and version-1 algorithms. Ironmon never migrates a run to the
+current package. If a pinned package is missing or damaged, the run is reported
+as unavailable rather than reconstructed with different data.
 
 ## Install from the release archive
 
@@ -49,10 +49,15 @@ is written to disk only when the game is saved normally afterward.
    while Infinite Fusion downloads missing sprite sheets. Some custom sprites
    may be absent or temporarily use a fallback until the game's local download
    allowance resets. This improves naturally as the local sprite cache fills.
-   To prepare the custom fusion library in advance, fully close Infinite Fusion and use
-   **Settings > Custom sprite library** in the tracker. This is a large download
-   and can require significant time and disk space. The tracker does not change
-   Infinite Fusion's `Download data` setting or its normal download limit.
+   To prepare or update the custom fusion and normal-species libraries, fully
+   close Infinite Fusion and use **Settings > Custom sprite library** in the
+   tracker. The first synchronization can be a large download. Later
+   synchronizations use the official server's change metadata, keep current
+   sheets without downloading their image data, and replace only missing or
+   changed sheets. Updated sheets also clear their tracker-generated
+   individual-sprite cache so new custom fusion sprites and normal-species
+   variants appear immediately. The tracker does not change Infinite Fusion's
+   `Download data` setting or its normal download limit.
 7. Start the game and select Ironmon when beginning a supported Hoenn run.
 
 ## Activate diagnostic access
@@ -79,17 +84,11 @@ Only accept access files received through a channel you trust. A token grants
 exactly its listed diagnostic information; it does not run code and does not
 modify gameplay state.
 
-Existing non-Ironmon saves retain their normal behavior. Ironmon runs created
-before 0.6.0 retain native evolutions because they do not declare evolution
-generator metadata. Start a new run or use F7 to enable generated evolutions.
-Development saves using evolution rules version 1 or 2 migrate to rules version
-3 when their exact legacy metadata still matches; already evolved Pokemon remain
-unchanged. Pre-release saves using normal evolution rules version 3 with fusion
-evolution rules version 3 migrate their fusion ordering to version 4 when every
-recorded catalog and dependency still matches. Their seed and current Pokemon
-state remain unchanged, while future fusion evolutions use the current ordering.
-Existing ability, base-stat, and move-access metadata continues to reproduce its
-assignments.
+Existing non-Ironmon saves retain their normal behavior. Pre-release Ironmon
+saves and archive recipes from before the version reset are intentionally not
+upgraded. Start a new run after installing this build. From this baseline onward,
+compatible runs retain their original profile and deterministic implementation;
+incompatible or incomplete metadata is rejected without rewriting the save.
 
 ## Share a seeded run
 

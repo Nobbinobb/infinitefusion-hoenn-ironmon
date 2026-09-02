@@ -3,7 +3,7 @@
 Ironmon stores an `Ironmon::Configuration` object in `PokemonGlobalMetadata`.
 It is serialized automatically with the rest of the save data.
 
-## Schema version 3
+## Schema version 1
 
 The wild and trainer settings use separate stable identifiers:
 
@@ -32,11 +32,11 @@ reset has no in-game confirmation message. If checkpoint loading, generation,
 or saving fails, the completed run stays locked and the game shows the
 actionable error. Wins never reset automatically.
 
-Proof-of-concept saves do not contain an `ironmon_configuration` value. The
-first Ironmon activity after loading creates a schema-version-3 configuration
-with all defaults. Schema-version-1 objects and hash-shaped development values
-are also migrated, with their existing wild, trainer, and unfusion choices
-preserved and automatic reset disabled.
+A save without an `ironmon_configuration` value receives a schema-version-1
+configuration with all defaults. A present serialized configuration must already
+match schema version 1 and contain valid fields; incompatible saved objects are
+rejected rather than migrated. Hash-shaped values remain accepted as explicit
+new configuration input, such as a validated seeded-run import.
 
 Before an F7 reset, Ironmon snapshots the current configuration. It restores
 that snapshot after loading the pre-starter checkpoint and before generating
