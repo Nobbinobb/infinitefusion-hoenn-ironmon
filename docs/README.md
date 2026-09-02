@@ -26,9 +26,8 @@ also suitable for saving as PDF.
 - `audits/area-content/` contains the detailed area-content snapshot used while
   the area catalog was designed.
 
-## Project history
+## Release history
 
-- [Roadmap](ROADMAP.md): milestone scope and release sequence.
 - [Release notes](releases/): version-specific changes from 0.2.1 onward.
 
 Historical validation records and the former collection of design notes were

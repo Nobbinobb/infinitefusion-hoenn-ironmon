@@ -10,7 +10,6 @@ and a fast reset to starter selection.
   maps each source file to its flat, numbered runtime filename.
 - `docs/IRONMON_MECHANICS.html` is the complete public mechanics manual.
 - `docs/README.md` is the compact documentation index.
-- `docs/ROADMAP.md` tracks milestone scope and status.
 - `docs/guides/` contains installation, configuration, and development guides.
 - `docs/releases/` contains versioned release notes.
 - `data/` contains release-generated runtime datasets.
@@ -25,7 +24,6 @@ and a fast reset to starter selection.
   SHA-256 checksums in `release/`.
 - `tools/generation/` contains release-data generators and their runtime bridge.
 
-Milestone 6 is on hold while optional quality-of-life features are developed.
 Version `0.8.4` pins each run to an immutable generation profile, keeps type
 coverage aligned with that exact profile, and smooths background fusion lookup
 preparation. It adds the shared cosmetic wardrobe, incremental custom-sprite
@@ -35,8 +33,8 @@ ordinary game modes retain it. The release also preserves player-matched special
 battles without applying Ironmon's additional level multiplier.
 See
 `docs/IRONMON_MECHANICS.html` for the complete behavior reference,
-`docs/ROADMAP.md` for cumulative scope, and `docs/guides/INSTALLATION.md` for
-installation steps and the current and legacy version compatibility table.
+and `docs/guides/INSTALLATION.md` for installation steps and the current and
+legacy version compatibility table.
 
 This repository is maintained independently from the official Pokemon Infinite
 Fusion game repository.
