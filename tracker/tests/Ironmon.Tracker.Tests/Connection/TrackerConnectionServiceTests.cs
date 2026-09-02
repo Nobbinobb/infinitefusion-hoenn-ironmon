@@ -12,7 +12,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     private const string _activeRunId = "active-run";
     private const string _archivedRunId = "archived-run";
     private const string _preparationTestGameVersion = "6.8.0";
-    private const string _preparationTestIronmonVersion = "0.8.3";
+    private const string _preparationTestIronmonVersion = "0.8.4";
     private const string _preparationTestTrackerVersion = "0.1.0";
     private const string _fusionPreparationFailureCode = "fusion_lookup_failed";
     private const string _testGenerationProfileId = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";

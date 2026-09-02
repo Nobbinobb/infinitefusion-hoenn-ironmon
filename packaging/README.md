@@ -1,4 +1,4 @@
-# Ironmon 0.8.3
+# Ironmon 0.8.4
 
 This distribution targets Pokemon Infinite Fusion 2 version 6.8.2.
 
@@ -6,15 +6,12 @@ Copy the included `Data` directory into the game directory and merge it with
 the existing `Data` directory. Only Ruby files are installed beneath
 `Data/Scripts/997_Ironmon`.
 
-Version 0.8.3 adds a compact defensive overview opened from a Pokemon's type
-text, including passive recovery and pending healing states. Derived wild
-fusions now share consistent encounter lookup and preparation. Basic Repels
-are available from Petalburg, and unavailable sprite downloads are remembered
-until explicitly rechecked. Effective level scaling, early-Hoenn safeguards,
-multi-opponent tracker targeting and PP state, shared sprite presentation,
-run-aware Pokémon obtainability, seeded-run sharing, battle-item control,
-aggregate type coverage, and signed, optionally expiring diagnostic access
-remain available.
+Version 0.8.4 pins new runs to immutable generation profiles so saved runs,
+completed-run lookup, and aggregate type coverage use the same exact data. It
+adds a shared cosmetic wardrobe with per-save equipped appearances, smooths
+background fusion preparation, synchronizes changed custom sprite sheets, and
+refines defensive multipliers and stat ordering. Ironmon starts no longer run
+the base game's redundant legacy randomization.
 The player package contains no maintainer generator, release-data generator,
 audit, or private signing-key material.
 

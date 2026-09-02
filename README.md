@@ -26,14 +26,13 @@ and a fast reset to starter selection.
 - `tools/generation/` contains release-data generators and their runtime bridge.
 
 Milestone 6 is on hold while optional quality-of-life features are developed.
-Version `0.8.3` adds compact live defensive overviews, including passive recovery
-and pending healing states. It aligns derived wild fusions with encounter lookup,
-adds shared lookup preparation, makes basic Repels available from Petalburg,
-and remembers unavailable sprite downloads with an explicit recheck option.
-It retains effective battle-level scaling, early-Hoenn safeguards, unified
-sprite presentation, run-aware obtainability, native fusion closure, seeded-run
-sharing, battle-item control, type coverage, signed diagnostic access, Favorite
-Clause, and the randomization safeguards from earlier releases.
+Version `0.8.4` pins each run to an immutable generation profile, keeps type
+coverage aligned with that exact profile, and smooths background fusion lookup
+preparation. It adds the shared cosmetic wardrobe, incremental custom-sprite
+synchronization, cleaner defensive multipliers, and the body/head stat layout.
+Ironmon starts now skip the base game's redundant legacy randomization while
+ordinary game modes retain it. The release also preserves player-matched special
+battles without applying Ironmon's additional level multiplier.
 See
 `docs/IRONMON_MECHANICS.html` for the complete behavior reference,
 `docs/ROADMAP.md` for cumulative scope, and `docs/guides/INSTALLATION.md` for

@@ -30,7 +30,7 @@ public sealed class SpriteDownloadSettingsTests
     private const string BaseManifestPath = "Data/sprites/BASE_SPRITES";
     private const string ManifestContents = "1.2.png\n1.2a.png\n";
     private const string ResourceName = "Ironmon.Tracker.App.Resources.Localization.TrackerResources";
-    private const string Version = "0.8.3";
+    private const string Version = "0.8.4";
     private const string ReviewAction = "ReviewSpriteInstallAsync";
     private const string RecheckAction = "ReviewUnavailableSpritesAsync";
     private const string StartAction = "StartSpriteInstallAsync";

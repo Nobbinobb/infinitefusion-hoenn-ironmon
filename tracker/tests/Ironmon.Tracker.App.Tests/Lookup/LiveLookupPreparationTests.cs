@@ -24,7 +24,7 @@ public sealed class LiveLookupPreparationTests
 {
     private const string _runId = "lookup-run";
     private const string _secondRunId = "next-lookup-run";
-    private const string _version = "0.8.3";
+    private const string _version = "0.8.4";
     private const string _rootName = "IronmonLookupUiTests";
     private const string _tabRole = "role=\"tablist\"";
     private const string _resourceName = "Ironmon.Tracker.App.Resources.Localization.TrackerResources";
