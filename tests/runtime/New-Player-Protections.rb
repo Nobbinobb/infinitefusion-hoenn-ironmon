@@ -180,8 +180,8 @@ module IronmonNewPlayerProtectionRuntimeTests
       with_ironmon_active(true) do
         labels = Ironmon.optional_trainer_choice_labels(page.list, choice_index)
         assert(
-          labels[0] == "Yes (lowest Lv. 32)",
-          "scaled adventurer Yes choice shows the actual Ironmon battle level"
+          labels[0] == "Yes (lowest Lv. 21)",
+          "player-matched adventurer Yes choice shows the unmultiplied battle level"
         )
         assert(labels[1] == "No", "scaled adventurer No choice is unchanged")
       end
@@ -207,7 +207,7 @@ module IronmonNewPlayerProtectionRuntimeTests
             interpreter.command_101
             assert(messages.length == 1, "embedded prompt displays one message")
             assert(
-              messages[0][1][0] == "Yes (lowest Lv. 32)",
+              messages[0][1][0] == "Yes (lowest Lv. 21)",
               "embedded prompt decorates Yes through the runtime interpreter"
             )
             assert(
@@ -233,8 +233,8 @@ module IronmonNewPlayerProtectionRuntimeTests
       with_ironmon_active(true) do
         labels = Ironmon.optional_trainer_choice_labels(page.list, choice_index)
         assert(
-          labels[0] == "Yes (lowest Lv. 32)",
-          "scaled move tutor shows the player-based Ironmon battle level"
+          labels[0] == "Yes (lowest Lv. 21)",
+          "player-matched move tutor shows the unmultiplied battle level"
         )
       end
     end
