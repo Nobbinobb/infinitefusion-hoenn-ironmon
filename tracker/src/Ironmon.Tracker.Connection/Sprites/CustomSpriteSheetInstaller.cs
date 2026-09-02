@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
@@ -6,7 +7,7 @@ using System.Text.RegularExpressions;
 namespace Ironmon.Tracker.Connection.Sprites;
 
 /// <summary>
-/// Installs missing custom fusion sprite sheets without changing Infinite Fusion's download settings.
+/// Synchronizes custom fusion and base-species sprite sheets without changing Infinite Fusion's download settings.
 /// </summary>
 public sealed partial class CustomSpriteSheetInstaller : IDisposable
 {
@@ -52,9 +53,39 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
     private const string CustomSpriteManifestRelativePath = "Data/sprites/CUSTOM_SPRITES";
 
     /// <summary>
+    /// Defines the game-relative base-species sprite manifest used to derive distinct sheets.
+    /// </summary>
+    private const string BaseSpriteManifestRelativePath = "Data/sprites/BASE_SPRITES";
+
+    /// <summary>
     /// Defines the game-owned destination directory consumed by <c>CustomSpriteExtracter</c>.
     /// </summary>
     private const string CustomSpriteSheetFolderRelativePath = "Graphics/CustomBattlers/spritesheets/spritesheets_custom";
+
+    /// <summary>
+    /// Defines the game-owned destination directory consumed by <c>BaseSpriteExtracter</c>.
+    /// </summary>
+    private const string BaseSpriteSheetFolderRelativePath = "Graphics/CustomBattlers/spritesheets/spritesheets_base";
+
+    /// <summary>
+    /// Defines the tracker-owned materialized sprite cache invalidated after a source sheet changes.
+    /// </summary>
+    private const string TrackerSpriteCacheRelativePath = "Graphics/CustomBattlers/local_sprites/IronmonTracker";
+
+    /// <summary>
+    /// Defines the cache filename used for the primary sprite variant.
+    /// </summary>
+    private const string MainSpriteVariant = "main";
+
+    /// <summary>
+    /// Defines the search pattern for materialized custom sprites derived from one head and variant sheet.
+    /// </summary>
+    private const string MaterializedSpriteSearchPattern = "custom-{0}-*-{1}.png";
+
+    /// <summary>
+    /// Defines the search pattern for every materialized normal-species variant derived from one base sheet.
+    /// </summary>
+    private const string MaterializedBaseSpriteSearchPattern = "base-{0}-0-*.png";
 
     /// <summary>
     /// Defines the suffix used for incomplete files so cancellation never exposes a partial PNG as installed.
@@ -69,12 +100,12 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
     /// <summary>
     /// Defines the error raised when a candidate installation lacks its custom-sprite manifest.
     /// </summary>
-    private const string InvalidManifestMessage = "The Infinite Fusion custom sprite manifest could not be found.";
+    private const string InvalidManifestMessage = "The Infinite Fusion custom sprite manifests could not be found.";
 
     /// <summary>
     /// Defines the error raised before any write when the represented game process is active.
     /// </summary>
-    private const string GameRunningMessage = "Close Infinite Fusion before downloading the custom sprite library.";
+    private const string GameRunningMessage = "Close Infinite Fusion before downloading the custom sprite libraries.";
 
     /// <summary>
     /// Defines the error raised when a completed response does not begin with the PNG signature.
@@ -90,6 +121,11 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
     /// Identifies Infinite Fusion's official true-size custom fusion spritesheet endpoint.
     /// </summary>
     private static readonly Uri CustomSpriteSheetBaseUri = new("https://infinitefusion.net/customsprites/spritesheets/spritesheets_custom/", UriKind.Absolute);
+
+    /// <summary>
+    /// Identifies Infinite Fusion's official true-size custom base-species spritesheet endpoint.
+    /// </summary>
+    private static readonly Uri BaseSpriteSheetBaseUri = new("https://infinitefusion.net/customsprites/spritesheets/spritesheets_base/", UriKind.Absolute);
 
     /// <summary>
     /// Contains the eight-byte signature required at the beginning of every installed PNG.
@@ -154,38 +190,44 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
     }
 
     /// <summary>
-    /// Builds a resumable installation plan from the game's current custom-sprite manifest.
+    /// Builds a resumable synchronization plan from the game's current custom-fusion and base-species manifests.
     /// </summary>
     /// <param name="gameRoot">The connected game root, or <see langword="null"/> to locate it beside the tracker.</param>
     /// <param name="includeUnavailable">Whether to also retry missing resources previously confirmed as HTTP 404.</param>
-    /// <returns>The sheets already present and still missing.</returns>
-    /// <exception cref="InvalidOperationException">The game root or custom-sprite manifest cannot be located.</exception>
+    /// <returns>The sheets already present and eligible for checking or download.</returns>
+    /// <exception cref="InvalidOperationException">The game root or either custom-sprite manifest cannot be located.</exception>
     /// <exception cref="IOException">The manifest or an existing candidate sheet cannot be read.</exception>
     /// <exception cref="UnauthorizedAccessException">The installation does not permit local inspection.</exception>
     public CustomSpriteInstallPlan CreatePlan(string? gameRoot = null, bool includeUnavailable = false)
     {
         string resolvedRoot = ResolveGameRoot(gameRoot);
-        string manifestPath = Path.Combine(resolvedRoot, CustomSpriteManifestRelativePath);
-        if (!File.Exists(manifestPath))
+        string customManifestPath = Path.Combine(resolvedRoot, CustomSpriteManifestRelativePath);
+        string baseManifestPath = Path.Combine(resolvedRoot, BaseSpriteManifestRelativePath);
+        if (!File.Exists(customManifestPath) || !File.Exists(baseManifestPath))
             throw new InvalidOperationException(InvalidManifestMessage);
 
-        string destinationRoot = Path.Combine(resolvedRoot, CustomSpriteSheetFolderRelativePath);
-        List<CustomSpriteSheetTarget> allSheets = [.. File.ReadLines(manifestPath)
-            .Select(CreateTarget)
+        IEnumerable<CustomSpriteSheetTarget?> targets = File.ReadLines(customManifestPath)
+            .Select(CreateCustomTarget)
+            .Concat(File.ReadLines(baseManifestPath).Select(CreateBaseTarget));
+
+        List<CustomSpriteSheetTarget> allSheets = [.. targets
             .Where(static target => target is not null)
             .Select(target => target!)
-            .DistinctBy(static target => target.RelativePath, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(static target => target.RelativePath, StringComparer.OrdinalIgnoreCase)
-            .Select(target => target with { DestinationPath = Path.Combine(destinationRoot, target.RelativePath.Replace('/', Path.DirectorySeparatorChar)) })];
+            .DistinctBy(static target => (target.Kind, target.RelativePath))
+            .OrderBy(static target => target.Kind)
+            .ThenBy(static target => target.RelativePath, StringComparer.OrdinalIgnoreCase)
+            .Select(target => target with { DestinationPath = GetDestinationPath(resolvedRoot, target) })
+            .Select(target => target with { HasValidLocalFile = IsValidPng(target.DestinationPath) })];
 
         HashSet<string> unavailable = CustomSpriteUnavailableStore.Read(resolvedRoot);
-        List<CustomSpriteSheetTarget> missingSheets = [.. allSheets.Where(static target => !IsValidPng(target.DestinationPath))];
-        List<CustomSpriteSheetTarget> pendingSheets = [.. missingSheets.Where(target => includeUnavailable || !unavailable.Contains(new Uri(CustomSpriteSheetBaseUri, target.RelativePath).AbsoluteUri))];
-        return new CustomSpriteInstallPlan(resolvedRoot, pendingSheets, allSheets.Count, missingSheets.Count - pendingSheets.Count);
+        List<CustomSpriteSheetTarget> pendingSheets = [.. allSheets.Where(target => target.HasValidLocalFile || includeUnavailable || !unavailable.Contains(GetResourceUri(target).AbsoluteUri))];
+        int existingSheetCount = allSheets.Count(static target => target.HasValidLocalFile);
+        int unavailableSheetCount = allSheets.Count(target => !target.HasValidLocalFile && !includeUnavailable && unavailable.Contains(GetResourceUri(target).AbsoluteUri));
+        return new CustomSpriteInstallPlan(resolvedRoot, pendingSheets, allSheets.Count, existingSheetCount, unavailableSheetCount);
     }
 
     /// <summary>
-    /// Downloads every missing sheet in a prepared plan with bounded concurrency and retry backoff.
+    /// Checks every eligible sheet and downloads missing or changed content with bounded concurrency and retry backoff.
     /// </summary>
     /// <param name="plan">The prepared installation plan.</param>
     /// <param name="progress">The optional progress observer.</param>
@@ -201,6 +243,7 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
             throw new InvalidOperationException(GameRunningMessage);
 
         HashSet<string> previouslyUnavailable = CustomSpriteUnavailableStore.Read(plan.GameRoot);
+        ConcurrentDictionary<string, CustomSpriteSheetSyncMetadata> synchronizationMetadata = new(CustomSpriteSheetSyncStore.Read(plan.GameRoot), StringComparer.OrdinalIgnoreCase);
         using CancellationTokenSource downloadCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         int gameStarted = 0;
         bool StopIfGameStarted()
@@ -216,6 +259,7 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
         Task gameMonitor = MonitorGameProcessAsync(StopIfGameStarted, downloadCancellation.Token);
         int completed = 0;
         int downloaded = 0;
+        int unchanged = 0;
         int failed = 0;
         int unavailable = plan.UnavailableSheetCount;
         long downloadedBytes = 0;
@@ -225,7 +269,7 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
         {
             await Parallel.ForEachAsync(plan.PendingSheets, options, async (target, token) =>
             {
-                Uri resource = new(CustomSpriteSheetBaseUri, target.RelativePath);
+                Uri resource = GetResourceUri(target);
                 try
                 {
                     token.ThrowIfCancellationRequested();
@@ -234,14 +278,30 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
 
                     try
                     {
-                        long bytes = await DownloadSheetAsync(target, StopIfGameStarted, token).ConfigureAwait(false);
-                        Interlocked.Add(ref downloadedBytes, bytes);
-                        Interlocked.Increment(ref downloaded);
+                        CustomSpriteSheetSyncOutcome outcome = await SynchronizeSheetAsync(target, synchronizationMetadata, StopIfGameStarted, token).ConfigureAwait(false);
+                        if (outcome.DownloadedBytes > 0)
+                        {
+                            InvalidateMaterializedSprites(plan.GameRoot, target);
+                            Interlocked.Add(ref downloadedBytes, outcome.DownloadedBytes);
+                            Interlocked.Increment(ref downloaded);
+                        }
+                        else
+                        {
+                            Interlocked.Increment(ref unchanged);
+                        }
                     }
                     catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
                     {
-                        CustomSpriteUnavailableStore.SetUnavailable(plan.GameRoot, resource, true);
-                        Interlocked.Increment(ref unavailable);
+                        if (IsValidPng(target.DestinationPath))
+                        {
+                            CustomSpriteUnavailableStore.SetUnavailable(plan.GameRoot, resource, false);
+                            Interlocked.Increment(ref unchanged);
+                        }
+                        else
+                        {
+                            CustomSpriteUnavailableStore.SetUnavailable(plan.GameRoot, resource, true);
+                            Interlocked.Increment(ref unavailable);
+                        }
                     }
                 }
                 catch (OperationCanceledException) when (token.IsCancellationRequested)
@@ -262,6 +322,7 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
                     progress?.Report(new CustomSpriteInstallProgress(currentCompleted, plan.PendingSheetCount, Interlocked.Read(ref downloadedBytes), Volatile.Read(ref failed), Volatile.Read(ref unavailable)));
                 }
             }).ConfigureAwait(false);
+            CustomSpriteSheetSyncStore.Write(plan.GameRoot, synchronizationMetadata);
         }
         catch (OperationCanceledException) when (Volatile.Read(ref gameStarted) != 0)
         {
@@ -279,25 +340,27 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
             }
         }
 
-        return new CustomSpriteInstallResult(downloaded, failed, downloadedBytes, unavailable);
+        return new CustomSpriteInstallResult(downloaded, unchanged, failed, downloadedBytes, unavailable);
     }
 
     /// <summary>
-    /// Downloads, validates, and atomically promotes one sprite sheet, retrying transient HTTP responses.
+    /// Conditionally checks one sprite sheet and atomically promotes changed content, retrying transient HTTP responses.
     /// </summary>
     /// <param name="target">The endpoint-relative resource and absolute installation destination.</param>
     /// <param name="stopIfGameStarted">Checks for a newly started game and cancels all installation work when found.</param>
     /// <param name="cancellationToken">The token that cancels streaming or retry delay.</param>
-    /// <returns>The number of response bytes promoted into the installation.</returns>
+    /// <param name="synchronizationMetadata">The shared successful-response metadata keyed by relative path.</param>
+    /// <returns>The synchronization outcome, including bytes promoted into the installation.</returns>
     /// <exception cref="HttpRequestException">The endpoint returns a terminal failure or exhausts retry attempts.</exception>
     /// <exception cref="IOException">The response cannot be streamed, validated, or promoted.</exception>
     /// <exception cref="UnauthorizedAccessException">The destination directory does not permit writes.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is cancelled.</exception>
-    private async Task<long> DownloadSheetAsync(CustomSpriteSheetTarget target, Func<bool> stopIfGameStarted, CancellationToken cancellationToken)
+    private async Task<CustomSpriteSheetSyncOutcome> SynchronizeSheetAsync(CustomSpriteSheetTarget target, ConcurrentDictionary<string, CustomSpriteSheetSyncMetadata> synchronizationMetadata, Func<bool> stopIfGameStarted, CancellationToken cancellationToken)
     {
         string? destinationFolder = Path.GetDirectoryName(target.DestinationPath);
         Directory.CreateDirectory(destinationFolder!);
         string partialPath = target.DestinationPath + PartialDownloadSuffix;
+        bool forceDownload = false;
         try
         {
             for (int attempt = 1; attempt <= MaximumDownloadAttempts; attempt++)
@@ -305,8 +368,25 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
                 if (stopIfGameStarted())
                     cancellationToken.ThrowIfCancellationRequested();
 
-                using HttpRequestMessage request = new(HttpMethod.Get, new Uri(CustomSpriteSheetBaseUri, target.RelativePath));
+                bool hasValidLocalFile = IsValidPng(target.DestinationPath);
+                using HttpRequestMessage request = new(HttpMethod.Get, GetResourceUri(target));
+                if (hasValidLocalFile && !forceDownload)
+                    ApplyConditionalHeaders(request, target, synchronizationMetadata);
+
                 using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                if (response.StatusCode == HttpStatusCode.NotModified && hasValidLocalFile)
+                {
+                    if (response.Content.Headers.ContentLength is > 0 and var remoteLength && remoteLength != new FileInfo(target.DestinationPath).Length)
+                    {
+                        synchronizationMetadata.TryRemove(target.RelativePath, out _);
+                        forceDownload = true;
+                        continue;
+                    }
+
+                    synchronizationMetadata[target.RelativePath] = CreateSynchronizationMetadata(response, target.DestinationPath, synchronizationMetadata.GetValueOrDefault(target.RelativePath));
+                    return new CustomSpriteSheetSyncOutcome(0);
+                }
+
                 if (!response.IsSuccessStatusCode)
                 {
                     if (attempt < MaximumDownloadAttempts && ShouldRetry(response.StatusCode))
@@ -330,7 +410,11 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
 
                 long bytes = new FileInfo(partialPath).Length;
                 File.Move(partialPath, target.DestinationPath, true);
-                return bytes;
+                if (response.Content.Headers.LastModified is DateTimeOffset lastModified)
+                    File.SetLastWriteTimeUtc(target.DestinationPath, lastModified.UtcDateTime);
+
+                synchronizationMetadata[target.RelativePath] = CreateSynchronizationMetadata(response, target.DestinationPath, null);
+                return new CustomSpriteSheetSyncOutcome(bytes);
             }
         }
         finally
@@ -339,6 +423,64 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
         }
 
         throw new HttpRequestException(RequestFailureMessage);
+    }
+
+    /// <summary>
+    /// Applies an exact entity tag when the synchronized file is unchanged locally, otherwise falls back to its modification time.
+    /// </summary>
+    /// <param name="request">The outgoing sheet request.</param>
+    /// <param name="target">The local and remote synchronization target.</param>
+    /// <param name="synchronizationMetadata">The last successful server metadata.</param>
+    private static void ApplyConditionalHeaders(HttpRequestMessage request, CustomSpriteSheetTarget target, IReadOnlyDictionary<string, CustomSpriteSheetSyncMetadata> synchronizationMetadata)
+    {
+        FileInfo localFile = new(target.DestinationPath);
+        DateTimeOffset localLastWrite = new(localFile.LastWriteTimeUtc, TimeSpan.Zero);
+        if (synchronizationMetadata.TryGetValue(target.RelativePath, out CustomSpriteSheetSyncMetadata? metadata)
+            && metadata.ContentLength == localFile.Length
+            && metadata.LocalLastWriteUtc == localLastWrite
+            && EntityTagHeaderValue.TryParse(metadata.EntityTag, out EntityTagHeaderValue? entityTag))
+        {
+            request.Headers.IfNoneMatch.Add(entityTag);
+            return;
+        }
+
+        request.Headers.IfModifiedSince = localLastWrite;
+    }
+
+    /// <summary>
+    /// Captures response validators alongside the exact local file state they describe.
+    /// </summary>
+    /// <param name="response">The successful or not-modified official response.</param>
+    /// <param name="destinationPath">The verified local sheet.</param>
+    /// <param name="previous">The prior metadata retained when a 304 response omits a validator.</param>
+    /// <returns>The metadata for the next conditional synchronization.</returns>
+    private static CustomSpriteSheetSyncMetadata CreateSynchronizationMetadata(HttpResponseMessage response, string destinationPath, CustomSpriteSheetSyncMetadata? previous)
+    {
+        FileInfo localFile = new(destinationPath);
+        return new CustomSpriteSheetSyncMetadata(
+            response.Headers.ETag?.ToString() ?? previous?.EntityTag,
+            response.Content.Headers.LastModified ?? previous?.LastModifiedUtc,
+            localFile.Length,
+            new DateTimeOffset(localFile.LastWriteTimeUtc, TimeSpan.Zero));
+    }
+
+    /// <summary>
+    /// Removes tracker-owned individual images derived from a sheet that was replaced.
+    /// </summary>
+    /// <param name="gameRoot">The synchronized Infinite Fusion installation.</param>
+    /// <param name="target">The changed sheet and its head and variant identity.</param>
+    private static void InvalidateMaterializedSprites(string gameRoot, CustomSpriteSheetTarget target)
+    {
+        string cacheRoot = Path.Combine(gameRoot, TrackerSpriteCacheRelativePath);
+        if (!Directory.Exists(cacheRoot))
+            return;
+
+        string pattern = target.Kind == CustomSpriteSheetKind.Base
+            ? string.Format(System.Globalization.CultureInfo.InvariantCulture, MaterializedBaseSpriteSearchPattern, target.Head)
+            : string.Format(System.Globalization.CultureInfo.InvariantCulture, MaterializedSpriteSearchPattern, target.Head, target.Variant.Length == 0 ? MainSpriteVariant : target.Variant);
+
+        foreach (string path in Directory.EnumerateFiles(cacheRoot, pattern, SearchOption.TopDirectoryOnly))
+            File.Delete(path);
     }
 
     /// <summary>
@@ -363,7 +505,7 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
     /// </summary>
     /// <param name="manifestEntry">One raw line from <c>Data/sprites/CUSTOM_SPRITES</c>.</param>
     /// <returns>The derived target, or <see langword="null"/> when the line is not a supported sprite filename.</returns>
-    private static CustomSpriteSheetTarget? CreateTarget(string manifestEntry)
+    private static CustomSpriteSheetTarget? CreateCustomTarget(string manifestEntry)
     {
         Match match = CustomSpriteManifestEntry().Match(manifestEntry.Trim());
         if (!match.Success)
@@ -372,7 +514,46 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
         string head = match.Groups[1].Value;
         string variant = match.Groups[2].Value.ToLowerInvariant();
         string relativePath = $"{head}/{head}{variant}.png";
-        return new CustomSpriteSheetTarget(relativePath, string.Empty);
+        return new CustomSpriteSheetTarget(relativePath, string.Empty, head, variant, CustomSpriteSheetKind.Fusion, false);
+    }
+
+    /// <summary>
+    /// Converts one normal-species sprite manifest entry into its shared species sheet.
+    /// Every alternate letter for one species intentionally resolves to the same sheet.
+    /// </summary>
+    /// <param name="manifestEntry">One raw line from <c>Data/sprites/BASE_SPRITES</c>.</param>
+    /// <returns>The derived target, or <see langword="null"/> when the line is not a supported sprite filename.</returns>
+    private static CustomSpriteSheetTarget? CreateBaseTarget(string manifestEntry)
+    {
+        Match match = BaseSpriteManifestEntry().Match(manifestEntry.Trim());
+        if (!match.Success)
+            return null;
+
+        string species = match.Groups[1].Value;
+        return new CustomSpriteSheetTarget($"{species}.png", string.Empty, species, string.Empty, CustomSpriteSheetKind.Base, false);
+    }
+
+    /// <summary>
+    /// Resolves the official endpoint for one library-specific sheet target.
+    /// </summary>
+    /// <param name="target">The parsed sprite-sheet target.</param>
+    /// <returns>The absolute official resource URI.</returns>
+    private static Uri GetResourceUri(CustomSpriteSheetTarget target)
+        => new(target.Kind == CustomSpriteSheetKind.Base ? BaseSpriteSheetBaseUri : CustomSpriteSheetBaseUri, target.RelativePath);
+
+    /// <summary>
+    /// Resolves the game-owned destination for one library-specific sheet target.
+    /// </summary>
+    /// <param name="gameRoot">The validated Infinite Fusion installation.</param>
+    /// <param name="target">The parsed sprite-sheet target.</param>
+    /// <returns>The absolute destination path.</returns>
+    private static string GetDestinationPath(string gameRoot, CustomSpriteSheetTarget target)
+    {
+        string relativeFolder = target.Kind == CustomSpriteSheetKind.Base
+            ? BaseSpriteSheetFolderRelativePath
+            : CustomSpriteSheetFolderRelativePath;
+
+        return Path.Combine(gameRoot, relativeFolder, target.RelativePath.Replace('/', Path.DirectorySeparatorChar));
     }
 
     /// <summary>
@@ -412,12 +593,16 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
     }
 
     /// <summary>
-    /// Determines whether a directory contains both the expected executable and sprite manifest.
+    /// Determines whether a directory contains the expected executable and both sprite manifests.
     /// </summary>
     /// <param name="path">The candidate installation directory.</param>
     /// <returns><see langword="true"/> when the directory is a usable Infinite Fusion 2 root.</returns>
     private static bool IsGameRoot(string path)
-        => File.Exists(Path.Combine(path, GameExecutableName)) && File.Exists(Path.Combine(path, CustomSpriteManifestRelativePath));
+    {
+        return File.Exists(Path.Combine(path, GameExecutableName))
+            && File.Exists(Path.Combine(path, CustomSpriteManifestRelativePath))
+            && File.Exists(Path.Combine(path, BaseSpriteManifestRelativePath));
+    }
 
     /// <summary>
     /// Determines whether the Infinite Fusion process associated with the target root is active.
@@ -501,4 +686,18 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
     /// <returns>The culture-invariant manifest filename expression.</returns>
     [GeneratedRegex(@"^(\d+)\.\d+([A-Za-z]*)\.png$", RegexOptions.CultureInvariant)]
     private static partial Regex CustomSpriteManifestEntry();
+
+    /// <summary>
+    /// Gets the compiled parser for <c>speciesVariant.png</c> base-sprite manifest entries.
+    /// </summary>
+    /// <returns>The culture-invariant base-species manifest filename expression.</returns>
+    [GeneratedRegex(@"^(\d+)[A-Za-z]*\.png$", RegexOptions.CultureInvariant)]
+    private static partial Regex BaseSpriteManifestEntry();
 }
+
+/// <summary>
+/// Describes whether one conditional synchronization transferred sheet content.
+/// </summary>
+/// <remarks>Initializes an immutable per-sheet outcome.</remarks>
+/// <param name="DownloadedBytes">The bytes promoted locally, or zero when the installed sheet was current.</param>
+internal sealed record CustomSpriteSheetSyncOutcome(long DownloadedBytes);

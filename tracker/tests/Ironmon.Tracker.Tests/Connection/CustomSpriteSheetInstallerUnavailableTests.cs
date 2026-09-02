@@ -51,7 +51,7 @@ public sealed partial class CustomSpriteSheetInstallerTests
         Assert.Equal(2, restarted.CreatePlan(_root).ExistingSheetCount);
 
         File.Delete(Path.Combine(_root, SheetFolderRelativePath, FirstSheetRelativePath));
-        Assert.Equal(1, restarted.CreatePlan(_root).PendingSheetCount);
+        Assert.Equal(2, restarted.CreatePlan(_root).PendingSheetCount);
     }
 
     /// <summary>
@@ -177,8 +177,8 @@ public sealed partial class CustomSpriteSheetInstallerTests
         CustomSpriteInstallPlan plan = installer.CreatePlan(_root);
         Assert.Equal(1, plan.ExistingSheetCount);
         Assert.Equal(1, plan.UnavailableSheetCount);
-        Assert.Equal(0, plan.PendingSheetCount);
-        Assert.Equal(1, installer.CreatePlan(_root, includeUnavailable: true).PendingSheetCount);
+        Assert.Equal(1, plan.PendingSheetCount);
+        Assert.Equal(2, installer.CreatePlan(_root, includeUnavailable: true).PendingSheetCount);
     }
 
     /// <summary>

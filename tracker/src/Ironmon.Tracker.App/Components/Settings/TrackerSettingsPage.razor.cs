@@ -11,6 +11,7 @@ public partial class TrackerSettingsPage : IDisposable
     private const string MegabyteUnit = "MB";
     private const string AvailableSpritesCompleteKey = "Settings.Sprites.AvailableComplete";
     private const string SpriteDownloadWithUnavailableKey = "Settings.Sprites.CompleteWithUnavailable";
+    private const string SpriteSynchronizationCurrentKey = "Settings.Sprites.Current";
     private CancellationTokenSource? _searchCancellation;
     private CancellationTokenSource? _spriteInstallCancellation;
     private IReadOnlyList<PokemonSearchMatch> _favorites = [];
@@ -177,7 +178,7 @@ public partial class TrackerSettingsPage : IDisposable
     }
 
     /// <summary>
-    /// Inspects the installed sprite library before asking for download confirmation.
+    /// Inspects the installed sprite library before asking for synchronization confirmation.
     /// </summary>
     /// <returns>A task representing local manifest inspection.</returns>
     private Task ReviewSpriteInstallAsync()
@@ -235,7 +236,7 @@ public partial class TrackerSettingsPage : IDisposable
     }
 
     /// <summary>
-    /// Starts the confirmed resumable custom sprite-sheet installation.
+    /// Starts the confirmed resumable custom sprite-sheet synchronization.
     /// </summary>
     /// <returns>A task representing the download.</returns>
     private async Task StartSpriteInstallAsync()
@@ -259,9 +260,10 @@ public partial class TrackerSettingsPage : IDisposable
             CustomSpriteInstallResult result = await SpriteInstaller.InstallAsync(_spriteInstallPlan, progress, cancellationToken);
             _spriteInstallStatus = result switch
             {
-                { FailedSheetCount: > 0 } => Text["Settings.Sprites.Partial", result.DownloadedSheetCount, result.FailedSheetCount, result.UnavailableSheetCount],
-                { UnavailableSheetCount: > 0 } => Text[SpriteDownloadWithUnavailableKey, result.DownloadedSheetCount, FormatBytes(result.DownloadedBytes), result.UnavailableSheetCount],
-                _ => Text["Settings.Sprites.Complete", result.DownloadedSheetCount, FormatBytes(result.DownloadedBytes)]
+                { FailedSheetCount: > 0 } => Text["Settings.Sprites.Partial", result.DownloadedSheetCount, result.UnchangedSheetCount, result.FailedSheetCount, result.UnavailableSheetCount],
+                { UnavailableSheetCount: > 0 } => Text[SpriteDownloadWithUnavailableKey, result.DownloadedSheetCount, result.UnchangedSheetCount, FormatBytes(result.DownloadedBytes), result.UnavailableSheetCount],
+                { DownloadedSheetCount: 0 } => Text[SpriteSynchronizationCurrentKey, result.UnchangedSheetCount],
+                _ => Text["Settings.Sprites.Complete", result.DownloadedSheetCount, result.UnchangedSheetCount, FormatBytes(result.DownloadedBytes)]
             };
 
             _spriteInstallPlan = null;

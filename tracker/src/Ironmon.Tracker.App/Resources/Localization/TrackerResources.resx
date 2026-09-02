@@ -1546,28 +1546,29 @@
   <data name="Settings.EvolutionGraph.NodesPerRowDescription" xml:space="preserve"><value>Wrap a logical level into another row after this many Pokémon.</value></data>
   <data name="Settings.EvolutionGraph.NodesPerRowValidation" xml:space="preserve"><value>Choose between {0} and {1} Pokémon per row.</value></data>
   <data name="Settings.Sprites.Group" xml:space="preserve"><value>Custom sprite library</value></data>
-  <data name="Settings.Sprites.GroupDescription" xml:space="preserve"><value>Prepare missing custom fusion sprites before they are needed.</value></data>
-  <data name="Settings.Sprites.DownloadCustom" xml:space="preserve"><value>Download custom sprites</value></data>
-  <data name="Settings.Sprites.DownloadDescription" xml:space="preserve"><value>Download missing official custom-fusion sprite sheets into this Infinite Fusion installation. Existing valid sheets are kept.</value></data>
-  <data name="Settings.Sprites.DownloadWarning" xml:space="preserve"><value>Keep Infinite Fusion closed. The complete library can require gigabytes of storage and significant time. The tracker uses four concurrent downloads with retry backoff; it does not change the game's Download data option or rate limit.</value></data>
-  <data name="Settings.Sprites.Review" xml:space="preserve"><value>Review download</value></data>
+  <data name="Settings.Sprites.GroupDescription" xml:space="preserve"><value>Keep official custom fusion and normal-species sprite sheets complete and current.</value></data>
+  <data name="Settings.Sprites.DownloadCustom" xml:space="preserve"><value>Synchronize custom sprites</value></data>
+  <data name="Settings.Sprites.DownloadDescription" xml:space="preserve"><value>Check official custom fusion and normal-species sprite sheets and download only missing or changed files. Unchanged sheets are verified without downloading their image data.</value></data>
+  <data name="Settings.Sprites.DownloadWarning" xml:space="preserve"><value>Keep Infinite Fusion closed. The initial library can require gigabytes of storage and significant time; later synchronization checks are much smaller. The tracker uses four concurrent requests with retry backoff and does not change the game's Download data option or rate limit.</value></data>
+  <data name="Settings.Sprites.Review" xml:space="preserve"><value>Review synchronization</value></data>
   <data name="Settings.Sprites.Preparing" xml:space="preserve"><value>Checking installed sprites…</value></data>
-  <data name="Settings.Sprites.Confirmation" xml:space="preserve"><value>Download {0} missing sheets? {1} of {2} sheets are already installed. You can cancel and resume later.</value></data>
-  <data name="Settings.Sprites.Start" xml:space="preserve"><value>Start download</value></data>
+  <data name="Settings.Sprites.Confirmation" xml:space="preserve"><value>Check {0} sheets for updates? {1} of {2} sheets are already installed. Only missing or changed image data will be downloaded.</value></data>
+  <data name="Settings.Sprites.Start" xml:space="preserve"><value>Start synchronization</value></data>
   <data name="Settings.Sprites.Cancel" xml:space="preserve"><value>Cancel</value></data>
-  <data name="Settings.Sprites.Progress" xml:space="preserve"><value>{0} of {1} sheets · {2} downloaded · {3} failed · {4} unavailable (404)</value></data>
-  <data name="Settings.Sprites.Complete" xml:space="preserve"><value>Downloaded {0} custom sprite sheets ({1}).</value></data>
-  <data name="Settings.Sprites.CompleteAlready" xml:space="preserve"><value>All {0} custom sprite sheets from the installed manifest are already available.</value></data>
-  <data name="Settings.Sprites.Partial" xml:space="preserve"><value>Downloaded {0} sheets; {1} failed and remain retryable. {2} unavailable files (404) are skipped. Review again to retry failures, or recheck unavailable files to include them too.</value></data>
+  <data name="Settings.Sprites.Progress" xml:space="preserve"><value>{0} of {1} sheets checked · {2} downloaded · {3} failed · {4} unavailable (404)</value></data>
+  <data name="Settings.Sprites.Complete" xml:space="preserve"><value>Updated {0} custom sprite sheets; {1} were already current ({2} downloaded).</value></data>
+  <data name="Settings.Sprites.Current" xml:space="preserve"><value>All {0} checked custom sprite sheets are up to date.</value></data>
+  <data name="Settings.Sprites.CompleteAlready" xml:space="preserve"><value>No custom sprite sheets currently require a synchronization request.</value></data>
+  <data name="Settings.Sprites.Partial" xml:space="preserve"><value>Updated {0} sheets; {1} were already current; {2} failed and remain retryable. {3} unavailable files (404) are skipped. Synchronize again to retry failures, or recheck unavailable files to include them too.</value></data>
   <data name="Settings.Sprites.RecheckUnavailable" xml:space="preserve"><value>Recheck unavailable files</value></data>
   <data name="Settings.Sprites.RecheckDescription" xml:space="preserve"><value>Files returning 404 are remembered and skipped in normal downloads. Recheck includes them in a new download review; other failures always remain retryable.</value></data>
   <data name="Settings.Sprites.SkippedUnavailable" xml:space="preserve"><value>{0} unavailable files (404) are excluded from this download. They are not counted as installed.</value></data>
   <data name="Settings.Sprites.AvailableComplete" xml:space="preserve"><value>{0} sheets are installed. The remaining {1} files returned 404 and are skipped. Use Recheck unavailable files to try them again.</value></data>
-  <data name="Settings.Sprites.CompleteWithUnavailable" xml:space="preserve"><value>Downloaded {0} sheets ({1}). {2} files returned 404 and will be skipped in normal downloads. Use Recheck unavailable files to try them again.</value></data>
-  <data name="Settings.Sprites.Cancelled" xml:space="preserve"><value>Download cancelled. Installed sheets were kept; review again to resume.</value></data>
-  <data name="Settings.Sprites.CloseGame" xml:space="preserve"><value>Close Infinite Fusion before downloading the custom sprite library.</value></data>
+  <data name="Settings.Sprites.CompleteWithUnavailable" xml:space="preserve"><value>Updated {0} sheets; {1} were already current ({2} downloaded). {3} files returned 404 and will be skipped during normal synchronization. Use Recheck unavailable files to try them again.</value></data>
+  <data name="Settings.Sprites.Cancelled" xml:space="preserve"><value>Synchronization cancelled. Installed sheets were kept; review again to resume.</value></data>
+  <data name="Settings.Sprites.CloseGame" xml:space="preserve"><value>Close Infinite Fusion before downloading the custom sprite libraries.</value></data>
   <data name="Settings.Sprites.InstallationNotFound" xml:space="preserve"><value>The tracker could not find a valid Infinite Fusion installation and custom-sprite manifest.</value></data>
-  <data name="Settings.Sprites.DownloadError" xml:space="preserve"><value>The custom sprite download stopped because the server or installation could not be accessed. Review again to resume.</value></data>
+  <data name="Settings.Sprites.DownloadError" xml:space="preserve"><value>Custom sprite synchronization stopped because the server or installation could not be accessed. Review again to resume.</value></data>
   <data name="Lookup.Graph.LoadingNeighborhood" xml:space="preserve"><value>Loading up to {0} layers… {1} of {2} loaded Pokémon shown · {3} connections loaded</value></data>
   <data name="Lookup.Graph.LoadedNeighborhood" xml:space="preserve"><value>Neighborhood loaded · {0} of {1} loaded Pokémon shown · {2} connections · select a branch to load up to {3} layers around it</value></data>
   <data name="Lookup.Graph.SelectNode" xml:space="preserve"><value>Select branch</value></data>

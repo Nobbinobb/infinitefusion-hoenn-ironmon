@@ -5,6 +5,7 @@
 module Ironmon
   SPRITE_CREDIT_CACHE_SCHEMA_VERSION = 1
   TRACKER_SPRITE_PATH_CACHE_LIMIT = 2048
+  TRACKER_TRANSPARENT_CACHE_INSPECTION_LIMIT = 512
   TRACKER_SPRITE_CACHE_FOLDER =
     "Graphics/CustomBattlers/local_sprites/IronmonTracker"
 
@@ -105,11 +106,53 @@ module Ironmon
   def self.load_tracker_sprite_bitmap(loader, pif_sprite)
     extractor = loader.get_sprite_extractor_instance(pif_sprite.type)
     sprite = extractor.load_sprite(pif_sprite)
-    return sprite if sprite || pif_sprite.type != :CUSTOM
-    fallback = PIFSprite.new(
-      :AUTOGEN, pif_sprite.head_id, pif_sprite.body_id, ""
-    )
-    return loader.get_sprite_extractor_instance(:AUTOGEN).load_sprite(fallback)
+    return sprite if pif_sprite.type != :CUSTOM && pif_sprite.type != :BASE
+    return sprite if tracker_sprite_bitmap_visible?(sprite)
+    sprite.dispose if sprite && sprite.respond_to?(:dispose)
+    if pif_sprite.type == :CUSTOM
+      fallback = PIFSprite.new(
+        :AUTOGEN, pif_sprite.head_id, pif_sprite.body_id, ""
+      )
+      return loader.get_sprite_extractor_instance(:AUTOGEN).load_sprite(
+        fallback
+      )
+    end
+    return nil if pif_sprite.alt_letter.to_s.empty?
+    fallback = PIFSprite.new(:BASE, pif_sprite.head_id, nil, "")
+    sprite = extractor.load_sprite(fallback)
+    return sprite if tracker_sprite_bitmap_visible?(sprite)
+    sprite.dispose if sprite && sprite.respond_to?(:dispose)
+    return nil
+  end
+
+  def self.tracker_sprite_bitmap_visible?(sprite)
+    return false if !sprite || !sprite.respond_to?(:bitmap)
+    bitmap = sprite.bitmap
+    return false if !bitmap || bitmap.disposed?
+    step = [bitmap.width / 96, bitmap.height / 96, 1].max
+    y = 0
+    while y < bitmap.height
+      x = 0
+      while x < bitmap.width
+        return true if bitmap.get_pixel(x, y).alpha > 0
+        x += step
+      end
+      y += step
+    end
+    return false
+  rescue Exception
+    return false
+  end
+
+  def self.tracker_cached_sprite_usable?(path)
+    return false if !File.file?(path)
+    return true if File.size(path) > TRACKER_TRANSPARENT_CACHE_INSPECTION_LIMIT
+    sprite = AnimatedBitmap.new(path)
+    return tracker_sprite_bitmap_visible?(sprite)
+  rescue Exception
+    return false
+  ensure
+    sprite.dispose if sprite && sprite.respond_to?(:dispose)
   end
 
   def self.tracker_resolved_sprite_path(pif_sprite)
@@ -124,7 +167,8 @@ module Ironmon
     end
     return resolved_local_path.tr("\\", "/") if resolved_local_path
     cache_path = tracker_materialized_sprite_path(pif_sprite)
-    return cache_path if File.file?(cache_path)
+    return cache_path if tracker_cached_sprite_usable?(cache_path)
+    File.delete(cache_path) if File.file?(cache_path)
     sprite = load_tracker_sprite_bitmap(loader, pif_sprite)
     return nil if !sprite
     ensure_tracker_sprite_cache_folder

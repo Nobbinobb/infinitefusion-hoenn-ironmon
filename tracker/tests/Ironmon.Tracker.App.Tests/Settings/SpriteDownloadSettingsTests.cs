@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Resources;
 using Ironmon.Tracker.App.Components.Settings;
@@ -26,6 +27,7 @@ public sealed class SpriteDownloadSettingsTests
     private const string TestRootName = "IronmonSpriteSettingsTests";
     private const string ExecutableName = "InfiniteFusion2.exe";
     private const string ManifestPath = "Data/sprites/CUSTOM_SPRITES";
+    private const string BaseManifestPath = "Data/sprites/BASE_SPRITES";
     private const string ManifestContents = "1.2.png\n1.2a.png\n";
     private const string ResourceName = "Ironmon.Tracker.App.Resources.Localization.TrackerResources";
     private const string Version = "0.8.3";
@@ -45,6 +47,7 @@ public sealed class SpriteDownloadSettingsTests
         Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(root, ManifestPath))!);
         File.WriteAllText(Path.Combine(root, ExecutableName), string.Empty);
         File.WriteAllText(Path.Combine(root, ManifestPath), ManifestContents);
+        File.WriteAllText(Path.Combine(root, BaseManifestPath), string.Empty);
         FieldInfo preferenceImplementation = typeof(Preferences).GetFields(BindingFlags.Static | BindingFlags.NonPublic)
             .Single(field => typeof(IPreferences).IsAssignableFrom(field.FieldType));
         object? originalPreferences = preferenceImplementation.GetValue(null);
@@ -77,7 +80,7 @@ public sealed class SpriteDownloadSettingsTests
                 var view = await renderer.RenderComponentAsync<TrackerSettingsPage>(ParameterView.Empty);
                 Assert.Contains("Recheck unavailable files", view.ToHtmlString());
                 await InvokeActionAsync(activator.Page!, ReviewAction);
-                Assert.Contains("Download 2 missing sheets? 0 of 2 sheets are already installed.", view.ToHtmlString());
+                Assert.Contains("Check 2 sheets for updates? 0 of 2 sheets are already installed.", view.ToHtmlString());
                 await InvokeActionAsync(activator.Page!, StartAction);
                 Assert.Contains("2 files returned 404", view.ToHtmlString());
 
@@ -85,16 +88,18 @@ public sealed class SpriteDownloadSettingsTests
                 Assert.Contains("0 sheets are installed. The remaining 2 files returned 404", view.ToHtmlString());
                 Assert.DoesNotContain("All 2 custom sprite sheets", view.ToHtmlString());
                 await InvokeActionAsync(activator.Page!, RecheckAction);
-                Assert.Contains("Download 2 missing sheets? 0 of 2 sheets are already installed.", view.ToHtmlString());
+                Assert.Contains("Check 2 sheets for updates? 0 of 2 sheets are already installed.", view.ToHtmlString());
                 await InvokeActionAsync(activator.Page!, CancelReviewAction);
                 Assert.Equal(2, installer.CreatePlan(root).UnavailableSheetCount);
 
                 handler.Available = true;
                 await InvokeActionAsync(activator.Page!, RecheckAction);
                 await InvokeActionAsync(activator.Page!, StartAction);
-                Assert.Contains("Downloaded 2 custom sprite sheets", view.ToHtmlString());
+                Assert.Contains("Updated 2 custom sprite sheets", view.ToHtmlString());
                 await InvokeActionAsync(activator.Page!, ReviewAction);
-                Assert.Contains("All 2 custom sprite sheets from the installed manifest are already available.", view.ToHtmlString());
+                Assert.Contains("Check 2 sheets for updates? 2 of 2 sheets are already installed.", view.ToHtmlString());
+                await InvokeActionAsync(activator.Page!, StartAction);
+                Assert.Contains("All 2 checked custom sprite sheets are up to date.", view.ToHtmlString());
             });
         }
         finally
@@ -148,9 +153,15 @@ public sealed class SpriteDownloadSettingsTests
         /// <returns>The controlled response.</returns>
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            return Task.FromResult(Available
-                ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([137, 80, 78, 71, 13, 10, 26, 10]) }
-                : new HttpResponseMessage(HttpStatusCode.NotFound));
+            if (!Available)
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+
+            HttpResponseMessage response = request.Headers.IfNoneMatch.Count > 0
+                ? new HttpResponseMessage(HttpStatusCode.NotModified)
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([137, 80, 78, 71, 13, 10, 26, 10]) };
+
+            response.Headers.ETag = new EntityTagHeaderValue("\"settings-test\"");
+            return Task.FromResult(response);
         }
     }
 
