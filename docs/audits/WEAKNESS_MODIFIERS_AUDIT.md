@@ -450,40 +450,40 @@ These scenarios were proposed by the original source audit. They are not a claim
 
 ## Source index
 
-Paths identify the local files inspected. Line numbers refer to the source snapshot on the audit date; search by method/handler name if later edits shift them.
+Paths identify the files inspected. Paths beginning with `Data/` are relative to the Infinite Fusion installation and are not part of this repository. Line numbers refer to the source snapshot on the audit date; search by method or handler name if later edits shift them.
 
-- **SETTINGS:** [game settings](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/001_Settings.rb:170>).
-- **BATTLE_SETTINGS:** [battle settings](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/002_BattleSettings.rb:1>).
-- **TYPE:** [type and effectiveness primitives](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/010_Data/002_PBS data/003_Type.rb:64>).
-- **CALC:** [move type and damage calculation](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_Move/003_Move_Usage_Calculations.rb:1>).
-- **MOVE_BASE:** [move flags and predicates](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_Move/001_PokeBattle_Move.rb:95>).
-- **USAGE:** [immunity, damage absorption, and survival](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_Move/002_Move_Usage.rb:81>).
-- **GENERIC:** [generic move classes](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_Move/004_Move_Effects_Generic.rb:393>).
-- **MOVES_A:** [move effects 000–07F](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_Move/005_Move_Effects_000-07F.rb:1>).
-- **MOVES_B:** [move effects 080–0FF](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_Move/006_Move_Effects_080-0FF.rb:1>).
-- **MOVES_C:** [move effects 100–17F](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_Move/007_Move_Effects_100-17F.rb:1>).
-- **ABILITIES:** [ability handlers](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/003_BattleHandlers_Abilities.rb:566>).
-- **ITEMS:** [item handlers](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/004_BattleHandlers_Items.rb:805>).
-- **HELPERS:** [shared ability and berry helpers](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_BattleHandlers.rb:523>).
-- **BATTLER:** [active types, ability/item activity, airborne state](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/001_Battler/001_PokeBattle_Battler.rb:352>).
-- **INITIALIZE:** [battler initialization and reset](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/001_Battler/002_Battler_Initialize.rb:37>).
-- **CHANGE:** [type, form, and transformation changes](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/001_Battler/003_Battler_ChangeSelf.rb:122>).
-- **ABILITY_ITEM:** [ability transitions and berry eligibility](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/001_Battler/006_Battler_AbilityAndItem.rb:1>).
-- **USE:** [move execution and between-hit effects](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/001_Battler/007_Battler_UseMove.rb:234>).
-- **TARGETING:** [target selection and redirection](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/001_Battler/008_Battler_UseMove_Targeting.rb:1>).
-- **SUCCESS:** [move success, protection, and immunity checks](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/001_Battler/009_Battler_UseMove_SuccessChecks.rb:294>).
-- **BATTLE:** [effective weather and weather lifecycle](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/003_Battle/002_PokeBattle_Battle.rb:672>).
-- **SWITCHING:** [switch-in and entry hazard effects](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/003_Battle/006_Battle_Action_Switching.rb:354>).
-- **POKEMON:** [persistent Pokémon types and Plate getters](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/014_Pokemon/001_Pokemon.rb:611>).
-- **FORMS:** [species form handlers](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/014_Pokemon/001_Pokemon-related/001_FormHandlers.rb:505>).
-- **FUSION:** [fusion type calculation](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/052_InfiniteFusion/Fusion/Data/FusedSpecies.rb:156>).
-- **IRONMON_ABILITIES:** [randomized ability integration](<C:/Program Files (x86)/InfiniteFusion2/Ironmon/src/randomization/abilities/Runtime_Integration.rb:73>).
-- **ABILITY_POOL:** [contextual ability eligibility](<C:/Program Files (x86)/InfiniteFusion2/Ironmon/src/randomization/abilities/Generator.rb:13>).
-- **SNAPSHOTS:** [live tracker snapshots](<C:/Program Files (x86)/InfiniteFusion2/Ironmon/src/tracker/live/Snapshots.rb:123>).
-- **MOVE_PRESENTATION:** [game-side move power/type presentation](<C:/Program Files (x86)/InfiniteFusion2/Ironmon/src/tracker/live/Move_Power_Presentation.rb:115>).
-- **TRACKER_RULES:** [tracker type-effectiveness calculator](<C:/Program Files (x86)/InfiniteFusion2/Ironmon/tracker/src/Ironmon.Tracker.Core/Moves/TypeEffectivenessRules.cs:38>).
-- **TRACKER_PRESENTATION:** [tracker move-row presentation](<C:/Program Files (x86)/InfiniteFusion2/Ironmon/tracker/src/Ironmon.Tracker.App/Components/Common/MovePresentation.cs:15>).
-- **MECHANICS:** [canonical mechanics manual](<C:/Program Files (x86)/InfiniteFusion2/Ironmon/docs/IRONMON_MECHANICS.html:1268>), consulted for the existing type-only presentation and hidden-information boundary; unchanged by this audit.
-- **TYPE_CATALOG:** [installed type data](<C:/Program Files (x86)/InfiniteFusion2/Data/types.dat>), decoded read-only for all 30 entries.
-- **MOVE_CATALOG:** [installed move data](<C:/Program Files (x86)/InfiniteFusion2/Data/moves.dat>), decoded read-only for all 680 entries, move-function mappings and flags.
-- **ABILITY_CATALOG / ITEM_CATALOG:** [installed ability data](<C:/Program Files (x86)/InfiniteFusion2/Data/abilities.dat>) and [installed item data](<C:/Program Files (x86)/InfiniteFusion2/Data/items.dat>), decoded read-only for identity/presence checks.
+- **SETTINGS:** `Data/Scripts/001_Settings.rb:170` (game settings).
+- **BATTLE_SETTINGS:** `Data/Scripts/002_BattleSettings.rb:1` (battle settings).
+- **TYPE:** `Data/Scripts/010_Data/002_PBS data/003_Type.rb:64` (type and effectiveness primitives).
+- **CALC:** `Data/Scripts/011_Battle/002_Move/003_Move_Usage_Calculations.rb:1` (move type and damage calculation).
+- **MOVE_BASE:** `Data/Scripts/011_Battle/002_Move/001_PokeBattle_Move.rb:95` (move flags and predicates).
+- **USAGE:** `Data/Scripts/011_Battle/002_Move/002_Move_Usage.rb:81` (immunity, damage absorption, and survival).
+- **GENERIC:** `Data/Scripts/011_Battle/002_Move/004_Move_Effects_Generic.rb:393` (generic move classes).
+- **MOVES_A:** `Data/Scripts/011_Battle/002_Move/005_Move_Effects_000-07F.rb:1` (move effects 000–07F).
+- **MOVES_B:** `Data/Scripts/011_Battle/002_Move/006_Move_Effects_080-0FF.rb:1` (move effects 080–0FF).
+- **MOVES_C:** `Data/Scripts/011_Battle/002_Move/007_Move_Effects_100-17F.rb:1` (move effects 100–17F).
+- **ABILITIES:** `Data/Scripts/011_Battle/003_BattleHandlers_Abilities.rb:566` (ability handlers).
+- **ITEMS:** `Data/Scripts/011_Battle/004_BattleHandlers_Items.rb:805` (item handlers).
+- **HELPERS:** `Data/Scripts/011_Battle/002_BattleHandlers.rb:523` (shared ability and berry helpers).
+- **BATTLER:** `Data/Scripts/011_Battle/001_Battler/001_PokeBattle_Battler.rb:352` (active types, ability/item activity, and airborne state).
+- **INITIALIZE:** `Data/Scripts/011_Battle/001_Battler/002_Battler_Initialize.rb:37` (battler initialization and reset).
+- **CHANGE:** `Data/Scripts/011_Battle/001_Battler/003_Battler_ChangeSelf.rb:122` (type, form, and transformation changes).
+- **ABILITY_ITEM:** `Data/Scripts/011_Battle/001_Battler/006_Battler_AbilityAndItem.rb:1` (ability transitions and berry eligibility).
+- **USE:** `Data/Scripts/011_Battle/001_Battler/007_Battler_UseMove.rb:234` (move execution and between-hit effects).
+- **TARGETING:** `Data/Scripts/011_Battle/001_Battler/008_Battler_UseMove_Targeting.rb:1` (target selection and redirection).
+- **SUCCESS:** `Data/Scripts/011_Battle/001_Battler/009_Battler_UseMove_SuccessChecks.rb:294` (move success, protection, and immunity checks).
+- **BATTLE:** `Data/Scripts/011_Battle/003_Battle/002_PokeBattle_Battle.rb:672` (effective weather and weather lifecycle).
+- **SWITCHING:** `Data/Scripts/011_Battle/003_Battle/006_Battle_Action_Switching.rb:354` (switch-in and entry hazard effects).
+- **POKEMON:** `Data/Scripts/014_Pokemon/001_Pokemon.rb:611` (persistent Pokémon types and Plate getters).
+- **FORMS:** `Data/Scripts/014_Pokemon/001_Pokemon-related/001_FormHandlers.rb:505` (species form handlers).
+- **FUSION:** `Data/Scripts/052_InfiniteFusion/Fusion/Data/FusedSpecies.rb:156` (fusion type calculation).
+- **IRONMON_ABILITIES:** [randomized ability integration](../../src/randomization/abilities/Runtime_Integration.rb#L73).
+- **ABILITY_POOL:** [contextual ability eligibility](../../src/randomization/abilities/Generator.rb#L13).
+- **SNAPSHOTS:** [live tracker snapshots](../../src/tracker/live/Snapshots.rb#L123).
+- **MOVE_PRESENTATION:** [game-side move power/type presentation](../../src/tracker/live/Move_Power_Presentation.rb#L115).
+- **TRACKER_RULES:** [tracker type-effectiveness calculator](../../tracker/src/Ironmon.Tracker.Core/Moves/TypeEffectivenessRules.cs#L38).
+- **TRACKER_PRESENTATION:** [tracker move-row presentation](../../tracker/src/Ironmon.Tracker.App/Components/Common/MovePresentation.cs#L15).
+- **MECHANICS:** [canonical mechanics manual](../IRONMON_MECHANICS.html), consulted for the existing type-only presentation and hidden-information boundary; unchanged by this audit.
+- **TYPE_CATALOG:** `Data/types.dat`, decoded read-only for all 30 entries.
+- **MOVE_CATALOG:** `Data/moves.dat`, decoded read-only for all 680 entries, move-function mappings, and flags.
+- **ABILITY_CATALOG / ITEM_CATALOG:** `Data/abilities.dat` and `Data/items.dat`, decoded read-only for identity and presence checks.

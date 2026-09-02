@@ -174,23 +174,23 @@ Suggested implementation order: passive ability recovery first; then active fiel
 
 ## Native source index
 
-Paths and line numbers refer to the installed source reviewed on the audit date. Search the named handler/method after future source changes. Source files are read-only evidence, not files to patch for presentation work.
+Paths are relative to the Infinite Fusion installation and refer to the source reviewed on the audit date. Search the named handler or method after future source changes. Source files are read-only evidence, not files to patch for presentation work.
 
-- **ABILITIES:** [ability handlers](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/003_BattleHandlers_Abilities.rb>).
-- **ITEMS:** [item handlers](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/004_BattleHandlers_Items.rb>).
-- **HELPERS:** [ability and berry helpers](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_BattleHandlers.rb>).
-- **ROUND:** [end-of-round processing](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/003_Battle/012_Battle_Phase_EndOfRound.rb>).
-- **SWITCHING:** [entry healing and hazards](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/003_Battle/006_Battle_Action_Switching.rb>).
-- **ABILITY_ITEM:** [item activation and consumption](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/001_Battler/006_Battler_AbilityAndItem.rb>).
-- **BATTLER:** [healing, weather, terrain, and contact predicates](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/001_Battler/001_PokeBattle_Battler.rb>).
-- **HP:** [HP changes and drain recovery](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/001_Battler/003_Battler_ChangeSelf.rb>).
-- **STATUSES:** [status application and sleep duration](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/001_Battler/004_Battler_Statuses.rb>).
-- **STAGES:** [stage-change rules](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/001_Battler/005_Battler_StatStages.rb>).
-- **USAGE:** [contact, damage absorption, and survival](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_Move/002_Move_Usage.rb>).
-- **SUCCESS:** [guard and immunity checks](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/001_Battler/009_Battler_UseMove_SuccessChecks.rb>).
-- **MOVE_BASE:** [move flags and substitute bypass](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_Move/001_PokeBattle_Move.rb>).
-- **CALC:** [attack calculation and stage handling](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_Move/003_Move_Usage_Calculations.rb>).
-- **GENERIC:** [healing and recoil move classes](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_Move/004_Move_Effects_Generic.rb>).
-- **MOVES_A:** [move effects 000-07F](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_Move/005_Move_Effects_000-07F.rb>).
-- **MOVES_B:** [move effects 080-0FF](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_Move/006_Move_Effects_080-0FF.rb>).
-- **MOVES_C:** [move effects 100-17F](<C:/Program Files (x86)/InfiniteFusion2/Data/Scripts/011_Battle/002_Move/007_Move_Effects_100-17F.rb>).
+- **ABILITIES:** `Data/Scripts/011_Battle/003_BattleHandlers_Abilities.rb` (ability handlers).
+- **ITEMS:** `Data/Scripts/011_Battle/004_BattleHandlers_Items.rb` (item handlers).
+- **HELPERS:** `Data/Scripts/011_Battle/002_BattleHandlers.rb` (ability and berry helpers).
+- **ROUND:** `Data/Scripts/011_Battle/003_Battle/012_Battle_Phase_EndOfRound.rb` (end-of-round processing).
+- **SWITCHING:** `Data/Scripts/011_Battle/003_Battle/006_Battle_Action_Switching.rb` (entry healing and hazards).
+- **ABILITY_ITEM:** `Data/Scripts/011_Battle/001_Battler/006_Battler_AbilityAndItem.rb` (item activation and consumption).
+- **BATTLER:** `Data/Scripts/011_Battle/001_Battler/001_PokeBattle_Battler.rb` (healing, weather, terrain, and contact predicates).
+- **HP:** `Data/Scripts/011_Battle/001_Battler/003_Battler_ChangeSelf.rb` (HP changes and drain recovery).
+- **STATUSES:** `Data/Scripts/011_Battle/001_Battler/004_Battler_Statuses.rb` (status application and sleep duration).
+- **STAGES:** `Data/Scripts/011_Battle/001_Battler/005_Battler_StatStages.rb` (stage-change rules).
+- **USAGE:** `Data/Scripts/011_Battle/002_Move/002_Move_Usage.rb` (contact, damage absorption, and survival).
+- **SUCCESS:** `Data/Scripts/011_Battle/001_Battler/009_Battler_UseMove_SuccessChecks.rb` (guard and immunity checks).
+- **MOVE_BASE:** `Data/Scripts/011_Battle/002_Move/001_PokeBattle_Move.rb` (move flags and substitute bypass).
+- **CALC:** `Data/Scripts/011_Battle/002_Move/003_Move_Usage_Calculations.rb` (attack calculation and stage handling).
+- **GENERIC:** `Data/Scripts/011_Battle/002_Move/004_Move_Effects_Generic.rb` (healing and recoil move classes).
+- **MOVES_A:** `Data/Scripts/011_Battle/002_Move/005_Move_Effects_000-07F.rb` (move effects 000-07F).
+- **MOVES_B:** `Data/Scripts/011_Battle/002_Move/006_Move_Effects_080-0FF.rb` (move effects 080-0FF).
+- **MOVES_C:** `Data/Scripts/011_Battle/002_Move/007_Move_Effects_100-17F.rb` (move effects 100-17F).
