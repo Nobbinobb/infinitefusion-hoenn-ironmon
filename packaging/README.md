@@ -23,3 +23,7 @@ and tracker features; install only one of them.
 
 See the included `INSTALLATION.md` for complete installation, compatibility,
 diagnostics, and removal instructions.
+
+Ironmon's original source code and documentation are licensed under the MIT
+License in `LICENSE`. Third-party components retain their own terms; see
+`THIRD_PARTY_NOTICES.md` and `OPEN-SANS-LICENSE.txt`.

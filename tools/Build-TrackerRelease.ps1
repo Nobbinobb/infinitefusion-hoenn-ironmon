@@ -367,7 +367,7 @@ if (Test-Path -LiteralPath $resolvedRuntimeRequiredDistribution) {
   Remove-Item -LiteralPath $resolvedRuntimeRequiredDistribution -Recurse -Force
 }
 New-Item -ItemType Directory -Force -Path $resolvedRuntimeRequiredDistribution | Out-Null
-foreach ($distributionEntry in "Data", "README.md", "INSTALLATION.md", "RELEASE_NOTES.md") {
+foreach ($distributionEntry in "Data", "README.md", "INSTALLATION.md", "RELEASE_NOTES.md", "LICENSE", "THIRD_PARTY_NOTICES.md", "OPEN-SANS-LICENSE.txt") {
   $sourceEntry = Join-Path $distribution $distributionEntry
   if (-not (Test-Path -LiteralPath $sourceEntry)) {
     throw "The base player distribution is missing '$distributionEntry'."

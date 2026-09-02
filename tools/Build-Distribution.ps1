@@ -22,6 +22,9 @@ $distributionRoot = Join-Path $projectRoot "dist"
 $distributionReadme = Join-Path $projectRoot "packaging\README.md"
 $installationGuide = Join-Path $projectRoot "docs\guides\INSTALLATION.md"
 $releaseNotes = Join-Path $projectRoot "docs\releases\RELEASE_NOTES_0.8.4.md"
+$projectLicense = Join-Path $projectRoot "LICENSE"
+$thirdPartyNotices = Join-Path $projectRoot "THIRD_PARTY_NOTICES.md"
+$openSansLicense = Join-Path $projectRoot "OPEN-SANS-LICENSE.txt"
 $installation = Join-Path $gameRoot "Data\Scripts\997_Ironmon"
 $installationData = Join-Path $gameRoot "Data\Ironmon"
 $installationBattleGraphics = Join-Path $installationData "graphics\Battle"
@@ -224,5 +227,8 @@ foreach ($battleMoveSheet in "cursor_fight.png", "cursor_fight_dark.png") {
 Copy-Item -LiteralPath $distributionReadme -Destination (Join-Path $distributionRoot "README.md")
 Copy-Item -LiteralPath $installationGuide -Destination (Join-Path $distributionRoot "INSTALLATION.md")
 Copy-Item -LiteralPath $releaseNotes -Destination (Join-Path $distributionRoot "RELEASE_NOTES.md")
+Copy-Item -LiteralPath $projectLicense -Destination (Join-Path $distributionRoot "LICENSE")
+Copy-Item -LiteralPath $thirdPartyNotices -Destination (Join-Path $distributionRoot "THIRD_PARTY_NOTICES.md")
+Copy-Item -LiteralPath $openSansLicense -Destination (Join-Path $distributionRoot "OPEN-SANS-LICENSE.txt")
 
 Write-Output "Ironmon source and data copied to the distribution and local game."
