@@ -131,7 +131,7 @@ public sealed class DefenseViewTests
     }
 
     /// <summary>
-    /// Verifies combined neutral results disappear and category-dependent defenses stay on their type row.
+    /// Verifies combined neutral results disappear and neutral category values are omitted from split rows.
     /// </summary>
     [Fact]
     public async Task CombinedMatchupsHideNeutralTypesAndAllSourceExplanations()
@@ -167,8 +167,8 @@ public sealed class DefenseViewTests
             Assert.DoesNotContain(">Fire</span>", html);
             Assert.DoesNotContain(">Normal</span>", html);
             Assert.Contains(">Rock</span>", html);
-            Assert.Contains("physical", html);
-            Assert.Contains("special", html);
+            Assert.DoesNotContain("<strong>1×</strong> physical", html);
+            Assert.Contains("<strong>2×</strong> special", html);
             Assert.Contains("–1×", html);
             Assert.Contains("Leech Seed", html);
             Assert.DoesNotContain("immunity", html);

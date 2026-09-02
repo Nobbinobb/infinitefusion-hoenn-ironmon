@@ -27,8 +27,19 @@ module Ironmon
     return [[rounded, 1].max, MAX_SCALED_LEVEL].min
   end
 
+  def self.player_level_override_battle?
+    return false if !$game_switches || !$game_variables
+    return false if !$game_switches[Settings::OVERRIDE_BATTLE_LEVEL_SWITCH]
+    return $game_variables[Settings::OVERRIDE_BATTLE_LEVEL_VALUE_VAR].is_a?(Integer)
+  end
+
   def self.scale_battle_pokemon(pokemon)
     return pokemon if !active? || !pokemon
+    if player_level_override_battle?
+      pokemon.instance_variable_set(:@ironmon_level_scaling_exempt, true)
+      return pokemon
+    end
+    return pokemon if pokemon.instance_variable_get(:@ironmon_level_scaling_exempt)
     return pokemon if pokemon.instance_variable_get(:@ironmon_level_scaled)
     pokemon.level = scaled_level(pokemon.level)
     pokemon.calc_stats
@@ -108,7 +119,7 @@ module Ironmon
     if reference[3] == :player_highest
       return nil if !$Trainer
       level = $Trainer.highest_level_pokemon_in_party.to_i
-      return level > 0 ? scaled_level(level) : nil
+      return level > 0 ? level : nil
     end
     trainer_data_mode = getTrainersDataMode
     trainer = trainer_data_mode.try_get(

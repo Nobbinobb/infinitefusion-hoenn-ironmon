@@ -23,13 +23,13 @@ public partial class PlayerStatGrid
         if (Player is null)
         {
             return [("SPE", "--", StatAdjustment.Neutral), ("HP", "--", StatAdjustment.Neutral),
-                ("ATK", "--", StatAdjustment.Neutral), ("DEF", "--", StatAdjustment.Neutral),
-                ("SPA", "--", StatAdjustment.Neutral), ("SPD", "--", StatAdjustment.Neutral)];
+                ("ATK", "--", StatAdjustment.Neutral), ("SPA", "--", StatAdjustment.Neutral),
+                ("DEF", "--", StatAdjustment.Neutral), ("SPD", "--", StatAdjustment.Neutral)];
         }
 
         return [("SPE", Format(Player.Speed), Player.NatureAdjustments.Speed), ("HP", Format(Player.MaximumHp), StatAdjustment.Neutral),
-            ("ATK", Format(Player.Attack), Player.NatureAdjustments.Attack), ("DEF", Format(Player.Defense), Player.NatureAdjustments.Defense),
-            ("SPA", Format(Player.SpecialAttack), Player.NatureAdjustments.SpecialAttack), ("SPD", Format(Player.SpecialDefense), Player.NatureAdjustments.SpecialDefense)];
+            ("ATK", Format(Player.Attack), Player.NatureAdjustments.Attack), ("SPA", Format(Player.SpecialAttack), Player.NatureAdjustments.SpecialAttack),
+            ("DEF", Format(Player.Defense), Player.NatureAdjustments.Defense), ("SPD", Format(Player.SpecialDefense), Player.NatureAdjustments.SpecialDefense)];
     }
 
     /// <summary>

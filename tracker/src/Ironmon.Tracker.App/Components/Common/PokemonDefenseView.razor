@@ -30,7 +30,16 @@
                                 }
                                 else
                                 {
-                                    <span class="defense-category-values"><span><strong>@FormatRange(PhysicalMin(entry), PhysicalMax(entry))</strong> @Text["Defense.Physical"]</span><span><strong>@FormatRange(SpecialMin(entry), SpecialMax(entry))</strong> @Text["Defense.Special"]</span></span>
+                                    <span class="defense-category-values">
+                                        @if (ShowPhysicalCategory(entry))
+                                        {
+                                            <span><strong>@FormatRange(PhysicalMin(entry), PhysicalMax(entry))</strong> @Text["Defense.Physical"]</span>
+                                        }
+                                        @if (ShowSpecialCategory(entry))
+                                        {
+                                            <span><strong>@FormatRange(SpecialMin(entry), SpecialMax(entry))</strong> @Text["Defense.Special"]</span>
+                                        }
+                                    </span>
                                 }
                             </div>
                         }

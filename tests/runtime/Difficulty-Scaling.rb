@@ -61,6 +61,26 @@ module IronmonDifficultyScalingRuntimeTests
     end
   end
 
+  def self.test_player_level_override_is_not_scaled_again
+    saved_switches = $game_switches
+    saved_variables = $game_variables
+    $game_switches = Game_Switches.new
+    $game_variables = Game_Variables.new
+    $game_switches[Settings::OVERRIDE_BATTLE_LEVEL_SWITCH] = true
+    $game_variables[Settings::OVERRIDE_BATTLE_LEVEL_VALUE_VAR] = 26
+    pokemon = Pokemon.new(:PIKACHU, 26)
+    with_ironmon_active(true) do
+      Ironmon.scale_battle_pokemon(pokemon)
+      assert(pokemon.level == 26, "player-matched battle level is not multiplied by 1.5")
+      $game_switches[Settings::OVERRIDE_BATTLE_LEVEL_SWITCH] = false
+      Ironmon.scale_battle_pokemon(pokemon)
+      assert(pokemon.level == 26, "player-matched party remains exempt after its wrapper clears the override")
+    end
+  ensure
+    $game_switches = saved_switches
+    $game_variables = saved_variables
+  end
+
   def self.test_gym_leader_addition_levels
     first = 4.times.map do |index|
       Ironmon.gym_leader_addition_level([20, 24], index)
@@ -86,6 +106,7 @@ module IronmonDifficultyScalingRuntimeTests
   def self.run
     test_scaled_level_rule
     test_battle_pokemon_uses_rule_once
+    test_player_level_override_is_not_scaled_again
     test_gym_leader_addition_levels
     File.binwrite(OUTPUT_PATH, "difficulty scaling runtime tests passed\n")
   rescue Exception => exception

@@ -39,6 +39,13 @@ module IronmonDefenseOverviewTests
     assert(profile(thick_fat, :WATER)["physical_min"] == 0.5, "unrelated resistance unchanged")
     assert(thick_fat["ability_description"] == GameData::Ability.get(:THICKFAT).description, "supporting metadata uses the game catalog description")
     assert(thick_fat["protections"].any? { |effect| effect["label"] == "Leech Seed" }, "protection labels describe only the defense")
+    player.stages[:DEFENSE] = 3
+    player.stages[:SPECIAL_DEFENSE] = -2
+    staged = overview(player)
+    assert(profile(staged, :FIRE)["physical_min"] == 1 && profile(staged, :FIRE)["special_max"] == 1, "defensive stat stages do not change type resistance factors")
+    assert(!rule(staged, :stage_DEFENSE) && !rule(staged, :stage_SPECIAL_DEFENSE), "defensive stat stages are not defense overview modifiers")
+    player.stages[:DEFENSE] = 0
+    player.stages[:SPECIAL_DEFENSE] = 0
     player.effects[PBEffects::GastroAcid] = true
     assert(profile(overview(player), :FIRE)["physical_min"] == 2, "suppressed Thick Fat no longer reduces damage")
     player.effects[PBEffects::GastroAcid] = false

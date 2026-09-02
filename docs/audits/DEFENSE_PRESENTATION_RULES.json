@@ -1926,7 +1926,6 @@
     "sport_factor": 0.3333333333333333,
     "aura_factor": 1.3333333333333333,
     "aura_break_factor": 0.6666666666666666,
-    "stage_base": 2,
     "healing_format": "+{1}/{2} HP per turn"
   },
   "public_effects": [
@@ -2011,10 +2010,6 @@
       "HeavyRain": "FIRE",
       "HarshSun": "WATER"
     }
-  },
-  "stages": {
-    "DEFENSE": "physical",
-    "SPECIAL_DEFENSE": "special"
   },
   "uproar": {
     "id": "uproar",

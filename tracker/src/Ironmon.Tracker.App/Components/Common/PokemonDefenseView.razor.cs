@@ -114,6 +114,24 @@ public partial class PokemonDefenseView
         => PhysicalMin(entry) == SpecialMin(entry) && PhysicalMax(entry) == SpecialMax(entry);
 
     /// <summary>
+    /// Determines whether the physical factor should be shown when the categories differ.
+    /// </summary>
+    private static bool ShowPhysicalCategory(DefenseTypeSnapshot entry)
+        => !NeutralRange(PhysicalMin(entry), PhysicalMax(entry)) || NeutralRange(SpecialMin(entry), SpecialMax(entry));
+
+    /// <summary>
+    /// Determines whether the special factor should be shown when the categories differ.
+    /// </summary>
+    private static bool ShowSpecialCategory(DefenseTypeSnapshot entry)
+        => !NeutralRange(SpecialMin(entry), SpecialMax(entry)) || NeutralRange(PhysicalMin(entry), PhysicalMax(entry));
+
+    /// <summary>
+    /// Determines whether a factor range is exactly neutral.
+    /// </summary>
+    private static bool NeutralRange(decimal min, decimal max)
+        => min == 1 && max == 1;
+
+    /// <summary>
     /// Formats a fixed factor or a conditional range.
     /// </summary>
     private static string FormatRange(decimal min, decimal max)

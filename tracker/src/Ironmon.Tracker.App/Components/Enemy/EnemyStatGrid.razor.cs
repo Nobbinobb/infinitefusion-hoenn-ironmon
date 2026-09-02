@@ -9,7 +9,7 @@ public partial class EnemyStatGrid
 {
     private readonly (string Name, EnemyStat Stat)[] _stats =
         [("SPE", EnemyStat.Speed), ("HP", EnemyStat.Hp), ("ATK", EnemyStat.Attack),
-         ("DEF", EnemyStat.Defense), ("SPA", EnemyStat.SpecialAttack), ("SPD", EnemyStat.SpecialDefense)];
+         ("SPA", EnemyStat.SpecialAttack), ("DEF", EnemyStat.Defense), ("SPD", EnemyStat.SpecialDefense)];
 
     /// <summary>
     /// Gets or initializes tracker-owned run knowledge.
