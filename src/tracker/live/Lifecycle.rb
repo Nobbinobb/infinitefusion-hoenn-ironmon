@@ -121,6 +121,9 @@ module Ironmon
       respond_to?(:register_statistics_battler_item)
     @tracker_player_battler = battler
     @tracker_player_pokemon = battler.pokemon
+    if !battler.effects[PBEffects::Transform]
+      battler.instance_variable_set(:@ironmon_tracker_transform_identity, nil)
+    end
     @tracker_move_menu_pokemon_id = nil
     snapshot = tracker_player_snapshot
     @tracker_player_json = tracker_json_generate(snapshot)

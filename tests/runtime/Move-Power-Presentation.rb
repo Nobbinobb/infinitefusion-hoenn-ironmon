@@ -45,6 +45,11 @@ module IronmonMovePowerPresentationRuntimeTests
     end
   end
 
+  class TransformScene
+    def pbDisplayMessage(*_args); end
+    def pbRefreshOne(*_args); end
+  end
+
   def self.assert(condition, message)
     raise "Move-power presentation runtime test failed: #{message}" if
       !condition
@@ -242,12 +247,115 @@ module IronmonMovePowerPresentationRuntimeTests
     )
   end
 
+  def self.test_imposter_snapshot
+    original_global = $PokemonGlobal
+    original_bag = $PokemonBag
+    original_game_temp = $game_temp
+    tracked = [:@tracker_battle, :@tracker_battle_id, :@tracker_player_battler,
+               :@tracker_player_pokemon, :@tracker_enemy_battlers]
+    previous = {}
+    tracked.each { |name| previous[name] = Ironmon.instance_variable_get(name) }
+    begin
+      $PokemonGlobal = PokemonGlobalMetadata.new
+      $PokemonGlobal.ironmon_mode = true
+      $PokemonBag = nil
+      $game_temp = Game_Temp.new
+      $game_temp.in_battle = true
+      pokemon = Pokemon.new(:DITTO, 42, nil, false)
+      pokemon.ability = :IMPOSTER
+      pokemon.item = :POTION
+      pokemon.moves.replace([
+        Pokemon::Move.new(:TACKLE), Pokemon::Move.new(:GROWL)
+      ])
+      target = Pokemon.new(:PIKACHU, 50, nil, false)
+      target.ability = :STATIC
+      target.item = :ORANBERRY
+      target.moves.replace([
+        Pokemon::Move.new(:THUNDERBOLT), Pokemon::Move.new(:QUICKATTACK),
+        Pokemon::Move.new(:ELECTROBALL), Pokemon::Move.new(:THUNDERWAVE)
+      ])
+      battle = PokeBattle_Battle.new(
+        TransformScene.new, [pokemon], [target], nil, nil
+      )
+      player = PokeBattle_Battler.new(battle, 0)
+      enemy = PokeBattle_Battler.new(battle, 1)
+      battle.battlers[0], battle.battlers[1] = player, enemy
+      battle.positions[0] = PokeBattle_ActivePosition.new
+      battle.positions[1] = PokeBattle_ActivePosition.new
+      player.pbInitialize(pokemon, 0)
+      enemy.pbInitialize(target, 0)
+      Ironmon.instance_variable_set(:@tracker_battle, battle)
+      Ironmon.instance_variable_set(:@tracker_battle_id, "imposter-test")
+      Ironmon.instance_variable_set(:@tracker_player_battler, player)
+      Ironmon.instance_variable_set(:@tracker_player_pokemon, pokemon)
+      Ironmon.instance_variable_set(:@tracker_enemy_battlers, { 1 => enemy })
+      original_hp = pokemon.hp
+      original_total_hp = pokemon.totalhp
+      original_level = pokemon.level
+      player.pbTransform(enemy)
+      snapshot = Ironmon.tracker_player_snapshot
+      assert(snapshot["transformed"], "the live snapshot identifies Transform")
+      assert(
+        snapshot["original_species_id"] == Ironmon.tracker_species_id(pokemon) &&
+          snapshot["stored_ability_details"]["id"] == "IMPOSTER" &&
+          snapshot["copied_ability_details"]["id"] == "STATIC",
+        "persistent learnset and ability ownership remain tied to the original Pokemon"
+      )
+      assert(
+        snapshot["species_id"] == Ironmon.tracker_species_id(target) &&
+          snapshot["species_name"] == target.species_data.name &&
+          snapshot["sprite_path"] == Ironmon.tracker_sprite_path(target),
+        "the transformed card uses the copied visible species and sprite"
+      )
+      assert(
+        snapshot["ability_details"]["id"] == "STATIC" &&
+          snapshot["ability"] == GameData::Ability.get(:STATIC).name,
+        "the transformed card uses the copied ability"
+      )
+      assert(
+        [snapshot["attack"], snapshot["defense"],
+         snapshot["special_attack"], snapshot["special_defense"],
+         snapshot["speed"]] ==
+          [enemy.attack, enemy.defense, enemy.spatk, enemy.spdef, enemy.speed],
+        "the transformed card uses the copied non-HP battle stats"
+      )
+      assert(
+        snapshot["level"] == original_level &&
+          snapshot["current_hp"] == original_hp &&
+          snapshot["maximum_hp"] == original_total_hp &&
+          snapshot["held_item"] == GameData::Item.get(:POTION).name,
+        "Transform retains the player's level, HP, and held item"
+      )
+      assert(
+        snapshot["moves"].map { |move| move["id"] } ==
+          target.moves.map { |move| move.id.to_s } &&
+          snapshot["moves"].all? { |move| move["current_pp"] == 5 && move["total_pp"] == 5 },
+        "the current move list uses the four copied 5-PP battle moves"
+      )
+      assert(
+        snapshot["stored_moves"].map { |move| move["id"] } ==
+          pokemon.moves.map { |move| move.id.to_s },
+        "PP-item targets retain the original party move slots"
+      )
+      assert(
+        snapshot["nature_adjustments"].values.uniq == ["neutral"],
+        "copied stats do not retain misleading original-nature highlights"
+      )
+    ensure
+      $PokemonGlobal = original_global
+      $PokemonBag = original_bag
+      $game_temp = original_game_temp
+      previous.each { |name, value| Ironmon.instance_variable_set(name, value) }
+    end
+  end
+
   def self.run
     test_catalog
     test_active_battle_types
     test_offline_calculation
     test_prospective_counters
     test_random_details
+    test_imposter_snapshot
     File.binwrite(OUTPUT_PATH, "move-power presentation runtime tests passed\n")
   rescue Exception => exception
     File.binwrite(

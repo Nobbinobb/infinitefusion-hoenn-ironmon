@@ -8,6 +8,10 @@ namespace Ironmon.Tracker.App.Components.Player;
 /// </summary>
 public partial class PlayerCard
 {
+    private const string _activeFusionResourceKey = "Player.Card.ActiveFusion";
+    private const string _activePokemonResourceKey = "Player.Card.ActivePokemon";
+    private const string _transformedFusionResourceKey = "Player.Card.TransformedFusion";
+    private const string _transformedResourceKey = "Player.Card.Transformed";
     private AbilitySnapshot? _selectedAbility;
     private bool _defenseOpen;
     private string? _defensePokemonId;
@@ -97,6 +101,18 @@ public partial class PlayerCard
         => Player is not null && !string.Equals(Player.Nickname, Player.SpeciesName, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
+    /// Gets the active, transformed, and fusion-aware card heading.
+    /// </summary>
+    /// <returns>The localized card heading.</returns>
+    private string GetCardKicker()
+    {
+        if (Player?.Transformed == true)
+            return Text[Player.Fusion ? _transformedFusionResourceKey : _transformedResourceKey];
+
+        return Text[Player?.Fusion == true ? _activeFusionResourceKey : _activePokemonResourceKey];
+    }
+
+    /// <summary>
     /// Gets the first visible evolution requirement.
     /// </summary>
     /// <returns>The evolution requirement or placeholder.</returns>
@@ -183,6 +199,9 @@ public partial class PlayerCard
         if (Player is null)
             return string.Empty;
 
+        if (Player.Transformed)
+            return string.Empty;
+
         NatureAdjustmentsSnapshot adjustments = Player.NatureAdjustments;
         (string Name, StatAdjustment Adjustment)[] stats =
         [
@@ -203,6 +222,18 @@ public partial class PlayerCard
             description.Add($"−{decreased}");
 
         return description.Count == 0 ? Text["Player.Card.NatureNoStatChange"] : string.Join(" / ", description);
+    }
+
+    /// <summary>
+    /// Gets the persistent moves that PP-restoring items actually target.
+    /// </summary>
+    /// <returns>The PP-item move targets.</returns>
+    private IReadOnlyList<PlayerMoveSnapshot> GetPpItemMoves()
+    {
+        if (Player is null)
+            return [];
+
+        return Player.StoredMoves.Count > 0 ? Player.StoredMoves : Player.Moves;
     }
 
     /// <summary>

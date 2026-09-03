@@ -41,6 +41,21 @@ public sealed class DefenseViewTests
     private const string _leechSeedProtection = "type_leech_seed";
     private const string _status = "NONE";
     private const string _gender = "unknown";
+    private const string _transformedHeading = "TRANSFORMED";
+    private const string _transformedSpeciesId = "PIKACHU:0";
+    private const string _transformedSpecies = "Pikachu";
+    private const string _transformedNickname = "Ditto";
+    private const string _transformedAbility = "Static";
+    private const string _electricType = "ELECTRIC";
+    private const string _copiedMoveId = "THUNDERBOLT";
+    private const string _copiedMove = "Thunderbolt";
+    private const string _storedMoveId = "TRANSFORM";
+    private const string _storedMove = "Transform";
+    private const string _storedMoveMarkup = ">Transform<";
+    private const string _hardyNature = "Hardy";
+    private const string _copiedStatsLabel = "copied stats";
+    private const string _copiedAttackMarkup = ">120<";
+    private const string _ppItemMovesMethod = "GetPpItemMoves";
 
     /// <summary>
     /// Verifies both card entry points refresh an open view and close it when its individual changes.
@@ -92,6 +107,62 @@ public sealed class DefenseViewTests
             Invoke(card, _openAction);
             await card.SetParametersAsync(CardParameters(enemy, _secondId, Example(enemy)));
             Assert.DoesNotContain(_viewClass, view.ToHtmlString());
+        });
+    }
+
+    /// <summary>
+    /// Verifies the player card renders copied Transform state while retaining the original PP-item targets.
+    /// </summary>
+    [Fact]
+    public async Task TransformedPlayerCardUsesCurrentBattleProjectionAndStoredItemMoves()
+    {
+        CapturingActivator activator = new();
+        string root = Path.Combine(Path.GetTempPath(), _rootName, Guid.NewGuid().ToString());
+        ServiceCollection services = new();
+        services.AddLogging();
+        services.AddSingleton<IComponentActivator>(activator);
+        services.AddSingleton<IStringLocalizer<TrackerResources>>(new DefenseLocalizer());
+        services.AddSingleton(new TrackerKnowledgeStore(new TrackerKnowledgeOptions(root)));
+        services.AddSingleton(new PokemonSpriteDialogService());
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        await using HtmlRenderer renderer = new(provider, provider.GetRequiredService<ILoggerFactory>());
+        PlayerMoveSnapshot currentMove = new() { Id = _copiedMoveId, Name = _copiedMove, Type = _electricType, CurrentPp = 5, TotalPp = 5 };
+        PlayerMoveSnapshot storedMove = new() { Id = _storedMoveId, Name = _storedMove, Type = _normalType, CurrentPp = 9, TotalPp = 10 };
+        PlayerPokemonSnapshot player = new()
+        {
+            PokemonId = _firstId,
+            SpeciesId = _transformedSpeciesId,
+            Nickname = _transformedNickname,
+            SpeciesName = _transformedSpecies,
+            Transformed = true,
+            Gender = _gender,
+            Status = _status,
+            Ability = _transformedAbility,
+            Nature = _hardyNature,
+            Healing = new(),
+            Types = [_electricType],
+            Moves = [currentMove],
+            StoredMoves = [storedMove],
+            Attack = 120
+        };
+
+        await renderer.Dispatcher.InvokeAsync(async () =>
+        {
+            var view = await renderer.RenderComponentAsync<PlayerCard>(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(PlayerCard.Player)] = player }));
+            string html = WebUtility.HtmlDecode(view.ToHtmlString());
+            Assert.Contains(_transformedHeading, html);
+            Assert.Contains(_transformedSpecies, html);
+            Assert.Contains(_transformedAbility, html);
+            Assert.Contains(_copiedMove, html);
+            Assert.DoesNotContain(_storedMoveMarkup, html);
+            Assert.Contains(_hardyNature, html);
+            Assert.DoesNotContain(_copiedStatsLabel, html);
+            Assert.Contains(_copiedAttackMarkup, html);
+
+            PlayerCard card = Assert.IsType<PlayerCard>(activator.Card);
+            MethodInfo method = typeof(PlayerCard).GetMethod(_ppItemMovesMethod, BindingFlags.NonPublic | BindingFlags.Instance)!;
+            IReadOnlyList<PlayerMoveSnapshot> itemMoves = Assert.IsType<IReadOnlyList<PlayerMoveSnapshot>>(method.Invoke(card, null), exactMatch: false);
+            Assert.Same(storedMove, Assert.Single(itemMoves));
         });
     }
 

@@ -73,9 +73,19 @@ public sealed class TrackerKnowledgeStore
     public void ObservePlayer(PlayerPokemonSnapshot player)
     {
         ArgumentNullException.ThrowIfNull(player);
-        ObserveMoves(player.SpeciesId, player.LevelUpMoves.Where(move => move.Source == "level_up"));
-        if (player.AbilityDetails is not null)
+        string originalSpeciesId = player.OriginalSpeciesId ?? player.SpeciesId;
+        ObserveMoves(originalSpeciesId, player.LevelUpMoves.Where(move => move.Source == "level_up"));
+        if (player.StoredAbilityDetails is not null)
+        {
+            ObserveAbility(originalSpeciesId, player.StoredAbilityDetails);
+        }
+        else if (!player.Transformed && player.AbilityDetails is not null)
+        {
             ObserveAbility(player.SpeciesId, player.AbilityDetails);
+        }
+
+        if (player.Transformed && player.CopiedAbilityDetails is not null)
+            ObserveAbility(player.SpeciesId, player.CopiedAbilityDetails);
     }
 
     /// <summary>

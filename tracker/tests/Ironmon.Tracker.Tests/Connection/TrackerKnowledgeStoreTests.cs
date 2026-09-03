@@ -54,6 +54,64 @@ public sealed class TrackerKnowledgeStoreTests
     }
 
     /// <summary>
+    /// Verifies a transformed player does not assign original learnset knowledge to the copied species.
+    /// </summary>
+    [Fact]
+    public void TransformedPlayerKeepsKnowledgeUnderItsOwningSpecies()
+    {
+        const string RunId = "run-transform-knowledge";
+        const string PokemonId = "player-ditto";
+        const string OriginalSpeciesId = "DITTO:0";
+        const string CopiedSpeciesId = "PIKACHU:0";
+        const string OriginalSpeciesName = "Ditto";
+        const string CopiedSpeciesName = "Pikachu";
+        const string Gender = "genderless";
+        const string Status = "NONE";
+        const string CopiedAbilityId = "STATIC";
+        const string CopiedAbilityName = "Static";
+        const string TransientAbilityId = "MUMMY";
+        const string TransientAbilityName = "Mummy";
+        const string OriginalAbilityId = "IMPOSTER";
+        const string OriginalAbilityName = "Imposter";
+        const string OriginalMoveId = "TRANSFORM";
+        string root = CreateRoot();
+        try
+        {
+            TrackerKnowledgeStore store = new(new TrackerKnowledgeOptions(root));
+            store.SelectRun(RunId);
+            PlayerPokemonSnapshot player = new()
+            {
+                PokemonId = PokemonId,
+                SpeciesId = CopiedSpeciesId,
+                OriginalSpeciesId = OriginalSpeciesId,
+                Nickname = OriginalSpeciesName,
+                SpeciesName = CopiedSpeciesName,
+                Transformed = true,
+                Gender = Gender,
+                Level = 25,
+                Status = Status,
+                Ability = CopiedAbilityName,
+                AbilityDetails = CreateAbility(TransientAbilityId, TransientAbilityName),
+                CopiedAbilityDetails = CreateAbility(CopiedAbilityId, CopiedAbilityName),
+                StoredAbilityDetails = CreateAbility(OriginalAbilityId, OriginalAbilityName),
+                LevelUpMoves = [CreateMove(OriginalMoveId, 1, 0)],
+                Healing = new HealingInventorySnapshot()
+            };
+
+            store.ObservePlayer(player);
+
+            Assert.Equal(OriginalMoveId, Assert.Single(store.GetDisplayedMoves(OriginalSpeciesId, 25)).Id);
+            Assert.Empty(store.GetDisplayedMoves(CopiedSpeciesId, 25));
+            Assert.Equal(OriginalAbilityName, Assert.Single(store.GetAbilities(OriginalSpeciesId)).Name);
+            Assert.Equal(CopiedAbilityName, Assert.Single(store.GetAbilities(CopiedSpeciesId)).Name);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    /// <summary>
     /// Verifies that a directly observed enemy move remains visible when its learn-level lookup is unavailable.
     /// </summary>
     [Fact]

@@ -132,38 +132,63 @@ module Ironmon
 
   def self.tracker_player_snapshot
     pokemon = @tracker_player_pokemon
+    battler = @tracker_player_battler if @tracker_battle_id
+    transformed = !!(battler && battler.effects[PBEffects::Transform])
+    transform_identity = transformed ?
+      battler.instance_variable_get(:@ironmon_tracker_transform_identity) : nil
     species = pokemon.species_data
     nature = pokemon.nature
-    ability = pokemon.ability
-    held_item = pokemon.item
+    ability = battler ? battler.ability : pokemon.ability
+    held_item = battler ? battler.item : pokemon.item
+    current_moves = battler ? battler.moves : pokemon.moves
+    displayed_species_id = transform_identity ?
+      transform_identity["species_id"] : tracker_species_id(pokemon)
+    displayed_species_name = transform_identity ?
+      transform_identity["species_name"] : species.name
+    displayed_fusion = transform_identity ?
+      transform_identity["fusion"] : pokemon.isFusion? || pokemon.isTripleFusion?
+    displayed_sprite_path = transform_identity ?
+      transform_identity["sprite_path"] : tracker_sprite_path(pokemon)
+    displayed_base_stat_total = transform_identity ?
+      transform_identity["base_stat_total"] :
+      pokemon.baseStats.values.inject(0) { |sum, value| sum + value }
     return {
       "pokemon_id" => pokemon.personalID.to_s,
-      "species_id" => tracker_species_id(pokemon),
+      "species_id" => displayed_species_id,
+      "original_species_id" => tracker_species_id(pokemon),
       "nickname" => pokemon.name,
-      "species_name" => species.name,
-      "fusion" => pokemon.isFusion? || pokemon.isTripleFusion?,
+      "species_name" => displayed_species_name,
+      "fusion" => displayed_fusion,
+      "transformed" => transformed,
       "gender" => tracker_gender(pokemon),
-      "sprite_path" => tracker_sprite_path(pokemon),
+      "sprite_path" => displayed_sprite_path,
       "level" => pokemon.level,
       "current_hp" => pokemon.hp,
       "maximum_hp" => pokemon.totalhp,
       "status" => pokemon.status.to_s,
       "confused" => tracker_player_confused?,
-      "types" => tracker_active_types(pokemon, @tracker_player_battler),
-      "defensive_overview" => tracker_defense_snapshot(pokemon, @tracker_player_battler),
+      "types" => tracker_active_types(pokemon, battler),
+      "defensive_overview" => tracker_defense_snapshot(pokemon, battler),
       "ability" => ability ? ability.name : "None",
       "ability_details" => ability ? tracker_ability_snapshot(ability) : nil,
+      "stored_ability_details" => pokemon.ability ?
+        tracker_ability_snapshot(pokemon.ability) : nil,
+      "copied_ability_details" => transform_identity ?
+        transform_identity["ability_details"] : nil,
       "held_item" => held_item ? held_item.name : nil,
-      "attack" => pokemon.attack,
-      "defense" => pokemon.defense,
-      "special_attack" => pokemon.spatk,
-      "special_defense" => pokemon.spdef,
-      "speed" => pokemon.speed,
-      "stat_stages" => tracker_battler_stat_stages(@tracker_player_battler),
-      "base_stat_total" => pokemon.baseStats.values.inject(0) { |sum, value| sum + value },
+      "attack" => battler ? battler.attack : pokemon.attack,
+      "defense" => battler ? battler.defense : pokemon.defense,
+      "special_attack" => battler ? battler.spatk : pokemon.spatk,
+      "special_defense" => battler ? battler.spdef : pokemon.spdef,
+      "speed" => battler ? battler.speed : pokemon.speed,
+      "stat_stages" => tracker_battler_stat_stages(battler),
+      "base_stat_total" => displayed_base_stat_total,
       "nature" => nature ? nature.name : nil,
-      "nature_adjustments" => tracker_nature_adjustments(pokemon),
-      "moves" => pokemon.moves.map { |move| tracker_move_snapshot(move) },
+      "nature_adjustments" => transformed ?
+        tracker_neutral_nature_adjustments : tracker_nature_adjustments(pokemon),
+      "moves" => current_moves.map { |move| tracker_move_snapshot(move, battler) },
+      "stored_moves" => battler ?
+        pokemon.moves.map { |move| tracker_move_snapshot(move, nil) } : [],
       "level_up_moves" => tracker_player_level_up_moves(pokemon),
       "learnset_progress" => tracker_learnset_progress(pokemon),
       "evolutions" => tracker_evolutions(pokemon),
@@ -291,21 +316,27 @@ module Ironmon
     return !!(confusion && confusion > 0)
   end
 
-  def self.tracker_move_snapshot(move)
+  def self.tracker_move_snapshot(move, battler = @tracker_player_battler)
+    move_data = GameData::Move.get(move.id)
+    presentation_move = if move.is_a?(Pokemon::Move)
+                          move
+                        else
+                          Pokemon::Move.new(move.id).tap { |entry| entry.pp = move.pp }
+                        end
     presentation = tracker_move_power_presentation(
-      move, @tracker_player_pokemon, @tracker_player_battler, false
+      presentation_move, @tracker_player_pokemon, battler, false
     )
     return {
-      "id" => move.id.to_s,
-      "name" => move.name,
+      "id" => move_data.id.to_s,
+      "name" => move_data.name,
       "type" => presentation && presentation["type"] ?
-        presentation["type"] : move.type.to_s,
-      "category" => tracker_move_category(GameData::Move.get(move.id)),
-      "description" => GameData::Move.get(move.id).description,
+        presentation["type"] : move_data.type.to_s,
+      "category" => tracker_move_category(move_data),
+      "description" => move_data.description,
       "current_pp" => move.pp,
       "total_pp" => move.total_pp,
-      "power" => move.base_damage || 0,
-      "accuracy" => move.accuracy || 0,
+      "power" => move_data.base_damage || 0,
+      "accuracy" => move_data.accuracy || 0,
       "power_presentation" => presentation
     }
   end
@@ -338,6 +369,34 @@ module Ironmon
       adjustments[key] = change[1] > 0 ? "increased" : "decreased"
     end
     return adjustments
+  end
+
+  def self.tracker_neutral_nature_adjustments
+    return {
+      "attack" => "neutral",
+      "defense" => "neutral",
+      "special_attack" => "neutral",
+      "special_defense" => "neutral",
+      "speed" => "neutral"
+    }
+  end
+
+  def self.tracker_record_transform(battler, target)
+    return if !battler || battler.index.odd? || !target || !target.pokemon
+    pokemon = target.pokemon
+    battler.instance_variable_set(:@ironmon_tracker_transform_identity, {
+      "species_id" => tracker_species_id(pokemon),
+      "species_name" => pokemon.species_data.name,
+      "fusion" => pokemon.isFusion? || pokemon.isTripleFusion?,
+      "sprite_path" => tracker_sprite_path(pokemon),
+      "ability_details" => target.ability ?
+        tracker_ability_snapshot(target.ability) : nil,
+      "base_stat_total" => pokemon.baseStats.values.inject(0) do |sum, value|
+        sum + value
+      end
+    })
+  rescue Exception => error
+    echoln "Ironmon tracker transform identity failed safely: #{error.message}"
   end
 
   def self.tracker_learnset_progress(pokemon)

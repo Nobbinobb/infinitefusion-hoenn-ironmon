@@ -222,6 +222,13 @@ end
 PokeBattle_Battle.prepend(IronmonTrackerBattleHooks)
 
 module IronmonTrackerBattlerHooks
+  def pbTransform(target)
+    result = super
+    Ironmon.tracker_record_transform(self, target) if
+      Ironmon.active? && effects[PBEffects::Transform]
+    return result
+  end
+
   def pbUseMove(choice, special_usage = false)
     result = super
     if !@lastMoveFailed && @lastMoveUsed && @index.odd? && !special_usage

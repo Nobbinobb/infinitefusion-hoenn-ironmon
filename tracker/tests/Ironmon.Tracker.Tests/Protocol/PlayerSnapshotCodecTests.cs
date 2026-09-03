@@ -6,6 +6,9 @@ namespace Ironmon.Tracker.Tests.Protocol;
 public sealed class PlayerSnapshotCodecTests
 {
     private const string PackedFusionPool = "AQID";
+    private const string OriginalSpeciesId = "DITTO:0";
+    private const string StoredAbilityName = "Imposter";
+    private const string CopiedAbilityName = "Synchronize";
     /// <summary>
     /// Initializes the player snapshot codec tests.
     /// </summary>
@@ -27,6 +30,11 @@ public sealed class PlayerSnapshotCodecTests
         Assert.Contains("\"current_hp\":18", json, StringComparison.Ordinal);
         Assert.Contains("\"total_pp\":10", json, StringComparison.Ordinal);
         Assert.Equal("Psychic", Assert.Single(restored.Moves).Name);
+        Assert.Equal("Psychic", Assert.Single(restored.StoredMoves).Name);
+        Assert.True(restored.Transformed);
+        Assert.Equal(OriginalSpeciesId, restored.OriginalSpeciesId);
+        Assert.Equal(StoredAbilityName, restored.StoredAbilityDetails?.Name);
+        Assert.Equal(CopiedAbilityName, restored.CopiedAbilityDetails?.Name);
         MovePowerPresentationSnapshot powerPresentation = Assert.IsType<MovePowerPresentationSnapshot>(Assert.Single(restored.Moves).PowerPresentation);
         Assert.Equal("125", powerPresentation.Display);
         Assert.Equal(MovePowerIndicator.MultiHit, powerPresentation.Indicator);
@@ -149,8 +157,10 @@ public sealed class PlayerSnapshotCodecTests
         {
             PokemonId = "42",
             SpeciesId = "ESPEON:0",
+            OriginalSpeciesId = OriginalSpeciesId,
             Nickname = "Espeon",
             SpeciesName = "Espeon",
+            Transformed = true,
             Gender = "female",
             SpritePath = "Graphics/Battlers/196.png",
             Level = 5,
@@ -160,6 +170,8 @@ public sealed class PlayerSnapshotCodecTests
             Confused = true,
             Types = ["PSYCHIC"],
             Ability = "Synchronize",
+            StoredAbilityDetails = new AbilitySnapshot { Id = "IMPOSTER", Name = StoredAbilityName, Description = "Copies the opposing Pokemon." },
+            CopiedAbilityDetails = new AbilitySnapshot { Id = "SYNCHRONIZE", Name = CopiedAbilityName, Description = "Passes status conditions back." },
             Attack = 14,
             Defense = 16,
             SpecialAttack = 21,
@@ -169,6 +181,7 @@ public sealed class PlayerSnapshotCodecTests
             BaseStatTotal = 525,
             Nature = "Hardy",
             Moves = [move],
+            StoredMoves = [move],
             Healing = new HealingInventorySnapshot
             {
                 ItemCount = 3,

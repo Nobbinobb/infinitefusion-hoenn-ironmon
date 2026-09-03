@@ -12,7 +12,7 @@ else
                            Size="80"
                            CssClass="@(Player is null ? "sprite-placeholder" : "sprite-placeholder live")" />
             <div class="identity-placeholder">
-                <p class="card-kicker">@Text[Player?.Fusion == true ? "Player.Card.ActiveFusion" : "Player.Card.ActivePokemon"]</p>
+                <p class="card-kicker">@GetCardKicker()</p>
                 <h2 class="identity-name">
                     <span>@GetName()</span>
                     @if (Player is not null)
@@ -98,7 +98,7 @@ else
 @if (_itemsOpen && Player is not null)
 {
     <BattleItemPanel Inventory="@Player.Healing"
-                     Moves="@Player.Moves"
+                     Moves="@GetPpItemMoves()"
                      InBattle="@InBattle"
                      BattleId="@BattleId"
                      TargetPosition="@TargetPosition"

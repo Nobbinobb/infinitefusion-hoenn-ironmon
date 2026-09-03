@@ -1183,6 +1183,12 @@
   <data name="Player.Card.ActivePokemon" xml:space="preserve">
     <value>ACTIVE POKEMON</value>
   </data>
+  <data name="Player.Card.Transformed" xml:space="preserve">
+    <value>TRANSFORMED</value>
+  </data>
+  <data name="Player.Card.TransformedFusion" xml:space="preserve">
+    <value>TRANSFORMED FUSION</value>
+  </data>
   <data name="Player.Card.Asleep" xml:space="preserve">
     <value>Asleep</value>
   </data>

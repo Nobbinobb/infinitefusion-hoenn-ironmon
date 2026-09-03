@@ -23,6 +23,12 @@ public sealed class PlayerPokemonSnapshot
     public required string SpeciesId { get; init; }
 
     /// <summary>
+    /// Gets or initializes the persistent species identifier used for learnset ownership.
+    /// This differs from <see cref="SpeciesId"/> while Transform is active.
+    /// </summary>
+    public string? OriginalSpeciesId { get; init; }
+
+    /// <summary>
     /// Gets or initializes the Pokemon nickname.
     /// </summary>
     public required string Nickname { get; init; }
@@ -37,6 +43,11 @@ public sealed class PlayerPokemonSnapshot
     /// Missing values from older game snapshots leave the marker hidden.
     /// </summary>
     public bool Fusion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether the active battler is currently transformed.
+    /// </summary>
+    public bool Transformed { get; init; }
 
     /// <summary>
     /// Gets or initializes the stable gender identifier.
@@ -94,6 +105,18 @@ public sealed class PlayerPokemonSnapshot
     public AbilitySnapshot? AbilityDetails { get; init; }
 
     /// <summary>
+    /// Gets or initializes the persistent ability used for species knowledge.
+    /// This differs from <see cref="AbilityDetails"/> after a temporary battle ability change.
+    /// </summary>
+    public AbilitySnapshot? StoredAbilityDetails { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the target ability copied when Transform activated.
+    /// This remains the knowledge authority if the active ability later changes.
+    /// </summary>
+    public AbilitySnapshot? CopiedAbilityDetails { get; init; }
+
+    /// <summary>
     /// Gets or initializes the localized held-item name when one is held.
     /// </summary>
     public string? HeldItem { get; init; }
@@ -147,6 +170,12 @@ public sealed class PlayerPokemonSnapshot
     /// Gets or initializes the four current moves in game order.
     /// </summary>
     public IReadOnlyList<PlayerMoveSnapshot> Moves { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes the persistent party moves used for PP-item targeting.
+    /// This differs from <see cref="Moves"/> while Transform is active.
+    /// </summary>
+    public IReadOnlyList<PlayerMoveSnapshot> StoredMoves { get; init; } = [];
 
     /// <summary>
     /// Gets or initializes current moves that legally reveal level-up learnset entries.
