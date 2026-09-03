@@ -27,7 +27,8 @@ compatibility, and no personal profile is shipped in the distribution.
 - Hairstyle variants, skin tones, and dyes are controls, not extra purchases.
 - Trainer victories pay once per actual battle; badges and Hall of Fame pay
   once per attempt. Reward identities distinguish repeated imports of one seed.
-- Points/ownership are shared; confirmed appearance is slot-specific and is
+- Points/ownership are shared; both gender default outfits are always owned;
+  confirmed appearance is slot-specific and is
   restored separately from the gameplay checkpoint.
 - The profile uses checksummed alternating snapshots and a cross-process lock.
   Corruption fails closed for spending/claiming, not for starting gameplay.

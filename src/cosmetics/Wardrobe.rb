@@ -138,9 +138,11 @@ module Ironmon
         @items = @catalog.available(category)
         @items = @items.select { |entry| @state["owned"][entry["key"]] } if @owned_only && !@initial
         @items.unshift(nil) if category == "hat"
+        @items.unshift(:filter) if !@initial
         @items << :back
         @window.commands = @items.map do |entry|
           next _INTL("Back") if entry == :back
+          next @owned_only ? _INTL("Filter: Obtained only") : _INTL("Filter: All items") if entry == :filter
           next _INTL("None") if !entry
           entry["name"]
         end
@@ -151,7 +153,7 @@ module Ironmon
       def preview_appearance
         draft = @appearance.dup
         entry = @browser_field ? @items[@window.index] : :back
-        set_piece(draft, @browser_field, entry) if @browser_field && entry != :back
+        set_piece(draft, @browser_field, entry) if @browser_field && (entry.nil? || entry.is_a?(Hash))
         return draft
       end
 
@@ -195,6 +197,8 @@ module Ironmon
         pbDrawShadowText(canvas, 310, 326, Graphics.width - 318, 30, status, base, shadow, 1)
         detail = if entry.is_a?(Hash)
                    entry["description"]
+                 elsif entry == :filter
+                   @owned_only ? _INTL("Showing only cosmetics you have permanently obtained.") : _INTL("Showing all installed cosmetics, including locked items you can preview.")
                  elsif @initial
                    _INTL("Only the final selected pieces become permanently unlocked.")
                  else
@@ -202,7 +206,7 @@ module Ironmon
                  end
         canvas.font.size = 18
         drawTextEx(canvas, 16, Graphics.height - 86, Graphics.width - 32, 2, detail, base, shadow)
-        hint = @browser_field ? _INTL("Left/Right: page  |  Action: owned/all  |  Back: categories") : _INTL("Left/Right: adjust or rotate preview  |  Confirm: select  |  Back: cancel")
+        hint = @browser_field ? _INTL("Confirm: select or change filter  |  Left/Right: page  |  Back: categories") : _INTL("Left/Right: adjust or rotate preview  |  Confirm: select  |  Back: cancel")
         pbDrawShadowText(canvas, 16, Graphics.height - 28, Graphics.width - 32, 26, hint, base, shadow)
       end
 
@@ -327,6 +331,10 @@ module Ironmon
       def choose_item
         entry = @items[@window.index]
         return show_root if entry == :back
+        if entry == :filter
+          @owned_only = !@owned_only
+          return show_browser(@browser_field)
+        end
         if entry && !@initial && !@state["owned"][entry["key"]]
           return if !pbConfirmMessage(_INTL("Permanently unlock {1} for {2} points?", entry["name"], entry["points"]))
           begin

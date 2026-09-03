@@ -20,6 +20,10 @@ module Ironmon
                          "hat2_color", "bike_color"].freeze
     DYE_FIELDS = ["clothes_color", "hair_color", "hat_color", "hat2_color", "bike_color"].freeze
 
+    def self.default_outfit_keys
+      return [GENDER_MALE, GENDER_FEMALE].map { |gender| "clothes:#{getDefaultClothes(gender)}" }.uniq
+    end
+
     def self.encode(value)
       return "{" + value.map { |key, child| "#{encode(key.to_s)}:#{encode(child)}" }.join(",") + "}" if value.is_a?(Hash)
       return "[" + value.map { |child| encode(child) }.join(",") + "]" if value.is_a?(Array)

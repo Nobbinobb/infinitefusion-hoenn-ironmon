@@ -40,11 +40,25 @@ module IronmonCosmeticRuntimeTests
 
   def self.test_profile(catalog, profile)
     draft = appearance(catalog)
-    assert(!profile.read["initial_claimed"], "a fresh profile has one free choice")
+    fresh = profile.read
+    assert(!fresh["initial_claimed"], "a fresh profile has one free choice")
+    assert(C.default_outfit_keys.all? { |key| fresh["owned"][key] },
+           "both gender default outfits are permanently owned from the start")
+    legacy = C::Profile.new(File.join(profile.directory, "legacy-defaults"))
+    legacy.synchronize do
+      state = legacy.empty
+      state["points"] = 75
+      legacy.write_unlocked(state)
+    end
+    migrated = legacy.read
+    assert(migrated["points"] == 75 && !migrated["initial_claimed"] &&
+           C.default_outfit_keys.all? { |key| migrated["owned"][key] },
+           "existing profiles gain both defaults without changing progression")
     profile.confirm(catalog, draft, "slot:File A", true)
     state = profile.read
-    assert(state["initial_claimed"] && state["owned"].keys.sort == C.appearance_keys(draft).sort,
-           "only final pieces are unlocked, not the browsed catalog")
+    expected_owned = (C.default_outfit_keys + C.appearance_keys(draft)).uniq.sort
+    assert(state["initial_claimed"] && state["owned"].keys.sort == expected_owned,
+           "defaults and only the final selected pieces are unlocked, not the browsed catalog")
     reject("a different new game cannot claim a second outfit") { profile.confirm(catalog, draft, "slot:File B", true) }
     assert(profile.read["points"] == 0, "free confirmation grants no currency")
     assert(profile.award("attempt-one", "trainer-one", 10), "first trainer reward")
@@ -205,6 +219,19 @@ module IronmonCosmeticRuntimeTests
     bitmap.save_to_png(File.join($ironmon_cosmetic_test_root, "bicycle-preview.png"))
     bitmap.dispose
     screen.show_browser("hat2")
+    assert(screen.instance_variable_get(:@items).first == :filter &&
+           screen.instance_variable_get(:@window).commands.first == "Filter: All items",
+           "category browsers expose the obtained-item filter")
+    screen.choose_item
+    filtered_items = screen.instance_variable_get(:@items)
+    assert(screen.instance_variable_get(:@window).commands.first == "Filter: Obtained only" &&
+           filtered_items.drop(1).all? { |entry| entry == :back || !entry || screen.instance_variable_get(:@state)["owned"][entry["key"]] },
+           "the visible filter shows only permanently obtained cosmetics")
+    Graphics.update
+    bitmap = Graphics.snap_to_bitmap
+    bitmap.save_to_png(File.join($ironmon_cosmetic_test_root, "obtained-filter.png"))
+    bitmap.dispose
+    screen.choose_item
     3.times { screen.move_horizontal(1) }
     Graphics.update
     bitmap = Graphics.snap_to_bitmap

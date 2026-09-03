@@ -54,16 +54,31 @@ module Ironmon
       end
 
       def read
-        return synchronize { read_unlocked }
+        return synchronize do
+          state = read_unlocked
+          write_unlocked(state) if unlock_default_outfits(state)
+          state
+        end
       end
 
       def transaction
         return synchronize do
           state = read_unlocked
+          defaults_unlocked = unlock_default_outfits(state)
           changed = yield(state)
-          write_unlocked(state) if changed
+          write_unlocked(state) if defaults_unlocked || changed
           state
         end
+      end
+
+      def unlock_default_outfits(state)
+        changed = false
+        Cosmetics.default_outfit_keys.each do |key|
+          next if state["owned"][key]
+          state["owned"][key] = true
+          changed = true
+        end
+        return changed
       end
 
       def write_unlocked(state)
