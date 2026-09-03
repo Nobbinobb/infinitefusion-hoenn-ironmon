@@ -244,17 +244,12 @@ class PokemonEncounters
   end
 end
 
-# The base game can fuse two selected encounter rows after selection. Once a
-# slot policy can itself yield a fusion, feeding those results back into that
-# path would attempt to create a fusion of fusions. Normal-only rows remain safe
-# inputs; other policies already decide whether each authored slot is a fusion.
+# Ironmon owns every derived wild-fusion roll. Visible overworld encounters
+# fuse only when eligible spawned Pokemon enter one battle together; the base
+# game's separate single-encounter random roll would bypass that boundary.
 alias ironmon_original_is_fused_encounter isFusedEncounter
 def isFusedEncounter
-  if Ironmon.active? &&
-     Ironmon.configuration.wild_policy !=
-       Ironmon::Configuration::POLICY_NORMAL_ONLY
-    return false
-  end
+  return isFusionForced?() if Ironmon.active?
   return ironmon_original_is_fused_encounter
 end
 
@@ -274,7 +269,7 @@ def generateWildEncounter(encounter_type)
     cross_environment = false
     if isFusionForced?
       origin = :standard_same
-    else
+    elsif Ironmon.overworld_encounter_environment?(encounter_type)
       roll = rand(100)
       if roll < Ironmon::WILD_FUSION_STANDARD_SAME_CHANCE
         origin = :standard_same

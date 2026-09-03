@@ -219,7 +219,8 @@ module Ironmon
       tables[table][number] = true
     end
     pair_codes = {}
-    tables.each_value do |numbers|
+    tables.each do |table, numbers|
+      next if !overworld_encounter_environment?(table[2])
       numbers.keys.sort.combination(2) do |first, second|
         pair_codes[(first << 10) | second] = true
       end
@@ -274,6 +275,7 @@ module Ironmon
         first["metadata"]["version"] == second["metadata"]["version"]
       return origins
     end
+    return [] if !overworld_encounter_environment?(first_type)
     origins = overworld == true ? [] : ["standard_same"]
     origins << "overworld_same" if
       overworld != false && overworld_encounter_environment?(first_type)

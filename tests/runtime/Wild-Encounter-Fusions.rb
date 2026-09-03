@@ -67,6 +67,80 @@ module IronmonWildEncounterFusionRuntimeTests
     )
   end
 
+  def self.test_non_overworld_sources_are_excluded_from_derived_fusions
+    assert(
+      !Ironmon.overworld_encounter_environment?(:OldRod) &&
+        !Ironmon.overworld_encounter_environment?(:GoodRod) &&
+        !Ironmon.overworld_encounter_environment?(:SuperRod),
+      "rod encounters are not overworld-capable fusion environments"
+    )
+    encounters = PokemonEncounters.allocate
+    encounters.instance_variable_set(:@encounter_tables, {
+      :OldRod => [[50, :PIKACHU, 5, 5], [50, :CHARMANDER, 5, 5]],
+      :Land => [[100, :BULBASAUR, 5, 5]],
+      :Water => [[100, :SQUIRTLE, 5, 5]]
+    })
+    assert(
+      encounters.ironmon_choose_normal_partner(
+        :OldRod, :PIKACHU, true
+      ).nil?,
+      "a fishing encounter cannot select a cross-environment partner"
+    )
+
+    sources = [
+      lookup_source(:PIKACHU, :OldRod, 1),
+      lookup_source(:CHARMANDER, :OldRod, 2),
+      lookup_source(:BULBASAUR, :Land, 1),
+      lookup_source(:SQUIRTLE, :Water, 1)
+    ]
+    cross_descriptors = Ironmon.tracker_area_encounter_fusion_descriptors(
+      sources, true, 0, 100
+    )
+    assert(
+      cross_descriptors.none? do |descriptor|
+        [descriptor["first"], descriptor["second"]].any? do |source|
+          source["metadata"]["encounter_type"].end_with?("Rod")
+        end
+      end,
+      "area lookup excludes fishing from every cross-environment pair"
+    )
+    assert(
+      [false, true, nil].all? do |overworld|
+        Ironmon.tracker_area_encounter_fusion_descriptors(
+          sources, false, 0, 100, "fishing", overworld
+        ).empty?
+      end,
+      "area lookup never invents same-table fishing fusions"
+    )
+  end
+
+  def self.test_active_ironmon_suppresses_base_single_encounter_fusions
+    original_rate = $game_variables[VAR_WILD_FUSION_RATE]
+    original_random = $game_switches[SWITCH_RANDOM_WILD_TO_FUSION]
+    original_next = $game_switches[SWITCH_FORCE_FUSE_NEXT_POKEMON]
+    original_all = $game_switches[SWITCH_FORCE_ALL_WILD_FUSIONS]
+    with_singleton_method_stub(Ironmon, :active?, proc { true }) do
+      $game_variables[VAR_WILD_FUSION_RATE] = 1
+      $game_switches[SWITCH_RANDOM_WILD_TO_FUSION] = false
+      $game_switches[SWITCH_FORCE_FUSE_NEXT_POKEMON] = false
+      $game_switches[SWITCH_FORCE_ALL_WILD_FUSIONS] = false
+      assert(
+        !isFusedEncounter(),
+        "active Ironmon suppresses the base single-encounter random roll"
+      )
+      $game_switches[SWITCH_FORCE_FUSE_NEXT_POKEMON] = true
+      assert(
+        isFusedEncounter(),
+        "active Ironmon retains explicit forced story fusions"
+      )
+    end
+  ensure
+    $game_variables[VAR_WILD_FUSION_RATE] = original_rate
+    $game_switches[SWITCH_RANDOM_WILD_TO_FUSION] = original_random
+    $game_switches[SWITCH_FORCE_FUSE_NEXT_POKEMON] = original_next
+    $game_switches[SWITCH_FORCE_ALL_WILD_FUSIONS] = original_all
+  end
+
   def self.test_standard_fusion_uses_player_mapping_and_queues_discovery
     first = encounter(:PIKACHU, 17, 0, :Land, 1)
     second = encounter(:CHARMANDER, 17, 0, :Land, 2)
@@ -388,6 +462,8 @@ module IronmonWildEncounterFusionRuntimeTests
   def self.run
     test_configured_rates
     test_source_classification_and_keys
+    test_non_overworld_sources_are_excluded_from_derived_fusions
+    test_active_ironmon_suppresses_base_single_encounter_fusions
     test_standard_fusion_uses_player_mapping_and_queues_discovery
     test_overworld_fusion_retains_existing_orientation
     test_lookup_lists_same_and_cross_table_possibilities
