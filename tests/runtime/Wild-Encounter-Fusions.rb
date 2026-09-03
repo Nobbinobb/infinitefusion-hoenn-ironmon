@@ -115,6 +115,10 @@ module IronmonWildEncounterFusionRuntimeTests
   end
 
   def self.test_active_ironmon_suppresses_base_single_encounter_fusions
+    original_game_variables = $game_variables
+    original_game_switches = $game_switches
+    $game_variables = [] if !$game_variables
+    $game_switches = [] if !$game_switches
     original_rate = $game_variables[VAR_WILD_FUSION_RATE]
     original_random = $game_switches[SWITCH_RANDOM_WILD_TO_FUSION]
     original_next = $game_switches[SWITCH_FORCE_FUSE_NEXT_POKEMON]
@@ -135,10 +139,16 @@ module IronmonWildEncounterFusionRuntimeTests
       )
     end
   ensure
-    $game_variables[VAR_WILD_FUSION_RATE] = original_rate
-    $game_switches[SWITCH_RANDOM_WILD_TO_FUSION] = original_random
-    $game_switches[SWITCH_FORCE_FUSE_NEXT_POKEMON] = original_next
-    $game_switches[SWITCH_FORCE_ALL_WILD_FUSIONS] = original_all
+    if $game_variables
+      $game_variables[VAR_WILD_FUSION_RATE] = original_rate
+    end
+    if $game_switches
+      $game_switches[SWITCH_RANDOM_WILD_TO_FUSION] = original_random
+      $game_switches[SWITCH_FORCE_FUSE_NEXT_POKEMON] = original_next
+      $game_switches[SWITCH_FORCE_ALL_WILD_FUSIONS] = original_all
+    end
+    $game_variables = original_game_variables
+    $game_switches = original_game_switches
   end
 
   def self.test_standard_fusion_uses_player_mapping_and_queues_discovery
