@@ -6,7 +6,7 @@ challenge rules, rapid resets, and a companion tracker designed around
 hidden-information boundaries.
 
 > [!IMPORTANT]
-> Ironmon **0.8.4** targets **Pokémon Infinite Fusion 2 version 6.8.2**.
+> Ironmon **0.8.5** targets **Pokémon Infinite Fusion 2 version 6.8.2**.
 > The included tracker currently targets Windows x64.
 
 ## Features
@@ -20,7 +20,8 @@ hidden-information boundaries.
 - Immutable generation profiles that preserve the exact data used by each run.
 - Fast challenge resets and automatic attempt archiving.
 - Progression safeguards for required story Pokémon, trades, HMs, and healing.
-- A shared cosmetic wardrobe with save-slot-specific equipped appearances.
+- A shared cosmetic wardrobe with default outfits, obtained-only filtering,
+  and save-slot-specific equipped appearances.
 - A local companion tracker with area lookup, Pokémon lookup, evolution graphs,
   run statistics, and completed-run archives.
 - Privacy-aware tracker communication: concealed gameplay information is
@@ -71,8 +72,8 @@ and troubleshooting.
 
 | Ironmon version | Infinite Fusion 2 version | Status |
 | --- | --- | --- |
-| 0.8.4 | 6.8.2 | Current |
-| 0.8.0–0.8.3 | 6.8.2 | Legacy |
+| 0.8.5 | 6.8.2 | Current |
+| 0.8.0–0.8.4 | 6.8.2 | Legacy |
 | 0.2.1–0.7.9 | 6.8.0 | Legacy |
 
 Use an Ironmon release only with its listed Infinite Fusion version.
@@ -93,7 +94,8 @@ may be exposed.
 
 Tracker features include:
 
-- Live player and opponent information.
+- Live player and opponent information, including temporary Imposter and
+  Transform battle state.
 - Area encounters, trainers, items, and discovery progress.
 - Pokémon details and move presentation.
 - Fusion-aware evolution and obtainability graphs.

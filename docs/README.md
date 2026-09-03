@@ -28,6 +28,9 @@ also suitable for saving as PDF.
 
 ## Release history
 
+- [Ironmon 0.8.5](releases/RELEASE_NOTES_0.8.5.md): wardrobe defaults and
+  filtering, transformed tracker state, encounter-fusion parity, and mechanics
+  manual refinements.
 - [Release notes](releases/): version-specific changes from 0.2.1 onward.
 
 Historical validation records and the former collection of design notes were

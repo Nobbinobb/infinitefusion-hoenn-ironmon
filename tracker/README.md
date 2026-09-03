@@ -44,6 +44,8 @@ for the input, generated artifacts, and manual refresh command.
 
 The current review build is a Windows-only .NET 10 Blazor Hybrid application
 with permanent Player, Enemy, live Lookup, and completed-run Archive views.
+The Player card follows temporary Imposter and Transform battle state while
+retaining the original Pokemon for nature, learnset, and PP-item ownership.
 Archive includes deterministic Pokemon lookup, fusion exploration, and session
 Back/Forward navigation. Live Lookup contains Trainers, Encounters, Items, and
 Type Coverage. The game connects locally on port `38521`; no browser or HTTP
