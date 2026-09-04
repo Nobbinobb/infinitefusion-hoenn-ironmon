@@ -69,7 +69,7 @@ jobs:
         run: ./tools/ci/Restore-Release-Catalogs.ps1
 
       - name: Restore
-        run: dotnet restore tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj
+        run: dotnet restore tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj --runtime win-x64 -p:Configuration=Release -m:1
 
       - name: Test
-        run: dotnet test tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj --configuration Release --no-restore --nologo --disable-build-servers --maxcpucount:1 -p:UseSharedCompilation=false
+        run: dotnet test tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj --configuration Release --runtime win-x64 --no-restore --nologo --disable-build-servers --maxcpucount:1 -p:UseSharedCompilation=false
