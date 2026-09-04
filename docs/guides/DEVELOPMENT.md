@@ -20,6 +20,35 @@ and fails before generation, testing, publication, or packaging begins. Set a
 new `ApplicationDisplayVersion`, numeric `ApplicationVersion`, and `Version` in
 the tracker project before intentionally creating the next release.
 
+## Git and pull-request workflow
+
+Create each change from an up-to-date `main` branch. Use `feature/<name>` for
+new behavior, `fix/<name>` for defects, `issue/<number>-<name>` when an issue is
+the primary work item, and `release/<version>` for release preparation. Keep
+version numbers unchanged on feature, fix, and issue branches.
+
+Push the working branch and open a pull request into `main`. The repository's
+GitHub Actions workflow runs the platform-independent tracker tests and the
+Windows application tests. Ruby and full release validation remain local
+because they require the installed Infinite Fusion game and its bundled Ruby
+runtime. A clean CI checkout restores the generated catalogs needed to compile
+the tracker from the latest published runtime-required release; these ignored
+release artifacts remain outside source control.
+
+After the desired feature and fix pull requests have merged, create a release
+branch from the updated `main`. Add the new release notes and synchronize the
+Ruby version, both tracker project versions, package documentation,
+installation guide, protocol examples, and distribution release-note pointer.
+Open the release pull request before producing packages so the final scope and
+wording can be reviewed.
+
+Run `tools/Build-TrackerRelease.ps1` locally only after the release pull request
+is approved, up to date, and frozen. Record the validated commit and generated
+archive checksums in the pull request. After merging, verify that `main` has the
+same content as the validated commit before tagging and publishing the release.
+Any code or documentation change after a successful release build invalidates
+those artifacts.
+
 ## Tracker builds
 
 The tracker solution is `tracker/Ironmon.Tracker.slnx`. Normal Debug and Release
