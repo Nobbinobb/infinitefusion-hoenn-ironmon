@@ -44,7 +44,7 @@ jobs:
         run: dotnet restore tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj
 
       - name: Test
-        run: dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj --configuration Release --no-restore --nologo --disable-build-servers --maxcpucount:1 -p:UseSharedCompilation=false
+        run: dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj --configuration Release --no-restore --nologo --disable-build-servers --maxcpucount:1 -p:UseSharedCompilation=false -- xUnit.ParallelizeTestCollections=false
 
   app-tests:
     name: Windows app tests
