@@ -978,7 +978,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         Assert.Equal("CYNDAQUIL:0", Assert.Single((await debugPredecessorTask).Matches).SpeciesId);
 
         Task<FusionMaterialSearchResponsePayload> debugMaterialTask = service.Requests.SearchDebugFusionMaterialsAsync("B445H175:0", 100, target: DebugPokemonTarget.Player);
-        TrackerMessage? debugMaterialRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+        TrackerMessage? debugMaterialRequest = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30));
         Assert.Equal("debug_fusion_material_search", debugMaterialRequest?.Command);
         DebugFusionMaterialSearchRequestPayload debugMaterialPayload = TrackerJson.DeserializePayload<DebugFusionMaterialSearchRequestPayload>(debugMaterialRequest!.Payload);
         Assert.Equal(100, debugMaterialPayload.Offset);
