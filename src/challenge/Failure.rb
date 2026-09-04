@@ -5,8 +5,11 @@
 module Ironmon
   def self.with_defeat_start_over_suppressed(decision)
     previous = @defeat_start_over_suppressed
-    @defeat_start_over_suppressed = active? && [2, 5].include?(decision)
-    return yield
+    failed = active? && [2, 5].include?(decision)
+    @defeat_start_over_suppressed = failed
+    result = yield
+    tracker_development_revive_player if failed && tracker_auto_revive_enabled?
+    return result
   ensure
     @defeat_start_over_suppressed = previous
   end

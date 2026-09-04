@@ -463,6 +463,33 @@ public sealed class TrackerRequestClient
         => _diagnosticRequests.GetRunDiagnosticsAsync(GetConnectedRunId(), cancellationToken);
 
     /// <summary>
+    /// Requests the currently authorized development state and all authorized option catalogs.
+    /// </summary>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The current development-control state.</returns>
+    public Task<DebugDevelopmentStateSnapshot> GetDebugDevelopmentStateAsync(CancellationToken cancellationToken = default)
+        => GetDebugDevelopmentStateAsync(includeCatalogs: true, includeEvolutions: true, cancellationToken);
+
+    /// <summary>
+    /// Requests selected portions of the authorized development state.
+    /// </summary>
+    /// <param name="includeCatalogs">Whether the shared ability, move, and item catalogs are included.</param>
+    /// <param name="includeEvolutions">Whether the current Pokémon's evolution and devolution options are included.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested development-control state.</returns>
+    public Task<DebugDevelopmentStateSnapshot> GetDebugDevelopmentStateAsync(bool includeCatalogs, bool includeEvolutions, CancellationToken cancellationToken = default)
+        => _diagnosticRequests.GetDevelopmentStateAsync(GetConnectedRunId(), includeCatalogs, includeEvolutions, cancellationToken);
+
+    /// <summary>
+    /// Sends one individually authorized development action.
+    /// </summary>
+    /// <param name="request">The requested action and its input.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The authoritative current-player state after the action, without option catalogs.</returns>
+    public Task<DebugDevelopmentStateSnapshot> ApplyDebugDevelopmentActionAsync(DebugDevelopmentActionRequestPayload request, CancellationToken cancellationToken = default)
+        => _diagnosticRequests.ApplyDevelopmentActionAsync(request, GetConnectedRunId(), cancellationToken);
+
+    /// <summary>
     /// Searches generated Pokémon in the active run through the authorized debug channel.
     /// </summary>
     /// <param name="query">The name fragment entered by the user.</param>

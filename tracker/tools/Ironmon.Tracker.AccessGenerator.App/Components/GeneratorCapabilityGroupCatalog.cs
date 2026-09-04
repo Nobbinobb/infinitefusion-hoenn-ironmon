@@ -10,6 +10,17 @@ public static class GeneratorCapabilityGroupCatalog
     /// </summary>
     public static IReadOnlyList<GeneratorCapabilityGroup> All { get; } =
     [
+        new("Generator.CapabilityGroups.DevelopmentControls",
+        [
+            DiagnosticCapabilities.DevelopmentAutoRevive,
+            DiagnosticCapabilities.DevelopmentFullHeal,
+            DiagnosticCapabilities.DevelopmentLevel,
+            DiagnosticCapabilities.DevelopmentChangeAbility,
+            DiagnosticCapabilities.DevelopmentChangeMoves,
+            DiagnosticCapabilities.DevelopmentGiveItem,
+            DiagnosticCapabilities.DevelopmentEvolution,
+            DiagnosticCapabilities.DevelopmentSwapPokemon
+        ]),
         new("Generator.CapabilityGroups.PokemonAvailability",
         [
             DiagnosticCapabilities.PokemonCurrentPlayer,

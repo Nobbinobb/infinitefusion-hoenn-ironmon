@@ -13,6 +13,14 @@ module Ironmon
   TRACKER_MAXIMUM_MESSAGE_BYTES = 1_048_576
   TRACKER_OUTPUT_WRITE_BYTES = 65_536
   TRACKER_DIAGNOSTIC_CAPABILITIES = [
+    "development.auto_revive",
+    "development.change_ability",
+    "development.change_moves",
+    "development.evolution",
+    "development.full_heal",
+    "development.give_item",
+    "development.level",
+    "development.swap_pokemon",
     "evolution.candidates",
     "evolution.generator_details",
     "evolution.results",
@@ -88,6 +96,8 @@ module Ironmon
       @last_error_at = 0.0
       @debug_requested = false
       @diagnostic_capabilities = []
+      Ironmon.disable_tracker_auto_revive if
+        Ironmon.respond_to?(:disable_tracker_auto_revive)
       @auto_select_starter = false
       @maximum_starter_base_stat_total = nil
       @favorite_species_ids = []

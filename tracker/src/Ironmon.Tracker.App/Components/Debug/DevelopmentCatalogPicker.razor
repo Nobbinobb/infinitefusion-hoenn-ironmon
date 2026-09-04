@@ -1,0 +1,32 @@
+<div class="@PickerCssClass" @ref="_pickerElement">
+    <input type="search"
+           value="@_query"
+           placeholder="@Placeholder"
+           aria-label="@AriaLabel"
+           autocomplete="off"
+           disabled="@Disabled"
+           @onfocus="OpenAsync"
+           @onblur="Close"
+           @oninput="HandleInput"
+           @onkeydown="HandleKeyDown"
+           @onkeydown:stopPropagation="true" />
+    @if (_open && !Disabled)
+    {
+        <div class="development-picker-results" role="listbox" aria-label="@AriaLabel">
+            @if (FilteredOptions.Count == 0)
+            {
+                <span class="development-picker-empty">@EmptyText</span>
+            }
+            else
+            {
+                @foreach (DebugDevelopmentCatalogEntry option in FilteredOptions)
+                {
+                    <button type="button" class="@(option.Id == SelectedId ? "selected" : null)" @onmousedown:preventDefault="true" @onclick="() => SelectAsync(option)">
+                        <strong>@option.Name</strong>
+                        <span>@option.Id</span>
+                    </button>
+                }
+            }
+        </div>
+    }
+</div>

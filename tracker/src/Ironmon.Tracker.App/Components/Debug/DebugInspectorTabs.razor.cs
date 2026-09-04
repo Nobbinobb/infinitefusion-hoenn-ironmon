@@ -44,6 +44,7 @@ public partial class DebugInspectorTabs
         DebugInspectorPage.Lookup => Text["Debug.Inspector.Lookup"],
         DebugInspectorPage.Diagnostics => Text["Debug.Inspector.RunDiagnostics"],
         DebugInspectorPage.Protocol => Text["Debug.Inspector.Protocol"],
+        DebugInspectorPage.Development => Text["Development.Title"],
         _ => page.ToString()
     };
 }

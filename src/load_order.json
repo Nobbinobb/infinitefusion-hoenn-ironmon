@@ -99,6 +99,7 @@
   { "source": "tracker/post_run/Obtainability.rb", "output": "019_Tracker_Post_Run_5_Obtainability.rb" },
   { "source": "tracker/post_run/Fusion_Caches_And_Runtime.rb", "output": "019_Tracker_Post_Run_6_Fusion_Caches_And_Runtime.rb" },
   { "source": "tracker/debug/Inspection.rb", "output": "020_Tracker_Debug.rb" },
+  { "source": "tracker/debug/Development.rb", "output": "020_Tracker_Debug_0_Development.rb" },
   { "source": "tracker/debug/Requests.rb", "output": "020_Tracker_Debug_1_Requests.rb" },
   { "source": "tracker/debug/Context_And_Authorization.rb", "output": "020_Tracker_Debug_2_Context_And_Authorization.rb" },
   { "source": "tracker/debug/Pokemon_Snapshots.rb", "output": "020_Tracker_Debug_3_Pokemon_Snapshots.rb" },

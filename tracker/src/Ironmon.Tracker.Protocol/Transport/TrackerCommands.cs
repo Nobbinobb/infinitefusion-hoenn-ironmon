@@ -111,6 +111,16 @@ public static class TrackerCommands
     public const string DebugRunDiagnostics = "debug_run_diagnostics";
 
     /// <summary>
+    /// Gets the authorized tracker-driven development-control state command.
+    /// </summary>
+    public const string DebugDevelopmentState = "debug_development_state";
+
+    /// <summary>
+    /// Gets the authorized tracker-driven development mutation command.
+    /// </summary>
+    public const string DebugDevelopmentAction = "debug_development_action";
+
+    /// <summary>
     /// Gets the authorized active-run Pokemon search command.
     /// </summary>
     public const string DebugPokemonSearch = "debug_pokemon_search";

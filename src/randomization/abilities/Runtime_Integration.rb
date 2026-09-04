@@ -30,6 +30,13 @@ end
 class Pokemon
   alias ironmon_ability_original_ability_id ability_id
   def ability_id
+    if instance_variable_get(:@ironmon_development_ability_override)
+      development_ability = instance_variable_get(
+        :@ironmon_development_ability
+      )
+      return development_ability if development_ability &&
+        GameData::Ability.exists?(development_ability)
+    end
     return ironmon_ability_original_ability_id if
       !Ironmon.ability_randomization_active?
     species_value = species_data

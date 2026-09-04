@@ -15,6 +15,9 @@ public partial class PokemonLookupCard
     private AbilitySnapshot? _selectedAbility;
     private PokemonObtainabilitySnapshot _obtainability = new();
     private bool _evolutionGraphOpen;
+    private DebugDevelopmentAction? _pendingDevelopmentAction;
+    private string? _developmentError;
+    private bool _developmentLoading;
 
     /// <summary>
     /// Gets or sets the request client used to load a selected information section.
@@ -89,6 +92,8 @@ public partial class PokemonLookupCard
             _selectedAbility = null;
             _evolutionGraphOpen = false;
             _sectionError = null;
+            _pendingDevelopmentAction = null;
+            _developmentError = null;
             PokemonInformationPage incomingPage = (PokemonInformationPage)(int)Pokemon.Section;
             _selectedPage = CanShowPage(incomingPage) ? incomingPage : GetFirstVisiblePage();
         }
@@ -152,6 +157,16 @@ public partial class PokemonLookupCard
     /// Gets whether the represented run authorizes its complete obtainability domain.
     /// </summary>
     private bool CanShowObtainability => !DebugMode || TrackerDiagnosticCapabilityRules.HasRunObtainability(Connection);
+
+    /// <summary>
+    /// Gets whether active-run lookup displays its authorized Pokémon swap action.
+    /// </summary>
+    private bool ShowDevelopmentActions => DebugMode && Inspector is null && CanSwapPokemon;
+
+    /// <summary>
+    /// Gets whether active-run lookup may replace the current player Pokémon.
+    /// </summary>
+    private bool CanSwapPokemon => Connection.HasDiagnosticCapability(DiagnosticCapabilities.DevelopmentSwapPokemon);
 
     /// <summary>
     /// Creates the selected Pokemon's graph node.
@@ -359,4 +374,68 @@ public partial class PokemonLookupCard
     /// </summary>
     private void CloseEvolutionGraph()
         => _evolutionGraphOpen = false;
+
+    /// <summary>
+    /// Opens the confirmation dialog for one lookup-driven development action.
+    /// </summary>
+    /// <param name="action">The requested mutation.</param>
+    private void RequestDevelopmentAction(DebugDevelopmentAction action)
+    {
+        _developmentError = null;
+        _pendingDevelopmentAction = action;
+    }
+
+    /// <summary>
+    /// Cancels the pending lookup-driven development action.
+    /// </summary>
+    private void CancelDevelopmentAction()
+    {
+        if (_developmentLoading)
+            return;
+
+        _pendingDevelopmentAction = null;
+        _developmentError = null;
+    }
+
+    /// <summary>
+    /// Gets the localized confirmation message for the selected lookup Pokémon.
+    /// </summary>
+    /// <returns>The confirmation message.</returns>
+    private string GetDevelopmentConfirmation()
+    {
+        string key = _pendingDevelopmentAction switch
+        {
+            DebugDevelopmentAction.SwapPokemon => "Development.Lookup.ConfirmSwap",
+            _ => throw new InvalidOperationException("No lookup-driven development action is pending.")
+        };
+
+        return Text[key, Pokemon.Identity.SpeciesName];
+    }
+
+    /// <summary>
+    /// Applies the confirmed lookup-driven development action to the current player Pokémon.
+    /// </summary>
+    /// <returns>A task representing the development action.</returns>
+    private async Task ConfirmDevelopmentActionAsync()
+    {
+        if (_pendingDevelopmentAction is null)
+            return;
+
+        DebugDevelopmentAction action = _pendingDevelopmentAction.Value;
+        _developmentLoading = true;
+        _developmentError = null;
+        try
+        {
+            await Connection.ApplyDebugDevelopmentActionAsync(new DebugDevelopmentActionRequestPayload { Action = action, SpeciesId = Pokemon.Identity.SpeciesId });
+            _pendingDevelopmentAction = null;
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
+        {
+            _developmentError = exception.Message;
+        }
+        finally
+        {
+            _developmentLoading = false;
+        }
+    }
 }
