@@ -19,6 +19,10 @@ module Ironmon
   }.freeze
   PROFILE_SOURCE_CACHE_VARIABLES = [
     :@normal_species_pool,
+    :@fully_evolved_normal_species_pool,
+    :@fully_evolved_normal_species_index,
+    :@fully_evolved_custom_fusion_pool,
+    :@fully_evolved_custom_fusion_index,
     :@allowed_ability_pool, :@ability_pool_fingerprint,
     :@base_stat_source_fingerprint,
     :@validated_base_stat_source_fingerprint,

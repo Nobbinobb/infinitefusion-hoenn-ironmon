@@ -61,43 +61,58 @@ module Ironmon
   def self.tracker_area_trainer_party(trainer, recipe, generator)
     return [] if !trainer
     party = trainer.pokemon.each_with_index.map do |pokemon, slot|
+      level = scaled_level(pokemon[:level])
       mapped = tracker_area_trainer_slot_species(
-        trainer, pokemon[:species], slot, recipe, generator
+        trainer, pokemon[:species], slot, level, recipe, generator
       )
       {
         "species" => GameData::Species.get(mapped),
-        "level" => scaled_level(pokemon[:level])
+        "level" => level
       }
     end
-    return party if !gym_leader?(trainer) || party.length >= 6
+    expansion_version = generation_profile_algorithm_version(
+      "gym_party_expansion"
+    )
+    target_size = trainer_party_expansion_target(
+      trainer, party.length, expansion_version
+    )
+    return party if !target_size || party.length >= target_size
 
     authored_levels = party.map { |pokemon| pokemon["level"] }
     authored_party_size = party.length
     trainer_name = trainer.name.to_s
-    while party.length < 6
+    while party.length < target_size
       slot = party.length
       addition_index = slot - authored_party_size
-      source = gym_leader_source_species_for(
-        recipe["seed"], trainer.trainer_type, trainer_name, slot
+      source = boss_trainer_source_species_for(
+        recipe["seed"], trainer.trainer_type, trainer_name, slot,
+        expansion_version
       )
+      level = boss_trainer_addition_level(
+        authored_levels, addition_index
+      )
+      purpose = expansion_version.to_i <= 1 ?
+        :gym_addition : :boss_addition
       mapped = generator.map(
         source,
-        [:gym_addition, trainer.trainer_type, trainer_name, slot]
+        [purpose, trainer.trainer_type, trainer_name, slot],
+        trainer_requires_fully_evolved_species?(level)
       )
       party << {
         "species" => GameData::Species.get(mapped),
-        "level" => gym_leader_addition_level(
-          authored_levels, addition_index
-        )
+        "level" => level
       }
     end
     return party
   end
 
-  def self.tracker_area_trainer_slot_species(trainer, source, slot, recipe,
-                                             generator)
+  def self.tracker_area_trainer_slot_species(trainer, source, slot, level,
+                                             recipe, generator)
     if !tracker_loaded_recipe?(recipe)
-      return generator.map(source, [:pbs, trainer.id, slot])
+      return generator.map(
+        source, [:pbs, trainer.id, slot],
+        trainer_requires_fully_evolved_species?(level)
+      )
     end
     species = GameData::Species.get(source).species
     placeholders = [

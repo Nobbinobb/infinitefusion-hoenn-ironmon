@@ -1,7 +1,7 @@
 module IronmonSeededRunImportRuntimeTests
   OUTPUT_PATH = $ironmon_seeded_run_import_test_output_path.to_s
   EXPECTED_WORLD_SNAPSHOT_SHA256 =
-    "860e4d84e09e98b41be0160b4e37206f0d9582d99bdebdffc544bb51499a78d5"
+    "58aef3ffdc9502ed948a82f063bd939c4882a980602174ddbaf987cba139029c"
 
   def self.assert(condition, message)
     raise "Seeded-run import runtime test failed: #{message}" if !condition
@@ -404,7 +404,7 @@ module IronmonSeededRunImportRuntimeTests
           [slot, tm_gifts[slot]]
         end,
         :gym_additions => (0..2).map do |slot|
-          Ironmon.gym_leader_source_species_for(
+          Ironmon.boss_trainer_source_species_for(
             seed, :LEADER_Roxanne, "Roxanne", slot
           )
         end,

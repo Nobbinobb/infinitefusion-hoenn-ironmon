@@ -21,7 +21,10 @@ module Ironmon
       "progression_support_pokemon"
     ].sort.freeze
     CURRENT_ALGORITHM_VERSIONS = ALGORITHM_FAMILIES.each_with_object({}) do |name, result|
-      result[name] = 1
+      result[name] = case name
+                     when "species_mapping", "gym_party_expansion" then 2
+                     else 1
+                     end
     end.freeze
 
     def self.build(algorithms, components)

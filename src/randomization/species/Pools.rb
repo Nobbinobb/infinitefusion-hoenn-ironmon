@@ -18,6 +18,57 @@ module Ironmon
     return @normal_species_pool
   end
 
+  def self.fully_evolved_normal_species_pool
+    if !@fully_evolved_normal_species_pool
+      terminal_roles = [:final, :standalone]
+      pool = evolution_catalog.normal_target_catalog.select do |entry|
+        terminal_roles.include?(entry[:role])
+      end.map { |entry| entry[:id] }
+      if pool.empty?
+        raise SpeciesGenerationError,
+              "the fully evolved normal species pool is empty"
+      end
+      @fully_evolved_normal_species_pool = pool.freeze
+    end
+    return @fully_evolved_normal_species_pool
+  end
+
+  def self.fully_evolved_normal_species_index
+    if !@fully_evolved_normal_species_index
+      @fully_evolved_normal_species_index =
+        fully_evolved_normal_species_pool.each_with_object({}) do |species, index|
+          index[GameData::Species.get(species).id_number] = true
+        end.freeze
+    end
+    return @fully_evolved_normal_species_index
+  end
+
+  def self.fully_evolved_custom_fusion_pool
+    if !@fully_evolved_custom_fusion_pool
+      terminal = fully_evolved_normal_species_index
+      pool = custom_fusion_pool.select do |species|
+        match = species.to_s.match(/\AB(\d+)H(\d+)\z/)
+        match && terminal.key?(match[1].to_i) && terminal.key?(match[2].to_i)
+      end
+      if pool.empty?
+        raise SpeciesGenerationError,
+              "the fully evolved custom fusion pool is empty"
+      end
+      @fully_evolved_custom_fusion_pool = pool.freeze
+    end
+    return @fully_evolved_custom_fusion_pool
+  end
+
+  def self.fully_evolved_custom_fusion_index
+    if !@fully_evolved_custom_fusion_index
+      @fully_evolved_custom_fusion_index =
+        fully_evolved_custom_fusion_pool.each_with_object({}) do |species, index|
+          index[GameData::Species.get(species).id_number] = true
+        end.freeze
+    end
+    return @fully_evolved_custom_fusion_index
+  end
+
   def self.stored_species_mapping(kind)
     return {} if !$PokemonGlobal
     if kind == :wild
