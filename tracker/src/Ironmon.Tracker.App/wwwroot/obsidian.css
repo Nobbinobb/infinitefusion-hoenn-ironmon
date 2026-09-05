@@ -1,0 +1,1213 @@
+/* Opt-in presentation: legacy views keep their existing component styles. */
+.obsidian {
+    --text:#f0f3fa;
+    --muted:#9eacbf;
+    --muted-strong:#c0cbdb;
+    --border:#2a3442;
+    --accent-soft:#b0a3ff;
+    --surface:#131820;
+    --surface-soft:#171f2c;
+    --surface-raised:#1b222e;
+    --obsidian-panel:#131820;
+    --obsidian-raised:#1b222e;
+    color:var(--text);
+    font:13px/1.45 "Segoe UI",sans-serif;
+    color-scheme:dark;
+}
+
+body:has(.tracker-shell.obsidian) {
+    background:#090b10;
+}
+
+.tracker-shell.obsidian {
+    background:#090b10;
+    padding:9px 17px 18px;
+    min-height:100vh;
+    max-width:none;
+    gap:0;
+}
+
+.obsidian button {
+    font-family:inherit;
+    cursor:pointer;
+}
+
+.obsidian button:disabled {
+    cursor:default;
+}
+
+.obsidian button:focus-visible {
+    outline:2px solid #b0a3ff;
+    outline-offset:3px;
+}
+
+.obsidian button {
+    touch-action:manipulation;
+}
+
+.obsidian .tracker-header {
+    height:37px;
+    min-height:37px;
+    margin:0;
+    padding:0;
+    align-items:center;
+    border:0;
+    background:transparent;
+}
+
+.obsidian .connection-state {
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    color:#c6d3e3;
+}
+
+.obsidian .connection-dot {
+    width:6px;
+    height:6px;
+    margin:0;
+    flex:none;
+}
+
+.obsidian .header-actions {
+    gap:5px;
+}
+
+.obsidian .settings-button {
+    display:grid;
+    place-items:center;
+    width:33px;
+    height:33px;
+    min-width:33px;
+    padding:0;
+    border:0;
+    border-radius:8px;
+    background:var(--obsidian-panel);
+    color:#b5c1d5;
+}
+
+.obsidian .settings-button:hover {
+    background:var(--obsidian-raised);
+}
+
+.obsidian .view-tabs {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:5px;
+    margin:11px 0 15px;
+    padding:0;
+    border:0;
+    border-bottom:1px solid #222b39;
+    border-radius:0;
+    background:transparent;
+}
+
+.obsidian .view-tab {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    padding:10px 2px 12px;
+    min-height:0;
+    border:0;
+    border-radius:7px 7px 0 0;
+    background:transparent;
+    color:var(--muted);
+    font-size:13px;
+    position:relative;
+}
+
+.obsidian .view-tab.selected {
+    color:#edeaff;
+    background:linear-gradient(0deg,#b0a3ff12,transparent);
+    box-shadow:none;
+}
+
+.obsidian .view-tab.selected:after {
+    content:"";
+    position:absolute;
+    bottom:-1px;
+    left:12px;
+    right:12px;
+    height:2px;
+    background:#b0a3ff;
+}
+
+.obsidian .tab-key {
+    padding:0;
+    border:0;
+    background:none;
+    min-width:0;
+    font-size:10px;
+    color:#708097;
+    box-shadow:none;
+}
+
+.obsidian .view-tab.selected .tab-key {
+    color:#b0a3ff;
+}
+
+.obsidian-player {
+    padding:0;
+    min-width:0;
+}
+
+.obsidian-player p,.obsidian-player h2,.obsidian-player h3 {
+    margin:0;
+}
+
+.obsidian-identity {
+    padding:15px 16px 0;
+    border:1px solid #2a3544;
+    border-radius:12px;
+    background:radial-gradient(ellipse at 14% 0%,#1d2433,#131820 64%);
+}
+
+.obsidian-identity-top {
+    display:grid;
+    grid-template-columns:72px minmax(0,1fr) 139px;
+    gap:12px;
+    align-items:center;
+}
+
+.obsidian .obsidian-sprite {
+    border:0;
+    border-radius:0;
+    background:transparent;
+    display:grid;
+    place-items:center;
+    overflow:visible;
+}
+
+.obsidian-sprite .pokemon-sprite-image {
+    width:100%;
+    height:100%;
+    transform:scale(1.55);
+}
+
+.obsidian-name {
+    min-width:0;
+    align-self:start;
+    padding-top:8px;
+}
+
+.obsidian .card-kicker {
+    font-size:9px;
+    letter-spacing:1.8px;
+    color:#9baccc;
+    margin:0 0 6px;
+    font-weight:400;
+    text-transform:uppercase;
+}
+
+.obsidian-name h2 {
+    font-size:23px;
+    line-height:1.13;
+    font-weight:650;
+    letter-spacing:-.55px;
+    overflow-wrap:anywhere;
+}
+
+.obsidian-player .obsidian-species {
+    font-size:11px;
+    color:var(--muted);
+    margin-top:4px;
+    line-height:1.4;
+}
+
+.obsidian-species .gender-icon {
+    font-size:12px;
+}
+
+.obsidian-types {
+    display:flex;
+    gap:5px;
+    flex-wrap:wrap;
+    margin-top:8px;
+}
+
+.obsidian-types button {
+    padding:3px 7px;
+    line-height:1.25;
+    border:0;
+    border-radius:4px;
+    background:color-mix(in srgb,currentColor 18%,var(--obsidian-panel));
+    font-size:11px;
+    font-weight:600;
+}
+
+.obsidian-identity-actions {
+    display:grid;
+    gap:5px;
+    padding-left:12px;
+    border-left:1px solid #2b3444;
+    min-width:0;
+}
+
+.obsidian-identity-actions button {
+    display:grid;
+    gap:1px;
+    text-align:left;
+    padding:1px 3px;
+    border:0;
+    background:transparent;
+    border-radius:5px;
+    width:100%;
+    min-width:0;
+    opacity:1;
+}
+
+.obsidian-identity-actions button>span {
+    font-size:10px;
+    color:#91a0b5;
+}
+
+.obsidian-identity-actions strong {
+    font-size:12px;
+    font-weight:600;
+    color:#e4eafa;
+    line-height:1.3;
+    overflow-wrap:anywhere;
+}
+
+.obsidian-identity-actions em {
+    font-style:normal;
+    color:#b0a3ff;
+    font-size:11px;
+}
+
+.obsidian-identity-actions button:not(:disabled):hover {
+    background:#a9baff0c;
+}
+
+.obsidian-hp {
+    margin-top:11px;
+}
+
+.obsidian-hp-caption {
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:6px;
+    font-size:10px;
+    color:#c1cbdc;
+}
+
+.obsidian-condition {
+    margin-left:8px;
+    font-size:11px;
+    color:#93b9a8;
+}
+
+.obsidian-hp-caption strong {
+    font-size:15px;
+    font-variant-numeric:tabular-nums;
+}
+
+.obsidian-hp-track {
+    height:5px;
+    border-radius:4px;
+    background:#27303b;
+    overflow:hidden;
+}
+
+.obsidian-hp-track>span {
+    display:block;
+    height:100%;
+    border-radius:4px;
+    background:#76d8b5;
+}
+
+.obsidian-identity-footer {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-top:10px;
+    padding:7px 0;
+    border-top:1px solid #27313e;
+}
+
+.obsidian-identity-footer button {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    border:0;
+    background:transparent;
+    padding:0;
+    color:var(--muted);
+    font-size:11px;
+    border-radius:4px;
+    min-height:23px;
+}
+
+.obsidian-identity-footer strong {
+    font-size:12px;
+    color:#e1e9f4;
+    font-weight:600;
+}
+
+.obsidian-heal-symbol {
+    color:#78ddb9;
+    font-size:17px;
+}
+
+.obsidian-identity-footer button:last-child strong {
+    color:#78ddb9;
+}
+
+.obsidian-stat-section {
+    margin:16px 1px 19px;
+}
+
+.obsidian-player .obsidian-label {
+    font-size:10px;
+    letter-spacing:1.6px;
+    color:#99a8bf;
+    font-weight:500;
+    text-transform:uppercase;
+    margin-bottom:10px;
+}
+
+.obsidian-stats {
+    display:grid;
+    grid-template-columns:repeat(7,minmax(0,1fr));
+    gap:3px;
+}
+
+.obsidian-stats>div {
+    display:grid;
+    gap:4px;
+    justify-items:center;
+}
+
+.obsidian-stats span {
+    font-size:10px;
+    color:var(--muted);
+}
+
+.obsidian-stats strong {
+    font-size:23px;
+    line-height:1.15;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+}
+
+.obsidian-positive {
+    color:#55eaa5!important;
+}
+
+.obsidian-negative {
+    color:#ff6389!important;
+}
+
+.obsidian-stages {
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:7px 13px;
+    min-height:25px;
+    margin-top:10px;
+    padding:7px 0 0;
+    border-top:1px solid #222b38;
+}
+
+.obsidian-stages>span:first-child {
+    font-size:10px;
+    color:#8594ab;
+}
+
+.obsidian-stages .battle-stat-chip {
+    padding:0;
+    border:0;
+    background:none;
+    border-radius:0;
+    color:#b0a3ff;
+    font-size:11px;
+}
+
+.obsidian .move-list {
+    gap:8px;
+    margin:0;
+}
+
+.obsidian .move-table-heading,.obsidian .live-move {
+    grid-template-columns:minmax(0,1fr) 44px 31px 36px;
+    gap:8px;
+    align-items:center;
+}
+
+.obsidian .move-table-heading {
+    padding:0 13px 2px 15px;
+    font-size:10px;
+    font-weight:400;
+    letter-spacing:0;
+}
+
+.obsidian .move-table-title {
+    display:flex;
+    align-items:baseline;
+    gap:9px;
+}
+
+.obsidian .move-table-title .section-label {
+    font-size:10px;
+    font-weight:500;
+    letter-spacing:1.5px;
+}
+
+.obsidian .move-table-title>span {
+    font-size:11px;
+    font-weight:400;
+}
+
+.obsidian .live-move {
+    min-height:52px;
+    padding:9px 12px;
+    border:1px solid #29313d;
+    border-left:3px solid var(--move-type);
+    border-radius:9px;
+    background:linear-gradient(100deg,color-mix(in srgb,var(--move-type) 9%,var(--obsidian-panel)),var(--obsidian-panel) 70%);
+    margin:0;
+    font-size:14px;
+}
+
+.obsidian .live-move:hover {
+    border-color:var(--move-type);
+    background:color-mix(in srgb,var(--move-type) 11%,var(--obsidian-panel));
+}
+
+.obsidian .move-name-line {
+    gap:7px;
+    min-width:0;
+}
+
+.obsidian .move-name-line strong {
+    font-size:16px;
+    line-height:1.2;
+    white-space:normal;
+    overflow-wrap:anywhere;
+    overflow:visible;
+    text-overflow:clip;
+    font-weight:600;
+}
+
+.obsidian .category-icon {
+    width:23px;
+    height:23px;
+    flex-shrink:0;
+}
+
+.obsidian .move-stats span {
+    font-size:14px;
+}
+
+.obsidian .move-stats .move-power-multi-hit-mark {
+    font-size:12px;
+}
+
+.obsidian .move-stats .move-power-indicator {
+    width:12px;
+    height:15px;
+}
+
+.obsidian .stab-badge {
+    padding:2px 3px;
+    font-size:8px;
+    letter-spacing:.4px;
+    font-weight:650;
+    color:var(--move-type,currentColor);
+    border-color:color-mix(in srgb,var(--move-type,currentColor) 40%,transparent);
+    background:color-mix(in srgb,var(--move-type,currentColor) 13%,transparent);
+}
+
+.obsidian .move-name-line .effectiveness {
+    height:20px;
+    min-width:13px;
+}
+
+.obsidian .move-name-line .effectiveness.double::before {
+    top:5px;
+}
+
+.obsidian .move-name-line .effectiveness.double::after {
+    top:11px;
+}
+
+.obsidian .move-name-line .effectiveness.increased.double::before,.obsidian .move-name-line .effectiveness.increased.double::after {
+    transform:rotate(225deg);
+}
+
+.obsidian .move-name-line .effectiveness.decreased.double::before {
+    top:2px;
+}
+
+.obsidian .move-name-line .effectiveness.decreased.double::after {
+    top:8px;
+}
+
+.obsidian .move-name-line .effectiveness.immune {
+    color:#ff6389;
+    font-size:18px;
+}
+
+.obsidian .empty-move {
+    min-height:52px;
+    border:1px dashed #29313d;
+    background:none;
+    font-size:12px;
+}
+
+.obsidian .detail-overlay {
+    z-index:1100;
+    inset:0;
+    display:grid;
+    place-items:center;
+    padding:19px;
+    background:#040609c9;
+    backdrop-filter:blur(3px);
+}
+
+.obsidian .detail-panel {
+    box-sizing:border-box;
+    width:min(100%,408px);
+    max-width:408px;
+    max-height:calc(100vh - 38px);
+    overflow:auto;
+    border:1px solid #38465a;
+    border-radius:13px;
+    padding:21px;
+    background:linear-gradient(135deg,#1a2230,#10151d 72%);
+    box-shadow:0 20px 60px #0008;
+    color:var(--text);
+}
+
+.obsidian .detail-panel-header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:19px;
+    padding:0;
+    border:0;
+}
+
+.obsidian .detail-panel-header h2 {
+    font-size:23px;
+    font-weight:600;
+    letter-spacing:-.4px;
+    line-height:1.2;
+    margin:0;
+}
+
+.obsidian .detail-title {
+    gap:11px;
+}
+
+.obsidian .detail-close {
+    display:grid;
+    place-items:center;
+    width:29px;
+    height:29px;
+    min-width:29px;
+    border:0;
+    border-radius:7px;
+    background:#263040;
+    color:#becbe0;
+    padding:0;
+    font-size:23px;
+    line-height:1;
+}
+
+.obsidian .detail-close:hover {
+    background:#38455a;
+}
+
+.obsidian .detail-tags {
+    gap:13px;
+    margin-bottom:17px;
+    font-size:12px;
+    color:#a9b5c7;
+}
+
+.obsidian .detail-tags>span {
+    background:none;
+    border:0;
+    padding:0;
+}
+
+.obsidian .detail-values {
+    display:flex;
+    flex-wrap:wrap;
+    gap:25px;
+    margin:16px 0;
+    padding:13px 0;
+    border-top:1px solid #2a3442;
+    border-bottom:1px solid #2a3442;
+    background:none;
+    border-radius:0;
+}
+
+.obsidian .detail-values>div {
+    padding:0;
+    background:none;
+    border:0;
+}
+
+.obsidian .detail-values dt {
+    font-size:10px;
+    color:var(--muted);
+}
+
+.obsidian .detail-values dd {
+    font-size:19px;
+    margin:5px 0 0;
+    color:var(--text);
+}
+
+.obsidian .detail-description {
+    font-size:13px;
+    line-height:1.65;
+    color:#bdc9db;
+    margin:12px 0 0;
+}
+
+.obsidian .move-power-details {
+    font-size:12px;
+    margin:18px 0;
+    border-collapse:collapse;
+    width:100%;
+}
+
+.obsidian .move-power-details th,.obsidian .move-power-details td {
+    padding:8px 4px;
+    border-bottom:1px solid #2a3442;
+    background:none;
+}
+
+.obsidian .move-power-details thead {
+    color:var(--muted);
+}
+
+.obsidian-sprite-preview {
+    display:grid;
+    place-items:center;
+    min-height:300px;
+}
+
+.obsidian-sprite-preview img {
+    max-width:100%;
+    object-fit:contain;
+}
+
+.obsidian-evolutions {
+    padding-left:18px;
+    line-height:1.8;
+    color:#bdc9db;
+}
+
+.obsidian-section-heading {
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+}
+
+.obsidian-section-heading h3,.obsidian-global-effects h3,.obsidian-effects h3 {
+    font-size:12px;
+    font-weight:600;
+    color:#d5dfef;
+    margin:0 0 10px;
+}
+
+.obsidian-section-heading small {
+    font-size:10px;
+    color:var(--muted);
+}
+
+.obsidian-matchup-group {
+    margin:8px 0 13px;
+}
+
+.obsidian-matchup-group h4 {
+    font-size:10px;
+    color:#93a3ba;
+    margin:0 0 5px;
+    font-weight:400;
+}
+
+.obsidian-matchups {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:5px 13px;
+}
+
+.obsidian-matchup {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:5px;
+    min-height:28px;
+    padding:4px 6px;
+    border:1px solid transparent;
+    border-radius:5px;
+    background:none;
+    font-size:12px;
+    color:inherit;
+    text-align:left;
+}
+
+.obsidian-matchup>span:first-child {
+    color:currentColor;
+    font-weight:600;
+}
+
+.obsidian-matchup strong {
+    color:#dfe7f5;
+    font-weight:600;
+}
+
+.obsidian-matchup:hover,.obsidian-matchup[aria-pressed="true"] {
+    background:#a9baff09;
+    border-color:#344052;
+}
+
+.obsidian-category-values {
+    display:grid;
+    gap:3px;
+}
+
+.obsidian-category-values>span {
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:5px;
+}
+
+.obsidian .obsidian-category-values .category-icon {
+    width:16px;
+    height:16px;
+}
+
+.obsidian-global-effects {
+    margin:15px 0;
+    padding:13px;
+    border:1px solid #303b51;
+    border-radius:8px;
+    background:#171e2b;
+}
+
+.obsidian-global-effect {
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:center;
+    gap:7px;
+    font-size:11px;
+    margin:7px 0;
+    color:#a9b7ce;
+}
+
+.obsidian-global-effect>span:first-child {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color:#dfdbff;
+}
+
+.obsidian .obsidian-global-effect .category-icon,.obsidian .obsidian-combined .category-icon {
+    width:17px;
+    height:17px;
+}
+
+.obsidian em {
+    font-size:10px;
+    color:#a9b7ce;
+    font-style:normal;
+}
+
+.obsidian-combined {
+    border-top:1px solid #303b51;
+    margin-top:10px;
+    padding-top:9px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px 10px;
+    align-items:center;
+    font-size:11px;
+}
+
+.obsidian-combined>small {
+    color:var(--muted);
+    font-size:10px;
+}
+
+.obsidian-combined>span {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    width:100%;
+    color:#adbcd1;
+}
+
+.obsidian-combined strong {
+    font-weight:600;
+}
+
+.obsidian-effects {
+    border-top:1px solid #2a3442;
+    padding-top:13px;
+    margin-top:16px;
+}
+
+.obsidian-protections {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:7px 16px;
+}
+
+.obsidian-effect {
+    font-size:12px;
+    color:#bfcee2;
+}
+
+.obsidian-effect button {
+    padding:0;
+    border:0;
+    background:none;
+    color:inherit;
+    font-size:12px;
+    text-align:left;
+}
+
+.obsidian-effect button:hover {
+    color:#efeaff;
+    text-decoration:underline;
+    text-underline-offset:3px;
+}
+
+.obsidian-effect small {
+    font-size:10px;
+    color:#a59ed1;
+}
+
+.obsidian-protection-detail {
+    margin-top:12px;
+    border-top:1px solid #263243;
+    padding-top:6px;
+}
+
+.obsidian .defense-moves {
+    font-size:11px;
+    line-height:1.5;
+    color:#afbed3;
+}
+
+.obsidian-recoveries {
+    display:grid;
+    gap:8px;
+}
+
+.obsidian-recoveries .obsidian-effect {
+    border-left:2px solid #64cfad;
+    padding:8px 11px;
+    background:#74d8b508;
+    border-radius:0 6px 6px 0;
+}
+
+.obsidian-recoveries button {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    min-height:20px;
+}
+
+.obsidian-recovery-detail {
+    padding:8px 0;
+    margin:4px 0 0;
+    border-top:1px solid #274038;
+    line-height:1.55;
+}
+
+.obsidian-recovery-detail p {
+    margin:0;
+    color:#9ee4c8;
+    font-size:12px;
+}
+
+.obsidian .battle-item-tabs {
+    gap:4px;
+    background:none;
+    border-bottom:1px solid #2a3442;
+    padding:0 0 10px;
+}
+
+.obsidian .battle-item-tab {
+    border:0;
+    background:#1b2432;
+    border-radius:6px;
+    font-size:11px;
+    padding:7px;
+}
+
+.obsidian .battle-item-tab.selected {
+    background:#b0a3ff22;
+    color:#dfd7ff;
+}
+
+.obsidian .battle-item-entry {
+    border:1px solid #2c3748;
+    border-radius:8px;
+    background:#161e2a;
+    padding:11px;
+}
+
+.obsidian .battle-item-name {
+    font-size:13px;
+}
+
+.obsidian .battle-item-description {
+    font-size:12px;
+    color:#b3c0d3;
+}
+
+.obsidian .battle-item-use,.obsidian .battle-item-move {
+    border:1px solid #3b4761;
+    border-radius:6px;
+    background:#262d43;
+    color:#e0daff;
+}
+
+.obsidian .connection-state {
+    border:0;
+    border-radius:0;
+    background:none;
+    padding:0;
+    font-weight:400;
+}
+
+.obsidian .connection-dot {
+    box-shadow:none;
+}
+
+.obsidian-player {
+    align-self:start;
+}
+
+.obsidian .tab-key {
+    width:auto;
+    height:auto;
+}
+
+.obsidian .battle-item-copy h3 {
+    font-size:13px;
+}
+
+.obsidian .battle-item-copy p {
+    font-size:12px;
+    color:#b3c0d3;
+}
+
+.obsidian .battle-item-moves button {
+    border:1px solid #3b4761;
+    border-radius:6px;
+    background:#262d43;
+    color:#e0daff;
+}
+
+.obsidian .detail-panel {
+    display:block;
+}
+
+.obsidian .obsidian-matchup {
+    color:var(--move-type);
+}
+
+.obsidian-combined>strong {
+    color:var(--move-type);
+}
+
+.obsidian .battle-item-tabs button {
+    border:0;
+    background:#1b2432;
+    border-radius:6px;
+    font-size:11px;
+    padding:7px;
+}
+
+.obsidian .battle-item-tabs button.selected {
+    background:#b0a3ff22;
+    color:#dfd7ff;
+}
+
+.obsidian .battle-item-moves {
+    grid-column:1 / -1;
+    min-width:0;
+    width:100%;
+}
+
+.obsidian .battle-item-notice {
+    margin-bottom:12px;
+}
+
+.obsidian .battle-item-tabs {
+    grid-template-columns:repeat(5,minmax(0,1fr));
+}
+
+.obsidian .battle-item-tabs button {
+    font-size:10px;
+    padding:8px 3px;
+}
+
+.obsidian .battle-item-notice {
+    background:#17202c;
+    border-color:#2d3a4d;
+    color:#acbbd1;
+}
+
+.obsidian .battle-item-use:disabled,.obsidian .battle-item-moves button:disabled {
+    opacity:.5;
+    cursor:default;
+}
+
+.obsidian-identity-actions em {
+    margin-left:4px;
+}
+
+.obsidian .obsidian-effect small {
+    margin-left:4px;
+}
+
+.obsidian .type-normal {
+    --move-type:#c8c6d3;
+}
+
+.obsidian .type-fighting {
+    --move-type:#ff9a3d;
+}
+
+.obsidian .type-ground {
+    --move-type:#dfab64;
+}
+
+.obsidian .type-flying {
+    --move-type:#9acaff;
+}
+
+.obsidian .type-fairy {
+    --move-type:#ed7ae9;
+}
+
+.obsidian .type-fire {
+    --move-type:#ff756b;
+}
+
+.obsidian .type-electric {
+    --move-type:#f0d337;
+}
+
+.obsidian .type-dark {
+    --move-type:#c8a286;
+}
+
+.obsidian .type-grass {
+    --move-type:#83c961;
+}
+
+.obsidian .type-rock {
+    --move-type:#cfc17c;
+}
+
+.obsidian .type-ice {
+    --move-type:#87dbe9;
+}
+
+.obsidian .type-dragon {
+    --move-type:#b096ff;
+}
+
+.obsidian .type-poison {
+    --move-type:#d587e5;
+}
+
+.obsidian .type-psychic {
+    --move-type:#ff84bf;
+}
+
+.obsidian .type-bug {
+    --move-type:#b8cb55;
+}
+
+.obsidian .type-water {
+    --move-type:#83b4ff;
+}
+
+.obsidian .type-ghost {
+    --move-type:#b296ed;
+}
+
+.obsidian .type-steel {
+    --move-type:#9bbace;
+}
+
+.obsidian .detail-values>div {
+    display:grid;
+    gap:4px;
+    justify-content:start;
+}
+
+.obsidian .detail-values dd {
+    margin:0;
+}
+
+.obsidian .move-power-details {
+    background:#17212d;
+    border:0;
+    border-radius:0;
+}
+
+.obsidian .move-power-details thead th {
+    font-size:10px;
+}
+
+.obsidian .detail-tags>.typing-type {
+    color:var(--move-type);
+}
+
+.obsidian .obsidian-sprite > span {
+    font-size: 42px;
+    line-height: 1;
+    font-weight: 500;
+    color: #9eacbf;
+}
+
+.obsidian .move-power-icon.fixed-damage {
+    color: #ff6389;
+}
+
+.obsidian-nature-adjustments {
+    margin: 14px 0 0;
+}
+
+.obsidian-nature-adjustments > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid #2a3442;
+}
+
+.obsidian-nature-adjustments dt {
+    font-size: 12px;
+    color: #a9b7ca;
+}
+
+.obsidian-nature-adjustments dd {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 650;
+}

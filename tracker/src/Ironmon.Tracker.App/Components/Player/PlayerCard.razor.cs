@@ -8,10 +8,23 @@ namespace Ironmon.Tracker.App.Components.Player;
 /// </summary>
 public partial class PlayerCard
 {
-    private const string _activeFusionResourceKey = "Player.Card.ActiveFusion";
-    private const string _activePokemonResourceKey = "Player.Card.ActivePokemon";
+    private const string _activeFusionResourceKey = "Redesign.YourFusion";
+    private const string _activePokemonResourceKey = "Redesign.YourPokemon";
     private const string _transformedFusionResourceKey = "Player.Card.TransformedFusion";
     private const string _transformedResourceKey = "Player.Card.Transformed";
+    private const string _hpStat = "HP";
+    private const string _spaStat = "SPA";
+    private const string _spdStat = "SPD";
+    private const string _atkStat = "ATK";
+    private const string _defStat = "DEF";
+    private const string _speStat = "SPE";
+    private const string _bstStat = "BST";
+    private const string _unknownStat = "—";
+    private const string _emptyHpStyle = "width: 0%";
+    private bool _itemsOpen;
+    private bool _natureOpen;
+    private bool _heldItemOpen;
+    private bool _evolutionsOpen;
     private AbilitySnapshot? _selectedAbility;
     private bool _defenseOpen;
     private string? _defensePokemonId;
@@ -23,7 +36,12 @@ public partial class PlayerCard
     {
         string? pokemonId = Player?.PokemonId;
         if (_defensePokemonId != pokemonId)
+        {
             _defenseOpen = false;
+            _selectedAbility = null;
+            _itemsOpen = false;
+            CloseSupplement();
+        }
 
         _defensePokemonId = pokemonId;
     }
@@ -42,7 +60,6 @@ public partial class PlayerCard
     /// Returns from the defense overview to the Pokemon card.
     /// </summary>
     private void CloseDefense() => _defenseOpen = false;
-    private bool _itemsOpen;
 
     /// <summary>
     /// Gets or sets the active player Pokemon.
@@ -145,7 +162,7 @@ public partial class PlayerCard
     private string? GetHpStyle()
     {
         if (Player is null)
-            return null;
+            return _emptyHpStyle;
 
         double percentage = Player.MaximumHp <= 0 ? 0 : Math.Clamp(Player.CurrentHp * TrackerUiConstants.FullPercentage / (double)Player.MaximumHp, 0, TrackerUiConstants.FullPercentage);
         return string.Create(CultureInfo.InvariantCulture, $"width: {percentage:0.##}%");
@@ -260,4 +277,49 @@ public partial class PlayerCard
     /// </summary>
     private void CloseItems()
         => _itemsOpen = false;
+
+    /// <summary>
+    /// Opens the nature explanation.
+    /// </summary>
+    private void OpenNature() 
+        => _natureOpen = true;
+
+    /// <summary>
+    /// Opens the held-item description.
+    /// </summary>
+    private void OpenHeldItem() 
+        => _heldItemOpen = true;
+
+    /// <summary>
+    /// Opens all known evolution requirements.
+    /// </summary>
+    private void OpenEvolutions() 
+        => _evolutionsOpen = true;
+
+    /// <summary>
+    /// Closes the supplementary identity dialog.
+    /// </summary>
+    private void CloseSupplement() 
+        => _natureOpen = _heldItemOpen = _evolutionsOpen = false;
+
+    /// <summary>
+    /// Builds the approved stat order without attributing copied stats to the original nature.
+    /// </summary>
+    /// <returns>The seven visible stats in player-card display order.</returns>
+    private IReadOnlyList<TrackerStatValue> GetStatValues()
+    {
+        NatureAdjustmentsSnapshot nature = Player?.Transformed == false ? Player.NatureAdjustments : new();
+        return [new(_hpStat, FormatStat(Player?.MaximumHp)), new(_spaStat, FormatStat(Player?.SpecialAttack), nature.SpecialAttack),
+            new(_spdStat, FormatStat(Player?.SpecialDefense), nature.SpecialDefense), new(_atkStat, FormatStat(Player?.Attack), nature.Attack),
+            new(_defStat, FormatStat(Player?.Defense), nature.Defense), new(_speStat, FormatStat(Player?.Speed), nature.Speed),
+            new(_bstStat, FormatStat(Player?.BaseStatTotal))];
+    }
+
+    /// <summary>
+    /// Formats one known stat or its waiting placeholder.
+    /// </summary>
+    /// <param name="value">The known stat value, or null while waiting for a player.</param>
+    /// <returns>The invariant stat text or unknown placeholder.</returns>
+    private static string FormatStat(int? value) 
+        => value?.ToString(CultureInfo.InvariantCulture) ?? _unknownStat;
 }

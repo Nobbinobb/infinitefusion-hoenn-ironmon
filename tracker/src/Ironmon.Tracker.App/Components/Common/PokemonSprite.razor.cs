@@ -57,6 +57,12 @@ public partial class PokemonSprite
     public string? CssClass { get; set; }
 
     /// <summary>
+    /// Gets or sets whether the enlarged sprite uses the redesigned dialog.
+    /// </summary>
+    [Parameter]
+    public bool Redesigned { get; set; }
+
+    /// <summary>
     /// Refreshes the local sprite when its game installation or path changes.
     /// </summary>
     protected override void OnParametersSet()
@@ -93,6 +99,6 @@ public partial class PokemonSprite
     private void OpenDialog()
     {
         if (_spriteSource is not null)
-            Dialog.Open(_spriteSource, Label, EnlargedSize);
+            Dialog.Open(_spriteSource, Label, EnlargedSize, Redesigned);
     }
 }

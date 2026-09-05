@@ -16,6 +16,10 @@
         <div class="detail-tags">
             <span class="typing-type @MovePresentation.GetTypeColorClass(Type)">@Type</span>
             <span>@GetCategoryName()</span>
+            @if (Stab)
+            {
+                <span class="stab-badge @MovePresentation.GetTypeColorClass(Type)" title="@Text["Common.Move.StabDescription"]">@Text["Common.Move.Stab"]</span>
+            }
             @if (Effectiveness is not null && Effectiveness != MoveEffectiveness.Neutral)
             {
                 <span class="@GetDetailEffectivenessClass(Effectiveness.Value)">

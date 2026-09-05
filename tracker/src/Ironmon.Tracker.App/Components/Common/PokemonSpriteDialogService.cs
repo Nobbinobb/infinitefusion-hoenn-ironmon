@@ -21,12 +21,13 @@ internal sealed class PokemonSpriteDialogService
     /// <param name="source">The fully materialized image source.</param>
     /// <param name="label">The accessible Pokemon label.</param>
     /// <param name="size">The requested square image size in pixels.</param>
-    public void Open(string source, string label, int size)
+    /// <param name="redesigned">Whether to use the migrated dialog presentation.</param>
+    public void Open(string source, string label, int size, bool redesigned = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(source);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(size, 0);
 
-        Current = new PokemonSpriteDialogRequest(source, label, size);
+        Current = new PokemonSpriteDialogRequest(source, label, size, redesigned);
         Changed?.Invoke();
     }
 
@@ -53,7 +54,8 @@ internal sealed class PokemonSpriteDialogService
 /// <param name="source">The fully materialized image source.</param>
 /// <param name="label">The accessible Pokemon label.</param>
 /// <param name="size">The requested square image size in pixels.</param>
-internal sealed class PokemonSpriteDialogRequest(string source, string label, int size)
+/// <param name="redesigned">Whether to use the migrated dialog presentation.</param>
+internal sealed class PokemonSpriteDialogRequest(string source, string label, int size, bool redesigned = false)
 {
     /// <summary>
     /// Gets the fully materialized image source.
@@ -69,4 +71,9 @@ internal sealed class PokemonSpriteDialogRequest(string source, string label, in
     /// Gets the requested square image size in pixels.
     /// </summary>
     public int Size { get; } = size;
+
+    /// <summary>
+    /// Gets whether the originating view has migrated to the redesigned dialogs.
+    /// </summary>
+    public bool Redesigned { get; } = redesigned;
 }

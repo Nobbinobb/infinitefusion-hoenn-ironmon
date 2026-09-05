@@ -13,6 +13,12 @@ public partial class MoveDetailPanel
     private const string ChanceNumberFormat = "0.##";
 
     /// <summary>
+    /// Gets or sets whether this move receives the same-type attack bonus.
+    /// </summary>
+    [Parameter]
+    public bool Stab { get; set; }
+
+    /// <summary>
     /// Gets or sets the localized move name.
     /// </summary>
     [Parameter]

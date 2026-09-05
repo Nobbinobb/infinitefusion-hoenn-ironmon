@@ -33,5 +33,17 @@ module Ironmon
         "active" => @active, "attack_types" => @types.map(&:to_s), "moves" => @moves
       }
     end
+
+    # Only unconditional-in-type numeric rules can be moved out of the chart.
+    # Contact, selected types and move-specific rules remain attached to types.
+    def all_type_factor?
+      return @active != false && !@conditional && @types.empty? && @factor.is_a?(Numeric) && @factor != 1 && @moves.empty?
+    end
+
+    def factor_snapshot
+      label = @source ? @source.name : @id.to_s.gsub(/([a-z])([A-Z])/, '\1 \2').tr('_', ' ')
+      return { "label" => label, "category" => @category&.to_s,
+               "factor" => @factor, "conditional" => @conditional || @active.nil? }
+    end
   end
 end

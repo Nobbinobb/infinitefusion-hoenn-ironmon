@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using System.Net;
+using Microsoft.JSInterop;
 using System.Globalization;
 using System.Reflection;
 using System.Resources;
@@ -69,6 +70,7 @@ public sealed class DefenseViewTests
         string root = Path.Combine(Path.GetTempPath(), _rootName, Guid.NewGuid().ToString());
         ServiceCollection services = new();
         services.AddLogging();
+        services.AddSingleton<IJSRuntime, StaticRenderJsRuntime>();
         services.AddSingleton<IComponentActivator>(activator);
         services.AddSingleton<IStringLocalizer<TrackerResources>>(new DefenseLocalizer());
         services.AddSingleton(new TrackerKnowledgeStore(new TrackerKnowledgeOptions(root)));
@@ -81,14 +83,23 @@ public sealed class DefenseViewTests
             var view = await renderer.RenderComponentAsync(cardType, CardParameters(enemy, _firstId, Example(enemy)));
             ComponentBase card = activator.Card!;
             Assert.DoesNotContain(_viewClass, view.ToHtmlString());
-            Assert.Contains("pokemon-type-link", view.ToHtmlString());
+            Assert.Contains(enemy ? "pokemon-type-link" : "obsidian-types", view.ToHtmlString());
             Assert.DoesNotContain("class=\"defense-link\"", view.ToHtmlString());
             Invoke(card, _openAction);
             string open = WebUtility.HtmlDecode(view.ToHtmlString());
-            Assert.Contains(_viewClass, open);
-            Assert.Contains("Hyper Voice", open);
+            Assert.Contains(enemy ? _viewClass : "role=\"dialog\"", open);
+            if (enemy)
+            {
+                Assert.Contains("Hyper Voice", open);
+            }
+            else
+            {
+                Assert.DoesNotContain("Hyper Voice", open);
+            }
+                
             Assert.Contains("Sound", open);
-            Assert.DoesNotContain("Soundproof", open);
+            string defenseHtml = enemy ? open : open[open.IndexOf("role=\"dialog\"", StringComparison.Ordinal)..];
+            Assert.DoesNotContain("Soundproof", defenseHtml);
             Assert.DoesNotContain("Blocks sound moves", open);
             Assert.DoesNotContain("defense-neutral", open);
             Assert.DoesNotContain("Damage modifiers</h3>", open);
@@ -98,7 +109,7 @@ public sealed class DefenseViewTests
             Assert.Equal(enemy, open.Contains("Known defenses only", StringComparison.Ordinal));
 
             await card.SetParametersAsync(CardParameters(enemy, _firstId, new DefenseOverviewSnapshot { InBattle = true, AbilityName = "Updated ability", Protections = [new() { Label = "Hail", Active = true }] }));
-            Assert.Contains(_viewClass, view.ToHtmlString());
+            Assert.Contains(enemy ? _viewClass : "role=\"dialog\"", view.ToHtmlString());
             Assert.Contains("Hail", view.ToHtmlString());
             Assert.DoesNotContain("Updated ability", view.ToHtmlString());
             Assert.DoesNotContain("Hyper Voice", view.ToHtmlString());
@@ -120,6 +131,7 @@ public sealed class DefenseViewTests
         string root = Path.Combine(Path.GetTempPath(), _rootName, Guid.NewGuid().ToString());
         ServiceCollection services = new();
         services.AddLogging();
+        services.AddSingleton<IJSRuntime, StaticRenderJsRuntime>();
         services.AddSingleton<IComponentActivator>(activator);
         services.AddSingleton<IStringLocalizer<TrackerResources>>(new DefenseLocalizer());
         services.AddSingleton(new TrackerKnowledgeStore(new TrackerKnowledgeOptions(root)));
@@ -143,7 +155,8 @@ public sealed class DefenseViewTests
             Types = [_electricType],
             Moves = [currentMove],
             StoredMoves = [storedMove],
-            Attack = 120
+            Attack = 120,
+            NatureAdjustments = new() { Attack = StatAdjustment.Increased, SpecialAttack = StatAdjustment.Decreased }
         };
 
         await renderer.Dispatcher.InvokeAsync(async () =>
@@ -158,6 +171,8 @@ public sealed class DefenseViewTests
             Assert.Contains(_hardyNature, html);
             Assert.DoesNotContain(_copiedStatsLabel, html);
             Assert.Contains(_copiedAttackMarkup, html);
+            Assert.DoesNotContain("obsidian-positive", html);
+            Assert.DoesNotContain("obsidian-negative", html);
 
             PlayerCard card = Assert.IsType<PlayerCard>(activator.Card);
             MethodInfo method = typeof(PlayerCard).GetMethod(_ppItemMovesMethod, BindingFlags.NonPublic | BindingFlags.Instance)!;
@@ -174,6 +189,7 @@ public sealed class DefenseViewTests
     {
         ServiceCollection services = new();
         services.AddLogging();
+        services.AddSingleton<IJSRuntime, StaticRenderJsRuntime>();
         services.AddSingleton<IStringLocalizer<TrackerResources>>(new DefenseLocalizer());
         await using ServiceProvider provider = services.BuildServiceProvider();
         await using HtmlRenderer renderer = new(provider, provider.GetRequiredService<ILoggerFactory>());
@@ -209,6 +225,7 @@ public sealed class DefenseViewTests
     {
         ServiceCollection services = new();
         services.AddLogging();
+        services.AddSingleton<IJSRuntime, StaticRenderJsRuntime>();
         services.AddSingleton<IStringLocalizer<TrackerResources>>(new DefenseLocalizer());
         await using ServiceProvider provider = services.BuildServiceProvider();
         await using HtmlRenderer renderer = new(provider, provider.GetRequiredService<ILoggerFactory>());
@@ -263,6 +280,7 @@ public sealed class DefenseViewTests
     {
         ServiceCollection services = new();
         services.AddLogging();
+        services.AddSingleton<IJSRuntime, StaticRenderJsRuntime>();
         services.AddSingleton<IStringLocalizer<TrackerResources>>(new DefenseLocalizer());
         await using ServiceProvider provider = services.BuildServiceProvider();
         await using HtmlRenderer renderer = new(provider, provider.GetRequiredService<ILoggerFactory>());
@@ -287,6 +305,59 @@ public sealed class DefenseViewTests
             var empty = await renderer.RenderComponentAsync<DefenseRuleList>(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(DefenseRuleList.Heading)] = "Recovery", [nameof(DefenseRuleList.Effects)] = Array.Empty<DefenseEffectSnapshot>() }));
             Assert.DoesNotContain("Recovery", empty.ToHtmlString());
         });
+    }
+
+    /// <summary>
+    /// Verifies category differences remain visible before screens, without showing a neutral split category.
+    /// </summary>
+    [Fact]
+    public void RedesignedMatchupsKeepSpecificFactorsAndLegacyCombinedValues()
+    {
+        DefenseTypeSnapshot entry = new()
+        {
+            Type = _fireType, Name = _fireType, Multiplier = 4,
+            TypePhysicalMin = 2, TypePhysicalMax = 2, TypeSpecialMin = 4, TypeSpecialMax = 4,
+            PhysicalMin = 2, PhysicalMax = 2, SpecialMin = 2, SpecialMax = 2
+        };
+
+        DefenseOverviewSnapshot snapshot = new()
+        {
+            TypeMatchups = [entry], AllTypeEffects = [new() { Label = "Light Screen", Category = "special", Factor = 0.5m }]
+        };
+
+        DefenseOverviewSnapshot copy = TrackerJson.DeserializePayload<DefenseOverviewSnapshot>(TrackerJson.SerializePayload(snapshot));
+        DefenseMatchupPresentation before = new(copy.TypeMatchups[0]);
+        DefenseMatchupPresentation combined = new(copy.TypeMatchups[0], false);
+        Assert.False(before.SameCategories);
+        Assert.True(before.ShowPhysical);
+        Assert.True(before.ShowSpecial);
+        Assert.Equal(4, before.SpecialMax);
+        Assert.True(combined.SameCategories);
+        Assert.Equal(2, combined.SpecialMax);
+        Assert.Equal(0.5m, Assert.Single(copy.AllTypeEffects).Factor);
+        DefenseMatchupPresentation neutralSpecial = new(new() { PhysicalMin = 2, PhysicalMax = 2, SpecialMin = 1, SpecialMax = 1 });
+        Assert.True(neutralSpecial.ShowPhysical);
+        Assert.False(neutralSpecial.ShowSpecial);
+        DefenseMatchupPresentation legacy = new(new() { Multiplier = 4, PhysicalMin = 1, PhysicalMax = 2, SpecialMin = 4, SpecialMax = 4 });
+        Assert.Equal(1, legacy.PhysicalMin);
+        Assert.Equal(2, legacy.PhysicalMax);
+        Assert.Equal(4, legacy.SpecialMax);
+    }
+
+    /// <summary>
+    /// Verifies old sprite callers keep their original dialog while a migrated caller opts in explicitly.
+    /// </summary>
+    [Fact]
+    public void SpriteDialogAppearanceBelongsToItsCaller()
+    {
+        const string source = "data:image/png;base64,test";
+        PokemonSpriteDialogService service = new();
+        service.Open(source, _species, 288, true);
+        Assert.True(service.Current!.Redesigned);
+        service.Close();
+        service.Open(source, _species, 288);
+        Assert.False(service.Current!.Redesigned);
+        Assert.Equal(source, service.Current.Source);
     }
 
     /// <summary>
@@ -367,4 +438,31 @@ public sealed class DefenseViewTests
         /// </summary>
         public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];
     }
+    /// <summary>
+    /// Rejects browser interop during static HTML rendering, where no browser lifecycle runs.
+    /// </summary>
+    private sealed class StaticRenderJsRuntime : IJSRuntime
+    {
+        /// <summary>
+        /// Fails unexpected browser interop in a static rendering test.
+        /// </summary>
+        /// <typeparam name="TValue">The requested browser result type.</typeparam>
+        /// <param name="identifier">The browser function identifier.</param>
+        /// <param name="args">The browser function arguments.</param>
+        /// <returns>No result because browser interop is invalid during static rendering.</returns>
+        /// <exception cref="InvalidOperationException">Thrown when unexpected browser interop is requested.</exception>
+        public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object?[]? args) => throw new InvalidOperationException(identifier);
+
+        /// <summary>
+        /// Fails unexpected cancellable browser interop in a static rendering test.
+        /// </summary>
+        /// <typeparam name="TValue">The requested browser result type.</typeparam>
+        /// <param name="identifier">The browser function identifier.</param>
+        /// <param name="cancellationToken">The browser operation's cancellation token.</param>
+        /// <param name="args">The browser function arguments.</param>
+        /// <returns>No result because browser interop is invalid during static rendering.</returns>
+        /// <exception cref="InvalidOperationException">Thrown when unexpected browser interop is requested.</exception>
+        public ValueTask<TValue> InvokeAsync<TValue>(string identifier, CancellationToken cancellationToken, object?[]? args) => throw new InvalidOperationException(identifier);
+    }
+
 }

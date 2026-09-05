@@ -1635,4 +1635,79 @@
   <data name="Defense.Recovery" xml:space="preserve"><value>Recovery</value></data>
   <data name="Player.Card.ActiveFusion" xml:space="preserve"><value>ACTIVE FUSION</value></data>
   <data name="Enemy.Card.OpposingFusionHeading" xml:space="preserve"><value>OPPOSING FUSION</value></data>
+  <data name="Redesign.Sprite" xml:space="preserve">
+    <value>Sprite</value>
+  </data>
+  <data name="Redesign.Stats" xml:space="preserve">
+    <value>Stats</value>
+  </data>
+  <data name="Redesign.Stages" xml:space="preserve">
+    <value>Stages</value>
+  </data>
+  <data name="Redesign.TransformedNature" xml:space="preserve">
+    <value>The copied battle stats do not use this Pokémon’s original nature.</value>
+  </data>
+  <data name="Redesign.DescriptionUnavailable" xml:space="preserve">
+    <value>No description is available for this item.</value>
+  </data>
+  <data name="Redesign.BothCategories" xml:space="preserve">
+    <value>Physical &amp; special</value>
+  </data>
+  <data name="Redesign.TypeMatchups" xml:space="preserve">
+    <value>Type matchups</value>
+  </data>
+  <data name="Redesign.BeforeAllTypes" xml:space="preserve">
+    <value>Before all-type effects</value>
+  </data>
+  <data name="Redesign.AllTypeEffects" xml:space="preserve">
+    <value>All-type effects</value>
+  </data>
+  <data name="Redesign.CombinedEffects" xml:space="preserve">
+    <value>With all active broad effects</value>
+  </data>
+  <data name="Redesign.RemainsImmune" xml:space="preserve">
+    <value>Remains immune · 0× damage</value>
+  </data>
+  <data name="Redesign.Hide" xml:space="preserve">
+    <value>Hide</value>
+  </data>
+  <data name="Redesign.Details" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="Redesign.Close" xml:space="preserve">
+    <value>Close dialog</value>
+  </data>
+  <data name="Redesign.YourPokemon" xml:space="preserve">
+    <value>Your Pokémon</value>
+  </data>
+  <data name="Redesign.YourFusion" xml:space="preserve">
+    <value>Your Fusion</value>
+  </data>
+  <data name="Redesign.Nature.Attack" xml:space="preserve">
+    <value>Attack</value>
+  </data>
+  <data name="Redesign.Nature.Defense" xml:space="preserve">
+    <value>Defense</value>
+  </data>
+  <data name="Redesign.Nature.SpecialAttack" xml:space="preserve">
+    <value>Special Attack</value>
+  </data>
+  <data name="Redesign.Nature.SpecialDefense" xml:space="preserve">
+    <value>Special Defense</value>
+  </data>
+  <data name="Redesign.Nature.Speed" xml:space="preserve">
+    <value>Speed</value>
+  </data>
+  <data name="Redesign.Nature.Increased" xml:space="preserve">
+    <value>{0} is increased by 10%.</value>
+  </data>
+  <data name="Redesign.Nature.Decreased" xml:space="preserve">
+    <value>{0} is reduced by 10%.</value>
+  </data>
+  <data name="Redesign.Nature.IncreaseValue" xml:space="preserve">
+    <value>+10%</value>
+  </data>
+  <data name="Redesign.Nature.DecreaseValue" xml:space="preserve">
+    <value>−10%</value>
+  </data>
 </root>

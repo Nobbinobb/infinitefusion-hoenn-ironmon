@@ -1,0 +1,17 @@
+<ObsidianDialog Title="@Nature" Eyebrow="@Text["Player.Card.Nature"]" Closed="Closed">
+    <p class="detail-description">@GetDescription()</p>
+    @if (!Transformed)
+    {
+        <dl class="obsidian-nature-adjustments">
+            @foreach (var stat in GetAdjustments())
+            {
+                <div>
+                    <dt>@Text[stat.NameKey]</dt>
+                    <dd class="@(stat.Adjustment == StatAdjustment.Increased ? _positiveClass : _negativeClass)">
+                        @Text[stat.Adjustment == StatAdjustment.Increased ? _increaseValueKey : _decreaseValueKey]
+                    </dd>
+                </div>
+            }
+        </dl>
+    }
+</ObsidianDialog>

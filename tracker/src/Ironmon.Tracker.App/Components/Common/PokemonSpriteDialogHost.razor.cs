@@ -34,7 +34,7 @@ public partial class PokemonSpriteDialogHost : IDisposable
     /// <returns>A task representing the focus operation.</returns>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_focusPending || Dialog.Current is null)
+        if (!_focusPending || Dialog.Current is null || Dialog.Current.Redesigned)
             return;
 
         _focusPending = false;

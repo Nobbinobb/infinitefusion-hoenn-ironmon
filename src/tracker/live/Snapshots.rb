@@ -176,6 +176,7 @@ module Ironmon
       "copied_ability_details" => transform_identity ?
         transform_identity["ability_details"] : nil,
       "held_item" => held_item ? held_item.name : nil,
+      "held_item_description" => held_item ? held_item.description : nil,
       "attack" => battler ? battler.attack : pokemon.attack,
       "defense" => battler ? battler.defense : pokemon.defense,
       "special_attack" => battler ? battler.spatk : pokemon.spatk,

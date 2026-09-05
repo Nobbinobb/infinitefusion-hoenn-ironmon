@@ -63,10 +63,18 @@ module IronmonDefenseOverviewTests
     normal = profile(overview(player), :NORMAL)
     assert(fire["physical_min"] == 2 && fire["physical_max"] == 4, "Fluffy combines Fire and contact factors without assuming contact")
     assert(normal["physical_min"] == 0.5 && normal["physical_max"] == 1, "Fluffy contact reduction applies beyond Fire")
+    fluffy = overview(player)
+    assert(fluffy["all_type_effects"].empty?, "move-dependent contact factors stay in the chart as ranges")
+    assert(profile(fluffy, :FIRE)["type_physical_min"] == 2 && profile(fluffy, :FIRE)["type_physical_max"] == 4, "contact-dependent type ranges remain complete")
     player.ability = :THICKFAT
     player.pbOwnSide.effects[PBEffects::Reflect] = 4
     fire = profile(overview(player), :FIRE)
     assert(fire["physical_max"] == 0.5 && fire["special_max"] == 1, "Reflect combines only with physical damage")
+    separated = overview(player)
+    assert(separated["all_type_effects"].any? { |effect| effect["label"] == "Reflect" && effect["category"] == "physical" && effect["factor"] == 0.5 }, "Reflect appears once as a broad physical effect")
+    assert(profile(separated, :FIRE)["type_physical_max"] == 1, "type-specific Thick Fat remains in the pre-screen matchup")
+    assert(profile(separated, :NORMAL)["type_physical_max"] == 1, "Reflect does not flood the pre-screen chart with neutral types")
+    assert(separated["all_type_effects"].none? { |effect| effect["label"] == "Thick Fat" }, "type-specific factors are not treated as broad effects")
     player.pbOwnSide.effects[PBEffects::AuroraVeil] = 4
     fire = profile(overview(player), :FIRE)
     assert(fire["physical_max"] == 0.5 && fire["special_max"] == 0.5, "Aurora Veil does not double-count Reflect")

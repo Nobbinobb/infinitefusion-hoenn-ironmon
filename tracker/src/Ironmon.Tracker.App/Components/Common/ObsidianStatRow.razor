@@ -1,0 +1,13 @@
+<section class="obsidian-stat-section" aria-label="@Text["Redesign.Stats"]">
+    <h3 class="obsidian-label">@Text["Redesign.Stats"]</h3>
+    <div class="obsidian-stats">
+        @foreach (TrackerStatValue stat in Stats)
+        {
+            <div><span>@stat.Label</span><strong class="@GetColor(stat.Adjustment)">@stat.Value</strong></div>
+        }
+    </div>
+    @if (Stages is not null && HasStages())
+    {
+        <div class="obsidian-stages"><span>@Text["Redesign.Stages"]</span><BattleStatStageChips Stages="Stages" /></div>
+    }
+</section>

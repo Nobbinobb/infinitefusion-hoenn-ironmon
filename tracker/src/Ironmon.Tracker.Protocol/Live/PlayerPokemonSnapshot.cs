@@ -122,6 +122,11 @@ public sealed class PlayerPokemonSnapshot
     public string? HeldItem { get; init; }
 
     /// <summary>
+    /// Gets the legally visible held item's localized description, when supplied by the game.
+    /// </summary>
+    public string? HeldItemDescription { get; init; }
+
+    /// <summary>
     /// Gets or initializes the calculated Attack stat.
     /// </summary>
     public int Attack { get; init; }

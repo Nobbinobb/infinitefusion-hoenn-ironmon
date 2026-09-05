@@ -40,7 +40,8 @@
 
 @if (_selectedMove is not null)
 {
-    <MoveDetailPanel Name="@_selectedMove.Name"
+    <ObsidianDialogScope Closed="CloseMove">
+    <MoveDetailPanel Stab="@MovePresentation.HasStab(_selectedMove.Type, _selectedMove.Category, Player?.Types)" Name="@_selectedMove.Name"
                      Type="@_selectedMove.Type"
                      Category="@_selectedMove.Category"
                      Description="@_selectedMove.Description"
@@ -52,4 +53,5 @@
                      PpText="@($"{_selectedMove.CurrentPp} / {_selectedMove.TotalPp}")"
                      Effectiveness="@MovePresentation.CalculateEffectiveness(_selectedMove.Type, _selectedMove.Category, TargetTypes)"
                      Closed="CloseMove" />
+    </ObsidianDialogScope>
 }
