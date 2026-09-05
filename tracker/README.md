@@ -84,6 +84,16 @@ Overview wild locations, trainer locations, and fusion materials use bounded
 10-row pages so high-collision fusions remain compact in the Overview.
 The diagnostic tools hosted with Diagnostic Access also include tracker-owned
 raw protocol and state diagnostics.
+Tokens may also grant eight independent Development controls: NoFail /
+AutoRevive, Full Heal, level adjustment, ability changes, move changes, item
+grants, direct evolution/devolution, and Pokemon swapping. Persistent changes
+are accepted only outside battle. Development provides searchable full-catalog
+ability, move, and item selectors plus explicit choices for every direct
+evolution or devolution branch of the current Pokemon. Active Debug Lookup
+offers the confirmed swap action; a swap creates the selected Pokemon at the
+current player's level with the newest four level-up moves available at that level.
+The Full current debug access preset remains read-only; each gameplay-changing
+Development permission must be selected explicitly.
 Protocol history, raw tracker state, and persisted knowledge are separately
 granted groups. Diagnostic reports contain only currently authorized groups
 and can be copied or exported to

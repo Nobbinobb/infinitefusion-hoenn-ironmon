@@ -58,6 +58,49 @@ internal sealed class TrackerDiagnosticRequestClient
     }
 
     /// <summary>
+    /// Requests selected portions of the currently authorized development state.
+    /// </summary>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="includeCatalogs">Whether the shared ability, move, and item catalogs are included.</param>
+    /// <param name="includeEvolutions">Whether the current Pokémon's evolution and devolution options are included.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The current development-control state.</returns>
+    internal Task<DebugDevelopmentStateSnapshot> GetDevelopmentStateAsync(string? runId, bool includeCatalogs, bool includeEvolutions, CancellationToken cancellationToken)
+    {
+        _authorization.EnsureAny(
+            DiagnosticCapabilities.DevelopmentAutoRevive,
+            DiagnosticCapabilities.DevelopmentChangeAbility,
+            DiagnosticCapabilities.DevelopmentChangeMoves,
+            DiagnosticCapabilities.DevelopmentEvolution,
+            DiagnosticCapabilities.DevelopmentFullHeal,
+            DiagnosticCapabilities.DevelopmentGiveItem,
+            DiagnosticCapabilities.DevelopmentLevel,
+            DiagnosticCapabilities.DevelopmentSwapPokemon);
+
+        Dictionary<string, object?> request = new()
+        {
+            ["include_catalogs"] = includeCatalogs,
+            ["include_evolutions"] = includeEvolutions
+        };
+
+        return _session.SendAsync<Dictionary<string, object?>, DebugDevelopmentStateSnapshot>(TrackerCommands.DebugDevelopmentState, request, runId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Sends one individually authorized development action.
+    /// </summary>
+    /// <param name="request">The requested action and its input.</param>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The authoritative current-player state after the action, without option catalogs.</returns>
+    internal Task<DebugDevelopmentStateSnapshot> ApplyDevelopmentActionAsync(DebugDevelopmentActionRequestPayload request, string? runId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        _authorization.EnsureDevelopmentAction(request.Action);
+        return _session.SendAsync<DebugDevelopmentActionRequestPayload, DebugDevelopmentStateSnapshot>(TrackerCommands.DebugDevelopmentAction, request, runId, cancellationToken);
+    }
+
+    /// <summary>
     /// Searches generated Pokémon in the active run through the authorized debug channel.
     /// </summary>
     /// <param name="query">The name fragment entered by the user.</param>

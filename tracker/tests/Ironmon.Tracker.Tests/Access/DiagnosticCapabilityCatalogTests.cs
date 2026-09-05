@@ -18,7 +18,7 @@ public sealed class DiagnosticCapabilityCatalogTests
     [Fact]
     public void CatalogContainsUniqueStableDefinitions()
     {
-        Assert.Equal(21, DiagnosticCapabilityCatalog.All.Count);
+        Assert.Equal(29, DiagnosticCapabilityCatalog.All.Count);
         Assert.Equal(DiagnosticCapabilityCatalog.All.Count, DiagnosticCapabilityCatalog.All.Select(definition => definition.Id).Distinct(StringComparer.Ordinal).Count());
         Assert.All(DiagnosticCapabilityCatalog.All, definition =>
         {

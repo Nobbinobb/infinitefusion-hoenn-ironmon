@@ -7,6 +7,469 @@
     cursor: pointer;
     text-underline-offset: 0.2rem;
 }
+
+.development-controls {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.15rem;
+}
+
+.development-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0 0.1rem;
+}
+
+.development-heading p,
+.development-notice {
+    margin: 0;
+}
+
+.development-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.development-primary-button,
+.development-secondary-button,
+.lookup-development-button {
+    min-width: max-content;
+    min-height: 2.15rem;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 0.44rem;
+    color: var(--text);
+    background: var(--surface-raised);
+    font: inherit;
+    font-size: 0.71rem;
+    font-weight: 650;
+    line-height: 1.15;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.development-primary-button,
+.lookup-development-button.primary {
+    border-color: rgb(183 164 255 / 48%);
+    background: rgb(128 100 220 / 22%);
+}
+
+.development-secondary-button {
+    color: var(--muted-strong);
+    background: transparent;
+}
+
+.development-primary-button:hover,
+.development-secondary-button:hover,
+.lookup-development-button:hover {
+    border-color: rgb(183 164 255 / 62%);
+    color: var(--accent-soft);
+}
+
+.development-primary-button:disabled,
+.development-secondary-button:disabled,
+.lookup-development-button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.development-quantity-field input,
+.development-picker > input {
+    min-width: 0;
+    height: 2.15rem;
+    padding: 0 0.55rem;
+    border: 1px solid var(--border);
+    border-radius: 0.42rem;
+    color: var(--text);
+    background: var(--surface);
+    font: inherit;
+    font-size: 0.72rem;
+}
+
+.development-picker {
+    position: relative;
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+.development-picker > input {
+    width: 100%;
+}
+
+.development-picker-results {
+    position: absolute;
+    z-index: 40;
+    top: calc(100% + 0.25rem);
+    right: 0;
+    left: 0;
+    display: grid;
+    max-height: 15rem;
+    overflow-y: auto;
+    padding: 0.25rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 0.48rem;
+    background: rgb(24 19 33 / 98%);
+    box-shadow: 0 0.6rem 1.4rem rgb(0 0 0 / 35%);
+}
+
+.development-picker.opens-up .development-picker-results {
+    top: auto;
+    bottom: calc(100% + 0.25rem);
+}
+
+.development-picker-results button {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.65rem;
+    padding: 0.48rem 0.55rem;
+    border: 0;
+    border-radius: 0.34rem;
+    color: var(--text);
+    background: transparent;
+    font: inherit;
+    font-size: 0.7rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.development-picker-results button:hover,
+.development-picker-results button.selected {
+    background: rgb(128 100 220 / 20%);
+}
+
+.development-picker-results button span,
+.development-picker-empty {
+    color: var(--muted);
+    font-size: 0.63rem;
+}
+
+.development-picker-empty {
+    padding: 0.55rem;
+}
+
+.development-moves {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.development-moves label {
+    display: grid;
+    gap: 0.2rem;
+    color: var(--muted);
+    font-size: 0.65rem;
+}
+
+.development-quantity-field {
+    display: grid;
+    flex: 0 0 5rem;
+    gap: 0.2rem;
+    color: var(--muted);
+    font-size: 0.65rem;
+}
+
+.development-quantity-field input {
+    width: 5rem;
+}
+
+.development-evolution-option {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--surface);
+}
+
+.development-evolution-option > strong {
+    font-size: 0.72rem;
+}
+
+.development-evolution-option > .development-primary-button {
+    justify-self: end;
+}
+
+.development-notice {
+    color: #78dfaa;
+    font-size: 0.72rem;
+}
+
+.development-controls {
+    gap: 0.45rem;
+    padding: 0;
+}
+
+.development-heading {
+    min-height: 2.15rem;
+    padding: 0 0.15rem;
+}
+
+.development-heading > .section-label {
+    margin: 0;
+}
+
+.development-panel {
+    overflow: visible;
+    border: 1px solid var(--border);
+    border-radius: 0.58rem;
+    background: var(--surface-soft);
+}
+
+.development-quick-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    min-height: 2.85rem;
+    padding: 0.4rem 0.65rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.development-quick-actions .development-toggle {
+    padding-right: 0.55rem;
+    border-right: 1px solid var(--border);
+}
+
+.development-quick-actions .development-secondary-button {
+    min-height: 1.9rem;
+    padding: 0.32rem 0.58rem;
+    border-color: var(--border);
+    background: var(--surface);
+}
+
+.development-quick-level {
+    display: flex;
+    align-items: center;
+    gap: 0.38rem;
+    margin-left: auto;
+    color: var(--muted-strong);
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.development-quick-level input {
+    width: 4.25rem;
+    min-width: 0;
+    height: 1.9rem;
+    padding: 0 0.42rem;
+    border: 1px solid var(--border);
+    border-radius: 0.4rem;
+    color: var(--text);
+    background: var(--surface);
+    font: inherit;
+    font-size: 0.71rem;
+}
+
+.development-row {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+    padding: 0.55rem 0.65rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.development-row:last-child {
+    border-bottom: 0;
+}
+
+.development-row h3 {
+    margin: 0;
+    font-size: 0.75rem;
+}
+
+.development-row > .development-primary-button,
+.development-row > .development-toggle {
+    justify-self: end;
+}
+
+.development-row-stack {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.42rem;
+}
+
+.development-row-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+}
+
+.development-quantity-field input,
+.development-picker > input {
+    min-width: 0;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 0.4rem;
+    color: var(--text);
+    background: var(--surface);
+    font: inherit;
+    font-size: 0.71rem;
+}
+
+.development-primary-button,
+.development-secondary-button,
+.lookup-development-button {
+    min-height: 2rem;
+    padding: 0.4rem 0.7rem;
+}
+
+.development-moves {
+    gap: 0.4rem;
+}
+
+.development-action-row.development-item-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 4.5rem auto;
+    align-items: end;
+    gap: 0.45rem;
+}
+
+.development-quantity-field {
+    width: 4.5rem;
+}
+
+.development-quantity-field input {
+    width: 4.5rem;
+}
+
+.development-evolution-option {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+}
+
+.development-evolution-option > span {
+    color: var(--muted-strong);
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.development-evolution-option > .development-primary-button {
+    justify-self: auto;
+}
+
+.lookup-overview-swap {
+    flex: 0 0 auto;
+    min-height: 1.85rem;
+    padding: 0.32rem 0.55rem;
+    border-color: rgb(183 164 255 / 34%);
+    background: rgb(128 100 220 / 12%);
+    font-size: 0.66rem;
+}
+
+.lookup-overview-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.55rem;
+}
+
+.lookup-overview-title-row .identity-name {
+    min-width: 0;
+    margin-right: auto;
+}
+
+.development-confirmation-dialog {
+    width: min(100%, 22rem);
+    gap: 0.75rem;
+}
+
+.detail-panel.development-confirmation-dialog h2,
+.detail-panel.development-confirmation-dialog p {
+    margin: 0;
+}
+
+.detail-panel.development-confirmation-dialog h2 {
+    font-size: 1rem;
+}
+
+.detail-panel.development-confirmation-dialog > p {
+    color: var(--muted-strong);
+    font-size: 0.75rem;
+    line-height: 1.45;
+}
+
+.development-confirmation-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.4rem;
+}
+
+.development-evolution-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 0.65rem;
+    color: var(--muted);
+    font-size: 0.7rem;
+}
+
+@media (max-width: 720px) {
+    .development-moves {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .development-action-row.development-item-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 4.5rem auto;
+        align-items: end;
+    }
+
+    .development-item-row .development-primary-button {
+        align-self: auto;
+    }
+
+}
+
+@media (max-width: 440px) {
+    .development-row {
+        grid-template-columns: 7.25rem minmax(0, 1fr);
+    }
+
+    .development-row-stack {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .development-evolution-option {
+        grid-template-columns: 4.75rem minmax(0, 1fr);
+    }
+
+    .development-quick-actions {
+        gap: 0.35rem;
+        padding-inline: 0.55rem;
+    }
+
+    .development-quick-actions .development-toggle {
+        padding-right: 0.4rem;
+        font-size: 0.69rem;
+    }
+
+    .development-quick-actions .development-secondary-button {
+        padding-inline: 0.48rem;
+    }
+
+    .development-quick-level {
+        gap: 0.28rem;
+    }
+
+    .development-quick-level input {
+        width: 3.8rem;
+    }
+}
 .pokemon-type-link:hover, .pokemon-type-link:focus-visible { text-decoration: underline; }
 .defense-view { display: grid; gap: 1rem; }
 .defense-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 0.8rem; }
@@ -4276,7 +4739,7 @@ button.move-placeholder:hover {
 
 .debug-pages {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0.3rem;
     padding: 0.25rem;
     border: 1px solid var(--border);

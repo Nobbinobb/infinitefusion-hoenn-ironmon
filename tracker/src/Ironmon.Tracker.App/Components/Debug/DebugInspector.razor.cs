@@ -212,11 +212,14 @@ public partial class DebugInspector : IDisposable
     /// <returns>A task representing any required request.</returns>
     private async Task SelectPageAsync(DebugInspectorPage page)
     {
-        if (_loading || !_visiblePages.Contains(page))
+        if (!_visiblePages.Contains(page))
             return;
 
         _selectedPage = page;
         _error = null;
+        if (_loading)
+            return;
+
         if (page == DebugInspectorPage.Pokemon)
         {
             EnsureSelectedTargetAvailable();
@@ -387,6 +390,7 @@ public partial class DebugInspector : IDisposable
             DebugInspectorPage.Lookup => TrackerDiagnosticCapabilityRules.CanUseActivePokemonLookup(Connection),
             DebugInspectorPage.Diagnostics => TrackerDiagnosticCapabilityRules.HasAnyRunDiagnostics(Connection),
             DebugInspectorPage.Protocol => TrackerDiagnosticCapabilityRules.HasAnyTrackerDiagnostics(AccessService.Snapshot),
+            DebugInspectorPage.Development => HasAnyDevelopmentControl(),
             _ => false
         };
     }
@@ -413,6 +417,21 @@ public partial class DebugInspector : IDisposable
     /// Gets whether at least one primary diagnostic page is authorized.
     /// </summary>
     private bool HasAnyPage => _visiblePages.Count > 0;
+
+    /// <summary>
+    /// Gets whether at least one gameplay-changing development control is authorized.
+    /// </summary>
+    private bool HasAnyDevelopmentControl()
+    {
+        return Connection.HasDiagnosticCapability(DiagnosticCapabilities.DevelopmentAutoRevive)
+            || Connection.HasDiagnosticCapability(DiagnosticCapabilities.DevelopmentChangeAbility)
+            || Connection.HasDiagnosticCapability(DiagnosticCapabilities.DevelopmentChangeMoves)
+            || Connection.HasDiagnosticCapability(DiagnosticCapabilities.DevelopmentEvolution)
+            || Connection.HasDiagnosticCapability(DiagnosticCapabilities.DevelopmentFullHeal)
+            || Connection.HasDiagnosticCapability(DiagnosticCapabilities.DevelopmentGiveItem)
+            || Connection.HasDiagnosticCapability(DiagnosticCapabilities.DevelopmentLevel)
+            || Connection.HasDiagnosticCapability(DiagnosticCapabilities.DevelopmentSwapPokemon);
+    }
 
     /// <summary>
     /// Gets whether one shared Pokemon information page is authorized.

@@ -23,5 +23,10 @@ public enum DebugInspectorPage
     /// <summary>
     /// Shows tracker-owned state and protocol diagnostics.
     /// </summary>
-    Protocol = 3
+    Protocol = 3,
+
+    /// <summary>
+    /// Shows individually authorized gameplay development controls.
+    /// </summary>
+    Development = 4
 }

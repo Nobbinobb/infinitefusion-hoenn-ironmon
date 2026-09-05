@@ -46,9 +46,21 @@ public static class DiagnosticAccessPresetCatalog
         new(
             DiagnosticAccessPresetIds.FullCurrentDebug,
             "Full current debug access",
-            "Prefills every capability currently supported by the generator.",
-            Sort(DiagnosticCapabilityCatalog.KnownIds.Where(capability => capability is not DiagnosticCapabilities.PokemonCurrentPlayer and not DiagnosticCapabilities.PokemonCurrentEnemies)))
+            "Prefills every read-only diagnostic capability currently supported by the generator. Development mutations remain opt-in.",
+            Sort(DiagnosticCapabilityCatalog.KnownIds.Where(IsReadOnlyFullDebugCapability)))
     ];
+
+    /// <summary>
+    /// Determines whether one capability belongs in the historical read-only full-debug preset.
+    /// </summary>
+    /// <param name="capability">The candidate capability identifier.</param>
+    /// <returns><see langword="true"/> when the capability is neither a direct active-Pokémon grant nor a development action; otherwise, <see langword="false"/>.</returns>
+    private static bool IsReadOnlyFullDebugCapability(string capability)
+    {
+        return capability is not DiagnosticCapabilities.PokemonCurrentPlayer
+            and not DiagnosticCapabilities.PokemonCurrentEnemies
+            && !capability.StartsWith("development.", StringComparison.Ordinal);
+    }
 
     /// <summary>
     /// Sorts one preset capability set into canonical token order.
