@@ -1410,3 +1410,382 @@ body:has(.tracker-shell.obsidian) {
     font-size: 13px;
     font-weight: 650;
 }
+
+.obsidian-settings {
+    align-self:start;
+}
+.obsidian-settings-heading {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin:0 1px 7px;
+}
+.obsidian-settings-heading .card-kicker {
+    font-size:9px;
+    letter-spacing:1.7px;
+    color:#9baccc;
+    margin:0 0 5px;
+}
+.obsidian-settings-heading h2 {
+    margin:0;
+    font-size:23px;
+    font-weight:650;
+    line-height:1.2;
+    letter-spacing:-.5px;
+}
+.obsidian-settings-saved {
+    font-size:11px;
+    color:#55eaa5;
+}
+.obsidian-settings-section {
+    border:1px solid #2a3544;
+    border-radius:12px;
+    background:radial-gradient(ellipse at 14% 0%,#1d2433 0%,#131820 64%);
+    padding:8px 14px;
+    margin-bottom:8px;
+}
+.obsidian-settings-section>header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+}
+.obsidian-settings-section h3 {
+    display:flex;
+    align-items:center;
+    gap:9px;
+    margin:0;
+    font-size:14px;
+    font-weight:600;
+    line-height:1.3;
+}
+.obsidian-line-icon {
+    width:16px;
+    height:16px;
+    flex-shrink:0;
+}
+
+.obsidian-settings-section h3 .obsidian-line-icon {
+    color:#b0a3ff;
+}
+.obsidian-setting-row {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 86px;
+    gap:14px;
+    align-items:center;
+    padding:8px 0 0;
+}
+.obsidian-setting-row+.obsidian-setting-row {
+    margin-top:8px;
+    border-top:1px solid #2a3442;
+}
+.obsidian-setting-row strong {
+    display:block;
+    font-size:13px;
+    font-weight:500;
+}
+.obsidian-setting-row small {
+    display:block;
+    color:#9eacbf;
+    font-size:11px;
+    line-height:1.45;
+    margin-top:2px;
+}
+.obsidian-setting-row input[type="number"] {
+    width:86px;
+    height:34px;
+    min-width:0;
+    border:1px solid #384456;
+    border-radius:7px;
+    background:#0d1119;
+    color:#f0f3fa;
+    padding:6px 8px;
+    text-align:center;
+    font:14px/1.45 "Segoe UI",sans-serif;
+    font-variant-numeric:tabular-nums;
+}
+.obsidian-setting-row input::placeholder {
+    color:#a0aec2;
+    font-size:11px;
+}
+.obsidian-setting-row input[aria-invalid="true"] {
+    border-color:#ff6389;
+}
+.obsidian-setting-switch {
+    appearance:none;
+    justify-self:end;
+    width:38px;
+    height:22px;
+    border:1px solid #455166;
+    background:#303a4a;
+    border-radius:20px;
+    position:relative;
+    cursor:pointer;
+    margin:0;
+}
+.obsidian-setting-switch:before {
+    content:'';
+    position:absolute;
+    width:14px;
+    height:14px;
+    top:3px;
+    left:3px;
+    border-radius:50%;
+    background:#aebacd;
+}
+.obsidian-setting-switch:checked {
+    background:#b0a3ff33;
+    border-color:#b0a3ff;
+}
+.obsidian-setting-switch:checked:before {
+    background:#b0a3ff;
+    transform:translateX(16px);
+}
+.obsidian-settings-description {
+    font-size:12px;
+    color:#9eacbf;
+    line-height:1.5;
+    margin:6px 0 0;
+}
+.obsidian-settings-actions {
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:9px 14px;
+    margin-top:10px;
+}
+.obsidian .obsidian-settings-button {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    border:1px solid #354153;
+    border-radius:7px;
+    background:#202938;
+    color:#f0f3fa;
+    padding:7px 10px;
+    font-size:12px;
+    font-weight:400;
+    line-height:1.45;
+    min-height:0;
+    white-space:nowrap;
+    box-shadow:none;
+}
+.obsidian .obsidian-settings-button:hover {
+    background:#2a3445;
+    border-color:#586784;
+}
+.obsidian .obsidian-settings-primary {
+    background:#b0a3ff1c;
+    border-color:#b0a3ff55;
+    color:#d2caff;
+}
+.obsidian .obsidian-settings-link {
+    background:transparent;
+    border:0;
+    border-radius:0;
+    padding:3px 0;
+    color:#b0a3ff;
+    font-size:11px;
+    font-weight:400;
+    line-height:1.45;
+    min-height:0;
+    box-shadow:none;
+}
+.obsidian .obsidian-settings-link:hover {
+    text-decoration:underline;
+}
+.obsidian-settings-warning {
+    font-size:11px;
+    color:#b6a992;
+    margin:9px 0 0;
+}
+.obsidian-settings-count {
+    font-size:11px;
+    color:#9eacbf;
+    white-space:nowrap;
+}
+.obsidian-favorites-overview {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-top:8px;
+}
+.obsidian-favorites-overview>span {
+    font-size:12px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.obsidian-settings-status {
+    font-size:11px;
+    color:#9eacbf;
+    padding:0 2px;
+    margin:0;
+}
+.obsidian-setting-error {
+    font-size:11px;
+    color:#ff6389;
+    margin:7px 0 0;
+}
+.obsidian .settings-button.selected {
+    color:#b0a3ff;
+    background:#b0a3ff20;
+}
+.obsidian-settings-dialog p {
+    margin:0;
+    color:#c3cede;
+    font-size:13px;
+    line-height:1.6;
+}
+.obsidian-settings-dialog .obsidian-settings-note {
+    font-size:11px;
+    color:#9eacbf;
+    margin-top:12px;
+}
+.obsidian-settings-dialog .obsidian-settings-actions {
+    margin-top:18px;
+}
+.obsidian-settings-metric {
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 0;
+    border-bottom:1px solid #2a3442;
+    font-size:12px;
+}
+.obsidian-settings-metric span {
+    color:#9eacbf;
+}
+.obsidian-settings-metric strong {
+    font-weight:600;
+}
+.obsidian-settings-dialog .obsidian-settings-caution {
+    border-left:2px solid #ba9b69;
+    padding-left:12px;
+    margin-top:17px;
+}
+.obsidian-settings-dialog progress {
+    display:block;
+    width:100%;
+    height:6px;
+    margin:18px 0 5px;
+    border:0;
+    accent-color:#b0a3ff;
+}
+.obsidian-settings-dialog progress::-webkit-progress-bar {
+    background:#2a3442;
+    border-radius:5px;
+}
+.obsidian-settings-dialog progress::-webkit-progress-value {
+    background:#b0a3ff;
+    border-radius:5px;
+}
+.obsidian-favorite-heading {
+    display:flex;
+    justify-content:space-between;
+    margin-top:18px;
+    color:#9eacbf;
+    font-size:11px;
+}
+.obsidian-favorite-list>div {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:9px 0;
+    border-bottom:1px solid #2a3442;
+    gap:10px;
+}
+.obsidian-favorite-list button {
+    color:#9eacbf;
+    background:transparent;
+    border:0;
+    border-radius:0;
+    font-size:12px;
+    font-weight:400;
+    padding:4px;
+    min-height:0;
+    box-shadow:none;
+}
+.obsidian-favorite-list button:hover {
+    color:#ff6389;
+}
+.obsidian-favorite-pager {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:14px;
+    font-size:12px;
+    color:#9eacbf;
+}
+.pokemon-search-field {
+    position:relative;
+    margin-top:16px;
+}
+.pokemon-search-field input {
+    display:block;
+    width:100%;
+    border:1px solid #3a485d;
+    border-radius:8px;
+    background:#0c1119;
+    color:#f0f3fa;
+    height:38px;
+    padding:8px 11px;
+    font:13px/1.45 "Segoe UI",sans-serif;
+}
+.pokemon-search-field input::placeholder {
+    color:#a0aec2;
+}
+.obsidian-settings-dialog .pokemon-search-status {
+    font-size:11px;
+    color:#9eacbf;
+    min-height:17px;
+    margin-top:10px;
+}
+.pokemon-search-suggestions {
+    position:absolute;
+    top:43px;
+    left:0;
+    right:0;
+    z-index:2;
+    border:1px solid #46536a;
+    border-radius:9px;
+    background:#1b222e;
+    box-shadow:0 15px 30px #0008;
+    max-height:266px;
+    overflow:auto;
+    scrollbar-width:thin;
+    padding:5px;
+}
+.pokemon-search-suggestions [role="option"] {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:9px 10px;
+    border-radius:5px;
+    cursor:pointer;
+}
+.pokemon-search-suggestions small {
+    font-size:11px;
+    color:#b0a3ff;
+}
+.pokemon-search-suggestions [role="option"]:hover,.pokemon-search-suggestions [aria-selected="true"] {
+    background:#b0a3ff20;
+}
+.pokemon-search-suggestions [aria-disabled="true"],.pokemon-search-suggestions [aria-disabled="true"] small {
+    color:#9eacbf;
+    cursor:default;
+}
+.obsidian .detail-panel:has(.pokemon-search-suggestions) {
+    overflow:visible;
+}
+
+.tracker-shell.obsidian:has(.obsidian-settings) {
+    padding-bottom:12px;
+}
+
+.obsidian .detail-panel:has(.obsidian-settings-dialog) {
+    width:min(100%,462px);
+    max-width:462px;
+}

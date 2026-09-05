@@ -166,7 +166,9 @@ module Ironmon
       elsif message["command"] == "favorite_pokemon_search"
         payload = message["payload"] || {}
         payload["normal_only"] = true
-        payload = Ironmon.tracker_pokemon_search_for_recipe(payload, nil)
+        payload = Ironmon.tracker_pokemon_search_for_recipe(
+          payload, nil, { :obtainability => false }
+        )
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "prepare_run_lookup"
         payload = Ironmon.tracker_run_lookup_preparation(

@@ -1328,6 +1328,7 @@
   <data name="Settings.Favorites.Next" xml:space="preserve"><value>Next</value></data>
   <data name="Settings.Favorites.Page" xml:space="preserve"><value>{0} / {1}</value></data>
   <data name="Settings.Favorites.ConnectToSearch" xml:space="preserve"><value>Connect the game to search its normal Pokémon list.</value></data>
+  <data name="Settings.Favorites.SearchFailed" xml:space="preserve"><value>The Pokémon search failed. Please try again.</value></data>
   <data name="Starter.Selection.Favorite" xml:space="preserve"><value>Favorite</value></data>
   <data name="Lookup.Areas.Title" xml:space="preserve"><value>Area progress</value></data>
   <data name="Lookup.Areas.Kicker" xml:space="preserve"><value>WORLD LOOKUP</value></data>
@@ -1797,5 +1798,74 @@
   </data>
   <data name="Redesign.Enemy.NoteExplanation" xml:space="preserve">
     <value>These are your notes for this species. Actual enemy stats stay hidden; battle stages are shown separately.</value>
+  </data>
+  <data name="Redesign.Settings.Saved" xml:space="preserve">
+    <value>✓ Saved</value>
+  </data>
+  <data name="Redesign.Settings.SavedLocally" xml:space="preserve">
+    <value>Saved on this tracker.</value>
+  </data>
+  <data name="Redesign.Settings.AutomaticChanges" xml:space="preserve">
+    <value>Changes apply automatically.</value>
+  </data>
+  <data name="Redesign.Settings.AutoSelectDescription" xml:space="preserve">
+    <value>Reveal all three, block input, then choose the Random Pick after two seconds.</value>
+  </data>
+  <data name="Redesign.Settings.MaximumBstDescription" xml:space="preserve">
+    <value>Inclusive ceiling for autoselect. No eligible starter resets the attempt; it still counts.</value>
+  </data>
+  <data name="Redesign.Settings.ExpansionDepthDescription" xml:space="preserve">
+    <value>Predecessor and evolution layers around the initial Pokémon and each selected branch.</value>
+  </data>
+  <data name="Redesign.Settings.NodesPerRowDescription" xml:space="preserve">
+    <value>Wrap a level after this many Pokémon.</value>
+  </data>
+  <data name="Redesign.Settings.SpriteDescription" xml:space="preserve">
+    <value>Keep custom fusion and normal-species sheets current. Only missing or changed image data is downloaded.</value>
+  </data>
+  <data name="Redesign.Settings.KeepGameClosed" xml:space="preserve">
+    <value>Keep Infinite Fusion closed during synchronization.</value>
+  </data>
+  <data name="Redesign.Settings.FavoritesDescription" xml:space="preserve">
+    <value>Fusions count when either half is a favorite.</value>
+  </data>
+  <data name="Redesign.Settings.Manage" xml:space="preserve">
+    <value>Manage</value>
+  </data>
+  <data name="Redesign.Settings.YourPokemon" xml:space="preserve">
+    <value>YOUR POKÉMON</value>
+  </data>
+  <data name="Redesign.Settings.MoreFavorites" xml:space="preserve">
+    <value> +{0}</value>
+  </data>
+  <data name="Redesign.Settings.ViewProgress" xml:space="preserve">
+    <value>View synchronization</value>
+  </data>
+  <data name="Redesign.Settings.SheetsChecked" xml:space="preserve">
+    <value>Sheets checked</value>
+  </data>
+  <data name="Redesign.Settings.Downloaded" xml:space="preserve">
+    <value>Downloaded</value>
+  </data>
+  <data name="Redesign.Settings.FailedUnavailable" xml:space="preserve">
+    <value>Failed · unavailable (404)</value>
+  </data>
+  <data name="Redesign.Settings.Installed" xml:space="preserve">
+    <value>Already installed</value>
+  </data>
+  <data name="Redesign.Settings.SheetsToCheck" xml:space="preserve">
+    <value>Sheets to check</value>
+  </data>
+  <data name="Redesign.Settings.MatchingPokemon" xml:space="preserve">
+    <value>Matching Pokémon</value>
+  </data>
+  <data name="Redesign.Settings.FirstMatches" xml:space="preserve">
+    <value>First {0} matches. Keep typing to narrow the list.</value>
+  </data>
+  <data name="Redesign.Settings.MatchCount" xml:space="preserve">
+    <value>{0} matching Pokémon</value>
+  </data>
+  <data name="Redesign.Settings.FavoriteAdded" xml:space="preserve">
+    <value>{0} added to favorites.</value>
   </data>
 </root>

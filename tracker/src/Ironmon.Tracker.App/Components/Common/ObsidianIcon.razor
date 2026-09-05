@@ -1,0 +1,18 @@
+<svg class="obsidian-line-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    @if (Kind == ObsidianIconKind.Shuffle)
+    {
+        <path d="m18 14 4 4-4 4 M18 2l4 4-4 4 M2 18h2.5a6 6 0 0 0 5-2.8l5-6.4a6 6 0 0 1 5-2.8H22 M2 6h2.5a6 6 0 0 1 5 2.8l5 6.4a6 6 0 0 0 5 2.8H22" />
+    }
+    else if (Kind == ObsidianIconKind.Branch)
+    {
+        <path d="M6 3v12 M18 9a9 9 0 0 1-9 9" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" />
+    }
+    else if (Kind == ObsidianIconKind.Images)
+    {
+        <path d="M18 22H4a2 2 0 0 1-2-2V6 M22 13l-3-3a2 2 0 0 0-3 0l-6 6" /><rect x="6" y="2" width="16" height="16" rx="2" /><circle cx="11" cy="7" r="1" />
+    }
+    else if (Kind == ObsidianIconKind.Heart)
+    {
+        <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />
+    }
+</svg>

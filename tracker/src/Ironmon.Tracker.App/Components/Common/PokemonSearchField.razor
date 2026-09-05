@@ -1,0 +1,20 @@
+<div class="pokemon-search-field">
+    <input @ref="_input" type="search" role="combobox" aria-label="@Placeholder" placeholder="@Placeholder" autocomplete="off"
+           aria-autocomplete="list" aria-controls="@_listId" aria-expanded="@_suggestionsOpen.ToString().ToLowerInvariant()" aria-activedescendant="@ActiveOptionId"
+           value="@_query" @oninput="HandleInputAsync" @onfocus="ShowSuggestions" @onblur="HideSuggestions"
+           @onkeydown="HandleKeyDownAsync" @onkeydown:stopPropagation="@_suggestionsOpen" />
+    @if (_suggestionsOpen && _matches.Count > 0)
+    {
+        <div id="@_listId" class="pokemon-search-suggestions" role="listbox" aria-label="@Text["Redesign.Settings.MatchingPokemon"]" @onmousedown:preventDefault>
+            @for (int index = 0; index < _matches.Count; index++)
+            {
+                PokemonSearchMatch match = _matches[index];
+                <div id="@GetOptionId(index)" role="option" aria-selected="@((_activeIndex == index).ToString().ToLowerInvariant())"
+                     aria-disabled="@IsAlreadySelected(match).ToString().ToLowerInvariant()" @onclick="() => SelectAsync(match)">
+                    <span>@match.SpeciesName</span><small>@(IsAlreadySelected(match) ? Text["Settings.Favorites.Added"] : Text["Settings.Favorites.Add"])</small>
+                </div>
+            }
+        </div>
+    }
+    <p class="pokemon-search-status" role="status">@_status</p>
+</div>

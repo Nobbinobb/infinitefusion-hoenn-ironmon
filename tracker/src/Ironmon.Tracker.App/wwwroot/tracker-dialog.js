@@ -29,18 +29,37 @@
                 }
             };
             root.addEventListener('keydown', keydown);
+            const observer = new MutationObserver(() => {
+                if (dialog.isConnected && !root.closest('[inert]') && document.activeElement === document.body) {
+                    (controls()[0] || dialog).focus({ preventScroll: true });
+                }
+            });
+            observer.observe(dialog, { childList: true, subtree: true });
             (controls()[0] || dialog).focus({ preventScroll: true });
             const handle = ++sequence;
-            dialogs.set(handle, { root, keydown, previous, isolated });
+            dialogs.set(handle, { root, keydown, previous, isolated, observer });
             return handle;
         },
         detach(handle) {
             const state = dialogs.get(handle);
             if (!state) return;
             state.root.removeEventListener('keydown', state.keydown);
+            state.observer.disconnect();
             state.isolated.forEach(e => e.inert = false);
             if (state.previous?.isConnected) state.previous.focus({ preventScroll: true });
             dialogs.delete(handle);
         }
     };
 })();
+
+window.ironmonSearch = {
+    initialize(input) {
+        input.addEventListener('keydown', event => {
+            if (['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) event.preventDefault();
+        });
+    },
+    scrollActive(input) {
+        const option = document.getElementById(input.getAttribute('aria-activedescendant'));
+        option?.scrollIntoView({ block: 'nearest' });
+    }
+};

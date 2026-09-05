@@ -12,23 +12,24 @@ public partial class TrackerSettingsPage : IDisposable
     private const string AvailableSpritesCompleteKey = "Settings.Sprites.AvailableComplete";
     private const string SpriteDownloadWithUnavailableKey = "Settings.Sprites.CompleteWithUnavailable";
     private const string SpriteSynchronizationCurrentKey = "Settings.Sprites.Current";
-    private CancellationTokenSource? _searchCancellation;
     private CancellationTokenSource? _spriteInstallCancellation;
     private IReadOnlyList<PokemonSearchMatch> _favorites = [];
-    private IReadOnlyList<PokemonSearchMatch> _matches = [];
     private CustomSpriteInstallPlan? _spriteInstallPlan;
     private CustomSpriteInstallProgress? _spriteInstallProgress;
-    private string _query = string.Empty;
     private string? _graphDepthError;
     private string? _nodesPerRowError;
-    private string? _searchError;
     private string? _maximumBstError;
     private string? _spriteInstallStatus;
     private int _favoritePage;
-    private bool _searching;
     private bool _showSpriteInstallConfirmation;
     private bool _spriteInstallPreparing;
+    private bool _spriteReviewIncludesUnavailable;
+    private bool _disposed;
     private bool _spriteInstallRunning;
+    private bool _spriteDialogOpen;
+    private bool _favoritesOpen;
+    private bool _graphSettingsSaved;
+    private const string _favoriteSeparator = ", ";
 
     /// <summary>
     /// Gets or initializes the persisted favorite-Pokemon store.
@@ -117,7 +118,10 @@ public partial class TrackerSettingsPage : IDisposable
     /// <param name="args">The checkbox change event.</param>
     /// <returns>A task representing callback dispatch.</returns>
     private Task HandleAutoSelectChanged(ChangeEventArgs args)
-        => AutoSelectStarterChanged.InvokeAsync(args.Value is bool enabled && enabled);
+    {
+        _graphSettingsSaved = false;
+        return AutoSelectStarterChanged.InvokeAsync(args.Value is bool enabled && enabled);
+    }
 
     /// <summary>
     /// Validates and persists the graph neighborhood expansion depth.
@@ -134,6 +138,7 @@ public partial class TrackerSettingsPage : IDisposable
 
         _graphDepthError = null;
         EvolutionGraphSettings.ExpansionDepth = value;
+        _graphSettingsSaved = true;
     }
 
     /// <summary>
@@ -151,6 +156,7 @@ public partial class TrackerSettingsPage : IDisposable
 
         _nodesPerRowError = null;
         EvolutionGraphSettings.NodesPerRow = value;
+        _graphSettingsSaved = true;
     }
 
     /// <summary>
@@ -164,6 +170,7 @@ public partial class TrackerSettingsPage : IDisposable
         if (text.Length == 0)
         {
             _maximumBstError = null;
+            _graphSettingsSaved = false;
             return MaximumStarterBaseStatTotalChanged.InvokeAsync(null);
         }
 
@@ -174,6 +181,7 @@ public partial class TrackerSettingsPage : IDisposable
         }
 
         _maximumBstError = null;
+        _graphSettingsSaved = false;
         return MaximumStarterBaseStatTotalChanged.InvokeAsync(value);
     }
 
@@ -201,6 +209,8 @@ public partial class TrackerSettingsPage : IDisposable
         if (_spriteInstallPreparing || _spriteInstallRunning)
             return;
 
+        bool openWhenReady = !_spriteDialogOpen;
+        _spriteReviewIncludesUnavailable = includeUnavailable;
         _spriteInstallPreparing = true;
         _spriteInstallStatus = null;
         _spriteInstallPlan = null;
@@ -232,6 +242,8 @@ public partial class TrackerSettingsPage : IDisposable
         finally
         {
             _spriteInstallPreparing = false;
+            if (openWhenReady && !_disposed)
+                _spriteDialogOpen = true;
         }
     }
 
@@ -293,6 +305,7 @@ public partial class TrackerSettingsPage : IDisposable
     /// </summary>
     private void CancelSpriteReview()
     {
+        _spriteDialogOpen = false;
         _showSpriteInstallConfirmation = false;
         _spriteInstallPlan = null;
     }
@@ -312,42 +325,71 @@ public partial class TrackerSettingsPage : IDisposable
         => $"{bytes / (1024d * 1024d):N1} {MegabyteUnit}";
 
     /// <summary>
-    /// Debounces user input and requests normal-Pokemon suggestions.
+    /// Gets a compact preview of the saved favorite species.
     /// </summary>
-    /// <param name="args">The search input event.</param>
-    /// <returns>A task representing the suggestion request.</returns>
-    private async Task HandleSearchInput(ChangeEventArgs args)
+    private string FavoriteSummary
     {
-        _query = args.Value?.ToString()?.Trim() ?? string.Empty;
-        _searchCancellation?.Cancel();
-        _searchCancellation?.Dispose();
-        _searchCancellation = new CancellationTokenSource();
-        CancellationToken cancellationToken = _searchCancellation.Token;
-        _matches = [];
-        _searchError = null;
-        _searching = false;
-        if (_query.Length < 2)
-            return;
+        get
+        {
+            if (_favorites.Count == 0)
+                return Text["Settings.Favorites.Empty"];
 
-        try
-        {
-            _searching = true;
-            await Task.Delay(250, cancellationToken);
-            PokemonSearchResponsePayload response = await Requests.SearchFavoritePokemonAsync(_query, limit: 8, cancellationToken: cancellationToken);
-            _matches = response.Matches;
+            string names = string.Join(_favoriteSeparator, _favorites.Take(3).Select(favorite => favorite.SpeciesName));
+            return _favorites.Count > 3 ? names + Text["Redesign.Settings.MoreFavorites", _favorites.Count - 3] : names;
         }
-        catch (OperationCanceledException)
+    }
+
+    /// <summary>
+    /// Opens the dialog containing favorite management and suggestions.
+    /// </summary>
+    private void OpenFavorites() => _favoritesOpen = true;
+
+    /// <summary>
+    /// Closes favorite management and cancels the search component's outstanding work.
+    /// </summary>
+    private void CloseFavorites() => _favoritesOpen = false;
+
+    /// <summary>
+    /// Shows an active synchronization or prepares a fresh library review.
+    /// </summary>
+    /// <returns>A task representing optional library inspection.</returns>
+    private Task OpenSpriteReviewAsync()
+    {
+        if (_spriteInstallRunning)
         {
+            _spriteDialogOpen = true;
+            return Task.CompletedTask;
         }
-        catch (Exception exception) when (exception is IOException or InvalidOperationException or TrackerProtocolException or TimeoutException)
-        {
-            _searchError = Text["Settings.Favorites.ConnectToSearch"];
-        }
-        finally
-        {
-            if (!cancellationToken.IsCancellationRequested)
-                _searching = false;
-        }
+
+        return _spriteInstallPreparing ? Task.CompletedTask : ReviewSpriteInstallAsync();
+    }
+
+    /// <summary>
+    /// Dismisses the synchronization dialog without cancelling an active transfer.
+    /// </summary>
+    private void CloseSpriteDialog() => _spriteDialogOpen = false;
+
+    /// <summary>
+    /// Searches the connected game's normal species for up to ten suggestions.
+    /// </summary>
+    /// <param name="query">The partial Pokémon name.</param>
+    /// <param name="cancellationToken">The cancellation token for superseded input.</param>
+    /// <returns>The first matching normal Pokémon.</returns>
+    private async Task<IReadOnlyList<PokemonSearchMatch>> SearchFavoritesAsync(string query, CancellationToken cancellationToken)
+    {
+        PokemonSearchResponsePayload response = await Requests.SearchFavoritePokemonAsync(query, limit: 10, cancellationToken: cancellationToken);
+        return response.Matches;
+    }
+
+    /// <summary>
+    /// Distinguishes a failed search from a missing game connection.
+    /// </summary>
+    /// <returns>The localized message for the current connection state.</returns>
+    private string GetFavoriteSearchErrorMessage()
+    {
+        return Text[ConnectionState.Snapshot.Status == TrackerConnectionStatus.Connected
+            ? "Settings.Favorites.SearchFailed"
+            : "Settings.Favorites.ConnectToSearch"];
     }
 
     /// <summary>
@@ -388,7 +430,10 @@ public partial class TrackerSettingsPage : IDisposable
     /// </summary>
     /// <returns>A task representing callback dispatch.</returns>
     private Task PublishFavoritesAsync()
-        => FavoriteSpeciesIdsChanged.InvokeAsync(_favorites.Select(favorite => favorite.SpeciesId).ToArray());
+    {
+        _graphSettingsSaved = false;
+        return FavoriteSpeciesIdsChanged.InvokeAsync([.. _favorites.Select(favorite => favorite.SpeciesId)]);
+    }
 
     /// <summary>
     /// Moves to the previous favorite page.
@@ -401,12 +446,11 @@ public partial class TrackerSettingsPage : IDisposable
     private void NextFavoritePage() => _favoritePage = Math.Min(FavoritePageCount - 1, _favoritePage + 1);
 
     /// <summary>
-    /// Cancels pending suggestion work when the settings view closes.
+    /// Cancels an active sprite synchronization when the settings view closes.
     /// </summary>
     public void Dispose()
     {
-        _searchCancellation?.Cancel();
-        _searchCancellation?.Dispose();
+        _disposed = true;
         _spriteInstallCancellation?.Cancel();
         _spriteInstallCancellation?.Dispose();
     }
