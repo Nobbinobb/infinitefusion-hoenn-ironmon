@@ -1,6 +1,6 @@
 <div class="evolution-target">
-    <PokemonSprite GameRoot="@GameRoot" SpritePath="@Candidate.SpritePath" Label="@Candidate.SpeciesName" Size="44" CssClass="evolution-target-sprite" />
-    <button class="evolution-target-action" type="button" @onclick="SelectAsync">
+    <PokemonSprite Redesigned="Redesigned" FitVisibleBounds="Redesigned" GameRoot="@GameRoot" SpritePath="@Candidate.SpritePath" Label="@Candidate.SpeciesName" Size="44" CssClass="evolution-target-sprite" />
+    <button class="evolution-target-action" disabled="@Disabled" type="button" @onclick="SelectAsync">
         <span class="evolution-target-copy">
             <strong>@Candidate.SpeciesName</strong>
             <small>BST @Candidate.BaseStatTotal</small>

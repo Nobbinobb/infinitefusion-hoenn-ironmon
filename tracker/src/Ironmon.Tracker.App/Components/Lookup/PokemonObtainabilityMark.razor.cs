@@ -24,6 +24,12 @@ public partial class PokemonObtainabilityMark
     public bool ShowLabel { get; set; }
 
     /// <summary>
+    /// Gets or sets whether a visible status label also includes its compact status icon.
+    /// </summary>
+    [Parameter]
+    public bool IncludeIcon { get; set; }
+
+    /// <summary>
     /// Gets the three-state UI value, using calculating until a status is available.
     /// </summary>
     private PokemonObtainabilityStatus DisplayStatus => Status switch

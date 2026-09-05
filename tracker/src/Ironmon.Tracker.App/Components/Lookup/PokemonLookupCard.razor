@@ -1,170 +1,209 @@
-<article class="lookup-pokemon" aria-label="@Text["Lookup.Card.GeneratedPokemonInformation"]">
-    <nav class="pokemon-information-tabs" aria-label="@Text["Debug.Inspector.PokemonInspectorPages"]">
-        @foreach (PokemonInformationPage page in Enum.GetValues<PokemonInformationPage>())
+<CascadingValue Name="@ResearchRedesigned" Value="Redesigned">
+    <article class="lookup-pokemon @(Redesigned ? "obsidian obsidian-research" : string.Empty)" aria-label="@Text["Lookup.Card.GeneratedPokemonInformation"]">
+        @if (Redesigned)
         {
-            @if (CanShowPage(page))
-            {
-                <button type="button" class="@GetPageClass(page)" @onclick="() => SelectPageAsync(page)">@GetPageText(page)</button>
-            }
-        }
-    </nav>
-
-    @if (_selectedPage == PokemonInformationPage.Overview)
-    {
-        @if (Inspector is not null)
-        {
-            <DebugPokemonOverview Pokemon="@Inspector.Identity" Types="@Pokemon.Identity.Types" ObtainabilityStatus="@(CanShowObtainability ? _obtainability.Status : null)" GameRoot="@GameRoot" />
-        }
-        else
-        {
-            <div class="card-heading">
-                <PokemonSprite GameRoot="@GameRoot" SpritePath="@Pokemon.Identity.SpritePath" Label="@Pokemon.Identity.SpeciesName" Size="80" CssClass="sprite-placeholder live" />
-                <div class="identity-placeholder">
-                    <p class="card-kicker">@(DebugMode ? "ACTIVE DEBUG RUN" : "POST-RUN DATA")</p>
-                    <div class="lookup-overview-title-row">
-                        <h2 class="identity-name">
-                            <span>@Pokemon.Identity.SpeciesName</span>
-                            @if (CanShowObtainability)
-                            {
-                                <PokemonObtainabilityMark Status="@_obtainability.Status" ShowLabel="true" />
-                            }
-                        </h2>
-                        @if (ShowDevelopmentActions && _pendingDevelopmentAction is null)
-                        {
-                            <button type="button" class="lookup-development-button lookup-overview-swap" disabled="@_developmentLoading" @onclick="() => RequestDevelopmentAction(DebugDevelopmentAction.SwapPokemon)">@Text["Development.Lookup.Swap"]</button>
-                        }
-                    </div>
-                    <p class="typing-line">
+            <header class="research-identity">
+                <PokemonSprite Redesigned="true" FitVisibleBounds="true" GameRoot="@GameRoot" SpritePath="@Pokemon.Identity.SpritePath" Label="@Pokemon.Identity.SpeciesName" Size="79" />
+                <div class="research-identity-copy">
+                    <p class="card-kicker">@Text[DebugMode ? "Redesign.Research.ActivePokemon" : IsFusion() ? "Redesign.Research.ArchivedFusion" : "Redesign.Research.ArchivedPokemon"]</p>
+                    <h2>@Pokemon.Identity.SpeciesName</h2>
+                    <div class="research-types">
                         @foreach (string type in Pokemon.Identity.Types)
                         {
                             <span class="typing-type @MovePresentation.GetTypeColorClass(type)">@type</span>
                         }
-                    </p>
+                        @if (CanShowObtainability)
+                        {
+                            <PokemonObtainabilityMark Status="@_obtainability.Status" ShowLabel="true" IncludeIcon="Redesigned" />
+                        }
+                    </div>
+                    <small>@Pokemon.Identity.SpeciesId</small>
                 </div>
-            </div>
-        }
-
-        <PokemonLookupSupplementalData Pokemon="@Pokemon"
-                                       Recipe="@Recipe"
-                                       DebugMode="@DebugMode"
-                                       DebugTarget="@DebugTarget"
-                                       DebugEnemyPosition="@DebugEnemyPosition"
-                                       GameRoot="@GameRoot"
-                                       PokemonSelected="PokemonSelected" />
-    }
-    else if (_loadingPage == _selectedPage)
-    {
-        <p class="lookup-message">@Text["Lookup.Card.LoadingSection"]</p>
-    }
-    else if (_sectionError is not null)
-    {
-        <p class="lookup-message error">@_sectionError</p>
-    }
-    else if (_selectedPage == PokemonInformationPage.Abilities)
-    {
-        <DebugAbilitySlots Slots="@GetAbilitySlots()" />
-
-        <section class="lookup-abilities" aria-label="@Text["Lookup.Card.AbilitiesHeading"]">
-            <p class="section-label">@Text["Lookup.Card.AbilitiesHeading"]</p>
-            <div>
-                @foreach (AbilitySnapshot ability in AbilitySection.Values)
+                @if (ShowDevelopmentActions)
                 {
-                    <button type="button" @onclick="() => SelectAbility(ability)">@ability.Name</button>
+                    <button type="button" class="obsidian-button research-swap" disabled="@_developmentLoading" @onclick="() => RequestDevelopmentAction(DebugDevelopmentAction.SwapPokemon)"><ObsidianIcon Kind="ObsidianIconKind.Merge" />@Text["Development.Lookup.Swap"]</button>
                 }
-            </div>
-        </section>
-
-        <GeneratorDiagnostics Heading="@Text["Debug.Overview.AbilityGeneratorHeading"]"
-                              Diagnostics="@AbilitySection.Generator" />
-    }
-    else if (_selectedPage == PokemonInformationPage.Stats)
-    {
-        @if (Inspector is not null)
-        {
-            <DebugBaseStats Stats="@InspectorStats" Fusion="@Inspector.Identity.Fusion" />
+            </header>
         }
-        else
-        {
-            <BaseStatVisualization Original="@StatsSection.Original"
-                                   Generated="@StatsSection.Generated"
-                                   OriginalTotal="@StatsSection.OriginalTotal"
-                                   GeneratedTotal="@StatsSection.GeneratedTotal"
-                                   Randomized="@StatsSection.Randomized"
-                                   Fusion="@IsFusion()" />
-        }
-
-        <GeneratorDiagnostics Heading="@Text["Debug.BaseStats.GeneratorHeading"]"
-                              Diagnostics="@StatsSection.Generator" />
-    }
-    else if (_selectedPage == PokemonInformationPage.Moves)
-    {
-        <MoveAccessTabs Access="@MovesSection.Access" />
-        <GeneratorDiagnostics Heading="@Text["Lookup.Generator.MoveHeading"]"
-                              Diagnostics="@MovesSection.Generator" />
-    }
-    else if (_selectedPage == PokemonInformationPage.Evolutions)
-    {
-        @if (HasEvolutionCandidates)
-        {
-            <EvolutionCandidateLists SpeciesId="@ActivePokemon.Identity.SpeciesId"
-                                     HasNormal="@(!IsFusion())"
-                                     HasHead="@IsFusion()"
-                                     HasBody="@IsFusion()"
-                                     Recipe="@Recipe"
-                                     DebugMode="@DebugMode"
-                                     DebugTarget="@DebugTarget"
-                                     DebugEnemyPosition="@DebugEnemyPosition"
-                                     GameRoot="@GameRoot"
-                                     ShowGraphAction="@(HasEvolutionResults && ActivePokemon.Evolutions is not null)"
-                                     GraphOpened="OpenEvolutionGraph"
-                                     Selected="PokemonSelected" />
-        }
-
-        @if (HasEvolutionResults && ActivePokemon.Evolutions is not null)
-        {
-            @if (EvolutionSection.NativeTargets.Count > 0)
+        <nav class="pokemon-information-tabs" aria-label="@Text["Debug.Inspector.PokemonInspectorPages"]">
+            @foreach (PokemonInformationPage page in Enum.GetValues<PokemonInformationPage>())
             {
-                <section class="lookup-relations" aria-label="@Text["Lookup.Card.EvolutionDestinations"]">
-                    <header><p class="section-label">@Text["Lookup.Card.CurrentEvolutionsHeading"]</p></header>
-                    <div class="lookup-relation-grid">
-                        @foreach (PokemonRelationSnapshot evolution in EvolutionSection.NativeTargets)
-                        {
-                            <PokemonRelationButton Relation="@evolution" GameRoot="@GameRoot" Selected="PokemonSelected" />
-                        }
+                @if (CanShowPage(page))
+                {
+                    <button type="button" class="@GetPageClass(page)" @onclick="() => SelectPageAsync(page)">@GetPageText(page)</button>
+                }
+            }
+        </nav>
+
+        <div class="research-page" aria-busy="@(_loadingPage == _selectedPage ? "true" : "false")">
+            @if (_selectedPage == PokemonInformationPage.Overview)
+            {
+                @if (!Redesigned && Inspector is not null)
+                {
+                    <DebugPokemonOverview Pokemon="@Inspector.Identity" Types="@Pokemon.Identity.Types" ObtainabilityStatus="@(CanShowObtainability ? _obtainability.Status : null)" GameRoot="@GameRoot" />
+                }
+                else if (!Redesigned)
+                {
+                    <div class="card-heading">
+                        <PokemonSprite GameRoot="@GameRoot" SpritePath="@Pokemon.Identity.SpritePath" Label="@Pokemon.Identity.SpeciesName" Size="80" CssClass="sprite-placeholder live" />
+                        <div class="identity-placeholder">
+                            <p class="card-kicker">@(DebugMode ? "ACTIVE DEBUG RUN" : "POST-RUN DATA")</p>
+                            <div class="lookup-overview-title-row">
+                                <h2 class="identity-name">
+                                    <span>@Pokemon.Identity.SpeciesName</span>
+                                    @if (CanShowObtainability)
+                                    {
+                                        <PokemonObtainabilityMark Status="@_obtainability.Status" ShowLabel="true" IncludeIcon="Redesigned" />
+                                    }
+                                </h2>
+                                @if (ShowDevelopmentActions && _pendingDevelopmentAction is null)
+                                {
+                                    <button type="button" class="lookup-development-button lookup-overview-swap" disabled="@_developmentLoading" @onclick="() => RequestDevelopmentAction(DebugDevelopmentAction.SwapPokemon)">@Text["Development.Lookup.Swap"]</button>
+                                }
+                            </div>
+                            <p class="typing-line">
+                                @foreach (string type in Pokemon.Identity.Types)
+                                {
+                                    <span class="typing-type @MovePresentation.GetTypeColorClass(type)">@type</span>
+                                }
+                            </p>
+                        </div>
                     </div>
-                </section>
-            }
+                }
 
-            @if (EvolutionSection.NativePredecessors.Count > 0)
+                <PokemonLookupSupplementalData Pokemon="@ActivePokemon"
+                                               Recipe="@Recipe"
+                                               DebugMode="@DebugMode"
+                                               DebugTarget="@DebugTarget"
+                                               DebugEnemyPosition="@DebugEnemyPosition"
+                                               GameRoot="@GameRoot"
+                                               PokemonSelected="PokemonSelected" />
+            }
+            else if (_loadingPage == _selectedPage)
             {
-                <section class="lookup-relations" aria-label="@Text["Lookup.Card.PreviousEvolutions"]">
-                    <header><p class="section-label">@Text["Lookup.Card.PreviousEvolutionHeading"]</p></header>
-                    <div class="lookup-relation-grid">
-                        @foreach (PokemonRelationSnapshot previousEvolution in EvolutionSection.NativePredecessors)
-                        {
-                            <PokemonRelationButton Relation="@previousEvolution" GameRoot="@GameRoot" Selected="PokemonSelected" />
-                        }
-                    </div>
-                </section>
+                <p class="lookup-message">@Text["Lookup.Card.LoadingSection"]</p>
             }
-
-            @if (HasEvolutionGeneratorDetails)
+            else if (_sectionError is not null)
             {
-                <GeneratorDiagnostics Heading="@Text["Lookup.Generator.EvolutionHeading"]"
-                                      Diagnostics="@EvolutionSection.Generator" />
+                <p class="lookup-message error">@_sectionError</p>
             }
-        }
+            else if (_selectedPage == PokemonInformationPage.Abilities)
+            {
+                <DebugAbilitySlots Slots="@GetAbilitySlots()" Redesigned="Redesigned" Abilities="@AbilitySection.Values" Selected="SelectAbility" />
 
-        @if (!HasEvolutionResults && !HasEvolutionCandidates)
-        {
-            <p class="lookup-message">@Text["Debug.Inspector.NoGeneratedEvolutionTargets"]</p>
-        }
-    }
-</article>
+                @if (!Redesigned || GetAbilitySlots().Count == 0)
+                {
+                    <section class="lookup-abilities" aria-label="@Text["Lookup.Card.AbilitiesHeading"]">
+                        <p class="section-label">@Text["Lookup.Card.AbilitiesHeading"]</p>
+                        <div>
+                            @foreach (AbilitySnapshot ability in AbilitySection.Values)
+                            {
+                                <button type="button" @onclick="() => SelectAbility(ability)">@ability.Name</button>
+                            }
+                        </div>
+                    </section>
+                }
+
+                <GeneratorDiagnostics Heading="@Text[Redesigned ? "Redesign.Research.AbilityGenerator" : "Debug.Overview.AbilityGeneratorHeading"]"
+                                      Diagnostics="@AbilitySection.Generator" />
+            }
+            else if (_selectedPage == PokemonInformationPage.Stats)
+            {
+                @if (Inspector is not null)
+                {
+                    <DebugBaseStats Stats="@InspectorStats" Fusion="@Inspector.Identity.Fusion" />
+                }
+                else
+                {
+                    <BaseStatVisualization Original="@StatsSection.Original"
+                                           Generated="@StatsSection.Generated"
+                                           OriginalTotal="@StatsSection.OriginalTotal"
+                                           GeneratedTotal="@StatsSection.GeneratedTotal"
+                                           Randomized="@StatsSection.Randomized"
+                                           Fusion="@IsFusion()" />
+                }
+
+                <GeneratorDiagnostics Heading="@Text[Redesigned ? "Redesign.Research.StatGenerator" : "Debug.BaseStats.GeneratorHeading"]"
+                                      Diagnostics="@StatsSection.Generator" />
+            }
+            else if (_selectedPage == PokemonInformationPage.Moves)
+            {
+                <MoveAccessTabs Access="@MovesSection.Access" />
+                <GeneratorDiagnostics Heading="@Text[Redesigned ? "Redesign.Research.MoveGenerator" : "Lookup.Generator.MoveHeading"]"
+                                      Diagnostics="@MovesSection.Generator" />
+            }
+            else if (_selectedPage == PokemonInformationPage.Evolutions)
+            {
+                @if (HasEvolutionCandidates)
+                {
+                    <EvolutionCandidateLists SpeciesId="@ActivePokemon.Identity.SpeciesId"
+                                             HasNormal="@(!IsFusion())"
+                                             HasHead="@IsFusion()"
+                                             HasBody="@IsFusion()"
+                                             Recipe="@Recipe"
+                                             DebugMode="@DebugMode"
+                                             DebugTarget="@DebugTarget"
+                                             DebugEnemyPosition="@DebugEnemyPosition"
+                                             GameRoot="@GameRoot"
+                                             ShowGraphAction="@(HasEvolutionResults && ActivePokemon.Evolutions is not null)"
+                                             GraphOpened="OpenEvolutionGraph"
+                                             Selected="PokemonSelected" />
+                }
+
+                @if (HasEvolutionResults && ActivePokemon.Evolutions is not null)
+                {
+                    @if (EvolutionSection.NativeTargets.Count > 0)
+                    {
+                        <section class="lookup-relations" aria-label="@Text["Lookup.Card.EvolutionDestinations"]">
+                            <header><p class="section-label">@Text["Lookup.Card.CurrentEvolutionsHeading"]</p></header>
+                            <div class="lookup-relation-grid">
+                                @foreach (PokemonRelationSnapshot evolution in EvolutionSection.NativeTargets)
+                                {
+                                    <PokemonRelationButton Relation="@evolution" GameRoot="@GameRoot" Selected="PokemonSelected" />
+                                }
+                            </div>
+                        </section>
+                    }
+
+                    @if (EvolutionSection.NativePredecessors.Count > 0)
+                    {
+                        <section class="lookup-relations" aria-label="@Text["Lookup.Card.PreviousEvolutions"]">
+                            <header><p class="section-label">@Text["Lookup.Card.PreviousEvolutionHeading"]</p></header>
+                            <div class="lookup-relation-grid">
+                                @foreach (PokemonRelationSnapshot previousEvolution in EvolutionSection.NativePredecessors)
+                                {
+                                    <PokemonRelationButton Relation="@previousEvolution" GameRoot="@GameRoot" Selected="PokemonSelected" />
+                                }
+                            </div>
+                        </section>
+                    }
+
+                    @if (HasEvolutionGeneratorDetails)
+                    {
+                        <GeneratorDiagnostics Heading="@Text[Redesigned ? "Redesign.Research.EvolutionGenerator" : "Lookup.Generator.EvolutionHeading"]"
+                                              Diagnostics="@EvolutionSection.Generator" />
+                    }
+                }
+
+                @if (!HasEvolutionResults && !HasEvolutionCandidates)
+                {
+                    <p class="lookup-message">@Text["Debug.Inspector.NoGeneratedEvolutionTargets"]</p>
+                }
+            }
+        </div>
+    </article>
+</CascadingValue>
 
 @if (_selectedAbility is not null)
 {
-    <AbilityDetailPanel Ability="@_selectedAbility" Closed="CloseAbility" />
+    @if (Redesigned)
+    {
+        <ObsidianDialogScope Closed="CloseAbility"><AbilityDetailPanel Ability="@_selectedAbility" Closed="CloseAbility" /></ObsidianDialogScope>
+    }
+    else
+    {
+        <AbilityDetailPanel Ability="@_selectedAbility" Closed="CloseAbility" />
+    }
 }
 
 @if (_evolutionGraphOpen && ActivePokemon.Evolutions is not null)
@@ -185,21 +224,38 @@
 
 @if (_pendingDevelopmentAction is not null)
 {
-    <div class="detail-overlay" role="presentation" @onclick="CancelDevelopmentAction">
-        <section class="detail-panel development-confirmation-dialog" role="dialog" aria-modal="true" aria-labelledby="development-confirmation-title" @onclick:stopPropagation>
-            <header class="detail-panel-header">
-                <h2 id="development-confirmation-title">@Text["Development.Lookup.Swap"]</h2>
-                <button class="detail-close" type="button" aria-label="@Text["Development.Cancel"]" disabled="@_developmentLoading" @onclick="CancelDevelopmentAction">×</button>
-            </header>
+    @if (Redesigned)
+    {
+        <ObsidianDialog Title="@Text["Development.Lookup.Swap"]" Eyebrow="@Pokemon.Identity.SpeciesName" Closed="CancelDevelopmentAction">
             <p>@GetDevelopmentConfirmation()</p>
             @if (_developmentError is not null)
             {
                 <p class="lookup-error" role="alert">@_developmentError</p>
             }
             <div class="development-confirmation-actions">
-                <button type="button" class="lookup-development-button" disabled="@_developmentLoading" @onclick="CancelDevelopmentAction">@Text["Development.Cancel"]</button>
-                <button type="button" class="lookup-development-button primary" disabled="@_developmentLoading" @onclick="ConfirmDevelopmentActionAsync">@Text["Development.Confirm"]</button>
+                <button type="button" class="obsidian-button" disabled="@_developmentLoading" @onclick="CancelDevelopmentAction">@Text["Development.Cancel"]</button>
+                <button type="button" class="obsidian-button obsidian-settings-primary" disabled="@_developmentLoading" @onclick="ConfirmDevelopmentActionAsync">@Text["Development.Confirm"]</button>
             </div>
-        </section>
-    </div>
+        </ObsidianDialog>
+    }
+    else
+    {
+        <div class="detail-overlay" role="presentation" @onclick="CancelDevelopmentAction">
+            <section class="detail-panel development-confirmation-dialog" role="dialog" aria-modal="true" aria-labelledby="development-confirmation-title" @onclick:stopPropagation>
+                <header class="detail-panel-header">
+                    <h2 id="development-confirmation-title">@Text["Development.Lookup.Swap"]</h2>
+                    <button class="detail-close" type="button" aria-label="@Text["Development.Cancel"]" disabled="@_developmentLoading" @onclick="CancelDevelopmentAction">×</button>
+                </header>
+                <p>@GetDevelopmentConfirmation()</p>
+                @if (_developmentError is not null)
+                {
+                    <p class="lookup-error" role="alert">@_developmentError</p>
+                }
+                <div class="development-confirmation-actions">
+                    <button type="button" class="lookup-development-button" disabled="@_developmentLoading" @onclick="CancelDevelopmentAction">@Text["Development.Cancel"]</button>
+                    <button type="button" class="lookup-development-button primary" disabled="@_developmentLoading" @onclick="ConfirmDevelopmentActionAsync">@Text["Development.Confirm"]</button>
+                </div>
+            </section>
+        </div>
+    }
 }

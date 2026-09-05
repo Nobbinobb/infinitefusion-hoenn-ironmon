@@ -11,6 +11,12 @@ public partial class MoveAccessTabs
     private MoveAccessEntrySnapshot? _selectedMove;
 
     /// <summary>
+    /// Gets or sets whether this content uses the redesigned research presentation.
+    /// </summary>
+    [CascadingParameter(Name = nameof(PokemonLookupCard.ResearchRedesigned))]
+    public bool Redesigned { get; set; }
+
+    /// <summary>
     /// Gets or sets the generated move-access channels.
     /// </summary>
     [Parameter]

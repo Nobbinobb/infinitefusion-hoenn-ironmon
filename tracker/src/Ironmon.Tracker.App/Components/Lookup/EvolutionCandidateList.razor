@@ -1,8 +1,8 @@
-<section class="evolution-targets" aria-label="@AriaLabel">
+<section class="evolution-targets" aria-busy="@(_loading ? "true" : "false")" aria-label="@AriaLabel">
     <header class="evolution-candidate-heading">
         <p class="section-label">@Heading</p>
         <div class="evolution-candidate-heading-actions">
-            @if (!_loading)
+            @if (_hasLoadedPage)
             {
                 <span>@Text["Lookup.Candidates.Total", _total]</span>
             }
@@ -19,24 +19,27 @@
             <button type="button" disabled="@_loading" @onclick="ApplyFilterAsync">@Text["Lookup.Candidates.FilterButton"]</button>
         </div>
     }
-    @if (_error is not null)
-    {
-        <p class="lookup-error" role="alert">@_error</p>
-    }
-    else if (_loading)
-    {
-        <p class="lookup-message">@Text["Lookup.Candidates.Loading"]</p>
-    }
-    else if (_matches.Count == 0)
+    <div class="evolution-candidate-status" role="status">
+        @if (_error is not null)
+        {
+            <p class="lookup-error" role="alert">@_error</p>
+            <button type="button" disabled="@_loading" @onclick="RetryPageAsync">@Text["Lookup.Graph.Retry"]</button>
+        }
+        else if (_loading)
+        {
+            <p class="lookup-message">@Text["Lookup.Candidates.Loading"]</p>
+        }
+    </div>
+    @if (_hasLoadedPage && _matches.Count == 0)
     {
         <p class="lookup-message">@Text["Lookup.Candidates.NoMatches"]</p>
     }
-    else
+    @if (_matches.Count > 0)
     {
         <div class="evolution-target-grid">
             @foreach (EvolutionCandidateSnapshot candidate in _matches)
             {
-                <EvolutionCandidateButton Candidate="@candidate" GameRoot="@GameRoot" Selected="@Selected" />
+                <EvolutionCandidateButton Disabled="_loading" Candidate="@candidate" GameRoot="@GameRoot" Selected="@Selected" />
             }
         </div>
         <nav class="lookup-pager" aria-label="@Text["Lookup.Candidates.Pages"]">

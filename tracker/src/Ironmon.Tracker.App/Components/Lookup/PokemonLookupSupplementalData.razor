@@ -1,7 +1,7 @@
 @if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldWildEncounters)) && (_wildOccurrences.Total > 0 || _loadingWildOccurrences || _wildOccurrenceError is not null))
 {
     <section class="lookup-occurrences" aria-label="@Text["Lookup.Card.WildEncounterLocations"]">
-        <header><p class="section-label">@Text["Lookup.Card.WildLocationsHeading"]</p><span>@Text["Lookup.Card.SlotCount", _wildOccurrences.Total]</span></header>
+        <header><p class="section-label">@Text[Redesigned ? "Redesign.Research.WildLocations" : "Lookup.Card.WildLocationsHeading"]</p><span>@Text["Lookup.Card.SlotCount", _wildOccurrences.Total]</span></header>
         @if (_loadingWildOccurrences)
         {
             <p class="lookup-message">@Text["Lookup.Areas.LoadingDetails"]</p>
@@ -52,7 +52,7 @@
 @if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldTrainerParties)) && _trainerOccurrences.Total > 0)
 {
     <section class="lookup-occurrences" aria-label="@Text["Lookup.Card.TrainerPartyLocations"]">
-        <header><p class="section-label">@Text["Lookup.Card.TrainersHeading"]</p><span>@Text["Lookup.Card.SlotCount", _trainerOccurrences.Total]</span></header>
+        <header><p class="section-label">@Text[Redesigned ? "Redesign.Research.Trainers" : "Lookup.Card.TrainersHeading"]</p><span>@Text["Lookup.Card.SlotCount", _trainerOccurrences.Total]</span></header>
         <div class="lookup-occurrence-list">
             @foreach (TrainerPokemonOccurrenceSnapshot occurrence in _trainerOccurrences.Matches)
             {
@@ -85,7 +85,7 @@
 @if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonOverview)) && Overview.FusionBases.Count > 0)
 {
     <section class="lookup-relations" aria-label="@Text["Lookup.Card.DisplayedFusionComponents"]">
-        <header><p class="section-label">@Text["Lookup.Card.DisplayedComponentsHeading"]</p></header>
+        <header><p class="section-label">@Text[Redesigned ? "Redesign.Research.DisplayedComponents" : "Lookup.Card.DisplayedComponentsHeading"]</p></header>
         <div class="lookup-relation-grid">
             @foreach (PokemonRelationSnapshot fusionBase in Overview.FusionBases)
             {
@@ -98,7 +98,7 @@
 @if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonOverview)) && Overview.ReverseFusion is not null)
 {
     <section class="lookup-relations" aria-label="@Text["Lookup.Card.IronmonReverseFusion"]">
-        <header><p class="section-label">@Text["Lookup.Card.IronmonReverseHeading"]</p></header>
+        <header><p class="section-label">@Text[Redesigned ? "Redesign.Research.IronmonReverse" : "Lookup.Card.IronmonReverseHeading"]</p></header>
         <div class="lookup-relation-grid">
             <PokemonRelationButton Relation="@Overview.ReverseFusion" GameRoot="@GameRoot" Selected="PokemonSelected" />
         </div>
@@ -108,7 +108,7 @@
 @if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.FusionMaterialPairs)) && Pokemon.Identity.Fusion)
 {
     <section class="lookup-relations" aria-label="@Text["Lookup.Card.IronmonFusionMaterials"]">
-        <header><p class="section-label">@Text["Lookup.Card.FusionMaterialsHeading"]</p></header>
+        <header><p class="section-label">@Text[Redesigned ? "Redesign.Research.FusionMaterials" : "Lookup.Card.FusionMaterialsHeading"]</p></header>
         @if (_loadingFusionMaterials)
         {
             <p class="lookup-empty">@Text["Lookup.Card.LoadingFusionMaterials"]</p>

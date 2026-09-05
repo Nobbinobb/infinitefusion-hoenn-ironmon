@@ -11,6 +11,7 @@ public partial class PokemonSprite
     private const int _defaultSize = 80;
     private const int _defaultEnlargedSize = 288;
     private const string _enlargeLocalizationKey = "PokemonSprite.Enlarge";
+    private const string _fittedSpriteClass = "pokemon-sprite-fitted";
     private const string _fitSpriteScript = "window.ironmonTrackerUi.fitSprite(this)";
     private string? _spriteKey;
     private string? _spriteSource;

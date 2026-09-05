@@ -7,6 +7,17 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class PokemonLookupCard
 {
+    /// <summary>
+    /// Gets or sets whether this content uses the redesigned research presentation.
+    /// </summary>
+    [Parameter]
+    public bool Redesigned { get; set; }
+
+    /// <summary>
+    /// Identifies the presentation scope shared by research content, excluding the legacy graph.
+    /// </summary>
+    public const string ResearchRedesigned = nameof(ResearchRedesigned);
+
     private readonly Dictionary<PokemonInformationPage, PokemonLookupSnapshot> _sections = [];
     private PokemonInformationPage _selectedPage = PokemonInformationPage.Overview;
     private PokemonInformationPage? _loadingPage;
@@ -418,7 +429,7 @@ public partial class PokemonLookupCard
     /// <returns>A task representing the development action.</returns>
     private async Task ConfirmDevelopmentActionAsync()
     {
-        if (_pendingDevelopmentAction is null)
+        if (_pendingDevelopmentAction is null || _developmentLoading)
             return;
 
         DebugDevelopmentAction action = _pendingDevelopmentAction.Value;

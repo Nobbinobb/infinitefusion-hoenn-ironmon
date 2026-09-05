@@ -22,6 +22,7 @@ public partial class PokemonLookupExplorer : IDisposable
     private int _matchTotal;
     private bool _loading;
     private bool _searched;
+    private bool _showDetail;
     private bool _observedDebugMode;
     private CompletedRunRecipePayload? _observedRecipe;
     private string? _observedRequestedSpeciesId;
@@ -39,10 +40,21 @@ public partial class PokemonLookupExplorer : IDisposable
     private DiagnosticAccessService AccessService { get; set; } = null!;
 
     /// <summary>
-    /// Gets or sets whether only the search controls and results use the redesigned archive presentation.
+    /// Gets or sets whether search results and Pokémon details use the redesigned research presentation.
     /// </summary>
     [Parameter]
     public bool Redesigned { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether a legacy search surface opens the redesigned selected Pokémon card.
+    /// </summary>
+    [Parameter]
+    public bool RedesignedDetails { get; set; }
+
+    /// <summary>
+    /// Gets whether selected Pokémon use the shared research presentation.
+    /// </summary>
+    private bool UseRedesignedDetails => Redesigned || RedesignedDetails;
 
     /// <summary>
     /// Gets or sets the completed-run reconstruction recipe.
@@ -89,6 +101,7 @@ public partial class PokemonLookupExplorer : IDisposable
             CancelRequest();
             _matches = [];
             _lookup = null;
+            _showDetail = false;
             _currentSpeciesId = null;
             _history.Clear();
             _searchPagination.Reset();
@@ -149,6 +162,7 @@ public partial class PokemonLookupExplorer : IDisposable
         _searched = false;
         _error = null;
         _lookup = null;
+        _showDetail = false;
         if (pageIndex == 0)
         {
             _currentSpeciesId = null;
@@ -283,7 +297,10 @@ public partial class PokemonLookupExplorer : IDisposable
     private async Task NavigateToPokemonAsync(string speciesId)
     {
         if (speciesId == _currentSpeciesId)
+        {
+            _showDetail = true;
             return;
+        }
 
         string? previousSpeciesId = _currentSpeciesId;
         PokemonSearchMatch? match = _matches.FirstOrDefault(candidate => candidate.SpeciesId == speciesId);
@@ -382,7 +399,10 @@ public partial class PokemonLookupExplorer : IDisposable
 
             _lookup = lookup;
             _currentSpeciesId = lookup.Identity.SpeciesId;
-            _matches = [];
+            _showDetail = true;
+            if (!UseRedesignedDetails)
+                _matches = [];
+
             StartLookupObtainabilityRefresh();
             return true;
         }

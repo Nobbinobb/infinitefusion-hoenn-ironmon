@@ -38,13 +38,30 @@
 
 @if (_selectedMove is not null)
 {
-    <MoveDetailPanel Name="@_selectedMove.Name"
-                     Type="@_selectedMove.Type"
-                     Category="@_selectedMove.Category"
-                     Description="@_selectedMove.Description"
-                     Power="@_selectedMove.Power"
-                     Accuracy="@_selectedMove.Accuracy"
-                     PpText="@($"{_selectedMove.TotalPp} PP")"
-                     LearnedLevel="@_selectedMove.LearnedLevel"
-                     Closed="CloseMove" />
+    @if (Redesigned)
+    {
+        <ObsidianDialogScope Closed="CloseMove">
+            <MoveDetailPanel Name="@_selectedMove.Name"
+                             Type="@_selectedMove.Type"
+                             Category="@_selectedMove.Category"
+                             Description="@_selectedMove.Description"
+                             Power="@_selectedMove.Power"
+                             Accuracy="@_selectedMove.Accuracy"
+                             PpText="@($"{_selectedMove.TotalPp} PP")"
+                             LearnedLevel="@_selectedMove.LearnedLevel"
+                             Closed="CloseMove" />
+        </ObsidianDialogScope>
+    }
+    else
+    {
+        <MoveDetailPanel Name="@_selectedMove.Name"
+                         Type="@_selectedMove.Type"
+                         Category="@_selectedMove.Category"
+                         Description="@_selectedMove.Description"
+                         Power="@_selectedMove.Power"
+                         Accuracy="@_selectedMove.Accuracy"
+                         PpText="@($"{_selectedMove.TotalPp} PP")"
+                         LearnedLevel="@_selectedMove.LearnedLevel"
+                         Closed="CloseMove" />
+    }
 }

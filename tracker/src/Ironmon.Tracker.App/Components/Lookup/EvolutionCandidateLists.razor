@@ -1,7 +1,7 @@
 <div class="evolution-candidate-lists">
     @if (HasNormal)
     {
-        <EvolutionCandidateList SpeciesId="@SpeciesId" Side="EvolutionCandidateSide.Normal" Heading="@Text["Lookup.Card.EvolutionCandidatesHeading"].Value" AriaLabel="@Text["Lookup.Card.EvolutionCandidates"].Value" Recipe="@Recipe" DebugMode="@DebugMode" DebugTarget="@DebugTarget" DebugEnemyPosition="@DebugEnemyPosition" GameRoot="@GameRoot" ShowGraphAction="@ShowGraphAction" GraphOpened="@GraphOpened" Selected="@Selected" />
+        <EvolutionCandidateList SpeciesId="@SpeciesId" Side="EvolutionCandidateSide.Normal" Heading="@Text[Redesigned ? "Redesign.Research.EvolutionCandidates" : "Lookup.Card.EvolutionCandidatesHeading"].Value" AriaLabel="@Text["Lookup.Card.EvolutionCandidates"].Value" Recipe="@Recipe" DebugMode="@DebugMode" DebugTarget="@DebugTarget" DebugEnemyPosition="@DebugEnemyPosition" GameRoot="@GameRoot" ShowGraphAction="@ShowGraphAction" GraphOpened="@GraphOpened" Selected="@Selected" />
     }
     @if (HasHead || HasBody)
     {
@@ -9,17 +9,17 @@
             @if (HasHead && HasBody)
             {
                 <nav class="evolution-candidate-side-tabs" aria-label="@Text["Lookup.Card.EvolutionCandidates"]" role="tablist">
-                    <button type="button" role="tab" aria-selected="@(_selectedFusionSide == EvolutionCandidateSide.Head)" class="@GetSideTabClass(EvolutionCandidateSide.Head)" @onclick="() => SelectFusionSide(EvolutionCandidateSide.Head)">@Text["Lookup.Card.HeadCandidates"]</button>
-                    <button type="button" role="tab" aria-selected="@(_selectedFusionSide == EvolutionCandidateSide.Body)" class="@GetSideTabClass(EvolutionCandidateSide.Body)" @onclick="() => SelectFusionSide(EvolutionCandidateSide.Body)">@Text["Lookup.Card.BodyCandidates"]</button>
+                    <button type="button" role="tab" aria-selected="@(_selectedFusionSide == EvolutionCandidateSide.Head)" class="@GetSideTabClass(EvolutionCandidateSide.Head)" @onclick="() => SelectFusionSide(EvolutionCandidateSide.Head)">@Text[Redesigned ? "Redesign.Research.HeadCandidates" : "Lookup.Card.HeadCandidates"]</button>
+                    <button type="button" role="tab" aria-selected="@(_selectedFusionSide == EvolutionCandidateSide.Body)" class="@GetSideTabClass(EvolutionCandidateSide.Body)" @onclick="() => SelectFusionSide(EvolutionCandidateSide.Body)">@Text[Redesigned ? "Redesign.Research.BodyCandidates" : "Lookup.Card.BodyCandidates"]</button>
                 </nav>
             }
             @if (_selectedFusionSide == EvolutionCandidateSide.Head && HasHead)
             {
-                <EvolutionCandidateList SpeciesId="@SpeciesId" Side="EvolutionCandidateSide.Head" AlwaysShowFilter="true" Heading="@Text["Lookup.Card.HeadEvolutionsHeading"].Value" AriaLabel="@Text["Lookup.Card.HeadEvolutionTargets"].Value" Recipe="@Recipe" DebugMode="@DebugMode" DebugTarget="@DebugTarget" DebugEnemyPosition="@DebugEnemyPosition" GameRoot="@GameRoot" ShowGraphAction="@ShowGraphAction" GraphOpened="@GraphOpened" Selected="@Selected" />
+                <EvolutionCandidateList SpeciesId="@SpeciesId" Side="EvolutionCandidateSide.Head" AlwaysShowFilter="true" Heading="@Text[Redesigned ? "Redesign.Research.HeadEvolutions" : "Lookup.Card.HeadEvolutionsHeading"].Value" AriaLabel="@Text["Lookup.Card.HeadEvolutionTargets"].Value" Recipe="@Recipe" DebugMode="@DebugMode" DebugTarget="@DebugTarget" DebugEnemyPosition="@DebugEnemyPosition" GameRoot="@GameRoot" ShowGraphAction="@ShowGraphAction" GraphOpened="@GraphOpened" Selected="@Selected" />
             }
             else if (HasBody)
             {
-                <EvolutionCandidateList SpeciesId="@SpeciesId" Side="EvolutionCandidateSide.Body" AlwaysShowFilter="true" Heading="@Text["Lookup.Card.BodyEvolutionsHeading"].Value" AriaLabel="@Text["Lookup.Card.BodyEvolutionTargets"].Value" Recipe="@Recipe" DebugMode="@DebugMode" DebugTarget="@DebugTarget" DebugEnemyPosition="@DebugEnemyPosition" GameRoot="@GameRoot" ShowGraphAction="@ShowGraphAction" GraphOpened="@GraphOpened" Selected="@Selected" />
+                <EvolutionCandidateList SpeciesId="@SpeciesId" Side="EvolutionCandidateSide.Body" AlwaysShowFilter="true" Heading="@Text[Redesigned ? "Redesign.Research.BodyEvolutions" : "Lookup.Card.BodyEvolutionsHeading"].Value" AriaLabel="@Text["Lookup.Card.BodyEvolutionTargets"].Value" Recipe="@Recipe" DebugMode="@DebugMode" DebugTarget="@DebugTarget" DebugEnemyPosition="@DebugEnemyPosition" GameRoot="@GameRoot" ShowGraphAction="@ShowGraphAction" GraphOpened="@GraphOpened" Selected="@Selected" />
             }
         </section>
     }

@@ -1913,4 +1913,82 @@
   <data name="Redesign.Archive.SearchDescription" xml:space="preserve"><value>Search by Pokémon name. Results show the species identifier and whether it is obtainable in the selected archived run.</value></data>
   <data name="Redesign.Archive.ItemUsage" xml:space="preserve"><value>Item usage</value></data>
   <data name="Redesign.Archive.SearchMatchCount" xml:space="preserve"><value>{0} matches in this archived run</value></data>
+  <data name="Redesign.Research.ArchivedFusion" xml:space="preserve">
+    <value>Archived fusion</value>
+  </data>
+  <data name="Redesign.Research.ArchivedPokemon" xml:space="preserve">
+    <value>Archived Pokémon</value>
+  </data>
+  <data name="Redesign.Research.ActivePokemon" xml:space="preserve">
+    <value>Active run · Pokémon</value>
+  </data>
+  <data name="Redesign.Research.Results" xml:space="preserve">
+    <value>Results</value>
+  </data>
+  <data name="Redesign.Research.Seed" xml:space="preserve">
+    <value>· Seed {0}</value>
+  </data>
+  <data name="Redesign.Research.DescriptionUnavailable" xml:space="preserve">
+    <value>This game response does not include an ability description.</value>
+  </data>
+  <data name="Redesign.Research.FinalFusion" xml:space="preserve">
+    <value>Final fusion</value>
+  </data>
+  <data name="Redesign.Research.BodyGenerated" xml:space="preserve">
+    <value>Body generated</value>
+  </data>
+  <data name="Redesign.Research.HeadGenerated" xml:space="preserve">
+    <value>Head generated</value>
+  </data>
+  <data name="Redesign.Research.Generated" xml:space="preserve">
+    <value>Generated slots</value>
+  </data>
+  <data name="Redesign.Research.Current" xml:space="preserve">
+    <value>Current abilities</value>
+  </data>
+  <data name="Redesign.Research.FinalFusionSlots" xml:space="preserve">
+    <value>Final fusion slots</value>
+  </data>
+  <data name="Redesign.Research.WildLocations" xml:space="preserve">
+    <value>Wild locations</value>
+  </data>
+  <data name="Redesign.Research.Trainers" xml:space="preserve">
+    <value>Trainers</value>
+  </data>
+  <data name="Redesign.Research.DisplayedComponents" xml:space="preserve">
+    <value>Displayed components</value>
+  </data>
+  <data name="Redesign.Research.IronmonReverse" xml:space="preserve">
+    <value>Ironmon reverse</value>
+  </data>
+  <data name="Redesign.Research.FusionMaterials" xml:space="preserve">
+    <value>Fusion materials</value>
+  </data>
+  <data name="Redesign.Research.HeadCandidates" xml:space="preserve">
+    <value>Head candidates</value>
+  </data>
+  <data name="Redesign.Research.BodyCandidates" xml:space="preserve">
+    <value>Body candidates</value>
+  </data>
+  <data name="Redesign.Research.HeadEvolutions" xml:space="preserve">
+    <value>Head evolution candidates</value>
+  </data>
+  <data name="Redesign.Research.BodyEvolutions" xml:space="preserve">
+    <value>Body evolution candidates</value>
+  </data>
+  <data name="Redesign.Research.EvolutionCandidates" xml:space="preserve">
+    <value>Evolution candidates</value>
+  </data>
+  <data name="Redesign.Research.AbilityGenerator" xml:space="preserve">
+    <value>Ability generator</value>
+  </data>
+  <data name="Redesign.Research.StatGenerator" xml:space="preserve">
+    <value>Base stat generator</value>
+  </data>
+  <data name="Redesign.Research.MoveGenerator" xml:space="preserve">
+    <value>Move generator</value>
+  </data>
+  <data name="Redesign.Research.EvolutionGenerator" xml:space="preserve">
+    <value>Evolution generator</value>
+  </data>
 </root>

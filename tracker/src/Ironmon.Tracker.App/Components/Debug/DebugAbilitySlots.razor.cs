@@ -7,6 +7,45 @@ namespace Ironmon.Tracker.App.Components.Debug;
 /// </summary>
 public partial class DebugAbilitySlots
 {
+    private DebugAbilitySlotGroup? _selectedGroup;
+
+    /// <summary>
+    /// Gets or sets whether this content uses the redesigned research presentation.
+    /// </summary>
+    [Parameter]
+    public bool Redesigned { get; set; }
+
+    /// <summary>
+    /// Gets or sets descriptions available for the represented generated abilities.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<AbilitySnapshot> Abilities { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the callback opening the selected ability's information.
+    /// </summary>
+    [Parameter]
+    public EventCallback<AbilitySnapshot> Selected { get; set; }
+
+    /// <summary>
+    /// Gets the selected group, falling back when a different species has different groups.
+    /// </summary>
+    private DebugAbilitySlotGroup SelectedGroup
+        => _selectedGroup is DebugAbilitySlotGroup group && GetVisibleGroups().Contains(group) ? group : GetVisibleGroups().FirstOrDefault();
+
+    /// <summary>
+    /// Opens a slot's description, preferring the complete ability catalog when available.
+    /// </summary>
+    /// <param name="slot">The generated slot selected by the user.</param>
+    /// <returns>A task representing the containing dialog callback.</returns>
+    private Task SelectSlotAsync(DebugAbilitySlotSnapshot slot)
+    {
+        AbilitySnapshot ability = Abilities.FirstOrDefault(value => value.Id == slot.AbilityId)
+            ?? new AbilitySnapshot { Id = slot.AbilityId, Name = slot.AbilityName, Description = slot.AbilityDescription ?? Text["Redesign.Research.DescriptionUnavailable"] };
+
+        return Selected.InvokeAsync(ability);
+    }
+
     /// <summary>
     /// Gets or sets the ability-slot diagnostics to display.
     /// </summary>
@@ -46,11 +85,11 @@ public partial class DebugAbilitySlots
     /// <returns>The group heading.</returns>
     private string GetGroupName(DebugAbilitySlotGroup group) => group switch
     {
-        DebugAbilitySlotGroup.Current => Text["Debug.Abilities.CurrentHeading"],
-        DebugAbilitySlotGroup.Generated => Text["Debug.Abilities.GeneratedSlotsHeading"],
-        DebugAbilitySlotGroup.FinalFusion => Text["Debug.Abilities.FinalFusionSlotsHeading"],
-        DebugAbilitySlotGroup.BodyGenerated => Text["Debug.Abilities.BodyGeneratedHeading"],
-        DebugAbilitySlotGroup.HeadGenerated => Text["Debug.Abilities.HeadGeneratedHeading"],
+        DebugAbilitySlotGroup.Current => Text[Redesigned ? "Redesign.Research.Current" : "Debug.Abilities.CurrentHeading"],
+        DebugAbilitySlotGroup.Generated => Text[Redesigned ? "Redesign.Research.Generated" : "Debug.Abilities.GeneratedSlotsHeading"],
+        DebugAbilitySlotGroup.FinalFusion => Text[Redesigned ? "Redesign.Research.FinalFusionSlots" : "Debug.Abilities.FinalFusionSlotsHeading"],
+        DebugAbilitySlotGroup.BodyGenerated => Text[Redesigned ? "Redesign.Research.BodyGenerated" : "Debug.Abilities.BodyGeneratedHeading"],
+        DebugAbilitySlotGroup.HeadGenerated => Text[Redesigned ? "Redesign.Research.HeadGenerated" : "Debug.Abilities.HeadGeneratedHeading"],
         _ => Text["Debug.Abilities.AbilitiesHeading"]
     };
 

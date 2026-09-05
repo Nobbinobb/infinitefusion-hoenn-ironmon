@@ -1,48 +1,100 @@
-<article class="debug-abilities" aria-label="@Text["Debug.Abilities.InspectedAbilitySlots"]">
-    @foreach (DebugAbilitySlotGroup group in GetVisibleGroups())
+@if (Redesigned)
+{
+    @if (GetVisibleGroups().Count > 1)
     {
-        <section class="debug-ability-group">
-            <header>
-                <p class="section-label">@GetGroupName(group)</p>
-                <span>@Text["Debug.Abilities.SlotCount", GetSlots(group).Count]</span>
-            </header>
-            <div class="debug-ability-list">
-                @foreach (DebugAbilitySlotSnapshot slot in GetSlots(group))
+        <nav class="research-group-tabs" aria-label="@Text["Debug.Abilities.InspectedAbilitySlots"]">
+            @foreach (DebugAbilitySlotGroup group in GetVisibleGroups())
+            {
+                <button type="button" aria-pressed="@(SelectedGroup == group ? "true" : "false")" @onclick="() => _selectedGroup = group">@(group == DebugAbilitySlotGroup.FinalFusion ? Text["Redesign.Research.FinalFusion"] : GetGroupName(group))</button>
+            }
+        </nav>
+    }
+    @if (Slots.Count > 0)
+    {
+        <ObsidianSection Title="@GetGroupName(SelectedGroup)" Icon="ObsidianIconKind.Layers" Class="research-abilities">
+            <HeadingContent><small>@Text["Debug.Abilities.SlotCount", GetSlots(SelectedGroup).Count]</small></HeadingContent>
+            <ChildContent>
+                @foreach (DebugAbilitySlotSnapshot slot in GetSlots(SelectedGroup))
                 {
-                    <article class="debug-ability-slot @(slot.Active ? "active" : string.Empty)">
-                        <div class="debug-slot-heading">
-                            <strong>@GetSlotName(slot)</strong>
-                            @if (slot.Active)
-                            {
-                                <span>@Text["Debug.Abilities.ActiveHeading"]</span>
-                            }
-                        </div>
-                        <div class="debug-slot-ability">
-                            <strong>@slot.AbilityName</strong>
-                            <code>@slot.AbilityId</code>
-                        </div>
+                    <article class="research-ability-slot">
+                        <div class="research-slot-heading"><span>@GetSlotName(slot)</span><span>@GetEligibilityName(slot.Eligibility)</span></div>
+                        <button type="button" class="research-ability-name" @onclick="() => SelectSlotAsync(slot)">@slot.AbilityName <span aria-hidden="true">↗</span></button>
+                        @if (slot.Active)
+                        {
+                            <span class="research-active">@Text["Debug.Abilities.ActiveHeading"]</span>
+                        }
                         <dl>
-                            <div><dt>@Text["Debug.Abilities.Eligibility"]</dt><dd>@GetEligibilityName(slot.Eligibility)</dd></div>
-                            @if (slot.OriginalAbilityId is not null)
+                            @if (slot.OriginalAbilityName is not null)
                             {
-                                <div><dt>@Text["Debug.Abilities.Original"]</dt><dd>@slot.OriginalAbilityName · @slot.OriginalAbilityId</dd></div>
+                                <div><dt>@Text["Debug.Abilities.Original"]</dt><dd>@slot.OriginalAbilityName</dd></div>
                             }
                             @if (slot.Source is not null)
                             {
                                 <div><dt>@Text["Debug.Abilities.Source"]</dt><dd>@slot.Source</dd></div>
                             }
-                            @if (slot.SourceAbilityId is not null)
+                            @if (slot.SourceAbilityName is not null)
                             {
-                                <div><dt>@Text["Debug.Abilities.From"]</dt><dd>@slot.SourceAbilityName · @slot.SourceAbilityId</dd></div>
+                                <div><dt>@Text["Debug.Abilities.From"]</dt><dd>@slot.SourceAbilityName</dd></div>
                             }
                         </dl>
                         @if (slot.RestrictedSourceReplaced)
                         {
-                            <p class="debug-replacement">@Text["Debug.Abilities.RestrictedAbilityReplaced"]</p>
+                            <p class="research-note">@Text["Debug.Abilities.RestrictedAbilityReplaced"]</p>
                         }
                     </article>
                 }
-            </div>
-        </section>
+            </ChildContent>
+        </ObsidianSection>
     }
-</article>
+}
+else
+{
+    <article class="debug-abilities" aria-label="@Text["Debug.Abilities.InspectedAbilitySlots"]">
+        @foreach (DebugAbilitySlotGroup group in GetVisibleGroups())
+        {
+            <section class="debug-ability-group">
+                <header>
+                    <p class="section-label">@GetGroupName(group)</p>
+                    <span>@Text["Debug.Abilities.SlotCount", GetSlots(group).Count]</span>
+                </header>
+                <div class="debug-ability-list">
+                    @foreach (DebugAbilitySlotSnapshot slot in GetSlots(group))
+                    {
+                        <article class="debug-ability-slot @(slot.Active ? "active" : string.Empty)">
+                            <div class="debug-slot-heading">
+                                <strong>@GetSlotName(slot)</strong>
+                                @if (slot.Active)
+                                {
+                                    <span>@Text["Debug.Abilities.ActiveHeading"]</span>
+                                }
+                            </div>
+                            <div class="debug-slot-ability">
+                                <strong>@slot.AbilityName</strong>
+                                <code>@slot.AbilityId</code>
+                            </div>
+                            <dl>
+                                <div><dt>@Text["Debug.Abilities.Eligibility"]</dt><dd>@GetEligibilityName(slot.Eligibility)</dd></div>
+                                @if (slot.OriginalAbilityId is not null)
+                                {
+                                    <div><dt>@Text["Debug.Abilities.Original"]</dt><dd>@slot.OriginalAbilityName · @slot.OriginalAbilityId</dd></div>
+                                }
+                                @if (slot.Source is not null)
+                                {
+                                    <div><dt>@Text["Debug.Abilities.Source"]</dt><dd>@slot.Source</dd></div>
+                                }
+                                @if (slot.SourceAbilityId is not null)
+                                {
+                                    <div><dt>@Text["Debug.Abilities.From"]</dt><dd>@slot.SourceAbilityName · @slot.SourceAbilityId</dd></div>
+                                }
+                            </dl>
+                            @if (slot.RestrictedSourceReplaced)
+                            {
+                                <p class="debug-replacement">@Text["Debug.Abilities.RestrictedAbilityReplaced"]</p>
+                            }
+                        </article>
+                    }
+                </div>
+            </section>
+        }
+    </article>
+}

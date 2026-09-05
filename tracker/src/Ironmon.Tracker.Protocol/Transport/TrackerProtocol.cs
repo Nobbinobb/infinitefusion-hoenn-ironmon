@@ -48,7 +48,7 @@ public static class TrackerProtocol
     /// <summary>
     /// Gets the number of generated evolution candidates returned per page.
     /// </summary>
-    public const int EvolutionCandidatePageSize = 50;
+    public const int EvolutionCandidatePageSize = 12;
 
     /// <summary>
     /// Gets the number of generated predecessors requested for each progressive graph page.

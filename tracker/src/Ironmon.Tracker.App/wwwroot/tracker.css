@@ -491,6 +491,13 @@
     cursor: zoom-in;
 }
 
+.pokemon-sprite-fitted {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
 .pokemon-sprite:disabled {
     cursor: default;
 }
@@ -4110,4 +4117,22 @@ button.move-placeholder:hover {
     .coverage-buckets {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+}
+
+.evolution-candidate-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 24px;
+    margin: 0 0 8px;
+    font-size: 12px;
+}
+
+.evolution-candidate-status .lookup-error,
+.evolution-candidate-status .lookup-message {
+    margin: 0;
+}
+
+.evolution-candidate-status .lookup-error {
+    flex: 1;
 }
