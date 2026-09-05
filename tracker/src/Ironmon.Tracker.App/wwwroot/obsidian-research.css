@@ -1,4 +1,4 @@
-/* Research styles are scoped to the selected card; the evolution graph retains its existing presentation. */
+/* Shared research search and selected-card styles; the evolution graph retains its existing presentation. */
 .lookup-pokemon:not(.obsidian-research)>.research-page{display:contents}
 .research-explorer{position:relative;display:flex;flex-direction:column;min-height:0;min-width:0;gap:0}
 .research-explorer .research-breadcrumb{display:flex;align-items:center;gap:5px;min-height:30px;padding-right:94px;margin-bottom:8px;color:#9eafc6;font-size:11px}
@@ -150,4 +150,34 @@
     .obsidian-research .research-group-tabs button{font-size:10px;padding:7px 2px}
     .obsidian-research .move-access-row{grid-template-columns:47px minmax(0,1fr);gap:6px;padding:10px 7px}
     .obsidian-research .move-access-origin{grid-column:2;max-width:none;text-align:left;padding-left:25px;margin-top:-4px}
+}
+
+.obsidian .research-search{display:flex;align-items:center;gap:8px;margin-bottom:13px}
+.obsidian .research-search-field{display:flex;gap:9px;align-items:center;flex:1;min-width:0;border:1px solid #354358;border-radius:8px;padding:9px 11px;background:#111823}
+.obsidian .research-search-field svg{color:#92a7c5}
+.obsidian .research-search input{border:0;background:none;color:#edf1f8;font:inherit;outline-offset:4px;width:100%;min-width:0}
+.obsidian .research-search input::placeholder{color:#8598b3}
+.obsidian .research-search-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.obsidian .research-search-match{padding:11px 12px;border:1px solid #2b394b;border-radius:9px;background:#141b25;text-align:left;display:flex;align-items:center;gap:7px;min-width:0}
+.obsidian .research-search-match>span:first-child{flex:1;min-width:0}
+.obsidian .research-search-match strong{display:block;font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.obsidian .research-search-match small{display:block;font-size:11px;color:#a3b4cd;margin-top:3px}
+.obsidian-archive .obsidian-archive-empty,
+.obsidian .research-search-empty{padding:27px 18px;background:#111720;border:1px solid #29374a;border-radius:10px;color:#aebfd5;line-height:1.6}
+.obsidian-archive .obsidian-archive-empty>svg,
+.obsidian .research-search-empty>svg{color:#af9ff4;width:23px;height:23px}
+.obsidian-archive .obsidian-archive-empty h3,
+.obsidian .research-search-empty h3{font-size:16px;font-weight:600;margin:11px 0 7px;color:#e1e8f5}
+.obsidian-archive .obsidian-archive-empty p,
+.obsidian .research-search-empty p{margin:0;font-size:12px}
+.obsidian .research-search-caption{font-size:11px;color:#a8bbd6;margin:0 0 10px}
+.obsidian .research-search .obsidian-button { padding:10px 13px; }
+.obsidian .research-search-match .pokemon-obtainability-mark { font-size:17px; }
+.obsidian .research-search-list { margin-bottom:12px; }
+.obsidian .research-search-legend { display:flex; gap:12px; flex-wrap:wrap; color:#a9b9ce; font-size:11px; margin:0 0 13px; }
+.obsidian .research-search-legend>span { display:flex; align-items:center; gap:4px; }
+.obsidian .research-search-match { color:#edf1f8; }
+.obsidian .research-search-legend .pokemon-obtainability-mark { font-size:14px; }
+@media(max-width:390px) {
+    .obsidian .research-search-match { padding:10px 9px; }
 }

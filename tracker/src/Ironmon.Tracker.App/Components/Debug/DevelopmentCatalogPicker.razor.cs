@@ -10,6 +10,8 @@ namespace Ironmon.Tracker.App.Components.Debug;
 public partial class DevelopmentCatalogPicker
 {
     private const int _maximumVisibleOptions = 8;
+    private const string _resultsIdPrefix = "development-options-";
+    private readonly string _resultsId = _resultsIdPrefix + Guid.NewGuid();
     private string _query = string.Empty;
     private string? _observedSelectedId;
     private bool _open;
@@ -63,6 +65,18 @@ public partial class DevelopmentCatalogPicker
     /// </summary>
     [Parameter]
     public bool Disabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the committed selection has an explicit clear action.
+    /// </summary>
+    [Parameter]
+    public bool AllowClear { get; set; }
+
+    /// <summary>
+    /// Gets or sets the localized accessible label for clearing the selection.
+    /// </summary>
+    [Parameter]
+    public string ClearLabel { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets whether clearing the search input also clears the committed selection.
@@ -138,6 +152,22 @@ public partial class DevelopmentCatalogPicker
         _open = false;
         _openUp = false;
         _query = Options.FirstOrDefault(option => option.Id == SelectedId)?.Name ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Clears the committed selection and lets the parent restore it if validation rejects removal.
+    /// </summary>
+    /// <returns>A task representing selection notification.</returns>
+    private async Task ClearAsync()
+    {
+        if (Disabled || !AllowClear)
+            return;
+
+        _query = string.Empty;
+        _observedSelectedId = null;
+        _open = false;
+        _openUp = false;
+        await SelectedIdChanged.InvokeAsync(null);
     }
 
     /// <summary>

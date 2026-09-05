@@ -508,7 +508,7 @@
     <value>Player</value>
   </data>
   <data name="Debug.Inspector.Pokemon" xml:space="preserve">
-    <value>Pokemon</value>
+    <value>Pokémon</value>
   </data>
   <data name="Debug.Inspector.PokemonInspectorPages" xml:space="preserve">
     <value>Pokemon inspector pages</value>
@@ -520,7 +520,7 @@
     <value>Reading game-owned debug data…</value>
   </data>
   <data name="Debug.Inspector.RunDiagnostics" xml:space="preserve">
-    <value>Run Diagnostics</value>
+    <value>Run diagnostics</value>
   </data>
   <data name="Debug.Inspector.RunDiagnosticsNotLoaded" xml:space="preserve">
     <value>Run diagnostics are not loaded.</value>
@@ -598,7 +598,7 @@
     <value>Connection and protocol history</value>
   </data>
   <data name="Debug.Protocol.ConnectionAndProtocolHistoryHeading" xml:space="preserve">
-    <value>CONNECTION AND PROTOCOL HISTORY</value>
+    <value>Connection and protocol history</value>
   </data>
   <data name="Debug.Protocol.ConnectionStateCopied" xml:space="preserve">
     <value>Connection state copied.</value>
@@ -613,10 +613,10 @@
     <value>Copy report</value>
   </data>
   <data name="Debug.Protocol.CurrentConnectionStateHeading" xml:space="preserve">
-    <value>CURRENT CONNECTION STATE</value>
+    <value>Current connection state</value>
   </data>
   <data name="Debug.Protocol.CurrentTrackerStateHeading" xml:space="preserve">
-    <value>CURRENT TRACKER STATE</value>
+    <value>Current tracker state</value>
   </data>
   <data name="Debug.Protocol.DiagnosticHistoryCleared" xml:space="preserve">
     <value>Diagnostic history cleared.</value>
@@ -643,7 +643,7 @@
     <value>No diagnostic entries recorded.</value>
   </data>
   <data name="Debug.Protocol.PersistedKnowledgeHeading" xml:space="preserve">
-    <value>PERSISTED KNOWLEDGE</value>
+    <value>Persisted knowledge</value>
   </data>
   <data name="Debug.Protocol.Refresh" xml:space="preserve">
     <value>Refresh</value>
@@ -1733,12 +1733,12 @@
   <data name="Development.Confirm" xml:space="preserve"><value>Confirm</value></data>
   <data name="Development.Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Development.AutoRevive.Title" xml:space="preserve"><value>NoFail / AutoRevive</value></data>
-  <data name="Development.AutoRevive.ShortLabel" xml:space="preserve"><value>AutoRevive</value></data>
+  <data name="Development.AutoRevive.ShortLabel" xml:space="preserve"><value>Auto-revive</value></data>
   <data name="Development.AutoRevive.Description" xml:space="preserve"><value>A defeat or draw keeps the attempt active and fully revives the current Pokémon after battle cleanup.</value></data>
   <data name="Development.FullHeal.Title" xml:space="preserve"><value>Full Heal</value></data>
   <data name="Development.FullHeal.Description" xml:space="preserve"><value>Restore the current Pokémon's HP, status, and PP.</value></data>
   <data name="Development.FullHeal.Action" xml:space="preserve"><value>Heal</value></data>
-  <data name="Development.FullHeal.CompactAction" xml:space="preserve"><value>Full Heal</value></data>
+  <data name="Development.FullHeal.CompactAction" xml:space="preserve"><value>Full heal</value></data>
   <data name="Development.FullHeal.Done" xml:space="preserve"><value>The current Pokémon was fully healed.</value></data>
   <data name="Development.Level.Title" xml:space="preserve"><value>Level adjustment</value></data>
   <data name="Development.Level.Label" xml:space="preserve"><value>Level</value></data>
@@ -1991,4 +1991,21 @@
   <data name="Redesign.Research.EvolutionGenerator" xml:space="preserve">
     <value>Evolution generator</value>
   </data>
+  <data name="Redesign.Tools.Inspect" xml:space="preserve"><value>Inspect</value></data>
+  <data name="Redesign.Tools.NoPlayer" xml:space="preserve"><value>No current Pokémon. Send your Pokémon into battle to initialize these controls.</value></data>
+  <data name="Redesign.Tools.MoveSlot" xml:space="preserve"><value>Slot {0}</value></data>
+  <data name="Redesign.Tools.RemoveMove" xml:space="preserve"><value>Remove move from slot {0}</value></data>
+  <data name="Redesign.Tools.NoMove" xml:space="preserve"><value>No move</value></data>
+  <data name="Redesign.Tools.Retained" xml:space="preserve"><value>{0} retained</value></data>
+  <data name="Redesign.Tools.CopyEntry" xml:space="preserve"><value>Copy {0}</value></data>
+  <data name="Redesign.Tools.Incoming" xml:space="preserve"><value>Incoming</value></data>
+  <data name="Redesign.Tools.Outgoing" xml:space="preserve"><value>Outgoing</value></data>
+  <data name="Redesign.Tools.Lifecycle" xml:space="preserve"><value>Lifecycle</value></data>
+  <data name="Redesign.Tools.SpeciesAbilitiesMoves" xml:space="preserve"><value>Species, abilities &amp; moves</value></data>
+  <data name="Redesign.Tools.GeneratorFingerprints" xml:space="preserve"><value>Generator fingerprints</value></data>
+  <data name="Redesign.Tools.ItemsPools" xml:space="preserve"><value>Items &amp; pools</value></data>
+  <data name="Redesign.Tools.Evolution" xml:space="preserve"><value>Evolution</value></data>
+  <data name="Redesign.Research.ActiveFusion" xml:space="preserve"><value>Active fusion</value></data>
+  <data name="Redesign.Tools.SearchDescription" xml:space="preserve"><value>Search by Pokémon name. Results show the species identifier and whether it is obtainable in the active run.</value></data>
+  <data name="Redesign.Tools.SearchMatchCount" xml:space="preserve"><value>{0} matches in this active run</value></data>
 </root>

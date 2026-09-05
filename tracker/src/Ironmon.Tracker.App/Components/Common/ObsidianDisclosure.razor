@@ -1,0 +1,21 @@
+<details class="obsidian-disclosure @Class" open="@InitiallyOpen">
+    <summary>
+        <span class="obsidian-disclosure-chevron"><ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></span>
+        @if (Icon is ObsidianIconKind icon)
+        {
+            <ObsidianIcon Kind="icon" />
+        }
+        <span class="obsidian-disclosure-heading">
+            @if (HeadingContent is not null)
+            {
+                @HeadingContent
+            }
+            else
+            {
+                @Title
+            }
+        </span>
+        @Actions
+    </summary>
+    <div class="obsidian-disclosure-content">@ChildContent</div>
+</details>

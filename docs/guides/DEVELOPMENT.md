@@ -68,3 +68,25 @@ run `Ironmon.AG.exe` from the project's Release `bin` output. Keep the external
 PKCS#8 P-256 private key outside the repository, game installation, tracker
 distribution, logs, and source-control staging. Never copy generated
 `.ironmon-access` files into `dist` or `release`.
+
+### Diagnostic Tools
+
+The Tools area uses the shared redesigned Pokémon research views for current
+Pokémon inspection and active-run lookup. Current inspection also retains the
+individual Pokémon's nickname, level, gender, held item, form, identity, and
+active ability-slot details. Pages and controls remain filtered by their
+individual diagnostic capabilities.
+
+Development applies level, ability, move, and evolution selections immediately.
+Use the remove button in an occupied move slot to clear it; the Pokémon must
+retain at least one move and cannot have duplicate moves. Failed actions restore
+the last confirmed player values. Giving an item still requires selecting an
+item, specifying a quantity, and pressing Give. Only available evolution
+directions are shown: one direction fills the section, and the section is
+omitted when neither direction is available.
+
+Run diagnostics groups generator fingerprints and item metadata into expandable
+sections. Protocol uses the same disclosure component for raw state and history;
+copying an entry does not toggle it. Report copy and export include only authorized
+groups, and clearing history leaves the current state and persisted knowledge
+available under their existing grants.

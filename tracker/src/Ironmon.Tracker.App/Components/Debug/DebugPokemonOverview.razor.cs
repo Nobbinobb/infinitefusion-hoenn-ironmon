@@ -8,6 +8,12 @@ namespace Ironmon.Tracker.App.Components.Debug;
 public partial class DebugPokemonOverview
 {
     /// <summary>
+    /// Gets or sets whether the parent presents the redesigned identity header.
+    /// </summary>
+    [Parameter]
+    public bool Redesigned { get; set; }
+
+    /// <summary>
     /// Gets or sets the game-owned inspector snapshot.
     /// </summary>
     [Parameter]

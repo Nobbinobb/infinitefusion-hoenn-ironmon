@@ -1,8 +1,12 @@
 <div class="@PickerCssClass" @ref="_pickerElement">
-    <input type="search"
+    <input type="text"
            value="@_query"
            placeholder="@Placeholder"
            aria-label="@AriaLabel"
+           role="combobox"
+           aria-autocomplete="list"
+           aria-expanded="@(_open && !Disabled)"
+           aria-controls="@_resultsId"
            autocomplete="off"
            disabled="@Disabled"
            @onfocus="OpenAsync"
@@ -10,9 +14,17 @@
            @oninput="HandleInput"
            @onkeydown="HandleKeyDown"
            @onkeydown:stopPropagation="true" />
+    @if (AllowClear && !string.IsNullOrEmpty(SelectedId))
+    {
+        <button type="button" class="tools-picker-clear" aria-label="@ClearLabel" title="@ClearLabel" disabled="@Disabled" @onmousedown:preventDefault="true" @onclick="ClearAsync"><ObsidianIcon Kind="ObsidianIconKind.Close" /></button>
+    }
+    else
+    {
+        <span class="tools-picker-chevron"><ObsidianIcon Kind="ObsidianIconKind.ChevronDown" /></span>
+    }
     @if (_open && !Disabled)
     {
-        <div class="development-picker-results" role="listbox" aria-label="@AriaLabel">
+        <div id="@_resultsId" class="development-picker-results" role="listbox" aria-label="@AriaLabel">
             @if (FilteredOptions.Count == 0)
             {
                 <span class="development-picker-empty">@EmptyText</span>
@@ -21,7 +33,7 @@
             {
                 @foreach (DebugDevelopmentCatalogEntry option in FilteredOptions)
                 {
-                    <button type="button" class="@(option.Id == SelectedId ? "selected" : null)" @onmousedown:preventDefault="true" @onclick="() => SelectAsync(option)">
+                    <button type="button" role="option" aria-selected="@(option.Id == SelectedId)" class="@(option.Id == SelectedId ? "selected" : null)" @onmousedown:preventDefault="true" @onclick="() => SelectAsync(option)">
                         <strong>@option.Name</strong>
                         <span>@option.Id</span>
                     </button>

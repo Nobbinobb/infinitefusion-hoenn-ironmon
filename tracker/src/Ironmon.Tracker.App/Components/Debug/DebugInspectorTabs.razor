@@ -1,6 +1,6 @@
 <nav class="debug-pages" aria-label="@Text["Debug.Inspector.DebugInspectorPages"]">
     @foreach (DebugInspectorPage page in Pages)
     {
-        <button type="button" class="@GetPageClass(page)" @onclick="() => SelectedPageChanged.InvokeAsync(page)">@GetPageText(page)</button>
+        <button type="button" class="@GetPageClass(page)" aria-pressed="@(page == SelectedPage)" @onclick="() => SelectedPageChanged.InvokeAsync(page)">@GetPageText(page)</button>
     }
 </nav>

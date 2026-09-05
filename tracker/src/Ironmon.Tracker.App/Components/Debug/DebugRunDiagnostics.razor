@@ -1,5 +1,6 @@
-<article class="debug-diagnostics" aria-label="@Text["Debug.Run.RunDiagnostics"]">
-    <section class="debug-data-section">
+<article class="debug-diagnostics tools-run" aria-label="@Text["Debug.Run.RunDiagnostics"]">
+    <header class="tools-page-heading"><h3>@Text["Debug.Run.RunDiagnostics"]</h3></header>
+    <section class="debug-data-section tools-panel">
         <p class="section-label">@Text["Debug.Run.RuntimeHeading"]</p>
         <dl class="debug-data-grid">
             <div><dt>@Text["Debug.Run.Game"]</dt><dd>@Diagnostics.Runtime.GameVersion</dd></div>
@@ -13,7 +14,7 @@
 
     @if (Diagnostics.Configuration is { } configuration)
     {
-        <section class="debug-data-section">
+        <section class="debug-data-section tools-panel">
             <p class="section-label">@Text["Debug.Run.ConfigurationHeading"]</p>
             <dl class="debug-data-grid">
                 <div><dt>@Text["Debug.Run.Wild"]</dt><dd>@configuration.WildPolicy</dd></div>
@@ -25,51 +26,64 @@
 
     @if (Diagnostics.SpeciesGenerator is not null || Diagnostics.EvolutionGenerator is not null || Diagnostics.ItemGenerator is not null)
     {
-        <section class="debug-data-section">
-            <p class="section-label">@Text["Debug.Run.GeneratorsAndPoolsHeading"]</p>
-            <dl class="debug-data-grid">
-                @if (Diagnostics.SpeciesGenerator is { } speciesGenerator && Diagnostics.AbilityGenerator is { } abilityGenerator && Diagnostics.PlayerFusionGenerator is { } playerFusionGenerator && Diagnostics.Mappings is { } mappings)
-                {
-                    <div><dt>@Text["Debug.Run.CustomFusions"]</dt><dd>@playerFusionGenerator.PoolSize</dd></div>
-                    <div><dt>@Text["Debug.Run.SpeciesSchema"]</dt><dd>@speciesGenerator.Version</dd></div>
-                    <div><dt>@Text["Debug.Run.AbilitySchema"]</dt><dd>@abilityGenerator.Version</dd></div>
-                    <div><dt>@Text["Debug.Run.BaseStatSchema"]</dt><dd>@(Diagnostics.BaseStatGenerator?.Version.ToString() ?? Text["Debug.Run.Legacy"])</dd></div>
-                    <div><dt>@Text["Debug.Run.MoveSchema"]</dt><dd>@(Diagnostics.MoveAccessGenerator?.Version.ToString() ?? Text["Debug.Run.None"])</dd></div>
-                    <div><dt>@Text["Debug.Run.AbilityPool"]</dt><dd>@abilityGenerator.PoolSize</dd></div>
-                    <div><dt>@Text["Debug.Run.WildMappings"]</dt><dd>@mappings.Wild</dd></div>
-                    <div><dt>@Text["Debug.Run.TrainerMappings"]</dt><dd>@mappings.Trainer</dd></div>
-                    <div class="wide"><dt>@Text["Debug.Run.SpeciesFingerprint"]</dt><dd>@speciesGenerator.PoolFingerprint</dd></div>
-                    <div class="wide"><dt>@Text["Debug.Run.FusionFingerprint"]</dt><dd>@playerFusionGenerator.PoolFingerprint</dd></div>
-                    <div class="wide"><dt>@Text["Debug.Run.AbilityFingerprint"]</dt><dd>@abilityGenerator.PoolFingerprint</dd></div>
-                    <div class="wide"><dt>@Text["Debug.Run.BaseStatFingerprint"]</dt><dd>@(Diagnostics.BaseStatGenerator?.SourceFingerprint ?? Text["Debug.Run.None"])</dd></div>
-                    <div class="wide"><dt>@Text["Debug.Run.MoveFingerprint"]</dt><dd>@(Diagnostics.MoveAccessGenerator?.PoolFingerprint ?? Text["Debug.Run.None"])</dd></div>
-                }
-                @if (Diagnostics.EvolutionGenerator is { } evolutionGenerator)
-                {
-                    <div><dt>@Text["Debug.Run.EvolutionSchema"]</dt><dd>@evolutionGenerator.Version</dd></div>
-                    <div class="wide"><dt>@Text["Debug.Run.EvolutionFingerprint"]</dt><dd>@evolutionGenerator.TargetFingerprint</dd></div>
-                }
-                @if (Diagnostics.ItemGenerator is { } itemGenerator)
-                {
-                    <div><dt>@Text["Debug.Run.ItemSchema"]</dt><dd>@itemGenerator.Version</dd></div>
-                    <div><dt>@Text["Debug.Run.ItemRules"]</dt><dd>@itemGenerator.RulesVersion</dd></div>
-                    <div><dt>@Text["Debug.Run.GroundItemPool"]</dt><dd>@itemGenerator.GroundPoolSize</dd></div>
-                    @if (itemGenerator.GroundTotalWeight > 0)
-                    {
-                        <div><dt>@Text["Debug.Run.GroundItemWeight"]</dt><dd>@itemGenerator.GroundTotalWeight</dd></div>
-                    }
-                    <div><dt>@Text["Debug.Run.TmGiftPool"]</dt><dd>@itemGenerator.TmPoolSize</dd></div>
-                    <div><dt>@Text["Debug.Run.ShopPolicy"]</dt><dd>@itemGenerator.ShopPolicyVersion</dd></div>
-                    <div class="wide"><dt>@Text["Debug.Run.ItemBans"]</dt><dd>@string.Join(", ", itemGenerator.ResultBans)</dd></div>
-                    <div class="wide"><dt>@Text["Debug.Run.GroundItemFingerprint"]</dt><dd>@itemGenerator.GroundPoolFingerprint</dd></div>
-                    <div class="wide"><dt>@Text["Debug.Run.TmGiftFingerprint"]</dt><dd>@itemGenerator.TmPoolFingerprint</dd></div>
-                    <div class="wide"><dt>@Text["Debug.Run.ItemBanFingerprint"]</dt><dd>@itemGenerator.ResultBanFingerprint</dd></div>
-                }
-                else
-                {
-                    <div><dt>@Text["Debug.Run.ItemSchema"]</dt><dd>@Text["Debug.Run.Legacy"]</dd></div>
-                }
-            </dl>
+        <section class="tools-panel tools-generators">
+            @if (Diagnostics.SpeciesGenerator is { } speciesGenerator && Diagnostics.AbilityGenerator is { } abilityGenerator && Diagnostics.PlayerFusionGenerator is { } playerFusionGenerator && Diagnostics.Mappings is { } mappings)
+            {
+                <ObsidianDisclosure Title="@Text["Redesign.Tools.SpeciesAbilitiesMoves"]" InitiallyOpen="true">
+                    <dl class="debug-data-grid">
+                        <div><dt>@Text["Debug.Run.CustomFusions"]</dt><dd>@playerFusionGenerator.PoolSize</dd></div>
+                        <div><dt>@Text["Debug.Run.SpeciesSchema"]</dt><dd>@speciesGenerator.Version</dd></div>
+                        <div><dt>@Text["Debug.Run.AbilitySchema"]</dt><dd>@abilityGenerator.Version</dd></div>
+                        <div><dt>@Text["Debug.Run.BaseStatSchema"]</dt><dd>@(Diagnostics.BaseStatGenerator?.Version.ToString() ?? Text["Debug.Run.Legacy"])</dd></div>
+                        <div><dt>@Text["Debug.Run.MoveSchema"]</dt><dd>@(Diagnostics.MoveAccessGenerator?.Version.ToString() ?? Text["Debug.Run.None"])</dd></div>
+                        <div><dt>@Text["Debug.Run.AbilityPool"]</dt><dd>@abilityGenerator.PoolSize</dd></div>
+                        <div><dt>@Text["Debug.Run.WildMappings"]</dt><dd>@mappings.Wild</dd></div>
+                        <div><dt>@Text["Debug.Run.TrainerMappings"]</dt><dd>@mappings.Trainer</dd></div>
+                    </dl>
+                    <ObsidianDisclosure Title="@Text["Redesign.Tools.GeneratorFingerprints"]">
+                        <dl class="debug-data-grid tools-fingerprints">
+                            <div class="wide"><dt>@Text["Debug.Run.SpeciesFingerprint"]</dt><dd>@speciesGenerator.PoolFingerprint</dd></div>
+                            <div class="wide"><dt>@Text["Debug.Run.FusionFingerprint"]</dt><dd>@playerFusionGenerator.PoolFingerprint</dd></div>
+                            <div class="wide"><dt>@Text["Debug.Run.AbilityFingerprint"]</dt><dd>@abilityGenerator.PoolFingerprint</dd></div>
+                            <div class="wide"><dt>@Text["Debug.Run.BaseStatFingerprint"]</dt><dd>@(Diagnostics.BaseStatGenerator?.SourceFingerprint ?? Text["Debug.Run.None"])</dd></div>
+                            <div class="wide"><dt>@Text["Debug.Run.MoveFingerprint"]</dt><dd>@(Diagnostics.MoveAccessGenerator?.PoolFingerprint ?? Text["Debug.Run.None"])</dd></div>
+                        </dl>
+                    </ObsidianDisclosure>
+                </ObsidianDisclosure>
+            }
+            @if (Diagnostics.EvolutionGenerator is { } evolutionGenerator)
+            {
+                <ObsidianDisclosure Title="@Text["Redesign.Tools.Evolution"]">
+                    <dl class="debug-data-grid tools-fingerprints">
+                        <div><dt>@Text["Debug.Run.EvolutionSchema"]</dt><dd>@evolutionGenerator.Version</dd></div>
+                        <div class="wide"><dt>@Text["Debug.Run.EvolutionFingerprint"]</dt><dd>@evolutionGenerator.TargetFingerprint</dd></div>
+                    </dl>
+                </ObsidianDisclosure>
+            }
+            @if (Diagnostics.ItemGenerator is { } itemGenerator)
+            {
+                <ObsidianDisclosure Title="@Text["Redesign.Tools.ItemsPools"]">
+                    <dl class="debug-data-grid tools-fingerprints">
+                        <div><dt>@Text["Debug.Run.ItemSchema"]</dt><dd>@itemGenerator.Version</dd></div>
+                        <div><dt>@Text["Debug.Run.ItemRules"]</dt><dd>@itemGenerator.RulesVersion</dd></div>
+                        <div><dt>@Text["Debug.Run.GroundItemPool"]</dt><dd>@itemGenerator.GroundPoolSize</dd></div>
+                        @if (itemGenerator.GroundTotalWeight > 0)
+                        {
+                            <div><dt>@Text["Debug.Run.GroundItemWeight"]</dt><dd>@itemGenerator.GroundTotalWeight</dd></div>
+                        }
+                        <div><dt>@Text["Debug.Run.TmGiftPool"]</dt><dd>@itemGenerator.TmPoolSize</dd></div>
+                        <div><dt>@Text["Debug.Run.ShopPolicy"]</dt><dd>@itemGenerator.ShopPolicyVersion</dd></div>
+                        <div class="wide"><dt>@Text["Debug.Run.ItemBans"]</dt><dd>@string.Join(", ", itemGenerator.ResultBans)</dd></div>
+                        <div class="wide"><dt>@Text["Debug.Run.GroundItemFingerprint"]</dt><dd>@itemGenerator.GroundPoolFingerprint</dd></div>
+                        <div class="wide"><dt>@Text["Debug.Run.TmGiftFingerprint"]</dt><dd>@itemGenerator.TmPoolFingerprint</dd></div>
+                        <div class="wide"><dt>@Text["Debug.Run.ItemBanFingerprint"]</dt><dd>@itemGenerator.ResultBanFingerprint</dd></div>
+                    </dl>
+                </ObsidianDisclosure>
+            }
+            else
+            {
+                <dl class="debug-data-grid"><div><dt>@Text["Debug.Run.ItemSchema"]</dt><dd>@Text["Debug.Run.Legacy"]</dd></div></dl>
+            }
         </section>
     }
 </article>

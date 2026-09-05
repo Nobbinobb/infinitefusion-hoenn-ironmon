@@ -1,6 +1,6 @@
 <div class="debug-target-controls">
     <label>
-        Inspect
+        @Text["Redesign.Tools.Inspect"]
         <select value="@SelectedTarget" disabled="@(Loading || !HasAvailableTarget)" @onchange="HandleSelectedTargetChanged" @onkeydown:stopPropagation="true">
             @if (PlayerAvailable && Player is not null)
             {

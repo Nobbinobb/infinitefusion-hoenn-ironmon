@@ -206,12 +206,17 @@
     color-scheme:dark;
 }
 
+:root {
+    --obsidian-background:#090d12;
+}
+
+html:has(.tracker-shell:is(.obsidian,.obsidian-access-shell)),
 body:has(.tracker-shell:is(.obsidian,.obsidian-access-shell)) {
-    background:#090b10;
+    background:var(--obsidian-background);
 }
 
 .tracker-shell:is(.obsidian,.obsidian-access-shell) {
-    background:#090b10;
+    background:var(--obsidian-background);
     padding:9px 17px 18px;
     min-height:100vh;
     max-width:none;

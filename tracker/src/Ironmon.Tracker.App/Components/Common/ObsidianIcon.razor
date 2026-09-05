@@ -1,5 +1,21 @@
 <svg class="obsidian-line-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    @if (Kind == ObsidianIconKind.Shuffle)
+    @if (Kind == ObsidianIconKind.Close)
+    {
+        <path d="m6 6 12 12 M6 18 18 6" />
+    }
+    else if (Kind == ObsidianIconKind.PackagePlus)
+    {
+        <path d="M12 3 3 8v10l9 5 M3 8l9 5 9-5 M12 13v10 M12 3l9 5v5 M7.5 5.5l9 5 M19 16v6 M16 19h6" />
+    }
+    else if (Kind == ObsidianIconKind.Plug)
+    {
+        <path d="m12 4 2 2 m4 4 2 2 M9 9l6 6 M14 6l4 4-5 5a3 3 0 0 1-4-4Z M9 15l-5 5" />
+    }
+    else if (Kind == ObsidianIconKind.Database)
+    {
+        <ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5v14c0 4 18 4 18 0V5 M3 12c0 4 18 4 18 0" />
+    }
+    else if (Kind == ObsidianIconKind.Shuffle)
     {
         <path d="m18 14 4 4-4 4 M18 2l4 4-4 4 M2 18h2.5a6 6 0 0 0 5-2.8l5-6.4a6 6 0 0 1 5-2.8H22 M2 6h2.5a6 6 0 0 1 5 2.8l5 6.4a6 6 0 0 0 5 2.8H22" />
     }

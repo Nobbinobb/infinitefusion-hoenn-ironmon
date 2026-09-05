@@ -1,10 +1,9 @@
-<section class="pokemon-card debug-view" role="tabpanel" aria-label="@Text["Debug.Inspector.AuthorizedDebugInspector"]">
+<section class="obsidian obsidian-tools debug-view" role="tabpanel" aria-label="@Text["Debug.Inspector.AuthorizedDebugInspector"]">
     <header class="debug-heading">
         <div>
-            <p class="card-kicker">@Text["Debug.Inspector.DevelopmentModeHeading"]</p>
             <h2>@Text["Debug.Inspector.IronmonInspector"]</h2>
         </div>
-        <span class="debug-authorized">@Text["Debug.Inspector.Authorized"]</span>
+        <span class="debug-authorized"><ObsidianIcon Kind="ObsidianIconKind.ShieldCheck" />@Text["Debug.Inspector.Authorized"]</span>
     </header>
 
     <DebugInspectorTabs Pages="@_visiblePages" SelectedPage="@_selectedPage" SelectedPageChanged="SelectPageAsync" />
@@ -68,6 +67,7 @@
     else if (HasAnyPage && _selectedPage == DebugInspectorPage.Pokemon)
     {
         <PokemonLookupCard Pokemon="@_lookup"
+                           Redesigned="true"
                            Inspector="@_pokemon"
                            DebugMode="true"
                            DebugTarget="@SelectedDebugTarget"

@@ -56,21 +56,6 @@
 .obsidian-archive .obsidian-archive-items-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:15px}
 .obsidian-archive .obsidian-archive-items-totals strong{display:block;font-size:24px;font-weight:600}
 .obsidian-archive .obsidian-archive-items-totals small{display:block;color:#a6b7ce;font-size:11px}
-.obsidian-archive .obsidian-archive-search{display:flex;align-items:center;gap:8px;margin-bottom:13px}
-.obsidian-archive .obsidian-archive-search-field{display:flex;gap:9px;align-items:center;flex:1;min-width:0;border:1px solid #354358;border-radius:8px;padding:9px 11px;background:#111823}
-.obsidian-archive .obsidian-archive-search-field svg{color:#92a7c5}
-.obsidian-archive .obsidian-archive-search input{border:0;background:none;color:#edf1f8;font:inherit;outline-offset:4px;width:100%;min-width:0}
-.obsidian-archive .obsidian-archive-search input::placeholder{color:#8598b3}
-.obsidian-archive .obsidian-archive-search-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.obsidian-archive .obsidian-archive-match{padding:11px 12px;border:1px solid #2b394b;border-radius:9px;background:#141b25;text-align:left;display:flex;align-items:center;gap:7px;min-width:0}
-.obsidian-archive .obsidian-archive-match>span:first-child{flex:1;min-width:0}
-.obsidian-archive .obsidian-archive-match strong{display:block;font-size:13px;font-weight:600;overflow-wrap:anywhere}
-.obsidian-archive .obsidian-archive-match small{display:block;font-size:11px;color:#a3b4cd;margin-top:3px}
-.obsidian-archive .obsidian-archive-empty{padding:27px 18px;background:#111720;border:1px solid #29374a;border-radius:10px;color:#aebfd5;line-height:1.6}
-.obsidian-archive .obsidian-archive-empty>svg{color:#af9ff4;width:23px;height:23px}
-.obsidian-archive .obsidian-archive-empty h3{font-size:16px;font-weight:600;margin:11px 0 7px;color:#e1e8f5}
-.obsidian-archive .obsidian-archive-empty p{margin:0;font-size:12px}
-.obsidian-archive .obsidian-archive-result-caption{font-size:11px;color:#a8bbd6;margin:0 0 10px}
 .tracker-shell.obsidian:has(>.obsidian-archive) { height:100vh; min-height:0; overflow:hidden; }
 .obsidian-archive { display:flex; flex-direction:column; min-height:0; min-width:0; color:#edf1f8; }
 .obsidian-archive [hidden] { display:none!important; }
@@ -87,18 +72,9 @@
 .obsidian-metric-icon { width:34px; height:34px; display:grid; place-items:center; border-radius:8px; color:#b5c8e3; background:#202939; flex-shrink:0; }
 .obsidian-metric strong { display:block; font-size:21px; font-weight:600; line-height:1.2; font-variant-numeric:tabular-nums; }
 .obsidian-metric small { display:block; margin-top:3px; color:#aabbd2; font-size:11px; }
-.obsidian-archive .obsidian-archive-search .obsidian-button { padding:10px 13px; }
-.obsidian-archive .obsidian-archive-match .pokemon-obtainability-mark { font-size:17px; }
-.obsidian-archive .obsidian-archive-search-list { margin-bottom:12px; }
 @media(max-width:390px) {
     .obsidian-archive .obsidian-archive-stats { padding:12px; }
-    .obsidian-archive .obsidian-archive-match { padding:10px 9px; }
     .obsidian-archive .obsidian-archive-counts { gap:7px; }
     .obsidian-archive .obsidian-archive-counts strong { font-size:19px; }
     .obsidian-archive .obsidian-archive-tabs button { font-size:11px; gap:4px; }
 }
-
-.obsidian-archive .obsidian-archive-search-legend { display:flex; gap:12px; flex-wrap:wrap; color:#a9b9ce; font-size:11px; margin:0 0 13px; }
-.obsidian-archive .obsidian-archive-search-legend>span { display:flex; align-items:center; gap:4px; }
-.obsidian-archive .obsidian-archive-match { color:#edf1f8; }
-.obsidian-archive .obsidian-archive-search-legend .pokemon-obtainability-mark { font-size:14px; }

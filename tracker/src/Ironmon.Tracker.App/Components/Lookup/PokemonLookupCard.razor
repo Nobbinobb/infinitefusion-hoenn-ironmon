@@ -5,8 +5,12 @@
             <header class="research-identity">
                 <PokemonSprite Redesigned="true" FitVisibleBounds="true" GameRoot="@GameRoot" SpritePath="@Pokemon.Identity.SpritePath" Label="@Pokemon.Identity.SpeciesName" Size="79" />
                 <div class="research-identity-copy">
-                    <p class="card-kicker">@Text[DebugMode ? "Redesign.Research.ActivePokemon" : IsFusion() ? "Redesign.Research.ArchivedFusion" : "Redesign.Research.ArchivedPokemon"]</p>
-                    <h2>@Pokemon.Identity.SpeciesName</h2>
+                    <p class="card-kicker">@Text[DebugMode ? IsFusion() ? "Redesign.Research.ActiveFusion" : "Redesign.Research.ActivePokemon" : IsFusion() ? "Redesign.Research.ArchivedFusion" : "Redesign.Research.ArchivedPokemon"]</p>
+                    <h2>@(Inspector?.Identity.Nickname ?? Pokemon.Identity.SpeciesName)</h2>
+                    @if (Inspector is not null)
+                    {
+                        <p class="tools-inspected-identity">@Pokemon.Identity.SpeciesName <GenderIcon Gender="@Inspector.Identity.Gender" /><span>@Text["Debug.Overview.LevelValue", Inspector.Identity.Level]</span></p>
+                    }
                     <div class="research-types">
                         @foreach (string type in Pokemon.Identity.Types)
                         {
@@ -38,9 +42,9 @@
         <div class="research-page" aria-busy="@(_loadingPage == _selectedPage ? "true" : "false")">
             @if (_selectedPage == PokemonInformationPage.Overview)
             {
-                @if (!Redesigned && Inspector is not null)
+                @if (Inspector is not null)
                 {
-                    <DebugPokemonOverview Pokemon="@Inspector.Identity" Types="@Pokemon.Identity.Types" ObtainabilityStatus="@(CanShowObtainability ? _obtainability.Status : null)" GameRoot="@GameRoot" />
+                    <DebugPokemonOverview Redesigned="Redesigned" Pokemon="@Inspector.Identity" Types="@Pokemon.Identity.Types" ObtainabilityStatus="@(CanShowObtainability ? _obtainability.Status : null)" GameRoot="@GameRoot" />
                 }
                 else if (!Redesigned)
                 {

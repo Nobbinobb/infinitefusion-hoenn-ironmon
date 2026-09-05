@@ -243,5 +243,25 @@ public enum ObsidianIconKind
     /// <summary>
     /// Identifies badges earned.
     /// </summary>
-    Award = 47
+    Award = 47,
+
+    /// <summary>
+    /// Identifies clearing a field or closing a surface.
+    /// </summary>
+    Close = 48,
+
+    /// <summary>
+    /// Identifies granting an inventory item.
+    /// </summary>
+    PackagePlus = 49,
+
+    /// <summary>
+    /// Identifies a connected data source.
+    /// </summary>
+    Plug = 50,
+
+    /// <summary>
+    /// Identifies structured state data.
+    /// </summary>
+    Database = 51
 }

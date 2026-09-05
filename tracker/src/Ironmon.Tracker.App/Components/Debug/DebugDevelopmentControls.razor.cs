@@ -154,6 +154,7 @@ public partial class DebugDevelopmentControls
         }
         catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
         {
+            ApplyPlayerState(_state?.Player);
             _error = exception.Message;
         }
         finally
@@ -228,12 +229,12 @@ public partial class DebugDevelopmentControls
     {
         _evolutionId = null;
         _devolutionId = null;
+        Array.Clear(_moveIds);
+        _abilityId = player?.AbilityId;
+        _level = player?.Level ?? 1;
         if (player is null)
             return;
 
-        _level = player.Level;
-        _abilityId = player.AbilityId;
-        Array.Clear(_moveIds);
         for (int index = 0; index < Math.Min(_moveIds.Length, player.MoveIds.Count); index++)
             _moveIds[index] = player.MoveIds[index];
     }

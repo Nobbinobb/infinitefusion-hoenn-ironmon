@@ -3,8 +3,8 @@
     {
         @if (Redesigned)
         {
-            <div class="obsidian-archive-search">
-                <label class="obsidian-archive-search-field"><ObsidianIcon Kind="ObsidianIconKind.Search" /><input type="search" placeholder="@Text["Lookup.Search.SearchPokemonName"]" aria-label="@Text["Lookup.Search.PokemonName"]" @bind="_query" @bind:event="oninput" @onkeydown="HandleSearchKeyDown" @onkeydown:stopPropagation="true" />
+            <div class="research-search">
+                <label class="research-search-field"><ObsidianIcon Kind="ObsidianIconKind.Search" /><input type="search" placeholder="@Text["Lookup.Search.SearchPokemonName"]" aria-label="@Text["Lookup.Search.PokemonName"]" @bind="_query" @bind:event="oninput" @onkeydown="HandleSearchKeyDown" @onkeydown:stopPropagation="true" />
                 </label><button type="button" class="obsidian-button obsidian-settings-primary" disabled="@_loading" @onclick="SearchAsync">@Text["Lookup.Search.Search"]</button>
             </div>
 
@@ -23,16 +23,16 @@
 
             @if (_matches.Count > 0)
             {
-                <p class="obsidian-archive-result-caption">@Text["Redesign.Archive.SearchMatchCount", _matchTotal]</p>
-                <div class="obsidian-archive-search-legend">
+                <p class="research-search-caption">@Text[DebugMode ? "Redesign.Tools.SearchMatchCount" : "Redesign.Archive.SearchMatchCount", _matchTotal]</p>
+                <div class="research-search-legend">
                     <span><PokemonObtainabilityMark Status="PokemonObtainabilityStatus.Obtainable" />@Text["Lookup.Obtainability.Obtainable"]</span>
                     <span><PokemonObtainabilityMark Status="PokemonObtainabilityStatus.Unobtainable" />@Text["Lookup.Obtainability.Unobtainable"]</span>
                     <span><PokemonObtainabilityMark Status="PokemonObtainabilityStatus.Calculating" />@Text["Lookup.Obtainability.Calculating"]</span>
                 </div>
-                <div class="obsidian-archive-search-list" aria-label="@Text["Lookup.Search.PokemonSearchResults"]">
+                <div class="research-search-list" aria-label="@Text["Lookup.Search.PokemonSearchResults"]">
                     @foreach (PokemonSearchMatch match in _matches)
                     {
-                        <button type="button" class="obsidian-archive-match" disabled="@_loading" @onclick="() => NavigateToPokemonAsync(match)">
+                        <button type="button" class="research-search-match" disabled="@_loading" @onclick="() => NavigateToPokemonAsync(match)">
                             <span><strong>@match.SpeciesName</strong><small>@match.SpeciesId</small></span>
                             <PokemonObtainabilityMark Status="@match.ObtainabilityStatus" />
                         </button>
@@ -43,7 +43,7 @@
             }
             @if (!_searched && !_loading && _error is null)
             {
-                <div class="obsidian-archive-empty"><ObsidianIcon Kind="ObsidianIconKind.Search" /><h3>@Text["Redesign.Archive.SearchTitle"]</h3><p>@Text["Redesign.Archive.SearchDescription"]</p></div>
+                <div class="research-search-empty"><ObsidianIcon Kind="ObsidianIconKind.Search" /><h3>@Text["Redesign.Archive.SearchTitle"]</h3><p>@Text[DebugMode ? "Redesign.Tools.SearchDescription" : "Redesign.Archive.SearchDescription"]</p></div>
             }
         }
         else
