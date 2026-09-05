@@ -120,6 +120,26 @@ public sealed class AreaSummaryPayload
     public int EncounterTotal { get; init; }
 
     /// <summary>
+    /// Gets or initializes the authored slot total, including independent fusion slots, or null for older peers.
+    /// </summary>
+    public int? EncounterSlotTotal { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the same- and cross-environment chance-fusion total, or null for older peers.
+    /// </summary>
+    public int? EncounterFusionTotal { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the tracker-owned number of encountered authored slots.
+    /// </summary>
+    public int EncounterSlotsEncountered { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the tracker-owned number of encountered chance fusions in the displayed encounter mode.
+    /// </summary>
+    public int EncounterFusionsEncountered { get; init; }
+
+    /// <summary>
     /// Gets or initializes the number of encountered authored slots and exact derived combinations.
     /// </summary>
     public int Encountered { get; init; }
@@ -683,4 +703,9 @@ public sealed class AreaItemIdentityPayload
     /// Gets or initializes the localized item name.
     /// </summary>
     public required string ItemName { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the item-weighting category of this disclosed identity, or null when unavailable.
+    /// </summary>
+    public string? Category { get; init; }
 }

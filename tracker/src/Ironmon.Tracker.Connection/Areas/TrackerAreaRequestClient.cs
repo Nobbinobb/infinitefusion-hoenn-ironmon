@@ -154,17 +154,25 @@ internal sealed class TrackerAreaRequestClient
     /// <returns>The tracker-counted area list.</returns>
     private AreaLookupSummaryResponsePayload ApplyTrackerCounts(string runId, AreaContentCategory category, AreaLookupSummaryResponsePayload response, bool? overworldEncounters)
     {
-        AreaSummaryPayload[] areas = [.. response.Areas.Select(area => new AreaSummaryPayload
+        AreaSummaryPayload[] areas = [.. response.Areas.Select(area =>
         {
-            AreaId = area.AreaId,
-            Name = area.Name,
-            MapIds = area.MapIds,
-            TrainerTotal = area.TrainerTotal,
-            TrainerDefeated = category == AreaContentCategory.Trainer ? Math.Min(area.TrainerTotal, Math.Max(area.TrainerDefeated, _discoveries.GetCount(runId, area.AreaId, category))) : 0,
-            EncounterTotal = area.EncounterTotal,
-            Encountered = category == AreaContentCategory.Encounter ? Math.Min(area.EncounterTotal, _discoveries.GetCount(runId, area.AreaId, category, overworldEncounters)) : 0,
-            ItemTotal = area.ItemTotal,
-            ItemsCollected = category == AreaContentCategory.Item ? Math.Min(area.ItemTotal, Math.Max(area.ItemsCollected, _discoveries.GetCount(runId, area.AreaId, category))) : 0
+            (int slots, int fusions) = category == AreaContentCategory.Encounter ? _discoveries.GetEncounterCounts(runId, area.AreaId, overworldEncounters) : (0, 0);
+            return new AreaSummaryPayload
+            {
+                AreaId = area.AreaId,
+                Name = area.Name,
+                MapIds = area.MapIds,
+                TrainerTotal = area.TrainerTotal,
+                TrainerDefeated = category == AreaContentCategory.Trainer ? Math.Min(area.TrainerTotal, Math.Max(area.TrainerDefeated, _discoveries.GetCount(runId, area.AreaId, category))) : 0,
+                EncounterTotal = area.EncounterTotal,
+                EncounterSlotTotal = area.EncounterSlotTotal,
+                EncounterFusionTotal = area.EncounterFusionTotal,
+                EncounterSlotsEncountered = Math.Min(area.EncounterSlotTotal ?? area.EncounterTotal, slots),
+                EncounterFusionsEncountered = Math.Min(area.EncounterFusionTotal ?? area.EncounterTotal, fusions),
+                Encountered = Math.Min(area.EncounterTotal, slots + fusions),
+                ItemTotal = area.ItemTotal,
+                ItemsCollected = category == AreaContentCategory.Item ? Math.Min(area.ItemTotal, Math.Max(area.ItemsCollected, _discoveries.GetCount(runId, area.AreaId, category))) : 0
+            };
         })];
 
         return new AreaLookupSummaryResponsePayload { SchemaVersion = response.SchemaVersion, Revision = _discoveries.GetRevision(runId), OverworldEncounters = overworldEncounters, Areas = areas };

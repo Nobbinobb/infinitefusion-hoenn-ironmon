@@ -1,4 +1,43 @@
 window.ironmonTrackerUi = {
+    scrollLookup(element, key) {
+        const content = element?.closest(".obsidian-lookup-content");
+        if (!content) return;
+        if (!key) { content.scrollTop = 0; return; }
+        const anchor = [...element.querySelectorAll("[data-lookup-anchor]")].find(node => node.dataset.lookupAnchor === key);
+        if (anchor) content.scrollTop += anchor.getBoundingClientRect().top - content.getBoundingClientRect().top;
+    },
+    fitSprite(image) {
+        if (!image.complete || !image.naturalWidth || image.src.startsWith("data:image/gif")) return;
+        const canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        if (!context) return;
+        context.drawImage(image, 0, 0);
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        let left = canvas.width, top = canvas.height, right = -1, bottom = -1;
+        for (let y = 0; y < canvas.height; y++) {
+            for (let x = 0; x < canvas.width; x++) {
+                if (pixels[(y * canvas.width + x) * 4 + 3] > 0) {
+                    left = Math.min(left, x);
+                    top = Math.min(top, y);
+                    right = Math.max(right, x);
+                    bottom = Math.max(bottom, y);
+                }
+            }
+        }
+        if (right < left) return;
+        const box = image.parentElement;
+        const width = right - left + 1, height = bottom - top + 1;
+        const scale = Math.min((box.clientWidth - 4) / width, (box.clientHeight - 4) / height);
+        if (scale <= 0) return;
+        Object.assign(image.style, {
+            position: "absolute", maxWidth: "none", transform: "none",
+            width: canvas.width * scale + "px", height: canvas.height * scale + "px",
+            left: ((box.clientWidth - width * scale) / 2 - left * scale) + "px",
+            top: ((box.clientHeight - height * scale) / 2 - top * scale) + "px"
+        });
+    },
     shouldOpenPickerUp(element, preferredHeight) {
         if (!element) {
             return false;

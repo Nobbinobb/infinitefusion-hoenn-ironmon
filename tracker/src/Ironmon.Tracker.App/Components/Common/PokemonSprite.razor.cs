@@ -11,6 +11,7 @@ public partial class PokemonSprite
     private const int _defaultSize = 80;
     private const int _defaultEnlargedSize = 288;
     private const string _enlargeLocalizationKey = "PokemonSprite.Enlarge";
+    private const string _fitSpriteScript = "window.ironmonTrackerUi.fitSprite(this)";
     private string? _spriteKey;
     private string? _spriteSource;
 
@@ -61,6 +62,13 @@ public partial class PokemonSprite
     /// </summary>
     [Parameter]
     public bool Redesigned { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the visible PNG pixels are centered and scaled to fit the sprite box with a small inset.
+    /// Animated images retain full-frame containment so later frames cannot be clipped.
+    /// </summary>
+    [Parameter]
+    public bool FitVisibleBounds { get; set; }
 
     /// <summary>
     /// Gets or sets whether the sprite opens its dialog, disabling interaction when embedded in another control.

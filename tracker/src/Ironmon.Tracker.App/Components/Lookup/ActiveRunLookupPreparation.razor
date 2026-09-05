@@ -1,10 +1,13 @@
-<div class="lookup-preparation" aria-busy="@_calculating">
+<div class="obsidian-lookup-state" aria-busy="@_calculating">
+    <ObsidianIcon Kind="ObsidianIconKind.Layers" />
+    <h3>@Text[_calculating ? "Lookup.Live.PreparingTitle" : "Lookup.Live.PrepareTitle"]</h3>
     <p role="status">@Text[_calculating ? _calculatingKey : Progress.Status == TrackerObtainabilityProgressStatus.Running ? _backgroundKey : _descriptionKey]</p>
     @if (Progress.Status == TrackerObtainabilityProgressStatus.Error)
     {
-        <p class="lookup-error" role="alert">@Progress.Error</p>
+        <p class="obsidian-lookup-error" role="alert">@Progress.Error</p>
     }
-    <button type="button" class="live-lookup-tab" disabled="@_calculating" @onclick="CalculateAsync">
+    <button type="button" class="obsidian-button obsidian-primary" disabled="@_calculating" @onclick="CalculateAsync">
+        <ObsidianIcon Kind="@(Progress.Status == TrackerObtainabilityProgressStatus.Error ? ObsidianIconKind.Reset : ObsidianIconKind.Layers)" />
         @Text[_calculating ? _calculatingButtonKey : Progress.Status == TrackerObtainabilityProgressStatus.Error ? _retryKey : _calculateKey]
     </button>
 </div>

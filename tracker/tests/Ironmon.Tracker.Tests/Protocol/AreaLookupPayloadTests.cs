@@ -8,9 +8,42 @@ public sealed class AreaLookupPayloadTests
     private const string _preparationAreaId = "area:5";
     private const string _preparationAreaName = "Route 101";
     private const string _crossEnvironment = "cross";
+    private const string _legacyAreaJson = """{"area_id":"area:5","name":"Route 101","encounter_total":100}""";
+    private const string _itemId = "LEAFSTONE";
+    private const string _itemName = "Leaf Stone";
+    private const string _itemCategory = "evolution";
     private const string _hiddenFusionJson = """
         {"entry_id":"encounter_fusion:10:standard_cross:0:Land:1:0:Water:2","origin":"standard_cross","environment":"grass","cross_environment":true,"details_revealed":false,"first_encounter_type":"Land","first_slot":1,"second_encounter_type":"Water","second_slot":2,"fusion_chance_percent":5,"minimum_level":4,"maximum_level":6}
         """;
+
+    /// <summary>
+    /// Verifies older peers cannot accidentally present a zero-valued split as complete metadata.
+    /// </summary>
+    [Fact]
+    public void LegacySummaryDoesNotInventSplitTotals()
+    {
+        using JsonDocument document = JsonDocument.Parse(_legacyAreaJson);
+        AreaSummaryPayload area = TrackerJson.DeserializePayload<AreaSummaryPayload>(document.RootElement);
+        Assert.Equal(100, area.EncounterTotal);
+        Assert.Null(area.EncounterSlotTotal);
+        Assert.Null(area.EncounterFusionTotal);
+    }
+
+    /// <summary>
+    /// Verifies split totals and disclosed item categories survive the wire representation.
+    /// </summary>
+    [Fact]
+    public void SplitCountsAndItemCategoryRoundTrip()
+    {
+        AreaSummaryPayload area = new() { AreaId = _preparationAreaId, Name = _preparationAreaName, EncounterTotal = 100, EncounterSlotTotal = 18, EncounterFusionTotal = 82, EncounterSlotsEncountered = 2, EncounterFusionsEncountered = 1 };
+        AreaSummaryPayload restored = TrackerJson.DeserializePayload<AreaSummaryPayload>(TrackerJson.SerializePayload(area));
+        Assert.Equal(18, restored.EncounterSlotTotal);
+        Assert.Equal(82, restored.EncounterFusionTotal);
+        Assert.Equal(2, restored.EncounterSlotsEncountered);
+        Assert.Equal(1, restored.EncounterFusionsEncountered);
+        AreaItemIdentityPayload item = new() { ItemId = _itemId, ItemName = _itemName, Category = _itemCategory };
+        Assert.Equal(_itemCategory, TrackerJson.DeserializePayload<AreaItemIdentityPayload>(TrackerJson.SerializePayload(item)).Category);
+    }
 
     /// <summary>
     /// Verifies a metadata-only fusion row deserializes without requiring or fabricating identities.

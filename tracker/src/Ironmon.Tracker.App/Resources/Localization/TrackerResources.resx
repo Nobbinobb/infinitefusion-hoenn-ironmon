@@ -1892,4 +1892,20 @@
   <data name="Redesign.Access.Stored" xml:space="preserve"><value>Stored access</value></data>
   <data name="Redesign.Access.Identifiers" xml:space="preserve"><value>Token identifiers</value></data>
   <data name="Redesign.Access.Untrusted" xml:space="preserve"><value>Stored permission details are unavailable. Remove this token before importing another.</value></data>
+  <data name="Lookup.Live.PrepareTitle" xml:space="preserve"><value>Prepare world lookup</value></data>
+  <data name="Lookup.Live.PreparingTitle" xml:space="preserve"><value>Preparing lookup data</value></data>
+  <data name="Lookup.Areas.Slots" xml:space="preserve"><value>Slots</value></data>
+  <data name="Lookup.Areas.ChanceFusions" xml:space="preserve"><value>Chance fusions</value></data>
+  <data name="Lookup.Areas.Count" xml:space="preserve"><value>{0} / {1}</value></data>
+  <data name="Lookup.Areas.SlotCountDescription" xml:space="preserve"><value>Encountered / total authored encounter slots, including independent fusion slots.</value></data>
+  <data name="Lookup.Areas.FusionCountDescription" xml:space="preserve"><value>Encountered / total chance-based fusions from same-environment and cross-environment rolls.</value></data>
+  <data name="Lookup.Areas.FusionRoll" xml:space="preserve"><value>{0:0.##}% fusion roll</value></data>
+  <data name="Lookup.Items.Category.hp_recovery" xml:space="preserve"><value>HP recovery</value></data>
+  <data name="Lookup.Items.Category.status_pp_recovery" xml:space="preserve"><value>Status / PP recovery</value></data>
+  <data name="Lookup.Items.Category.general_utility" xml:space="preserve"><value>General utility</value></data>
+  <data name="Lookup.Items.Category.evolution" xml:space="preserve"><value>Evolution items</value></data>
+  <data name="Lookup.Items.Category.poke_ball" xml:space="preserve"><value>Poké Balls</value></data>
+  <data name="Lookup.Items.Category.tm" xml:space="preserve"><value>TMs</value></data>
+  <data name="Lookup.Items.Category.battle_consumable" xml:space="preserve"><value>Battle consumables</value></data>
+  <data name="Lookup.Items.Category.held_combat" xml:space="preserve"><value>Held combat items</value></data>
 </root>

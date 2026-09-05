@@ -1,3 +1,109 @@
+@if (Redesigned)
+{
+    <section class="obsidian-area-lookup" aria-label="@Text["Lookup.Areas.Title"]" @ref="_lookupElement">
+        @if (_error is not null)
+        {
+            <p class="obsidian-lookup-error" role="alert">@_error</p>
+        }
+        else if (_loadingSummaries)
+        {
+            <p class="obsidian-lookup-message" role="status">@Text["Lookup.Areas.Loading"]</p>
+        }
+        else if (_areas.Count == 0)
+        {
+            <p class="obsidian-lookup-message">@Text["Lookup.Areas.Empty"]</p>
+        }
+        else
+        {
+            IReadOnlyList<AreaSummaryPayload> visibleAreas = GetVisibleAreas();
+            @foreach (AreaSummaryPayload area in GetPagedAreas(visibleAreas))
+            {
+                bool expanded = IsExpanded(area.AreaId);
+                <article class="obsidian-lookup-area">
+                    <button type="button" class="obsidian-lookup-area-head" data-lookup-anchor="@GetDetailKey(area.AreaId)" aria-expanded="@(expanded ? "true" : "false")" @onclick="() => ToggleAreaAsync(area.AreaId)">
+                        <ObsidianIcon Kind="@(expanded ? ObsidianIconKind.ChevronDown : ObsidianIconKind.ChevronRight)" />
+                        <strong>@area.Name</strong>
+                        <ObsidianLookupProgress Area="area" Category="_selectedCategory" />
+                    </button>
+                    @if (expanded)
+                    {
+                        <div class="obsidian-lookup-area-body">
+                            <ObsidianLoadingRegion Loading="@_loadingDetails.Contains(GetDetailKey(area.AreaId))" HasContent="@_details.ContainsKey(GetDetailKey(area.AreaId))" Label="@Text["Lookup.Areas.LoadingDetails"]">
+                                @if (_detailErrors.TryGetValue(GetDetailKey(area.AreaId), out string? detailError))
+                                {
+                                    <p class="obsidian-lookup-error" role="alert">@detailError</p>
+                                }
+                                @if (_details.TryGetValue(GetDetailKey(area.AreaId), out AreaLookupDetailResponsePayload? detail))
+                                {
+                                    @if (_selectedCategory == AreaContentCategory.Trainer)
+                                    {
+                                        @foreach (AreaTrainerEntryPayload trainer in GetPagedEntries(area.AreaId, detail.Trainers))
+                                        {
+                                            <ObsidianLookupTrainer Trainer="trainer" GameRoot="@GameRoot" />
+                                        }
+                                    }
+                                    else if (_selectedCategory == AreaContentCategory.Item)
+                                    {
+                                        @foreach (AreaItemEntryPayload item in GetPagedEntries(area.AreaId, detail.Items))
+                                        {
+                                            <ObsidianLookupItem Item="item" />
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @foreach (AreaEncounterEnvironmentPayload environment in detail.EncounterEnvironments)
+                                        {
+                                            bool environmentExpanded = IsEnvironmentExpanded(area.AreaId, environment.Key);
+                                            string environmentDetailKey = GetDetailKey(area.AreaId, environment.Key);
+                                            <section class="obsidian-lookup-method">
+                                                <button type="button" class="obsidian-lookup-method-head" data-lookup-anchor="@environmentDetailKey" aria-expanded="@(environmentExpanded ? "true" : "false")" @onclick="() => ToggleEnvironmentAsync(area.AreaId, environment.Key)">
+                                                    <ObsidianIcon Kind="@GetEnvironmentIcon(environment.Key)" /><span>@GetEnvironmentName(environment.Key)</span><ObsidianIcon Kind="@(environmentExpanded ? ObsidianIconKind.ChevronDown : ObsidianIconKind.ChevronRight)" />
+                                                </button>
+                                                @if (environmentExpanded)
+                                                {
+                                                    <ObsidianLoadingRegion Loading="@_loadingDetails.Contains(environmentDetailKey)" HasContent="@_details.ContainsKey(environmentDetailKey)" Label="@Text["Lookup.Areas.LoadingDetails"]">
+                                                        @if (_detailErrors.TryGetValue(environmentDetailKey, out string? environmentError))
+                                                        {
+                                                            <p class="obsidian-lookup-error" role="alert">@environmentError</p>
+                                                        }
+                                                        @if (_details.TryGetValue(environmentDetailKey, out AreaLookupDetailResponsePayload? environmentDetail))
+                                                        {
+                                                            @foreach (EncounterSubsection subsection in GetEncounterSubsections(environmentDetail))
+                                                            {
+                                                                <h4 class="obsidian-lookup-subsection">@subsection.Name<span></span></h4>
+                                                                @foreach (AreaEncounterEntryPayload encounter in subsection.Encounters)
+                                                                {
+                                                                    <ObsidianLookupEncounter Encounter="encounter" GameRoot="@GameRoot" />
+                                                                }
+                                                                @foreach (AreaEncounterFusionEntryPayload fusion in subsection.Fusions)
+                                                                {
+                                                                    <ObsidianLookupEncounter Fusion="fusion" GameRoot="@GameRoot" />
+                                                                }
+                                                            }
+                                                            <ObsidianPager State="@GetDetailPagination(area.AreaId, environment.Key)" Total="environmentDetail.TotalCount" Label="@Text["Lookup.Areas.EntryPages", GetEnvironmentName(environment.Key)]" Previous="() => PreviousDetailPage(area.AreaId, environment.Key)" Next="() => NextDetailPage(area.AreaId, environmentDetail.TotalCount, environment.Key)" />
+                                                        }
+                                                    </ObsidianLoadingRegion>
+                                                }
+                                            </section>
+                                        }
+                                    }
+                                    @if (_selectedCategory != AreaContentCategory.Encounter)
+                                    {
+                                        int count = GetDetailEntryCount(detail);
+                                        <ObsidianPager State="@GetDetailPagination(area.AreaId)" Total="count" Label="@Text["Lookup.Areas.EntryPages", area.Name]" Previous="() => PreviousDetailPage(area.AreaId)" Next="() => NextDetailPage(area.AreaId, count)" />
+                                    }
+                                }
+                            </ObsidianLoadingRegion>
+                        </div>
+                    }
+                </article>
+            }
+            <ObsidianPager State="_areaPagination" Total="visibleAreas.Count" Label="@Text["Lookup.Areas.AreaPages"]" Previous="PreviousAreaPage" Next="() => NextAreaPage(visibleAreas.Count)" />
+        }
+    </section>
+}
+else
+{
 <section class="area-lookup" aria-label="@Text["Lookup.Areas.Title"]">
     @if (ShowHeading)
     {
@@ -47,7 +153,7 @@
                 <article class="area-group">
                     <button type="button"
                             class="area-group-summary"
-                            aria-expanded="@expanded"
+                            aria-expanded="@(expanded ? "true" : "false")"
                             @onclick="() => ToggleAreaAsync(area.AreaId)">
                         <span class="area-group-chevron" aria-hidden="true">@(expanded ? "−" : "+")</span>
                         <strong>@area.Name</strong>
@@ -122,7 +228,7 @@
                                                 <section class="area-environment-group">
                                                     <button type="button"
                                                             class="area-environment-summary"
-                                                            aria-expanded="@environmentExpanded"
+                                                            aria-expanded="@(environmentExpanded ? "true" : "false")"
                                                             @onclick="() => ToggleEnvironmentAsync(area.AreaId, environment.Key)">
                                                         <span class="area-group-chevron" aria-hidden="true">@(environmentExpanded ? "−" : "+")</span>
                                                         <strong>@GetEnvironmentName(environment.Key)</strong>
@@ -251,3 +357,4 @@
     }
 
 </section>
+}

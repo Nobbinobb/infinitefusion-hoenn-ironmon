@@ -195,6 +195,34 @@ module IronmonAreaProgressRuntimeTests
       encounter_entries = Ironmon.tracker_area_encounter_metadata(
         area, { "data_mode" => Ironmon.tracker_data_mode }
       )
+      encounter_summary = Ironmon.tracker_area_lookup_summary(
+        { "category" => "encounter" }, "runtime-test"
+      )["areas"].find { |entry| entry["area_id"] == area["area_id"] }
+      assert(
+        encounter_summary["encounter_slot_total"] == encounter_entries.length &&
+          encounter_summary["encounter_fusion_total"] >= 0 &&
+          encounter_summary["encounter_total"] ==
+            encounter_summary["encounter_slot_total"] +
+            encounter_summary["encounter_fusion_total"],
+        "summary separates authored slots from chance fusion possibilities"
+      )
+      {
+        :POTION => "hp_recovery", :ANTIDOTE => "status_pp_recovery",
+        :ETHER => "status_pp_recovery", :REPEL => "general_utility",
+        :FIRESTONE => "evolution", :POKEBALL => "poke_ball",
+        :TM24 => "tm", :XATTACK => "battle_consumable",
+        :LEFTOVERS => "held_combat"
+      }.each do |item_id, category|
+        assert(
+          Ironmon.tracker_area_item_category(GameData::Item.get(item_id)) == category,
+          "lookup category matches item weighting for #{item_id}"
+        )
+      end
+      concealed_items = Ironmon.tracker_area_item_entries(area, active_recipe, {}, false, true)
+      assert(
+        concealed_items.all? { |entry| entry["items"].empty? },
+        "concealed pickups do not disclose identities or item categories"
+      )
       occurrence_source = encounter_entries[0]
       occurrence_generator = Ironmon.tracker_area_species_generator(
         active_recipe, :wild

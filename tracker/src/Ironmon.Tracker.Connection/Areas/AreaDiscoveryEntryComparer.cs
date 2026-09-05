@@ -111,5 +111,5 @@ internal static class AreaDiscoveryEntryComparer
     /// <param name="right">The new identity.</param>
     /// <returns>True when all persisted fields match.</returns>
     private static bool AreEquivalent(AreaItemIdentityPayload left, AreaItemIdentityPayload right)
-        => left.ItemId == right.ItemId && left.ItemName == right.ItemName;
+        => left.ItemId == right.ItemId && left.ItemName == right.ItemName && left.Category == right.Category;
 }

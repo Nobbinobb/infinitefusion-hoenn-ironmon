@@ -2022,19 +2022,12 @@ button.move-placeholder:hover {
     font-size: 1.15rem;
 }
 
-.live-lookup-tabs {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.35rem;
-}
-
 .archive-tabs {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.35rem;
 }
 
-.live-lookup-tab,
 .archive-tab {
     min-width: 0;
     padding: 0.55rem 0.3rem;
@@ -2048,13 +2041,11 @@ button.move-placeholder:hover {
     cursor: pointer;
 }
 
-.live-lookup-tab:hover,
 .archive-tab:hover {
     color: var(--text);
     border-color: var(--border-strong);
 }
 
-.live-lookup-tab.selected,
 .archive-tab.selected {
     border-color: rgb(80 220 170 / 55%);
     color: var(--text);
@@ -2496,29 +2487,6 @@ button.move-placeholder:hover {
     gap: 0.55rem;
     padding: 0.55rem;
     border-top: 1px solid var(--border);
-}
-
-.lookup-preparation {
-    display: grid;
-    gap: 0.65rem;
-    color: var(--muted);
-    font-size: 0.75rem;
-    line-height: 1.5;
-}
-
-.lookup-preparation p {
-    margin: 0;
-}
-
-.lookup-preparation button {
-    justify-self: start;
-    padding-inline: 0.8rem;
-    color: var(--text);
-}
-
-.lookup-preparation button:disabled {
-    cursor: wait;
-    opacity: 0.65;
 }
 
 .area-environment-list,
@@ -4731,10 +4699,6 @@ button.move-placeholder:hover {
 
     .debug-ability-list {
         grid-template-columns: minmax(0, 1fr);
-    }
-
-    .live-lookup-tabs {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .type-coverage-heading {

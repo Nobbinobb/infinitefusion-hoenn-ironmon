@@ -108,5 +108,100 @@ public enum ObsidianIconKind
     /// <summary>
     /// Identifies removal.
     /// </summary>
-    Trash = 20
+    Trash = 20,
+
+    /// <summary>
+    /// Identifies health recovery items.
+    /// </summary>
+    HeartPulse = 21,
+
+    /// <summary>
+    /// Identifies status and move-point recovery items.
+    /// </summary>
+    Pill = 22,
+
+    /// <summary>
+    /// Identifies general utility items.
+    /// </summary>
+    Backpack = 23,
+
+    /// <summary>
+    /// Identifies evolution items with a leaf engraved in a stone.
+    /// </summary>
+    EvolutionStone = 24,
+
+    /// <summary>
+    /// Identifies capture balls.
+    /// </summary>
+    Ball = 25,
+
+    /// <summary>
+    /// Identifies technical machines.
+    /// </summary>
+    Disc = 26,
+
+    /// <summary>
+    /// Identifies consumable battle boosts.
+    /// </summary>
+    Lightning = 27,
+
+    /// <summary>
+    /// Identifies held combat items.
+    /// </summary>
+    Swords = 28,
+
+    /// <summary>
+    /// Identifies concealed information.
+    /// </summary>
+    Question = 29,
+
+    /// <summary>
+    /// Identifies collapsed sections or forward paging.
+    /// </summary>
+    ChevronRight = 30,
+
+    /// <summary>
+    /// Identifies expanded sections.
+    /// </summary>
+    ChevronDown = 31,
+
+    /// <summary>
+    /// Identifies backward paging.
+    /// </summary>
+    ChevronLeft = 32,
+
+    /// <summary>
+    /// Identifies cave encounters.
+    /// </summary>
+    Mountain = 33,
+
+    /// <summary>
+    /// Identifies water encounters.
+    /// </summary>
+    Waves = 34,
+
+    /// <summary>
+    /// Identifies fishing encounters.
+    /// </summary>
+    Fish = 35,
+
+    /// <summary>
+    /// Identifies special encounter methods.
+    /// </summary>
+    Sparkles = 36,
+
+    /// <summary>
+    /// Identifies cross-environment combinations.
+    /// </summary>
+    Merge = 37,
+
+    /// <summary>
+    /// Identifies resetting a selection or retrying work.
+    /// </summary>
+    Reset = 38,
+
+    /// <summary>
+    /// Identifies preparing a set of lookup data.
+    /// </summary>
+    Layers = 39
 }

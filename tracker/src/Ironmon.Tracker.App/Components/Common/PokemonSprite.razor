@@ -2,7 +2,7 @@
     @if (!Interactive)
     {
         <span class="pokemon-sprite @CssClass" style="@GetSizeStyle(Size)" aria-hidden="true">
-            @if (_spriteSource is not null) { <img class="pokemon-sprite-image" src="@_spriteSource" alt="" /> }
+            @if (_spriteSource is not null) { <img class="pokemon-sprite-image" src="@_spriteSource" alt="" onload="@(FitVisibleBounds ? _fitSpriteScript : null)" /> }
             else { <span>?</span> }
         </span>
     }
@@ -18,7 +18,7 @@
             @onclick:stopPropagation="true">
         @if (_spriteSource is not null)
         {
-            <img class="pokemon-sprite-image" src="@_spriteSource" alt="" />
+            <img class="pokemon-sprite-image" src="@_spriteSource" alt="" onload="@(FitVisibleBounds ? _fitSpriteScript : null)" />
         }
         else
         {

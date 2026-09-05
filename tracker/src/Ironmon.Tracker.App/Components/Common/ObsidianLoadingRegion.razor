@@ -1,0 +1,9 @@
+<div class="obsidian-loading-region @(Loading && !HasContent ? "initial" : null)" aria-busy="@(Loading ? "true" : "false")">
+    <div class="obsidian-loading-content" inert="@(Loading ? string.Empty : null)">
+        @ChildContent
+    </div>
+    @if (Loading)
+    {
+        <div class="obsidian-loading-overlay" role="status"><span>@Label</span></div>
+    }
+</div>
