@@ -1,102 +1,80 @@
-<section class="tracker-settings diagnostic-access" aria-label="@Text["Access.Page.Title"]">
-    <header class="settings-heading">
-        <div>
-            <p class="card-kicker">@Text["Access.Page.Kicker"]</p>
-            <h2>@Text["Access.Page.Title"]</h2>
-        </div>
+<section class="obsidian obsidian-access @GetStateClass()" aria-label="@Text["Access.Page.Title"]">
+    <header class="obsidian-settings-heading">
+        <div><p class="card-kicker">@Text["Access.Page.Kicker"]</p><h2>@Text["Access.Page.Title"]</h2></div>
     </header>
-
-    <div class="access-state @GetStateClass()" role="status">
-        <strong>@GetStateHeading()</strong>
-        <span>@GetStateDescription()</span>
+    <div class="obsidian-access-state" role="status">
+        <ObsidianIcon Kind="ObsidianIconKind.ShieldCheck" />
+        <div><strong>@GetStateHeading()</strong><p>@GetStateDescription()</p></div>
     </div>
-
-    @if (_snapshot.State != DiagnosticAccessState.DeveloperOverride)
+    @if (_snapshot.State == DiagnosticAccessState.None)
     {
-        <div class="access-input">
-            <label for="diagnostic-access-token">@Text["Access.Input.Paste"]</label>
-            <textarea id="diagnostic-access-token" value="@_token" @oninput="UpdateToken" rows="4" maxlength="@DiagnosticAccessTokenConstants.MaximumTokenLength" placeholder="@Text["Access.Input.Placeholder"]"></textarea>
-            <div class="access-input-actions">
-                <label class="access-file-button">
-                    @Text["Access.Input.ImportFile"]
-                    <InputFile OnChange="ImportTokenFileAsync" accept=".ironmon-access" />
+        <ObsidianSection Title="@Text["Access.Input.Paste"]" Icon="ObsidianIconKind.Key">
+            <p class="obsidian-settings-description">@Text["Redesign.Access.InputDescription"]</p>
+            <textarea class="obsidian-seed-token" id="diagnostic-access-token" value="@_token" @oninput="UpdateToken" rows="4" maxlength="@DiagnosticAccessTokenConstants.MaximumTokenLength" placeholder="@Text["Access.Input.Placeholder"]" aria-label="@Text["Access.Input.Paste"]" spellcheck="false" disabled="@_busy"></textarea>
+            <div class="obsidian-settings-actions obsidian-sharing-input-actions">
+                <label class="obsidian-settings-button obsidian-seed-file">
+                    <ObsidianIcon Kind="ObsidianIconKind.FolderOpen" />@Text["Access.Input.ImportFile"]
+                    <InputFile OnChange="ImportTokenFileAsync" accept=".ironmon-access" disabled="@_busy" aria-label="@Text["Access.Input.ImportFile"]" />
                 </label>
-                <button type="button" class="access-primary" disabled="@(_busy || string.IsNullOrWhiteSpace(_token))" @onclick="ActivateAsync">@Text["Access.Input.Activate"]</button>
+                <button type="button" class="obsidian-settings-button obsidian-settings-primary" disabled="@(_busy || string.IsNullOrWhiteSpace(_token))" @onclick="ActivateAsync">@Text["Access.Input.Activate"]<ObsidianIcon Kind="ObsidianIconKind.ArrowRight" /></button>
             </div>
-            @if (_snapshot.State == DiagnosticAccessState.Active && !string.IsNullOrWhiteSpace(_token))
+        </ObsidianSection>
+    }
+    else
+    {
+        <ObsidianSection Title="@GetCurrentTitle()" Icon="ObsidianIconKind.ShieldCheck" Class="obsidian-access-current">
+            @if (_snapshot.Grant is not null)
             {
-                <p class="access-warning">@Text["Access.Input.ReplacementWarning"]</p>
+                <dl class="obsidian-access-summary">
+                    <div><dt>@Text["Access.Details.Note"]</dt><dd>@(_snapshot.Grant.Note ?? Text["Access.Details.NoNote"])</dd></div>
+                    <div><dt>@Text["Access.Details.Expiration"]</dt><dd>@FormatExpiration(_snapshot.Grant)</dd></div>
+                </dl>
+                <button type="button" class="obsidian-access-identifiers-button" aria-expanded="@_identifiersOpen" aria-controls="access-identifiers" @onclick="ToggleIdentifiers">@Text["Redesign.Access.Identifiers"]<ObsidianIcon Kind="ObsidianIconKind.Info" /></button>
+                @if (_identifiersOpen)
+                {
+                    <dl class="obsidian-access-summary obsidian-access-identifiers" id="access-identifiers">
+                        <div><dt>@Text["Access.Details.TokenId"]</dt><dd><code>@_snapshot.Grant.TokenId</code></dd></div>
+                        <div><dt>@Text["Access.Details.KeyId"]</dt><dd><code>@_snapshot.Grant.KeyId</code></dd></div>
+                    </dl>
+                }
             }
-        </div>
-    }
-
-    @if (!string.IsNullOrWhiteSpace(_operationMessage))
-    {
-        <p class="access-message @(_operationSucceeded ? "success" : "error")" role="status">@_operationMessage</p>
-    }
-
-    @if (_snapshot.Grant is not null)
-    {
-        <dl class="access-details">
-            <div><dt>@Text["Access.Details.Note"]</dt><dd>@(_snapshot.Grant.Note ?? Text["Access.Details.NoNote"])</dd></div>
-            <div><dt>@Text["Access.Details.Expiration"]</dt><dd>@FormatExpiration(_snapshot.Grant)</dd></div>
-            <div><dt>@Text["Access.Details.TokenId"]</dt><dd><code>@_snapshot.Grant.TokenId</code></dd></div>
-            <div><dt>@Text["Access.Details.KeyId"]</dt><dd><code>@_snapshot.Grant.KeyId</code></dd></div>
-        </dl>
-
-        <details class="access-grants">
-            <summary>@Text["Access.Grants.Direct"]</summary>
-            <div class="access-grants-content">
-                <div class="access-capabilities">
-                    @foreach (string capability in _snapshot.Grant.DirectCapabilities)
+            @if (_snapshot.Grant is not null || _snapshot.State == DiagnosticAccessState.DeveloperOverride)
+            {
+                <div class="obsidian-access-grants-heading"><h4>@Text[_snapshot.State == DiagnosticAccessState.DeveloperOverride ? "Access.Grants.Developer" : "Access.Grants.Direct"]</h4><span>@DirectCapabilities.Count</span></div>
+                <div class="obsidian-access-grants-scroll" role="region" aria-label="@Text["Access.Grants.Direct"]" tabindex="0">
+                    <DiagnosticCapabilityList Capabilities="DirectCapabilities" />
+                    @if (_snapshot.UnknownCapabilities.Count > 0)
                     {
-                        <span>@GetCapabilityName(capability)</span>
+                        <section class="obsidian-access-unknown">
+                            <h4>@Text["Access.Grants.Unknown"]</h4>
+                            <p>@Text["Access.Grants.UnknownDescription"]</p>
+                            @foreach (string capability in _snapshot.UnknownCapabilities)
+                            {
+                                <code>@capability</code>
+                            }
+                        </section>
                     }
                 </div>
                 @if (IncludedCapabilities.Count > 0)
                 {
-                    <h3>@Text["Access.Grants.Included"]</h3>
-                    <div class="access-capabilities included">
-                        @foreach (string capability in IncludedCapabilities)
-                        {
-                            <span>@GetCapabilityName(capability)</span>
-                        }
-                    </div>
+                    <section class="obsidian-access-included">
+                        <div class="obsidian-access-grants-heading"><h4>@Text["Access.Grants.Included"]</h4><span>@IncludedCapabilities.Count</span></div>
+                        <DiagnosticCapabilityList Capabilities="IncludedCapabilities" Included="true" />
+                    </section>
                 }
-            </div>
-        </details>
+            }
+            else
+            {
+                <p class="obsidian-settings-description">@Text["Redesign.Access.Untrusted"]</p>
+            }
+        </ObsidianSection>
     }
-    else if (_snapshot.State == DiagnosticAccessState.DeveloperOverride)
+    @if (!string.IsNullOrWhiteSpace(_operationMessage))
     {
-        <details class="access-grants">
-            <summary>@Text["Access.Grants.Developer"]</summary>
-            <div class="access-grants-content">
-                <div class="access-capabilities">
-                    @foreach (string capability in _snapshot.EffectiveCapabilities)
-                    {
-                        <span>@GetCapabilityName(capability)</span>
-                    }
-                </div>
-            </div>
-        </details>
+        <p class="obsidian-sharing-message @(_operationSucceeded ? "success" : "error")" role="status">@_operationMessage</p>
     }
-
-    @if (_snapshot.UnknownCapabilities.Count > 0)
-    {
-        <section class="access-unknown">
-            <h3>@Text["Access.Grants.Unknown"]</h3>
-            <p>@Text["Access.Grants.UnknownDescription"]</p>
-            <div class="access-capabilities unknown">
-                @foreach (string capability in _snapshot.UnknownCapabilities)
-                {
-                    <code>@capability</code>
-                }
-            </div>
-        </section>
-    }
-
     @if (_snapshot.State is not DiagnosticAccessState.None and not DiagnosticAccessState.DeveloperOverride)
     {
-        <button type="button" class="access-remove" disabled="@_busy" @onclick="RemoveAccess">@Text["Access.Remove.Button"]</button>
+        <button type="button" class="obsidian-access-remove" disabled="@_busy" @onclick="RemoveAccess"><ObsidianIcon Kind="ObsidianIconKind.Trash" />@Text["Access.Remove.Button"]</button>
     }
 </section>

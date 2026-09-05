@@ -2,7 +2,7 @@
 
 <PageTitle>@Text["App.Shell.AppTitle"]</PageTitle>
 
-<main class="tracker-shell @((_settingsOpen || _seedsOpen || ((_selectedView is TrackerView.Player or TrackerView.Enemy) && _run.StarterSelection is null)) && !_accessOpen ? "obsidian" : null)" tabindex="0" @onkeydown="HandleKeyDown">
+<main class="tracker-shell @(_accessOpen ? "obsidian-access-shell" : null) @((_settingsOpen || _seedsOpen || ((_selectedView is TrackerView.Player or TrackerView.Enemy) && _run.StarterSelection is null)) && !_accessOpen ? "obsidian" : null)" tabindex="0" @onkeydown="HandleKeyDown">
     <header class="tracker-header">
         <div class="connection-state" role="status" title="@GetConnectionDetail()" aria-label="@GetConnectionAccessibleText()">
             <span class="@GetConnectionDotClass()" aria-hidden="true"></span>
@@ -30,7 +30,7 @@
                 type="button"
                 role="tab"
                 title="Ctrl+1"
-                aria-selected="@(!_settingsOpen && !_seedsOpen && _selectedView == TrackerView.Player)"
+                aria-selected="@(!_accessOpen && !_settingsOpen && !_seedsOpen && _selectedView == TrackerView.Player)"
                 @onclick="() => SelectView(TrackerView.Player)">
             <span class="tab-key" aria-hidden="true">1</span>
             @Text["App.Shell.Player"]
@@ -39,7 +39,7 @@
                 type="button"
                 role="tab"
                 title="Ctrl+2"
-                aria-selected="@(!_settingsOpen && !_seedsOpen && _selectedView == TrackerView.Enemy)"
+                aria-selected="@(!_accessOpen && !_settingsOpen && !_seedsOpen && _selectedView == TrackerView.Enemy)"
                 @onclick="() => SelectView(TrackerView.Enemy)">
             <span class="tab-key" aria-hidden="true">2</span>
             @Text["App.Shell.Enemy"]
@@ -48,7 +48,7 @@
                 type="button"
                 role="tab"
                 title="Ctrl+3"
-                aria-selected="@(!_settingsOpen && !_seedsOpen && _selectedView == TrackerView.Lookup)"
+                aria-selected="@(!_accessOpen && !_settingsOpen && !_seedsOpen && _selectedView == TrackerView.Lookup)"
                 @onclick="() => SelectView(TrackerView.Lookup)">
             <span class="tab-key" aria-hidden="true">3</span>
             @Text["App.Shell.Lookup"]
@@ -57,7 +57,7 @@
                 type="button"
                 role="tab"
                 title="Ctrl+4"
-                aria-selected="@(!_settingsOpen && !_seedsOpen && _selectedView == TrackerView.Archive)"
+                aria-selected="@(!_accessOpen && !_settingsOpen && !_seedsOpen && _selectedView == TrackerView.Archive)"
                 @onclick="() => SelectView(TrackerView.Archive)">
             <span class="tab-key" aria-hidden="true">4</span>
             @Text["App.Shell.Archive"]

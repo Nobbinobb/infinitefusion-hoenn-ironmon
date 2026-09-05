@@ -8,6 +8,12 @@ namespace Ironmon.Tracker.App.Components.Common;
 public partial class ObsidianSection
 {
     /// <summary>
+    /// Gets or sets optional layout classes for the section's host view.
+    /// </summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    /// <summary>
     /// Gets or sets the section heading.
     /// </summary>
     [Parameter]

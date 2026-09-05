@@ -1423,18 +1423,17 @@
   <data name="Access.State.Active" xml:space="preserve"><value>Diagnostic access active</value></data>
   <data name="Access.State.ActiveDescription" xml:space="preserve"><value>The signed capabilities remain available until the displayed expiration.</value></data>
   <data name="Access.State.Lifetime" xml:space="preserve"><value>Lifetime diagnostic access</value></data>
-  <data name="Access.State.LifetimeDescription" xml:space="preserve"><value>The signed capabilities remain active until this token is removed or replaced.</value></data>
+  <data name="Access.State.LifetimeDescription" xml:space="preserve"><value>The signed capabilities remain active until this token is removed.</value></data>
   <data name="Access.State.Expired" xml:space="preserve"><value>Diagnostic access expired</value></data>
   <data name="Access.State.ExpiredDescription" xml:space="preserve"><value>The stored token no longer grants any diagnostic capabilities.</value></data>
   <data name="Access.State.Invalid" xml:space="preserve"><value>Stored access is invalid</value></data>
-  <data name="Access.State.InvalidDescription" xml:space="preserve"><value>The stored token cannot be trusted. Remove it or replace it with a valid token.</value></data>
+  <data name="Access.State.InvalidDescription" xml:space="preserve"><value>The stored token cannot be trusted. Remove it before importing a valid token.</value></data>
   <data name="Access.State.Developer" xml:space="preserve"><value>Debug developer override</value></data>
   <data name="Access.State.DeveloperDescription" xml:space="preserve"><value>This Debug tracker build locally grants every supported diagnostic capability without a token.</value></data>
   <data name="Access.Input.Paste" xml:space="preserve"><value>Access token</value></data>
   <data name="Access.Input.Placeholder" xml:space="preserve"><value>Paste the complete signed token here</value></data>
   <data name="Access.Input.ImportFile" xml:space="preserve"><value>Import token file</value></data>
   <data name="Access.Input.Activate" xml:space="preserve"><value>Activate access</value></data>
-  <data name="Access.Input.ReplacementWarning" xml:space="preserve"><value>Activating a valid token will replace the currently active token. Invalid input will leave the current access unchanged.</value></data>
   <data name="Access.Messages.Activated" xml:space="preserve"><value>Diagnostic access activated.</value></data>
   <data name="Access.Messages.Removed" xml:space="preserve"><value>Diagnostic access removed.</value></data>
   <data name="Access.Errors.ImportFailed" xml:space="preserve"><value>The selected token file could not be read.</value></data>
@@ -1458,6 +1457,14 @@
   <data name="Access.Grants.Unknown" xml:space="preserve"><value>Unknown signed capabilities</value></data>
   <data name="Access.Grants.UnknownDescription" xml:space="preserve"><value>These signed identifiers are preserved for review but grant no access in this tracker version.</value></data>
   <data name="Access.Remove.Button" xml:space="preserve"><value>Remove diagnostic access</value></data>
+  <data name="Access.Capabilities.development.auto_revive.Name" xml:space="preserve"><value>Auto-revive</value></data>
+  <data name="Access.Capabilities.development.change_ability.Name" xml:space="preserve"><value>Change ability</value></data>
+  <data name="Access.Capabilities.development.change_moves.Name" xml:space="preserve"><value>Change moves</value></data>
+  <data name="Access.Capabilities.development.evolution.Name" xml:space="preserve"><value>Evolve / devolve</value></data>
+  <data name="Access.Capabilities.development.full_heal.Name" xml:space="preserve"><value>Full heal</value></data>
+  <data name="Access.Capabilities.development.give_item.Name" xml:space="preserve"><value>Give item</value></data>
+  <data name="Access.Capabilities.development.level.Name" xml:space="preserve"><value>Change level</value></data>
+  <data name="Access.Capabilities.development.swap_pokemon.Name" xml:space="preserve"><value>Swap Pokémon</value></data>
   <data name="Access.Capabilities.pokemon.current_player.Name" xml:space="preserve"><value>Current player</value></data>
   <data name="Access.Capabilities.pokemon.current_enemies.Name" xml:space="preserve"><value>Current enemies</value></data>
   <data name="Access.Capabilities.pokemon.all_active.Name" xml:space="preserve"><value>All active-run Pokemon</value></data>
@@ -1880,4 +1887,9 @@
   <data name="Redesign.Seeds.ShareRun" xml:space="preserve"><value>Share this run</value></data>
   <data name="Redesign.Seeds.TokenReady" xml:space="preserve"><value>TOKEN READY</value></data>
   <data name="Redesign.Seeds.ShareDescription" xml:space="preserve"><value>Share this token to recreate the same randomized world.</value></data>
+  <data name="Redesign.Access.InputDescription" xml:space="preserve"><value>Paste a signed token or import an .ironmon-access file.</value></data>
+  <data name="Redesign.Access.Current" xml:space="preserve"><value>Current access</value></data>
+  <data name="Redesign.Access.Stored" xml:space="preserve"><value>Stored access</value></data>
+  <data name="Redesign.Access.Identifiers" xml:space="preserve"><value>Token identifiers</value></data>
+  <data name="Redesign.Access.Untrusted" xml:space="preserve"><value>Stored permission details are unavailable. Remove this token before importing another.</value></data>
 </root>

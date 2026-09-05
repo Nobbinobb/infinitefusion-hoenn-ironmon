@@ -73,5 +73,40 @@ public enum ObsidianIconKind
     /// <summary>
     /// Identifies seeded-run sharing.
     /// </summary>
-    Sprout = 13
+    Sprout = 13,
+
+    /// <summary>
+    /// Identifies a signed access token.
+    /// </summary>
+    Key = 14,
+
+    /// <summary>
+    /// Identifies diagnostic tools.
+    /// </summary>
+    Wrench = 15,
+
+    /// <summary>
+    /// Identifies validated access.
+    /// </summary>
+    ShieldCheck = 16,
+
+    /// <summary>
+    /// Identifies a granted permission.
+    /// </summary>
+    Check = 17,
+
+    /// <summary>
+    /// Identifies a permission implied by another grant.
+    /// </summary>
+    Included = 18,
+
+    /// <summary>
+    /// Identifies supplementary information.
+    /// </summary>
+    Info = 19,
+
+    /// <summary>
+    /// Identifies removal.
+    /// </summary>
+    Trash = 20
 }

@@ -5,15 +5,20 @@ using System.Globalization;
 namespace Ironmon.Tracker.App.Components.Access;
 
 /// <summary>
-/// Presents diagnostic-access activation, inspection, replacement, and removal.
+/// Presents diagnostic-access activation, inline inspection, and removal.
 /// </summary>
 public partial class DiagnosticAccessPage : IDisposable
 {
+    private const string _activeClass = "active";
+    private const string _problemClass = "problem";
+    private const string _noneClass = "none";
+    private const string _expirationFormat = "g";
     private DiagnosticAccessSnapshot _snapshot = DiagnosticAccessSnapshot.None();
     private string _token = string.Empty;
     private string? _operationMessage;
     private bool _operationSucceeded;
     private bool _busy;
+    private bool _identifiersOpen;
 
     /// <summary>
     /// Gets or initializes the tracker-owned diagnostic-access lifecycle service.
@@ -37,6 +42,29 @@ public partial class DiagnosticAccessPage : IDisposable
         => _snapshot.Grant is null ? [] : [.. _snapshot.Grant.EffectiveCapabilities.Except(_snapshot.Grant.DirectCapabilities, StringComparer.Ordinal)];
 
     /// <summary>
+    /// Gets direct signed capabilities or every supported capability in developer mode.
+    /// </summary>
+    private IReadOnlyList<string> DirectCapabilities
+        => _snapshot.State == DiagnosticAccessState.DeveloperOverride ? _snapshot.EffectiveCapabilities : _snapshot.Grant?.DirectCapabilities ?? [];
+
+    /// <summary>
+    /// Toggles inline signed-token identifiers.
+    /// </summary>
+    private void ToggleIdentifiers()
+        => _identifiersOpen = !_identifiersOpen;
+
+    /// <summary>
+    /// Gets the heading for active, expired, invalid, or local developer access.
+    /// </summary>
+    /// <returns>The localized current-access heading.</returns>
+    private string GetCurrentTitle() => _snapshot.State switch
+    {
+        DiagnosticAccessState.DeveloperOverride => Text["Access.Grants.Developer"],
+        DiagnosticAccessState.Active => Text["Redesign.Access.Current"],
+        _ => Text["Redesign.Access.Stored"]
+    };
+
+    /// <summary>
     /// Updates the pasted compact token.
     /// </summary>
     /// <param name="args">The text-input event.</param>
@@ -53,16 +81,26 @@ public partial class DiagnosticAccessPage : IDisposable
     /// <returns>A task representing bounded file loading.</returns>
     private async Task ImportTokenFileAsync(InputFileChangeEventArgs args)
     {
+        if (_busy || AccessService.Snapshot.State != DiagnosticAccessState.None)
+            return;
+
+        _busy = true;
         ClearOperationMessage();
         try
         {
             await using Stream stream = args.File.OpenReadStream(DiagnosticAccessTokenConstants.MaximumTokenLength);
             using StreamReader reader = new(stream);
-            _token = await reader.ReadToEndAsync();
+            string token = await reader.ReadToEndAsync();
+            if (AccessService.Snapshot.State == DiagnosticAccessState.None)
+                _token = token;
         }
         catch (Exception exception) when (exception is IOException or InvalidOperationException)
         {
             _operationMessage = Text["Access.Errors.ImportFailed"];
+        }
+        finally
+        {
+            _busy = false;
         }
     }
 
@@ -72,6 +110,9 @@ public partial class DiagnosticAccessPage : IDisposable
     /// <returns>A task representing activation.</returns>
     private async Task ActivateAsync()
     {
+        if (_busy || AccessService.Snapshot.State != DiagnosticAccessState.None || string.IsNullOrWhiteSpace(_token))
+            return;
+
         _busy = true;
         ClearOperationMessage();
         try
@@ -102,6 +143,9 @@ public partial class DiagnosticAccessPage : IDisposable
     /// </summary>
     private void RemoveAccess()
     {
+        if (_busy)
+            return;
+
         _busy = true;
         ClearOperationMessage();
         try
@@ -128,8 +172,13 @@ public partial class DiagnosticAccessPage : IDisposable
     /// <param name="args">The empty change event arguments.</param>
     private void HandleAccessChanged(object? sender, EventArgs args)
     {
-        _snapshot = AccessService.Snapshot;
-        _ = InvokeAsync(StateHasChanged);
+        _ = InvokeAsync(() =>
+        {
+            _snapshot = AccessService.Snapshot;
+            _identifiersOpen = false;
+            _token = string.Empty;
+            StateHasChanged();
+        });
     }
 
     /// <summary>
@@ -166,9 +215,9 @@ public partial class DiagnosticAccessPage : IDisposable
     /// <returns>The state modifier class.</returns>
     private string GetStateClass() => _snapshot.State switch
     {
-        DiagnosticAccessState.Active or DiagnosticAccessState.DeveloperOverride => "active",
-        DiagnosticAccessState.Expired or DiagnosticAccessState.Invalid => "problem",
-        _ => "none"
+        DiagnosticAccessState.Active or DiagnosticAccessState.DeveloperOverride => _activeClass,
+        DiagnosticAccessState.Expired or DiagnosticAccessState.Invalid => _problemClass,
+        _ => _noneClass
     };
 
     /// <summary>
@@ -177,15 +226,7 @@ public partial class DiagnosticAccessPage : IDisposable
     /// <param name="grant">The validated signed grant.</param>
     /// <returns>The lifetime label or local expiration value.</returns>
     private string FormatExpiration(DiagnosticAccessGrant grant)
-        => grant.ExpiresAt is null ? Text["Access.Details.Never"] : grant.ExpiresAt.Value.ToLocalTime().ToString("g", CultureInfo.CurrentCulture);
-
-    /// <summary>
-    /// Gets the localized display name for one supported capability.
-    /// </summary>
-    /// <param name="capability">The stable capability identifier.</param>
-    /// <returns>The localized capability name.</returns>
-    private string GetCapabilityName(string capability)
-        => Text[TrackerDiagnosticAccessLocalizationKeys.GetCapabilityName(capability)];
+        => grant.ExpiresAt is null ? Text["Access.Details.Never"] : grant.ExpiresAt.Value.ToLocalTime().ToString(_expirationFormat, CultureInfo.CurrentCulture);
 
     /// <summary>
     /// Gets the localized activation failure for one validation status.
