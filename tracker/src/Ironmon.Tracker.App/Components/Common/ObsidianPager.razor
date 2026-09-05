@@ -1,8 +1,8 @@
 @if (Total > State.PageSize)
 {
     <nav class="obsidian-pager" aria-label="@Label">
-        <button type="button" class="obsidian-button" disabled="@(!State.HasPrevious)" @onclick="Previous"><ObsidianIcon Kind="ObsidianIconKind.ChevronLeft" />@Text["Lookup.Search.Previous"]</button>
+        <button type="button" class="obsidian-button" disabled="@(Disabled || !State.HasPrevious)" @onclick="Previous"><ObsidianIcon Kind="ObsidianIconKind.ChevronLeft" />@Text["Lookup.Search.Previous"]</button>
         <span>@GetRange()</span>
-        <button type="button" class="obsidian-button" disabled="@(!State.HasNext(Total))" @onclick="Next">@Text["Lookup.Search.Next"]<ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></button>
+        <button type="button" class="obsidian-button" disabled="@(Disabled || !State.HasNext(Total))" @onclick="Next">@Text["Lookup.Search.Next"]<ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></button>
     </nav>
 }

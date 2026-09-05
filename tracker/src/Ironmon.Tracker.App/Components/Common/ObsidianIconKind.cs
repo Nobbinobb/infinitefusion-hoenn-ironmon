@@ -203,5 +203,45 @@ public enum ObsidianIconKind
     /// <summary>
     /// Identifies preparing a set of lookup data.
     /// </summary>
-    Layers = 39
+    Layers = 39,
+
+    /// <summary>
+    /// Identifies archived runs.
+    /// </summary>
+    Archive = 40,
+
+    /// <summary>
+    /// Identifies save-file histories.
+    /// </summary>
+    Files = 41,
+
+    /// <summary>
+    /// Identifies run statistics.
+    /// </summary>
+    Chart = 42,
+
+    /// <summary>
+    /// Identifies world areas.
+    /// </summary>
+    Map = 43,
+
+    /// <summary>
+    /// Identifies Pokémon search.
+    /// </summary>
+    Search = 44,
+
+    /// <summary>
+    /// Identifies active play time.
+    /// </summary>
+    Clock = 45,
+
+    /// <summary>
+    /// Identifies the highest level reached.
+    /// </summary>
+    TrendingUp = 46,
+
+    /// <summary>
+    /// Identifies badges earned.
+    /// </summary>
+    Award = 47
 }

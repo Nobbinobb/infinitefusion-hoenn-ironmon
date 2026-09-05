@@ -26,7 +26,7 @@
             }
             else
             {
-                <AreaLookupExplorer @key="@($"active-areas-{activeRunId}")" SourceKey="@($"active:{activeRunId}:{_connection.CurrentState?.OverworldEncounters}")" RunId="@activeRunId" GameRoot="@GameRoot" FixedCategory="@GetAreaCategory()" ShowHeading="false" ShowCategoryTabs="false" Redesigned="true" />
+                <AreaLookupExplorer @key="@($"active-areas-{activeRunId}")" SourceKey="@($"active:{activeRunId}:{_connection.CurrentState?.OverworldEncounters}")" RunId="@activeRunId" GameRoot="@GameRoot" FixedCategory="@GetAreaCategory()" ShowCategoryTabs="false" />
             }
         </div>
     }

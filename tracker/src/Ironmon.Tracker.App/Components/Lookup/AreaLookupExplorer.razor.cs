@@ -19,7 +19,7 @@ public partial class AreaLookupExplorer : IDisposable
     private const string _scrollFunction = "ironmonTrackerUi.scrollLookup";
     private ElementReference _lookupElement;
     private string? _pendingScrollKey;
-    private static readonly AreaContentCategory[] Categories = [AreaContentCategory.Trainer, AreaContentCategory.Encounter, AreaContentCategory.Item];
+    private static readonly AreaContentCategory[] _categories = [AreaContentCategory.Encounter, AreaContentCategory.Trainer, AreaContentCategory.Item];
     private readonly Dictionary<string, AreaLookupDetailResponsePayload> _details = [];
     private readonly Dictionary<string, PaginationState> _detailPagination = [];
     private readonly Dictionary<string, string> _detailErrors = [];
@@ -30,7 +30,7 @@ public partial class AreaLookupExplorer : IDisposable
     private readonly LatestRequestCoordinator<string> _summaryRequests = new();
     private readonly PaginationState _areaPagination = new(_pageSize);
     private IReadOnlyList<AreaSummaryPayload> _areas = [];
-    private AreaContentCategory _selectedCategory = AreaContentCategory.Trainer;
+    private AreaContentCategory _selectedCategory = AreaContentCategory.Encounter;
     private string? _observedSourceKey;
     private string? _error;
     private bool _loadingSummaries;
@@ -90,23 +90,10 @@ public partial class AreaLookupExplorer : IDisposable
     public AreaContentCategory? FixedCategory { get; set; }
 
     /// <summary>
-    /// Gets or sets whether the shared world-lookup heading is shown.
-    /// </summary>
-    [Parameter]
-    public bool ShowHeading { get; set; } = true;
-
-    /// <summary>
     /// Gets or sets whether the component's own category tabs are shown.
     /// </summary>
     [Parameter]
     public bool ShowCategoryTabs { get; set; } = true;
-
-    /// <summary>
-    /// Gets or sets whether to use the redesigned live presentation; archived views retain the legacy layout by default.
-    /// The redesigned host supplies its own heading and category tabs.
-    /// </summary>
-    [Parameter]
-    public bool Redesigned { get; set; }
 
     /// <summary>
     /// Subscribes to tracker-owned discoveries received regardless of the visible page.
@@ -124,7 +111,7 @@ public partial class AreaLookupExplorer : IDisposable
     /// <returns>A task representing optional scroll adjustment.</returns>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!Redesigned || _pendingScrollKey is null)
+        if (_pendingScrollKey is null)
             return;
 
         string key = _pendingScrollKey;
@@ -481,34 +468,6 @@ public partial class AreaLookupExplorer : IDisposable
     };
 
     /// <summary>
-    /// Formats an inclusive result range for one page.
-    /// </summary>
-    /// <param name="pagination">The selected pagination.</param>
-    /// <param name="count">The total result count.</param>
-    /// <returns>The visible range and total count.</returns>
-    private string GetPageRangeText(PaginationState pagination, int count)
-    {
-        (int first, int last) = pagination.GetRange(count);
-        return Text["Lookup.Search.ResultRange", first, last, count];
-    }
-
-    /// <summary>
-    /// Gets the localized selected-category progress for one area.
-    /// </summary>
-    /// <param name="area">The area summary.</param>
-    /// <returns>The completed and total count.</returns>
-    private string GetProgressText(AreaSummaryPayload area)
-    {
-        return _selectedCategory switch
-        {
-            AreaContentCategory.Trainer => Text["Lookup.Areas.DefeatedProgress", area.TrainerDefeated, area.TrainerTotal],
-            AreaContentCategory.Encounter => Text["Lookup.Areas.EncounteredProgress", area.Encountered, area.EncounterTotal],
-            AreaContentCategory.Item => Text["Lookup.Areas.CollectedProgress", area.ItemsCollected, area.ItemTotal],
-            _ => string.Empty
-        };
-    }
-
-    /// <summary>
     /// Gets the entry total for the selected category.
     /// </summary>
     /// <param name="area">The area summary.</param>
@@ -539,14 +498,6 @@ public partial class AreaLookupExplorer : IDisposable
             _ => string.Empty
         };
     }
-
-    /// <summary>
-    /// Gets the visual classes for one category tab.
-    /// </summary>
-    /// <param name="category">The category.</param>
-    /// <returns>The tab classes.</returns>
-    private string GetCategoryTabClass(AreaContentCategory category)
-        => category == _selectedCategory ? "area-category-tab selected" : "area-category-tab";
 
     /// <summary>
     /// Gets whether an area is expanded in the selected category.
@@ -665,60 +616,6 @@ public partial class AreaLookupExplorer : IDisposable
     /// <returns>The detail key.</returns>
     private string GetDetailKey(string areaId, string? encounterEnvironment = null)
         => $"{_selectedCategory}:{areaId}:{encounterEnvironment}";
-
-    /// <summary>
-    /// Formats an encounter's level or inclusive level range.
-    /// </summary>
-    /// <param name="encounter">The encounter entry.</param>
-    /// <returns>The localized level text.</returns>
-    private string FormatEncounterRange(AreaEncounterEntryPayload encounter)
-    {
-        return encounter.MinimumLevel == encounter.MaximumLevel
-            ? Text["Lookup.Areas.Level", encounter.MinimumLevel]
-            : Text["Lookup.Areas.LevelRange", encounter.MinimumLevel, encounter.MaximumLevel];
-    }
-
-    /// <summary>
-    /// Formats a derived fusion's resulting level or inclusive range.
-    /// </summary>
-    /// <param name="fusion">The derived fusion entry.</param>
-    /// <returns>The localized level text.</returns>
-    private string FormatFusionRange(AreaEncounterFusionEntryPayload fusion)
-    {
-        return fusion.MinimumLevel == fusion.MaximumLevel
-            ? Text["Lookup.Areas.Level", fusion.MinimumLevel]
-            : Text["Lookup.Areas.LevelRange", fusion.MinimumLevel, fusion.MaximumLevel];
-    }
-
-    /// <summary>
-    /// Formats both source slots for a derived fusion.
-    /// </summary>
-    /// <param name="fusion">The derived fusion entry.</param>
-    /// <returns>The localized source description.</returns>
-    private string FormatFusionSources(AreaEncounterFusionEntryPayload fusion)
-        => Text["Lookup.Areas.FusionSources", fusion.FirstEncounterType, fusion.FirstSlot, fusion.SecondEncounterType, fusion.SecondSlot];
-
-    /// <summary>
-    /// Gets the localized fusion mechanic and conditional roll chance.
-    /// </summary>
-    /// <param name="fusion">The derived fusion entry.</param>
-    /// <returns>The localized mechanic description.</returns>
-    private string FormatFusionOrigin(AreaEncounterFusionEntryPayload fusion)
-    {
-        string mechanic = fusion.Origin.StartsWith("overworld", StringComparison.Ordinal)
-            ? Text["Lookup.Areas.FusionOrigin.Overworld"]
-            : Text["Lookup.Areas.FusionOrigin.Standard"];
-
-        return Text["Lookup.Areas.FusionChance", mechanic, fusion.FusionChancePercent];
-    }
-
-    /// <summary>
-    /// Gets the disclosed encounter identity with a stable identifier fallback.
-    /// </summary>
-    /// <param name="encounter">The disclosed encounter entry.</param>
-    /// <returns>The species name or stable species identifier.</returns>
-    private static string GetEncounterIdentity(AreaEncounterEntryPayload encounter)
-        => encounter.SpeciesName ?? encounter.SpeciesId ?? "—";
 
     /// <summary>
     /// Gets whether an exception represents an expected lookup request failure.

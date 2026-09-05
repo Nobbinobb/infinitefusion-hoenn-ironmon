@@ -25,6 +25,12 @@ public partial class SeedTokenExportPanel
     public bool Redesigned { get; set; }
 
     /// <summary>
+    /// Gets or sets whether the redesigned export action appears as a compact archive button.
+    /// </summary>
+    [Parameter]
+    public bool Compact { get; set; }
+
+    /// <summary>
     /// Gets or sets a fixed archived reproduction recipe.
     /// </summary>
     [Parameter]

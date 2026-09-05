@@ -28,6 +28,12 @@ public partial class ObsidianPager
     public string Label { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets whether an in-flight request prevents paging.
+    /// </summary>
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    /// <summary>
     /// Gets or sets the previous-page action.
     /// </summary>
     [Parameter]

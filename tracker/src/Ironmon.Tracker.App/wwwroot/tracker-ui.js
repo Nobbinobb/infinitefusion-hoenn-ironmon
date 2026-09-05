@@ -1,6 +1,6 @@
 window.ironmonTrackerUi = {
     scrollLookup(element, key) {
-        const content = element?.closest(".obsidian-lookup-content");
+        const content = element?.closest(".obsidian-lookup-content, .obsidian-archive-content");
         if (!content) return;
         if (!key) { content.scrollTop = 0; return; }
         const anchor = [...element.querySelectorAll("[data-lookup-anchor]")].find(node => node.dataset.lookupAnchor === key);

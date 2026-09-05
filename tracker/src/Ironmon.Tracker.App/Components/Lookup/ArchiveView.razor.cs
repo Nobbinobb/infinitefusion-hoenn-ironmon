@@ -7,7 +7,7 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class ArchiveView : IDisposable
 {
-    private static readonly TimeSpan ObtainabilityPrecalculationInterval = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan _obtainabilityPrecalculationInterval = TimeSpan.FromMilliseconds(250);
     private readonly ArchiveRunSelectionState _selection = new();
     private CancellationTokenSource? _obtainabilityPrecalculationCancellation;
     private string? _obtainabilityPrecalculationRunId;
@@ -115,12 +115,16 @@ public partial class ArchiveView : IDisposable
     };
 
     /// <summary>
-    /// Gets the visual classes for one Archive tab.
+    /// Gets the shared icon identifying an archived-run section.
     /// </summary>
-    /// <param name="section">The represented section.</param>
-    /// <returns>The tab classes.</returns>
-    private string GetSectionTabClass(ArchiveSection section)
-        => section == _selectedSection ? "archive-tab selected" : "archive-tab";
+    /// <param name="section">The section to represent.</param>
+    /// <returns>The corresponding outline icon.</returns>
+    private static ObsidianIconKind GetSectionIcon(ArchiveSection section) => section switch
+    {
+        ArchiveSection.Summary => ObsidianIconKind.Chart,
+        ArchiveSection.Areas => ObsidianIconKind.Map,
+        _ => ObsidianIconKind.Search
+    };
 
     /// <summary>
     /// Reloads recipes while retaining a still-valid selection.
@@ -168,7 +172,7 @@ public partial class ArchiveView : IDisposable
                 if (response.Complete || response.BackgroundComplete)
                     break;
 
-                await Task.Delay(ObtainabilityPrecalculationInterval, cancellation.Token);
+                await Task.Delay(_obtainabilityPrecalculationInterval, cancellation.Token);
             }
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)

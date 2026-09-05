@@ -39,6 +39,12 @@ public partial class PokemonLookupExplorer : IDisposable
     private DiagnosticAccessService AccessService { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets whether only the search controls and results use the redesigned archive presentation.
+    /// </summary>
+    [Parameter]
+    public bool Redesigned { get; set; }
+
+    /// <summary>
     /// Gets or sets the completed-run reconstruction recipe.
     /// </summary>
     [Parameter]

@@ -1908,4 +1908,9 @@
   <data name="Lookup.Items.Category.tm" xml:space="preserve"><value>TMs</value></data>
   <data name="Lookup.Items.Category.battle_consumable" xml:space="preserve"><value>Battle consumables</value></data>
   <data name="Lookup.Items.Category.held_combat" xml:space="preserve"><value>Held combat items</value></data>
+  <data name="Redesign.Archive.ArchivedRuns" xml:space="preserve"><value>Archived runs</value></data>
+  <data name="Redesign.Archive.SearchTitle" xml:space="preserve"><value>Explore this run’s Pokémon</value></data>
+  <data name="Redesign.Archive.SearchDescription" xml:space="preserve"><value>Search by Pokémon name. Results show the species identifier and whether it is obtainable in the selected archived run.</value></data>
+  <data name="Redesign.Archive.ItemUsage" xml:space="preserve"><value>Item usage</value></data>
+  <data name="Redesign.Archive.SearchMatchCount" xml:space="preserve"><value>{0} matches in this archived run</value></data>
 </root>

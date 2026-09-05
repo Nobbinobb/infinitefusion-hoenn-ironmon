@@ -2,7 +2,7 @@
 
 <PageTitle>@Text["App.Shell.AppTitle"]</PageTitle>
 
-<main class="tracker-shell @(_accessOpen ? "obsidian-access-shell" : null) @((_settingsOpen || _seedsOpen || _selectedView == TrackerView.Lookup || ((_selectedView is TrackerView.Player or TrackerView.Enemy) && _run.StarterSelection is null)) && !_accessOpen ? "obsidian" : null)" tabindex="0" @onkeydown="HandleKeyDown">
+<main class="tracker-shell @(_accessOpen ? "obsidian-access-shell" : null) @((_settingsOpen || _seedsOpen || _selectedView is TrackerView.Lookup or TrackerView.Archive || ((_selectedView is TrackerView.Player or TrackerView.Enemy) && _run.StarterSelection is null)) && !_accessOpen ? "obsidian" : null)" tabindex="0" @onkeydown="HandleKeyDown">
     <header class="tracker-header">
         <div class="connection-state" role="status" title="@GetConnectionDetail()" aria-label="@GetConnectionAccessibleText()">
             <span class="@GetConnectionDotClass()" aria-hidden="true"></span>

@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="..\..\..\data\type_coverage.json" LogicalName="Ironmon.Tracker.App.Resources.Coverage.type_coverage.json" />
+    <EmbeddedResource Include="Resources\Catalogs\item-presentation.json" LogicalName="Ironmon.Tracker.App.Resources.Catalogs.item-presentation.json" />
     <EmbeddedResource Include="Resources\Keys\ironmon-access-public.pem" />
     <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#16131F" />
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#16131F" BaseSize="128,128" />

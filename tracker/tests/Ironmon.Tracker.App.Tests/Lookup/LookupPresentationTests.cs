@@ -14,6 +14,8 @@ namespace Ironmon.Tracker.App.Tests.Lookup;
 /// </summary>
 public sealed class LookupPresentationTests
 {
+    private const string _lost = "lost";
+    private const string _bag = "Bag";
     private const string _entryId = "item:10:1";
     private const string _itemId = "POTION";
     private const string _itemName = "Potion";
@@ -145,6 +147,29 @@ public sealed class LookupPresentationTests
             Assert.Contains("3 / 100", html);
             Assert.DoesNotContain("Chance fusions", html);
         }
+    }
+
+    /// <summary>
+    /// Verifies archive summaries keep numeric BST boundaries without exposing obsolete species rankings.
+    /// </summary>
+    [Fact]
+    public async Task ArchiveSummaryKeepsUsageAndNumericBoundaries()
+    {
+        RunStatisticsPayload statistics = new()
+        {
+            Result = _lost, TrainerDefeatedBstMinimum = 195, TrainerDefeatedBstMaximum = 640,
+            TrainerSpeciesCounts = new Dictionary<string, int>() { [_speciesId] = 7 }, TrainerSpeciesNames = new Dictionary<string, string>() { [_speciesId] = _speciesName },
+            ItemsBySource = new Dictionary<string, Dictionary<string, int>>() { [_bag] = new() { [_itemId] = 2 } }
+        };
+
+        string html = await RenderAsync<RunStatistics>(new() { [nameof(RunStatistics.Statistics)] = statistics });
+        Assert.Contains("195", html);
+        Assert.Contains("640", html);
+        Assert.Contains(_itemName, html);
+        Assert.DoesNotContain(_speciesId, html);
+        Assert.DoesNotContain(_speciesName, html);
+        Assert.DoesNotContain("Most encountered", html);
+        Assert.DoesNotContain("Items by source", html);
     }
 
     /// <summary>

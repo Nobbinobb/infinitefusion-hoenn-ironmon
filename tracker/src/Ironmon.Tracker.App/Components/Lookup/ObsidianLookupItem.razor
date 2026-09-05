@@ -5,7 +5,7 @@
         @foreach (AreaItemIdentityPayload identity in Item.Items)
         {
             <div class="obsidian-lookup-item-identity">
-                <span class="obsidian-lookup-item-icon @(Item.Collected ? "collected" : null)" title="@CategoryLabel(identity.Category)"><ObsidianIcon Kind="@CategoryIcon(identity.Category)" /></span>
+                <span class="obsidian-lookup-item-icon @(Item.Collected ? "collected" : null)" title="@Text[ItemCategoryPresentation.GetLabelKey(identity.Category)]"><ObsidianIcon Kind="@ItemCategoryPresentation.GetIcon(identity.Category)" /></span>
                 <div><strong>@identity.ItemName</strong><p>@(Item.Hidden ? Text["Lookup.Areas.HiddenItem"] : Text["Lookup.Areas.GroundItem"])</p></div>
             </div>
         }

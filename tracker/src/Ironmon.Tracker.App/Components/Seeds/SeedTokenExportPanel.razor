@@ -1,16 +1,29 @@
 @if (Redesigned)
 {
-    <ObsidianSection Title="@Title" Icon="ObsidianIconKind.Upload">
-        <p class="obsidian-settings-description">@Description</p>
-        <div class="obsidian-settings-actions">
-            <button type="button" class="obsidian-settings-button obsidian-settings-primary" disabled="@(Disabled || _busy)" @onclick="CreateAsync">@(_busy ? Text["Redesign.Seeds.Working"] : Text["Seeds.Export.Create"])<ObsidianIcon Kind="ObsidianIconKind.ArrowUpRight" /></button>
+    @if (Compact)
+    {
+        <div class="obsidian-archive-export">
+            <button type="button" class="obsidian-button obsidian-settings-primary" disabled="@(Disabled || _busy)" @onclick="CreateAsync"><ObsidianIcon Kind="ObsidianIconKind.Upload" />@(_busy ? Text["Redesign.Seeds.Working"] : Text["Seeds.Export.Create"])</button>
+            @if (!_dialogOpen && !string.IsNullOrWhiteSpace(_message) && !_succeeded)
+            {
+                <p class="obsidian-sharing-message error" role="status">@_message</p>
+            }
         </div>
-        <p class="obsidian-sharing-note">@Text["Redesign.Seeds.ChallengeNote"]</p>
-        @if (!_dialogOpen && !string.IsNullOrWhiteSpace(_message) && !_succeeded)
-        {
-            <p class="obsidian-sharing-message error" role="status">@_message</p>
-        }
-    </ObsidianSection>
+    }
+    else
+    {
+        <ObsidianSection Title="@Title" Icon="ObsidianIconKind.Upload">
+            <p class="obsidian-settings-description">@Description</p>
+            <div class="obsidian-settings-actions">
+                <button type="button" class="obsidian-settings-button obsidian-settings-primary" disabled="@(Disabled || _busy)" @onclick="CreateAsync">@(_busy ? Text["Redesign.Seeds.Working"] : Text["Seeds.Export.Create"])<ObsidianIcon Kind="ObsidianIconKind.ArrowUpRight" /></button>
+            </div>
+            <p class="obsidian-sharing-note">@Text["Redesign.Seeds.ChallengeNote"]</p>
+            @if (!_dialogOpen && !string.IsNullOrWhiteSpace(_message) && !_succeeded)
+            {
+                <p class="obsidian-sharing-message error" role="status">@_message</p>
+            }
+        </ObsidianSection>
+    }
     @if (_dialogOpen)
     {
         <div class="obsidian-sharing-dialog">
