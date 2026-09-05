@@ -1,7 +1,7 @@
 namespace Ironmon.Tracker.App.Components.Common;
 
 /// <summary>
-/// Shares compact defense-effect merging between migrated and legacy views.
+/// Shares compact protection and recovery merging across redesigned cards.
 /// </summary>
 internal static class DefenseEffectPresentation
 {

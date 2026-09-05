@@ -1,40 +1,35 @@
 <section class="obsidian obsidian-player" role="tabpanel" aria-label="@Text["Player.Card.PlayerPokemon"]">
-    <div class="obsidian-identity">
-        <div class="obsidian-identity-top">
-            <PokemonSprite GameRoot="@GameRoot" SpritePath="@Player?.SpritePath" Label="@(Player?.SpeciesName ?? GetName())" Size="72" CssClass="obsidian-sprite" Redesigned="true" />
-            <div class="obsidian-name">
-                <p class="card-kicker">@GetCardKicker()</p>
-                <h2>@GetName()</h2>
-                @if (Player is not null)
-                {
-                    <p class="obsidian-species">@if (HasDistinctNickname()) { @Player.SpeciesName } <GenderIcon Gender="@Player.Gender" /> · @Text["Player.Card.LevelValue", Player.Level]</p>
-                    <div class="obsidian-types">
-                        @foreach (string type in Player.Types)
-                        {
-                            <button type="button" class="typing-type @MovePresentation.GetTypeColorClass(type)" title="@Text["Defense.OpenTypes"]" aria-label="@Text["Defense.OpenType", type]" @onclick="OpenDefense">@type</button>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <p class="obsidian-species">@Text["Player.Card.PlayerWaitingDescription"]</p>
-                }
-            </div>
-            <div class="obsidian-identity-actions" aria-label="@Text["Player.Card.PokemonDetails"]">
-                <button type="button" disabled="@(Player?.AbilityDetails is null)" @onclick="() => SelectAbility(Player!.AbilityDetails!)"><span>@Text["Player.Card.Ability"]</span><strong>@(Player?.Ability ?? "—")</strong></button>
-                <button type="button" disabled="@(Player?.HeldItem is null)" @onclick="OpenHeldItem"><span>@Text["Player.Card.Item"]</span><strong>@(Player?.HeldItem ?? (Player is null ? "—" : Text["Player.Card.None"]))</strong></button>
-                <button type="button" disabled="@(Player is null || Player.Evolutions.Count < 2)" @onclick="OpenEvolutions"><span>@Text["Player.Card.Evolution"]</span><strong>@GetEvolutionRequirement() @if (Player?.Evolutions.Count > 1) { <em>+@(Player.Evolutions.Count - 1)</em> }</strong></button>
-            </div>
-        </div>
-        <div class="obsidian-hp">
+    <ObsidianIdentityPanel GameRoot="@GameRoot" SpritePath="@Player?.SpritePath" SpriteLabel="@(Player?.SpeciesName ?? GetName())" Name="@GetName()" Kicker="@GetCardKicker()" DetailsLabel="@Text["Player.Card.PokemonDetails"]">
+        <Metadata>
+            @if (Player is not null)
+            {
+                <p class="obsidian-species">@if (HasDistinctNickname()) { @Player.SpeciesName } <GenderIcon Gender="@Player.Gender" /> · @Text["Player.Card.LevelValue", Player.Level]</p>
+                <div class="obsidian-types">
+                    @foreach (string type in Player.Types)
+                    {
+                        <button type="button" class="typing-type @MovePresentation.GetTypeColorClass(type)" title="@Text["Defense.OpenTypes"]" aria-label="@Text["Defense.OpenType", type]" @onclick="OpenDefense">@type</button>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="obsidian-species">@Text["Player.Card.PlayerWaitingDescription"]</p>
+            }
+        </Metadata>
+        <Details>
+            <button type="button" disabled="@(Player?.AbilityDetails is null)" @onclick="() => SelectAbility(Player!.AbilityDetails!)"><span>@Text["Player.Card.Ability"]</span><strong>@(Player?.Ability ?? "—")</strong></button>
+            <button type="button" disabled="@(Player?.HeldItem is null)" @onclick="OpenHeldItem"><span>@Text["Player.Card.Item"]</span><strong>@(Player?.HeldItem ?? (Player is null ? "—" : Text["Player.Card.None"]))</strong></button>
+            <button type="button" disabled="@(Player is null || Player.Evolutions.Count < 2)" @onclick="OpenEvolutions"><span>@Text["Player.Card.Evolution"]</span><strong>@GetEvolutionRequirement() @if (Player?.Evolutions.Count > 1) { <em>+@(Player.Evolutions.Count - 1)</em> }</strong></button>
+        </Details>
+        <Health>
             <div class="obsidian-hp-caption"><span>HP <span class="obsidian-condition">@GetConditionText()</span></span><strong>@GetHpText()</strong></div>
             <div class="obsidian-hp-track" aria-label="@GetHpLabel()"><span style="@GetHpStyle()"></span></div>
-        </div>
-        <div class="obsidian-identity-footer">
+        </Health>
+        <Footer>
             <button type="button" disabled="@(Player?.Nature is null)" title="@GetNatureTooltip()" @onclick="OpenNature">@Text["Player.Card.Nature"] <strong>@(Player?.Nature ?? "—")</strong></button>
             <button type="button" disabled="@(Player is null)" @onclick="OpenItems"><span class="obsidian-heal-symbol" aria-hidden="true">+</span>@Text["Player.Card.Heals"] <strong>@GetHealingText()</strong></button>
-        </div>
-    </div>
+        </Footer>
+    </ObsidianIdentityPanel>
     <ObsidianStatRow Stats="GetStatValues()" Stages="@Player?.StatStages" />
     <PlayerMoveList @key="Player?.PokemonId" Player="Player" TargetTypes="TargetTypes" TargetEvasionStage="TargetEvasionStage" />
 </section>

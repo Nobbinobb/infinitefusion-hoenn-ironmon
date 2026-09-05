@@ -24,12 +24,10 @@ namespace Ironmon.Tracker.App.Tests.Defense;
 public sealed class DefenseViewTests
 {
     private const string _resourceName = "Ironmon.Tracker.App.Resources.Localization.TrackerResources";
-    private const string _detailsElement = "<details";
-    private const string _openAttribute = " open";
     private const string _openAction = "OpenDefense";
     private const string _closeAction = "CloseDefense";
     private const string _renderAction = "StateHasChanged";
-    private const string _viewClass = "defense-view";
+    private const string _viewClass = "role=\"dialog\"";
     private const string _rootName = "IronmonDefenseUiTests";
     private const string _firstId = "first";
     private const string _secondId = "second";
@@ -57,6 +55,110 @@ public sealed class DefenseViewTests
     private const string _copiedStatsLabel = "copied stats";
     private const string _copiedAttackMarkup = ">120<";
     private const string _ppItemMovesMethod = "GetPpItemMoves";
+    private const string _battleId = "enemy-design-test";
+    private const string _moveSource = "level_up";
+    private const string _moveOrigin = "enemy_use";
+    private const string _selectMoveAction = "SelectMove";
+    private const string _getMovesAction = "GetMoves";
+    private const string _toggleEffectAction = "Toggle";
+    private const string _expandedEffect = "aria-expanded=\"true\"";
+
+    /// <summary>
+    /// Verifies two opponents of the same species share discovery but retain individual PP and close stale move dialogs.
+    /// </summary>
+    [Fact]
+    public async Task DoubleBattleSelectionKeepsEncounterPpAndClosesPreviousMove()
+    {
+        CapturingActivator activator = new();
+        string root = Path.Combine(Path.GetTempPath(), _rootName, Guid.NewGuid().ToString());
+        TrackerKnowledgeStore knowledge = new(new TrackerKnowledgeOptions(root));
+        knowledge.SelectRun(_battleId);
+        knowledge.StartBattle(_battleId);
+        EnemyPokemonSnapshot[] enemies =
+        [
+            new() { EnemyId = _firstId, SpeciesId = _species, SpeciesName = "Charizard", Level = 50, Position = 1, Types = [_fireType] },
+            new() { EnemyId = _secondId, SpeciesId = _species, SpeciesName = "Charizard", Level = 50, Position = 3, Types = [_fireType] }
+        ];
+
+        ObservedMoveSnapshot observation = new() { Id = _copiedMoveId, Name = _copiedMove, Source = _moveSource, Origin = _moveOrigin, Type = _electricType, LearnedLevel = 1, TotalPp = 15, PpAfterUse = 2 };
+        knowledge.ObserveEnemyMove(_battleId, new() { EnemyId = _firstId, SpeciesId = _species, Position = 1, EnemyLevel = 50, Move = observation });
+        ServiceCollection services = new();
+        services.AddLogging();
+        services.AddSingleton<IJSRuntime, StaticRenderJsRuntime>();
+        services.AddSingleton<IComponentActivator>(activator);
+        services.AddSingleton<IStringLocalizer<TrackerResources>>(new DefenseLocalizer());
+        services.AddSingleton(knowledge);
+        services.AddSingleton(new PokemonSpriteDialogService());
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        await using HtmlRenderer renderer = new(provider, provider.GetRequiredService<ILoggerFactory>());
+        await renderer.Dispatcher.InvokeAsync(async () =>
+        {
+            Dictionary<string, object?> parameters = new()
+            {
+                [nameof(EnemyCard.Enemies)] = enemies,
+                [nameof(EnemyCard.BattleId)] = _battleId,
+                [nameof(EnemyCard.SelectedEnemyId)] = _firstId
+            };
+
+            var view = await renderer.RenderComponentAsync<EnemyCard>(ParameterView.FromDictionary(parameters));
+            EnemyMoveList firstMoves = (EnemyMoveList)activator.Components[typeof(EnemyMoveList)];
+            MethodInfo getMoves = typeof(EnemyMoveList).GetMethod(_getMovesAction, BindingFlags.NonPublic | BindingFlags.Instance)!;
+            var first = (IReadOnlyList<ObservedMoveSnapshot>)getMoves.Invoke(firstMoves, null)!;
+            Assert.Equal(2, Assert.Single(first).PpAfterUse);
+            Invoke(firstMoves, _selectMoveAction, first[0]);
+            Assert.Contains(_viewClass, view.ToHtmlString());
+
+            parameters[nameof(EnemyCard.SelectedEnemyId)] = _secondId;
+            await activator.Card!.SetParametersAsync(ParameterView.FromDictionary(parameters));
+            Assert.DoesNotContain(_viewClass, view.ToHtmlString());
+            EnemyMoveList secondMoves = (EnemyMoveList)activator.Components[typeof(EnemyMoveList)];
+            Assert.NotSame(firstMoves, secondMoves);
+            var second = (IReadOnlyList<ObservedMoveSnapshot>)getMoves.Invoke(secondMoves, null)!;
+            Assert.Null(Assert.Single(second).PpAfterUse);
+            Assert.Contains(_copiedMove, view.ToHtmlString());
+            Assert.Contains("Status hidden", view.ToHtmlString());
+            Assert.Contains("Unknown move", view.ToHtmlString());
+        });
+    }
+
+    /// <summary>
+    /// Verifies migrated recovery disclosures expose every independent contribution when opened.
+    /// </summary>
+    [Fact]
+    public async Task RedesignedRecoveryDisclosureShowsAmountsAndCollapses()
+    {
+        CapturingActivator activator = new();
+        ServiceCollection services = new();
+        services.AddLogging();
+        services.AddSingleton<IComponentActivator>(activator);
+        services.AddSingleton<IStringLocalizer<TrackerResources>>(new DefenseLocalizer());
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        await using HtmlRenderer renderer = new(provider, provider.GetRequiredService<ILoggerFactory>());
+        await renderer.Dispatcher.InvokeAsync(async () =>
+        {
+            var view = await renderer.RenderComponentAsync<ObsidianEffectList>(ParameterView.FromDictionary(new Dictionary<string, object?>
+            {
+                [nameof(ObsidianEffectList.Heading)] = "Recovery",
+                [nameof(ObsidianEffectList.Recovery)] = true,
+                [nameof(ObsidianEffectList.Effects)] = new DefenseEffectSnapshot[]
+                {
+                    new() { Label = "Turn end", Active = true, HealingAmounts = ["+1/16 HP per turn"] },
+                    new() { Label = "Turn end", Active = true, HealingAmounts = ["+1/16 HP per turn", "Status healed"] }
+                }
+            }));
+
+            ComponentBase effects = activator.Components[typeof(ObsidianEffectList)];
+            Assert.DoesNotContain("+1/16 HP per turn", view.ToHtmlString());
+            Invoke(effects, _toggleEffectAction, "Turn end");
+            string expanded = WebUtility.HtmlDecode(view.ToHtmlString());
+            Assert.Contains(_expandedEffect, expanded);
+            Assert.Contains("+1/16 HP per turn", expanded);
+            Assert.Contains("×2", expanded);
+            Assert.Contains("Status healed", expanded);
+            Invoke(effects, _toggleEffectAction, "Turn end");
+            Assert.DoesNotContain("Status healed", view.ToHtmlString());
+        });
+    }
 
     /// <summary>
     /// Verifies both card entry points refresh an open view and close it when its individual changes.
@@ -83,22 +185,14 @@ public sealed class DefenseViewTests
             var view = await renderer.RenderComponentAsync(cardType, CardParameters(enemy, _firstId, Example(enemy)));
             ComponentBase card = activator.Card!;
             Assert.DoesNotContain(_viewClass, view.ToHtmlString());
-            Assert.Contains(enemy ? "pokemon-type-link" : "obsidian-types", view.ToHtmlString());
+            Assert.Contains("obsidian-types", view.ToHtmlString());
             Assert.DoesNotContain("class=\"defense-link\"", view.ToHtmlString());
             Invoke(card, _openAction);
             string open = WebUtility.HtmlDecode(view.ToHtmlString());
-            Assert.Contains(enemy ? _viewClass : "role=\"dialog\"", open);
-            if (enemy)
-            {
-                Assert.Contains("Hyper Voice", open);
-            }
-            else
-            {
-                Assert.DoesNotContain("Hyper Voice", open);
-            }
-                
-            Assert.Contains("Sound", open);
-            string defenseHtml = enemy ? open : open[open.IndexOf("role=\"dialog\"", StringComparison.Ordinal)..];
+            Assert.Contains(_viewClass, open);
+            Assert.DoesNotContain("Hyper Voice", open);
+Assert.Contains("Sound", open);
+            string defenseHtml = open[open.IndexOf("role=\"dialog\"", StringComparison.Ordinal)..];
             Assert.DoesNotContain("Soundproof", defenseHtml);
             Assert.DoesNotContain("Blocks sound moves", open);
             Assert.DoesNotContain("defense-neutral", open);
@@ -109,7 +203,7 @@ public sealed class DefenseViewTests
             Assert.Equal(enemy, open.Contains("Known defenses only", StringComparison.Ordinal));
 
             await card.SetParametersAsync(CardParameters(enemy, _firstId, new DefenseOverviewSnapshot { InBattle = true, AbilityName = "Updated ability", Protections = [new() { Label = "Hail", Active = true }] }));
-            Assert.Contains(enemy ? _viewClass : "role=\"dialog\"", view.ToHtmlString());
+            Assert.Contains(_viewClass, view.ToHtmlString());
             Assert.Contains("Hail", view.ToHtmlString());
             Assert.DoesNotContain("Updated ability", view.ToHtmlString());
             Assert.DoesNotContain("Hyper Voice", view.ToHtmlString());
@@ -195,7 +289,7 @@ public sealed class DefenseViewTests
         await using HtmlRenderer renderer = new(provider, provider.GetRequiredService<ILoggerFactory>());
         await renderer.Dispatcher.InvokeAsync(async () =>
         {
-            var view = await renderer.RenderComponentAsync<PokemonDefenseView>();
+            var view = await renderer.RenderComponentAsync<ObsidianDefenseDialog>();
             Assert.Contains("updated Ironmon scripts", view.ToHtmlString());
             Assert.DoesNotContain("Incoming types", view.ToHtmlString());
         });
@@ -248,7 +342,7 @@ public sealed class DefenseViewTests
         Assert.Equal("Halves Fire and Ice damage.", copy.AbilityDescription);
         await renderer.Dispatcher.InvokeAsync(async () =>
         {
-            var view = await renderer.RenderComponentAsync<PokemonDefenseView>(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(PokemonDefenseView.Defense)] = copy }));
+            var view = await renderer.RenderComponentAsync<ObsidianDefenseDialog>(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(ObsidianDefenseDialog.Defense)] = copy }));
             string html = WebUtility.HtmlDecode(view.ToHtmlString());
             Assert.DoesNotContain("Halves Fire and Ice damage.", html);
             Assert.DoesNotContain("Thick Fat", html);
@@ -256,18 +350,19 @@ public sealed class DefenseViewTests
             Assert.DoesNotContain(">Normal</span>", html);
             Assert.Contains(">Rock</span>", html);
             Assert.DoesNotContain("<strong>1×</strong> physical", html);
-            Assert.Contains("<strong>2×</strong> special", html);
+            Assert.Contains("<strong>2×</strong>", html);
+            Assert.Contains("category-icon special", html);
             Assert.Contains("–1×", html);
             Assert.Contains("Leech Seed", html);
             Assert.DoesNotContain("immunity", html);
             Assert.DoesNotContain("Grass typing", html);
-            Assert.Contains("<li>Spore</li>", html);
+            Assert.DoesNotContain("<li>Spore</li>", html);
             Assert.Contains("Recovery", html);
-            Assert.Contains("+1/16 HP per turn", html);
+            Assert.DoesNotContain("+1/16 HP per turn", html);
             Assert.DoesNotContain("Hail · +1/16 HP per turn", html);
             Assert.DoesNotContain("Details & conditions", html);
             Assert.DoesNotContain("Current types alone", html);
-            Assert.Equal(2, html.Split("<details", StringSplitOptions.None).Length - 1);
+            Assert.DoesNotContain("aria-expanded=\"true\"", html);
             Assert.DoesNotContain("defense-neutral", html);
         });
     }
@@ -293,16 +388,18 @@ public sealed class DefenseViewTests
                 new() { Label = "Next turn end", Active = true, HealingAmounts = ["+1/2 original max HP (once)"] },
                 new() { Label = "Suppressed", Active = false, HealingAmounts = ["+1/4 HP"] }
             ];
-            var view = await renderer.RenderComponentAsync<DefenseRuleList>(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(DefenseRuleList.Heading)] = "Recovery", [nameof(DefenseRuleList.Effects)] = effects }));
+            var view = await renderer.RenderComponentAsync<ObsidianEffectList>(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(ObsidianEffectList.Heading)] = "Recovery", [nameof(ObsidianEffectList.Effects)] = effects, [nameof(ObsidianEffectList.Recovery)] = true }));
             string html = WebUtility.HtmlDecode(view.ToHtmlString());
-            Assert.Contains("×2", html);
-            Assert.Equal(1, html.Split("+1/16 HP per turn", StringSplitOptions.None).Length - 1);
+            Assert.Contains("Turn end", html);
             Assert.Contains("Next turn end", html);
-            Assert.Contains("+1/2 original max HP (once)", html);
+            Assert.DoesNotContain("+1/16 HP per turn", html);
             Assert.DoesNotContain("Suppressed", html);
-            Assert.DoesNotContain(_openAttribute, html);
-            Assert.Equal(2, html.Split(_detailsElement, StringSplitOptions.None).Length - 1);
-            var empty = await renderer.RenderComponentAsync<DefenseRuleList>(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(DefenseRuleList.Heading)] = "Recovery", [nameof(DefenseRuleList.Effects)] = Array.Empty<DefenseEffectSnapshot>() }));
+            var merged = DefenseEffectPresentation.Merge(effects);
+            Assert.Equal(2, merged.Count);
+            Assert.Equal(2, merged[0].HealingAmounts.Count);
+            Assert.Equal("+1/2 original max HP (once)", merged[1].HealingAmounts.Single());
+            Assert.Equal(2, html.Split("aria-expanded=\"false\"", StringSplitOptions.None).Length - 1);
+            var empty = await renderer.RenderComponentAsync<ObsidianEffectList>(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(ObsidianEffectList.Heading)] = "Recovery", [nameof(ObsidianEffectList.Effects)] = Array.Empty<DefenseEffectSnapshot>() }));
             Assert.DoesNotContain("Recovery", empty.ToHtmlString());
         });
     }
@@ -387,9 +484,12 @@ public sealed class DefenseViewTests
     /// <summary>
     /// Runs a production event handler and renders the resulting component state.
     /// </summary>
-    private static void Invoke(ComponentBase component, string action)
+    /// <param name="component">The mounted production component.</param>
+    /// <param name="action">The event handler to invoke.</param>
+    /// <param name="arguments">The event handler arguments.</param>
+    private static void Invoke(ComponentBase component, string action, params object?[] arguments)
     {
-        component.GetType().GetMethod(action, BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(component, null);
+        component.GetType().GetMethod(action, BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(component, arguments);
         typeof(ComponentBase).GetMethod(_renderAction, BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(component, null);
     }
 
@@ -404,11 +504,18 @@ public sealed class DefenseViewTests
         public ComponentBase? Card { get; private set; }
 
         /// <summary>
+        /// Gets the latest instance of each rendered component type.
+        /// </summary>
+        public Dictionary<Type, ComponentBase> Components { get; } = [];
+
+        /// <summary>
         /// Creates one framework component and records the relevant card.
         /// </summary>
         public IComponent CreateInstance(Type componentType)
         {
             IComponent component = (IComponent)Activator.CreateInstance(componentType)!;
+            if (component is ComponentBase instance)
+                Components[componentType] = instance;
             if (component is PlayerCard or EnemyCard)
                 Card = (ComponentBase)component;
 

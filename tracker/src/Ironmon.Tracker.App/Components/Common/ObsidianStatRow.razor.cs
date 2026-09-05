@@ -25,17 +25,6 @@ public partial class ObsidianStatRow
     public BattleStatStagesSnapshot? Stages { get; set; }
 
     /// <summary>
-    /// Determines whether a separate battle-stage line is needed.
-    /// </summary>
-    /// <returns>Whether at least one supported battle stage is nonzero.</returns>
-    private bool HasStages()
-    {
-        return Stages is not null
-            && (Stages.Attack != 0 || Stages.Defense != 0 || Stages.SpecialAttack != 0
-                || Stages.SpecialDefense != 0 || Stages.Speed != 0 || Stages.Accuracy != 0 || Stages.Evasion != 0);
-    }
-
-    /// <summary>
     /// Chooses the nature color without redundant arrows.
     /// </summary>
     /// <param name="adjustment">The known nature adjustment for the stat.</param>

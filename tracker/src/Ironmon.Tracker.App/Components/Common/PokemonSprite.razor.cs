@@ -63,6 +63,12 @@ public partial class PokemonSprite
     public bool Redesigned { get; set; }
 
     /// <summary>
+    /// Gets or sets whether the sprite opens its dialog, disabling interaction when embedded in another control.
+    /// </summary>
+    [Parameter]
+    public bool Interactive { get; set; } = true;
+
+    /// <summary>
     /// Refreshes the local sprite when its game installation or path changes.
     /// </summary>
     protected override void OnParametersSet()

@@ -1,0 +1,8 @@
+<section class="obsidian-stat-section" aria-label="@Heading">
+    <div class="obsidian-stat-heading"><h3 class="obsidian-label">@Heading</h3>@HeadingActions</div>
+    <div class="obsidian-stats">@ChildContent</div>
+    @if (Stages is not null && HasStages())
+    {
+        <div class="obsidian-stages"><span>@Text["Redesign.Stages"]</span><BattleStatStageChips Stages="Stages" /></div>
+    }
+</section>

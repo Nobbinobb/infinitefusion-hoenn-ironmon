@@ -1777,4 +1777,25 @@
   <data name="Development.Lookup.Actions" xml:space="preserve"><value>Authorized Pokémon changes</value></data>
   <data name="Development.Lookup.Swap" xml:space="preserve"><value>Swap Pokémon</value></data>
   <data name="Development.Lookup.ConfirmSwap" xml:space="preserve"><value>Replace the current Pokémon with a new {0} at the same level?</value></data>
+  <data name="Redesign.Enemy.StatNotes" xml:space="preserve">
+    <value>Stat notes</value>
+  </data>
+  <data name="Redesign.Enemy.StatHelp" xml:space="preserve">
+    <value>How stat notes work</value>
+  </data>
+  <data name="Redesign.Enemy.ObservedAbilities" xml:space="preserve">
+    <value>Observed abilities</value>
+  </data>
+  <data name="Redesign.Enemy.YourObservations" xml:space="preserve">
+    <value>Your observations</value>
+  </data>
+  <data name="Redesign.Enemy.CycleNote" xml:space="preserve">
+    <value>Left-click to cycle forward; right-click to cycle backwards.</value>
+  </data>
+  <data name="Redesign.Enemy.CycleExplanation" xml:space="preserve">
+    <value>Click a stat to cycle through unmarked (·), plus (+), and minus (−). Right-click to go backwards.</value>
+  </data>
+  <data name="Redesign.Enemy.NoteExplanation" xml:space="preserve">
+    <value>These are your notes for this species. Actual enemy stats stay hidden; battle stages are shown separately.</value>
+  </data>
 </root>

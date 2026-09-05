@@ -1,0 +1,25 @@
+<ObsidianStatSection Heading="@Text["Redesign.Enemy.StatNotes"]" Stages="@Enemy?.StatStages">
+    <HeadingActions><button type="button" class="obsidian-stat-help" aria-label="@Text["Redesign.Enemy.StatHelp"]" @onclick="OpenHelp">?</button></HeadingActions>
+    <ChildContent>
+        @foreach ((string Name, EnemyStat Stat) stat in _stats)
+        {
+            <div>
+                <span>@stat.Name</span>
+                <button type="button" class="@GetAnnotationClass(stat.Stat)" disabled="@(Enemy is null)" aria-label="@Text["Enemy.Stats.StatAnnotation", stat.Name, GetAnnotationText(stat.Stat)]" title="@Text["Redesign.Enemy.CycleNote"]" @onclick="() => CycleAnnotation(stat.Stat, true)" @oncontextmenu="() => CycleAnnotation(stat.Stat, false)" @oncontextmenu:preventDefault>
+                    <span aria-hidden="true">@GetAnnotationSymbol(stat.Stat)</span>
+                </button>
+            </div>
+        }
+        <div><span>BST</span><strong>@(Enemy?.BaseStatTotal.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "--")</strong></div>
+    </ChildContent>
+</ObsidianStatSection>
+@if (_helpOpen)
+{
+    <ObsidianDialog Title="@Text["Redesign.Enemy.StatNotes"]" Eyebrow="@Text["Redesign.Enemy.YourObservations"]" Closed="CloseHelp">
+        <p class="detail-description">@foreach (string part in System.Text.RegularExpressions.Regex.Split(Text["Redesign.Enemy.CycleExplanation"].Value, _annotationSymbolsPattern))
+            {
+                <span class="@(part == _plusSymbol ? _positiveClass : part == _minusSymbol ? _negativeClass : null)">@part</span>
+            }</p>
+        <p class="detail-description obsidian-note-explanation">@Text["Redesign.Enemy.NoteExplanation"]</p>
+    </ObsidianDialog>
+}

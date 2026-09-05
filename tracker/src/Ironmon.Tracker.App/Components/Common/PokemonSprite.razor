@@ -1,4 +1,13 @@
 <span class="pokemon-sprite-host">
+    @if (!Interactive)
+    {
+        <span class="pokemon-sprite @CssClass" style="@GetSizeStyle(Size)" aria-hidden="true">
+            @if (_spriteSource is not null) { <img class="pokemon-sprite-image" src="@_spriteSource" alt="" /> }
+            else { <span>?</span> }
+        </span>
+    }
+    else
+    {
     <button class="pokemon-sprite @CssClass"
             type="button"
             style="@GetSizeStyle(Size)"
@@ -16,5 +25,6 @@
             <span aria-hidden="true">?</span>
         }
     </button>
+    }
 
 </span>
