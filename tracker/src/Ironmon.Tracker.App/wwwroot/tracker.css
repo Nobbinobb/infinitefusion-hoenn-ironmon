@@ -970,12 +970,7 @@ details.access-grants {
     background: rgb(240 139 160 / 10%);
 }
 
-.seeded-run-page {
-    overflow: auto;
-}
-
-.seed-action-card,
-.seed-confirmation {
+.seed-action-card {
     display: grid;
     gap: 0.65rem;
     padding: 0.8rem;
@@ -989,8 +984,7 @@ details.access-grants {
     gap: 0.25rem;
 }
 
-.seed-action-card strong,
-.seed-confirmation > strong {
+.seed-action-card strong {
     font-size: 0.82rem;
 }
 
@@ -1023,23 +1017,6 @@ details.access-grants {
     color: #8ae4b4;
     font-size: 0.68rem;
     font-weight: 700;
-}
-
-.seed-destructive {
-    padding: 0.55rem 0.75rem;
-    border: 1px solid var(--enemy-soft);
-    border-radius: 0.48rem;
-    color: #16131f;
-    background: var(--enemy-soft);
-    font: inherit;
-    font-size: 0.7rem;
-    font-weight: 750;
-    cursor: pointer;
-}
-
-.seed-destructive:disabled {
-    cursor: default;
-    opacity: 0.55;
 }
 
 .access-details {

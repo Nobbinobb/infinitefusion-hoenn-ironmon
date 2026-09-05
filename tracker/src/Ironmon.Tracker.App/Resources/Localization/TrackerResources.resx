@@ -1868,4 +1868,16 @@
   <data name="Redesign.Settings.FavoriteAdded" xml:space="preserve">
     <value>{0} added to favorites.</value>
   </data>
+  <data name="Redesign.Seeds.AvailableDescription" xml:space="preserve"><value>Share this world, or start an attempt from a shared seed.</value></data>
+  <data name="Redesign.Seeds.ExportDescription" xml:space="preserve"><value>Create a token with this run’s deterministic inputs so someone else can play the same randomized world.</value></data>
+  <data name="Redesign.Seeds.ChallengeNote" xml:space="preserve"><value>A shared seed is not an official or maintainer-approved challenge.</value></data>
+  <data name="Redesign.Seeds.ImportDescription" xml:space="preserve"><value>Paste a complete token or load an .ironmon-seed file.</value></data>
+  <data name="Redesign.Seeds.ValidationNote" xml:space="preserve"><value>Validation does not change your current attempt.</value></data>
+  <data name="Redesign.Seeds.Working" xml:space="preserve"><value>Working…</value></data>
+  <data name="Redesign.Seeds.SharedRun" xml:space="preserve"><value>SHARED RUN</value></data>
+  <data name="Redesign.Seeds.Recognized" xml:space="preserve"><value>Recognized tracker seed token</value></data>
+  <data name="Redesign.Seeds.CompatibilityNote" xml:space="preserve"><value>The game will verify compatibility again before changing the run.</value></data>
+  <data name="Redesign.Seeds.ShareRun" xml:space="preserve"><value>Share this run</value></data>
+  <data name="Redesign.Seeds.TokenReady" xml:space="preserve"><value>TOKEN READY</value></data>
+  <data name="Redesign.Seeds.ShareDescription" xml:space="preserve"><value>Share this token to recreate the same randomized world.</value></data>
 </root>

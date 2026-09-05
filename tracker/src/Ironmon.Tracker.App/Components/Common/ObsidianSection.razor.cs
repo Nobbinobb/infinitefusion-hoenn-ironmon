@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Components;
 namespace Ironmon.Tracker.App.Components.Common;
 
 /// <summary>
-/// Groups related preferences using the shared redesigned settings surface.
+/// Groups related controls using the shared redesigned section surface.
 /// </summary>
-public partial class ObsidianSettingsSection
+public partial class ObsidianSection
 {
     /// <summary>
     /// Gets or sets the section heading.
@@ -26,7 +26,7 @@ public partial class ObsidianSettingsSection
     public RenderFragment? HeadingContent { get; set; }
 
     /// <summary>
-    /// Gets or sets the preference controls.
+    /// Gets or sets the section controls and supporting content.
     /// </summary>
     [Parameter]
     public RenderFragment? ChildContent { get; set; }

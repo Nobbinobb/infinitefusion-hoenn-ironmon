@@ -4,9 +4,11 @@ on:
   pull_request:
     branches:
       - main
-  push:
-    branches:
-      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
   workflow_dispatch:
 
 permissions:
@@ -22,6 +24,7 @@ env:
 
 jobs:
   core-tests:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Core tracker tests
     runs-on: windows-latest
     timeout-minutes: 20
@@ -47,6 +50,7 @@ jobs:
         run: dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj --configuration Release --no-restore --nologo --disable-build-servers --maxcpucount:1 -p:UseSharedCompilation=false -- xUnit.ParallelizeTestCollections=false
 
   app-tests:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Windows app tests
     runs-on: windows-latest
     timeout-minutes: 30

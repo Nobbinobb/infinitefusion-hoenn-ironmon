@@ -6,7 +6,7 @@
             <span class="obsidian-settings-saved">@Text["Redesign.Settings.Saved"]</span>
         }
     </header>
-    <ObsidianSettingsSection Title="@Text["Settings.Starter.Group"]" Icon="ObsidianIconKind.Shuffle">
+    <ObsidianSection Title="@Text["Settings.Starter.Group"]" Icon="ObsidianIconKind.Shuffle">
         <label class="obsidian-setting-row">
             <span><strong>@Text["Settings.Starter.AutoSelectStarter"]</strong><small>@Text["Redesign.Settings.AutoSelectDescription"]</small></span>
             <input class="obsidian-setting-switch" type="checkbox" checked="@AutoSelectStarter" @onchange="HandleAutoSelectChanged" />
@@ -19,8 +19,8 @@
         {
             <p class="obsidian-setting-error" role="alert">@_maximumBstError</p>
         }
-    </ObsidianSettingsSection>
-    <ObsidianSettingsSection Title="@Text["Settings.EvolutionGraph.Group"]" Icon="ObsidianIconKind.Branch">
+    </ObsidianSection>
+    <ObsidianSection Title="@Text["Settings.EvolutionGraph.Group"]" Icon="ObsidianIconKind.Branch">
         <label class="obsidian-setting-row">
             <span><strong>@Text["Settings.EvolutionGraph.ExpansionDepth"]</strong><small>@Text["Redesign.Settings.ExpansionDepthDescription"]</small></span>
             <input type="number" min="@EvolutionGraphSettings.MinimumExpansionDepth" max="@EvolutionGraphSettings.MaximumExpansionDepth" value="@EvolutionGraphSettings.ExpansionDepth" aria-invalid="@((!string.IsNullOrEmpty(_graphDepthError)).ToString().ToLowerInvariant())" @onchange="HandleExpansionDepthChanged" />
@@ -37,22 +37,22 @@
         {
             <p class="obsidian-setting-error" role="alert">@_nodesPerRowError</p>
         }
-    </ObsidianSettingsSection>
-    <ObsidianSettingsSection Title="@Text["Settings.Sprites.Group"]" Icon="ObsidianIconKind.Images">
+    </ObsidianSection>
+    <ObsidianSection Title="@Text["Settings.Sprites.Group"]" Icon="ObsidianIconKind.Images">
         <p class="obsidian-settings-description">@Text["Redesign.Settings.SpriteDescription"]</p>
         <div class="obsidian-settings-actions">
             <button class="obsidian-settings-button obsidian-settings-primary" type="button" disabled="@_spriteInstallPreparing" aria-busy="@((_spriteInstallPreparing && !_spriteReviewIncludesUnavailable).ToString().ToLowerInvariant())" @onclick="OpenSpriteReviewAsync">@(_spriteInstallPreparing && !_spriteReviewIncludesUnavailable ? Text["Settings.Sprites.Preparing"] : _spriteInstallRunning ? Text["Redesign.Settings.ViewProgress"] : Text["Settings.Sprites.Review"]) <span aria-hidden="true">↗</span></button>
             <button class="obsidian-settings-link" type="button" disabled="@(_spriteInstallRunning || _spriteInstallPreparing)" aria-busy="@((_spriteInstallPreparing && _spriteReviewIncludesUnavailable).ToString().ToLowerInvariant())" @onclick="ReviewUnavailableSpritesAsync">@(_spriteInstallPreparing && _spriteReviewIncludesUnavailable ? Text["Settings.Sprites.Preparing"] : Text["Settings.Sprites.RecheckUnavailable"])</button>
         </div>
         <p class="obsidian-settings-warning">@Text["Redesign.Settings.KeepGameClosed"]</p>
-    </ObsidianSettingsSection>
-    <ObsidianSettingsSection Title="@Text["Settings.Favorites.FavoriteClause"]" Icon="ObsidianIconKind.Heart">
+    </ObsidianSection>
+    <ObsidianSection Title="@Text["Settings.Favorites.FavoriteClause"]" Icon="ObsidianIconKind.Heart">
         <HeadingContent><span class="obsidian-settings-count">@Text["Settings.Favorites.Count", _favorites.Count]</span></HeadingContent>
         <ChildContent>
             <p class="obsidian-settings-description">@Text["Redesign.Settings.FavoritesDescription"]</p>
             <div class="obsidian-favorites-overview"><span>@FavoriteSummary</span><button class="obsidian-settings-button" type="button" @onclick="OpenFavorites">@Text["Redesign.Settings.Manage"] <span aria-hidden="true">›</span></button></div>
         </ChildContent>
-    </ObsidianSettingsSection>
+    </ObsidianSection>
     <p class="obsidian-settings-status" role="status">@(_graphSettingsSaved ? Text["Redesign.Settings.SavedLocally"] : Status ?? Text["Redesign.Settings.AutomaticChanges"])</p>
 </section>
 

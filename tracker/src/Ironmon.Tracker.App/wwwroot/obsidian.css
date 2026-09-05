@@ -1437,20 +1437,20 @@ body:has(.tracker-shell.obsidian) {
     font-size:11px;
     color:#55eaa5;
 }
-.obsidian-settings-section {
+.obsidian-section-card {
     border:1px solid #2a3544;
     border-radius:12px;
     background:radial-gradient(ellipse at 14% 0%,#1d2433 0%,#131820 64%);
     padding:8px 14px;
     margin-bottom:8px;
 }
-.obsidian-settings-section>header {
+.obsidian-section-card>header {
     display:flex;
     align-items:center;
     justify-content:space-between;
     gap:12px;
 }
-.obsidian-settings-section h3 {
+.obsidian-section-card h3 {
     display:flex;
     align-items:center;
     gap:9px;
@@ -1465,7 +1465,7 @@ body:has(.tracker-shell.obsidian) {
     flex-shrink:0;
 }
 
-.obsidian-settings-section h3 .obsidian-line-icon {
+.obsidian-section-card h3 .obsidian-line-icon {
     color:#b0a3ff;
 }
 .obsidian-setting-row {
@@ -1788,4 +1788,180 @@ body:has(.tracker-shell.obsidian) {
 .obsidian .detail-panel:has(.obsidian-settings-dialog) {
     width:min(100%,462px);
     max-width:462px;
+}
+
+.obsidian-sharing {
+    align-self:start;
+}
+.obsidian-sharing .obsidian-settings-heading {
+    margin-bottom:18px;
+}
+.obsidian-sharing-availability {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:0 2px 18px;
+    color:#9eacbf;
+}
+.obsidian-sharing-availability.available>.obsidian-line-icon {
+    color:#55eaa5;
+}
+.obsidian-sharing-availability strong {
+    color:#f0f3fa;
+    font-size:12px;
+    font-weight:500;
+}
+.obsidian-sharing-availability p {
+    font-size:11px;
+    margin:3px 0 0;
+}
+.obsidian-sharing .obsidian-section-card {
+    padding:15px;
+    margin-bottom:12px;
+}
+.obsidian-sharing .obsidian-settings-description {
+    color:#b8c4d6;
+    line-height:1.55;
+    margin-top:9px;
+}
+.obsidian-sharing .obsidian-settings-actions,
+.obsidian-sharing-dialog .obsidian-settings-actions {
+    margin-top:14px;
+    gap:9px;
+}
+.obsidian-sharing .obsidian-settings-button,
+.obsidian-sharing-dialog .obsidian-settings-button {
+    padding:8px 11px;
+}
+.obsidian-sharing button:disabled,
+.obsidian-sharing-dialog button:disabled {
+    opacity:.45;
+    cursor:default;
+}
+.obsidian-sharing-input-actions {
+    justify-content:space-between;
+}
+.obsidian-seed-file {
+    position:relative;
+    overflow:hidden;
+    cursor:pointer;
+}
+.obsidian-seed-file input[type="file"] {
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    opacity:0;
+    cursor:pointer;
+}
+.obsidian-seed-file:focus-within {
+    outline:2px solid #b0a3ff;
+    outline-offset:2px;
+}
+.obsidian-seed-file:has(input:disabled) {
+    opacity:.45;
+    cursor:default;
+}
+.obsidian .obsidian-seed-token {
+    display:block;
+    width:100%;
+    height:96px;
+    margin-top:13px;
+    border:1px solid #354153;
+    border-radius:8px;
+    background:#0c1119;
+    color:#f0f3fa;
+    padding:11px 12px;
+    resize:none;
+    font:11px/1.65 Consolas,monospace;
+    overflow-wrap:anywhere;
+    scrollbar-width:thin;
+}
+.obsidian-seed-token::placeholder {
+    color:#8797ae;
+}
+.obsidian-sharing-note {
+    font-size:11px;
+    color:#9eacbf;
+    margin:11px 0 0;
+    line-height:1.5;
+}
+.obsidian-sharing-dialog .detail-panel {
+    width:min(100%,462px);
+    max-width:462px;
+}
+.obsidian-sharing-dialog p {
+    margin:0;
+    color:#c3cede;
+    font-size:13px;
+    line-height:1.6;
+}
+.obsidian-sharing-dialog .obsidian-sharing-note {
+    font-size:11px;
+    color:#9eacbf;
+    margin-top:11px;
+}
+.obsidian-sharing-dialog .obsidian-seed-token {
+    height:114px;
+    margin-top:16px;
+}
+.obsidian-sharing-dialog .obsidian-sharing-validated {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:#55eaa5;
+    font-size:12px;
+}
+.obsidian-sharing-details {
+    margin:14px 0 0;
+}
+.obsidian-sharing-details>div {
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:10px 0;
+    border-bottom:1px solid #2a3442;
+    font-size:12px;
+}
+.obsidian-sharing-details dt {
+    color:#9eacbf;
+}
+.obsidian-sharing-details dd {
+    margin:0;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+    overflow-wrap:anywhere;
+    text-align:right;
+}
+.obsidian-sharing-dialog .obsidian-sharing-warning {
+    border-left:2px solid #ceaa72;
+    padding-left:12px;
+    margin-top:18px;
+}
+.obsidian .obsidian-sharing-danger {
+    color:#ffb1c3;
+    background:#ff63891a;
+    border-color:#ff638957;
+    white-space:normal;
+}
+.obsidian-sharing-message,
+.obsidian-sharing-dialog .obsidian-sharing-message {
+    font-size:12px;
+    margin:12px 0 0;
+    overflow-wrap:anywhere;
+}
+.obsidian-sharing-message.success {
+    color:#55eaa5;
+}
+.obsidian-sharing-message.error {
+    color:#ff6389;
+}
+@media(max-width:390px) {
+    .obsidian-sharing .obsidian-section-card {
+        padding:12px;
+    }
+    .obsidian-sharing .obsidian-settings-button,
+    .obsidian-sharing-dialog .obsidian-settings-button {
+        padding:8px 9px;
+    }
 }
