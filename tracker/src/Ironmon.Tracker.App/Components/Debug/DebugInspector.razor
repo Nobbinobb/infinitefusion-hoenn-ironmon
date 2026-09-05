@@ -35,6 +35,10 @@
     {
         <DebugProtocolDiagnostics />
     }
+    else if (HasAnyPage && _selectedPage == DebugInspectorPage.Development)
+    {
+        <DebugDevelopmentControls />
+    }
     else if (HasAnyPage && _error is not null)
     {
         <p class="lookup-error" role="alert">@_error</p>
@@ -54,14 +58,14 @@
             <p class="lookup-message">@Text["Debug.Inspector.RunDiagnosticsNotLoaded"]</p>
         }
     }
-    else if (HasAnyPage && (_pokemon is null || _lookup is null))
+    else if (HasAnyPage && _selectedPage == DebugInspectorPage.Pokemon && (_pokemon is null || _lookup is null))
     {
         <div class="lookup-empty">
             <strong>@Text["Debug.Inspector.NoPokemonInspected"]</strong>
             <p>@Text["Debug.Inspector.SelectAvailablePokemon"]</p>
         </div>
     }
-    else if (HasAnyPage)
+    else if (HasAnyPage && _selectedPage == DebugInspectorPage.Pokemon)
     {
         <PokemonLookupCard Pokemon="@_lookup"
                            Inspector="@_pokemon"

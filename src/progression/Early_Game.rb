@@ -567,6 +567,7 @@ module Ironmon
 
   def self.reset_after_early_game_loss(won, early_battle)
     return false if won || !early_battle
+    return false if tracker_auto_revive_enabled?
     complete_run(:lost) if !failed_run_locked?
     return false if !failed_run_locked?
     return queue_early_game_loss_reset

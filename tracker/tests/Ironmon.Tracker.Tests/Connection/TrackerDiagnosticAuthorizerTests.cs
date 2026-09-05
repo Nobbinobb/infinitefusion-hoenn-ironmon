@@ -72,10 +72,14 @@ public sealed class TrackerDiagnosticAuthorizerTests
             authorizer.EnsurePokemonInformation(section);
         }
 
+        foreach (DebugDevelopmentAction action in Enum.GetValues<DebugDevelopmentAction>())
+            authorizer.EnsureDevelopmentAction(action);
+
         Assert.Throws<ArgumentOutOfRangeException>(() => authorizer.HasAreaDetails((AreaContentCategory)99));
         Assert.Throws<ArgumentOutOfRangeException>(() => authorizer.EnsurePokemonSource(DebugPokemonTarget.Party));
         Assert.Throws<ArgumentOutOfRangeException>(() => authorizer.EnsurePokemonLookup((PokemonLookupSection)99));
         Assert.Throws<ArgumentOutOfRangeException>(() => authorizer.EnsurePokemonInformation((PokemonLookupSection)99));
+        Assert.Throws<ArgumentOutOfRangeException>(() => authorizer.EnsureDevelopmentAction((DebugDevelopmentAction)99));
     }
 
     /// <summary>

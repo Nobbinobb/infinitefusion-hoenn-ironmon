@@ -40,6 +40,12 @@ public static class DiagnosticAccessSelectionValidator
         if (direct.Contains(DiagnosticCapabilities.FusionPreviewResults) && !direct.Contains(DiagnosticCapabilities.PokemonAllActive))
             errors.Add("Fusion previews require All Active Pokemon.");
 
+        if (direct.Contains(DiagnosticCapabilities.DevelopmentSwapPokemon) && (!direct.Contains(DiagnosticCapabilities.PokemonAllActive) || !direct.Contains(DiagnosticCapabilities.PokemonOverview)))
+            errors.Add("Swap Pokemon requires All Active Pokemon and Pokemon Overview so its lookup action is available.");
+
+        if (direct.Contains(DiagnosticCapabilities.DevelopmentEvolution) && (!direct.Contains(DiagnosticCapabilities.PokemonAllActive) || !direct.Contains(DiagnosticCapabilities.EvolutionResults)))
+            errors.Add("Evolve / devolve requires All Active Pokemon and Evolution Results so direct generated edges can be selected.");
+
         return errors;
     }
 }

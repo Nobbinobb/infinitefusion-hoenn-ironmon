@@ -96,6 +96,34 @@ internal sealed class TrackerDiagnosticAuthorizer
     }
 
     /// <summary>
+    /// Rejects a tracker-driven development mutation unless its individual capability is effective.
+    /// </summary>
+    /// <param name="action">The requested development mutation.</param>
+    internal void EnsureDevelopmentAction(DebugDevelopmentAction action)
+        => EnsureAll(GetDevelopmentCapability(action));
+
+    /// <summary>
+    /// Gets the individual capability required by a tracker-driven development mutation.
+    /// </summary>
+    /// <param name="action">The requested development mutation.</param>
+    /// <returns>The stable capability identifier.</returns>
+    private static string GetDevelopmentCapability(DebugDevelopmentAction action)
+    {
+        return action switch
+        {
+            DebugDevelopmentAction.SetAutoRevive => DiagnosticCapabilities.DevelopmentAutoRevive,
+            DebugDevelopmentAction.FullHeal => DiagnosticCapabilities.DevelopmentFullHeal,
+            DebugDevelopmentAction.SetLevel => DiagnosticCapabilities.DevelopmentLevel,
+            DebugDevelopmentAction.SetAbility => DiagnosticCapabilities.DevelopmentChangeAbility,
+            DebugDevelopmentAction.SetMoves => DiagnosticCapabilities.DevelopmentChangeMoves,
+            DebugDevelopmentAction.GiveItem => DiagnosticCapabilities.DevelopmentGiveItem,
+            DebugDevelopmentAction.Evolve or DebugDevelopmentAction.Devolve => DiagnosticCapabilities.DevelopmentEvolution,
+            DebugDevelopmentAction.SwapPokemon => DiagnosticCapabilities.DevelopmentSwapPokemon,
+            _ => throw new ArgumentOutOfRangeException(nameof(action), action, "The development action is unsupported.")
+        };
+    }
+
+    /// <summary>
     /// Rejects an arbitrary species request without all-active access, or validates the selected live source.
     /// </summary>
     /// <param name="target">The optional live source that supplies the requested species.</param>

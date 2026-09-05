@@ -41,6 +41,8 @@ module Ironmon
         @diagnostic_capabilities = normalize_diagnostic_capabilities(
           payload["diagnostic_capabilities"]
         )
+        Ironmon.disable_tracker_auto_revive if
+          !diagnostic_capability?("development.auto_revive")
         @auto_select_starter = payload["auto_select_starter"] == true
         @maximum_starter_base_stat_total = Ironmon.valid_starter_bst_ceiling(
           payload["maximum_starter_base_stat_total"]
@@ -55,6 +57,8 @@ module Ironmon
         @diagnostic_capabilities = normalize_diagnostic_capabilities(
           payload["diagnostic_capabilities"]
         )
+        Ironmon.disable_tracker_auto_revive if
+          !diagnostic_capability?("development.auto_revive")
       elsif message["type"] == "event" &&
             message["event"] == "area_discovery_acknowledged"
         acknowledge_area_discovery(message)
@@ -238,6 +242,25 @@ module Ironmon
           "evolution.generator_details"
         ])
         payload = Ironmon.tracker_debug_run_diagnostics
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "debug_development_state"
+        require_any_diagnostic_capability(
+          Ironmon::TRACKER_DEVELOPMENT_CAPABILITIES
+        )
+        development_payload = message["payload"] || {}
+        include_catalogs = development_payload["include_catalogs"] != false
+        include_evolutions =
+          development_payload["include_evolutions"] != false
+        payload = Ironmon.tracker_development_state(
+          include_catalogs, include_evolutions
+        )
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "debug_development_action"
+        development_payload = message["payload"] || {}
+        action = development_payload["action"].to_s
+        capability = Ironmon::TRACKER_DEVELOPMENT_ACTION_CAPABILITIES[action]
+        require_diagnostic_capabilities([capability].compact)
+        payload = Ironmon.tracker_development_action(development_payload)
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "debug_pokemon_search"
         require_diagnostic_capabilities(["pokemon.all_active"])

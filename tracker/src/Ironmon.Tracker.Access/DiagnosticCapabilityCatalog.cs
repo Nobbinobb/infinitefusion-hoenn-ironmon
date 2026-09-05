@@ -67,6 +67,14 @@ public static class DiagnosticCapabilityCatalog
     {
         DiagnosticCapabilityDefinition[] definitions =
         [
+            new(DiagnosticCapabilities.DevelopmentAutoRevive, "NoFail / AutoRevive", "Keep the attempt active and revive the player Pokemon after a defeat or draw."),
+            new(DiagnosticCapabilities.DevelopmentChangeAbility, "Change ability", "Assign any ability from the complete game catalog to the current player Pokemon."),
+            new(DiagnosticCapabilities.DevelopmentChangeMoves, "Change moves", "Replace the current player Pokemon's move set."),
+            new(DiagnosticCapabilities.DevelopmentEvolution, "Evolve / devolve", "Move the current player Pokemon across one direct generated evolution edge."),
+            new(DiagnosticCapabilities.DevelopmentFullHeal, "Full heal", "Restore the current player Pokemon's HP, status, and PP outside battle."),
+            new(DiagnosticCapabilities.DevelopmentGiveItem, "Give item", "Add a selected item to the player's Bag outside battle."),
+            new(DiagnosticCapabilities.DevelopmentLevel, "Level adjustment", "Set the current player Pokemon's level outside battle."),
+            new(DiagnosticCapabilities.DevelopmentSwapPokemon, "Swap Pokemon", "Replace the current player Pokemon with a selected active-run lookup species at the same level."),
             new(DiagnosticCapabilities.PokemonCurrentPlayer, "Current player", "Inspect the current live player Pokemon."),
             new(DiagnosticCapabilities.PokemonCurrentEnemies, "Current enemies", "Inspect current live enemy Pokemon."),
             new(DiagnosticCapabilities.PokemonAllActive, "All active-run Pokemon", "Search and inspect any Pokemon generated for the active run.", [DiagnosticCapabilities.PokemonCurrentPlayer, DiagnosticCapabilities.PokemonCurrentEnemies]),

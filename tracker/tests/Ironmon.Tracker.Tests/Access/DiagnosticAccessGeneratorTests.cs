@@ -78,6 +78,17 @@ public sealed class DiagnosticAccessGeneratorTests
     }
 
     /// <summary>
+    /// Verifies the broad read-only preset never opts a token into gameplay mutations.
+    /// </summary>
+    [Fact]
+    public void FullDebugPresetExcludesDevelopmentMutations()
+    {
+        DiagnosticAccessPreset preset = DiagnosticAccessPresetCatalog.All.Single(candidate => candidate.Id == DiagnosticAccessPresetIds.FullCurrentDebug);
+
+        Assert.DoesNotContain(preset.Capabilities, capability => capability.StartsWith("development.", StringComparison.Ordinal));
+    }
+
+    /// <summary>
     /// Verifies Pokemon-bound information requires at least one Pokemon availability scope.
     /// </summary>
     [Theory]
@@ -229,6 +240,12 @@ public sealed class DiagnosticAccessGeneratorTests
     /// <returns>The stable minimum valid direct selection.</returns>
     private static string[] GetMinimumValidSelection(string capability)
     {
+        if (capability == DiagnosticCapabilities.DevelopmentSwapPokemon)
+            return [capability, DiagnosticCapabilities.PokemonAllActive, DiagnosticCapabilities.PokemonOverview];
+
+        if (capability == DiagnosticCapabilities.DevelopmentEvolution)
+            return [capability, DiagnosticCapabilities.PokemonAllActive, DiagnosticCapabilities.EvolutionResults];
+
         if (capability == DiagnosticCapabilities.FusionPreviewResults)
             return [DiagnosticCapabilities.FusionPreviewResults, DiagnosticCapabilities.PokemonAllActive];
 
