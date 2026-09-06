@@ -492,6 +492,21 @@ module IronmonSeededRunImportRuntimeTests
           seed, Ironmon.base_stat_source_fingerprint
         )
       )
+      [[1, 1], [1, NB_POKEMON], [NB_POKEMON, NB_POKEMON]].each do |pair|
+        prefix = preview_mapper.send(
+          :deterministic_value, "target_match", pair[0], pair[1], ""
+        )
+        [[577, 332_352], [332_352, 577], [12_345, 67_890]].each do |first, second|
+          assert(
+            preview_mapper.send(
+              :update_deterministic_hash, prefix, "#{first}|#{second}"
+            ) == preview_mapper.send(
+              :deterministic_value, "target_match", pair[0], pair[1], first, second
+            ),
+            "incremental target ranking preserves the original seed hash"
+          )
+        end
+      end
       range_examples.each do |materials, expected|
         actual = preview_mapper.send(
           :fusion_bst_range, materials[0], materials[1]
