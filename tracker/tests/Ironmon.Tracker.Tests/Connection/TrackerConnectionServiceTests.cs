@@ -1488,7 +1488,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     };
 
     /// <summary>
-    /// Waits for a completed-run recipe to enter tracker-owned persistence.
+    /// Waits for the archive notification confirming a completed-run recipe was persisted.
     /// </summary>
     /// <param name="archive">The completed-run archive being observed.</param>
     /// <param name="runId">The expected stable run identifier.</param>
@@ -1496,15 +1496,27 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     /// <exception cref="TimeoutException">Thrown when the recipe does not arrive.</exception>
     private static async Task WaitForRecipeAsync(CompletedRunArchive archive, string runId)
     {
-        DateTimeOffset deadline = DateTimeOffset.UtcNow.AddSeconds(3);
-        while (DateTimeOffset.UtcNow < deadline)
+        TaskCompletionSource<bool> persisted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        EventHandler changed = (_, _) =>
         {
             if (archive.Recipes.Any(recipe => recipe.RunId == runId))
-                return;
-
-            await Task.Delay(10);
+                persisted.TrySetResult(true);
+        };
+        archive.Changed += changed;
+        try
+        {
+            // Cover completion before subscription and allow hosted scheduling/IO
+            // without treating this functional assertion as a three-second benchmark.
+            changed(null, EventArgs.Empty);
+            await persisted.Task.WaitAsync(TimeSpan.FromSeconds(10));
         }
-
-        throw new TimeoutException("The expected completed-run recipe was not persisted.");
+        catch (TimeoutException exception)
+        {
+            throw new TimeoutException($"The expected completed-run recipe was not persisted. Archive error: {archive.LastError ?? "none reported"}.", exception);
+        }
+        finally
+        {
+            archive.Changed -= changed;
+        }
     }
 }
