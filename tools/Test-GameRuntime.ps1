@@ -226,7 +226,7 @@ $bootstrapSource = @(
     "  Thread.new do"
     "    loop do"
     "      sleep 30"
-    "      warn 'Runtime test progress: ' + Thread.main.backtrace.join(' | ')"
+    "      `$stderr.puts 'Runtime test progress: ' + Thread.main.backtrace.join(' | ')"
     "    end"
     "  end"
     "end"
