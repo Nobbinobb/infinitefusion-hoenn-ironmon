@@ -1,122 +1,72 @@
-<div class="lookup-explorer @(UseRedesignedDetails && _showDetail && _lookup is not null ? "research-explorer" : string.Empty)">
-    @if (!UseRedesignedDetails || !_showDetail || _lookup is null)
+<div class="lookup-explorer @(_showDetail && _lookup is not null ? "research-explorer" : string.Empty)">
+    @if (!_showDetail || _lookup is null)
     {
-        @if (Redesigned)
+        <div class="research-search">
+            <label class="research-search-field"><ObsidianIcon Kind="ObsidianIconKind.Search" /><input type="search" placeholder="@Text["Lookup.Search.SearchPokemonName"]" aria-label="@Text["Lookup.Search.PokemonName"]" @bind="_query" @bind:event="oninput" @onkeydown="HandleSearchKeyDown" @onkeydown:stopPropagation="true" />
+            </label><button type="button" class="obsidian-button obsidian-settings-primary" disabled="@_loading" @onclick="SearchAsync">@Text["Lookup.Search.Search"]</button>
+        </div>
+
+        @if (_error is not null)
         {
-            <div class="research-search">
-                <label class="research-search-field"><ObsidianIcon Kind="ObsidianIconKind.Search" /><input type="search" placeholder="@Text["Lookup.Search.SearchPokemonName"]" aria-label="@Text["Lookup.Search.PokemonName"]" @bind="_query" @bind:event="oninput" @onkeydown="HandleSearchKeyDown" @onkeydown:stopPropagation="true" />
-                </label><button type="button" class="obsidian-button obsidian-settings-primary" disabled="@_loading" @onclick="SearchAsync">@Text["Lookup.Search.Search"]</button>
-            </div>
-
-            @if (_error is not null)
-            {
-                <p class="lookup-error" role="alert">@_error</p>
-            }
-            else if (_loading)
-            {
-                <p class="lookup-message">@LoadingMessage</p>
-            }
-            else if (_searched && _matches.Count == 0 && _lookup is null)
-            {
-                <p class="lookup-message">@Text["Lookup.Search.NoMatchingPokemon"]</p>
-            }
-
-            @if (_matches.Count > 0)
-            {
-                <p class="research-search-caption">@Text[DebugMode ? "Redesign.Tools.SearchMatchCount" : "Redesign.Archive.SearchMatchCount", _matchTotal]</p>
-                <div class="research-search-legend">
-                    <span><PokemonObtainabilityMark Status="PokemonObtainabilityStatus.Obtainable" />@Text["Lookup.Obtainability.Obtainable"]</span>
-                    <span><PokemonObtainabilityMark Status="PokemonObtainabilityStatus.Unobtainable" />@Text["Lookup.Obtainability.Unobtainable"]</span>
-                    <span><PokemonObtainabilityMark Status="PokemonObtainabilityStatus.Calculating" />@Text["Lookup.Obtainability.Calculating"]</span>
-                </div>
-                <div class="research-search-list" aria-label="@Text["Lookup.Search.PokemonSearchResults"]">
-                    @foreach (PokemonSearchMatch match in _matches)
-                    {
-                        <button type="button" class="research-search-match" disabled="@_loading" @onclick="() => NavigateToPokemonAsync(match)">
-                            <span><strong>@match.SpeciesName</strong><small>@match.SpeciesId</small></span>
-                            <PokemonObtainabilityMark Status="@match.ObtainabilityStatus" />
-                        </button>
-                    }
-                </div>
-
-                <ObsidianPager State="_searchPagination" Total="_matchTotal" Label="@Text["Lookup.Search.PokemonSearchResultPages"]" Previous="PreviousSearchPageAsync" Next="NextSearchPageAsync" Disabled="_loading" />
-            }
-            @if (!_searched && !_loading && _error is null)
-            {
-                <div class="research-search-empty"><ObsidianIcon Kind="ObsidianIconKind.Search" /><h3>@Text["Redesign.Archive.SearchTitle"]</h3><p>@Text[DebugMode ? "Redesign.Tools.SearchDescription" : "Redesign.Archive.SearchDescription"]</p></div>
-            }
+            <p class="lookup-error" role="alert">@_error</p>
         }
-        else
+        else if (_loading)
         {
-            <div class="lookup-search">
-                <input type="search" placeholder="@Text["Lookup.Search.SearchPokemonName"]" aria-label="@Text["Lookup.Search.PokemonName"]" @bind="_query" @bind:event="oninput" @onkeydown="HandleSearchKeyDown" @onkeydown:stopPropagation="true" />
-                <button type="button" disabled="@_loading" @onclick="SearchAsync">@Text["Lookup.Search.Search"]</button>
+            <p class="lookup-message">@LoadingMessage</p>
+        }
+        else if (_searched && _matches.Count == 0 && _lookup is null)
+        {
+            <p class="lookup-message">@Text["Lookup.Search.NoMatchingPokemon"]</p>
+        }
+
+        @if (_matches.Count > 0)
+        {
+            <p class="research-search-caption">@Text[DebugMode ? "Redesign.Tools.SearchMatchCount" : "Redesign.Archive.SearchMatchCount", _matchTotal]</p>
+            <div class="research-search-legend">
+                <span><PokemonObtainabilityMark Status="PokemonObtainabilityStatus.Obtainable" />@Text["Lookup.Obtainability.Obtainable"]</span>
+                <span><PokemonObtainabilityMark Status="PokemonObtainabilityStatus.Unobtainable" />@Text["Lookup.Obtainability.Unobtainable"]</span>
+                <span><PokemonObtainabilityMark Status="PokemonObtainabilityStatus.Calculating" />@Text["Lookup.Obtainability.Calculating"]</span>
             </div>
-
-            @if (_error is not null)
-            {
-                <p class="lookup-error" role="alert">@_error</p>
-            }
-            else if (_loading)
-            {
-                <p class="lookup-message">@LoadingMessage</p>
-            }
-            else if (_searched && _matches.Count == 0 && _lookup is null)
-            {
-                <p class="lookup-message">@Text["Lookup.Search.NoMatchingPokemon"]</p>
-            }
-
-            @if (_matches.Count > 0)
-            {
-                <div class="lookup-results" aria-label="@Text["Lookup.Search.PokemonSearchResults"]">
-                    @foreach (PokemonSearchMatch match in _matches)
-                    {
-                        <button type="button" disabled="@_loading" @onclick="() => NavigateToPokemonAsync(match)">
-                            <div class="lookup-result-heading">
-                                <strong>@match.SpeciesName</strong>
-                                <PokemonObtainabilityMark Status="@match.ObtainabilityStatus" />
-                            </div>
-                            <span>@match.SpeciesId</span>
-                        </button>
-                    }
-                </div>
-
-                @if (_matchTotal > TrackerProtocol.DefaultSearchPageSize)
+            <div class="research-search-list" aria-label="@Text["Lookup.Search.PokemonSearchResults"]">
+                @foreach (PokemonSearchMatch match in _matches)
                 {
-                    <nav class="lookup-pager" aria-label="@Text["Lookup.Search.PokemonSearchResultPages"]">
-                        <button type="button" disabled="@(_loading || !HasPreviousSearchPage())" @onclick="PreviousSearchPageAsync">@Text["Lookup.Search.Previous"]</button>
-                        <span>@GetSearchRangeText()</span>
-                        <button type="button" disabled="@(_loading || !HasNextSearchPage())" @onclick="NextSearchPageAsync">@Text["Lookup.Search.Next"]</button>
-                    </nav>
+                    <button type="button" class="research-search-match" disabled="@_loading" @onclick="() => NavigateToPokemonAsync(match)">
+                        <span><strong>@match.SpeciesName</strong><small>@match.SpeciesId</small></span>
+                        <PokemonObtainabilityMark Status="@match.ObtainabilityStatus" />
+                    </button>
                 }
-            }
+            </div>
 
+            <ObsidianPager State="_searchPagination" Total="_matchTotal" Label="@Text["Lookup.Search.PokemonSearchResultPages"]" Previous="PreviousSearchPageAsync" Next="NextSearchPageAsync" Disabled="_loading" />
         }
+        @if (!_searched && !_loading && _error is null)
+        {
+            <div class="research-search-empty"><ObsidianIcon Kind="ObsidianIconKind.Search" /><h3>@Text["Redesign.Archive.SearchTitle"]</h3><p>@Text[DebugMode ? "Redesign.Tools.SearchDescription" : "Redesign.Archive.SearchDescription"]</p></div>
+        }
+
     }
-    @if (_lookup is not null && (!UseRedesignedDetails || _showDetail))
+    @if (_lookup is not null && _showDetail)
     {
-        @if (UseRedesignedDetails)
+        <div class="research-breadcrumb">
+            <button type="button" disabled="@_loading" @onclick="() => _showDetail = false">← @Text["Redesign.Research.Results"]</button>
+            @if (Recipe is not null)
+            {
+                <span>@Text["Redesign.Research.Seed", Recipe.Seed]</span>
+            }
+        </div>
+        @if (_error is not null)
         {
-            <div class="research-breadcrumb">
-                <button type="button" disabled="@_loading" @onclick="() => _showDetail = false">← @Text["Redesign.Research.Results"]</button>
-                @if (Recipe is not null)
-                {
-                    <span>@Text["Redesign.Research.Seed", Recipe.Seed]</span>
-                }
-            </div>
-            @if (_error is not null)
-            {
-                <p class="lookup-error" role="alert">@_error</p>
-            }
-            @if (_loading)
-            {
-                <p class="research-loading" role="status">@LoadingMessage</p>
-            }
+            <p class="lookup-error" role="alert">@_error</p>
         }
+        @if (_loading)
+        {
+            <p class="research-loading" role="status">@LoadingMessage</p>
+        }
+
         <nav class="lookup-history" aria-label="@Text["Lookup.Search.PokemonLookupHistory"]">
             <button type="button" disabled="@(!_history.CanGoBack || _loading)" @onclick="GoBackAsync">&#8592; @Text["Lookup.Search.Back"]</button>
             <button type="button" disabled="@(!_history.CanGoForward || _loading)" @onclick="GoForwardAsync">@Text["Lookup.Search.Forward"] &#8594;</button>
         </nav>
-        <PokemonLookupCard Redesigned="UseRedesignedDetails" Pokemon="@_lookup" Recipe="@Recipe" DebugMode="@DebugMode" GameRoot="@GameRoot" PokemonSelected="NavigateToPokemonAsync" />
+        <PokemonLookupCard Pokemon="@_lookup" Recipe="@Recipe" DebugMode="@DebugMode" GameRoot="@GameRoot" PokemonSelected="NavigateToPokemonAsync" />
     }
 </div>

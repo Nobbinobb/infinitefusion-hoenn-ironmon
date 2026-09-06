@@ -3,7 +3,7 @@
     <article class="obsidian-lookup-entry">
         @if (Encounter.DetailsRevealed)
         {
-            <PokemonSprite GameRoot="@GameRoot" SpritePath="@Encounter.SpritePath" Label="@Identity" Size="49" Redesigned="true" FitVisibleBounds="true" CssClass="obsidian-lookup-sprite" />
+            <PokemonSprite GameRoot="@GameRoot" SpritePath="@Encounter.SpritePath" Label="@Identity" Size="49" FitVisibleBounds="true" CssClass="obsidian-lookup-sprite" />
         }
         else
         {
@@ -22,7 +22,7 @@ else if (Fusion is not null)
     <article class="obsidian-lookup-entry obsidian-lookup-fusion">
         @if (Fusion.DetailsRevealed)
         {
-            <PokemonSprite GameRoot="@GameRoot" SpritePath="@Fusion.SpritePath" Label="@(Fusion.SpeciesName ?? Fusion.SpeciesId ?? string.Empty)" Size="49" Redesigned="true" FitVisibleBounds="true" CssClass="obsidian-lookup-sprite" />
+            <PokemonSprite GameRoot="@GameRoot" SpritePath="@Fusion.SpritePath" Label="@(Fusion.SpeciesName ?? Fusion.SpeciesId ?? string.Empty)" Size="49" FitVisibleBounds="true" CssClass="obsidian-lookup-sprite" />
         }
         else
         {

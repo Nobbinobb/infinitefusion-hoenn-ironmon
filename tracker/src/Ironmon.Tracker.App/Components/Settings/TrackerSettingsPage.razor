@@ -7,10 +7,7 @@
         }
     </header>
     <ObsidianSection Title="@Text["Settings.Starter.Group"]" Icon="ObsidianIconKind.Shuffle">
-        <label class="obsidian-setting-row">
-            <span><strong>@Text["Settings.Starter.AutoSelectStarter"]</strong><small>@Text["Redesign.Settings.AutoSelectDescription"]</small></span>
-            <input class="obsidian-setting-switch" type="checkbox" checked="@AutoSelectStarter" @onchange="HandleAutoSelectChanged" />
-        </label>
+        <ObsidianToggle Class="obsidian-setting-row" Label="@Text["Settings.Starter.AutoSelectStarter"]" Description="@Text["Redesign.Settings.AutoSelectDescription"]" LabelFirst="true" Value="AutoSelectStarter" ValueChanged="HandleAutoSelectChanged" />
         <label class="obsidian-setting-row">
             <span><strong>@Text["Settings.Starter.MaximumBst"]</strong><small>@Text["Redesign.Settings.MaximumBstDescription"]</small></span>
             <input type="number" min="@StarterSelectionConstants.MinimumBaseStatTotal" max="@StarterSelectionConstants.MaximumBaseStatTotal" value="@MaximumStarterBaseStatTotal" placeholder="@Text["Settings.Starter.MaximumBstPlaceholder"]" aria-invalid="@((!string.IsNullOrEmpty(_maximumBstError)).ToString().ToLowerInvariant())" @onchange="HandleMaximumBstChanged" />
@@ -77,11 +74,7 @@
                 </div>
                 @if (FavoritePageCount > 1)
                 {
-                    <nav class="obsidian-favorite-pager" aria-label="@Text["Settings.Favorites.Pages"]">
-                        <button class="obsidian-settings-button" type="button" disabled="@(_favoritePage == 0)" @onclick="PreviousFavoritePage">@Text["Settings.Favorites.Previous"]</button>
-                        <span>@Text["Settings.Favorites.Page", _favoritePage + 1, FavoritePageCount]</span>
-                        <button class="obsidian-settings-button" type="button" disabled="@(_favoritePage + 1 >= FavoritePageCount)" @onclick="NextFavoritePage">@Text["Settings.Favorites.Next"]</button>
-                    </nav>
+                    <ObsidianPagingControls Label="@Text["Settings.Favorites.Pages"]" RangeText="@Text["Settings.Favorites.Page", _favoritePage + 1, FavoritePageCount]" PreviousDisabled="@(_favoritePage == 0)" NextDisabled="@(_favoritePage + 1 >= FavoritePageCount)" Previous="PreviousFavoritePage" Next="NextFavoritePage" />
                 }
             }
         </div>

@@ -1,4 +1,4 @@
-<section class="development-controls" aria-label="@Text["Development.Title"]" aria-busy="@_loading">
+<section class="development-controls" aria-label="@Text["Development.Title"]" aria-busy="@(_loading ? "true" : "false")">
     <header class="tools-page-heading">
         <h3>@Text["Development.Title"]</h3>
         <button type="button" class="obsidian-button" disabled="@(_loading || _evolutionsLoading)" @onclick="LoadAsync"><ObsidianIcon Kind="ObsidianIconKind.Reset" />@Text["Development.Refresh"]</button>
@@ -29,7 +29,7 @@
                     <div class="tools-quick-actions">
                         @if (CanAutoRevive)
                         {
-                            <label class="tools-toggle"><input type="checkbox" checked="@_state.AutoReviveEnabled" disabled="@_loading" @onchange="SetAutoReviveAsync" /><span>@Text["Development.AutoRevive.ShortLabel"]</span></label>
+                            <ObsidianToggle Class="tools-toggle" Label="@Text["Development.AutoRevive.ShortLabel"]" Value="_state.AutoReviveEnabled" ValueChanged="SetAutoReviveAsync" Disabled="_loading" />
                         }
                         @if (CanFullHeal)
                         {

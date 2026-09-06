@@ -11,12 +11,6 @@ public partial class EvolutionCandidateLists
     private string? _observedSource;
 
     /// <summary>
-    /// Gets or sets whether the containing research card uses the redesigned presentation.
-    /// </summary>
-    [CascadingParameter(Name = nameof(PokemonLookupCard.ResearchRedesigned))]
-    public bool Redesigned { get; set; }
-
-    /// <summary>
     /// Gets or sets the source species identifier.
     /// </summary>
     [Parameter]

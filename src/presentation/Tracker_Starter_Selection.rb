@@ -11,23 +11,27 @@ module Ironmon
     return if !active? || !pokemon || pokemon.empty?
     random_pick = tracker_starter_random_pick(pokemon.length)
     auto_select = tracker_auto_select_starter?
-    if auto_select
-      ceiling = tracker_maximum_starter_base_stat_total
-      if ceiling
-        eligible = pokemon.each_index.select do |index|
-          total = pokemon[index].baseStats.values.inject(0) do |sum, value|
-            sum + value
-          end
-          total <= ceiling
+    ceiling = tracker_maximum_starter_base_stat_total
+    if ceiling
+      eligible = pokemon.each_index.select do |index|
+        total = pokemon[index].baseStats.values.inject(0) do |sum, value|
+          sum + value
         end
-        random_pick = if eligible.empty?
-                        nil
-                      else
-                        eligible[tracker_starter_random_pick(eligible.length)]
-                      end
+        total <= ceiling
       end
+      random_pick = if eligible.empty?
+                      nil
+                    else
+                      eligible[tracker_starter_random_pick(eligible.length)]
+                    end
     end
+    @tracker_starter_selection_sequence = (@tracker_starter_selection_sequence || 0) + 1
     @tracker_starter_selection = {
+      :selection_id => "#{ensure_tracker_run_id}:#{@tracker_starter_selection_sequence}",
+      :auto_select => auto_select,
+      :ceiling => ceiling,
+      :favorites => pokemon.map { |candidate| tracker_favorite_pokemon?(candidate) },
+      :accepting => false,
       :pokemon => pokemon,
       :sprites => if auto_select
                     tracker_select_starter_sprites(pokemon)
@@ -125,17 +129,20 @@ module Ironmon
         choice["base_stat_total"] = pokemon.baseStats.values.inject(0) do |sum, value|
           sum + value
         end
-        ceiling = tracker_maximum_starter_base_stat_total
+        ceiling = selection[:ceiling]
         choice["bst_eligible"] = !ceiling ||
           choice["base_stat_total"] <= ceiling
-        choice["favorite"] = tracker_favorite_pokemon?(pokemon)
+        choice["favorite"] = selection[:favorites][index]
+        choice["can_select"] = tracker_starter_selectable?(index)
       end
       choice
     end
     return {
       "active" => true,
+      "selection_id" => selection[:selection_id],
+      "auto_select" => selection[:auto_select],
       "random_pick_index" => selection[:random_pick_index],
-      "maximum_base_stat_total" => tracker_maximum_starter_base_stat_total,
+      "maximum_base_stat_total" => selection[:ceiling],
       "choices" => choices
     }
   end
@@ -154,6 +161,64 @@ module Ironmon
   def self.tracker_starter_random_pick_index
     selection = @tracker_starter_selection
     return selection ? selection[:random_pick_index] : nil
+  end
+
+  def self.tracker_starter_eligible?(index)
+    selection = @tracker_starter_selection
+    return false if !selection || !index.is_a?(Integer) || index < 0 ||
+      index >= selection[:pokemon].length
+    ceiling = selection[:ceiling]
+    total = selection[:pokemon][index].baseStats.values.inject(0) do |sum, value|
+      sum + value
+    end
+    return !ceiling || total <= ceiling
+  end
+
+  def self.tracker_starter_allowed?(index)
+    selection = @tracker_starter_selection
+    return false if !tracker_starter_eligible?(index) ||
+      !selection[:revealed][index]
+    return !selection[:auto_select] ||
+      index == selection[:random_pick_index] || selection[:favorites][index]
+  end
+
+  def self.tracker_starter_selectable?(index)
+    selection = @tracker_starter_selection
+    return tracker_starter_allowed?(index) && selection[:accepting] &&
+      !selection.key?(:pending_index)
+  end
+
+  def self.tracker_starter_favorite?(index)
+    return @tracker_starter_selection[:favorites][index]
+  end
+
+  def self.tracker_starter_selection_auto_select?
+    return @tracker_starter_selection && @tracker_starter_selection[:auto_select]
+  end
+
+  def self.set_tracker_starter_accepting(value)
+    return if !@tracker_starter_selection
+    @tracker_starter_selection[:accepting] = value
+    tracker_connection.send_event("starter_selection_changed", tracker_starter_selection_snapshot)
+  end
+
+  def self.request_tracker_starter(payload, run_id)
+    selection = @tracker_starter_selection
+    index = payload.is_a?(Hash) ? payload["index"] : nil
+    accepted = selection && run_id.to_s == ensure_tracker_run_id.to_s &&
+      payload.is_a?(Hash) && payload["selection_id"] == selection[:selection_id] &&
+      tracker_starter_selectable?(index)
+    if accepted
+      selection[:pending_index] = index
+      set_tracker_starter_accepting(false)
+    end
+    return { "accepted" => !!accepted }
+  end
+
+  def self.take_tracker_starter_choice
+    selection = @tracker_starter_selection
+    return nil if !selection || !selection.key?(:pending_index)
+    return selection.delete(:pending_index)
   end
 
   def self.tracker_auto_select_starter?
@@ -199,21 +264,65 @@ class StartersSelectionScene
       self.class != StartersSelectionScene || !Ironmon.starter_acquisition?
     begin
       return ironmon_tracker_auto_select_starter if
-        Ironmon.tracker_auto_select_starter?
-      return ironmon_tracker_original_start_scene
+        Ironmon.tracker_starter_selection_auto_select?
+      return ironmon_tracker_manual_select_starter
     ensure
       Ironmon.end_tracker_starter_selection
     end
   end
 
+  def ironmon_tracker_manual_select_starter
+    initializeGraphics
+    @index = nil
+    Ironmon.set_tracker_starter_accepting(true)
+    loop do
+      requested = Ironmon.take_tracker_starter_choice
+      if !requested.nil?
+        @index = requested
+        updateStarterSelectionGraphics
+        return ironmon_tracker_finalize_starter
+      end
+      previous_index = @index
+      if @index
+        @index = (@index + 1) % @starter_pokemon.length if Input.trigger?(Input::RIGHT)
+        @index = (@index - 1) % @starter_pokemon.length if Input.trigger?(Input::LEFT)
+        updateStarterSelectionGraphics if previous_index != @index
+        previous_index = @index
+        if Input.trigger?(Input::BACK)
+          pbPlayCancelSE
+          disposeGraphics
+          return nil
+        end
+        if Input.trigger?(Input::USE)
+          if !Ironmon.tracker_starter_selectable?(@index)
+            Ironmon.set_tracker_starter_accepting(false)
+            pbMessage(_INTL("This starter exceeds the maximum BST."))
+            Ironmon.set_tracker_starter_accepting(true)
+          else
+            Ironmon.set_tracker_starter_accepting(false)
+            confirmed = pbConfirmMessage(_INTL("Do you choose this Pokémon?"))
+            return ironmon_tracker_finalize_starter if confirmed &&
+              Ironmon.tracker_starter_eligible?(@index)
+            Ironmon.set_tracker_starter_accepting(true)
+          end
+        end
+      else
+        @index = 0 if Input.trigger?(Input::LEFT)
+        @index = 1 if Input.trigger?(Input::DOWN)
+        @index = 2 if Input.trigger?(Input::RIGHT)
+      end
+      if @index && (previous_index != @index || Input.trigger?(Input::UP) || Input.trigger?(Input::DOWN))
+        updateStarterSelectionGraphics
+      end
+      Input.update
+      Graphics.update
+    end
+  end
+
   def ironmon_tracker_auto_select_starter
     initializeGraphics
-    ceiling = Ironmon.tracker_maximum_starter_base_stat_total
     eligible_indices = @starter_pokemon.each_index.select do |index|
-      total = @starter_pokemon[index].baseStats.values.inject(0) do |sum, value|
-        sum + value
-      end
-      !ceiling || total <= ceiling
+      Ironmon.tracker_starter_eligible?(index)
     end
     if eligible_indices.empty?
       ironmon_tracker_dispose_unopened_graphics
@@ -232,7 +341,7 @@ class StartersSelectionScene
     updateOpenPokeballPosition
     updateStarterSelectionGraphics
     favorite_indices = eligible_indices.select do |index|
-      Ironmon.tracker_favorite_pokemon?(@starter_pokemon[index])
+      Ironmon.tracker_starter_favorite?(index)
     end
     if !favorite_indices.empty? && !favorite_indices.include?(@index)
       return ironmon_tracker_choose_random_or_favorite(
@@ -263,11 +372,36 @@ class StartersSelectionScene
       label = index == random_pick ? "Random Pick" : "Favorite"
       _INTL("{1} ({2})", pokemon_name, label)
     end
-    position = pbMessage(
-      _INTL("Favorite Clause: choose from the available starters."),
-      commands, 0
-    )
-    @index = allowed_indices[position]
+    message_window = pbCreateMessageWindow
+    message_window.text = _INTL("Favorite Clause: choose from the available starters.")
+    command_window = Window_CommandPokemonEx.new(commands)
+    command_window.z = 99999
+    command_window.resizeToFit(commands)
+    pbPositionNearMsgWindow(command_window, message_window, :right)
+    Ironmon.set_tracker_starter_accepting(true)
+    begin
+      loop do
+        Graphics.update
+        Input.update
+        command_window.update
+        message_window.update
+        requested = Ironmon.take_tracker_starter_choice
+        if !requested.nil?
+          @index = requested
+          break
+        end
+        if Input.trigger?(Input::USE)
+          candidate = allowed_indices[command_window.index]
+          next if !Ironmon.tracker_starter_selectable?(candidate)
+          @index = candidate
+          Ironmon.set_tracker_starter_accepting(false)
+          break
+        end
+      end
+    ensure
+      command_window.dispose
+      pbDisposeMessageWindow(message_window)
+    end
     updateOpenPokeballPosition
     updateStarterSelectionGraphics
     reveal_deadline = Ironmon.tracker_uptime_seconds +
@@ -280,6 +414,9 @@ class StartersSelectionScene
   end
 
   def ironmon_tracker_finalize_starter
+    raise "The selected starter is not allowed." if
+      !Ironmon.tracker_starter_allowed?(@index)
+    Ironmon.set_tracker_starter_accepting(false)
     chosen_pokemon = @starter_pokemon[@index]
     @spritesLoader.registerSpriteSubstitution(@pif_sprite)
     disposeGraphics

@@ -56,7 +56,7 @@ public sealed class DiagnosticToolsViewTests
     [InlineData(true)]
     public async Task LookupSearchDescribesItsRunContext(bool debugMode)
     {
-        await RenderAsync<PokemonLookupExplorer>(new() { [nameof(PokemonLookupExplorer.Redesigned)] = true, [nameof(PokemonLookupExplorer.DebugMode)] = debugMode }, true, async (component, html) =>
+        await RenderAsync<PokemonLookupExplorer>(new() { [nameof(PokemonLookupExplorer.DebugMode)] = debugMode }, true, async (component, html) =>
         {
             Assert.Contains(debugMode ? "obtainable in the active run" : "obtainable in the selected archived run", html());
             PokemonSearchMatch[] matches = [new() { SpeciesName = _speciesName, SpeciesId = _speciesId, ObtainabilityStatus = PokemonObtainabilityStatus.Obtainable }];

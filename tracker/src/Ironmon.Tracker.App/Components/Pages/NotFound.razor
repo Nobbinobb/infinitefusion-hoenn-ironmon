@@ -3,7 +3,9 @@
 
 <PageTitle>@Text["App.NotFound.NotFoundPageTitle"]</PageTitle>
 
-<main style="padding: 2rem; color: var(--text);">
-    <h1>@Text["App.NotFound.NotFoundHeading"]</h1>
-    <p style="color: var(--muted);">@Text["App.NotFound.NotFoundDescription"]</p>
+<main class="tracker-shell obsidian">
+    <ObsidianSection Title="@Text["App.NotFound.NotFoundHeading"]" Icon="ObsidianIconKind.Search">
+        <p>@Text["App.NotFound.NotFoundDescription"]</p>
+        <a class="obsidian-button" href="/">@Text["App.Shell.AppTitle"]</a>
+    </ObsidianSection>
 </main>

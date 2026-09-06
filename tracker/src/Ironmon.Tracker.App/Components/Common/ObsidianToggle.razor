@@ -1,4 +1,5 @@
-<label class="obsidian-toggle">
-    <input class="obsidian-setting-switch" type="checkbox" role="switch" checked="@Value" @onchange="HandleChangeAsync" />
-    <span>@Label</span>
+<label class="obsidian-toggle @Class">
+    @if (LabelFirst) { <span><strong>@Label</strong>@if (Description is not null) { <small>@Description</small> }</span> }
+    <input class="obsidian-setting-switch" type="checkbox" role="switch" aria-label="@Label" checked="@Value" disabled="@Disabled" @onchange="HandleChangeAsync" />
+    @if (!LabelFirst) { <span>@Label</span> }
 </label>

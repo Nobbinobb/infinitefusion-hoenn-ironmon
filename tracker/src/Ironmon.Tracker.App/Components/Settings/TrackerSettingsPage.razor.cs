@@ -115,12 +115,12 @@ public partial class TrackerSettingsPage : IDisposable
     /// <summary>
     /// Applies a changed automatic starter-selection value.
     /// </summary>
-    /// <param name="args">The checkbox change event.</param>
+    /// <param name="enabled">The requested automatic-selection state.</param>
     /// <returns>A task representing callback dispatch.</returns>
-    private Task HandleAutoSelectChanged(ChangeEventArgs args)
+    private Task HandleAutoSelectChanged(bool enabled)
     {
         _graphSettingsSaved = false;
-        return AutoSelectStarterChanged.InvokeAsync(args.Value is bool enabled && enabled);
+        return AutoSelectStarterChanged.InvokeAsync(enabled);
     }
 
     /// <summary>

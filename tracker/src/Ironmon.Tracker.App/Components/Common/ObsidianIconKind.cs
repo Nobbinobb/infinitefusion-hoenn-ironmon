@@ -288,5 +288,20 @@ public enum ObsidianIconKind
     /// <summary>
     /// Identifies decreasing graph magnification.
     /// </summary>
-    Minus = 56
+    Minus = 56,
+
+    /// <summary>
+    /// Identifies a favorite starter.
+    /// </summary>
+    Star = 57,
+
+    /// <summary>
+    /// Identifies the random starter pick.
+    /// </summary>
+    Dice = 58,
+
+    /// <summary>
+    /// Identifies a restricted selection.
+    /// </summary>
+    Lock = 59
 }

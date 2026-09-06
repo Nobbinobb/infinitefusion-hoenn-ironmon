@@ -1,0 +1,27 @@
+<article class="starter-choice-card @(RandomPick ? "starter-choice-random" : null)">
+    <header><span class="starter-slot">@Text["Starter.Selection.Slot", Choice.Index + 1]</span><span class="starter-markers">
+        @if (Choice.Revealed && Choice.Favorite) { <span class="starter-favorite-mark"><ObsidianIcon Kind="ObsidianIconKind.Star" />@Text["Starter.Selection.Favorite"]</span> }
+        @if (RandomPick) { <span class="starter-random-mark"><ObsidianIcon Kind="ObsidianIconKind.Dice" />@Text["Starter.Selection.RandomPick"]</span> }
+    </span></header>
+    <div class="starter-choice-identity">
+        @if (Choice.Revealed)
+        {
+            <PokemonSprite GameRoot="@GameRoot" SpritePath="@Choice.SpritePath" Label="@(Choice.SpeciesName ?? string.Empty)" Size="72" FitVisibleBounds="true" CssClass="starter-choice-sprite" />
+            <h3>@Choice.SpeciesName</h3><div class="starter-bst"><span>BST</span><strong>@Choice.BaseStatTotal</strong></div>
+        }
+        else
+        {
+            <span class="starter-hidden-sprite" aria-hidden="true">?</span><h3 class="starter-hidden-name">@Text["Starter.Selection.Hidden"]</h3>
+        }
+    </div>
+    <footer>
+        @if (!Choice.Revealed) { <span>@Text["Starter.Selection.OpenBall"]</span> }
+        else if (Ceiling is not null && !Choice.BstEligible) { <span class="starter-over-ceiling"><ObsidianIcon Kind="ObsidianIconKind.Close" />@Text["Starter.Selection.Ineligible"]</span> }
+        else if (AutoSelect && !RandomPick && !Choice.Favorite) { <span><ObsidianIcon Kind="ObsidianIconKind.Lock" />@Text["Starter.Selection.Restricted"]</span> }
+        else if (Ceiling is not null) { <span class="starter-eligible"><ObsidianIcon Kind="ObsidianIconKind.Check" />@Text["Starter.Selection.Eligible"]</span> }
+    </footer>
+    @if (CanSelect)
+    {
+        <button type="button" class="starter-select-action" aria-label="@Text["Starter.Selection.ChooseNamed", Choice.SpeciesName ?? string.Empty]" @onclick="Selected"><span>@Text["Starter.Selection.Choose"]<ObsidianIcon Kind="ObsidianIconKind.ArrowRight" /></span></button>
+    }
+</article>

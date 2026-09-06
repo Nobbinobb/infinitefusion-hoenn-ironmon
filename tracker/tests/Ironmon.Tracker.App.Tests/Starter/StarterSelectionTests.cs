@@ -1,14 +1,10 @@
 using Ironmon.Tracker.App.Components.Common;
-using Ironmon.Tracker.App.Components.Debug;
-using Ironmon.Tracker.App.Components.Lookup;
+using Ironmon.Tracker.App.Components.Starter;
 using Ironmon.Tracker.App.Tests.Settings;
 using Ironmon.Tracker.Connection.Knowledge;
 using Ironmon.Tracker.Connection.Transport;
 using Ironmon.Tracker.Protocol.Connection;
-using Ironmon.Tracker.Protocol.Debug;
-using Ironmon.Tracker.Protocol.Lookup;
-using Ironmon.Tracker.Protocol.Pokemon;
-using Ironmon.Tracker.Protocol.Transport;
+using Ironmon.Tracker.Protocol.Live;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
@@ -17,116 +13,62 @@ using Microsoft.JSInterop;
 using System.Reflection;
 using System.Resources;
 
-namespace Ironmon.Tracker.App.Tests.Lookup;
+namespace Ironmon.Tracker.App.Tests.Starter;
 
 /// <summary>
-/// Checks research disclosure, ability details, and the active-run-only swap confirmation boundary.
+/// Verifies starter disclosure, eligibility, and confirmation lifetime in the production components.
 /// </summary>
-public sealed class PokemonResearchTests
+public sealed class StarterSelectionTests
 {
-    private const string _speciesId = "GENGAR";
-    private const string _speciesName = "Gengar";
-    private const string _abilityId = "SUPERLUCK";
-    private const string _abilityName = "Super Luck";
-    private const string _originalId = "KEENEYE";
-    private const string _originalName = "Keen Eye";
-    private const string _description = "Heightens the critical-hit ratios of moves.";
-    private const string _storageName = "IronmonResearchTests";
+    private const string _speciesName = "Cyndaquil";
+    private const string _storageName = "IronmonStarterTests";
     private const string _version = "test";
     private const string _publish = "Publish";
-    private const string _requestSwap = "RequestDevelopmentAction";
-    private const string _cancelSwap = "CancelDevelopmentAction";
-    private const string _confirmSwap = "ConfirmDevelopmentActionAsync";
-    private const string _selectSlot = "SelectSlotAsync";
     private const string _render = "StateHasChanged";
+    private const string _request = "RequestChoice";
+    private const string _scene = "run:1";
+    private const string _nextScene = "run:2";
+    private const string _action = "starter-select-action";
     private const string _resourceName = "Ironmon.Tracker.App.Resources.Localization.TrackerResources";
-    private const string _descriptionJson = "{\"ability_id\":\"SUPERLUCK\",\"ability_name\":\"Super Luck\",\"ability_description\":\"Heightens the critical-hit ratios of moves.\"}";
     private const BindingFlags _instanceMembers = BindingFlags.Instance | BindingFlags.NonPublic;
 
     /// <summary>
-    /// Keeps swap unavailable for archives and unprivileged active-run lookup.
+    /// Hides stale identity fields and withholds actions unless every starter rule permits selection.
     /// </summary>
-    /// <param name="active">Whether the card represents an active run.</param>
-    /// <param name="authorized">Whether the game and tracker authorize development access.</param>
-    /// <returns>A task representing rendering and optional confirmation checks.</returns>
+    /// <param name="revealed">Whether the game has revealed the slot.</param>
+    /// <param name="automatic">Whether automatic-selection restrictions apply.</param>
+    /// <param name="favorite">Whether the candidate qualifies for the Favorite Clause.</param>
+    /// <param name="random">Whether this slot is the random pick.</param>
+    /// <param name="eligible">Whether its BST satisfies the ceiling.</param>
+    /// <param name="accepting">Whether the game currently accepts choices.</param>
+    /// <param name="expected">Whether the selection action should exist.</param>
+    /// <returns>A task representing rendering and confirmation checks.</returns>
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public async Task SwapRequiresActiveRunPermissionAndConfirmation(bool active, bool authorized)
+    [InlineData(false, false, true, true, true, true, false)]
+    [InlineData(true, false, false, false, true, true, true)]
+    [InlineData(true, false, true, true, false, true, false)]
+    [InlineData(true, true, false, false, true, true, false)]
+    [InlineData(true, true, true, false, true, true, true)]
+    [InlineData(true, true, false, true, true, true, true)]
+    [InlineData(true, true, true, false, false, true, false)]
+    [InlineData(true, true, false, true, true, false, false)]
+    public async Task SelectionRespectsDisclosureAndGameRules(bool revealed, bool automatic, bool favorite, bool random, bool eligible, bool accepting, bool expected)
     {
-        await RenderAsync<PokemonLookupCard>(new()
+        StarterChoiceSnapshot choice = new() { Index = 0, Revealed = revealed, SpeciesName = _speciesName, Favorite = favorite, BstEligible = eligible, CanSelect = accepting, BaseStatTotal = 309 };
+        StarterSelectionSnapshot selection = new() { Active = true, SelectionId = _scene, AutoSelect = automatic, RandomPickIndex = random ? 0 : 1, MaximumBaseStatTotal = 350, Choices = [choice] };
+        await RenderAsync<StarterSelection>(new() { [nameof(StarterSelection.Selection)] = selection }, false, async (component, html) =>
         {
-            [nameof(PokemonLookupCard.Pokemon)] = new PokemonLookupSnapshot
-            {
-                Identity = new() { SpeciesId = _speciesId, SpeciesName = _speciesName },
-                Section = PokemonLookupSection.Abilities,
-                Abilities = new() { Values = [new() { Id = _abilityId, Name = _abilityName, Description = _description }] }
-            },
-            [nameof(PokemonLookupCard.DebugMode)] = active
-        }, authorized, async (card, html) =>
-        {
-            Assert.Equal(active && authorized, html().Contains("research-swap", StringComparison.Ordinal));
-            Assert.DoesNotContain("role=\"dialog\"", html());
-            if (!active || !authorized)
+            Assert.Equal(expected, html().Contains(_action, StringComparison.Ordinal));
+            Assert.Equal(revealed, html().Contains(_speciesName, StringComparison.Ordinal));
+            Assert.Equal(revealed, html().Contains("pokemon-sprite", StringComparison.Ordinal));
+            await InvokeAsync(component, _request, choice);
+            Assert.Equal(expected, html().Contains("role=\"dialog\"", StringComparison.Ordinal));
+            if (!expected)
                 return;
 
-            await InvokeAsync(card, _requestSwap, DebugDevelopmentAction.SwapPokemon);
-            Assert.Contains("role=\"dialog\"", html());
-            Assert.Contains(_speciesName, html());
-            Assert.Contains("obsidian-dialog-scope", html());
-            await InvokeAsync(card, _cancelSwap);
+            await component.SetParametersAsync(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(StarterSelection.Selection)] = new StarterSelectionSnapshot { Active = true, SelectionId = _nextScene, Choices = [choice] } }));
             Assert.DoesNotContain("role=\"dialog\"", html());
-            await InvokeAsync(card, _requestSwap, DebugDevelopmentAction.SwapPokemon);
-            await InvokeAsync(card, _confirmSwap);
-            Assert.Contains("role=\"dialog\"", html());
-            Assert.Contains("role=\"alert\"", html());
-            Assert.DoesNotContain("disabled", html().Split("development-confirmation-actions", StringSplitOptions.None)[1]);
         });
-    }
-
-    /// <summary>
-    /// Keeps slot names, eligibility, provenance, and component-only descriptions while hiding raw IDs.
-    /// </summary>
-    /// <returns>A task representing the rendered slot and description selection.</returns>
-    [Fact]
-    public async Task RedesignedSlotsOpenComponentDescriptionsWithoutDuplicatingIdentifiers()
-    {
-        AbilitySnapshot? selected = null;
-        DebugAbilitySlotSnapshot slot = new()
-        {
-            Group = DebugAbilitySlotGroup.BodyGenerated, Kind = DebugAbilitySlotKind.Hidden, Index = 2,
-            AbilityId = _abilityId, AbilityName = _abilityName, AbilityDescription = _description,
-            OriginalAbilityId = _originalId, OriginalAbilityName = _originalName,
-            Eligibility = DebugAbilityEligibility.Universal, RestrictedSourceReplaced = true
-        };
-
-        await RenderAsync<DebugAbilitySlots>(new()
-        {
-            [nameof(DebugAbilitySlots.Slots)] = new[] { slot },
-            [nameof(DebugAbilitySlots.Selected)] = EventCallback.Factory.Create<AbilitySnapshot>(this, value => selected = value)
-        }, false, async (component, html) =>
-        {
-            Assert.Contains(_abilityName, html());
-            Assert.Contains(_originalName, html());
-            Assert.Contains("Hidden 2", html());
-            Assert.Contains("Universal", html());
-            Assert.DoesNotContain(_abilityId, html());
-            Assert.DoesNotContain(_originalId, html());
-            await InvokeAsync(component, _selectSlot, slot);
-            Assert.Equal(_description, selected?.Description);
-        });
-    }
-
-    /// <summary>
-    /// Reads the optional slot description through the same snake-case protocol contract as the game.
-    /// </summary>
-    [Fact]
-    public void ComponentDescriptionDeserializesFromGamePayload()
-    {
-        DebugAbilitySlotSnapshot slot = System.Text.Json.JsonSerializer.Deserialize<DebugAbilitySlotSnapshot>(_descriptionJson, TrackerJson.Options)!;
-        Assert.Equal(_description, slot.AbilityDescription);
     }
 
     /// <summary>
@@ -145,7 +87,7 @@ public sealed class PokemonResearchTests
         GameHandshakePayload game = new(_version, _version, true, authorized, directory, null, null);
         typeof(TrackerConnectionState).GetMethod(_publish, _instanceMembers)!.Invoke(state, [TrackerConnectionStatus.Connected, game, null, null]);
         await using TrackerConnectionService connection = new(new(0, _version, authorized, TimeSpan.FromSeconds(1)), new(), state, new(), new(storage), new(storage), new(storage));
-        ResearchActivator<T> activator = new();
+        StarterActivator<T> activator = new();
         ServiceCollection services = new();
         services.AddLogging();
         services.AddSingleton(connection.Requests);
@@ -153,7 +95,7 @@ public sealed class PokemonResearchTests
         services.AddSingleton(new PokemonSpriteDialogService());
         services.AddSingleton<IComponentActivator>(activator);
         services.AddSingleton<IJSRuntime, SettingsJsRuntime>();
-        services.AddSingleton<IStringLocalizer<TrackerResources>, ResearchLocalizer>();
+        services.AddSingleton<IStringLocalizer<TrackerResources>, StarterLocalizer>();
         try
         {
             await using ServiceProvider provider = services.BuildServiceProvider();
@@ -190,7 +132,7 @@ public sealed class PokemonResearchTests
     /// Captures the real component instance created by the renderer.
     /// </summary>
     /// <typeparam name="T">The component to capture.</typeparam>
-    private sealed class ResearchActivator<T> : IComponentActivator where T : IComponent
+    private sealed class StarterActivator<T> : IComponentActivator where T : IComponent
     {
         /// <summary>
         /// Gets the captured production component.
@@ -215,7 +157,7 @@ public sealed class PokemonResearchTests
     /// <summary>
     /// Resolves production research strings without desktop startup.
     /// </summary>
-    private sealed class ResearchLocalizer : IStringLocalizer<TrackerResources>
+    private sealed class StarterLocalizer : IStringLocalizer<TrackerResources>
     {
         private readonly ResourceManager _resources = new(_resourceName, typeof(TrackerResources).Assembly);
 
@@ -234,6 +176,7 @@ public sealed class PokemonResearchTests
         /// </summary>
         /// <param name="includeParentCultures">Whether parent resources should be included.</param>
         /// <returns>An empty resource sequence.</returns>
-        public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];
+        public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures)
+            => [];
     }
 }

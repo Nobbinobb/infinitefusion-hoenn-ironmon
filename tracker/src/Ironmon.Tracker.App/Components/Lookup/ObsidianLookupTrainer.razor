@@ -6,7 +6,7 @@
             @foreach (AreaTrainerPokemonPayload pokemon in Trainer.Party)
             {
                 <div class="obsidian-lookup-party-member">
-                    <PokemonSprite GameRoot="@GameRoot" SpritePath="@pokemon.SpritePath" Label="@pokemon.SpeciesName" Size="49" Redesigned="true" FitVisibleBounds="true" CssClass="obsidian-lookup-sprite" />
+                    <PokemonSprite GameRoot="@GameRoot" SpritePath="@pokemon.SpritePath" Label="@pokemon.SpeciesName" Size="49" FitVisibleBounds="true" CssClass="obsidian-lookup-sprite" />
                     <div><strong>@pokemon.SpeciesName</strong><small>@Text["Lookup.Areas.Level", pokemon.Level]</small></div>
                 </div>
             }

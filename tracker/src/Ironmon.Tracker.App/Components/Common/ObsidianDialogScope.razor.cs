@@ -5,7 +5,7 @@ using Microsoft.JSInterop;
 namespace Ironmon.Tracker.App.Components.Common;
 
 /// <summary>
-/// Applies the shared redesign and keyboard focus boundary to a dialog, including legacy dialog content.
+/// Applies the shared redesign and keyboard focus boundary to a dialog, including specialized dialog content.
 /// </summary>
 public partial class ObsidianDialogScope : IAsyncDisposable
 {

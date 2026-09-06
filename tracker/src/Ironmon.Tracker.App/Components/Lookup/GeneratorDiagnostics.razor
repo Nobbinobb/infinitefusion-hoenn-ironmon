@@ -1,30 +1,12 @@
-@if (Redesigned)
-{
-    <details class="research-generator" aria-label="@Heading">
-        <summary><ObsidianIcon Kind="ObsidianIconKind.Layers" /><span>@Heading</span><ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></summary>
-        <dl class="debug-data-grid">
-            @foreach (GeneratorDiagnosticEntrySnapshot entry in Diagnostics.Entries)
-            {
-                <div class="@(IsWide(entry) ? "wide" : string.Empty)">
-                    <dt>@FormatLabel(entry.Key)</dt>
-                    <dd>@entry.Value</dd>
-                </div>
-            }
-        </dl>
-    </details>
-}
-else
-{
-    <section class="debug-data-section generator-diagnostics" aria-label="@Heading">
-        <p class="section-label">@Heading</p>
-        <dl class="debug-data-grid">
-            @foreach (GeneratorDiagnosticEntrySnapshot entry in Diagnostics.Entries)
-            {
-                <div class="@(IsWide(entry) ? "wide" : string.Empty)">
-                    <dt>@FormatLabel(entry.Key)</dt>
-                    <dd>@entry.Value</dd>
-                </div>
-            }
-        </dl>
-    </section>
-}
+<details class="research-generator" aria-label="@Heading">
+    <summary><ObsidianIcon Kind="ObsidianIconKind.Layers" /><span>@Heading</span><ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></summary>
+    <dl class="debug-data-grid">
+        @foreach (GeneratorDiagnosticEntrySnapshot entry in Diagnostics.Entries)
+        {
+            <div class="@(IsWide(entry) ? "wide" : string.Empty)">
+                <dt>@FormatLabel(entry.Key)</dt>
+                <dd>@entry.Value</dd>
+            </div>
+        }
+    </dl>
+</details>

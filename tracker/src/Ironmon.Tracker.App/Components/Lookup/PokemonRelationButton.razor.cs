@@ -8,12 +8,6 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 public partial class PokemonRelationButton
 {
     /// <summary>
-    /// Gets or sets whether this content uses the redesigned research presentation.
-    /// </summary>
-    [CascadingParameter(Name = nameof(PokemonLookupCard.ResearchRedesigned))]
-    public bool Redesigned { get; set; }
-
-    /// <summary>
     /// Gets or sets the related Pokemon.
     /// </summary>
     [Parameter]

@@ -40,13 +40,11 @@
 }
 @if (_selectedAbility is not null)
 {
-    <ObsidianDialogScope Closed="CloseAbility"><AbilityDetailPanel Ability="_selectedAbility" Closed="CloseAbility" /></ObsidianDialogScope>
+    <AbilityDetailPanel Ability="_selectedAbility" Closed="CloseAbility" />
 }
 @if (_itemsOpen && Player is not null)
 {
-    <ObsidianDialogScope Closed="CloseItems">
-        <BattleItemPanel Inventory="Player.Healing" Moves="GetPpItemMoves()" InBattle="InBattle" BattleId="@BattleId" TargetPosition="TargetPosition" Closed="CloseItems" />
-    </ObsidianDialogScope>
+    <BattleItemPanel Inventory="Player.Healing" Moves="GetPpItemMoves()" InBattle="InBattle" BattleId="@BattleId" TargetPosition="TargetPosition" Closed="CloseItems" />
 }
 @if (_natureOpen && Player is not null)
 {

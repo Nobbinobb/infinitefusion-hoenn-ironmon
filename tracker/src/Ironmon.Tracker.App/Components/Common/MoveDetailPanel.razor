@@ -1,18 +1,16 @@
 @using Ironmon.Tracker.Core
 
-<div class="detail-overlay" role="presentation" @onclick="Close">
-    <section class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="move-detail-title" @onclick:stopPropagation>
-        <header class="detail-panel-header">
-            <div class="detail-title">
-                <MoveCategoryIcon Category="@Category" />
-                <div>
-                    <p class="card-kicker">@Text["Common.Move.MoveInformation"]</p>
-                    <h2 id="move-detail-title" class="@MovePresentation.GetTypeColorClass(Type)">@Name</h2>
-                </div>
+<ObsidianDialog Title="@Name" Eyebrow="@Text["Common.Move.MoveInformation"]" CloseLabel="@Text["Common.Move.CloseMoveInformation"]" Closed="Close">
+    <HeadingContent>
+        <div class="detail-title">
+            <MoveCategoryIcon Category="@Category" />
+            <div>
+                <p class="card-kicker">@Text["Common.Move.MoveInformation"]</p>
+                <h2 id="move-detail-title" class="@MovePresentation.GetTypeColorClass(Type)">@Name</h2>
             </div>
-            <button class="detail-close" type="button" aria-label="@Text["Common.Move.CloseMoveInformation"]" @onclick="Close">×</button>
-        </header>
-
+        </div>
+    </HeadingContent>
+    <ChildContent>
         <div class="detail-tags">
             <span class="typing-type @MovePresentation.GetTypeColorClass(Type)">@Type</span>
             <span>@GetCategoryName()</span>
@@ -63,5 +61,5 @@
         }
 
         <p class="detail-description">@GetDescription()</p>
-    </section>
-</div>
+    </ChildContent>
+</ObsidianDialog>

@@ -9,6 +9,7 @@ namespace Ironmon.Tracker.Tests.Connection;
 /// </summary>
 public sealed class TrackerConnectionServiceTests : IDisposable
 {
+    private const string _starterScene = "run-2:starter-1";
     private const string _activeRunId = "active-run";
     private const string _archivedRunId = "archived-run";
     private const string _preparationTestGameVersion = "6.8.0";
@@ -797,7 +798,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         Assert.Equal("CHARMANDER:0", candidatePayload.SpeciesId);
         Assert.Equal(EvolutionCandidateSide.Normal, candidatePayload.Side);
         Assert.Equal("saur", candidatePayload.Query);
-        Assert.Equal(50, candidatePayload.Limit);
+        Assert.Equal(TrackerProtocol.EvolutionCandidatePageSize, candidatePayload.Limit);
         EvolutionCandidateSearchResponsePayload candidateResponse = new()
         {
             Matches = [new EvolutionCandidateSnapshot { SpeciesId = "BULBASAUR:0", SpeciesName = "Bulbasaur", BaseStatTotal = 318 }],
@@ -1137,6 +1138,17 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         Assert.Equal("POTION", receivedBattleItem.ItemId);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(battleItemRequest.RequestId!, new BattleItemUseResponsePayload { Accepted = true, Message = "Potion selected." }, "run-2", "battle-1"));
         Assert.True((await battleItemTask).Accepted);
+
+        Task<StarterSelectionResponsePayload> starterTask = service.Requests.SelectStarterAsync(new() { SelectionId = _starterScene, Index = 1 });
+        TrackerMessage starterRequest = (await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2)))!;
+        Assert.Equal(TrackerCommands.SelectStarter, starterRequest.Command);
+        Assert.Equal(battleItemRequest.RunId, starterRequest.RunId);
+        Assert.Null(starterRequest.BattleId);
+        StarterSelectionRequestPayload starterPayload = TrackerJson.DeserializePayload<StarterSelectionRequestPayload>(starterRequest.Payload);
+        Assert.Equal(_starterScene, starterPayload.SelectionId);
+        Assert.Equal(1, starterPayload.Index);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(starterRequest.RequestId!, new StarterSelectionResponsePayload { Accepted = true }, starterRequest.RunId));
+        Assert.True((await starterTask).Accepted);
 
         PlayerMoveMenuOpenedPayload moveMenu = new() { PokemonId = "1234" };
         TrackerMessage moveMenuOpened = TrackerMessageFactory.CreateEvent("player_move_menu_opened", 6, moveMenu, "run-2", "battle-1");

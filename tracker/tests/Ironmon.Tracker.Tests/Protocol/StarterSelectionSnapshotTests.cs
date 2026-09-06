@@ -5,6 +5,8 @@ namespace Ironmon.Tracker.Tests.Protocol;
 /// </summary>
 public sealed class StarterSelectionSnapshotTests
 {
+    private const string _scene = "run-7:1";
+
     /// <summary>
     /// Initializes the starter-selection protocol tests.
     /// </summary>
@@ -24,6 +26,8 @@ public sealed class StarterSelectionSnapshotTests
         StarterSelectionSnapshot result = TrackerJson.DeserializePayload<StarterSelectionSnapshot>(json);
 
         Assert.True(result.Active);
+        Assert.Equal(_scene, result.SelectionId);
+        Assert.True(result.AutoSelect);
         Assert.Equal(1, result.RandomPickIndex);
         Assert.Equal(3, result.Choices.Count);
         StarterChoiceSnapshot hidden = result.Choices[0];
@@ -39,6 +43,7 @@ public sealed class StarterSelectionSnapshotTests
         Assert.Equal(525, revealed.BaseStatTotal);
         Assert.True(revealed.Favorite);
         Assert.True(revealed.BstEligible);
+        Assert.True(revealed.CanSelect);
     }
 
     /// <summary>
@@ -59,12 +64,28 @@ public sealed class StarterSelectionSnapshotTests
     }
 
     /// <summary>
+    /// Preserves the scene identifier and slot in a confirmed selection request.
+    /// </summary>
+    [Fact]
+    public void ConfirmedChoiceRoundTripsItsScene()
+    {
+        StarterSelectionRequestPayload request = new() { SelectionId = _scene, Index = 2 };
+        StarterSelectionRequestPayload result = TrackerJson.DeserializePayload<StarterSelectionRequestPayload>(TrackerJson.SerializePayload(request));
+        Assert.Equal(_scene, result.SelectionId);
+        Assert.Equal(2, result.Index);
+        StarterSelectionResponsePayload response = TrackerJson.DeserializePayload<StarterSelectionResponsePayload>(TrackerJson.SerializePayload(new StarterSelectionResponsePayload { Accepted = true }));
+        Assert.True(response.Accepted);
+    }
+
+    /// <summary>
     /// Creates a three-slot selection containing one revealed random pick.
     /// </summary>
     /// <returns>The test starter-selection snapshot.</returns>
     private static StarterSelectionSnapshot CreateSelection() => new()
     {
         Active = true,
+        SelectionId = _scene,
+        AutoSelect = true,
         RandomPickIndex = 1,
         MaximumBaseStatTotal = 525,
         Choices =
@@ -79,7 +100,8 @@ public sealed class StarterSelectionSnapshotTests
                 SpritePath = "Graphics/Battlers/3.png",
                 BaseStatTotal = 525,
                 BstEligible = true,
-                Favorite = true
+                Favorite = true,
+                CanSelect = true
             },
             new StarterChoiceSnapshot { Index = 2, Revealed = false }
         ]

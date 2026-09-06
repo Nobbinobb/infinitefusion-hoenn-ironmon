@@ -442,18 +442,18 @@ Assert.Contains("Sound", open);
     }
 
     /// <summary>
-    /// Verifies old sprite callers keep their original dialog while a migrated caller opts in explicitly.
+    /// Verifies every sprite caller shares the same dialog request and closing clears it.
     /// </summary>
     [Fact]
-    public void SpriteDialogAppearanceBelongsToItsCaller()
+    public void SpriteDialogRequestCanBeClosedAndReplaced()
     {
         const string source = "data:image/png;base64,test";
         PokemonSpriteDialogService service = new();
-        service.Open(source, _species, 288, true);
-        Assert.True(service.Current!.Redesigned);
+        service.Open(source, _species, 288);
+        Assert.Equal(_species, service.Current!.Label);
         service.Close();
         service.Open(source, _species, 288);
-        Assert.False(service.Current!.Redesigned);
+        Assert.Equal(288, service.Current!.Size);
         Assert.Equal(source, service.Current.Source);
     }
 

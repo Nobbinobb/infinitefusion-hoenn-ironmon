@@ -10,12 +10,6 @@ public partial class DebugAbilitySlots
     private DebugAbilitySlotGroup? _selectedGroup;
 
     /// <summary>
-    /// Gets or sets whether this content uses the redesigned research presentation.
-    /// </summary>
-    [Parameter]
-    public bool Redesigned { get; set; }
-
-    /// <summary>
     /// Gets or sets descriptions available for the represented generated abilities.
     /// </summary>
     [Parameter]
@@ -85,11 +79,11 @@ public partial class DebugAbilitySlots
     /// <returns>The group heading.</returns>
     private string GetGroupName(DebugAbilitySlotGroup group) => group switch
     {
-        DebugAbilitySlotGroup.Current => Text[Redesigned ? "Redesign.Research.Current" : "Debug.Abilities.CurrentHeading"],
-        DebugAbilitySlotGroup.Generated => Text[Redesigned ? "Redesign.Research.Generated" : "Debug.Abilities.GeneratedSlotsHeading"],
-        DebugAbilitySlotGroup.FinalFusion => Text[Redesigned ? "Redesign.Research.FinalFusionSlots" : "Debug.Abilities.FinalFusionSlotsHeading"],
-        DebugAbilitySlotGroup.BodyGenerated => Text[Redesigned ? "Redesign.Research.BodyGenerated" : "Debug.Abilities.BodyGeneratedHeading"],
-        DebugAbilitySlotGroup.HeadGenerated => Text[Redesigned ? "Redesign.Research.HeadGenerated" : "Debug.Abilities.HeadGeneratedHeading"],
+        DebugAbilitySlotGroup.Current => Text["Redesign.Research.Current"],
+        DebugAbilitySlotGroup.Generated => Text["Redesign.Research.Generated"],
+        DebugAbilitySlotGroup.FinalFusion => Text["Redesign.Research.FinalFusionSlots"],
+        DebugAbilitySlotGroup.BodyGenerated => Text["Redesign.Research.BodyGenerated"],
+        DebugAbilitySlotGroup.HeadGenerated => Text["Redesign.Research.HeadGenerated"],
         _ => Text["Debug.Abilities.AbilitiesHeading"]
     };
 

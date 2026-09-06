@@ -34,7 +34,7 @@
     font-weight:400;
     letter-spacing:0;
 }
-.evolution-graph-dialog-actions,.graph-toolbar,.graph-modes,.graph-toggles,.obsidian-toggle {
+.evolution-graph-dialog-actions,.graph-toolbar,.graph-modes,.graph-toggles,.graph-toggles .obsidian-toggle {
     display:flex;
     align-items:center;
 }
@@ -56,11 +56,11 @@
 .graph-modes button[aria-pressed=true] { color:#e2d9ff; background:#2a2940; }
 .graph-modes button:disabled { opacity:.6; cursor:wait; }
 .graph-toggles { flex-wrap:wrap; gap:12px; margin-left:auto; }
-.obsidian-toggle { gap:6px; min-height:34px; color:#bbc9de; font-size:11px; white-space:nowrap; cursor:pointer; }
-.obsidian-toggle .obsidian-setting-switch { width:30px; height:18px; flex-shrink:0; }
-.obsidian-toggle .obsidian-setting-switch:before { width:10px; height:10px; }
-.obsidian-toggle .obsidian-setting-switch:checked:before { transform:translateX(12px); }
-.obsidian-toggle:has(:checked) { color:#e2d9ff; }
+.graph-toggles .obsidian-toggle { gap:6px; min-height:34px; color:#bbc9de; font-size:11px; white-space:nowrap; cursor:pointer; }
+.graph-toggles .obsidian-toggle .obsidian-setting-switch { width:30px; height:18px; flex-shrink:0; }
+.graph-toggles .obsidian-toggle .obsidian-setting-switch:before { width:10px; height:10px; }
+.graph-toggles .obsidian-toggle .obsidian-setting-switch:checked:before { transform:translateX(12px); }
+.graph-toggles .obsidian-toggle:has(:checked) { color:#e2d9ff; }
 .evolution-graph { flex:1; display:flex; flex-direction:column; min-height:0; }
 .graph-loading { flex:1; display:grid; place-items:center; min-height:220px; color:#9baec8; }
 .evolution-graph-viewport {
@@ -182,8 +182,8 @@
     .graph-toolbar { gap:5px; padding:0; }
     .graph-modes button { padding:6px 5px; font-size:10px; }
     .graph-toggles { gap:9px; }
-    .obsidian-toggle { font-size:10px; }
+    .graph-toggles .obsidian-toggle { font-size:10px; }
 }
 @media(pointer:coarse) {
-    .obsidian-toggle,.graph-modes button { min-height:44px; }
+    .graph-toggles .obsidian-toggle,.graph-modes button { min-height:44px; }
 }

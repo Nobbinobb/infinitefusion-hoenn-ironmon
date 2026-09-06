@@ -7,12 +7,6 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class PokemonLookupSupplementalData : IDisposable
 {
-    /// <summary>
-    /// Gets or sets whether the containing research card uses the redesigned presentation.
-    /// </summary>
-    [CascadingParameter(Name = nameof(PokemonLookupCard.ResearchRedesigned))]
-    public bool Redesigned { get; set; }
-
     private const string _overworldOriginPrefix = "overworld";
     private readonly PaginationState _fusionMaterialPagination = new(TrackerProtocol.FusionMaterialPageSize);
     private readonly PaginationState _trainerOccurrencePagination = new(TrackerProtocol.OccurrencePageSize);

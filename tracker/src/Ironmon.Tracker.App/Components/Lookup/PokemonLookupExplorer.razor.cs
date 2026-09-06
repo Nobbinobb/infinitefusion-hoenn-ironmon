@@ -40,23 +40,6 @@ public partial class PokemonLookupExplorer : IDisposable
     private DiagnosticAccessService AccessService { get; set; } = null!;
 
     /// <summary>
-    /// Gets or sets whether search results and Pokémon details use the redesigned research presentation.
-    /// </summary>
-    [Parameter]
-    public bool Redesigned { get; set; }
-
-    /// <summary>
-    /// Gets or sets whether a legacy search surface opens the redesigned selected Pokémon card.
-    /// </summary>
-    [Parameter]
-    public bool RedesignedDetails { get; set; }
-
-    /// <summary>
-    /// Gets whether selected Pokémon use the shared research presentation.
-    /// </summary>
-    private bool UseRedesignedDetails => Redesigned || RedesignedDetails;
-
-    /// <summary>
     /// Gets or sets the completed-run reconstruction recipe.
     /// </summary>
     [Parameter]
@@ -400,9 +383,6 @@ public partial class PokemonLookupExplorer : IDisposable
             _lookup = lookup;
             _currentSpeciesId = lookup.Identity.SpeciesId;
             _showDetail = true;
-            if (!UseRedesignedDetails)
-                _matches = [];
-
             StartLookupObtainabilityRefresh();
             return true;
         }
@@ -581,20 +561,6 @@ public partial class PokemonLookupExplorer : IDisposable
     }
 
     /// <summary>
-    /// Gets whether an earlier search page exists.
-    /// </summary>
-    /// <returns>Whether the current page starts after the first match.</returns>
-    private bool HasPreviousSearchPage()
-        => _searchPagination.HasPrevious;
-
-    /// <summary>
-    /// Gets whether a later search page exists.
-    /// </summary>
-    /// <returns>Whether matches remain after the current page.</returns>
-    private bool HasNextSearchPage()
-        => _searchPagination.HasNext(_matchTotal, _matches.Count);
-
-    /// <summary>
     /// Loads the previous search page.
     /// </summary>
     /// <returns>A task representing the search.</returns>
@@ -607,16 +573,6 @@ public partial class PokemonLookupExplorer : IDisposable
     /// <returns>A task representing the search.</returns>
     private Task NextSearchPageAsync()
         => SearchPageAsync(_searchPagination.PageIndex + 1);
-
-    /// <summary>
-    /// Formats the inclusive visible result range.
-    /// </summary>
-    /// <returns>The visible range and total count.</returns>
-    private string GetSearchRangeText()
-    {
-        (int first, int last) = _searchPagination.GetRange(_matchTotal, _matches.Count);
-        return Text["Lookup.Search.ResultRange", first, last, _matchTotal];
-    }
 
     /// <summary>
     /// Gets whether an exception represents an expected request failure.

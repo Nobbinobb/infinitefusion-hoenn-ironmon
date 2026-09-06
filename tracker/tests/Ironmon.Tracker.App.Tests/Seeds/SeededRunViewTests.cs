@@ -46,22 +46,23 @@ public sealed class SeededRunViewTests
     private const string _playerChoice = "player_choice";
 
     /// <summary>
-    /// Keeps export explicit and preserves the inline archive presentation while the new view uses a dialog.
+    /// Keeps export explicit and shows the same token dialog for compact and full export.
     /// </summary>
-    /// <param name="redesigned">Whether to use the migrated presentation.</param>
+    /// <param name="compact">Whether export uses the compact archive action.</param>
     /// <returns>A task representing export and clipboard verification.</returns>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task ExportWaitsForRecipeAndCopiesAValidToken(bool redesigned)
+    public async Task ExportWaitsForRecipeAndCopiesAValidToken(bool compact)
     {
         TaskCompletionSource<RunReproductionRecipePayload> recipe = new(TaskCreationOptions.RunContinuationsAsynchronously);
         int requests = 0;
         Dictionary<string, object?> parameters = new()
         {
+            [nameof(SeedTokenExportPanel.Compact)] = compact,
             [nameof(SeedTokenExportPanel.Title)] = "Export current run",
             [nameof(SeedTokenExportPanel.Description)] = "Share the current world.",
-            [nameof(SeedTokenExportPanel.Redesigned)] = redesigned,
+
             [nameof(SeedTokenExportPanel.RecipeProvider)] = (Func<Task<RunReproductionRecipePayload>>)(() => { requests++; return recipe.Task; })
         };
 
@@ -74,7 +75,7 @@ public sealed class SeededRunViewTests
             Assert.DoesNotContain(_dialog, html());
             recipe.SetResult(CreateRecipe());
             await creating;
-            Assert.Equal(redesigned, html().Contains(_dialog, StringComparison.Ordinal));
+            Assert.Contains(_dialog, html());
             await InvokeAsync(panel, _copy);
             SeedTokenValidationResult result = await codec.ValidateAsync(Assert.IsType<string>(js.Copied));
             Assert.True(result.IsValid);

@@ -1,4 +1,4 @@
-<div class="obsidian-lookup-state" aria-busy="@_calculating">
+<div class="obsidian-lookup-state" aria-busy="@(_calculating ? "true" : "false")">
     <ObsidianIcon Kind="ObsidianIconKind.Layers" />
     <h3>@Text[_calculating ? "Lookup.Live.PreparingTitle" : "Lookup.Live.PrepareTitle"]</h3>
     <p role="status">@Text[_calculating ? _calculatingKey : Progress.Status == TrackerObtainabilityProgressStatus.Running ? _backgroundKey : _descriptionKey]</p>

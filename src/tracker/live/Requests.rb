@@ -158,6 +158,9 @@ module Ironmon
             "message" => "Seeded run is waiting for a safe map boundary."
           }, message["run_id"])
         end
+      elsif message["command"] == "select_starter"
+        payload = Ironmon.request_tracker_starter(message["payload"], message["run_id"])
+        queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "use_battle_item"
         payload = Ironmon.request_tracker_battle_item(
           message["payload"], message["battle_id"]

@@ -9,7 +9,7 @@
             <p>@(CanUseActiveRun ? Text["Redesign.Seeds.AvailableDescription"] : Text["Seeds.State.UnavailableDescription"])</p>
         </div>
     </div>
-    <SeedTokenExportPanel RecipeProvider="ExportRecipeAsync" Title="@Text["Seeds.Export.Title"]" Description="@Text["Redesign.Seeds.ExportDescription"]" Disabled="@(OperationLocked || !CanUseActiveRun)" BusyChanged="HandleExportBusyChanged" Redesigned="true" />
+    <SeedTokenExportPanel RecipeProvider="ExportRecipeAsync" Title="@Text["Seeds.Export.Title"]" Description="@Text["Redesign.Seeds.ExportDescription"]" Disabled="@(OperationLocked || !CanUseActiveRun)" BusyChanged="HandleExportBusyChanged" />
     <ObsidianSection Title="@Text["Seeds.Import.Title"]" Icon="ObsidianIconKind.Download">
         <p class="obsidian-settings-description">@Text["Redesign.Seeds.ImportDescription"]</p>
         <textarea class="obsidian-seed-token" value="@_importToken" @oninput="UpdateImportToken" rows="4" maxlength="@SeedTokenConstants.MaximumTokenLength" placeholder="@Text["Seeds.Import.Placeholder"]" aria-label="@Text["Seeds.Import.Placeholder"]" spellcheck="false" disabled="@OperationLocked"></textarea>

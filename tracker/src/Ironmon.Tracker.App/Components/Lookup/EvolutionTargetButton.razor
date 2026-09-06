@@ -1,6 +1,6 @@
 <div class="evolution-target-shell @(IsFocused ? "focused" : null)">
     <div class="evolution-target">
-        <PokemonSprite GameRoot="@GameRoot" SpritePath="@Target.SpritePath" Label="@Target.SpeciesName" Size="38" CssClass="evolution-target-sprite" Redesigned="true" FitVisibleBounds="true" />
+        <PokemonSprite GameRoot="@GameRoot" SpritePath="@Target.SpritePath" Label="@Target.SpeciesName" Size="38" CssClass="evolution-target-sprite" FitVisibleBounds="true" />
         <button class="evolution-target-action" type="button" title="@GetActionTitle()" @onclick="ActivateAsync">
             <span class="evolution-target-copy">
                 <strong>@Target.SpeciesName</strong>

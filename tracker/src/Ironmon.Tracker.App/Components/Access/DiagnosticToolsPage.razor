@@ -3,7 +3,7 @@
         <button type="button"
                 class="@GetTabClass(false)"
                 role="tab"
-                aria-selected="@(!_toolsSelected)"
+                aria-selected="@(!_toolsSelected ? "true" : "false")"
                 @onclick="ShowAccess">
             <ObsidianIcon Kind="ObsidianIconKind.Key" />@Text["Diagnostics.Page.Access"]
         </button>
@@ -12,7 +12,7 @@
             <button type="button"
                     class="@GetTabClass(true)"
                     role="tab"
-                    aria-selected="@_toolsSelected"
+                    aria-selected="@(_toolsSelected ? "true" : "false")"
                     @onclick="ShowTools">
                 <ObsidianIcon Kind="ObsidianIconKind.Wrench" />@Text["Diagnostics.Page.Tools"]
             </button>

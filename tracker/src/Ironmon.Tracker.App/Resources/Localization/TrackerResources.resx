@@ -1177,7 +1177,7 @@
   <data name="Settings.Starter.Group" xml:space="preserve"><value>Starter selection</value></data>
   <data name="Settings.Starter.GroupDescription" xml:space="preserve"><value>Automatic selection and generated BST limit.</value></data>
   <data name="Settings.Starter.MaximumBst" xml:space="preserve"><value>Maximum starter BST</value></data>
-  <data name="Settings.Starter.MaximumBstDescription" xml:space="preserve"><value>Optional inclusive ceiling for autoselect. Attempts with no eligible starter reset immediately and still count.</value></data>
+  <data name="Settings.Starter.MaximumBstDescription" xml:space="preserve"><value>Inclusive ceiling for manual and automatic selection. Autoselect resets attempts with no eligible starter; they still count.</value></data>
   <data name="Settings.Starter.MaximumBstPlaceholder" xml:space="preserve"><value>No ceiling</value></data>
   <data name="Settings.Starter.MaximumBstValidation" xml:space="preserve"><value>Enter a whole number from {0} to {1}, or leave this empty.</value></data>
   <data name="Player.Card.ActivePokemon" xml:space="preserve">
@@ -1816,10 +1816,10 @@
     <value>Changes apply automatically.</value>
   </data>
   <data name="Redesign.Settings.AutoSelectDescription" xml:space="preserve">
-    <value>Reveal all three, block input, then choose the Random Pick after two seconds.</value>
+    <value>Reveal all three and select the Random Pick, or choose between it and your favorites.</value>
   </data>
   <data name="Redesign.Settings.MaximumBstDescription" xml:space="preserve">
-    <value>Inclusive ceiling for autoselect. No eligible starter resets the attempt; it still counts.</value>
+    <value>Applies to manual and automatic selection. Autoselect resets if none qualify.</value>
   </data>
   <data name="Redesign.Settings.ExpansionDepthDescription" xml:space="preserve">
     <value>Predecessor and evolution layers around the initial Pokémon and each selected branch.</value>
@@ -2021,4 +2021,20 @@
   <data name="Redesign.Graph.Incoming" xml:space="preserve"><value>Evolves from</value></data>
   <data name="Redesign.Graph.Outgoing" xml:space="preserve"><value>Evolves into</value></data>
   <data name="Redesign.Graph.NoRoutes" xml:space="preserve"><value>No evolution routes in the current scope.</value></data>
+  <data name="Starter.Selection.AutoHeading" xml:space="preserve"><value>AUTO-SELECT</value></data>
+  <data name="Starter.Selection.ManualHeading" xml:space="preserve"><value>RUN START · MANUAL SELECTION</value></data>
+  <data name="Starter.Selection.FavoriteInstructions" xml:space="preserve"><value>Your favorite differs from the random pick. Choose an eligible random pick or favorite.</value></data>
+  <data name="Starter.Selection.AutomaticInstructions" xml:space="preserve"><value>The game is selecting your random starter.</value></data>
+  <data name="Starter.Selection.ManualInstructions" xml:space="preserve"><value>Reveal each Pokémon in the game, then choose an eligible starter here or in the game.</value></data>
+  <data name="Starter.Selection.Choices" xml:space="preserve"><value>Starter choices</value></data>
+  <data name="Starter.Selection.Ceiling" xml:space="preserve"><value>BST ceiling</value></data>
+  <data name="Starter.Selection.Slot" xml:space="preserve"><value>Starter {0}</value></data>
+  <data name="Starter.Selection.Restricted" xml:space="preserve"><value>Random pick or favorite only</value></data>
+  <data name="Starter.Selection.Choose" xml:space="preserve"><value>Choose</value></data>
+  <data name="Starter.Selection.ChooseNamed" xml:space="preserve"><value>Choose {0}</value></data>
+  <data name="Starter.Selection.ConfirmTitle" xml:space="preserve"><value>Choose {0}?</value></data>
+  <data name="Starter.Selection.ConfirmDescription" xml:space="preserve"><value>{0} will become your starter.</value></data>
+  <data name="Starter.Selection.Accepted" xml:space="preserve"><value>Selection accepted. Waiting for the game.</value></data>
+  <data name="Starter.Selection.Rejected" xml:space="preserve"><value>This starter is no longer available for selection. Check the current choices.</value></data>
+  <data name="Starter.Selection.RequestFailed" xml:space="preserve"><value>The selection could not be confirmed. Check the game before trying again.</value></data>
 </root>

@@ -19,7 +19,6 @@
 .research-types .typing-type{padding:3px 7px;font-size:11px;border-radius:4px;line-height:1.15}
 .research-types .typing-type{color:var(--move-type);background:color-mix(in srgb,var(--move-type) 18%,transparent);font-weight:500;text-transform:capitalize}
 .research-types .pokemon-obtainability-mark{font-size:12px}
-.research-types .pokemon-obtainability-label{font-size:11px}
 .obsidian-research .research-swap{margin-left:auto;font-size:11px;padding:6px 9px;display:flex;align-items:center;gap:6px}
 .obsidian-research>.pokemon-information-tabs{display:flex;flex-shrink:0;border:0;border-bottom:1px solid #2a3544;background:none;border-radius:0;padding:0;margin:0 0 12px;gap:0}
 .obsidian-research>.pokemon-information-tabs button{flex:1;min-width:0;border:0;border-radius:0;border-bottom:2px solid transparent;background:none;color:#aebed5;padding:11px 2px;font-size:11px;white-space:nowrap}
@@ -47,8 +46,7 @@
 .obsidian-research .lookup-occurrence small{display:block;font-size:11px;color:#a3b6d0;margin-top:4px;line-height:1.5}
 .obsidian-research .lookup-occurrence button{background:none;border:0;color:#b9adff;padding:0;font-size:11px}
 .obsidian-research .lookup-occurrence>span{margin-left:auto;color:#5aebbb;font-size:11px}
-.obsidian-research .lookup-pager{margin:12px 0 0;display:flex;align-items:center;justify-content:space-between;gap:6px;border:0;padding:0;background:none;font-size:10px;color:#9eafc6}
-.obsidian-research .evolution-candidate-status button,.obsidian-research .lookup-pager button,.obsidian-research .lookup-search button,.obsidian-research .evolution-candidate-graph-action{border:1px solid #40506a;border-radius:6px;padding:6px 9px;background:#202a3a;color:#cfdaeb;font-size:11px}
+.obsidian-research .evolution-candidate-status button,.obsidian-research .lookup-search button,.obsidian-research .evolution-candidate-graph-action{border:1px solid #40506a;border-radius:6px;padding:6px 9px;background:#202a3a;color:#cfdaeb;font-size:11px}
 .obsidian-research button:disabled,.research-explorer button:disabled{opacity:.4;cursor:default}
 .obsidian-research button:not(:disabled){cursor:pointer}
 .obsidian-research button:focus-visible,.research-explorer button:focus-visible,.obsidian-research summary:focus-visible{outline:2px solid #b0a3ff;outline-offset:3px}

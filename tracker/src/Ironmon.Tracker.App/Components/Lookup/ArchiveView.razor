@@ -24,7 +24,7 @@
                     {
                         <div class="obsidian-archive-run-actions">
                             <span class="obsidian-archive-run-context"><ObsidianIcon Kind="ObsidianIconKind.Archive" />@(selectedRecipe.Statistics is RunStatisticsPayload statistics ? Text["Lookup.Statistics.Attempt", statistics.AttemptNumber] : Text["Archive.Kicker"])</span>
-                            <SeedTokenExportPanel @key="@($"archive-seed-{selectedRecipe.RunId}")" Recipe="selectedRecipe" Title="@Text["Seeds.ArchiveExport.Title"]" Description="@Text["Seeds.ArchiveExport.Description"]" Redesigned="true" Compact="true" />
+                            <SeedTokenExportPanel @key="@($"archive-seed-{selectedRecipe.RunId}")" Recipe="selectedRecipe" Title="@Text["Seeds.ArchiveExport.Title"]" Description="@Text["Seeds.ArchiveExport.Description"]" Compact="true" />
                         </div>
                         <nav class="obsidian-lookup-tabs obsidian-archive-tabs" role="tablist" aria-label="@Text["Archive.Sections.Label"]">
                             @foreach (ArchiveSection section in Enum.GetValues<ArchiveSection>())
@@ -39,7 +39,7 @@
                             <AreaLookupExplorer @key="@($"archive-areas-{selectedRecipe.RunId}")" SourceKey="@($"archive:{selectedRecipe.RunId}")" RunId="@selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
                         </div>
                         <div role="tabpanel" hidden="@(_selectedSection != ArchiveSection.Pokemon)">
-                            <PokemonLookupExplorer @key="selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" Redesigned="true" />
+                            <PokemonLookupExplorer @key="selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
                         </div>
                     }
                 }

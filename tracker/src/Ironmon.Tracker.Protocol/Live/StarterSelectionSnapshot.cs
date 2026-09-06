@@ -23,9 +23,19 @@ public sealed class StarterSelectionSnapshot
     public int? RandomPickIndex { get; init; }
 
     /// <summary>
-    /// Gets or initializes the inclusive automatic-selection BST ceiling when enabled.
+    /// Gets or initializes the inclusive starter-selection BST ceiling when enabled.
     /// </summary>
     public int? MaximumBaseStatTotal { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the identifier binding requests to this opening of the starter screen.
+    /// </summary>
+    public string? SelectionId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether the game is using automatic selection rules.
+    /// </summary>
+    public bool AutoSelect { get; init; }
 
     /// <summary>
     /// Gets or initializes the starter slots in display order.

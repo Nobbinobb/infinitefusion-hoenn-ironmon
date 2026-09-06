@@ -5,7 +5,7 @@
            aria-label="@AriaLabel"
            role="combobox"
            aria-autocomplete="list"
-           aria-expanded="@(_open && !Disabled)"
+           aria-expanded="@(_open && !Disabled ? "true" : "false")"
            aria-controls="@_resultsId"
            autocomplete="off"
            disabled="@Disabled"
@@ -33,7 +33,7 @@
             {
                 @foreach (DebugDevelopmentCatalogEntry option in FilteredOptions)
                 {
-                    <button type="button" role="option" aria-selected="@(option.Id == SelectedId)" class="@(option.Id == SelectedId ? "selected" : null)" @onmousedown:preventDefault="true" @onclick="() => SelectAsync(option)">
+                    <button type="button" role="option" aria-selected="@(option.Id == SelectedId ? "true" : "false")" class="@(option.Id == SelectedId ? "selected" : null)" @onmousedown:preventDefault="true" @onclick="() => SelectAsync(option)">
                         <strong>@option.Name</strong>
                         <span>@option.Id</span>
                     </button>

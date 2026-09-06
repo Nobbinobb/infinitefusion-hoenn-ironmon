@@ -29,7 +29,7 @@
                     <div><dt>@Text["Access.Details.Note"]</dt><dd>@(_snapshot.Grant.Note ?? Text["Access.Details.NoNote"])</dd></div>
                     <div><dt>@Text["Access.Details.Expiration"]</dt><dd>@FormatExpiration(_snapshot.Grant)</dd></div>
                 </dl>
-                <button type="button" class="obsidian-access-identifiers-button" aria-expanded="@_identifiersOpen" aria-controls="access-identifiers" @onclick="ToggleIdentifiers">@Text["Redesign.Access.Identifiers"]<ObsidianIcon Kind="ObsidianIconKind.Info" /></button>
+                <button type="button" class="obsidian-access-identifiers-button" aria-expanded="@(_identifiersOpen ? "true" : "false")" aria-controls="access-identifiers" @onclick="ToggleIdentifiers">@Text["Redesign.Access.Identifiers"]<ObsidianIcon Kind="ObsidianIconKind.Info" /></button>
                 @if (_identifiersOpen)
                 {
                     <dl class="obsidian-access-summary obsidian-access-identifiers" id="access-identifiers">

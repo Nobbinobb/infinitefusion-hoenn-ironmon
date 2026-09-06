@@ -10,12 +10,6 @@ public partial class BaseStatVisualization
     private BaseStatDisplayMode _mode = BaseStatDisplayMode.Table;
 
     /// <summary>
-    /// Gets or sets whether this content uses the redesigned research presentation.
-    /// </summary>
-    [CascadingParameter(Name = nameof(PokemonLookupCard.ResearchRedesigned))]
-    public bool Redesigned { get; set; }
-
-    /// <summary>
     /// Gets or sets the original final base stats.
     /// </summary>
     [Parameter]
@@ -66,17 +60,15 @@ public partial class BaseStatVisualization
     {
         string? head = Fusion ? Text["Common.BaseStats.Head"].Value : null;
         string? body = Fusion ? Text["Common.BaseStats.Body"].Value : null;
-        (string Name, int Original, int Generated, string? Dominance)[] stats =
+        return
         [
             ("HP", Original.Hp, Generated.Hp, head),
-            ("ATK", Original.Attack, Generated.Attack, body),
-            ("DEF", Original.Defense, Generated.Defense, body),
             ("SPA", Original.SpecialAttack, Generated.SpecialAttack, head),
             ("SPD", Original.SpecialDefense, Generated.SpecialDefense, head),
+            ("ATK", Original.Attack, Generated.Attack, body),
+            ("DEF", Original.Defense, Generated.Defense, body),
             ("SPE", Original.Speed, Generated.Speed, body)
         ];
-
-        return Redesigned ? [stats[0], stats[3], stats[4], stats[1], stats[2], stats[5]] : stats;
     }
 
     /// <summary>

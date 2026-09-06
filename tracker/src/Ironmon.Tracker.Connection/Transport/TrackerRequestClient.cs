@@ -225,6 +225,20 @@ public sealed class TrackerRequestClient
     }
 
     /// <summary>
+    /// Requests a starter using the identity of the scene the player reviewed.
+    /// </summary>
+    /// <param name="request">The selection identifier and revealed slot.</param>
+    /// <param name="cancellationToken">The token that cancels waiting for the response.</param>
+    /// <returns>The game's authoritative acceptance result.</returns>
+    public Task<StarterSelectionResponsePayload> SelectStarterAsync(StarterSelectionRequestPayload request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.SelectionId);
+        ArgumentOutOfRangeException.ThrowIfNegative(request.Index);
+        return _session.SendAsync<StarterSelectionRequestPayload, StarterSelectionResponsePayload>(TrackerCommands.SelectStarter, request, GetConnectedRunId(), cancellationToken);
+    }
+
+    /// <summary>
     /// Searches normal Pokemon in the connected game for Favorite Clause suggestions.
     /// </summary>
     /// <param name="query">The name fragment entered by the user.</param>

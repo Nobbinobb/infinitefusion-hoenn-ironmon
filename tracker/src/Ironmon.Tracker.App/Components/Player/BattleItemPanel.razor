@@ -1,61 +1,51 @@
-<div class="detail-overlay" role="presentation" @onclick="Close">
-    <section class="detail-panel battle-item-panel" role="dialog" aria-modal="true" aria-labelledby="battle-item-title" @onclick:stopPropagation>
-        <header class="detail-panel-header">
-            <div>
-                <p class="card-kicker">@Text["Player.Items.Inventory"]</p>
-                <h2 id="battle-item-title">@Text["Player.Items.Title"]</h2>
-            </div>
-            <button class="detail-close" type="button" aria-label="@Text["Player.Items.Close"]" @onclick="Close">×</button>
-        </header>
-
-        <nav class="battle-item-tabs" aria-label="@Text["Player.Items.Categories"]" role="tablist">
-            @foreach (BattleItemCategory category in _categories)
-            {
-                <button class="@GetCategoryClass(category)" type="button" role="tab" aria-selected="@(_selectedCategory == category)" @onclick="() => SelectCategory(category)">
-                    <span>@GetCategoryName(category)</span>
-                    <strong>@GetItemCount(category)</strong>
-                </button>
-            }
-        </nav>
-
-        @if (!InBattle)
+<ObsidianDialog Title="@Text["Player.Items.Title"]" Eyebrow="@Text["Player.Items.Inventory"]" CloseLabel="@Text["Player.Items.Close"]" Class="battle-item-panel" Closed="Close">
+    <nav class="battle-item-tabs" aria-label="@Text["Player.Items.Categories"]" role="tablist">
+        @foreach (BattleItemCategory category in _categories)
         {
-            <p class="battle-item-notice">@Text["Player.Items.BattleOnly"]</p>
+            <button class="@GetCategoryClass(category)" type="button" role="tab" aria-selected="@(_selectedCategory == category ? "true" : "false")" @onclick="() => SelectCategory(category)">
+                <span>@GetCategoryName(category)</span>
+                <strong>@GetItemCount(category)</strong>
+            </button>
         }
-        @if (_status is not null)
-        {
-            <p class="battle-item-notice" role="status">@_status</p>
-        }
+    </nav>
 
-        <div class="battle-item-list">
-            @if (GetSelectedItems().Count == 0)
-            {
-                <p class="empty-state">@Text["Player.Items.EmptyCategory"]</p>
-            }
-            @foreach (BattleItemSnapshot item in GetSelectedItems())
-            {
-                <article class="battle-item-entry">
-                    <div class="battle-item-copy">
-                        <h3>@item.Name <span>×@item.Quantity</span></h3>
-                        <p>@item.Description</p>
+    @if (!InBattle)
+    {
+        <p class="battle-item-notice">@Text["Player.Items.BattleOnly"]</p>
+    }
+    @if (_status is not null)
+    {
+        <p class="battle-item-notice" role="status">@_status</p>
+    }
+
+    <div class="battle-item-list">
+        @if (GetSelectedItems().Count == 0)
+        {
+            <p class="empty-state">@Text["Player.Items.EmptyCategory"]</p>
+        }
+        @foreach (BattleItemSnapshot item in GetSelectedItems())
+        {
+            <article class="battle-item-entry">
+                <div class="battle-item-copy">
+                    <h3>@item.Name <span>×@item.Quantity</span></h3>
+                    <p>@item.Description</p>
+                </div>
+                @if (item.RequiresMove)
+                {
+                    <div class="battle-item-moves" aria-label="@Text["Player.Items.ChooseMove"]">
+                        @for (int moveIndex = 0; moveIndex < Moves.Count; moveIndex++)
+                        {
+                            int selectedMoveIndex = moveIndex;
+                            PlayerMoveSnapshot move = Moves[moveIndex];
+                            <button type="button" disabled="@(!CanUseItems)" @onclick="() => UseItem(item, selectedMoveIndex)">@move.Name <small>@move.CurrentPp/@move.TotalPp PP</small></button>
+                        }
                     </div>
-                    @if (item.RequiresMove)
-                    {
-                        <div class="battle-item-moves" aria-label="@Text["Player.Items.ChooseMove"]">
-                            @for (int moveIndex = 0; moveIndex < Moves.Count; moveIndex++)
-                            {
-                                int selectedMoveIndex = moveIndex;
-                                PlayerMoveSnapshot move = Moves[moveIndex];
-                                <button type="button" disabled="@(!CanUseItems)" @onclick="() => UseItem(item, selectedMoveIndex)">@move.Name <small>@move.CurrentPp/@move.TotalPp PP</small></button>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <button class="battle-item-use" type="button" disabled="@(!CanUseItems)" @onclick="() => UseItem(item, null)">@Text["Player.Items.Use"]</button>
-                    }
-                </article>
-            }
-        </div>
-    </section>
-</div>
+                }
+                else
+                {
+                    <button class="battle-item-use" type="button" disabled="@(!CanUseItems)" @onclick="() => UseItem(item, null)">@Text["Player.Items.Use"]</button>
+                }
+            </article>
+        }
+    </div>
+</ObsidianDialog>

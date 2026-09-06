@@ -1,75 +1,46 @@
-@if (Redesigned)
+@if (Compact)
 {
-    @if (Compact)
-    {
-        <div class="obsidian-archive-export">
-            <button type="button" class="obsidian-button obsidian-settings-primary" disabled="@(Disabled || _busy)" @onclick="CreateAsync"><ObsidianIcon Kind="ObsidianIconKind.Upload" />@(_busy ? Text["Redesign.Seeds.Working"] : Text["Seeds.Export.Create"])</button>
-            @if (!_dialogOpen && !string.IsNullOrWhiteSpace(_message) && !_succeeded)
-            {
-                <p class="obsidian-sharing-message error" role="status">@_message</p>
-            }
-        </div>
-    }
-    else
-    {
-        <ObsidianSection Title="@Title" Icon="ObsidianIconKind.Upload">
-            <p class="obsidian-settings-description">@Description</p>
-            <div class="obsidian-settings-actions">
-                <button type="button" class="obsidian-settings-button obsidian-settings-primary" disabled="@(Disabled || _busy)" @onclick="CreateAsync">@(_busy ? Text["Redesign.Seeds.Working"] : Text["Seeds.Export.Create"])<ObsidianIcon Kind="ObsidianIconKind.ArrowUpRight" /></button>
-            </div>
-            <p class="obsidian-sharing-note">@Text["Redesign.Seeds.ChallengeNote"]</p>
-            @if (!_dialogOpen && !string.IsNullOrWhiteSpace(_message) && !_succeeded)
-            {
-                <p class="obsidian-sharing-message error" role="status">@_message</p>
-            }
-        </ObsidianSection>
-    }
-    @if (_dialogOpen)
-    {
-        <div class="obsidian-sharing-dialog">
-            <ObsidianDialog Title="@Text["Redesign.Seeds.ShareRun"]" Eyebrow="@Text["Redesign.Seeds.TokenReady"]" Closed="CloseDialog">
-                <p>@Text["Redesign.Seeds.ShareDescription"]</p>
-                <textarea class="obsidian-seed-token" readonly rows="4" aria-label="@Text["Seeds.Export.TokenLabel"]">@_token</textarea>
-                <div class="obsidian-settings-actions">
-                    <button type="button" class="obsidian-settings-button obsidian-settings-primary" disabled="@(Disabled || _busy)" @onclick="CopyAsync"><ObsidianIcon Kind="ObsidianIconKind.Copy" />@(_copied ? Text["Seeds.Export.Copied"] : Text["Seeds.Export.Copy"])</button>
-                    <button type="button" class="obsidian-settings-button" disabled="@(Disabled || _busy)" @onclick="SaveAsync"><ObsidianIcon Kind="ObsidianIconKind.FileDown" />@Text["Seeds.Export.Save"]</button>
-                </div>
-                @if (_copied)
-                {
-                    <p class="obsidian-sharing-message success" role="status">@Text["Seeds.Messages.Copied"]</p>
-                }
-                @if (!string.IsNullOrWhiteSpace(_message))
-                {
-                    <p class="obsidian-sharing-message @(_succeeded ? "success" : "error")" role="status">@_message</p>
-                }
-                <p class="obsidian-sharing-note">@Text["Redesign.Seeds.ChallengeNote"]</p>
-            </ObsidianDialog>
-        </div>
-    }
+    <div class="obsidian-archive-export">
+        <button type="button" class="obsidian-button obsidian-settings-primary" disabled="@(Disabled || _busy)" @onclick="CreateAsync"><ObsidianIcon Kind="ObsidianIconKind.Upload" />@(_busy ? Text["Redesign.Seeds.Working"] : Text["Seeds.Export.Create"])</button>
+        @if (!_dialogOpen && !string.IsNullOrWhiteSpace(_message) && !_succeeded)
+        {
+            <p class="obsidian-sharing-message error" role="status">@_message</p>
+        }
+    </div>
 }
 else
 {
-    <section class="seed-action-card">
-        <div>
-            <strong>@Title</strong>
-            <small>@Description</small>
+    <ObsidianSection Title="@Title" Icon="ObsidianIconKind.Upload">
+        <p class="obsidian-settings-description">@Description</p>
+        <div class="obsidian-settings-actions">
+            <button type="button" class="obsidian-settings-button obsidian-settings-primary" disabled="@(Disabled || _busy)" @onclick="CreateAsync">@(_busy ? Text["Redesign.Seeds.Working"] : Text["Seeds.Export.Create"])<ObsidianIcon Kind="ObsidianIconKind.ArrowUpRight" /></button>
         </div>
-        <button type="button" class="access-primary" disabled="@(Disabled || _busy)" @onclick="CreateAsync">@Text["Seeds.Export.Create"]</button>
-        @if (!string.IsNullOrWhiteSpace(_token))
+        <p class="obsidian-sharing-note">@Text["Redesign.Seeds.ChallengeNote"]</p>
+        @if (!_dialogOpen && !string.IsNullOrWhiteSpace(_message) && !_succeeded)
         {
-            <textarea readonly rows="4" aria-label="@Text["Seeds.Export.TokenLabel"]">@_token</textarea>
-            <div class="seed-export-actions">
-                <button type="button" class="access-remove" disabled="@(Disabled || _busy)" @onclick="CopyAsync">@(_copied ? Text["Seeds.Export.Copied"] : Text["Seeds.Export.Copy"])</button>
-                <button type="button" class="access-remove" disabled="@(Disabled || _busy)" @onclick="SaveAsync">@Text["Seeds.Export.Save"]</button>
+            <p class="obsidian-sharing-message error" role="status">@_message</p>
+        }
+    </ObsidianSection>
+}
+@if (_dialogOpen)
+{
+    <div class="obsidian-sharing-dialog">
+        <ObsidianDialog Title="@Text["Redesign.Seeds.ShareRun"]" Eyebrow="@Text["Redesign.Seeds.TokenReady"]" Closed="CloseDialog">
+            <p>@Text["Redesign.Seeds.ShareDescription"]</p>
+            <textarea class="obsidian-seed-token" readonly rows="4" aria-label="@Text["Seeds.Export.TokenLabel"]">@_token</textarea>
+            <div class="obsidian-settings-actions">
+                <button type="button" class="obsidian-settings-button obsidian-settings-primary" disabled="@(Disabled || _busy)" @onclick="CopyAsync"><ObsidianIcon Kind="ObsidianIconKind.Copy" />@(_copied ? Text["Seeds.Export.Copied"] : Text["Seeds.Export.Copy"])</button>
+                <button type="button" class="obsidian-settings-button" disabled="@(Disabled || _busy)" @onclick="SaveAsync"><ObsidianIcon Kind="ObsidianIconKind.FileDown" />@Text["Seeds.Export.Save"]</button>
             </div>
             @if (_copied)
             {
-                <p class="seed-copy-status" role="status">@Text["Seeds.Messages.Copied"]</p>
+                <p class="obsidian-sharing-message success" role="status">@Text["Seeds.Messages.Copied"]</p>
             }
-        }
-        @if (!string.IsNullOrWhiteSpace(_message))
-        {
-            <p class="access-message @(_succeeded ? "success" : "error")" role="status">@_message</p>
-        }
-    </section>
+            @if (!string.IsNullOrWhiteSpace(_message))
+            {
+                <p class="obsidian-sharing-message @(_succeeded ? "success" : "error")" role="status">@_message</p>
+            }
+            <p class="obsidian-sharing-note">@Text["Redesign.Seeds.ChallengeNote"]</p>
+        </ObsidianDialog>
+    </div>
 }

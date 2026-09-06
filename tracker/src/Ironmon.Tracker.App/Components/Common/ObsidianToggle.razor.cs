@@ -26,6 +26,30 @@ public partial class ObsidianToggle
     public EventCallback<bool> ValueChanged { get; set; }
 
     /// <summary>
+    /// Gets or sets whether changes are temporarily unavailable.
+    /// </summary>
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets the surrounding layout classes.
+    /// </summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether descriptive text precedes the switch.
+    /// </summary>
+    [Parameter]
+    public bool LabelFirst { get; set; }
+
+    /// <summary>
+    /// Gets or sets secondary explanation displayed in the label-first layout.
+    /// </summary>
+    [Parameter]
+    public string? Description { get; set; }
+
+    /// <summary>
     /// Forwards the native checkbox state to the owning view.
     /// </summary>
     /// <param name="args">The checkbox change event.</param>

@@ -19,12 +19,6 @@ public partial class SeedTokenExportPanel
     private const string _tokenIdFormat = "N";
 
     /// <summary>
-    /// Gets or sets whether export uses the shared redesigned section and token dialog.
-    /// </summary>
-    [Parameter]
-    public bool Redesigned { get; set; }
-
-    /// <summary>
     /// Gets or sets whether the redesigned export action appears as a compact archive button.
     /// </summary>
     [Parameter]
@@ -108,8 +102,8 @@ public partial class SeedTokenExportPanel
             _seed = recipe.Seed;
             _token = Codec.Create(recipe, Guid.NewGuid().ToString(_tokenIdFormat), TimeProvider.GetUtcNow());
             _succeeded = true;
-            _message = Redesigned ? null : Text["Seeds.Messages.Exported"].Value;
-            _dialogOpen = Redesigned;
+            _message = null;
+            _dialogOpen = true;
         }
         catch (Exception exception) when (IsExportFailure(exception))
         {

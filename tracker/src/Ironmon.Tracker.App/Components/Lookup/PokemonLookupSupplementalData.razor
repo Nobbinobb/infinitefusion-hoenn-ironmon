@@ -1,7 +1,7 @@
 @if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldWildEncounters)) && (_wildOccurrences.Total > 0 || _loadingWildOccurrences || _wildOccurrenceError is not null))
 {
     <section class="lookup-occurrences" aria-label="@Text["Lookup.Card.WildEncounterLocations"]">
-        <header><p class="section-label">@Text[Redesigned ? "Redesign.Research.WildLocations" : "Lookup.Card.WildLocationsHeading"]</p><span>@Text["Lookup.Card.SlotCount", _wildOccurrences.Total]</span></header>
+        <header><p class="section-label">@Text["Redesign.Research.WildLocations"]</p><span>@Text["Lookup.Card.SlotCount", _wildOccurrences.Total]</span></header>
         @if (_loadingWildOccurrences)
         {
             <p class="lookup-message">@Text["Lookup.Areas.LoadingDetails"]</p>
@@ -40,11 +40,7 @@
         }
         @if (_wildOccurrences.Total > TrackerProtocol.OccurrencePageSize)
         {
-            <nav class="lookup-pager" aria-label="@Text["Lookup.Card.WildEncounterLocations"]">
-                <button type="button" disabled="@(_loadingWildOccurrences || !_wildOccurrencePagination.HasPrevious)" @onclick="PreviousWildOccurrencePageAsync">@Text["Lookup.Fusion.Previous"]</button>
-                <span>@GetOccurrenceRangeText(_wildOccurrencePagination, _wildOccurrences.Matches.Count, _wildOccurrences.Total)</span>
-                <button type="button" disabled="@(_loadingWildOccurrences || !_wildOccurrencePagination.HasNext(_wildOccurrences.Total, _wildOccurrences.Matches.Count))" @onclick="NextWildOccurrencePageAsync">@Text["Lookup.Fusion.Next"]</button>
-            </nav>
+            <ObsidianPagingControls Label="@Text["Lookup.Card.WildEncounterLocations"]" RangeText="@GetOccurrenceRangeText(_wildOccurrencePagination, _wildOccurrences.Matches.Count, _wildOccurrences.Total)" PreviousDisabled="@(_loadingWildOccurrences || !_wildOccurrencePagination.HasPrevious)" NextDisabled="@(_loadingWildOccurrences || !_wildOccurrencePagination.HasNext(_wildOccurrences.Total, _wildOccurrences.Matches.Count))" Previous="PreviousWildOccurrencePageAsync" Next="NextWildOccurrencePageAsync" />
         }
     </section>
 }
@@ -52,7 +48,7 @@
 @if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldTrainerParties)) && _trainerOccurrences.Total > 0)
 {
     <section class="lookup-occurrences" aria-label="@Text["Lookup.Card.TrainerPartyLocations"]">
-        <header><p class="section-label">@Text[Redesigned ? "Redesign.Research.Trainers" : "Lookup.Card.TrainersHeading"]</p><span>@Text["Lookup.Card.SlotCount", _trainerOccurrences.Total]</span></header>
+        <header><p class="section-label">@Text["Redesign.Research.Trainers"]</p><span>@Text["Lookup.Card.SlotCount", _trainerOccurrences.Total]</span></header>
         <div class="lookup-occurrence-list">
             @foreach (TrainerPokemonOccurrenceSnapshot occurrence in _trainerOccurrences.Matches)
             {
@@ -73,11 +69,7 @@
         }
         @if (_trainerOccurrences.Total > TrackerProtocol.OccurrencePageSize)
         {
-            <nav class="lookup-pager" aria-label="@Text["Lookup.Card.TrainerPartyLocations"]">
-                <button type="button" disabled="@(_loadingTrainerOccurrences || !_trainerOccurrencePagination.HasPrevious)" @onclick="PreviousTrainerOccurrencePageAsync">@Text["Lookup.Fusion.Previous"]</button>
-                <span>@GetOccurrenceRangeText(_trainerOccurrencePagination, _trainerOccurrences.Matches.Count, _trainerOccurrences.Total)</span>
-                <button type="button" disabled="@(_loadingTrainerOccurrences || !_trainerOccurrencePagination.HasNext(_trainerOccurrences.Total, _trainerOccurrences.Matches.Count))" @onclick="NextTrainerOccurrencePageAsync">@Text["Lookup.Fusion.Next"]</button>
-            </nav>
+            <ObsidianPagingControls Label="@Text["Lookup.Card.TrainerPartyLocations"]" RangeText="@GetOccurrenceRangeText(_trainerOccurrencePagination, _trainerOccurrences.Matches.Count, _trainerOccurrences.Total)" PreviousDisabled="@(_loadingTrainerOccurrences || !_trainerOccurrencePagination.HasPrevious)" NextDisabled="@(_loadingTrainerOccurrences || !_trainerOccurrencePagination.HasNext(_trainerOccurrences.Total, _trainerOccurrences.Matches.Count))" Previous="PreviousTrainerOccurrencePageAsync" Next="NextTrainerOccurrencePageAsync" />
         }
     </section>
 }
@@ -85,7 +77,7 @@
 @if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonOverview)) && Overview.FusionBases.Count > 0)
 {
     <section class="lookup-relations" aria-label="@Text["Lookup.Card.DisplayedFusionComponents"]">
-        <header><p class="section-label">@Text[Redesigned ? "Redesign.Research.DisplayedComponents" : "Lookup.Card.DisplayedComponentsHeading"]</p></header>
+        <header><p class="section-label">@Text["Redesign.Research.DisplayedComponents"]</p></header>
         <div class="lookup-relation-grid">
             @foreach (PokemonRelationSnapshot fusionBase in Overview.FusionBases)
             {
@@ -98,7 +90,7 @@
 @if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonOverview)) && Overview.ReverseFusion is not null)
 {
     <section class="lookup-relations" aria-label="@Text["Lookup.Card.IronmonReverseFusion"]">
-        <header><p class="section-label">@Text[Redesigned ? "Redesign.Research.IronmonReverse" : "Lookup.Card.IronmonReverseHeading"]</p></header>
+        <header><p class="section-label">@Text["Redesign.Research.IronmonReverse"]</p></header>
         <div class="lookup-relation-grid">
             <PokemonRelationButton Relation="@Overview.ReverseFusion" GameRoot="@GameRoot" Selected="PokemonSelected" />
         </div>
@@ -108,7 +100,7 @@
 @if ((!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.FusionMaterialPairs)) && Pokemon.Identity.Fusion)
 {
     <section class="lookup-relations" aria-label="@Text["Lookup.Card.IronmonFusionMaterials"]">
-        <header><p class="section-label">@Text[Redesigned ? "Redesign.Research.FusionMaterials" : "Lookup.Card.FusionMaterialsHeading"]</p></header>
+        <header><p class="section-label">@Text["Redesign.Research.FusionMaterials"]</p></header>
         @if (_loadingFusionMaterials)
         {
             <p class="lookup-empty">@Text["Lookup.Card.LoadingFusionMaterials"]</p>
@@ -136,11 +128,7 @@
             </div>
             @if (_fusionMaterials.Total > TrackerProtocol.FusionMaterialPageSize)
             {
-                <nav class="lookup-pager" aria-label="@Text["Lookup.Fusion.FusionMaterialSearchPages"]">
-                    <button type="button" disabled="@(!_fusionMaterialPagination.HasPrevious)" @onclick="PreviousFusionMaterialPageAsync">@Text["Lookup.Fusion.Previous"]</button>
-                    <span>@GetFusionMaterialRangeText()</span>
-                    <button type="button" disabled="@(!_fusionMaterialPagination.HasNext(_fusionMaterials.Total, _fusionMaterials.Matches.Count))" @onclick="NextFusionMaterialPageAsync">@Text["Lookup.Fusion.Next"]</button>
-                </nav>
+                <ObsidianPagingControls Label="@Text["Lookup.Fusion.FusionMaterialSearchPages"]" RangeText="@GetFusionMaterialRangeText()" PreviousDisabled="@(!_fusionMaterialPagination.HasPrevious)" NextDisabled="@(!_fusionMaterialPagination.HasNext(_fusionMaterials.Total, _fusionMaterials.Matches.Count))" Previous="PreviousFusionMaterialPageAsync" Next="NextFusionMaterialPageAsync" />
             }
         }
     </section>
