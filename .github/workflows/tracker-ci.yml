@@ -18,7 +18,6 @@ concurrency:
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   DOTNET_NOLOGO: true
-  GAME_REVISION: aadf65fb6ba960a15fe1764bfcb3c31bca2a512e
 
 jobs:
   current-catalogs:
@@ -26,12 +25,14 @@ jobs:
     name: Generate current-source catalogs
     runs-on: windows-latest
     timeout-minutes: 45
+    outputs:
+      game_version: ${{ steps.game.outputs.game_version }}
     steps:
-      - name: Download pinned Hoenn game
+      - name: Download newest Hoenn release
         uses: actions/checkout@v6
         with:
           repository: infinitefusion/infinitefusion-hoenn-public
-          ref: ${{ env.GAME_REVISION }}
+          ref: releases
           path: game
           persist-credentials: false
       - name: Check out tested source
@@ -40,6 +41,7 @@ jobs:
           path: game/Ironmon
           persist-credentials: false
       - name: Prepare software rendering for the hosted game
+        id: game
         shell: pwsh
         run: ./game/Ironmon/tools/ci/Initialize-HostedGame.ps1
       - name: Verify hosted game runtime
@@ -64,6 +66,8 @@ jobs:
 
   core-tests:
     needs: current-catalogs
+    env:
+      IRONMON_EXPECTED_GAME_VERSION: ${{ needs.current-catalogs.outputs.game_version }}
     name: Core tracker tests
     runs-on: windows-latest
     timeout-minutes: 20

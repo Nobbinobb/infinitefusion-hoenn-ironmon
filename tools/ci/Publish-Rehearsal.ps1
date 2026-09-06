@@ -10,8 +10,8 @@ $candidateRun = $runs | Where-Object headSha -eq $candidateCommit | Select-Objec
 if ($null -eq $candidateRun) { throw 'No successful candidate build matches the merged commit.' }
 gh run download $candidateRun.databaseId --repo $env:GITHUB_REPOSITORY --name release-candidate --dir candidate
 $manifest = Get-Content candidate/candidate.json -Raw | ConvertFrom-Json
-if (-not $manifest.rehearsal -or $manifest.source_commit -ne $candidateCommit -or $manifest.source_tree -ne $mergedTree -or $manifest.game_commit -ne $env:GAME_REVISION) {
-  throw 'Merged source or game revision differs from the tested candidate.'
+if (-not $manifest.rehearsal -or $manifest.source_commit -ne $candidateCommit -or $manifest.source_tree -ne $mergedTree -or $manifest.game_commit -notmatch '^[0-9a-f]{40}$' -or $manifest.run_id -ne $candidateRun.databaseId.ToString()) {
+  throw 'Merged source or provenance differs from the tested candidate.'
 }
 if (@($manifest.archives).Count -ne 2) { throw 'Expected two validated archives.' }
 foreach ($archive in $manifest.archives) {
@@ -32,7 +32,8 @@ Disposable automated release rehearsal. DO NOT INSTALL.
 This uses existing version metadata solely to test packaging and publication.
 Source commit: $candidateCommit
 Merged commit: $env:GITHUB_SHA
-Game commit: $env:GAME_REVISION
+Game commit: $($manifest.game_commit)
+Game version: $($manifest.game_version)
 Candidate run: $($candidateRun.databaseId)
 The candidate ZIPs were verified after merge and were not rebuilt.
 "@ | Set-Content candidate/REHEARSAL.md

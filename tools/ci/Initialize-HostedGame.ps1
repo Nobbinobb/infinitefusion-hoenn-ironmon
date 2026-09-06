@@ -5,6 +5,17 @@ if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_OS -ne 'Windows') {
 }
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $gameRoot = Split-Path -Parent $projectRoot
+$gameCommit = git -C $gameRoot rev-parse HEAD
+if ($gameCommit -notmatch '^[0-9a-f]{40}$') { throw 'Downloaded game revision is invalid.' }
+$settings = Get-Content (Join-Path $gameRoot 'Data/Scripts/001_Settings.rb') -Raw
+$versionMatch = [regex]::Match($settings, '(?m)^\s*GAME_VERSION_NUMBER\s*=\s*["''](?<version>\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)["'']')
+if (-not $versionMatch.Success) { throw 'Downloaded game version is unavailable.' }
+$gameVersion = $versionMatch.Groups['version'].Value
+"GAME_REVISION=$gameCommit" >> $env:GITHUB_ENV
+"IRONMON_EXPECTED_GAME_VERSION=$gameVersion" >> $env:GITHUB_ENV
+"game_commit=$gameCommit" >> $env:GITHUB_OUTPUT
+"game_version=$gameVersion" >> $env:GITHUB_OUTPUT
+Write-Output "Using newest Hoenn release: $gameCommit (game version $gameVersion)."
 $mesaArchive = Join-Path $env:RUNNER_TEMP 'mesa3d-26.2.0-release-msvc.7z'
 $mesaRoot = Join-Path $env:RUNNER_TEMP 'ironmon-mesa'
 $mesaDigest = 'dcb2719ef346dab5b609fcb193a5f13cfc4b0502e3f4de1ad43d349477402f47'

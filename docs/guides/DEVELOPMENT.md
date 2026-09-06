@@ -28,12 +28,14 @@ the primary work item, and `release/<version>` for release preparation. Keep
 version numbers unchanged on feature, fix, and issue branches.
 
 Push the working branch and open a pull request into `main`. The repository's
-GitHub Actions workflow first downloads a pinned Hoenn revision and generates
+GitHub Actions workflow first downloads the newest Hoenn `releases` revision and generates
 catalogs from the source being tested, using `tools/Build-TrackerRelease.ps1
 -GenerateOnly`. Both tracker test jobs consume those catalogs from the same
 workflow run. They never restore catalogs from a previous Ironmon release.
 Generated artifacts remain outside source control and expire after one day.
-Changing the pinned game revision is a reviewed dependency update.
+Each run records the downloaded game commit and version. Tests compare generated
+metadata with that downloaded version. Publication reuses the tested candidate
+even if upstream publishes another update after the build.
 
 The isolated `release-rehearsal.yml` workflow exercises full hosted release
 validation and publication on disposable branches. It is experimental until
