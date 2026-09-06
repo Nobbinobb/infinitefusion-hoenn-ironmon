@@ -32,16 +32,12 @@ GitHub Actions workflow first downloads the newest Hoenn `releases` revision and
 catalogs from the source being tested, using `tools/Build-TrackerRelease.ps1
 -GenerateOnly`. Both tracker test jobs consume those catalogs from the same
 workflow run. They never restore catalogs from a previous Ironmon release.
-Generated artifacts remain outside source control and expire after one day.
-Each run records the downloaded game commit and version. Tests compare generated
-metadata with that downloaded version. Publication reuses the tested candidate
-even if upstream publishes another update after the build.
-
-The isolated `release-rehearsal.yml` workflow exercises full hosted release
-validation and publication on disposable branches. It is experimental until
-the results in `docs/audits/RELEASE_AUTOMATION_REHEARSAL.md` confirm the hosted
-runtime, clean-checkout generation, and publication checks. The established
-production release procedure below remains in effect until adoption.
+Generated artifacts remain outside source control. Tracker-only catalogs expire
+after one day; upstream snapshots and release candidates are retained for seven
+days. Each run records the game revision and refreshed online sprite metadata.
+Tests compare generated metadata with those resolved inputs. Publication reuses
+a tested candidate only when its source tree and upstream fingerprint still
+match; otherwise it rebuilds and fully retests the approved source.
 
 After the desired feature and fix pull requests have merged, create a release
 branch from the updated `main`. Add the new release notes and synchronize the
@@ -50,12 +46,16 @@ installation guide, protocol examples, and distribution release-note pointer.
 Open the release pull request before producing packages so the final scope and
 wording can be reviewed.
 
-Run `tools/Build-TrackerRelease.ps1` locally only after the release pull request
-is approved, up to date, and frozen. Record the validated commit and generated
-archive checksums in the pull request. After merging, verify that `main` has the
-same content as the validated commit before tagging and publishing the release.
-Any code or documentation change after a successful release build invalidates
-those artifacts.
+The release PR runs `tools/Build-TrackerRelease.ps1` on a hosted runner and
+produces both packages, checksums, provenance, and audit evidence. Review the
+candidate and fusion-pool comparison, then merge after all four required checks
+pass. Merging the version increase starts automatic publication. A changed
+upstream input triggers a complete rebuild and retest before publication; a
+failed gate publishes nothing. No manual tag or local package upload is needed.
+
+See [Release automation](../RELEASE_AUTOMATION.md) for the current workflow and
+recovery instructions. Local runtime or release validation must use an isolated
+game checkout when another worktree shares the installed game's parent directory.
 
 ## Tracker builds
 

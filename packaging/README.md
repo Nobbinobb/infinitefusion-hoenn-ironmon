@@ -1,4 +1,4 @@
-# Ironmon 0.8.5
+# Ironmon 0.8.6
 
 This distribution targets Pokemon Infinite Fusion 2 version 6.8.2.
 
@@ -6,11 +6,10 @@ Copy the included `Data` directory into the game directory and merge it with
 the existing `Data` directory. Only Ruby files are installed beneath
 `Data/Scripts/997_Ironmon`.
 
-Version 0.8.5 makes both default outfits permanently available, adds an
-obtained-only wardrobe filter, and projects Imposter and Transform battle state
-accurately in the tracker. Derived wild fusions now use only encounter types
-that can participate in the corresponding overworld mechanic, and the mechanics
-manual has been reorganized for clearer lookup and reference.
+Version 0.8.6 redesigns the tracker, revises trainer randomization and boss
+parties, and adds live gym badge progress. Fusion preparation avoids impossible
+reverse-pair repair work, and new generation profiles use validated visible
+custom sprite variants while preserving existing runs' pinned data.
 The player package contains no maintainer generator, release-data generator,
 audit, or private signing-key material.
 

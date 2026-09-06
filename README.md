@@ -6,7 +6,7 @@ challenge rules, rapid resets, and a companion tracker designed around
 hidden-information boundaries.
 
 > [!IMPORTANT]
-> Ironmon **0.8.5** targets **Pokémon Infinite Fusion 2 version 6.8.2**.
+> Ironmon **0.8.6** targets **Pokémon Infinite Fusion 2 version 6.8.2**.
 > The included tracker currently targets Windows x64.
 
 ## Features
@@ -72,8 +72,8 @@ and troubleshooting.
 
 | Ironmon version | Infinite Fusion 2 version | Status |
 | --- | --- | --- |
-| 0.8.5 | 6.8.2 | Current |
-| 0.8.0–0.8.4 | 6.8.2 | Legacy |
+| 0.8.6 | 6.8.2 | Current |
+| 0.8.0–0.8.5 | 6.8.2 | Legacy |
 | 0.2.1–0.7.9 | 6.8.0 | Legacy |
 
 Use an Ironmon release only with its listed Infinite Fusion version.

@@ -1,6 +1,6 @@
 # Ironmon Tracker protocol v1
 
-This document records the implemented protocol through the 0.8.5 tracker UI,
+This document records the implemented protocol through the 0.8.6 tracker UI,
 native fusion closure, and run-aware evolution additions. Later parts extend
 the payload catalog without changing the common envelope or transport.
 
@@ -41,7 +41,7 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.2",
-    "ironmon_version": "0.8.5",
+    "ironmon_version": "0.8.6",
     "ironmon_active": false,
     "debug_available": true,
     "supported_diagnostic_capabilities": ["pokemon.current_player", "run.seed"],
@@ -242,7 +242,7 @@ action path. Non-cancellable nested screens such as Summary reject the request
 until closed. The native battle checks, turn consumption, item consumption, and
 effect handlers remain authoritative.
 
-An active 0.8.5 run also includes optional aggregate type-coverage context:
+An active 0.8.6 run also includes optional aggregate type-coverage context:
 
 ```json
 {
@@ -670,7 +670,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "result": "lost",
   "generation_profile_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "game_version": "6.8.2",
-  "ironmon_version": "0.8.5",
+  "ironmon_version": "0.8.6",
   "configuration": {
     "schema_version": 1,
     "wild_policy": "mixed",
