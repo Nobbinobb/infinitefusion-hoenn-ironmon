@@ -1,0 +1,105 @@
+name: Disposable release rehearsal
+
+on:
+  push:
+    branches:
+      - feature/release-automation-test
+      - release-test/integration-20260906
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  GAME_REVISION: d606db4fecd27190b0c6721306e710313f3d106d
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_NOLOGO: true
+
+jobs:
+  candidate:
+    if: github.ref == 'refs/heads/feature/release-automation-test'
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - name: Download pinned Hoenn game
+        uses: actions/checkout@v6
+        with:
+          repository: infinitefusion/infinitefusion-hoenn-public
+          ref: ${{ env.GAME_REVISION }}
+          path: game
+          persist-credentials: false
+      - name: Check out candidate source
+        uses: actions/checkout@v6
+        with:
+          path: game/Ironmon
+          persist-credentials: false
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.400
+      - name: Install Windows MAUI workload
+        run: dotnet workload install maui-windows --skip-manifest-update
+      - name: Generate, test and package current source
+        shell: pwsh
+        working-directory: game/Ironmon
+        run: ./tools/Build-TrackerRelease.ps1
+      - name: Record candidate provenance
+        shell: pwsh
+        working-directory: game/Ironmon
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (git status --porcelain --untracked-files=no) { throw 'Release build changed tracked source.' }
+          $archives = @(Get-ChildItem release/*.zip | ForEach-Object {
+            @{ name = $_.Name; bytes = $_.Length; sha256 = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() }
+          })
+          if ($archives.Count -ne 2) { throw 'Expected both release variants.' }
+          $manifest = @{
+            source_commit = $env:GITHUB_SHA
+            source_tree = (git rev-parse 'HEAD^{tree}')
+            game_commit = $env:GAME_REVISION
+            run_id = $env:GITHUB_RUN_ID
+            archives = $archives
+            rehearsal = $true
+          }
+          $manifest | ConvertTo-Json -Depth 5 | Set-Content release/candidate.json
+          "Candidate: $env:GITHUB_SHA; game: $env:GAME_REVISION" >> $env:GITHUB_STEP_SUMMARY
+          $archives | Format-Table | Out-String >> $env:GITHUB_STEP_SUMMARY
+      - name: Retain candidate for merge publication
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-candidate
+          path: game/Ironmon/release/
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+      - name: Retain failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-failure-diagnostics
+          path: |
+            game/Ironmon/data/*.error
+            game/Ironmon/data/*.summary
+            game/Ironmon/data/*.progress
+            game/Ironmon/data/*.txt
+            game/errorlog.txt
+          retention-days: 1
+          if-no-files-found: ignore
+
+  publish-rehearsal:
+    if: github.ref == 'refs/heads/release-test/integration-20260906'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Publish previously validated candidate after test merge
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./tools/ci/Publish-Rehearsal.ps1
