@@ -16,13 +16,11 @@ public partial class EvolutionGraph
         _portalCounts.Clear();
         int nodesPerRow = Math.Clamp(NodesPerRow, EvolutionGraphSettings.MinimumNodesPerRow, EvolutionGraphSettings.MaximumNodesPerRow);
         int[] orderedLevels = [.. _orderedNodes.Select(node => node.StageLevel).Distinct().Order()];
+        Dictionary<int, IReadOnlyList<string>> retainedRanges = CaptureActiveRangeMembers();
         BuildLevelPages(orderedLevels, nodesPerRow);
-        SelectActivePages(orderedLevels, selectFocusRanges);
+        SelectActivePages(orderedLevels, selectFocusRanges, retainedRanges);
         int widestRow = _levelPages.Values.SelectMany(pages => pages).Select(page => page.Count).DefaultIfEmpty(1).Max();
         _canvasWidth = Math.Max(_canvasMinimumWidth, (_canvasPadding * 2) + (widestRow * _nodeWidth) + (Math.Max(0, widestRow - 1) * _nodeGap));
-        if (!CompactRows)
-            _canvasWidth += _rangeButtonWidth + _rangeButtonGap;
-
         if (CompactRows)
         {
             BuildCompactLayout(orderedLevels, widestRow);
@@ -107,11 +105,30 @@ public partial class EvolutionGraph
     }
 
     /// <summary>
-    /// Selects valid compact ranges, preferring the focused node and its direct connections.
+    /// Captures stable identities before loading or filtering can move BST range boundaries.
+    /// </summary>
+    /// <returns>The displayed range members per level, with the focused Pokemon preferred when present.</returns>
+    private Dictionary<int, IReadOnlyList<string>> CaptureActiveRangeMembers()
+    {
+        Dictionary<int, IReadOnlyList<string>> ranges = [];
+        foreach ((int level, int pageIndex) in _activePageIndexes)
+        {
+            if (!_levelPages.TryGetValue(level, out IReadOnlyList<IReadOnlyList<EvolutionTargetSnapshot>>? pages) || pageIndex < 0 || pageIndex >= pages.Count)
+                continue;
+
+            ranges[level] = [.. pages[pageIndex].OrderByDescending(node => IsFocused(node.SpeciesId)).Select(node => node.SpeciesId)];
+        }
+
+        return ranges;
+    }
+
+    /// <summary>
+    /// Selects compact ranges by stable members, preferring the focused node and its direct connections for a new focus.
     /// </summary>
     /// <param name="orderedLevels">The stable logical levels.</param>
     /// <param name="selectFocusRanges">Whether selection should follow a changed focus or display mode.</param>
-    private void SelectActivePages(IReadOnlyList<int> orderedLevels, bool selectFocusRanges)
+    /// <param name="retainedRanges">The previously selected range members before page boundaries changed.</param>
+    private void SelectActivePages(IReadOnlyList<int> orderedLevels, bool selectFocusRanges, IReadOnlyDictionary<int, IReadOnlyList<string>> retainedRanges)
     {
         string focusSpeciesId = FocusedSpeciesId ?? Current.SpeciesId;
         HashSet<string> connectedSpeciesIds = new(StringComparer.OrdinalIgnoreCase);
@@ -137,8 +154,15 @@ public partial class EvolutionGraph
                 continue;
             }
 
-            if (!selectFocusRanges && _activePageIndexes.TryGetValue(level, out int retainedPageIndex) && retainedPageIndex >= 0 && retainedPageIndex < pages.Count)
-                continue;
+            if (!selectFocusRanges && retainedRanges.TryGetValue(level, out IReadOnlyList<string>? members))
+            {
+                int retainedPageIndex = members.Select(speciesId => FindPageIndex(level, speciesId)).FirstOrDefault(pageIndex => pageIndex >= 0, -1);
+                if (retainedPageIndex >= 0)
+                {
+                    _activePageIndexes[level] = retainedPageIndex;
+                    continue;
+                }
+            }
 
             if (focusPageIndex >= 0)
             {
@@ -170,28 +194,28 @@ public partial class EvolutionGraph
     {
         List<(int Level, double Top, double Height)> levelBands = [];
         List<(int Level, int PageIndex, double X, double Y)> rangeLabels = [];
-        double nextNodeY = _canvasPadding;
+        double nextNodeY = _canvasPadding + 73;
         foreach (int level in orderedLevels)
         {
             IReadOnlyList<IReadOnlyList<EvolutionTargetSnapshot>> pages = _levelPages[level];
             int physicalRowCount = pages.Count;
-            double bandTop = nextNodeY - _levelBandPadding;
-            double bandHeight = (_levelBandPadding * 2) + (physicalRowCount * _nodeHeight) + (Math.Max(0, physicalRowCount - 1) * _rowGap);
+            double bandTop = nextNodeY - 73;
+            double bandHeight = 105 + (physicalRowCount * _nodeHeight) + (Math.Max(0, physicalRowCount - 1) * _rowGap);
             levelBands.Add((level, bandTop, bandHeight));
             for (int physicalRowIndex = 0; physicalRowIndex < physicalRowCount; physicalRowIndex++)
             {
                 IReadOnlyList<EvolutionTargetSnapshot> row = pages[physicalRowIndex];
                 double rowWidth = (row.Count * _nodeWidth) + (Math.Max(0, row.Count - 1) * _nodeGap);
-                double contentStartX = _rangeButtonWidth + _rangeButtonGap;
-                double startX = contentStartX + ((_canvasWidth - contentStartX - rowWidth) / 2);
+                double startX = (_canvasWidth - rowWidth) / 2;
                 double y = nextNodeY + (physicalRowIndex * (_nodeHeight + _rowGap));
                 for (int index = 0; index < row.Count; index++)
                     _positions[row[index].SpeciesId] = (startX + (index * (_nodeWidth + _nodeGap)), y);
 
-                rangeLabels.Add((level, physicalRowIndex, 10, y + ((_nodeHeight - _rangeButtonHeight) / 2)));
+                double labelX = GetCenteredGapPositions(row.Count, 1, physicalRowIndex)[0] - (_rangeButtonWidth / 2);
+                rangeLabels.Add((level, physicalRowIndex, labelX, y - 34));
             }
 
-            nextNodeY = bandTop + bandHeight + _levelBandGap + _levelBandPadding;
+            nextNodeY = bandTop + bandHeight + _levelBandGap + 73;
         }
 
         _levelBands = levelBands;

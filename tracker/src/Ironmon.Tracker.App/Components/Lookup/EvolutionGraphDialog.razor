@@ -1,89 +1,96 @@
-<div class="detail-overlay" role="presentation" @onclick="CloseAsync">
-    <section class="@DialogCssClass" role="dialog" aria-modal="true" aria-labelledby="evolution-graph-dialog-title" @onclick:stopPropagation>
-        <header class="detail-panel-header">
-            <div>
-                <p class="card-kicker">@Text["Lookup.Graph.EvolutionGraph"]</p>
-                <h2 id="evolution-graph-dialog-title">@Current.SpeciesName</h2>
+<ObsidianDialogScope Closed="CloseAsync">
+    <div class="detail-overlay graph-overlay" role="presentation" @onclick="CloseAsync">
+        <section class="@DialogCssClass" role="dialog" aria-modal="true" aria-labelledby="evolution-graph-dialog-title" @onclick:stopPropagation>
+            <header class="detail-panel-header">
+                <div>
+                    <p class="card-kicker">@Text["Lookup.Graph.EvolutionGraph"]</p>
+                    <h2 id="evolution-graph-dialog-title">@Current.SpeciesName <small>@Text["Redesign.Graph.PokemonCount", _nodes.Count]</small></h2>
+                </div>
+                <div class="evolution-graph-dialog-actions">
+                    <button class="detail-close" type="button" title="@WindowToggleLabel" aria-label="@WindowToggleLabel" @onclick="ToggleMaximizedAsync"><ObsidianIcon Kind="@(_maximized ? ObsidianIconKind.Shrink : ObsidianIconKind.Expand)" /></button>
+                    <button class="detail-close" type="button" aria-label="@Text["Lookup.Graph.Close"]" @onclick="CloseAsync"><ObsidianIcon Kind="ObsidianIconKind.Close" /></button>
+                </div>
+            </header>
+
+            <div class="graph-toolbar">
+                <div class="graph-modes" role="group" aria-label="@Text["Redesign.Graph.Reachability"]">
+                    <button type="button" disabled="@_obtainabilityLoading" aria-pressed="@(_reachabilityMode == ReachabilityDisplayMode.All ? "true" : "false")" @onclick="() => SetReachabilityModeAsync(ReachabilityDisplayMode.All)">@Text["Redesign.Graph.AllRoutes"]</button>
+                    <button type="button" disabled="@_obtainabilityLoading" aria-pressed="@(GroupedReachabilityMode ? "true" : "false")" @onclick="() => SetReachabilityModeAsync(ReachabilityDisplayMode.Grouped)">@Text["Redesign.Graph.ByReachability"]</button>
+                    <button type="button" disabled="@_obtainabilityLoading" aria-pressed="@(ReachableOnlyMode ? "true" : "false")" @onclick="() => SetReachabilityModeAsync(ReachabilityDisplayMode.ReachableOnly)">@Text["Redesign.Graph.ReachableOnly"]</button>
+                </div>
+                <div class="graph-toggles">
+                    <ObsidianToggle Label="@Text["Redesign.Graph.ShowAll"]" Value="_showAllLoaded" ValueChanged="ToggleGraphScope" />
+                    <ObsidianToggle Label="@Text["Redesign.Graph.SingleRow"]" Value="_compactRows" ValueChanged="ToggleRowMode" />
+                </div>
             </div>
-            <div class="evolution-graph-dialog-actions">
-                <button class="evolution-obtainability-toggle @(ReachabilityModeActive ? "active" : null)"
-                        type="button"
-                        disabled="@_obtainabilityLoading"
-                        title="@(_obtainabilityLoading ? Text["Lookup.Obtainability.Checking"] : ReachabilityToggleLabel)"
-                        aria-label="@(_obtainabilityLoading ? Text["Lookup.Obtainability.Checking"] : ReachabilityToggleLabel)"
-                        aria-pressed="@ReachabilityModeActive"
-                        @onclick="ToggleReachabilityFilterAsync">
-                    <span aria-hidden="true">@ReachabilityToggleIcon</span>
-                </button>
-                <button class="detail-close" type="button" title="@RowModeToggleLabel" aria-label="@RowModeToggleLabel" @onclick="ToggleRowMode">@RowModeToggleIcon</button>
-                <button class="detail-close" type="button" title="@ScopeToggleLabel" aria-label="@ScopeToggleLabel" @onclick="ToggleGraphScope">@ScopeToggleIcon</button>
-                <button class="detail-close" type="button" title="@WindowToggleLabel" aria-label="@WindowToggleLabel" @onclick="ToggleMaximizedAsync">@WindowToggleIcon</button>
-                <button class="detail-close" type="button" aria-label="@Text["Lookup.Graph.Close"]" @onclick="CloseAsync">×</button>
-            </div>
-        </header>
 
-        @if (!_firstPageLoaded && _loading)
-        {
-            <p class="lookup-message">@Text["Lookup.Graph.Loading"]</p>
-        }
-        else
-        {
-            <EvolutionGraph Current="@Current"
-                            GameRoot="@GameRoot"
-                            ViewportRevision="@_viewportRevision"
-                            NodesPerRow="@_nodesPerRow"
-                            CompactRows="@_compactRows"
-                            ReachabilityViewActive="@GroupedReachabilityMode"
-                            ReachableSpeciesIds="@EvolutionReachableSpeciesIds"
-                            BranchSelectionEnabled="true"
-                            Nodes="@GraphNodes"
-                            Edges="@GraphEdges"
-                            FocusedSpeciesId="@_focusedSpeciesId"
-                            Focused="FocusPokemonAsync"
-                            VisibleNodeCountChanged="HandleVisibleNodeCountChanged"
-                            Selected="SelectPokemonAsync" />
+            @if (!_firstPageLoaded && _loading)
+            {
+                <div class="graph-loading" role="status">@Text["Lookup.Graph.Loading"]</div>
+            }
+            else
+            {
+                <EvolutionGraph Current="@Current"
+                                GameRoot="@GameRoot"
+                                ViewportRevision="@_viewportRevision"
+                                NodesPerRow="@_nodesPerRow"
+                                CompactRows="@_compactRows"
+                                ReachabilityViewActive="@GroupedReachabilityMode"
+                                ReachableSpeciesIds="@EvolutionReachableSpeciesIds"
+                                BranchSelectionEnabled="true"
+                                Nodes="@GraphNodes"
+                                Edges="@GraphEdges"
+                                FocusedSpeciesId="@_focusedSpeciesId"
+                                Focused="FocusPokemonAsync"
+                                VisibleNodeCountChanged="HandleVisibleNodeCountChanged"
+                                Selected="SelectPokemonAsync" />
+            }
+            <footer class="graph-footer" aria-live="polite">
+                @if (_loading)
+                {
+                    <p class="lookup-message">@Text["Lookup.Graph.LoadingNeighborhood", _expansionDepth, _displayedNodeCount, _nodes.Count, _edges.Count]</p>
+                }
+                else if (_error is null)
+                {
+                    <p class="lookup-message">@Text["Redesign.Graph.Loaded", _displayedNodeCount, _nodes.Count, _edges.Count]</p>
+                    @if (!_showAllLoaded)
+                    {
+                        <p class="lookup-message">@Text["Redesign.Graph.Neighborhood", _expansionDepth]</p>
+                    }
+                }
 
-            @if (_loading)
-            {
-                <p class="lookup-message">@Text["Lookup.Graph.LoadingNeighborhood", _expansionDepth, _displayedNodeCount, _nodes.Count, _edges.Count]</p>
-            }
-            else if (_error is null)
-            {
-                <p class="lookup-message">@Text["Lookup.Graph.LoadedNeighborhood", _displayedNodeCount, _nodes.Count, _edges.Count, _expansionDepth]</p>
-            }
+                @if (_obtainabilityLoading && _obtainabilityProgress is not null)
+                {
+                    <p class="lookup-message">
+                        <span>@ObtainabilityPhaseLabel</span>
+                    </p>
+                }
+                else if (GroupedReachabilityMode && _obtainabilityProgress is not null)
+                {
+                    <p class="lookup-message evolution-obtainability-active-info">
+                        <span>@Text["Lookup.Graph.AvailabilityViewActive", EvolutionReachableSpeciesIds.Count, Math.Max(0, GraphNodes.Count - EvolutionReachableSpeciesIds.Count)]</span>
+                    </p>
+                }
+                else if (ReachableOnlyMode && _obtainabilityProgress is not null)
+                {
+                    <p class="lookup-message evolution-obtainability-active-info">
+                        <span>@Text["Lookup.Graph.ObtainableOnlyViewActive", EvolutionReachableSpeciesIds.Count]</span>
+                    </p>
+                }
 
-            @if (_obtainabilityLoading && _obtainabilityProgress is not null)
-            {
-                <p class="lookup-message">
-                    <span>@ObtainabilityPhaseLabel</span>
-                </p>
-            }
-            else if (GroupedReachabilityMode && _obtainabilityProgress is not null)
-            {
-                <p class="lookup-message evolution-obtainability-active-info">
-                    <span>@Text["Lookup.Graph.AvailabilityViewActive", EvolutionReachableSpeciesIds.Count, Math.Max(0, GraphNodes.Count - EvolutionReachableSpeciesIds.Count)]</span>
-                    <span>@Text["Lookup.Graph.ShowOnlyObtainableHint"]</span>
-                </p>
-            }
-            else if (ReachableOnlyMode && _obtainabilityProgress is not null)
-            {
-                <p class="lookup-message evolution-obtainability-active-info">
-                    <span>@Text["Lookup.Graph.ObtainableOnlyViewActive", EvolutionReachableSpeciesIds.Count]</span>
-                    <span>@Text["Lookup.Graph.ShowAllPossibleHint"]</span>
-                </p>
-            }
-        }
-
-        @if (_error is not null)
-        {
-            <div class="evolution-graph-dialog-error">
-                <p class="lookup-message error">@_error</p>
-                <button type="button" @onclick="RetryAsync">@Text["Lookup.Graph.Retry"]</button>
-            </div>
-        }
-        @if (_obtainabilityError is not null)
-        {
-            <p class="lookup-message error">@_obtainabilityError</p>
-        }
-    </section>
-</div>
+                @if (_error is not null)
+                {
+                    <div class="evolution-graph-dialog-error">
+                        <p class="lookup-message error">@_error</p>
+                        <button type="button" @onclick="RetryAsync">@Text["Lookup.Graph.Retry"]</button>
+                    </div>
+                }
+                @if (_obtainabilityError is not null)
+                {
+                    <p class="lookup-message error">@_obtainabilityError</p>
+                }
+                <div class="graph-legend"><span><PokemonObtainabilityMark Status="PokemonObtainabilityStatus.Obtainable" /> @Text["Lookup.Obtainability.Obtainable"]</span><span><PokemonObtainabilityMark Status="PokemonObtainabilityStatus.Unobtainable" /> @Text["Lookup.Obtainability.Unobtainable"]</span><span>@Text["Lookup.Graph.CanvasInstructions"]</span></div>
+            </footer>
+        </section>
+    </div>
+</ObsidianDialogScope>

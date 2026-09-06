@@ -263,5 +263,30 @@ public enum ObsidianIconKind
     /// <summary>
     /// Identifies structured state data.
     /// </summary>
-    Database = 51
+    Database = 51,
+
+    /// <summary>
+    /// Identifies expanding the graph window.
+    /// </summary>
+    Expand = 52,
+
+    /// <summary>
+    /// Identifies restoring the compact graph window.
+    /// </summary>
+    Shrink = 53,
+
+    /// <summary>
+    /// Identifies centering the graph viewport.
+    /// </summary>
+    Crosshair = 54,
+
+    /// <summary>
+    /// Identifies increasing graph magnification.
+    /// </summary>
+    Plus = 55,
+
+    /// <summary>
+    /// Identifies decreasing graph magnification.
+    /// </summary>
+    Minus = 56
 }

@@ -1,5 +1,25 @@
 <svg class="obsidian-line-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    @if (Kind == ObsidianIconKind.Close)
+    @if (Kind == ObsidianIconKind.Expand)
+    {
+        <path d="M8 3H3v5 M3 3l6 6 M16 3h5v5 M21 3l-6 6 M3 16v5h5 M3 21l6-6 M21 16v5h-5 M21 21l-6-6" />
+    }
+    else if (Kind == ObsidianIconKind.Shrink)
+    {
+        <path d="M9 4v5H4 M9 9 3 3 M15 4v5h5 M15 9l6-6 M4 15h5v5 M9 15l-6 6 M20 15h-5v5 M15 15l6 6" />
+    }
+    else if (Kind == ObsidianIconKind.Crosshair)
+    {
+        <circle cx="12" cy="12" r="8" /><path d="M12 2v4 M12 18v4 M2 12h4 M18 12h4" />
+    }
+    else if (Kind == ObsidianIconKind.Plus)
+    {
+        <path d="M12 5v14 M5 12h14" />
+    }
+    else if (Kind == ObsidianIconKind.Minus)
+    {
+        <path d="M5 12h14" />
+    }
+    else if (Kind == ObsidianIconKind.Close)
     {
         <path d="m6 6 12 12 M6 18 18 6" />
     }

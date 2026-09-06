@@ -1,9 +1,4 @@
 <section class="evolution-graph" aria-label="@Text["Lookup.Graph.EvolutionGraph"]">
-    <header class="evolution-graph-header">
-        <p class="section-label">@Text["Lookup.Graph.EvolutionGraphHeading"]</p>
-        <span>@Text["Lookup.Graph.CanvasInstructions"]</span>
-    </header>
-
     <div class="evolution-graph-viewport" @ref="_viewport">
         <div class="evolution-graph-canvas" style="@CanvasStyle" @ref="_canvas">
             @foreach ((int Level, double Top, double Height) band in _levelBands)
@@ -24,6 +19,7 @@
                             style="@GetRangeStyle(range.Value.X, range.Value.Y)"
                             title="@GetRangeTitle(range.Key.Level, range.Key.PageIndex)"
                             aria-label="@GetRangeTitle(range.Key.Level, range.Key.PageIndex)"
+                            aria-pressed="@(IsRangeActive(range.Key.Level, range.Key.PageIndex) ? "true" : "false")"
                             @onclick="() => SelectRangeAsync(range.Key.Level, range.Key.PageIndex)">
                         <span>@GetRangeLabel(range.Key.Level, range.Key.PageIndex)</span>
                         @if (portalCount > 0)
@@ -67,7 +63,7 @@
                     @foreach (EvolutionGraphEdge edge in _visibleEdges.Where(ShouldShowLabel))
                     {
                         <foreignObject @key="edge.Key" x="@GetLabelX(edge)" y="@GetLabelY(edge)" width="@_edgeLabelWidth" height="@_edgeLabelHeight">
-                            <div class="evolution-graph-edge-label" xmlns="http://www.w3.org/1999/xhtml">
+                            <button type="button" class="evolution-graph-edge-label" title="@string.Join(Environment.NewLine, edge.EffectiveMethods)" @onclick="OpenRoutes" xmlns="http://www.w3.org/1999/xhtml">
                                 @if (edge.ComponentSide != EvolutionCandidateSide.Normal)
                                 {
                                     <small>@(edge.ComponentSide == EvolutionCandidateSide.Head ? Text["Common.BaseStats.Head"] : Text["Common.BaseStats.Body"])</small>
@@ -76,7 +72,7 @@
                                 {
                                     <span>@method</span>
                                 }
-                            </div>
+                            </button>
                         </foreignObject>
                     }
                 </g>
@@ -84,7 +80,7 @@
 
             @foreach (EvolutionTargetSnapshot node in _visibleNodes)
             {
-                <div @key="node.SpeciesId" class="evolution-graph-node @(IsFocused(node.SpeciesId) ? "current" : null) @(!IsReachable(node.SpeciesId) ? "unavailable" : null)" style="@GetNodeStyle(node.SpeciesId)">
+                <div @key="node.SpeciesId" class="evolution-graph-node @(IsFocused(node.SpeciesId) ? "current" : null) @(IsRelated(node.SpeciesId) ? "related" : null) @(!IsReachable(node.SpeciesId) ? "unavailable" : null)" style="@GetNodeStyle(node.SpeciesId)">
                     <EvolutionTargetButton Target="@node"
                                            GameRoot="@GameRoot"
                                            Selected="@Selected"
@@ -94,10 +90,47 @@
             }
         </div>
 
+        <button class="graph-focused-routes" type="button" @onclick="OpenRoutes"><strong>@FocusedNode.SpeciesName</strong><span>@Text["Redesign.Graph.Routes"]</span><ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></button>
         <div class="evolution-graph-controls">
-            <button type="button" title="@Text["Lookup.Graph.ZoomOut"]" aria-label="@Text["Lookup.Graph.ZoomOut"]" @onclick="ZoomOutAsync">−</button>
-            <button class="evolution-graph-zoom" type="button" title="@Text["Lookup.Graph.ResetView"]" aria-label="@Text["Lookup.Graph.ResetView"]" @onclick="ResetViewAsync">◎</button>
-            <button type="button" title="@Text["Lookup.Graph.ZoomIn"]" aria-label="@Text["Lookup.Graph.ZoomIn"]" @onclick="ZoomInAsync">+</button>
+            <button type="button" title="@Text["Lookup.Graph.ZoomOut"]" aria-label="@Text["Lookup.Graph.ZoomOut"]" @onclick="ZoomOutAsync"><ObsidianIcon Kind="ObsidianIconKind.Minus" /></button>
+            <button class="evolution-graph-zoom" type="button" title="@Text["Lookup.Graph.ResetView"]" aria-label="@Text["Lookup.Graph.ResetView"]" @onclick="ResetViewAsync"><ObsidianIcon Kind="ObsidianIconKind.Crosshair" /><span data-graph-zoom></span></button>
+            <button type="button" title="@Text["Lookup.Graph.ZoomIn"]" aria-label="@Text["Lookup.Graph.ZoomIn"]" @onclick="ZoomInAsync"><ObsidianIcon Kind="ObsidianIconKind.Plus" /></button>
         </div>
     </div>
 </section>
+@if (_routesOpen)
+{
+    <ObsidianDialog Eyebrow="@Text["Redesign.Graph.Routes"]" Title="@FocusedNode.SpeciesName" Closed="CloseRoutes">
+        <div class="graph-routes">
+            @foreach (bool incoming in new[] { true, false })
+            {
+                IReadOnlyList<EvolutionGraphEdge> routes = GetFocusedRoutes(incoming);
+                @if (routes.Count > 0)
+                {
+                    <p class="graph-route-heading">@Text[incoming ? "Redesign.Graph.Incoming" : "Redesign.Graph.Outgoing"]</p>
+                    @foreach (EvolutionGraphEdge edge in routes)
+                    {
+                        EvolutionTargetSnapshot target = _nodeLookup[incoming ? edge.SourceSpeciesId : edge.TargetSpeciesId];
+                        <div class="graph-route" @key="edge.Key">
+                            <EvolutionTargetButton Target="target" GameRoot="@GameRoot" Selected="SelectRouteAsync" />
+                            <div class="graph-route-methods">
+                                @if (edge.ComponentSide != EvolutionCandidateSide.Normal)
+                                {
+                                    <small>@Text[edge.ComponentSide == EvolutionCandidateSide.Head ? "Common.BaseStats.Head" : "Common.BaseStats.Body"]</small>
+                                }
+                                @foreach (string method in edge.EffectiveMethods)
+                                {
+                                    <span>@method</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            }
+            @if (!Edges.Any(IsActive))
+            {
+                <p>@Text["Redesign.Graph.NoRoutes"]</p>
+            }
+        </div>
+    </ObsidianDialog>
+}

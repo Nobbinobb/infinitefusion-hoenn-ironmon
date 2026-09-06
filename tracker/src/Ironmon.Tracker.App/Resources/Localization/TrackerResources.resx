@@ -2008,4 +2008,17 @@
   <data name="Redesign.Research.ActiveFusion" xml:space="preserve"><value>Active fusion</value></data>
   <data name="Redesign.Tools.SearchDescription" xml:space="preserve"><value>Search by Pokémon name. Results show the species identifier and whether it is obtainable in the active run.</value></data>
   <data name="Redesign.Tools.SearchMatchCount" xml:space="preserve"><value>{0} matches in this active run</value></data>
+  <data name="Redesign.Graph.PokemonCount" xml:space="preserve"><value>{0} Pokémon</value></data>
+  <data name="Redesign.Graph.Reachability" xml:space="preserve"><value>Evolution reachability</value></data>
+  <data name="Redesign.Graph.AllRoutes" xml:space="preserve"><value>All routes</value></data>
+  <data name="Redesign.Graph.ByReachability" xml:space="preserve"><value>By reachability</value></data>
+  <data name="Redesign.Graph.ReachableOnly" xml:space="preserve"><value>Reachable only</value></data>
+  <data name="Redesign.Graph.ShowAll" xml:space="preserve"><value>Show all</value></data>
+  <data name="Redesign.Graph.SingleRow" xml:space="preserve"><value>Single row</value></data>
+  <data name="Redesign.Graph.Loaded" xml:space="preserve"><value>{0} of {1} loaded Pokémon shown · {2} connections</value></data>
+  <data name="Redesign.Graph.Neighborhood" xml:space="preserve"><value>Neighborhood · {0} layers from tracker settings</value></data>
+  <data name="Redesign.Graph.Routes" xml:space="preserve"><value>Evolution routes</value></data>
+  <data name="Redesign.Graph.Incoming" xml:space="preserve"><value>Evolves from</value></data>
+  <data name="Redesign.Graph.Outgoing" xml:space="preserve"><value>Evolves into</value></data>
+  <data name="Redesign.Graph.NoRoutes" xml:space="preserve"><value>No evolution routes in the current scope.</value></data>
 </root>

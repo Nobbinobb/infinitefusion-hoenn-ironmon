@@ -67,64 +67,6 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
     private string WindowToggleLabel => _maximized ? Text["Lookup.Graph.Restore"] : Text["Lookup.Graph.Maximize"];
 
     /// <summary>
-    /// Gets the icon for the window-size control.
-    /// </summary>
-    private string WindowToggleIcon => _maximized ? "❐" : "⛶";
-
-    /// <summary>
-    /// Gets the accessible label for the graph-scope control.
-    /// </summary>
-    private string ScopeToggleLabel => _showAllLoaded ? Text["Lookup.Graph.ShowFocusedNeighborhood"] : Text["Lookup.Graph.ShowAllLoaded"];
-
-    /// <summary>
-    /// Gets the icon for the graph-scope control.
-    /// </summary>
-    private string ScopeToggleIcon => _showAllLoaded ? "◎" : "▦";
-
-    /// <summary>
-    /// Gets the accessible label for the physical-row display control.
-    /// </summary>
-    private string RowModeToggleLabel => _compactRows ? Text["Lookup.Graph.ShowExpandedRows"] : Text["Lookup.Graph.ShowCompactRows"];
-
-    /// <summary>
-    /// Gets the icon for the physical-row display control.
-    /// </summary>
-    private string RowModeToggleIcon => _compactRows ? "☷" : "▤";
-
-    /// <summary>
-    /// Gets the accessible label for the obtainability filter control.
-    /// </summary>
-    private string ReachabilityToggleLabel => _reachabilityMode switch
-    {
-        ReachabilityDisplayMode.All => Text["Lookup.Graph.ShowAvailabilityRows"],
-        ReachabilityDisplayMode.Grouped => Text["Lookup.Graph.ShowOnlyObtainable"],
-        _ => Text["Lookup.Graph.ShowAllPossible"]
-    };
-
-    /// <summary>
-    /// Gets the icon for the obtainability filter control.
-    /// </summary>
-    private string ReachabilityToggleIcon
-    {
-        get
-        {
-            return _obtainabilityLoading
-                ? "…"
-                : _reachabilityMode switch
-                {
-                    ReachabilityDisplayMode.All => "◇",
-                    ReachabilityDisplayMode.Grouped => "◐",
-                    _ => "✓"
-                };
-        }
-    }
-
-    /// <summary>
-    /// Gets whether either availability presentation is active.
-    /// </summary>
-    private bool ReachabilityModeActive => _reachabilityMode != ReachabilityDisplayMode.All;
-
-    /// <summary>
     /// Gets whether unavailable evolutions should remain visible in separate rows.
     /// </summary>
     private bool GroupedReachabilityMode => _reachabilityMode == ReachabilityDisplayMode.Grouped;
@@ -133,6 +75,11 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
     /// Gets whether unavailable evolutions should be removed from the graph.
     /// </summary>
     private bool ReachableOnlyMode => _reachabilityMode == ReachabilityDisplayMode.ReachableOnly;
+
+    /// <summary>
+    /// Gets whether the graph should restrict edges to executable relationships.
+    /// </summary>
+    private bool ReachabilityModeActive => _reachabilityMode != ReachabilityDisplayMode.All;
 
     /// <summary>
     /// Gets whether the completed result classified every relationship currently loaded by the graph.
@@ -596,45 +543,36 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
     /// <summary>
     /// Switches between the selected bounded neighborhood and every loaded node.
     /// </summary>
-    private void ToggleGraphScope()
+    /// <param name="showAll">Whether every loaded node should be included.</param>
+    private void ToggleGraphScope(bool showAll)
     {
-        _showAllLoaded = !_showAllLoaded;
+        _showAllLoaded = showAll;
         _viewportRevision++;
     }
 
     /// <summary>
     /// Switches between all physical BST rows and one selected range per logical level.
     /// </summary>
-    private void ToggleRowMode()
+    /// <param name="singleRow">Whether each logical level should display one range.</param>
+    private void ToggleRowMode(bool singleRow)
     {
-        _compactRows = !_compactRows;
+        _compactRows = singleRow;
         _viewportRevision++;
     }
 
     /// <summary>
-    /// Advances through the original, reachability-grouped, and evolution-reachable-only graph views, progressively finishing the shared run calculation when needed.
+    /// Selects a reachability presentation, completing the shared classification when required.
     /// </summary>
-    /// <returns>A task representing any required bounded requests.</returns>
-    private async Task ToggleReachabilityFilterAsync()
+    /// <param name="mode">The requested graph presentation.</param>
+    /// <returns>A task representing any required bounded classification requests.</returns>
+    private async Task SetReachabilityModeAsync(ReachabilityDisplayMode mode)
     {
-        if (_reachabilityMode == ReachabilityDisplayMode.Grouped)
-        {
-            if (ObtainabilityCoversCurrentGraph)
-            {
-                _reachabilityMode = ReachabilityDisplayMode.ReachableOnly;
-                _viewportRevision++;
-            }
-            else
-            {
-                await LoadObtainabilityAsync(ReachabilityDisplayMode.ReachableOnly);
-            }
-
+        if (mode == _reachabilityMode)
             return;
-        }
 
-        if (_reachabilityMode == ReachabilityDisplayMode.ReachableOnly)
+        if (mode == ReachabilityDisplayMode.All || ObtainabilityCoversCurrentGraph)
         {
-            _reachabilityMode = ReachabilityDisplayMode.All;
+            _reachabilityMode = mode;
             _viewportRevision++;
             return;
         }
@@ -642,14 +580,7 @@ public partial class EvolutionGraphDialog : IAsyncDisposable
         if (_obtainabilityLoading || (!DebugMode && Recipe is null))
             return;
 
-        if (ObtainabilityCoversCurrentGraph)
-        {
-            _reachabilityMode = ReachabilityDisplayMode.Grouped;
-            _viewportRevision++;
-            return;
-        }
-
-        await LoadObtainabilityAsync(ReachabilityDisplayMode.Grouped);
+        await LoadObtainabilityAsync(mode);
     }
 
     /// <summary>
