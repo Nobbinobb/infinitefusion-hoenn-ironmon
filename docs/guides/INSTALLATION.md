@@ -1,6 +1,6 @@
-# Installing Ironmon 0.8.5
+# Installing Ironmon 0.8.6
 
-Ironmon `0.8.5` targets Pokemon Infinite Fusion 2 version 6.8.2.
+Ironmon `0.8.6` targets Pokemon Infinite Fusion 2 version 6.8.2.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
 
@@ -11,18 +11,18 @@ The game scripts and tracker must come from the same Ironmon archive.
 
 | Ironmon version | Infinite Fusion 2 version | Status |
 | --- | --- | --- |
-| 0.8.5 | 6.8.2 | Current |
-| 0.8.0–0.8.4 | 6.8.2 | Legacy |
+| 0.8.6 | 6.8.2 | Current |
+| 0.8.0–0.8.5 | 6.8.2 | Legacy |
 | 0.2.1–0.7.9 | 6.8.0 | Legacy |
 
-The documented release history begins with Ironmon 0.2.1. Legacy packages are
-kept for matching older Infinite Fusion installations; they are not compatible
-packages for the current game version.
+The documented release history begins with Ironmon 0.2.1. Historical release
+notes and source tags do not guarantee that older binary downloads remain
+available. Use the compatibility table when choosing an existing package.
 
 Every new Ironmon attempt pins an immutable generation-profile package. Normal
 in-place updates retain those content-addressed packages, so active runs and
 completed-run lookup continue to use their original game data, audits, custom
-fusion pool, and version-1 algorithms. Ironmon never migrates a run to the
+fusion pool, and pinned algorithm versions. Ironmon never migrates a run to the
 current package. If a pinned package is missing or damaged, the run is reported
 as unavailable rather than reconstructed with different data.
 
@@ -32,9 +32,9 @@ as unavailable rather than reconstructed with different data.
 2. Keep a backup of saves you care about.
 3. Choose and extract one release archive into the game's root directory—the
    directory containing `InfiniteFusion2.exe`:
-   - `Ironmon-v0.8.5-win-x64.zip` is self-contained and includes the .NET
+   - `Ironmon-v0.8.6-win-x64.zip` is self-contained and includes the .NET
      runtime.
-   - `Ironmon-v0.8.5-win-x64-runtime-required.zip` is smaller and
+   - `Ironmon-v0.8.6-win-x64-runtime-required.zip` is smaller and
      requires the Windows x64 .NET 10 Runtime to be installed.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
    directory. The package installs Ruby files under

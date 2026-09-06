@@ -28,6 +28,10 @@ also suitable for saving as PDF.
 
 ## Release history
 
+- [Ironmon 0.8.6](releases/RELEASE_NOTES_0.8.6.md): redesigned tracker, trainer
+  and boss parties, validated fusion sprites, gym badge progress, and automated
+  release validation.
+
 - [Ironmon 0.8.5](releases/RELEASE_NOTES_0.8.5.md): wardrobe defaults and
   filtering, transformed tracker state, encounter-fusion parity, and mechanics
   manual refinements.
