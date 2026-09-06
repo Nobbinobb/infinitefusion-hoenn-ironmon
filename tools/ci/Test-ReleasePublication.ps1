@@ -29,10 +29,11 @@ function gh {
   }
   if ($arguments[0] -eq 'api' -and $arguments[1] -like '*/git/matching-refs/*') { return '[]' }
   if ($arguments[0] -eq 'release' -and $arguments[1] -eq 'create') {
-    $global:IronmonPublicationTestState.fakeRelease = @{target_commitish=$global:IronmonPublicationTestState.commit;draft=$true;assets=@()}
+    $global:IronmonPublicationTestState.fakeRelease = @{tag_name='v1.2.3';target_commitish=$global:IronmonPublicationTestState.commit;draft=$true;assets=@()}
     return
   }
-  if ($arguments[0] -eq 'api' -and $arguments[1] -like '*/releases/tags/*') {
+  if ($arguments[0] -eq 'release' -and $arguments[1] -eq 'view') { return '456' }
+  if ($arguments[0] -eq 'api' -and $arguments[1] -eq 'repos/owner/repo/releases/456') {
     return ($global:IronmonPublicationTestState.fakeRelease | ConvertTo-Json -Depth 6)
   }
   if ($arguments[0] -eq 'release' -and $arguments[1] -eq 'upload') {
@@ -90,7 +91,17 @@ Copy-Item (Join-Path $env:GITHUB_WORKSPACE 'latest.json') -Destination (Join-Pat
   $rejected = $false
   try { & "$testRoot/tools/Publish-Release.ps1" -SourceCommit $global:IronmonPublicationTestState.commit } catch { $rejected = $true }
   if (-not $rejected -or $global:IronmonPublicationTestState.published -ne 1) { throw 'Mismatched remote assets must never be overwritten.' }
-  Write-Output 'Publication contracts passed: publish, immutable retry, upstream rebuild, retry limit and remote tampering.'
+  $global:IronmonPublicationTestState.fakeRelease.assets = @($global:IronmonPublicationTestState.fakeRelease.assets | Select-Object -Last 2)
+  $global:IronmonPublicationTestState.fakeRelease.draft = $true
+  $global:IronmonPublicationTestState.uploads = 0
+  $global:IronmonPublicationTestState.published = 0
+  & "$testRoot/tools/Publish-Release.ps1" -SourceCommit $global:IronmonPublicationTestState.commit
+  if ($global:IronmonPublicationTestState.uploads -ne 5 -or $global:IronmonPublicationTestState.published -ne 1) { throw 'A partial draft must resume through its release ID without replacing existing verified assets.' }
+  $global:IronmonPublicationTestState.fakeRelease.tag_name = 'v9.9.9'
+  $rejected = $false
+  try { & "$testRoot/tools/Publish-Release.ps1" -SourceCommit $global:IronmonPublicationTestState.commit } catch { $rejected = $true }
+  if (-not $rejected -or $global:IronmonPublicationTestState.published -ne 1) { throw 'A resolved release with a different tag must be rejected.' }
+  Write-Output 'Publication contracts passed: publish, immutable retry, upstream rebuild, retry limit, remote tampering, partial-draft recovery and release-ID identity.'
 } finally {
   Remove-Item Function:git, Function:gh
   Remove-Variable IronmonPublicationTestState -Scope Global

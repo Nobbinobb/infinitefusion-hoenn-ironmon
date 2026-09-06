@@ -56,7 +56,13 @@ if (-not $existing) {
   if ($refs | Where-Object ref -eq "refs/tags/$tag") { throw 'Release tag already exists without a matching release; manual investigation is required.' }
   gh release create $tag --repo $env:GITHUB_REPOSITORY --target $SourceCommit --draft --title "Ironmon $version" --notes-file $releaseNotes
 }
-$release = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$tag" | ConvertFrom-Json
+# GitHub's by-tag REST endpoint does not reliably return unpublished drafts.
+# The CLI resolves both drafts and published releases; retain the numeric identity
+# for subsequent reads while uploads are still private.
+$releaseId = gh release view $tag --repo $env:GITHUB_REPOSITORY --json databaseId --jq '.databaseId'
+if ($releaseId -notmatch '^[1-9]\d*$') { throw 'Release identity is unavailable.' }
+$release = gh api "repos/$env:GITHUB_REPOSITORY/releases/$releaseId" | ConvertFrom-Json
+if ($release.tag_name -cne $tag) { throw 'Resolved release tag mismatch.' }
 if ($release.target_commitish -ne $SourceCommit) { throw 'Existing release targets different source.' }
 $assets = @(Get-ChildItem -LiteralPath $directory -File)
 foreach ($asset in $assets) {
@@ -70,7 +76,7 @@ foreach ($asset in $assets) {
     gh release upload $tag $asset.FullName --repo $env:GITHUB_REPOSITORY
   }
 }
-$verified = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$tag" | ConvertFrom-Json
+$verified = gh api "repos/$env:GITHUB_REPOSITORY/releases/$releaseId" | ConvertFrom-Json
 if (@($verified.assets).Count -ne $assets.Count) { throw 'Unexpected release assets.' }
 foreach ($asset in $assets) {
   $remote = $verified.assets | Where-Object name -eq $asset.Name | Select-Object -First 1

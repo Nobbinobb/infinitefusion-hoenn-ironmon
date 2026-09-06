@@ -15,19 +15,28 @@ foreach ($pull in $pulls) {
     $artifacts = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$($run.id)/artifacts?per_page=100" | ConvertFrom-Json
     $inputArtifact = $artifacts.artifacts | Where-Object name -eq 'upstream-inputs' | Select-Object -First 1
     $artifact = $inputArtifact | Where-Object { -not $_.expired }
-    # Ordinary PRs have no release candidate and therefore no candidate input snapshot.
-    if ($workflow -eq 'release-candidate.yml' -and -not $inputArtifact -and $run.conclusion -eq 'success') { continue }
+    # A missing artifact can mean either an ordinary PR or a pruned release
+    # candidate. Check the completed jobs before treating it as an ordinary PR.
+    if ($workflow -eq 'release-candidate.yml' -and -not $inputArtifact -and $run.conclusion -eq 'success') {
+      $jobs = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$($run.id)/jobs?per_page=100" | ConvertFrom-Json
+      if (-not ($jobs.jobs | Where-Object { $_.name -eq 'candidate / build' -and $_.conclusion -eq 'success' })) { continue }
+    }
     $oldFingerprint = $null
     if ($artifact) {
       $directory = Join-Path $env:RUNNER_TEMP "watch-$($run.id)"
       gh run download $run.id --repo $env:GITHUB_REPOSITORY --name upstream-inputs --dir $directory
       $oldFingerprint = (Get-Content (Join-Path $directory 'upstream-inputs.json') -Raw | ConvertFrom-Json).fingerprint
-    } elseif (-not $inputArtifact -and $run.run_attempt -ge 3) {
+    } elseif (-not $inputArtifact -and $run.conclusion -ne 'success' -and $run.run_attempt -ge 3) {
       Write-Output "PR #$($pull.number): input resolution/artifacts unavailable after repeated attempts; inspect the failed run."
       continue
     }
     if ($oldFingerprint -eq $snapshot.fingerprint) { continue }
-    if ([DateTimeOffset]::Parse($run.created_at) -lt [DateTimeOffset]::UtcNow.AddDays(-30)) {
+    # PowerShell 7.5 can deserialize JSON dates to DateTime. Preserve that value;
+    # converting it back through a culture-dependent string can swap month/day.
+    $createdAt = if ($run.created_at -is [DateTime]) { [DateTimeOffset]$run.created_at } else {
+      [DateTimeOffset]::Parse([string]$run.created_at, [Globalization.CultureInfo]::InvariantCulture)
+    }
+    if ($createdAt -lt [DateTimeOffset]::UtcNow.AddDays(-30)) {
       $expiredRuns += "PR #$($pull.number): $workflow is outside GitHub's 30-day rerun window; update the PR branch to start fresh validation."
       continue
     }

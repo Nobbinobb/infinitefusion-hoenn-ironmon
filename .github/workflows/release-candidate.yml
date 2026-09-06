@@ -32,6 +32,7 @@ jobs:
         run: |
           ./tools/ci/Test-ReleaseAutomation.ps1
           ./tools/ci/Test-ReleasePublication.ps1
+          ./tools/ci/Test-UpstreamWatch.ps1
   inputs:
     needs: metadata
     if: needs.metadata.outputs.release == 'true'
