@@ -1,5 +1,7 @@
 # Release automation freshness refinement — 2026-09-06
 
+This is the historical local-validation stage. Subsequent authenticated hosted work and applied repository settings are recorded in [the orchestration rehearsal](RELEASE_AUTOMATION_ORCHESTRATION.md).
+
 ## Scope and result
 
 Work stayed in `Ironmon-release-automation` on `feature/release-automation-test`. The handoff file was preserved. The active feature worktree, installed game, production main, stable release and repository visibility were not modified by this work. No new hosted run was triggered.
