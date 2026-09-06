@@ -338,6 +338,14 @@ if ($GenerateOnly) {
   return
 }
 
+& (Join-Path $PSScriptRoot "Test-GenerationProfile.ps1") `
+  -GameRoot $gameRoot `
+  -TimeoutSeconds 300
+
+& (Join-Path $PSScriptRoot "Test-GameRuntime.ps1") `
+  -GameRoot $gameRoot `
+  -TimeoutSeconds 300
+
 & dotnet test (Join-Path $projectRoot "tracker\tests\Ironmon.Tracker.Tests\Ironmon.Tracker.Tests.csproj") `
   --configuration Release `
   --maxcpucount:1 `
@@ -353,14 +361,6 @@ if ($LASTEXITCODE -ne 0) {
 if ($LASTEXITCODE -ne 0) {
   throw "Tracker app tests failed."
 }
-
-& (Join-Path $PSScriptRoot "Test-GenerationProfile.ps1") `
-  -GameRoot $gameRoot `
-  -TimeoutSeconds 300
-
-& (Join-Path $PSScriptRoot "Test-GameRuntime.ps1") `
-  -GameRoot $gameRoot `
-  -TimeoutSeconds 300
 
 & (Join-Path $PSScriptRoot "Test-DefenseOverview.ps1")
 & (Join-Path $PSScriptRoot "Test-AreaEncounterLookup.ps1") -GameRoot $gameRoot

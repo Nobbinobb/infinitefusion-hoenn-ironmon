@@ -221,6 +221,15 @@ $rubyFusionPredecessorBenchmarkResultPath = $fusionPredecessorBenchmarkResultPat
 $rubyMoveAccessStructureResultPath = $moveAccessStructureResultPath.Replace('\', '/')
 $rubyTrackerStructureResultPath = $trackerStructureResultPath.Replace('\', '/')
 $bootstrapSource = @(
+    "if ENV['IRONMON_RUNTIME_TRACE'] == 'true'"
+    "  `$stderr.sync = true"
+    "  Thread.new do"
+    "    loop do"
+    "      sleep 30"
+    "      warn 'Runtime test progress: ' + Thread.main.backtrace.join(' | ')"
+    "    end"
+    "  end"
+    "end"
     "begin"
     "`$ironmon_diagnostic_access_test_output_path = `"$rubyResultPath`""
     "`$ironmon_catch_assistance_test_output_path = `"$rubyCatchAssistanceResultPath`""
