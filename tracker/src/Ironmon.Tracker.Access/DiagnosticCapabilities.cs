@@ -6,6 +6,46 @@ namespace Ironmon.Tracker.Access;
 public static class DiagnosticCapabilities
 {
     /// <summary>
+    /// Gets permission to keep an attempt active and revive the current player Pokémon after defeat.
+    /// </summary>
+    public const string DevelopmentAutoRevive = "development.auto_revive";
+
+    /// <summary>
+    /// Gets permission to assign any game ability to the current player Pokémon.
+    /// </summary>
+    public const string DevelopmentChangeAbility = "development.change_ability";
+
+    /// <summary>
+    /// Gets permission to replace the current player's moves.
+    /// </summary>
+    public const string DevelopmentChangeMoves = "development.change_moves";
+
+    /// <summary>
+    /// Gets permission to evolve or devolve the current player Pokémon.
+    /// </summary>
+    public const string DevelopmentEvolution = "development.evolution";
+
+    /// <summary>
+    /// Gets permission to fully heal the current player Pokémon.
+    /// </summary>
+    public const string DevelopmentFullHeal = "development.full_heal";
+
+    /// <summary>
+    /// Gets permission to add an item to the player's Bag.
+    /// </summary>
+    public const string DevelopmentGiveItem = "development.give_item";
+
+    /// <summary>
+    /// Gets permission to adjust the current player Pokémon's level.
+    /// </summary>
+    public const string DevelopmentLevel = "development.level";
+
+    /// <summary>
+    /// Gets permission to replace the current player Pokémon from active-run lookup.
+    /// </summary>
+    public const string DevelopmentSwapPokemon = "development.swap_pokemon";
+
+    /// <summary>
     /// Gets current-player Pokemon availability.
     /// </summary>
     public const string PokemonCurrentPlayer = "pokemon.current_player";

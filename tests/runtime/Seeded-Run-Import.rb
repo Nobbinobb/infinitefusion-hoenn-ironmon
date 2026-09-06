@@ -2,6 +2,10 @@ module IronmonSeededRunImportRuntimeTests
   OUTPUT_PATH = $ironmon_seeded_run_import_test_output_path.to_s
   EXPECTED_WORLD_SNAPSHOT_SHA256 =
     "58aef3ffdc9502ed948a82f063bd939c4882a980602174ddbaf987cba139029c"
+  # This world uses custom_fusion_pool_fixture, not the installed sprite pool.
+  # Keep its historical profile metadata stable for the unchanged golden hash.
+  WORLD_SNAPSHOT_PROFILE_ID =
+    "0a3cc2e688a8263c25e31821a154c46823249be882480459ee91f203660b4324"
 
   def self.assert(condition, message)
     raise "Seeded-run import runtime test failed: #{message}" if !condition
@@ -452,6 +456,12 @@ module IronmonSeededRunImportRuntimeTests
     baseline_snapshot[:recipe] = baseline_snapshot[:recipe].reject do |key, _value|
       key == "ironmon_version"
     end
+    assert(
+      baseline_snapshot[:recipe]["generation_profile_id"] ==
+        Ironmon.current_generation_profile_id,
+      "the exported recipe identifies the actual current generation profile"
+    )
+    baseline_snapshot[:recipe]["generation_profile_id"] = WORLD_SNAPSHOT_PROFILE_ID
     digest = Digest::SHA256.hexdigest(Marshal.dump(baseline_snapshot))
     assert(
       digest == EXPECTED_WORLD_SNAPSHOT_SHA256,
@@ -482,6 +492,21 @@ module IronmonSeededRunImportRuntimeTests
           seed, Ironmon.base_stat_source_fingerprint
         )
       )
+      [[1, 1], [1, NB_POKEMON], [NB_POKEMON, NB_POKEMON]].each do |pair|
+        prefix = preview_mapper.send(
+          :deterministic_value, "target_match", pair[0], pair[1], ""
+        )
+        [[577, 332_352], [332_352, 577], [12_345, 67_890]].each do |first, second|
+          assert(
+            preview_mapper.send(
+              :update_deterministic_hash, prefix, "#{first}|#{second}"
+            ) == preview_mapper.send(
+              :deterministic_value, "target_match", pair[0], pair[1], first, second
+            ),
+            "incremental target ranking preserves the original seed hash"
+          )
+        end
+      end
       range_examples.each do |materials, expected|
         actual = preview_mapper.send(
           :fusion_bst_range, materials[0], materials[1]

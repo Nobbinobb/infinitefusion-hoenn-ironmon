@@ -67,4 +67,49 @@ public sealed class DiagnosticCapabilityProtocolTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new TrackerHandshakePayload("0.7.4", false, diagnosticCapabilities: oversized));
         Assert.Throws<ArgumentOutOfRangeException>(() => new TrackerHandshakePayload("0.7.4", false, diagnosticCapabilities: [longIdentifier]));
     }
+
+    /// <summary>
+    /// Verifies development requests and refreshed state retain their typed mutation values.
+    /// </summary>
+    [Fact]
+    public void DevelopmentPayloadsRoundTrip()
+    {
+        DebugDevelopmentActionRequestPayload request = new()
+        {
+            Action = DebugDevelopmentAction.SetMoves,
+            MoveIds = ["TACKLE", "GROWL"]
+        };
+        DebugDevelopmentStateSnapshot state = new()
+        {
+            AutoReviveEnabled = true,
+            Player = new DebugDevelopmentPlayerSnapshot
+            {
+                PokemonId = "42",
+                SpeciesId = "PIKACHU:0",
+                SpeciesName = "Pikachu",
+                Level = 25,
+                AbilityId = "STATIC",
+                AbilityName = "Static",
+                MoveIds = ["TACKLE"],
+                MoveNames = ["Tackle"]
+            },
+            Abilities = [new DebugDevelopmentCatalogEntry { Id = "STATIC", Name = "Static" }],
+            Moves = [new DebugDevelopmentCatalogEntry { Id = "TACKLE", Name = "Tackle" }],
+            Items = [new DebugDevelopmentCatalogEntry { Id = "POTION", Name = "Potion" }],
+            Evolutions = [new DebugDevelopmentCatalogEntry { Id = "RAICHU:0", Name = "Raichu" }],
+            Devolutions = []
+        };
+
+        DebugDevelopmentActionRequestPayload restoredRequest = TrackerJson.DeserializePayload<DebugDevelopmentActionRequestPayload>(TrackerJson.SerializePayload(request));
+        DebugDevelopmentStateSnapshot restoredState = TrackerJson.DeserializePayload<DebugDevelopmentStateSnapshot>(TrackerJson.SerializePayload(state));
+
+        Assert.Equal(DebugDevelopmentAction.SetMoves, restoredRequest.Action);
+        Assert.Equal(["TACKLE", "GROWL"], restoredRequest.MoveIds);
+        Assert.True(restoredState.AutoReviveEnabled);
+        Assert.Equal("PIKACHU:0", restoredState.Player?.SpeciesId);
+        Assert.Equal("STATIC", restoredState.Player?.AbilityId);
+        Assert.Equal("STATIC", Assert.Single(restoredState.Abilities).Id);
+        Assert.Equal("POTION", Assert.Single(restoredState.Items).Id);
+        Assert.Equal("RAICHU:0", Assert.Single(restoredState.Evolutions).Id);
+    }
 }

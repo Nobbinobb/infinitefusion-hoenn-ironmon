@@ -1,0 +1,115 @@
+<section class="development-controls" aria-label="@Text["Development.Title"]">
+    <header class="development-heading">
+        <p class="section-label">@Text["Development.Heading"]</p>
+        <button type="button" class="development-secondary-button" disabled="@(_loading || _evolutionsLoading)" @onclick="LoadAsync">@Text["Development.Refresh"]</button>
+    </header>
+
+    @if (_error is not null)
+    {
+        <p class="lookup-error" role="alert">@_error</p>
+    }
+    @if (_notice is not null)
+    {
+        <p class="development-notice" role="status">@_notice</p>
+    }
+    @if (_state is null)
+    {
+        <p class="lookup-message">@Text["Development.Loading"]</p>
+    }
+    else
+    {
+        <div class="development-panel">
+            @if (CanAutoRevive || CanFullHeal || CanLevel)
+            {
+                <div class="development-quick-actions">
+                    @if (CanAutoRevive)
+                    {
+                        <label class="development-toggle">
+                            <input type="checkbox" checked="@_state.AutoReviveEnabled" disabled="@_loading" @onchange="SetAutoReviveAsync" />
+                            <span>@Text["Development.AutoRevive.ShortLabel"]</span>
+                        </label>
+                    }
+                    @if (CanFullHeal)
+                    {
+                        <button type="button" class="development-secondary-button" disabled="@(_loading || _state.Player is null)" @onclick="FullHealAsync">@Text["Development.FullHeal.CompactAction"]</button>
+                    }
+                    @if (CanLevel)
+                    {
+                        <label class="development-quick-level">
+                            <span>@Text["Development.Level.Label"]</span>
+                            <input type="number" min="1" max="100" @bind="_level" @onblur="SetLevelAsync" disabled="@(_loading || _state.Player is null)" />
+                        </label>
+                    }
+                </div>
+            }
+
+            @if (CanAbility)
+            {
+                <article class="development-row development-row-stack">
+                    <h3>@Text["Development.Ability.Label"]</h3>
+                    <DevelopmentCatalogPicker Options="@_state.Abilities" SelectedId="@_abilityId" SelectedIdChanged="SetAbilitySelectionAsync" ClearSelectionOnInput="false" Placeholder="@Text["Development.Ability.Search"]" AriaLabel="@Text["Development.Ability.Title"]" EmptyText="@Text["Development.NoMatches"]" Disabled="@(_loading || _state.Player is null)" />
+                </article>
+            }
+
+            @if (CanMoves)
+            {
+                <article class="development-row development-row-stack">
+                    <h3>@Text["Development.Moves.Label"]</h3>
+                    <div class="development-moves">
+                        @for (int index = 0; index < _moveIds.Length; index++)
+                        {
+                            int moveIndex = index;
+                            <label>
+                                <span>@Text["Development.Moves.Slot", index + 1]</span>
+                                <DevelopmentCatalogPicker Options="@_state.Moves" SelectedId="@_moveIds[index]" SelectedIdChanged="id => SetMoveSelectionAsync(moveIndex, id)" Placeholder="@Text["Development.Moves.Search"]" AriaLabel="@Text["Development.Moves.Slot", index + 1]" EmptyText="@Text["Development.NoMatches"]" Disabled="@(_loading || _state.Player is null)" />
+                            </label>
+                        }
+                    </div>
+                </article>
+            }
+
+            @if (CanGiveItem)
+            {
+                <article class="development-row development-row-stack">
+                    <h3>@Text["Development.Item.Label"]</h3>
+                    <div class="development-action-row development-item-row">
+                        <DevelopmentCatalogPicker Options="@_state.Items" SelectedId="@_itemId" SelectedIdChanged="SetItemSelection" Placeholder="@Text["Development.Item.Search"]" AriaLabel="@Text["Development.Item.Title"]" EmptyText="@Text["Development.NoMatches"]" Disabled="@_loading" />
+                        <label class="development-quantity-field">
+                            <span>@Text["Development.Item.Quantity"]</span>
+                            <input type="number" min="1" max="999" @bind="_quantity" disabled="@_loading" />
+                        </label>
+                        <button type="button" class="development-primary-button" disabled="@(_loading || string.IsNullOrWhiteSpace(_itemId))" @onclick="GiveItemAsync">@Text["Development.Item.Action"]</button>
+                    </div>
+                </article>
+            }
+
+            @if (CanEvolution && _evolutionsLoading)
+            {
+                <div class="development-evolution-loading" role="status">
+                    <span class="connection-work-spinner" aria-hidden="true"></span>
+                    <span>@Text["Development.Evolution.Loading"]</span>
+                </div>
+            }
+            else if (CanEvolution && (_state.Evolutions.Count > 0 || _state.Devolutions.Count > 0))
+            {
+                <article class="development-row development-row-stack">
+                    <h3>@Text["Development.Evolution.Title"]</h3>
+                    @if (_state.Evolutions.Count > 0)
+                    {
+                        <div class="development-evolution-option">
+                            <span>@Text["Development.Evolution.Evolve"]</span>
+                            <DevelopmentCatalogPicker Options="@_state.Evolutions" SelectedId="@_evolutionId" SelectedIdChanged="EvolveSelectionAsync" Placeholder="@Text["Development.Evolution.SelectEvolution"]" AriaLabel="@Text["Development.Evolution.Evolve"]" EmptyText="@Text["Development.Evolution.None"]" Disabled="@(_loading || _state.Player is null)" />
+                        </div>
+                    }
+                    @if (_state.Devolutions.Count > 0)
+                    {
+                        <div class="development-evolution-option">
+                            <span>@Text["Development.Evolution.Devolve"]</span>
+                            <DevelopmentCatalogPicker Options="@_state.Devolutions" SelectedId="@_devolutionId" SelectedIdChanged="DevolveSelectionAsync" Placeholder="@Text["Development.Evolution.SelectDevolution"]" AriaLabel="@Text["Development.Evolution.Devolve"]" EmptyText="@Text["Development.Evolution.None"]" Disabled="@(_loading || _state.Player is null)" />
+                        </div>
+                    }
+                </article>
+            }
+        </div>
+    }
+</section>

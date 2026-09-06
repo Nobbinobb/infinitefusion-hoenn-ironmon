@@ -112,7 +112,7 @@ begin
   IronmonScriptLoader.load_directory(
     "Data/Scripts", [/\A(?:997|998|999)/]
   )
-  IronmonScriptLoader.load_manifest(source_path, source_manifest_path)
+  IronmonScriptLoader.load_manifest(source_path, source_manifest_path, false)
   if IronmonFusionPredecessorIndexExporter::SCHEMA_VERSION !=
      Ironmon::FusionPredecessorIndex::SCHEMA_VERSION
     raise "the fusion predecessor exporter schema does not match the runtime"

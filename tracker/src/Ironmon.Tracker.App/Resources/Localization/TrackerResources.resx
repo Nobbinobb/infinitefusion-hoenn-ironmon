@@ -1635,4 +1635,71 @@
   <data name="Defense.Recovery" xml:space="preserve"><value>Recovery</value></data>
   <data name="Player.Card.ActiveFusion" xml:space="preserve"><value>ACTIVE FUSION</value></data>
   <data name="Enemy.Card.OpposingFusionHeading" xml:space="preserve"><value>OPPOSING FUSION</value></data>
+  <data name="Development.Title" xml:space="preserve"><value>Development</value></data>
+  <data name="Development.Heading" xml:space="preserve"><value>Authorized run controls</value></data>
+  <data name="Development.Description" xml:space="preserve"><value>Each control appears only when its individual signed permission is active. Persistent changes are available outside battle.</value></data>
+  <data name="Development.Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Development.Loading" xml:space="preserve"><value>Reading development state…</value></data>
+  <data name="Development.CurrentPokemon" xml:space="preserve"><value>Current Pokémon</value></data>
+  <data name="Development.CurrentLevel" xml:space="preserve"><value>Level {0}</value></data>
+  <data name="Development.NoMatches" xml:space="preserve"><value>No matching options</value></data>
+  <data name="Development.Enabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="Development.Disabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="Development.Apply" xml:space="preserve"><value>Apply</value></data>
+  <data name="Development.Saved" xml:space="preserve"><value>AutoRevive setting updated.</value></data>
+  <data name="Development.Confirm" xml:space="preserve"><value>Confirm</value></data>
+  <data name="Development.Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Development.AutoRevive.Title" xml:space="preserve"><value>NoFail / AutoRevive</value></data>
+  <data name="Development.AutoRevive.ShortLabel" xml:space="preserve"><value>AutoRevive</value></data>
+  <data name="Development.AutoRevive.Description" xml:space="preserve"><value>A defeat or draw keeps the attempt active and fully revives the current Pokémon after battle cleanup.</value></data>
+  <data name="Development.FullHeal.Title" xml:space="preserve"><value>Full Heal</value></data>
+  <data name="Development.FullHeal.Description" xml:space="preserve"><value>Restore the current Pokémon's HP, status, and PP.</value></data>
+  <data name="Development.FullHeal.Action" xml:space="preserve"><value>Heal</value></data>
+  <data name="Development.FullHeal.CompactAction" xml:space="preserve"><value>Full Heal</value></data>
+  <data name="Development.FullHeal.Done" xml:space="preserve"><value>The current Pokémon was fully healed.</value></data>
+  <data name="Development.Level.Title" xml:space="preserve"><value>Level adjustment</value></data>
+  <data name="Development.Level.Label" xml:space="preserve"><value>Level</value></data>
+  <data name="Development.Level.Description" xml:space="preserve"><value>Set the current Pokémon's level from 1 to 100 without changing its moves.</value></data>
+  <data name="Development.Level.Down" xml:space="preserve"><value>−1 level</value></data>
+  <data name="Development.Level.Up" xml:space="preserve"><value>+1 level</value></data>
+  <data name="Development.Level.Set" xml:space="preserve"><value>Set level</value></data>
+  <data name="Development.Level.Done" xml:space="preserve"><value>The current Pokémon's level was updated.</value></data>
+  <data name="Development.Ability.Title" xml:space="preserve"><value>Change ability</value></data>
+  <data name="Development.Ability.Label" xml:space="preserve"><value>Ability</value></data>
+  <data name="Development.Ability.Description" xml:space="preserve"><value>Search the complete ability catalog and assign any ability to the current Pokémon.</value></data>
+  <data name="Development.Ability.Search" xml:space="preserve"><value>Search abilities…</value></data>
+  <data name="Development.Ability.Action" xml:space="preserve"><value>Set ability</value></data>
+  <data name="Development.Ability.Done" xml:space="preserve"><value>The current Pokémon's ability was updated.</value></data>
+  <data name="Development.Moves.Title" xml:space="preserve"><value>Change moves</value></data>
+  <data name="Development.Moves.Label" xml:space="preserve"><value>Moves</value></data>
+  <data name="Development.Moves.Description" xml:space="preserve"><value>Choose one to four moves. Leave unused slots empty.</value></data>
+  <data name="Development.Moves.Search" xml:space="preserve"><value>Search moves…</value></data>
+  <data name="Development.Moves.Slot" xml:space="preserve"><value>Move {0}</value></data>
+  <data name="Development.Moves.Action" xml:space="preserve"><value>Apply</value></data>
+  <data name="Development.Moves.Done" xml:space="preserve"><value>The current Pokémon's moves were replaced.</value></data>
+  <data name="Development.Moves.OneRequired" xml:space="preserve"><value>A Pokémon must keep at least one move.</value></data>
+  <data name="Development.Moves.NoDuplicates" xml:space="preserve"><value>A Pokémon cannot have the same move twice.</value></data>
+  <data name="Development.Item.Title" xml:space="preserve"><value>Give item</value></data>
+  <data name="Development.Item.Label" xml:space="preserve"><value>Item</value></data>
+  <data name="Development.Item.Description" xml:space="preserve"><value>Choose an item and add the requested quantity to the Bag.</value></data>
+  <data name="Development.Item.Search" xml:space="preserve"><value>Search items…</value></data>
+  <data name="Development.Item.Quantity" xml:space="preserve"><value>Quantity</value></data>
+  <data name="Development.Item.Action" xml:space="preserve"><value>Give</value></data>
+  <data name="Development.Item.Done" xml:space="preserve"><value>The item was added to the Bag.</value></data>
+  <data name="Development.Evolution.Title" xml:space="preserve"><value>Evolve or devolve</value></data>
+  <data name="Development.Evolution.Description" xml:space="preserve"><value>Choose a direct generated evolution or predecessor for the current Pokémon. Every branch is listed separately.</value></data>
+  <data name="Development.Evolution.Evolve" xml:space="preserve"><value>Evolution</value></data>
+  <data name="Development.Evolution.Devolve" xml:space="preserve"><value>Devolution</value></data>
+  <data name="Development.Evolution.SelectEvolution" xml:space="preserve"><value>Select an evolution…</value></data>
+  <data name="Development.Evolution.SelectDevolution" xml:space="preserve"><value>Select a predecessor…</value></data>
+  <data name="Development.Evolution.None" xml:space="preserve"><value>No direct option available</value></data>
+  <data name="Development.Evolution.Loading" xml:space="preserve"><value>Loading evolution options…</value></data>
+  <data name="Development.Evolution.EvolveAction" xml:space="preserve"><value>Evolve</value></data>
+  <data name="Development.Evolution.DevolveAction" xml:space="preserve"><value>Devolve</value></data>
+  <data name="Development.Evolution.Evolved" xml:space="preserve"><value>The current Pokémon evolved along the selected branch.</value></data>
+  <data name="Development.Evolution.Devolved" xml:space="preserve"><value>The current Pokémon devolved to the selected predecessor.</value></data>
+  <data name="Development.SwapLookupHint" xml:space="preserve"><value>To replace the current Pokémon, select the desired species in Lookup and use “Swap to this Pokémon”.</value></data>
+  <data name="Development.Lookup.Actions" xml:space="preserve"><value>Authorized Pokémon changes</value></data>
+  <data name="Development.Lookup.Swap" xml:space="preserve"><value>Swap Pokémon</value></data>
+  <data name="Development.Lookup.ConfirmSwap" xml:space="preserve"><value>Replace the current Pokémon with a new {0} at the same level?</value></data>
 </root>

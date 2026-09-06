@@ -907,6 +907,8 @@ The request requirements are:
 | wild reverse occurrences | `world.wild_encounters` plus either a represented current target or `pokemon.all_active` |
 | trainer reverse occurrences | `world.trainer_parties` plus either a represented current target or `pokemon.all_active` |
 | fusion preview | `fusion.preview_results` |
+| development state | any `development.*` capability |
+| development mutation | the exact capability mapped to its action |
 
 The selected exact Pokemon information capability is `pokemon.overview`,
 `pokemon.abilities`, `pokemon.base_stats`, `pokemon.move_access`, or
@@ -976,6 +978,38 @@ the completed-run lookup equivalents, but their request payloads omit the
 completion recipe and the game resolves them from the currently loaded run.
 These commands are unavailable through the normal post-run API while a run
 remains active.
+
+`debug_development_state` has an empty payload and returns only option catalogs
+covered by the effective development grants. Its player identity, level,
+ability identifier, and moves describe the single current usable party Pokemon.
+The ability and move collections are complete searchable game catalogs; the
+evolution and devolution collections list every valid direct branch for the
+current Pokemon.
+`debug_development_action` carries an `action` plus only the input used by that
+action: `enabled`, `level`, `ability_id`, `move_ids`, `item_id` and
+`quantity`, or `species_id`. The action-to-capability mapping is:
+
+| Action | Capability |
+| --- | --- |
+| `set_auto_revive` | `development.auto_revive` |
+| `full_heal` | `development.full_heal` |
+| `set_level` | `development.level` |
+| `set_ability` | `development.change_ability` |
+| `set_moves` | `development.change_moves` |
+| `give_item` | `development.give_item` |
+| `evolve`, `devolve` | `development.evolution` |
+| `swap_pokemon` | `development.swap_pokemon` |
+
+Only `set_auto_revive` is accepted during battle. Every persistent Pokemon or
+inventory mutation is rejected while a battle ID is active. Evolution actions
+must traverse one explicitly selected direct generated edge in the requested
+direction. Ability changes may select any identifier in the game catalog. Swap
+creates a fresh Pokemon at the replaced Pokemon's level and resets its moves to
+the newest four level-up moves available at that level. Every successful action
+returns the refreshed player state without repeating the option catalogs. The
+development-state request can load the invariant catalogs separately from the
+Pokemon-specific evolution directions so the page renders before predecessor
+preparation completes.
 
 ### Live grant replacement
 

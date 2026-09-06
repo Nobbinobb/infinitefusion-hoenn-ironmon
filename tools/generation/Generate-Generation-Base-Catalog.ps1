@@ -37,7 +37,7 @@ $bootstrapSource = @(
     $loaderSource
     "IronmonScriptLoader.load_directory(`"Data/Scripts`", [/\A(?:997|998|999)/])"
     "GameData.load_all"
-    "IronmonScriptLoader.load_manifest(`"$rubySourceRoot`", `"$rubyManifest`")"
+    "IronmonScriptLoader.load_manifest(`"$rubySourceRoot`", `"$rubyManifest`", false)"
     "eval(File.binread(`"$rubyExporter`"), TOPLEVEL_BINDING, `"$rubyExporter`")"
     "exit! 0"
     "rescue Exception => error"

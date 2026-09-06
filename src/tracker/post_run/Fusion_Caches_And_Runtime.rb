@@ -176,7 +176,9 @@ end
 
 Events.onEndBattle += proc do |_sender, event|
   decision = event[0]
-  Ironmon.complete_run(:lost) if [2, 5].include?(decision)
+  if [2, 5].include?(decision) && !Ironmon.tracker_auto_revive_enabled?
+    Ironmon.complete_run(:lost)
+  end
 end
 
 alias ironmon_tracker_original_hall_of_fame_entry pbHallOfFameEntry
