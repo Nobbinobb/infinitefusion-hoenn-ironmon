@@ -36,6 +36,11 @@ public static class TrackerEvents
     public const string EncounterModeChanged = "encounter_mode_changed";
 
     /// <summary>
+    /// Gets the current-state update announcing changed gym badge ownership.
+    /// </summary>
+    public const string BadgesChanged = "badges_changed";
+
+    /// <summary>
     /// Gets the completed-run event.
     /// </summary>
     public const string RunCompleted = "run_completed";

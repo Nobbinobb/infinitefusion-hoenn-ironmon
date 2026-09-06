@@ -32,6 +32,7 @@
     </ObsidianIdentityPanel>
     <ObsidianStatRow Stats="GetStatValues()" Stages="@Player?.StatStages" />
     <PlayerMoveList @key="Player?.PokemonId" Player="Player" TargetTypes="TargetTypes" TargetEvasionStage="TargetEvasionStage" />
+    <GymBadgeProgress GameRoot="@GameRoot" Badges="Badges" />
 </section>
 
 @if (_defenseOpen && Player is not null)

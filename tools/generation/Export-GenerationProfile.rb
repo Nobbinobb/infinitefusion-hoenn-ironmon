@@ -5,6 +5,7 @@ module IronmonGenerationProfileExporter
     "area_catalog",
     "base_catalog",
     "custom_fusion_pool",
+    "custom_sprites",
     "obtainability_sources"
   ].freeze
 

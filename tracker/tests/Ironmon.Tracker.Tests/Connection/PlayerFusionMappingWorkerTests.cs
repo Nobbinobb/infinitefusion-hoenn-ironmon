@@ -107,6 +107,23 @@ public sealed class PlayerFusionMappingWorkerTests
     }
 
     /// <summary>
+    /// Rejects the isolated 824-BST fusion in save H's seed without exhaustively retrying impossible repairs.
+    /// </summary>
+    [Fact]
+    public void IsolatedFusionReportsAnImpossiblePairingPromptly()
+    {
+        PlayerFusionMappingWorkerCatalog catalog = PlayerFusionMappingWorkerCatalog.Load();
+        PlayerFusionMappingWorker worker = new(catalog);
+        Stopwatch elapsed = Stopwatch.StartNew();
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => worker.AuditPairing(1_271_448_503, catalog.PlayerFusionGeneratorVersion));
+
+        Assert.Contains("271035 (824 BST)", error.Message, StringComparison.Ordinal);
+        Assert.Contains("within 92 BST", error.Message, StringComparison.Ordinal);
+        Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(10), $"An impossible pairing took {elapsed.Elapsed} to reject.");
+    }
+
+    /// <summary>
     /// Verifies a migrated sprite pool can replace the embedded pool while all
     /// mapping work remains in the parallel tracker worker.
     /// </summary>

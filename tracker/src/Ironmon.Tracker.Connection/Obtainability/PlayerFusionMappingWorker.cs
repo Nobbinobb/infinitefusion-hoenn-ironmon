@@ -270,6 +270,8 @@ internal sealed class PlayerFusionMappingWorker
 
                 if (partner < 0)
                 {
+                    EnsureStrengthPartnerExists(ordered[position], targets, maximumPairDifference, cancellationToken);
+                    EnsureStrengthPartnerExists(ordered[position + 1], targets, maximumPairDifference, cancellationToken);
                     bool repaired = RepairStrengthPair(pairs, ordered[position], ordered[position + 1], maximumPairDifference);
                     if (repaired)
                         continue;
@@ -314,6 +316,28 @@ internal sealed class PlayerFusionMappingWorker
             return candidatePosition;
         }
         return -1;
+    }
+
+    /// <summary>
+    /// Rejects an isolated fusion before retrying repairs that cannot produce a legal partner.
+    /// </summary>
+    private static void EnsureStrengthPartnerExists(TargetData target, IReadOnlyList<TargetData> targets, int maximumPairDifference, CancellationToken cancellationToken)
+    {
+        int? nearestDifference = null;
+        foreach (TargetData candidate in targets)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (SharesComponent(target, candidate))
+                continue;
+
+            int difference = Math.Abs(target.Bst - candidate.Bst);
+            nearestDifference = Math.Min(nearestDifference ?? int.MaxValue, difference);
+            if (difference <= maximumPairDifference)
+                return;
+        }
+
+        string nearest = nearestDifference is int required ? $"; the nearest requires {required} BST" : string.Empty;
+        throw new InvalidOperationException($"Custom fusion {target.Id} ({target.Bst} BST) has no disjoint reverse partner within {maximumPairDifference} BST{nearest}.");
     }
 
     /// <summary>

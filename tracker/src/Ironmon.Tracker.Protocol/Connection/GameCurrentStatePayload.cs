@@ -22,8 +22,9 @@ public sealed class GameCurrentStatePayload
     /// <param name="fusionAssignments">The authorized active-run recipe for early native fusion assignment preparation.</param>
     /// <param name="activeRunPreparationReady">Whether the active run has reached the safe background-preparation boundary.</param>
     /// <param name="overworldEncounters">The current overworld encounter option, or null for older games.</param>
+    /// <param name="badges">The eight individual gym badge flags in trainer-card order, or null for older games.</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when sequence is negative.</exception>
-    public GameCurrentStatePayload(bool ironmonActive, string? runId, string? battleId, long sequence, BattleSnapshot? battle = null, PlayerPokemonSnapshot? player = null, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null, StarterSelectionSnapshot? starterSelection = null, RunStatisticsPayload? attemptStatistics = null, CompletedRunRecipePayload? completedRun = null, TypeCoverageContextPayload? typeCoverage = null, FusionAssignmentRecipePayload? fusionAssignments = null, bool activeRunPreparationReady = false, bool? overworldEncounters = null)
+    public GameCurrentStatePayload(bool ironmonActive, string? runId, string? battleId, long sequence, BattleSnapshot? battle = null, PlayerPokemonSnapshot? player = null, IReadOnlyList<EnemyPokemonSnapshot>? enemies = null, StarterSelectionSnapshot? starterSelection = null, RunStatisticsPayload? attemptStatistics = null, CompletedRunRecipePayload? completedRun = null, TypeCoverageContextPayload? typeCoverage = null, FusionAssignmentRecipePayload? fusionAssignments = null, bool activeRunPreparationReady = false, bool? overworldEncounters = null, IReadOnlyList<bool>? badges = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(sequence);
         IronmonActive = ironmonActive;
@@ -40,6 +41,7 @@ public sealed class GameCurrentStatePayload
         FusionAssignments = fusionAssignments;
         ActiveRunPreparationReady = activeRunPreparationReady;
         OverworldEncounters = overworldEncounters;
+        Badges = badges;
     }
 
     /// <summary>
@@ -111,4 +113,9 @@ public sealed class GameCurrentStatePayload
     /// Gets the current overworld encounter option, or null when not reported by the game.
     /// </summary>
     public bool? OverworldEncounters { get; }
+
+    /// <summary>
+    /// Gets the individual gym badge flags in trainer-card order, or null when unavailable.
+    /// </summary>
+    public IReadOnlyList<bool>? Badges { get; }
 }

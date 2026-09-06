@@ -12,6 +12,7 @@ module Ironmon
     "custom_fusion_pool" => File.join(
       "Data", "Ironmon", "generation_custom_fusion_pool.bin"
     ),
+    "custom_sprites" => File.join("Data", "Ironmon", "generation_custom_sprites.json"),
     "obtainability_sources" => File.join(
       "Data", "Ironmon", "obtainability_source_catalog.json"
     )
@@ -24,6 +25,7 @@ module Ironmon
     "area_catalog" => "area_catalog.dat",
     "base_catalog" => "generation_base_catalog.json",
     "custom_fusion_pool" => "generation_custom_fusion_pool.bin",
+    "custom_sprites" => "generation_custom_sprites.json",
     "obtainability_sources" => "obtainability_source_catalog.json"
   }.freeze
 
@@ -91,6 +93,13 @@ module Ironmon
     components = manifest["components"]
     names = components.map { |component| component["name"] }
     expected_names = GENERATION_PROFILE_COMPONENT_PATHS.keys.sort
+    eligibility = manifest["algorithms"].find do |entry|
+      entry["name"] == "custom_fusion_eligibility"
+    end
+    if ![1, 2].include?(eligibility["version"])
+      raise GenerationProfileUnavailable, "the custom sprite eligibility version is unsupported"
+    end
+    expected_names -= ["custom_sprites"] if eligibility["version"] < 2
     if names != expected_names
       raise GenerationProfileUnavailable,
         "the #{label} generation profile component set is incomplete"
@@ -222,7 +231,9 @@ module Ironmon
     end
     require "fileutils"
     FileUtils.mkdir_p(root)
-    GENERATION_PROFILE_COMPONENT_FILENAMES.each do |name, filename|
+    profile["manifest"]["components"].each do |component|
+      name = component["name"]
+      filename = GENERATION_PROFILE_COMPONENT_FILENAMES[name]
       source = GENERATION_PROFILE_COMPONENT_PATHS[name]
       generation_profile_atomic_write(File.join(root, filename), File.binread(source))
     end
@@ -311,6 +322,7 @@ module Ironmon
   end
 
   def self.reset_current_generation_profile_cache
+    ValidatedCustomSprites.reset
     @current_generation_profile = nil
     @generation_profiles = nil
     @tracker_area_catalog_documents = nil

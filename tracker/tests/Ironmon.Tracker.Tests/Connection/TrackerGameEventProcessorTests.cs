@@ -97,6 +97,15 @@ public sealed class TrackerGameEventProcessorTests
             await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.SeededRunImportStatus, 5, status, "run-1"), game, CancellationToken.None);
             Assert.Equal(status.TokenId, publishedStatus?.TokenId);
 
+            bool[] badges = [true, false, true, false, false, false, false, false];
+            GameCurrentStatePayload badgeUpdate = new(true, game.RunId, null, 5, badges: badges);
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.BadgesChanged, 5, badgeUpdate, game.RunId), game, CancellationToken.None);
+            Assert.Equal(badges, connectionState.Snapshot.CurrentState?.Badges);
+            Assert.Same(enemy, Assert.Single(runState.Snapshot.Enemies));
+            GameCurrentStatePayload staleBadges = new(true, _preparedRunId, null, 5, badges: []);
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.BadgesChanged, 5, staleBadges, _preparedRunId), game, CancellationToken.None);
+            Assert.Equal(badges, connectionState.Snapshot.CurrentState?.Badges);
+
             int completedRunSelections = 0;
             completedRuns.SelectionRequested += (_, _) => completedRunSelections++;
             CompletedRunRecipePayload completedRecipe = CreateCompletedRecipe("run-1");
@@ -106,6 +115,7 @@ public sealed class TrackerGameEventProcessorTests
             Assert.Equal(0, completedRunSelections);
             Assert.Equal(completedRecipe.Statistics?.SaveSlot, connectionState.Snapshot.CurrentState?.AttemptStatistics?.SaveSlot);
             Assert.Equal(1, connectionState.Snapshot.CurrentState?.AttemptStatistics?.AttemptsLost);
+            Assert.Equal(badges, connectionState.Snapshot.CurrentState?.Badges);
 
             GameCurrentStatePayload preparationReady = new(true, "run-1", null, 7, activeRunPreparationReady: true);
             await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.ActiveRunPreparationReady, 7, preparationReady, "run-1"), game, CancellationToken.None);

@@ -13,6 +13,7 @@ module Ironmon
   def self.update_tracker_connection
     tracker_connection.update
     update_tracker_encounter_mode
+    update_tracker_badges
   rescue Exception => e
     echoln "Ironmon tracker update failed safely: #{e.message}"
   end
@@ -113,6 +114,15 @@ module Ironmon
     tracker_connection.send_event(
       "encounter_mode_changed", tracker_current_state
     ) if changed
+  end
+
+  def self.update_tracker_badges
+    badges = active? ? tracker_badge_snapshot : nil
+    changed = !@tracker_badges.nil? && @tracker_badges != badges
+    @tracker_badges = badges
+    tracker_connection.send_event(
+      "badges_changed", tracker_current_state
+    ) if changed && badges
   end
 
   def self.tracker_player_sent_out(battler)

@@ -391,10 +391,14 @@ try {
     $playerFusionPairingMetric = $seededRunImportResults | Where-Object {
         $_ -match '^player_fusion_pairing_milliseconds=\d+$'
     } | Select-Object -First 1
-    if ($seededRunImportResults.Count -lt 2 -or
+    $isolatedPlayerFusionPairingMetric = $seededRunImportResults | Where-Object {
+        $_ -match '^isolated_player_fusion_pairing_milliseconds=\d+$'
+    } | Select-Object -First 1
+    if ($seededRunImportResults.Count -lt 3 -or
         $seededRunImportResults[0] -ne
             "seeded-run import runtime tests passed" -or
-        -not $playerFusionPairingMetric) {
+        -not $playerFusionPairingMetric -or
+        -not $isolatedPlayerFusionPairingMetric) {
         throw "The bundled runtime did not complete the seeded-run import tests."
     }
     $playerFusionPairingMilliseconds = [int](
@@ -403,6 +407,13 @@ try {
     Write-Output (
         "Bundled-runtime global player-fusion pairing: " +
         "$playerFusionPairingMilliseconds ms."
+    )
+    $isolatedPlayerFusionPairingMilliseconds = [int](
+        $isolatedPlayerFusionPairingMetric.Split('=', 2)[1]
+    )
+    Write-Output (
+        "Bundled-runtime impossible player-fusion rejection: " +
+        "$isolatedPlayerFusionPairingMilliseconds ms."
     )
     if (-not (Test-Path -LiteralPath $runTransitionResultPath) -or
         (Get-Content -LiteralPath $runTransitionResultPath -Raw).Trim() -ne

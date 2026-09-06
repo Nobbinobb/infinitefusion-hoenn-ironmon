@@ -1,0 +1,21 @@
+<section class="obsidian-badge-progress" aria-label="@GetProgressLabel()">
+    <div class="obsidian-badge-heading"><span>@Text["Badges.Heading"]</span><strong>@GetCountText() <span>/ @_badgeCount</span></strong></div>
+    <div class="obsidian-badge-row">
+        @for (int index = 0; index < _badgeCount; index++)
+        {
+            <div class="obsidian-badge @GetStatusClass(index)" role="img" aria-label="@GetBadgeLabel(index)" title="@GetBadgeLabel(index)">
+                <span class="obsidian-badge-art" aria-hidden="true">
+                    @if (_spriteSource is not null)
+                    {
+                        <img src="@_spriteSource" alt="" style="@GetSpritePosition(index)" />
+                    }
+                    else
+                    {
+                        <ObsidianIcon Kind="ObsidianIconKind.Award" />
+                    }
+                </span>
+                <span class="obsidian-badge-status" aria-hidden="true">@GetStatusSymbol(index)</span>
+            </div>
+        }
+    </div>
+</section>

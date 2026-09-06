@@ -1323,6 +1323,24 @@ module IronmonTrackerStructureRuntimeTests
       $PokemonGlobal.ironmon_generation_profile_id =
         Ironmon.current_generation_profile_id
       active_recipe = Ironmon.tracker_debug_active_recipe
+      original_fusion_mapper = Ironmon.method(:tracker_post_run_fusion_mapper)
+      begin
+        Ironmon.define_singleton_method(:tracker_post_run_fusion_mapper) do |_recipe|
+          raise "A normal Pokemon overview must not finish fusion preparation"
+        end
+        normal_overview = Ironmon.tracker_pokemon_lookup_for_recipe(
+          { "species_id" => "CHARMELEON:0", "section" => "overview" },
+          active_recipe,
+          { :overview => true, :obtainability => false, :wild => false, :trainer => false }
+        )
+        assert(
+          normal_overview["overview"]["reverse_fusion"].nil? &&
+            normal_overview["overview"]["fusion_bases"].empty?,
+          "normal Pokemon overviews return without touching the global fusion mapper"
+        )
+      ensure
+        Ironmon.define_singleton_method(:tracker_post_run_fusion_mapper, original_fusion_mapper)
+      end
       assert(
         active_recipe["active_run"] == true &&
           Ironmon.tracker_loaded_recipe?(active_recipe) &&

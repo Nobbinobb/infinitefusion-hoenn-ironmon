@@ -297,7 +297,6 @@ module Ironmon
 
     case section
     when "overview"
-      fusion_mapper = tracker_post_run_fusion_mapper(recipe)
       result["overview"] = {
         "wild_occurrences" => visibility && !visibility[:wild] ?
           { "matches" => [], "total" => 0 } :
@@ -314,7 +313,7 @@ module Ironmon
           ),
         "reverse_fusion" => visibility && !visibility[:overview] ?
           nil : tracker_lookup_reverse_fusion(
-            species, fusion_mapper, recipe,
+            species, recipe,
             !visibility || visibility[:obtainability]
           ),
         "fusion_materials" => { "matches" => [], "total" => 0 }

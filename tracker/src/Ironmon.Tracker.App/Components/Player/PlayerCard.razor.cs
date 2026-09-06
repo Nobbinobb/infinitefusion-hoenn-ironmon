@@ -74,6 +74,12 @@ public partial class PlayerCard
     public string? GameRoot { get; set; }
 
     /// <summary>
+    /// Gets or sets the current save's individual gym badge flags.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<bool>? Badges { get; set; }
+
+    /// <summary>
     /// Gets or sets visible opposing types used for move effectiveness.
     /// </summary>
     [Parameter]

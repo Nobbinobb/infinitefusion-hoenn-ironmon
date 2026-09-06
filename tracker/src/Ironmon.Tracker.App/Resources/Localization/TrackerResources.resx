@@ -2037,4 +2037,18 @@
   <data name="Starter.Selection.Accepted" xml:space="preserve"><value>Selection accepted. Waiting for the game.</value></data>
   <data name="Starter.Selection.Rejected" xml:space="preserve"><value>This starter is no longer available for selection. Check the current choices.</value></data>
   <data name="Starter.Selection.RequestFailed" xml:space="preserve"><value>The selection could not be confirmed. Check the game before trying again.</value></data>
+  <data name="Badges.Heading" xml:space="preserve"><value>Hoenn badges</value></data>
+  <data name="Badges.Progress" xml:space="preserve"><value>Gym badges: {0} / {1} earned</value></data>
+  <data name="Badges.Label" xml:space="preserve"><value>{0} Badge · {1}</value></data>
+  <data name="Badges.Earned" xml:space="preserve"><value>Earned</value></data>
+  <data name="Badges.NotEarned" xml:space="preserve"><value>Not earned</value></data>
+  <data name="Badges.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Badges.Stone" xml:space="preserve"><value>Stone</value></data>
+  <data name="Badges.Knuckle" xml:space="preserve"><value>Knuckle</value></data>
+  <data name="Badges.Dynamo" xml:space="preserve"><value>Dynamo</value></data>
+  <data name="Badges.Heat" xml:space="preserve"><value>Heat</value></data>
+  <data name="Badges.Balance" xml:space="preserve"><value>Balance</value></data>
+  <data name="Badges.Feather" xml:space="preserve"><value>Feather</value></data>
+  <data name="Badges.Mind" xml:space="preserve"><value>Mind</value></data>
+  <data name="Badges.Rain" xml:space="preserve"><value>Rain</value></data>
 </root>

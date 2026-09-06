@@ -21,6 +21,7 @@ $rubyFixturePath = ([IO.Path]::GetFullPath($fixturePath)).Replace('\', '/')
 $rubyPoolFixturePath = ([IO.Path]::GetFullPath($poolFixturePath)).Replace('\', '/')
 $rubyResultPath = ([IO.Path]::GetFullPath($resultPath)).Replace('\', '/')
 $testSource = [IO.File]::ReadAllText($testPath, [Text.Encoding]::UTF8)
+$spriteTestSource = [IO.File]::ReadAllText((Join-Path $projectRoot "tests/runtime/Validated-Custom-Sprites.rb"), [Text.Encoding]::UTF8)
 $loaderSource = [IO.File]::ReadAllText(
     (Join-Path $PSScriptRoot "generation\Script-Loader.rb"),
     [Text.Encoding]::UTF8
@@ -34,6 +35,7 @@ $bootstrap = @(
     "IronmonScriptLoader.load_directory(`"Data/Scripts`", [/\A(?:998|999)/])"
     "GameData.load_all"
     $testSource
+    $spriteTestSource
     "exit! 0"
     "rescue Exception => error"
     "File.binwrite(`"$($errorPath.Replace('\', '/'))`", `"#{error.class}: #{error.message}\n#{error.backtrace.join(`"\n`")}`")"

@@ -63,6 +63,12 @@ public partial class EnemyCard : IDisposable
     public string? BattleId { get; set; }
 
     /// <summary>
+    /// Gets or sets the current save's individual gym badge flags.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<bool>? Badges { get; set; }
+
+    /// <summary>
     /// Gets or sets the selected opposing Pokemon identifier.
     /// </summary>
     [Parameter]

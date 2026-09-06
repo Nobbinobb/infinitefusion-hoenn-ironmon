@@ -40,6 +40,7 @@ module IronmonScriptLoader
 
   def self.load_manifest(source_root, manifest_path, initialize_catalogs = true)
     root = File.expand_path(source_root)
+    $ironmon_source_root = root
     root_prefix = root.end_with?(File::SEPARATOR) ? root :
       root + File::SEPARATOR
     document = JSON.parse(File.open(manifest_path, "rb") { |file| file.read })

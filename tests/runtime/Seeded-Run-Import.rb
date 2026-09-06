@@ -172,7 +172,7 @@ module IronmonSeededRunImportRuntimeTests
     service.define_singleton_method(:pool) { pool }
     service.define_singleton_method(:info) do
       {
-        :schema_version => Ironmon::CustomFusionPool::SCHEMA_VERSION,
+        :schema_version => 1,
         :size => pool.length,
         :fingerprint => Ironmon.species_pool_fingerprint(pool),
         :source_entries => pool.length,
@@ -469,6 +469,42 @@ module IronmonSeededRunImportRuntimeTests
     )
   end
 
+  def self.test_isolated_player_fusion_pool
+    seed = 1_271_448_503
+    mapper = Ironmon::PlayerFusionMapper.new(
+      seed, [NB_POKEMON + 2, NB_POKEMON + 3], {}, {},
+      Ironmon::BaseStatGenerator.new(seed, Ironmon.base_stat_source_fingerprint)
+    )
+    ordering_attempts = 0
+    ordering = mapper.method(:strength_ordered_fusion_ids)
+    mapper.define_singleton_method(:strength_ordered_fusion_ids) do |attempt|
+      ordering_attempts += 1
+      ordering.call(attempt)
+    end
+    mapper.define_singleton_method(:repair_strength_pair) do |*arguments|
+      raise "an isolated fusion must be rejected before exhaustive repairs"
+    end
+    failure = nil
+    2.times do
+      begin
+        mapper.prepare
+      rescue Ironmon::PlayerFusionMappingError => error
+        assert(
+          error.message.include?("has no disjoint reverse partner"),
+          "a pool whose targets share a component reports an impossible pairing"
+        )
+        assert(error.equal?(failure), "isolated pool failure is cached") if failure
+        failure = error
+      else
+        assert(false, "an isolated pool cannot produce reverse pairs")
+      end
+      assert(
+        ordering_attempts == 1,
+        "an isolated pool fails on its first ordering and never restarts preparation"
+      )
+    end
+  end
+
   def self.test_player_fusion_reverse_materials
     original_game_temp = $game_temp
     begin
@@ -547,6 +583,33 @@ module IronmonSeededRunImportRuntimeTests
         blocked_seed_mapper.paired_species(forward),
         "the player-fusion mapper repairs a blocked strength pairing"
       )
+      isolated_seed = 1_271_448_503
+      isolated_mapper = Ironmon::PlayerFusionMapper.new(
+        isolated_seed, Ironmon.custom_fusion_pool_numbers, {}, {},
+        Ironmon::BaseStatGenerator.new(
+          isolated_seed, Ironmon.base_stat_source_fingerprint
+        )
+      )
+      isolated_started = System.uptime
+      isolated_error = nil
+      begin
+        isolated_mapper.prepare
+      rescue Ironmon::PlayerFusionMappingError => error
+        isolated_error = error
+      end
+      @isolated_player_fusion_pairing_milliseconds =
+        ((System.uptime - isolated_started).to_f / 1_000.0).round
+      assert(
+        isolated_error && isolated_error.message.include?("has no disjoint reverse partner"),
+        "an isolated fusion reports an impossible pairing instead of exhaustive repairs"
+      )
+      begin
+        isolated_mapper.prepare
+      rescue Ironmon::PlayerFusionMappingError => error
+        assert(error.equal?(isolated_error), "an impossible pairing caches its failure")
+      else
+        assert(false, "an impossible pairing remains rejected on repeated requests")
+      end
       chained_seed = 116_872_428
       chained_mapper = Ironmon::PlayerFusionMapper.new(
         chained_seed, Ironmon.custom_fusion_pool_numbers, {}, {},
@@ -797,12 +860,15 @@ module IronmonSeededRunImportRuntimeTests
     test_transaction(false)
     test_preset_failure_rollback
     test_repeated_import_determinism
+    test_isolated_player_fusion_pool
     test_player_fusion_reverse_materials
     File.binwrite(
       OUTPUT_PATH,
       "seeded-run import runtime tests passed\n" +
         "player_fusion_pairing_milliseconds=" +
-        @player_fusion_pairing_milliseconds.to_i.to_s + "\n"
+        @player_fusion_pairing_milliseconds.to_i.to_s + "\n" +
+        "isolated_player_fusion_pairing_milliseconds=" +
+        @isolated_player_fusion_pairing_milliseconds.to_i.to_s + "\n"
     )
   rescue Exception => exception
     File.binwrite(

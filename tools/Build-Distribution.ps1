@@ -10,6 +10,7 @@ $catalog = Join-Path $projectRoot "data\area_catalog.dat"
 $generationProfile = Join-Path $projectRoot "data\generation_profile.json"
 $generationBaseCatalog = Join-Path $projectRoot "data\generation_base_catalog.json"
 $generationCustomFusionPool = Join-Path $projectRoot "data\generation_custom_fusion_pool.bin"
+$generationCustomSprites = Join-Path $projectRoot "data\generation_custom_sprites.json"
 $obtainabilitySourceCatalog = Join-Path $projectRoot "data\obtainability_source_catalog.json"
 $movePowerPresentationCatalog = Join-Path $projectRoot "data\move_power_presentation.json"
 $defensePresentationCatalog = Join-Path $projectRoot "data\defense_presentation.json"
@@ -201,6 +202,11 @@ $generationPackageFiles = @(
     [pscustomobject]@{ Source = $generationCustomFusionPool; Name = "generation_custom_fusion_pool.bin" },
     [pscustomobject]@{ Source = $obtainabilitySourceCatalog; Name = "obtainability_source_catalog.json" }
 )
+if ($generationProfileDocument.manifest.components.name -contains "custom_sprites") {
+    $generationPackageFiles += [pscustomobject]@{ Source = $generationCustomSprites; Name = "generation_custom_sprites.json" }
+    Copy-Item -LiteralPath $generationCustomSprites -Destination (Join-Path $distributionData "generation_custom_sprites.json")
+    Copy-Item -LiteralPath $generationCustomSprites -Destination (Join-Path $installationData "generation_custom_sprites.json")
+}
 foreach ($packageFile in $generationPackageFiles) {
     Copy-Item -LiteralPath $packageFile.Source -Destination (
         Join-Path $distributionProfileDirectory $packageFile.Name
