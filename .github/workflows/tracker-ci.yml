@@ -18,7 +18,7 @@ concurrency:
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   DOTNET_NOLOGO: true
-  GAME_REVISION: d606db4fecd27190b0c6721306e710313f3d106d
+  GAME_REVISION: aadf65fb6ba960a15fe1764bfcb3c31bca2a512e
 
 jobs:
   current-catalogs:

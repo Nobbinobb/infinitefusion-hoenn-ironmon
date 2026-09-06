@@ -72,4 +72,3 @@ module Ironmon
     return false
   end
 end
-
