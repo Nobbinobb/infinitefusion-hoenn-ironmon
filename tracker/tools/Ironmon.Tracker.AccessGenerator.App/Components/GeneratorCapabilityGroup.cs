@@ -1,3 +1,5 @@
+using Ironmon.Tracker.App.Components.Common;
+
 namespace Ironmon.Tracker.AccessGenerator.App.Components;
 
 /// <summary>
@@ -5,11 +7,30 @@ namespace Ironmon.Tracker.AccessGenerator.App.Components;
 /// </summary>
 /// <param name="resourceKey">The localized group-name resource key.</param>
 /// <param name="capabilities">The capability identifiers in display order.</param>
+/// <param name="icon">The shared outline icon for this group.</param>
 /// <exception cref="ArgumentException">Thrown when resourceKey is empty.</exception>
 /// <exception cref="ArgumentNullException">Thrown when capabilities is null.</exception>
 /// <remarks>Initializes an immutable generator capability group.</remarks>
-public sealed class GeneratorCapabilityGroup(string resourceKey, IReadOnlyList<string> capabilities)
+public sealed class GeneratorCapabilityGroup(string resourceKey, IReadOnlyList<string> capabilities, ObsidianIconKind icon)
 {
+    private const string _shortNameSuffix = ".ShortName";
+    private const string _descriptionSuffix = ".Description";
+
+    /// <summary>
+    /// Gets the outline icon used in the group navigation.
+    /// </summary>
+    public ObsidianIconKind Icon { get; } = icon;
+
+    /// <summary>
+    /// Gets the compact navigation label resource key.
+    /// </summary>
+    public string ShortNameKey => ResourceKey + _shortNameSuffix;
+
+    /// <summary>
+    /// Gets the group introduction resource key.
+    /// </summary>
+    public string DescriptionKey => ResourceKey + _descriptionSuffix;
+
     /// <summary>
     /// Gets the localized group-name resource key.
     /// </summary>

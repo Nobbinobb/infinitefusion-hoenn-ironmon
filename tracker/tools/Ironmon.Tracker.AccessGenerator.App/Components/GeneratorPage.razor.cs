@@ -17,30 +17,45 @@ public partial class GeneratorPage : ComponentBase, IDisposable
     private string _note = string.Empty;
     private string _expirationLocal = DateTime.Now.AddDays(GeneratorApplicationConstants.DefaultExpirationDays).ToString(GeneratorApplicationConstants.LocalDateTimeInputFormat, CultureInfo.InvariantCulture);
     private bool _neverExpires;
+    private bool _loadingKey;
+    private bool _showReview;
+    private bool _showResult;
+    private bool _reviewEffective;
     private string? _errorMessage;
     private string? _resultMessage;
 
     /// <summary>
     /// Loads and validates the selected external private key.
     /// </summary>
-    /// <param name="args">The file-selection event.</param>
-    private async Task LoadSigningKeyAsync(InputFileChangeEventArgs args)
+    /// <returns>The native selection and key import task.</returns>
+    private async Task LoadSigningKeyAsync()
     {
+        if (_loadingKey)
+            return;
+
+        _loadingKey = true;
         ClearMessages();
-        _signingKey?.Dispose();
-        _signingKey = null;
-        _result = null;
         try
         {
-            IBrowserFile file = args.File;
-            await using Stream stream = file.OpenReadStream(DiagnosticAccessGeneratorConstants.MaximumPrivateKeyCharacters);
-            using StreamReader reader = new(stream);
-            string pem = await reader.ReadToEndAsync();
-            _signingKey = DiagnosticAccessSigningKey.Import(pem, file.Name);
+            DiagnosticAccessSigningKey? key = await FileService.LoadSigningKeyAsync();
+            if (key is null)
+                return;
+
+            _signingKey?.Dispose();
+            _signingKey = key;
+            InvalidateResult();
         }
-        catch (Exception exception) when (exception is ArgumentException or IOException)
+        catch (ArgumentException exception)
         {
             _errorMessage = exception.Message;
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException or NotSupportedException or UnauthorizedAccessException or COMException)
+        {
+            _errorMessage = Text["Generator.Errors.LoadKeyFailed"];
+        }
+        finally
+        {
+            _loadingKey = false;
         }
     }
 
@@ -117,6 +132,8 @@ public partial class GeneratorPage : ComponentBase, IDisposable
             DateTimeOffset? expiresAt = GetExpiration();
             DiagnosticAccessTokenGenerationRequest request = new(_tokenId, issuedAt, expiresAt, NormalizeNote(), _selection.DirectCapabilities);
             _result = TokenGenerator.Generate(key, request);
+            _showReview = false;
+            _showResult = true;
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or FormatException)
         {
@@ -135,7 +152,7 @@ public partial class GeneratorPage : ComponentBase, IDisposable
         ClearMessages();
         try
         {
-            await Clipboard.Default.SetTextAsync(_result.Token);
+            await GeneratorClipboardService.CopyTokenAsync(_result.Token);
             _resultMessage = Text["Generator.Messages.TokenCopied"];
         }
         catch (Exception exception) when (exception is InvalidOperationException or NotSupportedException or UnauthorizedAccessException or COMException)
@@ -170,6 +187,7 @@ public partial class GeneratorPage : ComponentBase, IDisposable
     /// </summary>
     private void StartNewToken()
     {
+        CloseDialogs();
         _tokenId = CreateTokenId();
         _result = null;
         ClearMessages();
@@ -185,7 +203,7 @@ public partial class GeneratorPage : ComponentBase, IDisposable
         if (_neverExpires)
             return null;
 
-        if (!DateTime.TryParseExact(_expirationLocal, GeneratorApplicationConstants.LocalDateTimeInputFormat, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out DateTime localExpiration))
+        if (!TryGetLocalExpiration(out DateTime localExpiration))
             throw new FormatException(Text["Generator.Errors.InvalidExpiration"]);
 
         return new DateTimeOffset(localExpiration).ToUniversalTime();
@@ -200,7 +218,7 @@ public partial class GeneratorPage : ComponentBase, IDisposable
         if (_neverExpires)
             return Text["Generator.Details.LifetimeAccess"];
 
-        return DateTime.TryParseExact(_expirationLocal, GeneratorApplicationConstants.LocalDateTimeInputFormat, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out DateTime expiration)
+        return TryGetLocalExpiration(out DateTime expiration)
             ? new DateTimeOffset(expiration).ToUniversalTime().ToString(GeneratorApplicationConstants.UtcExpirationDisplayFormat, CultureInfo.InvariantCulture)
             : Text["Generator.Review.InvalidExpiration"];
     }
@@ -211,6 +229,52 @@ public partial class GeneratorPage : ComponentBase, IDisposable
     /// <returns>The trimmed note, or null when empty.</returns>
     private string? NormalizeNote()
         => string.IsNullOrWhiteSpace(_note) ? null : _note.Trim();
+
+    /// <summary>
+    /// Accepts the browser's normalized date value with optional seconds.
+    /// </summary>
+    /// <param name="expiration">The parsed local expiration when valid.</param>
+    /// <returns>Whether the local date value is valid.</returns>
+    private bool TryGetLocalExpiration(out DateTime expiration)
+        => DateTime.TryParseExact(_expirationLocal, [GeneratorApplicationConstants.LocalDateTimeInputFormat, GeneratorApplicationConstants.LocalDateTimeMinuteInputFormat], CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out expiration);
+
+    /// <summary>
+    /// Validates form dependencies and expiration before presenting the unsigned review.
+    /// </summary>
+    private void ReviewToken()
+    {
+        ClearMessages();
+        try
+        {
+            if (_signingKey is null)
+                throw new InvalidOperationException(Text["Generator.Errors.SelectSigningKey"]);
+
+            DateTimeOffset? expiration = GetExpiration();
+            if (expiration is not null && expiration <= DateTimeOffset.UtcNow)
+                throw new InvalidOperationException(Text["Generator.Errors.PastExpiration"]);
+
+            IReadOnlyList<string> errors = DiagnosticAccessSelectionValidator.GetErrors(_selection.DirectCapabilities);
+            if (errors.Count > 0)
+                throw new InvalidOperationException(errors[0]);
+
+            _reviewEffective = false;
+            _showReview = true;
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or FormatException)
+        {
+            _errorMessage = exception.Message;
+        }
+    }
+
+    /// <summary>
+    /// Dismisses any generator modal while retaining the editable form.
+    /// </summary>
+    private void CloseDialogs()
+    {
+        _showReview = false;
+        _showResult = false;
+        ClearMessages();
+    }
 
     /// <summary>
     /// Invalidates a previously generated token after an input change.

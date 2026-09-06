@@ -51,6 +51,11 @@ internal static class GeneratorApplicationConstants
     internal const string LocalDateTimeInputFormat = "yyyy-MM-ddTHH:mm:ss";
 
     /// <summary>
+    /// Gets the normalized browser date format when seconds are omitted.
+    /// </summary>
+    internal const string LocalDateTimeMinuteInputFormat = "yyyy-MM-ddTHH:mm";
+
+    /// <summary>
     /// Gets the invariant UTC expiration display format.
     /// </summary>
     internal const string UtcExpirationDisplayFormat = "yyyy-MM-dd HH:mm:ss 'UTC'";

@@ -69,6 +69,16 @@ PKCS#8 P-256 private key outside the repository, game installation, tracker
 distribution, logs, and source-control staging. Never copy generated
 `.ironmon-access` files into `dist` or `release`.
 
+The generator uses the tracker's dark presentation and shared outline icons.
+Permission groups scroll within the editor without changing the window size;
+development controls remain individually selectable. Load a signing key, choose
+a preset or individual grants, then use **Review & generate** to inspect the
+direct and effective grants before signing. The result dialog supports copying,
+saving, and creating another token while retaining the form choices.
+**Choose file** opens the owned Windows picker directly; cancellation keeps the
+loaded key. Copying flushes token text to the Windows clipboard before reporting
+success, so the token remains available after the generator exits.
+
 ### Diagnostic Tools
 
 The Tools area uses the shared redesigned Pokémon research views for current

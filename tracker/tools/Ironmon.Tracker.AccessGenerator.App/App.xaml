@@ -4,7 +4,7 @@
              x:Class="Ironmon.Tracker.AccessGenerator.App.App">
     <Application.Resources>
         <ResourceDictionary>
-            <Color x:Key="WindowBackground">#100E16</Color>
+            <Color x:Key="WindowBackground">#090D12</Color>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

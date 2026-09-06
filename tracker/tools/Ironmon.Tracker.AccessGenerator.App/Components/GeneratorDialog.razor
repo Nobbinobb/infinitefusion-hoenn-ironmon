@@ -1,0 +1,7 @@
+<dialog class="generator-dialog" @ref="_element" aria-label="@Title" @onkeydown="HandleKeyDown">
+    <header class="dialog-heading">
+        <div><p class="eyebrow">@Eyebrow</p><h2>@Title</h2></div>
+        <button class="dialog-close" autofocus aria-label="@Text["Generator.Common.Close"]" @onclick="CloseAsync"><ObsidianIcon Kind="ObsidianIconKind.Close" /></button>
+    </header>
+    <div class="dialog-content">@ChildContent</div>
+</dialog>
