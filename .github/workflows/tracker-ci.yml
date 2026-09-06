@@ -39,6 +39,9 @@ jobs:
         with:
           path: game/Ironmon
           persist-credentials: false
+      - name: Prepare software rendering for the hosted game
+        shell: pwsh
+        run: ./game/Ironmon/tools/ci/Initialize-HostedGame.ps1
       - name: Verify hosted game runtime
         shell: pwsh
         run: ./game/Ironmon/tools/ci/Test-HostedGameRuntime.ps1
