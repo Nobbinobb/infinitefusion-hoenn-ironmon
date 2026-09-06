@@ -6,8 +6,8 @@ module Ironmon
   class SpeciesGenerationError < StandardError; end
 
   class SpeciesGenerator
-    SCHEMA_VERSION = 1
-    SLOT_SCHEMA_VERSIONS = [SCHEMA_VERSION].freeze
+    SCHEMA_VERSION = 2
+    SLOT_SCHEMA_VERSIONS = [1, SCHEMA_VERSION].freeze
     SUPPORTED_SCHEMA_VERSIONS = SLOT_SCHEMA_VERSIONS
     MIX_MULTIPLIER_ONE = 0xBF58476D1CE4E5B9
     MIX_MULTIPLIER_TWO = 0x94D049BB133111EB
@@ -29,13 +29,13 @@ module Ironmon
       end
     end
 
-    def map(species, context)
+    def map(species, context, fully_evolved = false)
       species_data = GameData::Species.try_get(species)
       return species if !species_data
       source_id = species_data.id_number
       return species if source_id <= 0
       return species if source_id >= Settings::ZAPMOLCUNO_NB
-      mapped_id = map_id(source_id, context)
+      mapped_id = map_id(source_id, context, fully_evolved)
       mapped_species = GameData::Species.try_get(mapped_id)
       return mapped_species ? mapped_species.id : species
     rescue Exception => e
@@ -43,43 +43,67 @@ module Ironmon
       return species
     end
 
-    def map_id(source_id, context)
-      key = mapping_key(source_id, context)
+    def map_id(source_id, context, fully_evolved = false)
+      fully_evolved = fully_evolved && @schema_version >= 2
+      key = mapping_key(source_id, context, fully_evolved)
       stored = @mapping[key]
       if stored
-        return stored if allowed_species_id?(stored)
+        return stored if allowed_species_id?(stored, fully_evolved)
         @mapping.delete(key)
       end
-      pool = select_pool(source_id, context)
+      pool = select_pool(source_id, context, fully_evolved)
       if !pool || pool.empty?
         raise SpeciesGenerationError,
               "the #{@namespace} #{@policy} species pool is empty"
       end
-      selected = pool[deterministic_value(source_id, context, "species") % pool.length]
+      purpose = fully_evolved ? "fully_evolved_species" : "species"
+      selected = pool[deterministic_value(source_id, context, purpose) % pool.length]
       @mapping[key] = species_number(selected)
       return @mapping[key]
     end
 
-    def map_number(species, context)
-      return map_id(species_number(species), context)
+    def map_number(species, context, fully_evolved = false)
+      return map_id(species_number(species), context, fully_evolved)
     end
 
     private
 
-    def allowed_species_id?(species_id)
+    def allowed_species_id?(species_id, fully_evolved)
+      normal_pool = fully_evolved ?
+        Ironmon.fully_evolved_normal_species_pool : @normal_pool
+      fusion_pool = fully_evolved ?
+        Ironmon.fully_evolved_custom_fusion_pool : @fusion_pool
       case @policy
       when Configuration::POLICY_NORMAL_ONLY
-        @normal_pool_index ||= pool_index(@normal_pool)
-        return @normal_pool_index.key?(species_id)
+        return normal_pool_index(normal_pool, fully_evolved).key?(species_id)
       when Configuration::POLICY_CUSTOM_FUSIONS_ONLY
-        @fusion_pool_index ||= pool_index(@fusion_pool)
-        return @fusion_pool_index.key?(species_id)
+        return fusion_pool_index(fusion_pool, fully_evolved).key?(species_id)
       else
-        @normal_pool_index ||= pool_index(@normal_pool)
-        @fusion_pool_index ||= pool_index(@fusion_pool)
-        return @normal_pool_index.key?(species_id) ||
-               @fusion_pool_index.key?(species_id)
+        return normal_pool_index(normal_pool, fully_evolved).key?(species_id) ||
+               fusion_pool_index(fusion_pool, fully_evolved).key?(species_id)
       end
+    end
+
+    def normal_pool_index(pool, fully_evolved)
+      variable = fully_evolved ? :@fully_evolved_normal_pool_index :
+        :@normal_pool_index
+      index = instance_variable_get(variable)
+      if !index
+        index = pool_index(pool)
+        instance_variable_set(variable, index)
+      end
+      return index
+    end
+
+    def fusion_pool_index(pool, fully_evolved)
+      variable = fully_evolved ? :@fully_evolved_fusion_pool_index :
+        :@fusion_pool_index
+      index = instance_variable_get(variable)
+      if !index
+        index = pool_index(pool)
+        instance_variable_set(variable, index)
+      end
+      return index
     end
 
     def pool_index(pool)
@@ -99,15 +123,19 @@ module Ironmon
       return GameData::Species.get(species).id_number
     end
 
-    def select_pool(source_id, context)
+    def select_pool(source_id, context, fully_evolved)
+      normal_pool = fully_evolved ?
+        Ironmon.fully_evolved_normal_species_pool : @normal_pool
+      fusion_pool = fully_evolved ?
+        Ironmon.fully_evolved_custom_fusion_pool : @fusion_pool
       case @policy
       when Configuration::POLICY_NORMAL_ONLY
-        return @normal_pool
+        return normal_pool
       when Configuration::POLICY_CUSTOM_FUSIONS_ONLY
-        return @fusion_pool
+        return fusion_pool
       else
         category = deterministic_category(source_id, context)
-        return category == 0 ? @normal_pool : @fusion_pool
+        return category == 0 ? normal_pool : fusion_pool
       end
     end
 
@@ -121,9 +149,11 @@ module Ironmon
       return value % 2
     end
 
-    def mapping_key(source_id, context)
+    def mapping_key(source_id, context, fully_evolved)
       normalized = context.is_a?(Array) ? context : [context]
-      return [@schema_version, @namespace, *normalized, source_id]
+      key = [@schema_version, @namespace, *normalized, source_id]
+      key << :fully_evolved if fully_evolved
+      return key
     end
 
     def deterministic_value(source_id, context, purpose)

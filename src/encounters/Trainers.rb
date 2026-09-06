@@ -19,8 +19,12 @@ module GameData
     alias ironmon_original_replace_species_to_randomized replace_species_to_randomized
     def replace_species_to_randomized(species, trainer_id, pokemon_index)
       if Ironmon.active?
+        pokemon_data = @pokemon[pokemon_index] if @pokemon
+        level = if pokemon_data
+                  Ironmon.trainer_effective_level(pokemon_data[:level])
+                end
         return Ironmon.trainer_species_for(
-          species, [:pbs, trainer_id, pokemon_index]
+          species, [:pbs, trainer_id, pokemon_index], level
         )
       end
       return ironmon_original_replace_species_to_randomized(
@@ -35,6 +39,123 @@ Events.onTrainerPartyLoad += proc do |_sender, event_args|
 end
 
 module Ironmon
+  RIVAL_STORY_STARTER_MARKER = :@ironmon_rival_story_starter
+
+  def self.rival_story_generation_enabled?
+    return active? &&
+      generation_profile_algorithm_version("species_mapping").to_i >= 2
+  rescue Exception
+    return false
+  end
+
+  def self.rival_story_fusion_plan
+    pool = custom_fusion_pool
+    if !pool || pool.empty?
+      raise SpeciesGenerationError,
+            "the rival's story needs a custom-sprite fusion"
+    end
+    index = progression_random_value(
+      :hoenn_rival_story_fusion, 0
+    ) % pool.length
+    fusion = GameData::Species.get(pool[index])
+    body = GameData::Species.get(fusion.get_body_species_symbol)
+    head = GameData::Species.get(fusion.get_head_species_symbol)
+    return {
+      :fusion => fusion.id,
+      :body => body.id,
+      :head => head.id
+    }
+  end
+
+  def self.rival_story_initial_species
+    policy = configuration.trainer_policy
+    if policy == Configuration::POLICY_NORMAL_ONLY
+      pool = normal_species_pool
+      if !pool || pool.empty?
+        raise SpeciesGenerationError,
+              "the rival's story needs a normal Pokemon"
+      end
+      index = progression_random_value(
+        :hoenn_rival_story_normal, 0
+      ) % pool.length
+      return GameData::Species.get(pool[index]).id
+    end
+    plan = rival_story_fusion_plan
+    if policy == Configuration::POLICY_CUSTOM_FUSIONS_ONLY
+      return plan[:fusion]
+    end
+    return plan[:body]
+  end
+
+  def self.mark_rival_story_starter(pokemon)
+    return pokemon if !pokemon
+    mark_persistent_trainer_species(pokemon)
+    pokemon.instance_variable_set(RIVAL_STORY_STARTER_MARKER, true)
+    return pokemon
+  end
+
+  def self.rival_story_starter?(pokemon)
+    return pokemon && pokemon.instance_variable_get(
+      RIVAL_STORY_STARTER_MARKER
+    ) == true
+  rescue Exception
+    return false
+  end
+
+  def self.rival_story_starter(trainer)
+    return nil if !trainer || !trainer.currentTeam
+    return trainer.currentTeam.find do |pokemon|
+      rival_story_starter?(pokemon)
+    end
+  end
+
+  def self.prepare_rival_story_starter(pokemon)
+    return pokemon if !pokemon
+    species = rival_story_initial_species
+    if pokemon.species != species
+      pokemon.species = species
+      pokemon.pif_sprite = nil if pokemon.respond_to?(:pif_sprite=)
+      pokemon.reset_moves
+      pokemon.calc_stats
+    end
+    return mark_rival_story_starter(pokemon)
+  end
+
+  def self.restore_rival_story_starter_after_second_battle(trainer, starter)
+    return trainer if !trainer || !trainer.currentTeam || !starter
+    replacement = trainer.currentTeam[-1]
+    return trainer if !replacement
+    species = starter.species
+    if configuration.trainer_policy == Configuration::POLICY_MIXED &&
+       GameData::Species.get(species).id_number <= NB_POKEMON
+      species = rival_story_fusion_plan[:fusion]
+    end
+    if starter.species != species
+      starter.species = species
+      starter.pif_sprite = nil if starter.respond_to?(:pif_sprite=)
+      starter.reset_moves
+    end
+    starter.level = replacement.level
+    starter.calc_stats
+    trainer.currentTeam[-1] = mark_rival_story_starter(starter)
+    return trainer
+  end
+
+  def self.restore_rival_story_starter_after_third_battle(trainer, starter)
+    return trainer if !trainer || !trainer.currentTeam || !starter
+    replacement = trainer.currentTeam[-1]
+    return trainer if !replacement
+    if starter.species != replacement.species
+      starter.species = replacement.species
+      starter.pif_sprite = nil if starter.respond_to?(:pif_sprite=)
+      starter.reset_moves
+    end
+    starter.level = replacement.level
+    starter.calc_stats
+    trainer.currentTeam[-1] = mark_rival_story_starter(starter)
+    return trainer
+  end
+
   def self.with_trainer_battle_format_policy(one_against_two = false)
     previous_separate_trainers = @separate_simultaneous_trainers
     previous_one_against_two = @one_against_two_trainer_battle
@@ -182,12 +303,48 @@ def customTrainerBattle(trainerName, trainerType, party_array,
                         sprite_override = nil, custom_appearance = nil,
                         items = [], canLose = false)
   party_array = Ironmon.trainer_battle_party(
-    party_array, [:custom, trainerType, trainerName]
+    party_array, [:custom, trainerType, trainerName], default_level
   )
   return ironmon_original_custom_trainer_battle(
     trainerName, trainerType, party_array, default_level, endSpeech,
     sprite_override, custom_appearance, items, canLose
   )
+end
+
+alias ironmon_original_initialize_rival_battled_trainer initializeRivalBattledTrainer
+def initializeRivalBattledTrainer
+  trainer = ironmon_original_initialize_rival_battled_trainer
+  if Ironmon.rival_story_generation_enabled? &&
+     trainer && trainer.currentTeam
+    Ironmon.prepare_rival_story_starter(trainer.currentTeam[0])
+  end
+  return trainer
+end
+
+alias ironmon_original_update_rival_team_for_second_battle updateRivalTeamForSecondBattle
+def updateRivalTeamForSecondBattle
+  if !Ironmon.rival_story_generation_enabled?
+    return ironmon_original_update_rival_team_for_second_battle
+  end
+  trainer = $PokemonGlobal.battledTrainers[BATTLED_TRAINER_RIVAL_KEY]
+  starter = Ironmon.rival_story_starter(trainer)
+  result = ironmon_original_update_rival_team_for_second_battle
+  trainer = $PokemonGlobal.battledTrainers[BATTLED_TRAINER_RIVAL_KEY]
+  Ironmon.restore_rival_story_starter_after_second_battle(trainer, starter)
+  return result
+end
+
+alias ironmon_original_update_rival_team_for_third_battle updateRivalTeamForThirdBattle
+def updateRivalTeamForThirdBattle
+  if !Ironmon.rival_story_generation_enabled?
+    return ironmon_original_update_rival_team_for_third_battle
+  end
+  trainer = $PokemonGlobal.battledTrainers[BATTLED_TRAINER_RIVAL_KEY]
+  starter = Ironmon.rival_story_starter(trainer)
+  result = ironmon_original_update_rival_team_for_third_battle
+  trainer = $PokemonGlobal.battledTrainers[BATTLED_TRAINER_RIVAL_KEY]
+  Ironmon.restore_rival_story_starter_after_third_battle(trainer, starter)
+  return result
 end
 
 alias ironmon_original_rematchable_trainer_battle rematchable_trainer_battle
@@ -200,6 +357,7 @@ def rematchable_trainer_battle(rematchable_trainers = [], default_level = 50,
         trainer.currentTeam, [:rematch, trainer.trainerType,
                               trainer.trainerName]
       )
+      Ironmon.expand_dynamic_boss_trainer_party(mapped_trainer)
       mapped_trainer
     end
   end

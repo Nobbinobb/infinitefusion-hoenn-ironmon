@@ -1,9 +1,9 @@
 module IronmonSeededRunImportRuntimeTests
   OUTPUT_PATH = $ironmon_seeded_run_import_test_output_path.to_s
   EXPECTED_WORLD_SNAPSHOT_SHA256 =
-    "860e4d84e09e98b41be0160b4e37206f0d9582d99bdebdffc544bb51499a78d5"
+    "077400265fa5f025c23be6c43392271c23b119ba80d6fbe203051ecc8fff36f9"
   # This world uses custom_fusion_pool_fixture, not the installed sprite pool.
-  # Keep its historical profile metadata stable for the unchanged golden hash.
+  # Pin profile metadata while retaining version-2 species mapping and boss parties.
   WORLD_SNAPSHOT_PROFILE_ID =
     "0a3cc2e688a8263c25e31821a154c46823249be882480459ee91f203660b4324"
 
@@ -408,7 +408,7 @@ module IronmonSeededRunImportRuntimeTests
           [slot, tm_gifts[slot]]
         end,
         :gym_additions => (0..2).map do |slot|
-          Ironmon.gym_leader_source_species_for(
+          Ironmon.boss_trainer_source_species_for(
             seed, :LEADER_Roxanne, "Roxanne", slot
           )
         end,

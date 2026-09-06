@@ -186,6 +186,10 @@ module IronmonWallyTutorialRuntimeTests
         Ironmon.persistent_trainer_species?(pokemon),
         "the normal catch is marked as Wally's persistent species"
       )
+      assert(
+        Ironmon.trainer_maturity_exception?(pokemon),
+        "Wally's persistent Pokemon keeps normal level-based evolution"
+      )
       pokemon.species = :RAICHU
       assert(
         Ironmon.persistent_trainer_species?(pokemon),
@@ -213,8 +217,8 @@ module IronmonWallyTutorialRuntimeTests
       Pokemon.new(:PIKACHU, 10)
     )
     mappings = []
-    mapping = proc do |species, context|
-      mappings << [species, context]
+    mapping = proc do |species, context, level = nil|
+      mappings << [species, context, level]
       :RAICHU
     end
     with_trainer_policy(Ironmon::Configuration::POLICY_NORMAL_ONLY) do
