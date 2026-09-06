@@ -38,7 +38,7 @@ module IronmonScriptLoader
     end
   end
 
-  def self.load_manifest(source_root, manifest_path)
+  def self.load_manifest(source_root, manifest_path, initialize_catalogs = true)
     root = File.expand_path(source_root)
     root_prefix = root.end_with?(File::SEPARATOR) ? root :
       root + File::SEPARATOR
@@ -55,6 +55,8 @@ module IronmonScriptLoader
          File.extname(source_path) != ".rb"
         raise "invalid Ironmon Ruby source path in the manifest"
       end
+      next if !initialize_catalogs &&
+        relative_source == "tracker/area_lookup/Initialize.rb"
       code = File.open(source_path, "rb") { |file| file.read }
       eval(code, TOPLEVEL_BINDING, output_name)
     end

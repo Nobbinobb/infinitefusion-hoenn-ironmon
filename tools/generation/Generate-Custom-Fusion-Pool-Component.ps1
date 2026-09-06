@@ -44,7 +44,7 @@ $bootstrapSource = @(
     "GameData.load_all"
     "`$game_temp = Game_Temp.new"
     "Game.load_sprites_list_caches"
-    "IronmonScriptLoader.load_manifest(`"$rubySourceRoot`", `"$rubyManifest`")"
+    "IronmonScriptLoader.load_manifest(`"$rubySourceRoot`", `"$rubyManifest`", false)"
     "eval(File.binread(`"$rubyExporter`"), TOPLEVEL_BINDING, `"$rubyExporter`")"
     "exit! 0"
     "rescue Exception => error"
