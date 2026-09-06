@@ -17,6 +17,7 @@ Copy-Item docs/audits/generated/*_GENERATED.* -Destination $evidence
 foreach ($pattern in 'data/*.audit.json', 'data/*.component.json', 'data/generation_profile.json', 'data/*.summary', 'data/*-test.json', 'data/*-probe.json') {
   Get-ChildItem $pattern -File -ErrorAction SilentlyContinue | Copy-Item -Destination $evidence
 }
+Copy-Item resources/sprites/validated_custom_sprites.json.gz -Destination $evidence
 Copy-Item (Join-Path $SnapshotDirectory 'upstream-inputs.json') -Destination $evidence
 Copy-Item (Join-Path $env:RUNNER_TEMP 'release-gate.log') -Destination $evidence
 Copy-Item "docs/releases/RELEASE_NOTES_$version.md" -Destination $evidence

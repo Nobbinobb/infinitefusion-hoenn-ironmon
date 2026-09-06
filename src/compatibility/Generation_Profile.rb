@@ -22,7 +22,7 @@ module Ironmon
     ].sort.freeze
     CURRENT_ALGORITHM_VERSIONS = ALGORITHM_FAMILIES.each_with_object({}) do |name, result|
       result[name] = case name
-                     when "species_mapping", "gym_party_expansion" then 2
+                     when "species_mapping", "gym_party_expansion", "custom_fusion_eligibility" then 2
                      else 1
                      end
     end.freeze

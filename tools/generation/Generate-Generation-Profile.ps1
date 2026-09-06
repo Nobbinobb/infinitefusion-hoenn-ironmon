@@ -14,6 +14,8 @@ $baseCatalogPath = Join-Path $dataRoot "generation_base_catalog.json"
 $baseDescriptorPath = Join-Path $dataRoot "generation_base_catalog.component.json"
 $poolPath = Join-Path $dataRoot "generation_custom_fusion_pool.bin"
 $poolDescriptorPath = Join-Path $dataRoot "generation_custom_fusion_pool.component.json"
+$spritePath = Join-Path $dataRoot "generation_custom_sprites.json"
+$spriteDescriptorPath = Join-Path $dataRoot "generation_custom_sprites.component.json"
 $areaCatalogPath = Join-Path $dataRoot "area_catalog.dat"
 $areaDescriptorPath = Join-Path $dataRoot "generation_area_catalog.component.json"
 $obtainabilityPath = Join-Path $dataRoot "obtainability_source_catalog.json"
@@ -87,6 +89,7 @@ $obtainabilityDocument = Get-Content -LiteralPath $obtainabilityPath -Raw | Conv
 if ($obtainabilityDocument.schema_version -ne 1) {
     throw "The obtainability source catalog has an unsupported schema."
 }
+Write-ComponentDescriptor -Name "custom_sprites" -SchemaVersion 1 -SourcePath $spritePath -DescriptorPath $spriteDescriptorPath
 Write-ComponentDescriptor -Name "area_catalog" -SchemaVersion 1 -SourcePath $areaCatalogPath -DescriptorPath $areaDescriptorPath
 Write-ComponentDescriptor -Name "obtainability_sources" -SchemaVersion 1 -SourcePath $obtainabilityPath -DescriptorPath $obtainabilityDescriptorPath
 Assert-ComponentDescriptor -Name "base_catalog" -SchemaVersion 1 -SourcePath $baseCatalogPath -DescriptorPath $baseDescriptorPath
@@ -104,6 +107,7 @@ $rubyDescriptors = @(
     $areaDescriptorPath,
     $baseDescriptorPath,
     $poolDescriptorPath,
+    $spriteDescriptorPath,
     $obtainabilityDescriptorPath
 ) | ForEach-Object { "`"$($_.Replace('\', '/'))`"" }
 $rubyExporter = ([IO.Path]::GetFullPath($exporterPath)).Replace('\', '/')
@@ -139,7 +143,7 @@ try {
     if ($profile.profile_id -notmatch '^[0-9a-f]{64}$' -or
         $profile.manifest.schema_version -ne 1 -or
         $profile.manifest.algorithms.Count -ne 13 -or
-        $profile.manifest.components.Count -ne 4) {
+        $profile.manifest.components.Count -ne 5) {
         throw "The generated profile does not satisfy the version 1 contract."
     }
     Write-Output "Generation profile exported: $($profile.profile_id)"

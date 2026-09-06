@@ -98,7 +98,7 @@ internal sealed class TrackerGameEventProcessor
             return;
         }
 
-        if (message.Event == TrackerEvents.EncounterModeChanged)
+        if (message.Event is TrackerEvents.EncounterModeChanged or TrackerEvents.BadgesChanged)
         {
             GameCurrentStatePayload state = TrackerJson.DeserializePayload<GameCurrentStatePayload>(message.Payload);
             if (state.RunId == _state.Snapshot.CurrentState?.RunId)
@@ -137,7 +137,7 @@ internal sealed class TrackerGameEventProcessor
             return;
 
         RunStatisticsPayload? statistics = recipe.Statistics ?? current.AttemptStatistics;
-        GameCurrentStatePayload completed = new(current.IronmonActive, current.RunId, current.BattleId, message.Sequence ?? current.Sequence, current.Battle, current.Player, current.Enemies, current.StarterSelection, statistics, recipe, current.TypeCoverage, current.FusionAssignments, current.ActiveRunPreparationReady, current.OverworldEncounters);
+        GameCurrentStatePayload completed = new(current.IronmonActive, current.RunId, current.BattleId, message.Sequence ?? current.Sequence, current.Battle, current.Player, current.Enemies, current.StarterSelection, statistics, recipe, current.TypeCoverage, current.FusionAssignments, current.ActiveRunPreparationReady, current.OverworldEncounters, current.Badges);
         _state.Publish(TrackerConnectionStatus.Connected, game, completed);
     }
 

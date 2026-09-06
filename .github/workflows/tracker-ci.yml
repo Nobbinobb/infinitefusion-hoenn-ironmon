@@ -22,20 +22,31 @@ jobs:
   validation:
     name: PR validation
     if: always()
-    needs: [inputs, current-catalogs, core-tests, app-tests]
+    needs: [inputs, current-catalogs, core-tests, app-tests, sprite-contracts]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Require every gameplay, generation and tracker job to pass
         env:
           RESULTS: ${{ join(needs.*.result, ',') }}
-        run: test "$RESULTS" = 'success,success,success,success'
+        run: test "$RESULTS" = 'success,success,success,success,success'
+
+  sprite-contracts:
+    name: Offline sprite catalogue tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - run: python3 -m pip install -r tools/sprites/requirements.txt
+      - run: python3 -m unittest discover -s tools/sprites -p 'test_*.py'
 
   inputs:
     uses: ./.github/workflows/upstream-inputs.yml
 
   current-catalogs:
-    needs: inputs
+    needs: [inputs, sprite-contracts]
     name: Generate current-source catalogs
     runs-on: windows-latest
     timeout-minutes: 45
@@ -83,6 +94,7 @@ jobs:
           name: current-source-catalogs
           path: |
             game/Ironmon/data/generation_custom_fusion_pool.bin
+            game/Ironmon/data/generation_custom_sprites.json
             game/Ironmon/data/generation_profile.json
             game/Ironmon/data/obtainability_source_catalog.json
             game/Ironmon/data/type_coverage.json

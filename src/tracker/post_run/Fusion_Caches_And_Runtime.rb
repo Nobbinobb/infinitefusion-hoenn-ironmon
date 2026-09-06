@@ -16,9 +16,10 @@ module Ironmon
     ]
   end
 
-  def self.tracker_lookup_reverse_fusion(species, mapper, recipe = nil,
+  def self.tracker_lookup_reverse_fusion(species, recipe,
                                          obtainability = false)
     return nil if !species.is_a?(GameData::FusedSpecies)
+    mapper = tracker_post_run_fusion_mapper(recipe)
     reverse = GameData::Species.get(mapper.paired_species(species.id))
     return tracker_lookup_relation(
       reverse, "Ironmon reverse", recipe, obtainability

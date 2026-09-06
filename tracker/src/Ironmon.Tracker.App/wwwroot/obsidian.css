@@ -58,16 +58,12 @@
 }
 
 .obsidian-enemy .obsidian-identity-top {
-    min-height:106px;
+    min-height:88px;
 }
 
 .obsidian-enemy .obsidian-name {
     align-self:center;
     padding-top:0;
-}
-
-.obsidian-enemy .obsidian-sprite .pokemon-sprite-image {
-    transform:scale(1.14);
 }
 
 .obsidian-enemy .obsidian-identity-actions {
@@ -374,13 +370,12 @@ body:has(.tracker-shell:is(.obsidian,.obsidian-access-shell)) {
     background:transparent;
     display:grid;
     place-items:center;
-    overflow:visible;
+    overflow:hidden;
 }
 
 .obsidian-sprite .pokemon-sprite-image {
     width:100%;
     height:100%;
-    transform:scale(1.55);
 }
 
 .obsidian-name {
@@ -1189,7 +1184,143 @@ body:has(.tracker-shell:is(.obsidian,.obsidian-access-shell)) {
 }
 
 .obsidian-player, .obsidian-enemy {
-    align-self:start;
+    align-self:stretch;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    line-height:1.35;
+}
+
+:is(.obsidian-player,.obsidian-enemy) .obsidian-identity-actions button>span {
+    line-height:12px;
+}
+
+:is(.obsidian-player,.obsidian-enemy) .obsidian-identity-footer {
+    padding-block:5px;
+}
+
+:is(.obsidian-player,.obsidian-enemy) .obsidian-hp {
+    margin-top:9px;
+}
+
+:is(.obsidian-player,.obsidian-enemy) .obsidian-stages {
+    min-height:20px;
+    margin-top:6px;
+    padding-top:4px;
+}
+
+:is(.obsidian-player,.obsidian-enemy) .move-placeholder {
+    min-height:50px;
+}
+
+.obsidian-player>*, .obsidian-enemy>* {
+    flex-shrink:0;
+}
+
+:is(.obsidian-player,.obsidian-enemy)>.obsidian-stat-section {
+    margin:12px 1px 13px;
+}
+
+:is(.obsidian-player,.obsidian-enemy)>.move-list {
+    gap:6px;
+    margin-bottom:8px;
+}
+
+.obsidian-badge-progress {
+    margin-top:auto;
+    padding:11px 0 8px;
+    border-top:1px solid #2a3442;
+}
+
+.obsidian-badge-heading {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:12px;
+    color:#aab9ce;
+    font-size:10px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+}
+
+.obsidian-badge-heading strong {
+    color:#dfe6f4;
+    font-size:12px;
+    letter-spacing:0;
+    font-weight:600;
+}
+
+.obsidian-badge-heading strong span {
+    color:#8393aa;
+    font-weight:400;
+}
+
+.obsidian-badge-row {
+    display:grid;
+    grid-template-columns:repeat(8,minmax(0,1fr));
+    gap:4px;
+}
+
+.obsidian-badge {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    min-width:0;
+}
+
+.obsidian-badge-art {
+    display:grid;
+    place-items:center;
+    width:36px;
+    height:36px;
+}
+
+.obsidian-badge-art img {
+    width:32px;
+    height:32px;
+    max-width:none;
+    object-fit:none;
+    image-rendering:pixelated;
+}
+
+.obsidian-badge-status {
+    display:grid;
+    place-items:center;
+    height:12px;
+    font-size:11px;
+    line-height:1;
+    color:#55eaa5;
+}
+
+.obsidian-badge:is(.unearned,.unknown) .obsidian-badge-art {
+    filter:grayscale(1);
+    opacity:.28;
+}
+
+.obsidian-badge:is(.unearned,.unknown) .obsidian-badge-status {
+    color:#8393aa;
+}
+
+.obsidian-enemy:has(>.obsidian-enemy-selector)>.obsidian-stat-section {
+    margin:8px 1px;
+}
+
+.obsidian-enemy:has(>.obsidian-enemy-selector)>.move-list {
+    gap:4px;
+}
+
+.obsidian-enemy:has(>.obsidian-enemy-selector) .move-placeholder {
+    min-height:48px;
+    padding-block:7px;
+}
+
+.obsidian-enemy:has(>.obsidian-enemy-selector) .obsidian-badge-heading {
+    display:none;
+}
+
+.obsidian-enemy:has(>.obsidian-enemy-selector) .obsidian-badge {
+    gap:5px;
 }
 
 :is(.obsidian,.obsidian-access-shell) .tab-key {

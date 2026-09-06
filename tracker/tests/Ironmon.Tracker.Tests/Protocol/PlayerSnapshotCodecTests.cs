@@ -66,7 +66,22 @@ public sealed class PlayerSnapshotCodecTests
 
         Assert.Null(state.Battle);
         Assert.Null(state.Player);
+        Assert.Null(state.Badges);
         Assert.Equal(9, state.Sequence);
+    }
+
+    /// <summary>
+    /// Preserves individual badge ownership instead of assuming a sequential earned count.
+    /// </summary>
+    [Fact]
+    public void CurrentStateRoundTripsNonSequentialBadges()
+    {
+        bool[] badges = [true, false, true, false, false, true, false, false];
+        GameCurrentStatePayload state = new(true, null, null, 0, badges: badges);
+
+        GameCurrentStatePayload restored = TrackerJson.DeserializePayload<GameCurrentStatePayload>(TrackerJson.SerializePayload(state));
+
+        Assert.Equal(badges, restored.Badges);
     }
 
     /// <summary>

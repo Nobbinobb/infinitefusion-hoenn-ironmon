@@ -172,7 +172,7 @@ module IronmonSeededRunImportRuntimeTests
     service.define_singleton_method(:pool) { pool }
     service.define_singleton_method(:info) do
       {
-        :schema_version => Ironmon::CustomFusionPool::SCHEMA_VERSION,
+        :schema_version => 1,
         :size => pool.length,
         :fingerprint => Ironmon.species_pool_fingerprint(pool),
         :source_entries => pool.length,
@@ -547,6 +547,35 @@ module IronmonSeededRunImportRuntimeTests
         blocked_seed_mapper.paired_species(forward),
         "the player-fusion mapper repairs a blocked strength pairing"
       )
+      isolated_seed = 1_271_448_503
+      isolated_mapper = Ironmon::PlayerFusionMapper.new(
+        isolated_seed, Ironmon.custom_fusion_pool_numbers, {}, {},
+        Ironmon::BaseStatGenerator.new(
+          isolated_seed, Ironmon.base_stat_source_fingerprint
+        )
+      )
+      isolated_started = System.uptime
+      isolated_error = nil
+      begin
+        isolated_mapper.prepare
+      rescue Ironmon::PlayerFusionMappingError => error
+        isolated_error = error
+      end
+      assert(
+        isolated_error && isolated_error.message.include?("has no disjoint reverse partner"),
+        "an isolated fusion reports an impossible pairing instead of exhaustive repairs"
+      )
+      assert(
+        (System.uptime - isolated_started).to_f / 1_000_000.0 < 15.0,
+        "an impossible pairing is rejected promptly"
+      )
+      begin
+        isolated_mapper.prepare
+      rescue Ironmon::PlayerFusionMappingError => error
+        assert(error.equal?(isolated_error), "an impossible pairing caches its failure")
+      else
+        assert(false, "an impossible pairing remains rejected on repeated requests")
+      end
       chained_seed = 116_872_428
       chained_mapper = Ironmon::PlayerFusionMapper.new(
         chained_seed, Ironmon.custom_fusion_pool_numbers, {}, {},

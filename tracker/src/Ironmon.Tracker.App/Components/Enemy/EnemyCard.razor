@@ -49,6 +49,7 @@
     </ObsidianIdentityPanel>
     <EnemyStatNotes Enemy="@SelectedEnemy" />
     <EnemyMoveList @key="(BattleId, SelectedEnemy?.EnemyId)" Enemy="@SelectedEnemy" BattleId="@BattleId" PlayerTypes="@PlayerTypes" PlayerEvasionStage="@PlayerEvasionStage" />
+    <GymBadgeProgress GameRoot="@GameRoot" Badges="Badges" />
 </section>
 
 @if (_defenseOpen && SelectedEnemy is not null)

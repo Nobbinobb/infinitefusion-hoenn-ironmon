@@ -25,11 +25,26 @@ module IronmonCustomFusionPoolComponentExporter
       DESCRIPTOR_PATH,
       Ironmon::GenerationProfile.canonical_json(descriptor) + "\n"
     )
+    variants = Ironmon.custom_fusion_pool_service.validated_variants
+    retained = pool.each_with_object({}) do |identity, result|
+      letters = variants.fetch(identity.to_s)
+      raise "eligible fusion has no validated sprite" if letters.empty?
+      result[identity.to_s] = letters
+    end
+    sprite_path = File.join(File.dirname(OUTPUT_PATH), "generation_custom_sprites.json")
+    sprite_document = {
+      "schema_version" => Ironmon::ValidatedCustomSprites::SCHEMA_VERSION,
+      "catalogue_id" => Ironmon::ValidatedCustomSprites.source["catalogue_id"],
+      "variants" => retained
+    }
+    File.binwrite(sprite_path, Ironmon::GenerationProfile.canonical_json(sprite_document) + "\n")
     source_info = Ironmon.custom_fusion_pool_info
     audit = {
       "component_schema_version" =>
         Ironmon::CustomFusionComponent::SCHEMA_VERSION,
       "source_pool_schema_version" => source_info[:schema_version],
+      "sprite_catalogue_id" => source_info[:sprite_catalogue_id],
+      "rejected_unvalidated_sprites" => source_info[:rejected_unvalidated_sprites],
       "normal_species_count" => decoded["normal_species_count"],
       "eligible_count" => decoded["eligible_count"],
       "source_pool_fingerprint" => source_info[:fingerprint],

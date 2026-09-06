@@ -70,12 +70,23 @@ module Ironmon
     @tracker_live_sprite_paths = nil
   end
 
+  def self.validated_pif_sprite(pif_sprite)
+    return pif_sprite if !pif_sprite || ![:CUSTOM, :AUTOGEN].include?(pif_sprite.type)
+    letters = ValidatedCustomSprites.allowed_letters(pif_sprite.head_id, pif_sprite.body_id)
+    return pif_sprite if !letters || letters.empty?
+    return pif_sprite if pif_sprite.type == :CUSTOM && letters.include?(pif_sprite.alt_letter.to_s)
+    pif_sprite.type = :CUSTOM
+    pif_sprite.alt_letter = letters.first
+    pif_sprite.local_path = nil
+    return pif_sprite
+  end
+
   def self.tracker_live_pif_sprite(pokemon, preferred_sprite = nil)
-    return preferred_sprite if preferred_sprite
+    return validated_pif_sprite(preferred_sprite) if preferred_sprite
     pif_sprite = pokemon.pif_sprite
     if pif_sprite
       begin
-        return pif_sprite if pif_sprite.species == pokemon.species_data.species
+        return validated_pif_sprite(pif_sprite) if pif_sprite.species == pokemon.species_data.species
       rescue Exception
       end
     end
@@ -188,6 +199,7 @@ class BattleSpriteLoader
     pif_sprite = ironmon_sprite_fix_original_select_new_pif_fusion_sprite(
       head_id, body_id
     )
+    pif_sprite = Ironmon.validated_pif_sprite(pif_sprite)
     if pif_sprite && !pif_sprite.local_path
       local_path = check_for_local_sprite(pif_sprite)
       pif_sprite.local_path = local_path if local_path
@@ -209,6 +221,7 @@ class BattleSpriteLoader
 
   alias ironmon_sprite_fix_original_load_pif_sprite_directly load_pif_sprite_directly
   def load_pif_sprite_directly(pif_sprite)
+    pif_sprite = Ironmon.validated_pif_sprite(pif_sprite)
     if pif_sprite && !pif_sprite.local_path
       local_path = check_for_local_sprite(pif_sprite)
       pif_sprite.local_path = local_path if local_path
@@ -235,7 +248,14 @@ end
 
 alias ironmon_sprite_fix_original_map_alt_sprite_letters_for_pokemon map_alt_sprite_letters_for_pokemon
 def map_alt_sprite_letters_for_pokemon(sprite_name)
+  match = /\A(\d+)\.(\d+)\z/.match(sprite_name.to_s)
+  if match
+    statuses = Ironmon::ValidatedCustomSprites.allowed_statuses(match[1].to_i, match[2].to_i)
+    return statuses.dup if statuses && !statuses.empty?
+  end
   return Ironmon.sprite_credit_catalog.fetch(sprite_name.to_s, {}).dup
+rescue Ironmon::GenerationProfileUnavailable
+  raise
 rescue Exception => e
   echoln "Ironmon sprite credit cache failed: #{e.message}"
   return ironmon_sprite_fix_original_map_alt_sprite_letters_for_pokemon(

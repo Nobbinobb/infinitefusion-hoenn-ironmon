@@ -8,6 +8,7 @@
   { "source": "foundation/Generator_Metadata.rb", "output": "001_Generator_Metadata.rb" },
   { "source": "foundation/Runtime_Hooks.rb", "output": "001_Runtime_Hooks.rb" },
   { "source": "compatibility/Generation_Profile_Runtime_Integration.rb", "output": "001_Runtime_Hooks_1_Generation_Profile.rb" },
+  { "source": "compatibility/Validated_Custom_Sprites.rb", "output": "001_Validated_Custom_Sprites.rb" },
   { "source": "run/Configuration.rb", "output": "002_Configuration.rb" },
   { "source": "run/Configuration_Screen.rb", "output": "002_Configuration_Screen.rb" },
   { "source": "randomization/species/Custom_Fusion_Pool.rb", "output": "002_Custom_Fusion_Pool.rb" },

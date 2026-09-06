@@ -3,6 +3,7 @@
 #===============================================================================
 
 module Ironmon
+  TRACKER_GYM_BADGE_COUNT = 8
   TRACKER_STATUS_ITEMS = [
     :ANTIDOTE, :AWAKENING, :ASPEARBERRY, :BIGMALASADA, :BLUEFLUTE,
     :BURNHEAL, :CASTELIACONE, :CHERIBERRY, :CHESTOBERRY, :FULLHEAL,
@@ -21,6 +22,7 @@ module Ironmon
   def self.tracker_current_state
     payload = {
       "ironmon_active" => active?,
+      "badges" => tracker_badge_snapshot,
       "overworld_encounters" => !!($PokemonSystem &&
         $PokemonSystem.overworld_encounters),
       "run_id" => ensure_tracker_run_id,
@@ -48,6 +50,11 @@ module Ironmon
     assignments = tracker_active_fusion_assignment_recipe
     payload["fusion_assignments"] = assignments if assignments
     return payload
+  end
+
+  def self.tracker_badge_snapshot
+    return nil if !$Trainer
+    return Array.new(TRACKER_GYM_BADGE_COUNT) { |index| !!$Trainer.badges[index] }
   end
 
   def self.tracker_active_run_preparation_ready?

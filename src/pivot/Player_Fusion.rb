@@ -493,6 +493,8 @@ module Ironmon
             ordered, position, false, maximum_pair_difference
           )
           if !partner_position
+            ensure_strength_partner_exists(ordered[position], maximum_pair_difference)
+            ensure_strength_partner_exists(ordered[position + 1], maximum_pair_difference)
             repaired = repair_strength_pair(
               pairs, ordered[position], ordered[position + 1],
               maximum_pair_difference
@@ -562,6 +564,22 @@ module Ironmon
         return candidate_position
       end
       return nil
+    end
+
+    def ensure_strength_partner_exists(species_id, maximum)
+      nearest_difference = nil
+      found = @fusion_pool_ids.each_with_index.any? do |candidate, index|
+        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+        next false if shares_component?(species_id, candidate)
+        difference = (target_bst(species_id) - target_bst(candidate)).abs
+        nearest_difference = difference if !nearest_difference || difference < nearest_difference
+        difference <= maximum
+      end
+      return if found
+      raise PlayerFusionMappingError,
+            "custom fusion #{species_id} (#{target_bst(species_id)} BST) " +
+              "has no disjoint reverse partner within #{maximum} BST" +
+              (nearest_difference ? "; the nearest requires #{nearest_difference} BST" : "")
     end
 
     def repair_strength_pair(pairs, current_first, current_second,

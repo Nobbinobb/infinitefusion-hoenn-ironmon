@@ -85,6 +85,7 @@
         else
         {
             <PlayerCard Player="@_run.Player"
+                        Badges="@_connection.CurrentState?.Badges"
                         GameRoot="@_connection.Game?.GameRoot"
                         TargetTypes="@GetMoveTargetEnemy()?.Types"
                         TargetEvasionStage="@(GetMoveTargetEnemy()?.StatStages.Evasion ?? 0)"
@@ -96,6 +97,7 @@
     else if (_selectedView == TrackerView.Enemy)
     {
         <EnemyCard Enemies="@_run.Enemies"
+                   Badges="@_connection.CurrentState?.Badges"
                    BattleId="@_run.Battle?.BattleId"
                    PlayerTypes="@_run.Player?.Types"
                    PlayerEvasionStage="@(_run.Player?.StatStages.Evasion ?? 0)"
