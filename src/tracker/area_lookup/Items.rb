@@ -1,5 +1,5 @@
 #===============================================================================
-# Ironmon tracker area item reconstruction and catalog initialization
+# Ironmon tracker area item reconstruction
 #===============================================================================
 
 module Ironmon
@@ -80,5 +80,3 @@ module Ironmon
     return false
   end
 end
-
-Ironmon.tracker_area_catalog_document

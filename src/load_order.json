@@ -64,6 +64,7 @@
   { "source": "tracker/area_lookup/Fusion_Work.rb", "output": "010_Tracker_Area_Lookup_2_Fusion_Work.rb" },
   { "source": "tracker/area_lookup/Trainers.rb", "output": "010_Tracker_Area_Lookup_3_Trainers.rb" },
   { "source": "tracker/area_lookup/Items.rb", "output": "010_Tracker_Area_Lookup_4_Items.rb" },
+  { "source": "tracker/area_lookup/Initialize.rb", "output": "010_Tracker_Area_Lookup_5_Initialize.rb" },
   { "source": "pivot/Blind_Interface.rb", "output": "011_Blind_Pivot_Interface.rb" },
   { "source": "pivot/Player_Fusion.rb", "output": "012_Player_Fusion_Gamble.rb" },
   { "source": "pivot/Caught_Fusion_Transformations.rb", "output": "013_Caught_Fusion_Transformations.rb" },

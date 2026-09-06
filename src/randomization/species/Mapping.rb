@@ -3,6 +3,8 @@
 #===============================================================================
 
 module Ironmon
+  TRAINER_FULLY_EVOLVED_LEVEL = 30
+
   def self.wild_species_for(species, context = nil)
     return species if !active?
     context ||= wild_script_context(:unspecified)
@@ -57,10 +59,45 @@ module Ironmon
     return pokemon
   end
 
-  def self.trainer_species_for(species, context = nil)
+  def self.trainer_species_for(species, context = nil, level = nil)
     return species if !active?
     context ||= [:unspecified]
-    return species_generator(:trainer).map(species, context)
+    fully_evolved = trainer_requires_fully_evolved_species?(level)
+    return species_generator(:trainer).map(species, context, fully_evolved)
+  end
+
+  def self.trainer_requires_fully_evolved_species?(level)
+    return level && level.to_i >= TRAINER_FULLY_EVOLVED_LEVEL
+  end
+
+  def self.trainer_effective_level(level)
+    return nil if level.nil?
+    if respond_to?(:player_level_override_battle?) &&
+       player_level_override_battle?
+      return $game_variables[Settings::OVERRIDE_BATTLE_LEVEL_VALUE_VAR]
+    end
+    return respond_to?(:scaled_level) ? scaled_level(level) : level.to_i
+  end
+
+  def self.trainer_pokemon_effective_level(pokemon)
+    return nil if !pokemon
+    return pokemon.level if pokemon.instance_variable_get(
+      :@ironmon_level_scaled
+    )
+    return pokemon.level if pokemon.instance_variable_get(
+      :@ironmon_level_scaling_exempt
+    )
+    return trainer_effective_level(pokemon.level)
+  end
+
+  def self.fully_evolved_trainer_species?(species)
+    species_data = GameData::Species.try_get(species)
+    return false if !species_data
+    number = species_data.id_number
+    return true if number >= Settings::ZAPMOLCUNO_NB
+    return fully_evolved_normal_species_index.key?(number) if
+      number <= NB_POKEMON
+    return fully_evolved_custom_fusion_index.key?(number)
   end
 
   def self.custom_fusion_species?(species)
@@ -151,6 +188,22 @@ module Ironmon
     return pokemon
   end
 
+  def self.mark_trainer_maturity_exception(pokemon)
+    return pokemon if !pokemon
+    pokemon.instance_variable_set(:@ironmon_trainer_maturity_exception, true)
+    return pokemon
+  end
+
+  def self.trainer_maturity_exception?(pokemon)
+    return false if !pokemon
+    return true if persistent_trainer_species?(pokemon)
+    return pokemon.instance_variable_get(
+      :@ironmon_trainer_maturity_exception
+    ) == true
+  rescue Exception
+    return false
+  end
+
   def self.persistent_trainer_species?(pokemon)
     return pokemon && pokemon.instance_variable_get(
       :@ironmon_persistent_trainer_species
@@ -166,7 +219,12 @@ module Ironmon
   def self.ensure_trainer_party_policy(trainer)
     return trainer if !active? || !trainer || !trainer.party
     trainer.party.each_with_index do |pokemon, slot|
-      next if trainer_species_allowed?(pokemon.species)
+      level = trainer_pokemon_effective_level(pokemon)
+      requires_final = trainer_requires_fully_evolved_species?(level) &&
+        !trainer_maturity_exception?(pokemon)
+      policy_valid = trainer_species_allowed?(pokemon.species)
+      next if policy_valid &&
+        (!requires_final || fully_evolved_trainer_species?(pokemon.species))
       context = pokemon.instance_variable_get(:@ironmon_trainer_slot_context)
       if !context
         trainer_type = trainer.respond_to?(:trainer_type) ?
@@ -174,7 +232,9 @@ module Ironmon
         trainer_name = trainer.respond_to?(:name) ? trainer.name : ""
         context = [:boundary, trainer_type, trainer_name, slot]
       end
-      mapped_species = trainer_species_for(pokemon.species, context)
+      mapped_species = trainer_species_for(
+        pokemon.species, context, requires_final ? level : nil
+      )
       next if pokemon.species == mapped_species
       pokemon.species = mapped_species
       pokemon.pif_sprite = nil if pokemon.respond_to?(:pif_sprite=)
@@ -187,7 +247,8 @@ module Ironmon
   # Dynamic Hoenn trainers keep story-owned teams which may change between
   # battles. Map their battle clones through the trainer policy. A marked
   # policy-valid story Pokemon keeps its persistent species instead.
-  def self.trainer_battle_party(party, party_context = [:dynamic])
+  def self.trainer_battle_party(party, party_context = [:dynamic],
+                                default_level = nil)
     return party if !active?
     return party.each_with_index.map do |entry, slot|
       context = [*party_context, slot]
@@ -195,7 +256,9 @@ module Ironmon
         mapped = entry.clone
         next mapped if persistent_trainer_species?(entry) &&
           trainer_species_allowed?(entry.species)
-        mapped_species = trainer_species_for(entry.species, context)
+        level = trainer_maturity_exception?(entry) ? nil :
+          trainer_effective_level(entry.level)
+        mapped_species = trainer_species_for(entry.species, context, level)
         if mapped.species != mapped_species
           mapped.species = mapped_species
           mapped.pif_sprite = nil if mapped.respond_to?(:pif_sprite=)
@@ -204,7 +267,9 @@ module Ironmon
         end
         mapped
       elsif entry.is_a?(Symbol) || entry.is_a?(Integer)
-        trainer_species_for(entry, context)
+        trainer_species_for(
+          entry, context, trainer_effective_level(default_level)
+        )
       else
         entry
       end

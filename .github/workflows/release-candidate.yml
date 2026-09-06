@@ -1,0 +1,61 @@
+name: Release candidate
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+concurrency:
+  group: release-candidate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      release: ${{ steps.version.outputs.release }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate mod, tracker and release-note versions
+        id: version
+        shell: pwsh
+        env:
+          BASE_COMMIT: ${{ github.event.pull_request.base.sha }}
+        run: ./tools/ci/Test-ReleaseMetadata.ps1 -BaseCommit $env:BASE_COMMIT
+      - name: Validate automation contracts
+        shell: pwsh
+        run: |
+          ./tools/ci/Test-ReleaseAutomation.ps1
+          ./tools/ci/Test-ReleasePublication.ps1
+          ./tools/ci/Test-UpstreamWatch.ps1
+  inputs:
+    needs: metadata
+    if: needs.metadata.outputs.release == 'true'
+    uses: ./.github/workflows/upstream-inputs.yml
+  candidate:
+    needs: [metadata, inputs]
+    if: needs.metadata.outputs.release == 'true'
+    uses: ./.github/workflows/release-build.yml
+    with:
+      source_ref: ${{ github.sha }}
+      game_commit: ${{ needs.inputs.outputs.game_commit }}
+  ready:
+    name: Release readiness
+    if: always()
+    needs: [metadata, inputs, candidate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require a successful candidate for a version change
+        env:
+          METADATA_RESULT: ${{ needs.metadata.result }}
+          RELEASE_CHANGE: ${{ needs.metadata.outputs.release }}
+          CANDIDATE_RESULT: ${{ needs.candidate.result }}
+        run: |
+          test "$METADATA_RESULT" = success
+          if [ "$RELEASE_CHANGE" = true ]; then test "$CANDIDATE_RESULT" = success; fi

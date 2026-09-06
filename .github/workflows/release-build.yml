@@ -1,0 +1,102 @@
+name: Build verified release
+on:
+  workflow_call:
+    inputs:
+      source_ref:
+        required: true
+        type: string
+      game_commit:
+        required: true
+        type: string
+      reuse_candidate:
+        default: false
+        type: boolean
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_NOLOGO: true
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: infinitefusion/infinitefusion-hoenn-public
+          ref: ${{ inputs.game_commit }}
+          path: game
+          persist-credentials: false
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source_ref }}
+          path: game/Ironmon
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: upstream-inputs
+          path: upstream-inputs
+      - name: Reuse reviewed candidate if source and current inputs match
+        if: inputs.reuse_candidate
+        id: reuse
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./game/Ironmon/tools/ci/Reuse-ReleaseCandidate.ps1 -SnapshotDirectory (Join-Path $env:GITHUB_WORKSPACE 'upstream-inputs')
+      - name: Install refreshed metadata and software rendering
+        if: steps.reuse.outputs.reused != 'true'
+        shell: pwsh
+        run: ./game/Ironmon/tools/ci/Initialize-HostedGame.ps1 -SnapshotDirectory upstream-inputs
+      - name: Verify clean runtime startup
+        if: steps.reuse.outputs.reused != 'true'
+        shell: pwsh
+        run: ./game/Ironmon/tools/ci/Test-HostedGameRuntime.ps1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        if: steps.reuse.outputs.reused != 'true'
+        with:
+          dotnet-version: 10.0.400
+      - name: Install Windows MAUI workload
+        if: steps.reuse.outputs.reused != 'true'
+        run: dotnet workload install maui-windows --skip-manifest-update
+      - name: Generate all data and audits, run full gate, package both variants
+        if: steps.reuse.outputs.reused != 'true'
+        shell: pwsh
+        working-directory: game/Ironmon
+        run: ./tools/Build-TrackerRelease.ps1 *>&1 | Tee-Object -FilePath (Join-Path $env:RUNNER_TEMP 'release-gate.log')
+      - name: Audit fusion membership changes against the previous stable release
+        if: steps.reuse.outputs.reused != 'true'
+        shell: pwsh
+        working-directory: game/Ironmon
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./tools/ci/Compare-ReleasePool.ps1
+      - name: Freeze candidate and evidence
+        if: steps.reuse.outputs.reused != 'true'
+        shell: pwsh
+        working-directory: game/Ironmon
+        run: ./tools/ci/New-ReleaseCandidate.ps1 -SnapshotDirectory (Join-Path $env:GITHUB_WORKSPACE 'upstream-inputs')
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-candidate
+          path: game/Ironmon/release/
+          retention-days: 7
+          overwrite: true
+          compression-level: 0
+          if-no-files-found: error
+      - name: Retain failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-failure-diagnostics
+          path: |
+            game/Ironmon/data/*.error
+            game/Ironmon/data/*.summary
+            game/Ironmon/data/*.progress
+            game/Ironmon/data/*.txt
+            game/errorlog.txt
+            ${{ runner.temp }}/ironmon-runtime.*.log
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore

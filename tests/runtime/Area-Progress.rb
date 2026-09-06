@@ -161,6 +161,39 @@ module IronmonAreaProgressRuntimeTests
         lookup_party == runtime_party,
         "active trainer lookup matches the battle party transformation"
       )
+      boss_data = trainer_index.values.find do |candidate|
+        Ironmon.boss_trainer?(candidate) &&
+          ![:RIVAL1, :RIVAL2].include?(candidate.trainer_type)
+      end
+      assert(boss_data, "the trainer catalog contains a Boss Trainer")
+      runtime_boss = boss_data.to_trainer
+      authored_boss_size = runtime_boss.party.length
+      Ironmon.expand_boss_trainer_party(runtime_boss)
+      lookup_boss = Ironmon.tracker_area_trainer_party(
+        boss_data, active_recipe,
+        Ironmon.tracker_area_species_generator(active_recipe, :trainer)
+      )
+      runtime_boss_party = runtime_boss.party.map do |pokemon|
+        [pokemon.species, pokemon.level]
+      end
+      lookup_boss_party = lookup_boss.map do |pokemon|
+        [pokemon["species"].id, pokemon["level"]]
+      end
+      assert(
+        lookup_boss_party == runtime_boss_party,
+        "active trainer lookup matches expanded boss parties"
+      )
+      assert(
+        lookup_boss.length == [authored_boss_size + 3, 6].min,
+        "trainer lookup adds three Boss Trainer Pokemon up to six"
+      )
+      assert(
+        lookup_boss.all? do |pokemon|
+          pokemon["level"] < Ironmon::TRAINER_FULLY_EVOLVED_LEVEL ||
+            Ironmon.fully_evolved_trainer_species?(pokemon["species"])
+        end,
+        "trainer lookup exposes only terminal species at level 30 or above"
+      )
       completed_trainer = trainer_entries[0]
       completed_item = area["items"].find do |entry|
         entry["entry_id"] == item_entry

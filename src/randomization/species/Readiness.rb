@@ -80,7 +80,11 @@ module Ironmon
     getTrainersDataMode.list_all.each do |_trainer_id, trainer|
       trainer.pokemon.each_with_index do |pokemon, slot|
         species = GameData::Species.get(pokemon[:species])
-        generator.map_id(species.id_number, [:pbs, trainer.id, slot])
+        level = trainer_effective_level(pokemon[:level])
+        generator.map_id(
+          species.id_number, [:pbs, trainer.id, slot],
+          trainer_requires_fully_evolved_species?(level)
+        )
       end
     end
   end
@@ -109,6 +113,10 @@ module Ironmon
     @wild_species_generator = nil
     @trainer_species_generator = nil
     @custom_fusion_species_index = nil
+    @fully_evolved_normal_species_pool = nil
+    @fully_evolved_normal_species_index = nil
+    @fully_evolved_custom_fusion_pool = nil
+    @fully_evolved_custom_fusion_index = nil
   end
 end
 

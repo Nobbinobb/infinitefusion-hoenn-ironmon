@@ -279,6 +279,8 @@ module Ironmon
 
     def closest_result_ids(pair, source_type_mask, target_bst, permitted_range)
       ensure_result_bst_index
+      # Every candidate shares this prefix; continue the same hash from it.
+      rank_prefix = deterministic_value("target_match", pair[0], pair[1], "")
       best = nil
       maximum_distance = [
         (target_bst - @result_bst_minimum).abs,
@@ -304,8 +306,8 @@ module Ironmon
             next if !permitted_range.include?(second_bst)
             score = distance + (second_bst - target_bst).abs
             next if best && score > best[0]
-            rank = deterministic_value(
-              "target_match", pair[0], pair[1], first_id, second_id
+            rank = update_deterministic_hash(
+              rank_prefix, "#{first_id}|#{second_id}"
             )
             candidate = [score, rank, first_id, second_id]
             best = candidate if !best ||

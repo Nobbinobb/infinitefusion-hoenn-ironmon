@@ -1,7 +1,11 @@
 module IronmonSeededRunImportRuntimeTests
   OUTPUT_PATH = $ironmon_seeded_run_import_test_output_path.to_s
   EXPECTED_WORLD_SNAPSHOT_SHA256 =
-    "860e4d84e09e98b41be0160b4e37206f0d9582d99bdebdffc544bb51499a78d5"
+    "077400265fa5f025c23be6c43392271c23b119ba80d6fbe203051ecc8fff36f9"
+  # This world uses custom_fusion_pool_fixture, not the installed sprite pool.
+  # Pin profile metadata while retaining version-2 species mapping and boss parties.
+  WORLD_SNAPSHOT_PROFILE_ID =
+    "0a3cc2e688a8263c25e31821a154c46823249be882480459ee91f203660b4324"
 
   def self.assert(condition, message)
     raise "Seeded-run import runtime test failed: #{message}" if !condition
@@ -404,7 +408,7 @@ module IronmonSeededRunImportRuntimeTests
           [slot, tm_gifts[slot]]
         end,
         :gym_additions => (0..2).map do |slot|
-          Ironmon.gym_leader_source_species_for(
+          Ironmon.boss_trainer_source_species_for(
             seed, :LEADER_Roxanne, "Roxanne", slot
           )
         end,
@@ -452,6 +456,12 @@ module IronmonSeededRunImportRuntimeTests
     baseline_snapshot[:recipe] = baseline_snapshot[:recipe].reject do |key, _value|
       key == "ironmon_version"
     end
+    assert(
+      baseline_snapshot[:recipe]["generation_profile_id"] ==
+        Ironmon.current_generation_profile_id,
+      "the exported recipe identifies the actual current generation profile"
+    )
+    baseline_snapshot[:recipe]["generation_profile_id"] = WORLD_SNAPSHOT_PROFILE_ID
     digest = Digest::SHA256.hexdigest(Marshal.dump(baseline_snapshot))
     assert(
       digest == EXPECTED_WORLD_SNAPSHOT_SHA256,
@@ -482,6 +492,21 @@ module IronmonSeededRunImportRuntimeTests
           seed, Ironmon.base_stat_source_fingerprint
         )
       )
+      [[1, 1], [1, NB_POKEMON], [NB_POKEMON, NB_POKEMON]].each do |pair|
+        prefix = preview_mapper.send(
+          :deterministic_value, "target_match", pair[0], pair[1], ""
+        )
+        [[577, 332_352], [332_352, 577], [12_345, 67_890]].each do |first, second|
+          assert(
+            preview_mapper.send(
+              :update_deterministic_hash, prefix, "#{first}|#{second}"
+            ) == preview_mapper.send(
+              :deterministic_value, "target_match", pair[0], pair[1], first, second
+            ),
+            "incremental target ranking preserves the original seed hash"
+          )
+        end
+      end
       range_examples.each do |materials, expected|
         actual = preview_mapper.send(
           :fusion_bst_range, materials[0], materials[1]

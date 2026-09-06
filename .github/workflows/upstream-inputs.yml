@@ -1,0 +1,37 @@
+name: Resolve upstream inputs
+on:
+  workflow_call:
+    outputs:
+      game_commit:
+        value: ${{ jobs.resolve.outputs.game_commit }}
+      fingerprint:
+        value: ${{ jobs.resolve.outputs.fingerprint }}
+permissions:
+  contents: read
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      game_commit: ${{ steps.inputs.outputs.game_commit }}
+      fingerprint: ${{ steps.inputs.outputs.fingerprint }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Resolve latest game, settings, sprite lists and credits
+        id: inputs
+        shell: pwsh
+        run: |
+          ./tools/ci/Get-UpstreamInputs.ps1 -OutputDirectory upstream-inputs
+          $snapshot = Get-Content upstream-inputs/upstream-inputs.json -Raw | ConvertFrom-Json
+          "game_commit=$($snapshot.game_commit)" >> $env:GITHUB_OUTPUT
+          "fingerprint=$($snapshot.fingerprint)" >> $env:GITHUB_OUTPUT
+          "Upstream input fingerprint: $($snapshot.fingerprint)" >> $env:GITHUB_STEP_SUMMARY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: upstream-inputs
+          path: upstream-inputs/
+          retention-days: 7
+          overwrite: true
+          if-no-files-found: error

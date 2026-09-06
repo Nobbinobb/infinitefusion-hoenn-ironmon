@@ -21,7 +21,10 @@ $distributionBattleGraphics = Join-Path $distributionData "graphics\Battle"
 $distributionRoot = Join-Path $projectRoot "dist"
 $distributionReadme = Join-Path $projectRoot "packaging\README.md"
 $installationGuide = Join-Path $projectRoot "docs\guides\INSTALLATION.md"
-$releaseNotes = Join-Path $projectRoot "docs\releases\RELEASE_NOTES_0.8.5.md"
+[xml]$trackerVersionDocument = Get-Content -LiteralPath (Join-Path $projectRoot 'tracker/src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj') -Raw
+$releaseVersion = [string]$trackerVersionDocument.Project.PropertyGroup.ApplicationDisplayVersion
+if ($releaseVersion -notmatch '^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$') { throw 'Invalid tracker release version.' }
+$releaseNotes = Join-Path $projectRoot "docs\releases\RELEASE_NOTES_$releaseVersion.md"
 $projectLicense = Join-Path $projectRoot "LICENSE"
 $thirdPartyNotices = Join-Path $projectRoot "THIRD_PARTY_NOTICES.md"
 $openSansLicense = Join-Path $projectRoot "OPEN-SANS-LICENSE.txt"

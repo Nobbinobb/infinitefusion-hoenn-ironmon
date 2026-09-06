@@ -1,0 +1,104 @@
+name: Publish release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      source_commit:
+        description: Approved main commit to release (40-character SHA)
+        required: true
+        type: string
+      refresh_attempt:
+        description: Automatic upstream refresh attempt (normally 0)
+        default: '0'
+        type: string
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+concurrency:
+  group: production-release-${{ inputs.source_commit || github.sha }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      release: ${{ steps.plan.outputs.release }}
+      source_commit: ${{ steps.plan.outputs.source_commit }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require approved main source and validate release versions
+        id: plan
+        shell: pwsh
+        env:
+          SOURCE_COMMIT: ${{ inputs.source_commit || github.sha }}
+          BASE_COMMIT: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+          REFRESH_ATTEMPT: ${{ inputs.refresh_attempt || '0' }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          if ($env:SOURCE_COMMIT -notmatch '^[0-9a-f]{40}$' -or $env:REFRESH_ATTEMPT -notmatch '^[0-3]$') { throw 'Invalid release request.' }
+          git merge-base --is-ancestor $env:SOURCE_COMMIT origin/main
+          if ($LASTEXITCODE -ne 0) { throw 'Only approved commits on main can be released.' }
+          git checkout --detach $env:SOURCE_COMMIT
+          if ($env:EVENT_NAME -eq 'push') {
+            ./tools/ci/Test-ReleaseMetadata.ps1 -BaseCommit $env:BASE_COMMIT
+          } else {
+            ./tools/ci/Test-ReleaseMetadata.ps1
+          }
+          "source_commit=$env:SOURCE_COMMIT" >> $env:GITHUB_OUTPUT
+  inputs:
+    needs: plan
+    if: needs.plan.outputs.release == 'true'
+    uses: ./.github/workflows/upstream-inputs.yml
+  candidate:
+    needs: [plan, inputs]
+    if: needs.plan.outputs.release == 'true'
+    uses: ./.github/workflows/release-build.yml
+    with:
+      source_ref: ${{ needs.plan.outputs.source_commit }}
+      game_commit: ${{ needs.inputs.outputs.game_commit }}
+      reuse_candidate: true
+  publish:
+    needs: [plan, inputs, candidate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release
+    concurrency:
+      group: production-publication
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Check out trusted publication tools
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+          path: automation
+          persist-credentials: false
+      - name: Check out approved source for tree and release-note verification
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.plan.outputs.source_commit }}
+          path: source
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-candidate
+          path: candidate
+      - name: Publish verified bytes, or automatically rebuild if upstream changed
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_COMMIT: ${{ needs.plan.outputs.source_commit }}
+          REFRESH_ATTEMPT: ${{ inputs.refresh_attempt || '0' }}
+        run: ./automation/tools/ci/Publish-Release.ps1 -SourceCommit $env:SOURCE_COMMIT -RefreshAttempt ([int]$env:REFRESH_ATTEMPT)
