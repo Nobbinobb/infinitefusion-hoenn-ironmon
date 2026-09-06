@@ -88,6 +88,16 @@ its file hash and gameplay fusion mappings remained unchanged. Charmeleon's
 overview returned while leaving the scheduled pairing fiber untouched. A
 second request to the failed mapper reused the same error immediately.
 
+An isolated two-target fixture checks rejection on the first ordering attempt,
+before entering exhaustive strength repairs, and verifies that a repeated
+request does not restart preparation. The full save-H seed remains a separate
+integration check for the diagnostic error and cached failure. Its elapsed
+time is reported in the runtime test log and includes generating target stats,
+ordering the installed pool, and any valid repairs before the isolated target
+is reached. A fixed 15-second assertion therefore measured runner speed as
+well as failure detection and failed on hosted CI. The runtime harness still
+enforces its overall timeout.
+
 The rendered production player card used the captured Charmeleon snapshot.
 Its visible sprite bounds were fully inside the sprite button and centered
 within 0.01 pixels in both directions. Clicking the sprite opened its dialog.
