@@ -1,0 +1,71 @@
+<ObsidianDialog Title="@Text["Defense.Title"]" Eyebrow="@Name" Closed="Closed">
+    @if (Defense is null)
+    {
+        <p class="detail-description">@Text["Defense.Unavailable"]</p>
+    }
+    else
+    {
+        @if (Defense.LimitedInformation) { <p class="defense-help">@Text["Defense.KnownOnly"]</p> }
+        <div class="obsidian-section-heading"><h3>@Text["Redesign.TypeMatchups"]</h3>@if (Defense.AllTypeEffects.Count > 0) { <small>@Text["Redesign.BeforeAllTypes"]</small> }</div>
+        @foreach (string group in _groups)
+        {
+            var entries = Matching(group).ToArray();
+            @if (entries.Length > 0)
+            {
+                <section class="obsidian-matchup-group">
+                    <h4>@Text[group]</h4>
+                    <div class="obsidian-matchups">
+                        @foreach (DefenseMatchupPresentation value in entries)
+                        {
+                            <button type="button" class="obsidian-matchup @MovePresentation.GetTypeColorClass(value.Entry.Type)" aria-pressed="@((SelectedType()?.Type == value.Entry.Type).ToString().ToLowerInvariant())" @onclick="() => SelectType(value.Entry.Type)">
+                                <span>@value.Entry.Name</span>
+                                @if (value.SameCategories)
+                                {
+                                    <strong>@DefenseMatchupPresentation.Format(value.PhysicalMin, value.PhysicalMax)</strong>
+                                }
+                                else
+                                {
+                                    <span class="obsidian-category-values">
+                                        @if (value.ShowPhysical) { <span><MoveCategoryIcon Category="MoveCategory.Physical" /><strong>@DefenseMatchupPresentation.Format(value.PhysicalMin, value.PhysicalMax)</strong></span> }
+                                        @if (value.ShowSpecial) { <span><MoveCategoryIcon Category="MoveCategory.Special" /><strong>@DefenseMatchupPresentation.Format(value.SpecialMin, value.SpecialMax)</strong></span> }
+                                    </span>
+                                }
+                            </button>
+                        }
+                    </div>
+                </section>
+            }
+        }
+        @if (Defense.AllTypeEffects.Count > 0)
+        {
+            <section class="obsidian-global-effects">
+                <h3>@Text["Redesign.AllTypeEffects"]</h3>
+                @foreach (DefenseAllTypeEffectSnapshot effect in Defense.AllTypeEffects)
+                {
+                    <div class="obsidian-global-effect">
+                        <span>@if (effect.Category == _physicalCategory) { <MoveCategoryIcon Category="MoveCategory.Physical" /> } else if (effect.Category == _specialCategory) { <MoveCategoryIcon Category="MoveCategory.Special" /> } @CategoryLabel(effect.Category) <strong>@DefenseMatchupPresentation.Format(effect.Factor, effect.Factor)</strong></span>
+                        <span>@effect.Label @if (effect.Conditional) { <em>@Text["Defense.Conditional"]</em> }</span>
+                    </div>
+                }
+                @if (SelectedType() is { } selected)
+                {
+                    var before = new DefenseMatchupPresentation(selected);
+                    var combined = new DefenseMatchupPresentation(selected, false);
+                    <div class="obsidian-combined"><strong class="@MovePresentation.GetTypeColorClass(selected.Type)">@selected.Name</strong><small>@Text["Redesign.CombinedEffects"]</small>
+                        @if (before.PhysicalMin != combined.PhysicalMin || before.PhysicalMax != combined.PhysicalMax)
+                        {
+                            <span><MoveCategoryIcon Category="MoveCategory.Physical" />@DefenseMatchupPresentation.Format(before.PhysicalMin, before.PhysicalMax) → <strong>@DefenseMatchupPresentation.Format(combined.PhysicalMin, combined.PhysicalMax)</strong></span>
+                        }
+                        @if (before.SpecialMin != combined.SpecialMin || before.SpecialMax != combined.SpecialMax)
+                        {
+                            <span><MoveCategoryIcon Category="MoveCategory.Special" />@DefenseMatchupPresentation.Format(before.SpecialMin, before.SpecialMax) → <strong>@DefenseMatchupPresentation.Format(combined.SpecialMin, combined.SpecialMax)</strong></span>
+                        }
+                        @if (combined.Maximum == 0) { <span>@Text["Redesign.RemainsImmune"]</span> }
+                    </div>
+                }
+            </section>
+        }
+        <ObsidianEffectList Heading="@Text["Defense.Protection"]" Effects="Defense.Protections" />
+        <ObsidianEffectList Heading="@Text["Defense.Recovery"]" Effects="Defense.Recovery" Recovery="true" />
+    }
+</ObsidianDialog>

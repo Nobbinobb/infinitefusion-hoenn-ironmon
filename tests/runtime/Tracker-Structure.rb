@@ -181,7 +181,159 @@ module IronmonTrackerStructureRuntimeTests
     return service
   end
 
+  def self.validate_starter_selection_rules
+    previous_selection = Ironmon.instance_variable_get(:@tracker_starter_selection)
+    previous_connection = Ironmon.instance_variable_get(:@tracker_connection)
+    previous_global = $PokemonGlobal
+    $PokemonGlobal = PokemonGlobalMetadata.new
+    connection = Object.new
+    def connection.send_event(*args); end
+    Ironmon.instance_variable_set(:@tracker_connection, connection)
+    species = Struct.new(:id, :name).new(:CYNDAQUIL, "Cyndaquil")
+    candidate = Struct.new(:baseStats, :species_data, :form, :pif_sprite)
+    selection = {
+      :selection_id => "starter-test", :auto_select => false, :ceiling => 350,
+      :pokemon => [309, 314, 500].map { |total| candidate.new({ :HP => total }, species, 0) },
+      :sprites => [nil, nil, nil], :revealed => [false, false, false],
+      :favorites => [false, true, false], :random_pick_index => 0, :accepting => true
+    }
+    validate_starter_random_pick(selection[:pokemon], connection)
+    Ironmon.instance_variable_set(:@tracker_starter_selection, selection)
+    run_id = Ironmon.ensure_tracker_run_id
+    request = { "selection_id" => "starter-test", "index" => 0 }
+    hidden = Ironmon.tracker_starter_selection_snapshot["choices"]
+    assert(hidden.all? { |choice| choice.keys.sort == ["index", "revealed"] },
+           "hidden starters expose no identity, BST, favorite or eligibility")
+    assert(!Ironmon.request_tracker_starter(request, run_id)["accepted"],
+           "hidden starters cannot be selected from the tracker")
+    selection[:revealed] = [true, true, true]
+    assert(Ironmon.tracker_starter_selectable?(0) && Ironmon.tracker_starter_selectable?(1),
+           "manual selection permits every revealed starter below the ceiling")
+    assert(!Ironmon.tracker_starter_allowed?(2), "the manual game path also rejects an over-ceiling starter")
+    selection[:ceiling] = 600
+    assert(Ironmon.tracker_starter_selectable?(2), "manual selection allows an unrelated eligible starter")
+    selection[:auto_select] = true
+    assert(!Ironmon.tracker_starter_allowed?(2), "automatic rules reject unrelated starters even below the ceiling")
+    assert(Ironmon.tracker_starter_selectable?(0) && Ironmon.tracker_starter_selectable?(1),
+           "automatic choice permits random pick and favorite")
+    selection[:favorites][2] = true
+    assert(Ironmon.tracker_starter_selectable?(2), "all qualifying favorites remain selectable")
+    selection[:ceiling] = 350
+    assert(!Ironmon.tracker_starter_selectable?(2), "favorites cannot bypass the ceiling")
+    assert(!Ironmon.request_tracker_starter(request, "old-run")["accepted"], "stale run requests are rejected")
+    assert(!Ironmon.request_tracker_starter(request.merge("selection_id" => "old-scene"), run_id)["accepted"],
+           "a reopened scene rejects an old confirmation")
+    [-1, 3, "0", nil].each do |index|
+      assert(!Ironmon.request_tracker_starter(request.merge("index" => index), run_id)["accepted"],
+             "malformed or out-of-range starter indices are rejected")
+    end
+    selection[:accepting] = false
+    assert(!Ironmon.request_tracker_starter(request, run_id)["accepted"], "automatic animation and game confirmations block requests")
+    selection[:accepting] = true
+    assert(Ironmon.request_tracker_starter(request, run_id)["accepted"], "a current eligible request is accepted")
+    assert(!Ironmon.request_tracker_starter(request, run_id)["accepted"], "duplicate selection requests cannot race")
+    assert(Ironmon.take_tracker_starter_choice == 0 && Ironmon.take_tracker_starter_choice.nil?, "the game consumes a tracker choice only once")
+    assert(!Ironmon.tracker_starter_selectable?(1), "consuming the request does not reopen selection")
+    validate_starter_manual_scene(selection)
+  ensure
+    Ironmon.instance_variable_set(:@tracker_starter_selection, previous_selection)
+    Ironmon.instance_variable_set(:@tracker_connection, previous_connection)
+    $PokemonGlobal = previous_global
+  end
+
+  def self.validate_starter_random_pick(pokemon, connection)
+    singleton = class << Ironmon; self; end
+    original_active = Ironmon.method(:active?)
+    original_sprites = Ironmon.method(:tracker_select_starter_sprites)
+    original_sequence = Ironmon.instance_variable_get(:@tracker_starter_selection_sequence)
+    singleton.send(:define_method, :active?) { true }
+    singleton.send(:define_method, :tracker_select_starter_sprites) { |choices| Array.new(choices.length) }
+    def connection.auto_select_starter?; return @test_auto_select; end
+    def connection.maximum_starter_base_stat_total; return @test_ceiling; end
+    def connection.favorite_species_ids; return []; end
+    seed = (1..100).find do |value|
+      $PokemonGlobal.ironmon_seed = value
+      Ironmon.tracker_starter_random_pick(pokemon.length) == 2
+    end
+    assert(seed, "the regression seed picks the over-ceiling slot without filtering")
+    [false, true].each do |auto_select|
+      connection.instance_variable_set(:@test_auto_select, auto_select)
+      [[nil, [2]], [314, [0, 1]], [309, [0]], [308, [nil]]].each do |ceiling, allowed|
+        connection.instance_variable_set(:@test_ceiling, ceiling)
+        Ironmon.begin_tracker_starter_selection(pokemon)
+        snapshot = Ironmon.tracker_starter_selection_snapshot
+        assert(snapshot && allowed.include?(snapshot["random_pick_index"]),
+               "Random Pick respects the inclusive ceiling in mode #{auto_select} with ceiling #{ceiling.inspect}")
+        pick = snapshot["random_pick_index"]
+        Ironmon.begin_tracker_starter_selection(pokemon)
+        assert(Ironmon.tracker_starter_random_pick_index == pick, "reopening the bag preserves the deterministic eligible pick")
+        if !auto_select
+          assert(snapshot["choices"].all? { |choice| choice.keys.sort == ["index", "revealed"] },
+                 "filtering the manual random pick does not reveal starter identities")
+        end
+      end
+    end
+  ensure
+    singleton.send(:define_method, :active?, original_active) if original_active
+    singleton.send(:define_method, :tracker_select_starter_sprites, original_sprites) if original_sprites
+    Ironmon.instance_variable_set(:@tracker_starter_selection_sequence, original_sequence)
+  end
+
+  def self.validate_starter_manual_scene(selection)
+    input_singleton = class << Input; self; end
+    graphics_singleton = class << Graphics; self; end
+    original_trigger = Input.method(:trigger?)
+    original_input_update = Input.method(:update)
+    original_graphics_update = Graphics.method(:update)
+    frame = 0
+    keys = [Input::RIGHT, Input::USE, Input::LEFT, Input::USE]
+    input_singleton.send(:define_method, :trigger?) { |key| keys[frame] == key }
+    input_singleton.send(:define_method, :update) do
+      frame += 1
+      raise "Starter selection did not complete its scripted input" if frame > 5
+    end
+    graphics_singleton.send(:define_method, :update) {}
+    selection[:auto_select] = false
+    selection[:revealed] = [false, false, false]
+    selection[:accepting] = false
+    scene = StartersSelectionScene.allocate
+    scene.instance_variable_set(:@starter_pokemon, selection[:pokemon])
+    loader = Object.new
+    def loader.registerSpriteSubstitution(sprite); end
+    scene.instance_variable_set(:@spritesLoader, loader)
+    def scene.initializeGraphics; end
+    def scene.disposeGraphics; @test_disposed = true; end
+    def scene.updateStarterSelectionGraphics
+      @pif_sprite = :starter_test_sprite
+      Ironmon.reveal_tracker_starter(@index)
+    end
+    def scene.pbSet(variable, value); @test_chosen_index = value; end
+    def scene.pbMessage(message)
+      @test_blocked = true
+      raise "Tracker input remained active during the warning" if Ironmon.tracker_starter_selectable?(1)
+    end
+    def scene.pbConfirmMessage(message)
+      raise "Tracker input remained active during confirmation" if Ironmon.tracker_starter_selectable?(1)
+      return true
+    end
+    chosen = scene.ironmon_tracker_manual_select_starter
+    assert(scene.instance_variable_get(:@test_blocked), "the game refuses the over-ceiling starter before confirmation")
+    assert(chosen.equal?(selection[:pokemon][1]), "manual input can then select an eligible starter")
+    assert(scene.instance_variable_get(:@test_chosen_index) == 1 && scene.instance_variable_get(:@test_disposed),
+           "manual completion records the selected slot and disposes its presentation")
+    assert(chosen.pif_sprite == :starter_test_sprite, "the selected candidate keeps its displayed sprite")
+    selection[:accepting] = true
+    request = { "selection_id" => selection[:selection_id], "index" => 1 }
+    assert(Ironmon.request_tracker_starter(request, Ironmon.ensure_tracker_run_id)["accepted"], "a revealed tracker choice can be queued")
+    assert(scene.ironmon_tracker_manual_select_starter.equal?(chosen), "the game consumes the queued tracker choice through the same completion path")
+  ensure
+    input_singleton.send(:define_method, :trigger?, original_trigger) if original_trigger
+    input_singleton.send(:define_method, :update, original_input_update) if original_input_update
+    graphics_singleton.send(:define_method, :update, original_graphics_update) if original_graphics_update
+  end
+
   def self.run
+    validate_starter_selection_rules
     assert_source(
       Ironmon::TrackerConnection.instance_method(:update),
       "018_Tracker_Connection.rb",

@@ -1,0 +1,12 @@
+<ObsidianDialogScope Closed="Closed">
+    <div class="detail-overlay" role="presentation" @onclick="Closed">
+        <section class="detail-panel @Class" role="dialog" aria-modal="true" aria-label="@Title" tabindex="-1" @onclick:stopPropagation>
+            <header class="detail-panel-header">
+                @if (HeadingContent is not null) { @HeadingContent }
+                else { <div><p class="card-kicker">@Eyebrow</p><h2>@Title</h2></div> }
+                <button class="detail-close" type="button" aria-label="@(CloseLabel ?? Text["Redesign.Close"])" @onclick="Closed">×</button>
+            </header>
+            @ChildContent
+        </section>
+    </div>
+</ObsidianDialogScope>

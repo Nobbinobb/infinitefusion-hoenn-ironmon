@@ -56,6 +56,26 @@ public sealed class DefenseTypeSnapshot
     public decimal? SpecialMax { get; init; }
 
     /// <summary>
+    /// Gets the minimum physical factor before all-type effects; null for older senders.
+    /// </summary>
+    public decimal? TypePhysicalMin { get; init; }
+
+    /// <summary>
+    /// Gets the maximum physical factor before all-type effects; null for older senders.
+    /// </summary>
+    public decimal? TypePhysicalMax { get; init; }
+
+    /// <summary>
+    /// Gets the minimum special factor before all-type effects; null for older senders.
+    /// </summary>
+    public decimal? TypeSpecialMin { get; init; }
+
+    /// <summary>
+    /// Gets the maximum special factor before all-type effects; null for older senders.
+    /// </summary>
+    public decimal? TypeSpecialMax { get; init; }
+
+    /// <summary>
     /// Gets supporting rules included in the combined factors; their sources and explanations are not displayed.
     /// </summary>
     public IReadOnlyList<DefenseRuleSnapshot> Adjustments { get; init; } = [];

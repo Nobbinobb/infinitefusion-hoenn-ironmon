@@ -5,19 +5,20 @@
         <div>
             <p class="card-kicker">@Text["Lookup.Coverage.Kicker"]</p>
             <h3>@Text["Lookup.Coverage.Title"]</h3>
-            <p>@Text["Lookup.Coverage.Description"]</p>
         </div>
-        <button type="button" class="coverage-reset" disabled="@(!Selection.IsManual)" @onclick="ResetToCurrentMoves">
+        <button type="button" class="coverage-reset obsidian-button" disabled="@(!Selection.IsManual)" @onclick="ResetToCurrentMoves">
+            <ObsidianIcon Kind="ObsidianIconKind.Reset" />
             @Text["Lookup.Coverage.CurrentMoves"]
         </button>
     </header>
+    <p class="coverage-description">@Text["Lookup.Coverage.Description"]</p>
 
     <div class="coverage-type-grid" aria-label="@Text["Lookup.Coverage.TypeSelection"]">
         @foreach (string type in PokemonTypeCatalog.StandardTypes)
         {
             <button type="button"
                     class="@GetTypeButtonClass(type)"
-                    aria-pressed="@Selection.SelectedTypes.Contains(type, StringComparer.Ordinal)"
+                    aria-pressed="@(Selection.SelectedTypes.Contains(type, StringComparer.Ordinal) ? "true" : "false")"
                     title="@GetTypeTitle(type)"
                     @onclick="() => ToggleType(type)">
                 <span>@type</span>
@@ -49,7 +50,7 @@
     }
     else
     {
-        <div class="coverage-buckets" aria-label="@Text["Lookup.Coverage.Results"]">
+        <div class="coverage-buckets" aria-label="@Text["Lookup.Coverage.Results"]" aria-live="polite">
             @foreach (TypeCoverageBucketResult bucket in _calculation.Buckets)
             {
                 <article class="coverage-bucket @GetBucketClass(bucket.Effectiveness)">

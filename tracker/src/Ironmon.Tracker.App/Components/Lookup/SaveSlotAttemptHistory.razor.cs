@@ -46,11 +46,4 @@ public partial class SaveSlotAttemptHistory
     private RunStatisticsPayload? GetSelectedStatistics()
         => _slots.FirstOrDefault(slot => string.Equals(slot.Key, _selection.SelectedSaveSlot, StringComparison.OrdinalIgnoreCase)).Value;
 
-    /// <summary>
-    /// Gets the visual classes for one save-slot tab.
-    /// </summary>
-    /// <param name="slot">The represented save-slot identifier.</param>
-    /// <returns>The tab classes.</returns>
-    private string GetTabClass(string slot)
-        => string.Equals(slot, _selection.SelectedSaveSlot, StringComparison.OrdinalIgnoreCase) ? "save-slot-tab selected" : "save-slot-tab";
 }

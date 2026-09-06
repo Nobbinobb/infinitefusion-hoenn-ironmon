@@ -43,6 +43,11 @@ public sealed class DefenseOverviewSnapshot
     public IReadOnlyList<DefenseTypeSnapshot> TypeMatchups { get; init; } = [];
 
     /// <summary>
+    /// Gets broad damage factors displayed once outside the redesigned type chart.
+    /// </summary>
+    public IReadOnlyList<DefenseAllTypeEffectSnapshot> AllTypeEffects { get; init; } = [];
+
+    /// <summary>
     /// Gets the compact, deduplicated protection labels and their move catalogs.
     /// </summary>
     public IReadOnlyList<DefenseEffectSnapshot> Protections { get; init; } = [];

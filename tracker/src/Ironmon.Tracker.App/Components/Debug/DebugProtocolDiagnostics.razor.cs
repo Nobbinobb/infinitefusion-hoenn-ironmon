@@ -8,6 +8,7 @@ namespace Ironmon.Tracker.App.Components.Debug;
 /// </summary>
 public partial class DebugProtocolDiagnostics : IDisposable
 {
+    private const string _timeFormat = "HH:mm:ss.fff";
     private static readonly JsonSerializerOptions DisplayJsonOptions = new(TrackerJson.Options) { WriteIndented = true };
     private IReadOnlyList<TrackerDiagnosticEntry> _entries = [];
     private string _connectionJson = "{}";
@@ -194,6 +195,18 @@ public partial class DebugProtocolDiagnostics : IDisposable
     /// </summary>
     private bool HasAnyDiagnosticGroup
         => HasProtocolHistory || HasRawState || HasPersistedKnowledge;
+
+    /// <summary>
+    /// Gets the localized source or direction of a diagnostic entry.
+    /// </summary>
+    /// <param name="direction">The entry source.</param>
+    /// <returns>The localized direction label.</returns>
+    private string GetDirectionText(TrackerDiagnosticDirection direction) => direction switch
+    {
+        TrackerDiagnosticDirection.Incoming => Text["Redesign.Tools.Incoming"],
+        TrackerDiagnosticDirection.Outgoing => Text["Redesign.Tools.Outgoing"],
+        _ => Text["Redesign.Tools.Lifecycle"]
+    };
 
     /// <summary>
     /// Serializes one diagnostic value as formatted JSON.

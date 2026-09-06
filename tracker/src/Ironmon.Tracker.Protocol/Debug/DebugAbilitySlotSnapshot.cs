@@ -38,6 +38,11 @@ public sealed class DebugAbilitySlotSnapshot
     public required string AbilityName { get; init; }
 
     /// <summary>
+    /// Gets or initializes the localized description, including component-only generated abilities.
+    /// </summary>
+    public string? AbilityDescription { get; init; }
+
+    /// <summary>
     /// Gets or initializes the original ability identifier for the same slot.
     /// </summary>
     public string? OriginalAbilityId { get; init; }

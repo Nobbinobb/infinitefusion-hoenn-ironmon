@@ -63,10 +63,10 @@ public partial class BaseStatVisualization
         return
         [
             ("HP", Original.Hp, Generated.Hp, head),
-            ("ATK", Original.Attack, Generated.Attack, body),
-            ("DEF", Original.Defense, Generated.Defense, body),
             ("SPA", Original.SpecialAttack, Generated.SpecialAttack, head),
             ("SPD", Original.SpecialDefense, Generated.SpecialDefense, head),
+            ("ATK", Original.Attack, Generated.Attack, body),
+            ("DEF", Original.Defense, Generated.Defense, body),
             ("SPE", Original.Speed, Generated.Speed, body)
         ];
     }

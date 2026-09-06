@@ -41,11 +41,7 @@
 
         @if (_matchTotal > TrackerProtocol.DefaultSearchPageSize)
         {
-            <nav class="lookup-pager" aria-label="@Text["Lookup.Fusion.FusionMaterialSearchPages"]">
-                <button type="button" disabled="@(_loading || !HasPreviousPage())" @onclick="PreviousPageAsync">@Text["Lookup.Fusion.Previous"]</button>
-                <span>@GetRangeText()</span>
-                <button type="button" disabled="@(_loading || !HasNextPage())" @onclick="NextPageAsync">@Text["Lookup.Fusion.Next"]</button>
-            </nav>
+            <ObsidianPagingControls Label="@Text["Lookup.Fusion.FusionMaterialSearchPages"]" RangeText="@GetRangeText()" PreviousDisabled="@(_loading || !HasPreviousPage())" NextDisabled="@(_loading || !HasNextPage())" Previous="PreviousPageAsync" Next="NextPageAsync" />
         }
     }
 

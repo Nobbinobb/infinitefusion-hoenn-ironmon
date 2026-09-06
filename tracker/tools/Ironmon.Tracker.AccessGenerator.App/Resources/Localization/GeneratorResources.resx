@@ -16,16 +16,16 @@
     <value>Ironmon Access Token Generator</value>
   </data>
   <data name="Generator.Header.Release" xml:space="preserve">
-    <value>Ironmon {0}</value>
+    <value>Ironmon tools · v{0}</value>
   </data>
   <data name="Generator.Header.Title" xml:space="preserve">
-    <value>Diagnostic access token</value>
+    <value>Access Generator</value>
   </data>
   <data name="Generator.Header.Description" xml:space="preserve">
-    <value>Create a signed token that enables only the selected diagnostic information. The private key remains in this process and is never included in the token.</value>
+    <value>Create a token with the permissions you want to share.</value>
   </data>
   <data name="Generator.Common.Optional" xml:space="preserve">
-    <value>(optional)</value>
+    <value>optional</value>
   </data>
   <data name="Generator.SigningKey.Title" xml:space="preserve">
     <value>Signing key</value>
@@ -43,7 +43,7 @@
     <value>Presets only prefill the form. Every capability remains individually editable.</value>
   </data>
   <data name="Generator.Details.Preset" xml:space="preserve">
-    <value>Preset</value>
+    <value>Start from a preset</value>
   </data>
   <data name="Generator.Details.CustomSelection" xml:space="preserve">
     <value>Custom selection</value>
@@ -58,41 +58,41 @@
     <value>Lifetime access</value>
   </data>
   <data name="Generator.Details.ExpiresAt" xml:space="preserve">
-    <value>Expires at</value>
+    <value>Expires at · local time</value>
   </data>
   <data name="Generator.Capabilities.Title" xml:space="preserve">
-    <value>Diagnostic capabilities</value>
+    <value>Permissions</value>
   </data>
   <data name="Generator.Capabilities.Description" xml:space="preserve">
     <value>Included capabilities are selected and locked while their parent capability remains enabled.</value>
   </data>
   <data name="Generator.Capabilities.IncludedByAllActive" xml:space="preserve">
-    <value>Included by All active-run Pokemon</value>
+    <value>Included by All active-run Pokémon</value>
   </data>
   <data name="Generator.CapabilityGroups.PokemonAvailability" xml:space="preserve">
-    <value>Pokemon availability</value>
+    <value>Pokémon availability</value>
   </data>
   <data name="Generator.CapabilityGroups.DevelopmentControls" xml:space="preserve">
     <value>Development controls</value>
   </data>
   <data name="Generator.Capabilities.development.auto_revive.Name" xml:space="preserve"><value>NoFail / AutoRevive</value></data>
-  <data name="Generator.Capabilities.development.auto_revive.Description" xml:space="preserve"><value>Keep the attempt active and revive the player Pokemon after a defeat or draw.</value></data>
+  <data name="Generator.Capabilities.development.auto_revive.Description" xml:space="preserve"><value>Keep the attempt active and revive the player Pokémon after a defeat or draw.</value></data>
   <data name="Generator.Capabilities.development.full_heal.Name" xml:space="preserve"><value>Full Heal</value></data>
-  <data name="Generator.Capabilities.development.full_heal.Description" xml:space="preserve"><value>Restore the current player Pokemon's HP, status, and PP outside battle.</value></data>
+  <data name="Generator.Capabilities.development.full_heal.Description" xml:space="preserve"><value>Restore the current player Pokémon's HP, status, and PP outside battle.</value></data>
   <data name="Generator.Capabilities.development.level.Name" xml:space="preserve"><value>Level adjustment</value></data>
-  <data name="Generator.Capabilities.development.level.Description" xml:space="preserve"><value>Set the current player Pokemon's level outside battle.</value></data>
+  <data name="Generator.Capabilities.development.level.Description" xml:space="preserve"><value>Set the current player Pokémon's level outside battle.</value></data>
   <data name="Generator.Capabilities.development.change_ability.Name" xml:space="preserve"><value>Change ability</value></data>
-  <data name="Generator.Capabilities.development.change_ability.Description" xml:space="preserve"><value>Assign any ability from the complete game catalog to the current player Pokemon.</value></data>
+  <data name="Generator.Capabilities.development.change_ability.Description" xml:space="preserve"><value>Assign any ability from the complete game catalog to the current player Pokémon.</value></data>
   <data name="Generator.Capabilities.development.change_moves.Name" xml:space="preserve"><value>Change moves</value></data>
-  <data name="Generator.Capabilities.development.change_moves.Description" xml:space="preserve"><value>Replace the current player Pokemon's move set.</value></data>
+  <data name="Generator.Capabilities.development.change_moves.Description" xml:space="preserve"><value>Replace the current player Pokémon's move set.</value></data>
   <data name="Generator.Capabilities.development.give_item.Name" xml:space="preserve"><value>Give item</value></data>
   <data name="Generator.Capabilities.development.give_item.Description" xml:space="preserve"><value>Add a selected item to the player's Bag outside battle.</value></data>
   <data name="Generator.Capabilities.development.evolution.Name" xml:space="preserve"><value>Evolve / devolve</value></data>
-  <data name="Generator.Capabilities.development.evolution.Description" xml:space="preserve"><value>Move the current player Pokemon across one direct generated evolution edge.</value></data>
-  <data name="Generator.Capabilities.development.swap_pokemon.Name" xml:space="preserve"><value>Swap Pokemon</value></data>
-  <data name="Generator.Capabilities.development.swap_pokemon.Description" xml:space="preserve"><value>Replace the current player Pokemon from active-run lookup at the same level.</value></data>
+  <data name="Generator.Capabilities.development.evolution.Description" xml:space="preserve"><value>Move the current player Pokémon across one direct generated evolution edge.</value></data>
+  <data name="Generator.Capabilities.development.swap_pokemon.Name" xml:space="preserve"><value>Swap Pokémon</value></data>
+  <data name="Generator.Capabilities.development.swap_pokemon.Description" xml:space="preserve"><value>Replace the current player Pokémon from active-run lookup at the same level.</value></data>
   <data name="Generator.CapabilityGroups.PokemonInformation" xml:space="preserve">
-    <value>Pokemon information</value>
+    <value>Pokémon information</value>
   </data>
   <data name="Generator.CapabilityGroups.EvolutionInformation" xml:space="preserve">
     <value>Evolution information</value>
@@ -110,7 +110,7 @@
     <value>Tracker diagnostics</value>
   </data>
   <data name="Generator.Review.Title" xml:space="preserve">
-    <value>Review and generate</value>
+    <value>Review</value>
   </data>
   <data name="Generator.Review.Description" xml:space="preserve">
     <value>The summary reflects the claims that will be signed.</value>
@@ -143,22 +143,22 @@
     <value>Invalid expiration</value>
   </data>
   <data name="Generator.Review.Generate" xml:space="preserve">
-    <value>Generate signed token</value>
+    <value>Generate token</value>
   </data>
   <data name="Generator.Result.Title" xml:space="preserve">
-    <value>Token ready</value>
+    <value>Your token is ready</value>
   </data>
   <data name="Generator.Result.Description" xml:space="preserve">
-    <value>Send this compact token to the person who needs temporary or lifetime diagnostic access.</value>
+    <value>Import this token in the tracker's Access view.</value>
   </data>
   <data name="Generator.Result.Copy" xml:space="preserve">
     <value>Copy token</value>
   </data>
   <data name="Generator.Result.Save" xml:space="preserve">
-    <value>Save token file</value>
+    <value>Save token</value>
   </data>
   <data name="Generator.Result.CreateAnother" xml:space="preserve">
-    <value>Create another</value>
+    <value>Create another token</value>
   </data>
   <data name="Generator.Errors.SelectSigningKey" xml:space="preserve">
     <value>Select a private signing key before generating a token.</value>
@@ -200,13 +200,13 @@
     <value>Ability generation</value>
   </data>
   <data name="Generator.Presets.ability_generation.Description" xml:space="preserve">
-    <value>Prefills current Pokemon ability and run-generator diagnostics.</value>
+    <value>Prefills current Pokémon ability and run-generator diagnostics.</value>
   </data>
   <data name="Generator.Presets.encounter_mapping.Name" xml:space="preserve">
     <value>Encounter mapping</value>
   </data>
   <data name="Generator.Presets.encounter_mapping.Description" xml:space="preserve">
-    <value>Prefills active-run Pokemon, wild, trainer, seed, and generator information.</value>
+    <value>Prefills active-run Pokémon, wild, trainer, seed, and generator information.</value>
   </data>
   <data name="Generator.Presets.full_current_debug.Name" xml:space="preserve">
     <value>Full current debug access</value>
@@ -218,22 +218,22 @@
     <value>Current player</value>
   </data>
   <data name="Generator.Capabilities.pokemon.current_player.Description" xml:space="preserve">
-    <value>Inspect the current live player Pokemon.</value>
+    <value>Inspect the current live player Pokémon.</value>
   </data>
   <data name="Generator.Capabilities.pokemon.current_enemies.Name" xml:space="preserve">
     <value>Current enemies</value>
   </data>
   <data name="Generator.Capabilities.pokemon.current_enemies.Description" xml:space="preserve">
-    <value>Inspect current live enemy Pokemon.</value>
+    <value>Inspect current live enemy Pokémon.</value>
   </data>
   <data name="Generator.Capabilities.pokemon.all_active.Name" xml:space="preserve">
-    <value>All active-run Pokemon</value>
+    <value>All active-run Pokémon</value>
   </data>
   <data name="Generator.Capabilities.pokemon.all_active.Description" xml:space="preserve">
-    <value>Search and inspect any Pokemon generated for the active run.</value>
+    <value>Search and inspect any Pokémon generated for the active run.</value>
   </data>
   <data name="Generator.Capabilities.pokemon.overview.Name" xml:space="preserve">
-    <value>Pokemon overview</value>
+    <value>Pokémon overview</value>
   </data>
   <data name="Generator.Capabilities.pokemon.overview.Description" xml:space="preserve">
     <value>View identity, form, level, held item, fusion components, and active ability context.</value>
@@ -296,7 +296,7 @@
     <value>Fusion previews</value>
   </data>
   <data name="Generator.Capabilities.fusion.preview_results.Description" xml:space="preserve">
-    <value>Preview both generated orientations for selected normal Pokemon.</value>
+    <value>Preview both generated orientations for selected normal Pokémon.</value>
   </data>
   <data name="Generator.Capabilities.fusion.material_pairs.Name" xml:space="preserve">
     <value>Fusion material pairs</value>
@@ -339,5 +339,110 @@
   </data>
   <data name="Generator.Capabilities.tracker.persisted_knowledge.Description" xml:space="preserve">
     <value>View raw persisted move-discovery knowledge.</value>
+  </data>
+  <data name="Generator.Header.Context" xml:space="preserve">
+    <value>Diagnostic access</value>
+  </data>
+  <data name="Generator.Common.Close" xml:space="preserve">
+    <value>Close dialog</value>
+  </data>
+  <data name="Generator.SigningKey.Empty" xml:space="preserve">
+    <value>Load a signing key</value>
+  </data>
+  <data name="Generator.SigningKey.Loaded" xml:space="preserve">
+    <value>Loaded</value>
+  </data>
+  <data name="Generator.SigningKey.Choose" xml:space="preserve">
+    <value>Choose file</value>
+  </data>
+  <data name="Generator.SigningKey.Change" xml:space="preserve">
+    <value>Change key</value>
+  </data>
+  <data name="Generator.Details.CustomDescription" xml:space="preserve">
+    <value>Custom selection. Only the checked permissions will be granted.</value>
+  </data>
+  <data name="Generator.Details.ExpirationHint" xml:space="preserve">
+    <value>Time-limited access for this investigation.</value>
+  </data>
+  <data name="Generator.Details.LifetimeHint" xml:space="preserve">
+    <value>This token will have no expiration.</value>
+  </data>
+  <data name="Generator.Review.Included" xml:space="preserve">
+    <value>Included automatically</value>
+  </data>
+  <data name="Generator.Review.GrantCount" xml:space="preserve">
+    <value>{0} grants</value>
+  </data>
+  <data name="Generator.Review.Open" xml:space="preserve">
+    <value>Review &amp; generate</value>
+  </data>
+  <data name="Generator.Review.DialogTitle" xml:space="preserve">
+    <value>Review token</value>
+  </data>
+  <data name="Generator.Review.TokenContext" xml:space="preserve">
+    <value>Access token</value>
+  </data>
+  <data name="Generator.Review.Back" xml:space="preserve">
+    <value>Back to editing</value>
+  </data>
+  <data name="Generator.Result.Summary" xml:space="preserve">
+    <value>{0} direct grants · {1} effective grants</value>
+  </data>
+  <data name="Generator.Errors.PastExpiration" xml:space="preserve">
+    <value>The expiration must be in the future.</value>
+  </data>
+  <data name="Generator.Footer.PrivateKey" xml:space="preserve">
+    <value>The signing key stays on this device.</value>
+  </data>
+  <data name="Generator.CapabilityGroups.DevelopmentControls.ShortName" xml:space="preserve">
+    <value>Development</value>
+  </data>
+  <data name="Generator.CapabilityGroups.DevelopmentControls.Description" xml:space="preserve">
+    <value>Changes the game. These controls are selected individually.</value>
+  </data>
+  <data name="Generator.CapabilityGroups.PokemonAvailability.ShortName" xml:space="preserve">
+    <value>Availability</value>
+  </data>
+  <data name="Generator.CapabilityGroups.PokemonAvailability.Description" xml:space="preserve">
+    <value>Choose which Pokémon this token can inspect.</value>
+  </data>
+  <data name="Generator.CapabilityGroups.PokemonInformation.ShortName" xml:space="preserve">
+    <value>Pokémon info</value>
+  </data>
+  <data name="Generator.CapabilityGroups.PokemonInformation.Description" xml:space="preserve">
+    <value>Choose the details available for permitted Pokémon.</value>
+  </data>
+  <data name="Generator.CapabilityGroups.EvolutionInformation.ShortName" xml:space="preserve">
+    <value>Evolutions</value>
+  </data>
+  <data name="Generator.CapabilityGroups.EvolutionInformation.Description" xml:space="preserve">
+    <value>Inspect generated evolution results and their rules.</value>
+  </data>
+  <data name="Generator.CapabilityGroups.AreaInformation.ShortName" xml:space="preserve">
+    <value>Areas</value>
+  </data>
+  <data name="Generator.CapabilityGroups.AreaInformation.Description" xml:space="preserve">
+    <value>Inspect generated encounters, trainers, and ground items.</value>
+  </data>
+  <data name="Generator.CapabilityGroups.FusionInformation.ShortName" xml:space="preserve">
+    <value>Fusions</value>
+  </data>
+  <data name="Generator.CapabilityGroups.FusionInformation.Description" xml:space="preserve">
+    <value>Inspect fusion previews and their source materials.</value>
+  </data>
+  <data name="Generator.CapabilityGroups.RunInformation.ShortName" xml:space="preserve">
+    <value>Run information</value>
+  </data>
+  <data name="Generator.CapabilityGroups.RunInformation.Description" xml:space="preserve">
+    <value>Inspect the active run configuration and generators.</value>
+  </data>
+  <data name="Generator.CapabilityGroups.TrackerDiagnostics.ShortName" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+  <data name="Generator.CapabilityGroups.TrackerDiagnostics.Description" xml:space="preserve">
+    <value>Inspect the tracker connection and stored state.</value>
+  </data>
+  <data name="Generator.Errors.LoadKeyFailed" xml:space="preserve">
+    <value>The signing-key file could not be opened. Please try again.</value>
   </data>
 </root>

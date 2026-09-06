@@ -1,0 +1,41 @@
+@if (VisibleEffects().Count > 0)
+{
+    <section class="obsidian-effects">
+        <h3>@Heading</h3>
+        <div class="@(Recovery ? "obsidian-recoveries" : "obsidian-protections")">
+            @foreach (DefenseEffectSnapshot effect in VisibleEffects())
+            {
+                <div class="obsidian-effect">
+                    @if (effect.Moves.Count > 0 || effect.HealingAmounts.Count > 0)
+                    {
+                        <button type="button" aria-expanded="@((_expandedLabel == effect.Label).ToString().ToLowerInvariant())" @onclick="() => Toggle(effect.Label)">
+                            <span>@effect.Label @if (effect.Moves.Count > 0) { <small>(@effect.Moves.Count)</small> } @if (effect.Active is null) { <em>@Text["Defense.Conditional"]</em> }</span>
+                            @if (Recovery) { <small>@Text[_expandedLabel == effect.Label ? "Redesign.Hide" : "Redesign.Details"]</small> }
+                        </button>
+                    }
+                    else
+                    {
+                        <span>@effect.Label @if (effect.Active is null) { <em>@Text["Defense.Conditional"]</em> }</span>
+                    }
+                    @if (Recovery && _expandedLabel == effect.Label)
+                    {
+                        <div class="obsidian-recovery-detail">
+                            @foreach (var amounts in effect.HealingAmounts.GroupBy(amount => amount))
+                            {
+                                <p>@amounts.Key@if (amounts.Count() > 1) { <small> ×@amounts.Count()</small> }</p>
+                            }
+                            @if (effect.Moves.Count > 0) { <ul class="defense-moves">@foreach (string move in effect.Moves) { <li>@move</li> }</ul> }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+        @if (!Recovery && VisibleEffects().FirstOrDefault(effect => effect.Label == _expandedLabel) is { } expanded)
+        {
+            <div class="obsidian-protection-detail">
+                @foreach (var amounts in expanded.HealingAmounts.GroupBy(amount => amount)) { <p>@amounts.Key @if (amounts.Count() > 1) { <small>×@amounts.Count()</small> }</p> }
+                <ul class="defense-moves">@foreach (string move in expanded.Moves) { <li>@move</li> }</ul>
+            </div>
+        }
+    </section>
+}

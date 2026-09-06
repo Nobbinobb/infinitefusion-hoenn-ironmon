@@ -1,38 +1,23 @@
 @if (_slots.Count > 0)
 {
-    <details class="archive-disclosure save-slot-history" open>
-        <summary>
-            <span>
-                <small>@Text["Archive.SaveSlots.Kicker"]</small>
-                <strong>@Text["Archive.SaveSlots.Title"]</strong>
-            </span>
-        </summary>
-        <div class="archive-disclosure-content">
-            <nav class="save-slot-tabs" role="tablist" aria-label="@Text["Archive.SaveSlots.Tabs"]">
-            @foreach (KeyValuePair<string, RunStatisticsPayload> slot in _slots)
-            {
-                <button type="button"
-                        class="@GetTabClass(slot.Key)"
-                        role="tab"
-                        aria-selected="@(slot.Key == _selection.SelectedSaveSlot)"
-                        @onclick="() => SelectSlot(slot.Key)">
-                    @slot.Key
-                </button>
-            }
+    <details class="obsidian-archive-surface" open>
+        <summary class="obsidian-archive-disclosure"><ObsidianIcon Kind="ObsidianIconKind.Files" /><span><strong>@Text["Archive.SaveSlots.Title"]</strong><small>@(GetSelectedStatistics() is RunStatisticsPayload latest ? Text["Archive.SaveSlots.LatestAttempt", latest.AttemptNumber] : string.Empty)</small></span><ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></summary>
+        <div class="obsidian-archive-history-body">
+            <nav class="obsidian-archive-file-tabs" role="tablist" aria-label="@Text["Archive.SaveSlots.Tabs"]">
+                @foreach (KeyValuePair<string, RunStatisticsPayload> slot in _slots)
+                {
+                    <button type="button" role="tab" aria-selected="@(slot.Key == _selection.SelectedSaveSlot ? "true" : "false")" @onclick="() => SelectSlot(slot.Key)">@slot.Key</button>
+                }
             </nav>
-
-        @if (GetSelectedStatistics() is RunStatisticsPayload statistics)
-        {
-                <div class="save-slot-history-heading">
-                    <span>@Text["Archive.SaveSlots.LatestAttempt", statistics.AttemptNumber]</span>
+            @if (GetSelectedStatistics() is RunStatisticsPayload statistics)
+            {
+                <div class="obsidian-archive-counts" role="tabpanel">
+                    <div><strong>@statistics.AttemptsStarted</strong><small>@Text["Lookup.Statistics.Started"]</small></div>
+                    <div class="obsidian-archive-lost"><strong>@statistics.AttemptsLost</strong><small>@Text["Lookup.Statistics.Lost"]</small></div>
+                    <div class="obsidian-archive-won"><strong>@statistics.AttemptsWon</strong><small>@Text["Lookup.Statistics.Won"]</small></div>
+                    <div><strong>@statistics.AttemptsAbandoned</strong><small>@Text["Lookup.Statistics.Abandoned"]</small></div>
                 </div>
-                <div class="analysis-summary-grid save-slot-history-grid" role="tabpanel">
-                    <article><strong>@statistics.AttemptsStarted</strong><span>@Text["Lookup.Statistics.Started"]</span></article>
-                    <article><strong>@statistics.AttemptsLost</strong><span>@Text["Lookup.Statistics.Lost"]</span></article>
-                    <article><strong>@statistics.AttemptsWon</strong><span>@Text["Lookup.Statistics.Won"]</span></article>
-                    <article><strong>@statistics.AttemptsAbandoned</strong><span>@Text["Lookup.Statistics.Abandoned"]</span></article>
-                </div>
-        }
+            }
         </div>
     </details>
 }

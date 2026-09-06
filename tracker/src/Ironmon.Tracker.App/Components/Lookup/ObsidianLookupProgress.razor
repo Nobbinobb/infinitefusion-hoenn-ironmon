@@ -1,0 +1,11 @@
+@if (Category == AreaContentCategory.Encounter && Area.EncounterSlotTotal is not null && Area.EncounterFusionTotal is not null)
+{
+    <span class="obsidian-lookup-counts">
+        <span title="@Text["Lookup.Areas.SlotCountDescription"]">@Text["Lookup.Areas.Slots"]</span><b>@Text["Lookup.Areas.Count", Area.EncounterSlotsEncountered, Area.EncounterSlotTotal]</b>
+        <span title="@Text["Lookup.Areas.FusionCountDescription"]">@Text["Lookup.Areas.ChanceFusions"]</span><b class="obsidian-lookup-fusion-count">@Text["Lookup.Areas.Count", Area.EncounterFusionsEncountered, Area.EncounterFusionTotal]</b>
+    </span>
+}
+else
+{
+    <span class="obsidian-lookup-progress"><b>@Text["Lookup.Areas.Count", Completed, Total]</b><span>@ProgressLabel</span></span>
+}

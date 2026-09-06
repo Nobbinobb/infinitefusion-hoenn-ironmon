@@ -1,72 +1,49 @@
-<section class="pokemon-card lookup-view" role="tabpanel" aria-label="@Text["Archive.Title"]">
-    <SaveSlotAttemptHistory Slots="@CompletedRuns.GetLatestSaveSlotStatistics(CurrentStatistics)"
-                            CurrentSaveSlot="@CurrentStatistics?.SaveSlot" />
-
-    <details class="archive-disclosure" open="@_selection.IsExpanded">
-        <summary @onclick="ToggleCompletedRuns" @onclick:preventDefault="true">
-            <span>
-                <small>@Text["Archive.Kicker"]</small>
-                <strong>@Text["Archive.Title"]</strong>
-            </span>
-        </summary>
-        @if (_selection.IsExpanded)
-        {
-            <div class="archive-disclosure-content">
+<section class="obsidian-archive" role="tabpanel" aria-label="@Text["Archive.Title"]">
+    <div class="obsidian-archive-content">
+        <header class="obsidian-settings-heading"><div><p class="card-kicker">@Text["Archive.Kicker"]</p><h2>@Text["Archive.Title"]</h2></div></header>
+        <SaveSlotAttemptHistory Slots="@CompletedRuns.GetLatestSaveSlotStatistics(CurrentStatistics)" CurrentSaveSlot="@CurrentStatistics?.SaveSlot" />
+        <details class="obsidian-archive-completed" open="@_selection.IsExpanded">
+            <summary class="obsidian-archive-disclosure" @onclick="ToggleCompletedRuns" @onclick:preventDefault="true"><span><strong>@Text["Redesign.Archive.ArchivedRuns"]</strong></span><ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></summary>
+            @if (_selection.IsExpanded)
+            {
                 @if (_recipes.Count == 0)
                 {
-                    <div class="lookup-empty">
-                        <strong>@Text["Archive.NoCompletedRun"]</strong>
-                        <p>@Text["Archive.NoCompletedRunDescription"]</p>
-                    </div>
+                    <div class="obsidian-archive-empty"><ObsidianIcon Kind="ObsidianIconKind.Archive" /><h3>@Text["Archive.NoCompletedRun"]</h3><p>@Text["Archive.NoCompletedRunDescription"]</p></div>
                 }
                 else
                 {
-                    <div class="lookup-controls">
-                        <label>
-                            @Text["Archive.Run"]
-                            <select value="@_selection.SelectedRunId" @onchange="SelectRun" @onkeydown:stopPropagation="true">
-                                @foreach (CompletedRunRecipePayload recipe in _recipes)
-                                {
-                                    <option value="@recipe.RunId">@FormatRun(recipe)</option>
-                                }
-                            </select>
-                        </label>
-                    </div>
-
+                    <label class="obsidian-archive-label">@Text["Archive.Run"]
+                        <select class="obsidian-archive-run-select" value="@_selection.SelectedRunId" @onchange="SelectRun" @onkeydown:stopPropagation="true">
+                            @foreach (CompletedRunRecipePayload recipe in _recipes)
+                            {
+                                <option value="@recipe.RunId">@FormatRun(recipe)</option>
+                            }
+                        </select>
+                    </label>
                     @if (GetSelectedRecipe() is CompletedRunRecipePayload selectedRecipe)
                     {
-                        <nav class="archive-tabs" role="tablist" aria-label="@Text["Archive.Sections.Label"]">
+                        <div class="obsidian-archive-run-actions">
+                            <span class="obsidian-archive-run-context"><ObsidianIcon Kind="ObsidianIconKind.Archive" />@(selectedRecipe.Statistics is RunStatisticsPayload statistics ? Text["Lookup.Statistics.Attempt", statistics.AttemptNumber] : Text["Archive.Kicker"])</span>
+                            <SeedTokenExportPanel @key="@($"archive-seed-{selectedRecipe.RunId}")" Recipe="selectedRecipe" Title="@Text["Seeds.ArchiveExport.Title"]" Description="@Text["Seeds.ArchiveExport.Description"]" Compact="true" />
+                        </div>
+                        <nav class="obsidian-lookup-tabs obsidian-archive-tabs" role="tablist" aria-label="@Text["Archive.Sections.Label"]">
                             @foreach (ArchiveSection section in Enum.GetValues<ArchiveSection>())
                             {
-                                <button type="button"
-                                        class="@GetSectionTabClass(section)"
-                                        role="tab"
-                                        aria-selected="@(_selectedSection == section)"
-                                        @onclick="() => SelectSection(section)">
-                                    @GetSectionName(section)
-                                </button>
+                                <button type="button" role="tab" aria-selected="@(_selectedSection == section ? "true" : "false")" @onclick="() => SelectSection(section)"><ObsidianIcon Kind="@GetSectionIcon(section)" />@GetSectionName(section)</button>
                             }
                         </nav>
-
-                        <div class="archive-tab-panel" role="tabpanel" hidden="@(_selectedSection != ArchiveSection.Summary)">
-                            <SeedTokenExportPanel @key="@($"archive-seed-{selectedRecipe.RunId}")"
-                                                  Recipe="selectedRecipe"
-                                                  Title="@Text["Seeds.ArchiveExport.Title"]"
-                                                  Description="@Text["Seeds.ArchiveExport.Description"]" />
+                        <div role="tabpanel" hidden="@(_selectedSection != ArchiveSection.Summary)">
                             <RunStatistics @key="@($"statistics-{selectedRecipe.RunId}")" Statistics="@selectedRecipe.Statistics" />
                         </div>
-
-                        <div class="archive-tab-panel" role="tabpanel" hidden="@(_selectedSection != ArchiveSection.Areas)">
+                        <div role="tabpanel" hidden="@(_selectedSection != ArchiveSection.Areas)">
                             <AreaLookupExplorer @key="@($"archive-areas-{selectedRecipe.RunId}")" SourceKey="@($"archive:{selectedRecipe.RunId}")" RunId="@selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
                         </div>
-
-                        <div class="archive-tab-panel" role="tabpanel" hidden="@(_selectedSection != ArchiveSection.Pokemon)">
+                        <div role="tabpanel" hidden="@(_selectedSection != ArchiveSection.Pokemon)">
                             <PokemonLookupExplorer @key="selectedRecipe.RunId" Recipe="@selectedRecipe" GameRoot="@GameRoot" />
                         </div>
-
                     }
                 }
-            </div>
-        }
-    </details>
+            }
+        </details>
+    </div>
 </section>

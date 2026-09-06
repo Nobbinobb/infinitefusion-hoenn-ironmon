@@ -1,0 +1,6 @@
+<ul class="obsidian-capabilities @(Included ? "included" : null)">
+    @foreach (string capability in Capabilities)
+    {
+        <li><ObsidianIcon Kind="@(Included ? ObsidianIconKind.Included : ObsidianIconKind.Check)" /><span>@Text[TrackerDiagnosticAccessLocalizationKeys.GetCapabilityName(capability)]</span></li>
+    }
+</ul>

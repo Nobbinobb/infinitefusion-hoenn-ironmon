@@ -269,6 +269,7 @@ module Ironmon
       "index" => index,
       "ability_id" => ability_data.id.to_s,
       "ability_name" => ability_data.name,
+      "ability_description" => ability_data.description,
       "original_ability_id" => original_data ? original_data.id.to_s : nil,
       "original_ability_name" => original_data ? original_data.name : nil,
       "eligibility" => tracker_lookup_ability_eligibility(ability),

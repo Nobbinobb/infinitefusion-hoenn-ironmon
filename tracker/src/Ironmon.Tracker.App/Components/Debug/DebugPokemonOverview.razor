@@ -1,34 +1,12 @@
 <article class="debug-overview" aria-label="@Text["Debug.Overview.InspectedPokemonOverview"]">
-    <div class="card-heading action-heading">
-        <PokemonSprite GameRoot="@GameRoot" SpritePath="@Pokemon.SpritePath" Label="@Pokemon.SpeciesName" Size="80" CssClass="sprite-placeholder live" />
-        <div class="identity-placeholder">
-            <p class="card-kicker">@(Pokemon.Fusion ? "FUSION" : "NORMAL POKEMON")</p>
-            <h2 class="identity-name">
-                <span>@Pokemon.Nickname</span>
-                <GenderIcon Gender="@Pokemon.Gender" />
-                <small>@Text["Debug.Overview.LevelValue", Pokemon.Level]</small>
-                <PokemonObtainabilityMark Status="@ObtainabilityStatus" ShowLabel="true" />
-            </h2>
-            @if (HasDistinctNickname())
-            {
-                <p class="debug-species-name">@Pokemon.SpeciesName</p>
-            }
-            <p class="typing-line">
-                @foreach (string type in Types)
-                {
-                    <span class="typing-type @MovePresentation.GetTypeColorClass(type)">@type</span>
-                }
-            </p>
-        </div>
-        <div class="identity-actions">
-            <span>@Text["Debug.Overview.Item"] <strong>@(Pokemon.HeldItemName ?? Text["Debug.Overview.None"])</strong></span>
-            <span>@Text["Debug.Overview.Form"] <strong>@GetFormText()</strong></span>
-        </div>
-    </div>
 
-    <section class="debug-data-section">
+
+    <section class="debug-data-section tools-panel tools-identity-data">
         <p class="section-label">@Text["Debug.Overview.IdentityHeading"]</p>
         <dl class="debug-data-grid">
+            <div><dt>@Text["Debug.Overview.Item"]</dt><dd>@(Pokemon.HeldItemName ?? Text["Debug.Overview.None"])</dd></div>
+            <div><dt>@Text["Debug.Overview.Form"]</dt><dd>@GetFormText()</dd></div>
+
             <div><dt>@Text["Debug.Overview.PokemonId"]</dt><dd>@Pokemon.PokemonId</dd></div>
             <div><dt>@Text["Debug.Overview.SpeciesId"]</dt><dd>@Pokemon.SpeciesId</dd></div>
             <div><dt>@Text["Debug.Overview.AbilitySlot"]</dt><dd>@Pokemon.ActiveAbilitySlot (@Pokemon.ActiveAbilityIndex)</dd></div>

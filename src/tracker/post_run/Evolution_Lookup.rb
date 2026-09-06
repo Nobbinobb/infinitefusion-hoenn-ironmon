@@ -258,9 +258,8 @@ module Ironmon
       numeric_id > (NB_POKEMON * NB_POKEMON) + NB_POKEMON
     body_id = (numeric_id - 1) / NB_POKEMON
     head_id = numeric_id - (body_id * NB_POKEMON)
-    identity = "B#{body_id}H#{head_id}".to_sym
-    return nil if !custom_fusion_species?(identity)
-    return identity
+    return nil if !custom_fusion_pool_service.include_number?(numeric_id)
+    return "B#{body_id}H#{head_id}".to_sym
   end
 
   def self.tracker_evolution_target_snapshot(

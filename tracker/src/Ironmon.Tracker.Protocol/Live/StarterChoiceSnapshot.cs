@@ -51,4 +51,9 @@ public sealed class StarterChoiceSnapshot
     /// Gets or initializes whether the revealed starter is covered by the Favorite Clause.
     /// </summary>
     public bool Favorite { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether the game currently accepts selection of this revealed slot.
+    /// </summary>
+    public bool CanSelect { get; init; }
 }

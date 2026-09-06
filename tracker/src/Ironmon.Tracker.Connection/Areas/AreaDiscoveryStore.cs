@@ -114,6 +114,21 @@ public sealed class AreaDiscoveryStore
     }
 
     /// <summary>
+    /// Counts authored slots separately from exact chance-fusion discoveries for the displayed encounter mode.
+    /// </summary>
+    /// <param name="runId">The owning run identifier.</param>
+    /// <param name="areaId">The stable area identifier.</param>
+    /// <param name="overworldEncounters">The active mode, or null for both archived mechanics.</param>
+    /// <returns>The authored-slot count and eligible chance-fusion count.</returns>
+    public (int Slots, int Fusions) GetEncounterCounts(string runId, string areaId, bool? overworldEncounters = null)
+    {
+        IReadOnlyList<string> keys = GetKeys(runId, areaId, AreaContentCategory.Encounter);
+        int slots = keys.Count(key => key.StartsWith(_encounterPrefix, StringComparison.Ordinal));
+        int fusions = keys.Count(key => key.StartsWith(_fusionPrefix, StringComparison.Ordinal) && IsEncounterCounted(key, overworldEncounters));
+        return (slots, fusions);
+    }
+
+    /// <summary>
     /// Matches authored slots and encountered fusion possibilities against the displayed mechanic.
     /// </summary>
     /// <param name="key">The persisted discovery key.</param>

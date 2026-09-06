@@ -2,7 +2,13 @@
 {
     @if (ShowLabel)
     {
-        <span class="@CssClass" title="@Label">@Label</span>
+        <span class="@CssClass" title="@Label">
+            @if (IncludeIcon)
+            {
+                <span aria-hidden="true">@Icon</span>
+            }
+            @Label
+        </span>
     }
     else
     {

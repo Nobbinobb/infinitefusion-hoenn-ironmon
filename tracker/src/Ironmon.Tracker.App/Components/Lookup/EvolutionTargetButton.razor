@@ -1,16 +1,15 @@
 <div class="evolution-target-shell @(IsFocused ? "focused" : null)">
     <div class="evolution-target">
-        <PokemonSprite GameRoot="@GameRoot" SpritePath="@Target.SpritePath" Label="@Target.SpeciesName" Size="44" CssClass="evolution-target-sprite" />
+        <PokemonSprite GameRoot="@GameRoot" SpritePath="@Target.SpritePath" Label="@Target.SpeciesName" Size="38" CssClass="evolution-target-sprite" FitVisibleBounds="true" />
         <button class="evolution-target-action" type="button" title="@GetActionTitle()" @onclick="ActivateAsync">
             <span class="evolution-target-copy">
                 <strong>@Target.SpeciesName</strong>
-                <small>BST @Target.BaseStatTotal</small>
+                <small>@Text["Lookup.Graph.BstValue", Target.BaseStatTotal] <PokemonObtainabilityMark Status="@Target.ObtainabilityStatus" /></small>
             </span>
-            <PokemonObtainabilityMark Status="@Target.ObtainabilityStatus" />
         </button>
     </div>
     @if (Focused.HasDelegate)
     {
-        <button class="evolution-target-open" type="button" title="@Text["Lookup.Graph.OpenPokemon"]" aria-label="@Text["Lookup.Graph.OpenPokemon"]" @onclick="SelectAsync">↗</button>
+        <button class="evolution-target-open" type="button" title="@Text["Lookup.Graph.OpenPokemon"]" aria-label="@Text["Lookup.Graph.OpenPokemon"]" @onclick="SelectAsync"><ObsidianIcon Kind="ObsidianIconKind.ArrowUpRight" /></button>
     }
 </div>

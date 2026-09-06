@@ -1,103 +1,69 @@
-@if (_defenseOpen && SelectedEnemy is not null)
-{
-    <PokemonDefenseView Name="@GetName()" Defense="@SelectedEnemy.DefensiveOverview" Closed="CloseDefense" />
-}
-else
-{
-<section class="pokemon-card" role="tabpanel" aria-label="@Text["Enemy.Card.EnemyPokemon"]">
+<section class="obsidian obsidian-enemy" role="tabpanel" aria-label="@Text["Enemy.Card.EnemyPokemon"]">
     @if (Enemies.Count > 1)
     {
-        <nav class="enemy-selector" aria-label="@Text["Enemy.Card.OpposingPokemon"]">
+        <nav class="obsidian-enemy-selector" aria-label="@Text["Enemy.Card.OpposingPokemon"]">
             @for (int index = 0; index < Enemies.Count; index++)
             {
                 EnemyPokemonSnapshot candidate = Enemies[index];
                 int enemyNumber = index + 1;
-                <button class="@GetEnemySelectorClass(candidate)" type="button" @onclick="() => SelectEnemy(candidate.EnemyId)">@Text["Enemy.Card.EnemyNumber", enemyNumber]</button>
+                <button @key="candidate.EnemyId" type="button" aria-pressed="@((candidate.EnemyId == SelectedEnemy?.EnemyId).ToString().ToLowerInvariant())" @onclick="() => SelectEnemy(candidate.EnemyId)">
+                    <PokemonSprite GameRoot="@GameRoot" SpritePath="@candidate.SpritePath" Label="@candidate.SpeciesName" Size="35" Interactive="false" />
+                    <span class="obsidian-enemy-option"><small>@Text["Enemy.Card.EnemyNumber", enemyNumber]</small><strong>@candidate.SpeciesName</strong></span>
+                    <span class="obsidian-enemy-level">@Text["Enemy.Card.LevelValue", candidate.Level]</span>
+                </button>
             }
         </nav>
     }
-
-    <div class="card-heading action-heading">
-        <PokemonSprite GameRoot="@GameRoot"
-                       SpritePath="@SelectedEnemy?.SpritePath"
-                       Label="@(SelectedEnemy?.SpeciesName ?? Text["Enemy.Card.OpposingPokemonHeading"])"
-                       Size="80"
-                       CssClass="@(SelectedEnemy is null ? "sprite-placeholder enemy" : "sprite-placeholder enemy live")" />
-        <div class="identity-placeholder">
-            <p class="card-kicker">@Text[SelectedEnemy?.Fusion == true ? "Enemy.Card.OpposingFusionHeading" : "Enemy.Card.OpposingPokemonHeading"]</p>
-            <h2 class="identity-name">
-                <span>@GetName()</span>
-                @if (SelectedEnemy is not null)
-                {
-                    <small>@Text["Enemy.Card.LevelValue", SelectedEnemy.Level]</small>
-                }
-            </h2>
+    <ObsidianIdentityPanel GameRoot="@GameRoot" SpritePath="@SelectedEnemy?.SpritePath" SpriteLabel="@GetName()" Name="@GetName()" Kicker="@Text[SelectedEnemy?.Fusion == true ? "Enemy.Card.OpposingFusionHeading" : "Enemy.Card.OpposingPokemonHeading"]" DetailsLabel="@Text["Enemy.Card.HiddenEnemyDetails"]">
+        <Metadata>
             @if (SelectedEnemy is null)
             {
-                <p>@Text["Enemy.Card.EnemyWaitingDescription"]</p>
+                <p class="obsidian-species">@Text["Enemy.Card.EnemyWaitingDescription"]</p>
             }
             else
             {
-                <p class="typing-line">
+                <p class="obsidian-species">@Text["Enemy.Card.LevelValue", SelectedEnemy.Level]</p>
+                <div class="obsidian-types">
                     @foreach (string type in SelectedEnemy.Types)
                     {
-                        <button type="button" class="typing-type pokemon-type-link @MovePresentation.GetTypeColorClass(type)" title="@Text["Defense.OpenTypes"]" aria-label="@Text["Defense.OpenType", type]" @onclick="OpenDefense">@type</button>
+                        <button type="button" class="typing-type @MovePresentation.GetTypeColorClass(type)" title="@Text["Defense.OpenTypes"]" aria-label="@Text["Defense.OpenType", type]" @onclick="OpenDefense">@type</button>
                     }
-                </p>
+                </div>
             }
-        </div>
-        <div class="identity-actions placeholder-content" aria-label="@Text["Enemy.Card.HiddenEnemyDetails"]">
-            @if (GetAbilities().Count > 1)
+        </Metadata>
+        <Details>
+            <button type="button" disabled="@(GetAbilities().Count == 0)" @onclick="OpenAbilities"><span>@Text["Enemy.Card.Ability"]</span><strong>@GetFirstAbilityName() @if (GetAbilities().Count > 1) { <em>+@(GetAbilities().Count - 1)</em> }</strong></button>
+            <div class="obsidian-hidden-detail"><span>@Text["Enemy.Card.Item"]</span><strong>@(SelectedEnemy is null ? "--" : Text["Enemy.Card.Hidden"])</strong></div>
+        </Details>
+        <Health>
+            <div class="obsidian-hp-caption"><span>HP <span class="obsidian-condition">@(SelectedEnemy is null ? Text["Enemy.Card.StatusUnknown"] : Text["Enemy.Card.StatusHidden"])</span></span><strong>-- / --</strong></div>
+            <div class="obsidian-hp-track obsidian-unknown-hp" aria-label="@Text["Enemy.Card.EnemyHpUnknown"]"></div>
+        </Health>
+        <Footer>
+            <span>@Text["Enemy.Card.Highest"] <strong>@FormatHighestLevel()</strong></span>
+            @if (SelectedEnemy?.CatchChancePercent is double catchChance)
             {
-                <details class="compact-disclosure">
-                    <summary>@Text["Enemy.Card.Ability"] <strong>@GetAbilities()[0].Name</strong><span>+@(GetAbilities().Count - 1)</span></summary>
-                    <div class="disclosure-menu">
-                        @foreach (AbilitySnapshot ability in GetAbilities())
-                        {
-                            <button type="button" @onclick="() => SelectAbility(ability)">@ability.Name</button>
-                        }
-                    </div>
-                </details>
+                <span class="obsidian-catch">@Text["Enemy.Card.PokeBall"] <strong>@FormatCatchChance(catchChance)</strong></span>
             }
-            else if (GetAbilities().Count == 1)
-            {
-                <button class="identity-action-button" type="button" @onclick="() => SelectAbility(GetAbilities()[0])">@Text["Enemy.Card.Ability"] <strong>@GetAbilities()[0].Name</strong></button>
-            }
-            else
-            {
-                <span>@Text["Enemy.Card.Ability"] <strong>@GetFirstAbilityName()</strong></span>
-            }
-            <span>@Text["Enemy.Card.Item"] <strong>@(SelectedEnemy is null ? "--" : Text["Enemy.Card.Hidden"])</strong></span>
-            <span class="identity-action-spacer" aria-hidden="true"></span>
-        </div>
-    </div>
-
-    <div class="hp-block placeholder-content">
-        <div><span>HP</span><strong>-- / --</strong></div>
-        <div class="hp-bar unknown enemy" aria-label="@Text["Enemy.Card.EnemyHpUnknown"]"><span></span></div>
-    </div>
-
-    <div class="detail-strip placeholder-content" aria-label="@Text["Enemy.Card.EnemyCondition"]">
-        <span>@(SelectedEnemy is null ? Text["Enemy.Card.StatusUnknown"] : Text["Enemy.Card.StatusHidden"])</span>
-        @if (SelectedEnemy?.CatchChancePercent is double catchChance)
-        {
-            <span>@Text["Enemy.Card.PokeBall"] <strong>@FormatCatchChance(catchChance)</strong></span>
-        }
-    </div>
-
-    <EnemyStatGrid Enemy="@SelectedEnemy" />
-
-    <div class="summary-row placeholder-content" aria-label="@Text["Enemy.Card.EnemySummary"]">
-        <span>BST <strong>@GetBaseStatTotal()</strong></span>
-        <span>@Text["Enemy.Card.Highest"] <strong>@FormatHighestLevel()</strong></span>
-        <BattleStatStageChips Stages="@SelectedEnemy?.StatStages" />
-    </div>
-
-    <EnemyMoveList Enemy="@SelectedEnemy" BattleId="@BattleId" PlayerTypes="@PlayerTypes" PlayerEvasionStage="@PlayerEvasionStage" />
+        </Footer>
+    </ObsidianIdentityPanel>
+    <EnemyStatNotes Enemy="@SelectedEnemy" />
+    <EnemyMoveList @key="(BattleId, SelectedEnemy?.EnemyId)" Enemy="@SelectedEnemy" BattleId="@BattleId" PlayerTypes="@PlayerTypes" PlayerEvasionStage="@PlayerEvasionStage" />
 </section>
-}
 
-@if (_selectedAbility is not null)
+@if (_defenseOpen && SelectedEnemy is not null)
 {
-    <AbilityDetailPanel Ability="@_selectedAbility" Closed="CloseAbility" />
+    <ObsidianDefenseDialog Name="@GetName()" Defense="@SelectedEnemy.DefensiveOverview" Closed="CloseDefense" />
+}
+@if (_abilitiesOpen)
+{
+    <ObsidianDialog Title="@(GetAbilities().Count == 1 ? GetFirstAbilityName() : Text["Redesign.Enemy.ObservedAbilities"])" Eyebrow="@GetName()" Closed="CloseAbilities">
+        @foreach (AbilitySnapshot ability in GetAbilities())
+        {
+            <section class="obsidian-ability-entry">
+                @if (GetAbilities().Count > 1) { <h3>@ability.Name</h3> }
+                <p class="detail-description">@ability.Description</p>
+            </section>
+        }
+    </ObsidianDialog>
 }

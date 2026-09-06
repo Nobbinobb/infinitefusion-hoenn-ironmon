@@ -1,81 +1,69 @@
 <article class="debug-protocol" aria-label="@Text["Debug.Protocol.TrackerProtocolDiagnostics"]">
-    <div class="debug-protocol-actions">
-        <button type="button" @onclick="Refresh">@Text["Debug.Protocol.Refresh"]</button>
+    <header class="tools-page-heading"><h3>@Text["Debug.Inspector.Protocol"]</h3></header>
+    <div class="tools-protocol-actions">
+        <button type="button" class="obsidian-button" @onclick="Refresh"><ObsidianIcon Kind="ObsidianIconKind.Reset" />@Text["Debug.Protocol.Refresh"]</button>
         @if (HasAnyDiagnosticGroup)
         {
-            <button type="button" @onclick="CopyReportAsync">@Text["Debug.Protocol.CopyReport"]</button>
-            <button type="button" @onclick="ExportReportAsync">@Text["Debug.Protocol.ExportReport"]</button>
-        }
-        @if (HasProtocolHistory)
-        {
-            <button type="button" @onclick="ClearHistory">@Text["Debug.Protocol.ClearHistory"]</button>
+            <button type="button" class="obsidian-button" @onclick="CopyReportAsync"><ObsidianIcon Kind="ObsidianIconKind.Copy" />@Text["Debug.Protocol.CopyReport"]</button>
+            <button type="button" class="obsidian-button" @onclick="ExportReportAsync"><ObsidianIcon Kind="ObsidianIconKind.Download" />@Text["Debug.Protocol.ExportReport"]</button>
         }
     </div>
-
     @if (_status is not null)
     {
-        <p class="debug-report-status" role="status">@_status</p>
+        <p class="tools-notice" role="status">@_status</p>
     }
-
     @if (HasProtocolHistory && _lastProtocolError is not null)
     {
         <p class="lookup-error" role="alert">@_lastProtocolError</p>
     }
-
-    @if (HasRawState)
+    @if (HasRawState || HasPersistedKnowledge)
     {
-        <details class="debug-raw-section">
-            <summary class="debug-raw-heading">
-                <p class="section-label">@Text["Debug.Protocol.CurrentConnectionStateHeading"]</p>
-                <button type="button" @onclick="CopyConnectionAsync" @onclick:stopPropagation="true">@Text["Debug.Protocol.Copy"]</button>
-            </summary>
-            <pre class="debug-raw-value">@_connectionJson</pre>
-        </details>
-
-        <details class="debug-raw-section">
-            <summary class="debug-raw-heading">
-                <p class="section-label">@Text["Debug.Protocol.CurrentTrackerStateHeading"]</p>
-                <button type="button" @onclick="CopyRunStateAsync" @onclick:stopPropagation="true">@Text["Debug.Protocol.Copy"]</button>
-            </summary>
-            <pre class="debug-raw-value">@_runStateJson</pre>
-        </details>
+        <section class="tools-panel tools-raw-sections">
+            @if (HasRawState)
+            {
+                <ObsidianDisclosure Title="@Text["Debug.Protocol.CurrentConnectionStateHeading"]" Icon="ObsidianIconKind.Plug">
+                    <Actions><button type="button" class="tools-text-button" @onclick="CopyConnectionAsync" @onclick:stopPropagation="true" @onclick:preventDefault="true"><ObsidianIcon Kind="ObsidianIconKind.Copy" />@Text["Debug.Protocol.Copy"]</button></Actions>
+                    <ChildContent><pre class="tools-raw-value">@_connectionJson</pre></ChildContent>
+                </ObsidianDisclosure>
+                <ObsidianDisclosure Title="@Text["Debug.Protocol.CurrentTrackerStateHeading"]" Icon="ObsidianIconKind.Database">
+                    <Actions><button type="button" class="tools-text-button" @onclick="CopyRunStateAsync" @onclick:stopPropagation="true" @onclick:preventDefault="true"><ObsidianIcon Kind="ObsidianIconKind.Copy" />@Text["Debug.Protocol.Copy"]</button></Actions>
+                    <ChildContent><pre class="tools-raw-value">@_runStateJson</pre></ChildContent>
+                </ObsidianDisclosure>
+            }
+            @if (HasPersistedKnowledge)
+            {
+                <ObsidianDisclosure Title="@Text["Debug.Protocol.PersistedKnowledgeHeading"]" Icon="ObsidianIconKind.Files">
+                    <Actions><button type="button" class="tools-text-button" @onclick="CopyKnowledgeAsync" @onclick:stopPropagation="true" @onclick:preventDefault="true"><ObsidianIcon Kind="ObsidianIconKind.Copy" />@Text["Debug.Protocol.Copy"]</button></Actions>
+                    <ChildContent><pre class="tools-raw-value">@_knowledgeJson</pre></ChildContent>
+                </ObsidianDisclosure>
+            }
+        </section>
     }
-
-    @if (HasPersistedKnowledge)
-    {
-        <details class="debug-raw-section">
-            <summary class="debug-raw-heading">
-                <p class="section-label">@Text["Debug.Protocol.PersistedKnowledgeHeading"]</p>
-                <button type="button" @onclick="CopyKnowledgeAsync" @onclick:stopPropagation="true">@Text["Debug.Protocol.Copy"]</button>
-            </summary>
-            <pre class="debug-raw-value">@_knowledgeJson</pre>
-        </details>
-    }
-
     @if (HasProtocolHistory)
     {
-        <section class="debug-history" aria-label="@Text["Debug.Protocol.ConnectionAndProtocolHistory"]">
-            <header class="debug-raw-heading">
-                <p class="section-label">@Text["Debug.Protocol.ConnectionAndProtocolHistoryHeading"]</p>
-                <span class="debug-entry-meta">@_entries.Count retained</span>
+        <section class="tools-history" aria-label="@Text["Debug.Protocol.ConnectionAndProtocolHistory"]">
+            <header class="tools-history-heading">
+                <h3>@Text["Debug.Protocol.ConnectionAndProtocolHistoryHeading"]</h3>
+                <button type="button" class="tools-text-button tools-danger" @onclick="ClearHistory"><ObsidianIcon Kind="ObsidianIconKind.Trash" />@Text["Debug.Protocol.ClearHistory"]</button>
             </header>
-            @if (_entries.Count == 0)
-            {
-                <p class="lookup-message">@Text["Debug.Protocol.NoDiagnosticEntries"]</p>
-            }
-            @foreach (TrackerDiagnosticEntry entry in _entries.Reverse())
-            {
-                <details class="debug-history-entry">
-                    <summary class="debug-entry-heading">
-                        <div>
-                            <p><strong>@entry.Name</strong></p>
-                            <span class="debug-entry-meta">@entry.Direction · @entry.Timestamp.ToLocalTime().ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture)</span>
-                        </div>
-                        <button type="button" @onclick="() => CopyEntryAsync(entry)" @onclick:stopPropagation="true">@Text["Debug.Protocol.Copy"]</button>
-                    </summary>
-                    <pre class="debug-raw-value">@entry.RawValue</pre>
-                </details>
-            }
+            <p class="tools-entry-count">@Text["Redesign.Tools.Retained", _entries.Count]</p>
+            <div class="tools-panel tools-history-entries">
+                @if (_entries.Count == 0)
+                {
+                    <p class="lookup-message">@Text["Debug.Protocol.NoDiagnosticEntries"]</p>
+                }
+                @foreach (TrackerDiagnosticEntry entry in _entries.Reverse())
+                {
+                    <ObsidianDisclosure @key="entry">
+                        <HeadingContent>
+                            <strong class="tools-entry-name">@entry.Name</strong>
+                            <span class="tools-entry-meta"><span class="tools-direction" data-direction="@entry.Direction">@GetDirectionText(entry.Direction)</span><span>·</span><time>@entry.Timestamp.ToLocalTime().ToString(_timeFormat, CultureInfo.InvariantCulture)</time></span>
+                        </HeadingContent>
+                        <Actions><button type="button" class="tools-text-button" aria-label="@Text["Redesign.Tools.CopyEntry", entry.Name]" @onclick="() => CopyEntryAsync(entry)" @onclick:stopPropagation="true" @onclick:preventDefault="true"><ObsidianIcon Kind="ObsidianIconKind.Copy" /></button></Actions>
+                        <ChildContent><pre class="tools-raw-value">@entry.RawValue</pre></ChildContent>
+                    </ObsidianDisclosure>
+                }
+            </div>
         </section>
     }
 </article>

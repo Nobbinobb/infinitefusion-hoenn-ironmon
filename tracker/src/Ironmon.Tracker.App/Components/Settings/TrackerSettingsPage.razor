@@ -1,202 +1,125 @@
-<section class="tracker-settings" aria-label="@Text["Settings.Page.Settings"]">
-    <header class="settings-heading">
-        <div>
-            <p class="card-kicker">@Text["Settings.Page.TrackerPreferences"]</p>
-            <h2>@Text["Settings.Page.Settings"]</h2>
-        </div>
+<section class="obsidian-settings" aria-label="@Text["Settings.Page.Settings"]">
+    <header class="obsidian-settings-heading">
+        <div><p class="card-kicker">@Text["Settings.Page.TrackerPreferences"]</p><h2>@Text["Settings.Page.Settings"]</h2></div>
+        @if (!string.IsNullOrWhiteSpace(Status) || _graphSettingsSaved)
+        {
+            <span class="obsidian-settings-saved">@Text["Redesign.Settings.Saved"]</span>
+        }
     </header>
-
-    <details class="settings-group">
-        <summary>
-            <span>
-                <strong>@Text["Settings.Starter.Group"]</strong>
-                <small>@Text["Settings.Starter.GroupDescription"]</small>
-            </span>
-        </summary>
-        <div class="settings-group-content">
-            <label class="settings-option">
-                <span>
-                    <strong>@Text["Settings.Starter.AutoSelectStarter"]</strong>
-                    <small>@Text["Settings.Starter.AutoSelectDescription"]</small>
-                </span>
-                <input type="checkbox" checked="@AutoSelectStarter" @onchange="HandleAutoSelectChanged" />
-            </label>
-
-            <label class="settings-number-option">
-                <span>
-                    <strong>@Text["Settings.Starter.MaximumBst"]</strong>
-                    <small>@Text["Settings.Starter.MaximumBstDescription"]</small>
-                </span>
-                <input type="number"
-                       min="@StarterSelectionConstants.MinimumBaseStatTotal"
-                       max="@StarterSelectionConstants.MaximumBaseStatTotal"
-                       value="@MaximumStarterBaseStatTotal"
-                       placeholder="@Text["Settings.Starter.MaximumBstPlaceholder"]"
-                       @onchange="HandleMaximumBstChanged" />
-                @if (!string.IsNullOrWhiteSpace(_maximumBstError))
-                {
-                    <small class="settings-validation">@_maximumBstError</small>
-                }
-            </label>
-        </div>
-    </details>
-
-    <details class="settings-group">
-        <summary>
-            <span>
-                <strong>@Text["Settings.EvolutionGraph.Group"]</strong>
-                <small>@Text["Settings.EvolutionGraph.GroupDescription"]</small>
-            </span>
-        </summary>
-        <div class="settings-group-content">
-            <label class="settings-number-option">
-                <span>
-                    <strong>@Text["Settings.EvolutionGraph.ExpansionDepth"]</strong>
-                    <small>@Text["Settings.EvolutionGraph.ExpansionDepthDescription"]</small>
-                </span>
-                <input type="number"
-                       min="@EvolutionGraphSettings.MinimumExpansionDepth"
-                       max="@EvolutionGraphSettings.MaximumExpansionDepth"
-                       value="@EvolutionGraphSettings.ExpansionDepth"
-                       @onchange="HandleExpansionDepthChanged" />
-                @if (!string.IsNullOrWhiteSpace(_graphDepthError))
-                {
-                    <small class="settings-validation">@_graphDepthError</small>
-                }
-            </label>
-
-            <label class="settings-number-option">
-                <span>
-                    <strong>@Text["Settings.EvolutionGraph.NodesPerRow"]</strong>
-                    <small>@Text["Settings.EvolutionGraph.NodesPerRowDescription"]</small>
-                </span>
-                <input type="number"
-                       min="@EvolutionGraphSettings.MinimumNodesPerRow"
-                       max="@EvolutionGraphSettings.MaximumNodesPerRow"
-                       value="@EvolutionGraphSettings.NodesPerRow"
-                       @onchange="HandleNodesPerRowChanged" />
-                @if (!string.IsNullOrWhiteSpace(_nodesPerRowError))
-                {
-                    <small class="settings-validation">@_nodesPerRowError</small>
-                }
-            </label>
-        </div>
-    </details>
-
-    <details class="settings-group">
-        <summary>
-            <span>
-                <strong>@Text["Settings.Sprites.Group"]</strong>
-                <small>@Text["Settings.Sprites.GroupDescription"]</small>
-            </span>
-        </summary>
-        <div class="settings-group-content">
-            <section class="sprite-download-card">
-                <span>
-                    <strong>@Text["Settings.Sprites.DownloadCustom"]</strong>
-                    <small>@Text["Settings.Sprites.DownloadDescription"]</small>
-                    <small class="settings-warning">@Text["Settings.Sprites.DownloadWarning"]</small>
-                </span>
-
-                @if (_spriteInstallRunning && _spriteInstallProgress is not null)
-                {
-                    <progress max="@Math.Max(1, _spriteInstallProgress.TotalSheetCount)" value="@_spriteInstallProgress.CompletedSheetCount"></progress>
-                    <small>@Text["Settings.Sprites.Progress", _spriteInstallProgress.CompletedSheetCount, _spriteInstallProgress.TotalSheetCount, FormatBytes(_spriteInstallProgress.DownloadedBytes), _spriteInstallProgress.FailedSheetCount, _spriteInstallProgress.UnavailableSheetCount]</small>
-                    <button type="button" class="secondary" @onclick="CancelSpriteInstall">@Text["Settings.Sprites.Cancel"]</button>
-                }
-                else if (_showSpriteInstallConfirmation && _spriteInstallPlan is not null)
-                {
-                    <div class="sprite-download-confirmation">
-                        <p>@Text["Settings.Sprites.Confirmation", _spriteInstallPlan.PendingSheetCount, _spriteInstallPlan.ExistingSheetCount, _spriteInstallPlan.TotalSheetCount]</p>
-                        @if (_spriteInstallPlan.UnavailableSheetCount > 0)
-                        {
-                            <p>@Text["Settings.Sprites.SkippedUnavailable", _spriteInstallPlan.UnavailableSheetCount]</p>
-                        }
-                        <div>
-                            <button type="button" @onclick="StartSpriteInstallAsync">@Text["Settings.Sprites.Start"]</button>
-                            <button type="button" class="secondary" @onclick="CancelSpriteReview">@Text["Settings.Sprites.Cancel"]</button>
-                        </div>
-                    </div>
-                }
-                else
-                {
-                    <button type="button" disabled="@_spriteInstallPreparing" @onclick="ReviewSpriteInstallAsync">@(_spriteInstallPreparing ? Text["Settings.Sprites.Preparing"] : Text["Settings.Sprites.Review"])</button>
-                    <button type="button" class="secondary" disabled="@_spriteInstallPreparing" @onclick="ReviewUnavailableSpritesAsync">@Text["Settings.Sprites.RecheckUnavailable"]</button>
-                    <small>@Text["Settings.Sprites.RecheckDescription"]</small>
-                }
-
-                @if (!string.IsNullOrWhiteSpace(_spriteInstallStatus))
-                {
-                    <p class="settings-status" role="status">@_spriteInstallStatus</p>
-                }
-            </section>
-        </div>
-    </details>
-
-    <details class="settings-group favorite-settings">
-        <summary>
-            <span>
-                <strong>@Text["Settings.Favorites.FavoriteClause"]</strong>
-                <small>@Text["Settings.Favorites.Description"]</small>
-            </span>
-        </summary>
-        <div class="settings-group-content">
-            <input class="favorite-search" type="search" value="@_query" @oninput="HandleSearchInput" placeholder="@Text["Settings.Favorites.SearchPlaceholder"]" autocomplete="off" />
-
-        @if (_searching)
+    <ObsidianSection Title="@Text["Settings.Starter.Group"]" Icon="ObsidianIconKind.Shuffle">
+        <ObsidianToggle Class="obsidian-setting-row" Label="@Text["Settings.Starter.AutoSelectStarter"]" Description="@Text["Redesign.Settings.AutoSelectDescription"]" LabelFirst="true" Value="AutoSelectStarter" ValueChanged="HandleAutoSelectChanged" />
+        <label class="obsidian-setting-row">
+            <span><strong>@Text["Settings.Starter.MaximumBst"]</strong><small>@Text["Redesign.Settings.MaximumBstDescription"]</small></span>
+            <input type="number" min="@StarterSelectionConstants.MinimumBaseStatTotal" max="@StarterSelectionConstants.MaximumBaseStatTotal" value="@MaximumStarterBaseStatTotal" placeholder="@Text["Settings.Starter.MaximumBstPlaceholder"]" aria-invalid="@((!string.IsNullOrEmpty(_maximumBstError)).ToString().ToLowerInvariant())" @onchange="HandleMaximumBstChanged" />
+        </label>
+        @if (_maximumBstError is not null)
         {
-            <p class="settings-status">@Text["Settings.Favorites.Searching"]</p>
+            <p class="obsidian-setting-error" role="alert">@_maximumBstError</p>
         }
-        else if (!string.IsNullOrWhiteSpace(_searchError))
+    </ObsidianSection>
+    <ObsidianSection Title="@Text["Settings.EvolutionGraph.Group"]" Icon="ObsidianIconKind.Branch">
+        <label class="obsidian-setting-row">
+            <span><strong>@Text["Settings.EvolutionGraph.ExpansionDepth"]</strong><small>@Text["Redesign.Settings.ExpansionDepthDescription"]</small></span>
+            <input type="number" min="@EvolutionGraphSettings.MinimumExpansionDepth" max="@EvolutionGraphSettings.MaximumExpansionDepth" value="@EvolutionGraphSettings.ExpansionDepth" aria-invalid="@((!string.IsNullOrEmpty(_graphDepthError)).ToString().ToLowerInvariant())" @onchange="HandleExpansionDepthChanged" />
+        </label>
+        @if (_graphDepthError is not null)
         {
-            <p class="settings-status">@_searchError</p>
+            <p class="obsidian-setting-error" role="alert">@_graphDepthError</p>
         }
-        else if (_matches.Count > 0)
+        <label class="obsidian-setting-row">
+            <span><strong>@Text["Settings.EvolutionGraph.NodesPerRow"]</strong><small>@Text["Redesign.Settings.NodesPerRowDescription"]</small></span>
+            <input type="number" min="@EvolutionGraphSettings.MinimumNodesPerRow" max="@EvolutionGraphSettings.MaximumNodesPerRow" value="@EvolutionGraphSettings.NodesPerRow" aria-invalid="@((!string.IsNullOrEmpty(_nodesPerRowError)).ToString().ToLowerInvariant())" @onchange="HandleNodesPerRowChanged" />
+        </label>
+        @if (_nodesPerRowError is not null)
         {
-            <div class="favorite-suggestions">
-                @foreach (PokemonSearchMatch match in _matches)
-                {
-                    <button type="button" disabled="@IsFavorite(match.SpeciesId)" @onclick="() => AddFavoriteAsync(match)">
-                        <span>@match.SpeciesName</span>
-                        <small>@(IsFavorite(match.SpeciesId) ? Text["Settings.Favorites.Added"] : Text["Settings.Favorites.Add"])</small>
-                    </button>
-                }
-            </div>
+            <p class="obsidian-setting-error" role="alert">@_nodesPerRowError</p>
         }
+    </ObsidianSection>
+    <ObsidianSection Title="@Text["Settings.Sprites.Group"]" Icon="ObsidianIconKind.Images">
+        <p class="obsidian-settings-description">@Text["Redesign.Settings.SpriteDescription"]</p>
+        <div class="obsidian-settings-actions">
+            <button class="obsidian-settings-button obsidian-settings-primary" type="button" disabled="@_spriteInstallPreparing" aria-busy="@((_spriteInstallPreparing && !_spriteReviewIncludesUnavailable).ToString().ToLowerInvariant())" @onclick="OpenSpriteReviewAsync">@(_spriteInstallPreparing && !_spriteReviewIncludesUnavailable ? Text["Settings.Sprites.Preparing"] : _spriteInstallRunning ? Text["Redesign.Settings.ViewProgress"] : Text["Settings.Sprites.Review"]) <span aria-hidden="true">↗</span></button>
+            <button class="obsidian-settings-link" type="button" disabled="@(_spriteInstallRunning || _spriteInstallPreparing)" aria-busy="@((_spriteInstallPreparing && _spriteReviewIncludesUnavailable).ToString().ToLowerInvariant())" @onclick="ReviewUnavailableSpritesAsync">@(_spriteInstallPreparing && _spriteReviewIncludesUnavailable ? Text["Settings.Sprites.Preparing"] : Text["Settings.Sprites.RecheckUnavailable"])</button>
+        </div>
+        <p class="obsidian-settings-warning">@Text["Redesign.Settings.KeepGameClosed"]</p>
+    </ObsidianSection>
+    <ObsidianSection Title="@Text["Settings.Favorites.FavoriteClause"]" Icon="ObsidianIconKind.Heart">
+        <HeadingContent><span class="obsidian-settings-count">@Text["Settings.Favorites.Count", _favorites.Count]</span></HeadingContent>
+        <ChildContent>
+            <p class="obsidian-settings-description">@Text["Redesign.Settings.FavoritesDescription"]</p>
+            <div class="obsidian-favorites-overview"><span>@FavoriteSummary</span><button class="obsidian-settings-button" type="button" @onclick="OpenFavorites">@Text["Redesign.Settings.Manage"] <span aria-hidden="true">›</span></button></div>
+        </ChildContent>
+    </ObsidianSection>
+    <p class="obsidian-settings-status" role="status">@(_graphSettingsSaved ? Text["Redesign.Settings.SavedLocally"] : Status ?? Text["Redesign.Settings.AutomaticChanges"])</p>
+</section>
 
-            <div class="favorite-list-heading">
-                <strong>@Text["Settings.Favorites.YourFavorites"]</strong>
-                <small>@Text["Settings.Favorites.Count", _favorites.Count]</small>
-            </div>
+@if (_favoritesOpen)
+{
+    <ObsidianDialog Title="@Text["Settings.Favorites.FavoriteClause"]" Eyebrow="@Text["Redesign.Settings.YourPokemon"]" Closed="CloseFavorites">
+        <div class="obsidian-settings-dialog">
+            <p>@Text["Settings.Favorites.Description"]</p>
+            <PokemonSearchField Placeholder="@Text["Settings.Favorites.SearchPlaceholder"]" SearchAsync="SearchFavoritesAsync" GetSearchErrorMessage="GetFavoriteSearchErrorMessage" IsSelected="IsFavorite" Selected="AddFavoriteAsync" />
+            <div class="obsidian-favorite-heading"><span>@Text["Settings.Favorites.YourFavorites"]</span><span>@Text["Settings.Favorites.Count", _favorites.Count]</span></div>
             @if (_favorites.Count == 0)
             {
-                <p class="favorite-empty">@Text["Settings.Favorites.Empty"]</p>
+                <p class="obsidian-settings-note">@Text["Settings.Favorites.Empty"]</p>
             }
             else
             {
-                <div class="favorite-list">
+                <div class="obsidian-favorite-list">
                     @foreach (PokemonSearchMatch favorite in PagedFavorites)
                     {
-                        <div>
-                            <span>@favorite.SpeciesName</span>
-                            <button type="button" @onclick="() => RemoveFavoriteAsync(favorite.SpeciesId)">@Text["Settings.Favorites.Remove"]</button>
-                        </div>
+                        <div @key="favorite.SpeciesId"><span>@favorite.SpeciesName</span><button type="button" @onclick="() => RemoveFavoriteAsync(favorite.SpeciesId)">@Text["Settings.Favorites.Remove"]</button></div>
                     }
                 </div>
                 @if (FavoritePageCount > 1)
                 {
-                    <nav class="favorite-pager" aria-label="@Text["Settings.Favorites.Pages"]">
-                        <button type="button" disabled="@(_favoritePage == 0)" @onclick="PreviousFavoritePage">@Text["Settings.Favorites.Previous"]</button>
-                        <span>@Text["Settings.Favorites.Page", _favoritePage + 1, FavoritePageCount]</span>
-                        <button type="button" disabled="@(_favoritePage + 1 >= FavoritePageCount)" @onclick="NextFavoritePage">@Text["Settings.Favorites.Next"]</button>
-                    </nav>
+                    <ObsidianPagingControls Label="@Text["Settings.Favorites.Pages"]" RangeText="@Text["Settings.Favorites.Page", _favoritePage + 1, FavoritePageCount]" PreviousDisabled="@(_favoritePage == 0)" NextDisabled="@(_favoritePage + 1 >= FavoritePageCount)" Previous="PreviousFavoritePage" Next="NextFavoritePage" />
                 }
             }
         </div>
-    </details>
+    </ObsidianDialog>
+}
 
-    @if (!string.IsNullOrWhiteSpace(Status))
-    {
-        <p class="settings-status" role="status">@Status</p>
-    }
-</section>
+@if (_spriteDialogOpen)
+{
+    <ObsidianDialog Title="@Text["Settings.Sprites.DownloadCustom"]" Eyebrow="@Text["Settings.Sprites.Group"]" Closed="CloseSpriteDialog">
+        <div class="obsidian-settings-dialog">
+            @if (_spriteInstallRunning && _spriteInstallProgress is not null)
+            {
+                <p>@Text["Settings.Sprites.DownloadDescription"]</p>
+                <progress aria-label="@Text["Redesign.Settings.SheetsChecked"]" max="@Math.Max(1, _spriteInstallProgress.TotalSheetCount)" value="@_spriteInstallProgress.CompletedSheetCount"></progress>
+                <div class="obsidian-settings-metric"><span>@Text["Redesign.Settings.SheetsChecked"]</span><strong>@_spriteInstallProgress.CompletedSheetCount / @_spriteInstallProgress.TotalSheetCount</strong></div>
+                <div class="obsidian-settings-metric"><span>@Text["Redesign.Settings.Downloaded"]</span><strong>@FormatBytes(_spriteInstallProgress.DownloadedBytes)</strong></div>
+                <div class="obsidian-settings-metric"><span>@Text["Redesign.Settings.FailedUnavailable"]</span><strong>@_spriteInstallProgress.FailedSheetCount · @_spriteInstallProgress.UnavailableSheetCount</strong></div>
+                <p class="obsidian-settings-note">@Text["Redesign.Settings.KeepGameClosed"]</p>
+                <div class="obsidian-settings-actions"><button class="obsidian-settings-button" type="button" @onclick="CancelSpriteInstall">@Text["Settings.Sprites.Cancel"]</button></div>
+            }
+            else if (_showSpriteInstallConfirmation && _spriteInstallPlan is not null)
+            {
+                <p>@Text["Settings.Sprites.Confirmation", _spriteInstallPlan.PendingSheetCount, _spriteInstallPlan.ExistingSheetCount, _spriteInstallPlan.TotalSheetCount]</p>
+                <div class="obsidian-settings-metric"><span>@Text["Redesign.Settings.Installed"]</span><strong>@_spriteInstallPlan.ExistingSheetCount / @_spriteInstallPlan.TotalSheetCount</strong></div>
+                <div class="obsidian-settings-metric"><span>@Text["Redesign.Settings.SheetsToCheck"]</span><strong>@_spriteInstallPlan.PendingSheetCount</strong></div>
+                @if (_spriteInstallPlan.UnavailableSheetCount > 0)
+                {
+                    <p class="obsidian-settings-note">@Text["Settings.Sprites.SkippedUnavailable", _spriteInstallPlan.UnavailableSheetCount]</p>
+                }
+                <p class="obsidian-settings-note">@Text["Settings.Sprites.RecheckDescription"]</p>
+                <p class="obsidian-settings-caution">@Text["Settings.Sprites.DownloadWarning"]</p>
+                <div class="obsidian-settings-actions">
+                    <button class="obsidian-settings-button obsidian-settings-primary" type="button" @onclick="StartSpriteInstallAsync">@Text["Settings.Sprites.Start"]</button>
+                    <button class="obsidian-settings-button" type="button" @onclick="CancelSpriteReview">@Text["Settings.Sprites.Cancel"]</button>
+                </div>
+            }
+            else
+            {
+                <p role="status">@(_spriteInstallPreparing ? Text["Settings.Sprites.Preparing"] : _spriteInstallStatus)</p>
+                <div class="obsidian-settings-actions">
+                    <button class="obsidian-settings-button obsidian-settings-primary" type="button" disabled="@_spriteInstallPreparing" @onclick="ReviewSpriteInstallAsync">@Text["Settings.Sprites.Review"]</button>
+                    <button class="obsidian-settings-link" type="button" disabled="@_spriteInstallPreparing" @onclick="ReviewUnavailableSpritesAsync">@Text["Settings.Sprites.RecheckUnavailable"]</button>
+                </div>
+                <p class="obsidian-settings-note">@Text["Settings.Sprites.RecheckDescription"]</p>
+            }
+        </div>
+    </ObsidianDialog>
+}

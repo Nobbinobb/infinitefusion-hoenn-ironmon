@@ -23,11 +23,19 @@ module Ironmon
           item = GameData::Item.try_get(item_id.to_sym)
           {
             "item_id" => item_id,
-            "item_name" => item ? item.name : item_id
+            "item_name" => item ? item.name : item_id,
+            "category" => tracker_area_item_category(item)
           }
         end
       }
     end
+  end
+
+  def self.tracker_area_item_category(item)
+    return nil if !item
+    category = item_result_category(item)
+    return category == :excluded || category == :uniform ?
+      "general_utility" : category.to_s
   end
 
   def self.tracker_area_resolved_item_ids(entry, recipe)

@@ -333,7 +333,7 @@ public partial class Home : IDisposable
     /// <param name="view">The tab's tracker view.</param>
     /// <returns>The tab CSS classes.</returns>
     private string GetTabClass(TrackerView view)
-        => view == _selectedView ? TrackerUiConstants.SelectedViewTabCssClass : TrackerUiConstants.ViewTabCssClass;
+        => view == _selectedView && !_accessOpen && !_settingsOpen && !_seedsOpen ? TrackerUiConstants.SelectedViewTabCssClass : TrackerUiConstants.ViewTabCssClass;
 
     /// <summary>
     /// Gets the concise connection state shown in the tracker header.

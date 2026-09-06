@@ -36,6 +36,11 @@ public static class TrackerCommands
     public const string UseBattleItem = "use_battle_item";
 
     /// <summary>
+    /// Gets the command selecting a revealed, eligible starter in the active scene.
+    /// </summary>
+    public const string SelectStarter = "select_starter";
+
+    /// <summary>
     /// Gets the connected-game normal-Pokemon search command used by Favorite Clause settings.
     /// </summary>
     public const string FavoritePokemonSearch = "favorite_pokemon_search";

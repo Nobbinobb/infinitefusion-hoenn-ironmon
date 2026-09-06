@@ -21,6 +21,8 @@ module Ironmon
     end
     areas = catalog_areas.map do |area|
       encounter_entries = tracker_area_encounter_metadata(area, recipe)
+      encounter_total = category == "encounter" ?
+        tracker_area_encounter_total(encounter_entries, recipe) : 0
       trainer_defeated = if category == "trainer" && !archived
                            area["trainers"].count do |entry|
                              tracker_area_event_completed?(entry)
@@ -42,8 +44,10 @@ module Ironmon
         "trainer_total" => category == "trainer" ?
           area["trainers"].length : 0,
         "trainer_defeated" => trainer_defeated,
-        "encounter_total" => category == "encounter" ?
-          tracker_area_encounter_total(encounter_entries, recipe) : 0,
+        "encounter_total" => encounter_total,
+        "encounter_slot_total" => category == "encounter" ? encounter_entries.length : 0,
+        "encounter_fusion_total" => category == "encounter" ?
+          encounter_total - encounter_entries.length : 0,
         "encountered" => 0,
         "item_total" => category == "item" ? area["items"].length : 0,
         "items_collected" => items_collected

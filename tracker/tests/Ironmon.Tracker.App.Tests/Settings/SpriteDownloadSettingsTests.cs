@@ -66,6 +66,7 @@ public sealed class SpriteDownloadSettingsTests
             CapturingActivator activator = new();
             ServiceCollection services = new();
             services.AddLogging();
+            services.AddSingleton<Microsoft.JSInterop.IJSRuntime, SettingsJsRuntime>();
             services.AddSingleton(state);
             services.AddSingleton(requests);
             services.AddSingleton(installer);

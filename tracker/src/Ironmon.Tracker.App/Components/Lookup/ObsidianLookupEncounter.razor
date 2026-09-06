@@ -1,0 +1,38 @@
+@if (Encounter is not null)
+{
+    <article class="obsidian-lookup-entry">
+        @if (Encounter.DetailsRevealed)
+        {
+            <PokemonSprite GameRoot="@GameRoot" SpritePath="@Encounter.SpritePath" Label="@Identity" Size="49" FitVisibleBounds="true" CssClass="obsidian-lookup-sprite" />
+        }
+        else
+        {
+            <span class="obsidian-lookup-mystery" aria-hidden="true">?</span>
+        }
+        <div class="obsidian-lookup-copy">
+            <small>@Text["Lookup.Areas.Slot", Encounter.Slot]</small>
+            <strong>@(Encounter.DetailsRevealed ? Identity : Text["Lookup.Areas.UnknownPokemon"])</strong>
+            <p>@LevelRange(Encounter.MinimumLevel, Encounter.MaximumLevel)@(Encounter.DetailsRevealed && Encounter.IndependentFusion ? $" · {Text["Lookup.Areas.IndependentFusion"]}" : null)</p>
+        </div>
+        <div class="obsidian-lookup-chance"><b>@Text["Lookup.Areas.Probability", Encounter.ProbabilityPercent]</b><ObsidianStatus Complete="Encounter.Encountered" Label="@(Encounter.Encountered ? Text["Lookup.Areas.Encountered"] : Text["Lookup.Areas.NotEncountered"])" /></div>
+    </article>
+}
+else if (Fusion is not null)
+{
+    <article class="obsidian-lookup-entry obsidian-lookup-fusion">
+        @if (Fusion.DetailsRevealed)
+        {
+            <PokemonSprite GameRoot="@GameRoot" SpritePath="@Fusion.SpritePath" Label="@(Fusion.SpeciesName ?? Fusion.SpeciesId ?? string.Empty)" Size="49" FitVisibleBounds="true" CssClass="obsidian-lookup-sprite" />
+        }
+        else
+        {
+            <span class="obsidian-lookup-mystery" aria-hidden="true">?</span>
+        }
+        <div class="obsidian-lookup-copy">
+            <div class="obsidian-lookup-fusion-title"><strong>@(Fusion.DetailsRevealed ? Fusion.SpeciesName ?? Fusion.SpeciesId : Text["Lookup.Areas.UnknownPokemon"])</strong><small>@(Fusion.Encountered ? Text["Lookup.Areas.EncounteredDerivedFusion"] : Text["Lookup.Areas.DerivedFusion"])</small></div>
+            <p>@Text["Lookup.Areas.FusionSources", Fusion.FirstEncounterType, Fusion.FirstSlot, Fusion.SecondEncounterType, Fusion.SecondSlot]</p>
+            <p>@LevelRange(Fusion.MinimumLevel, Fusion.MaximumLevel) · @Origin</p>
+            <p class="obsidian-lookup-roll">@Text["Lookup.Areas.FusionRoll", Fusion.FusionChancePercent]</p>
+        </div>
+    </article>
+}

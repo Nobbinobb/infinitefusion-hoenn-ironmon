@@ -1,54 +1,57 @@
-<section class="tracker-settings seeded-run-page" aria-label="@Text["Seeds.Page.Title"]">
-    <header class="settings-heading">
-        <div>
-            <p class="card-kicker">@Text["Seeds.Page.Kicker"]</p>
-            <h2>@Text["Seeds.Page.Title"]</h2>
-        </div>
+<section class="obsidian-sharing" aria-label="@Text["Seeds.Page.Title"]">
+    <header class="obsidian-settings-heading">
+        <div><p class="card-kicker">@Text["Seeds.Page.Kicker"]</p><h2>@Text["Seeds.Page.Title"]</h2></div>
     </header>
-
-    <div class="access-state @(CanUseActiveRun ? "active" : "none")" role="status">
-        <strong>@(CanUseActiveRun ? Text["Seeds.State.Available"] : Text["Seeds.State.Unavailable"])</strong>
-        <span>@(CanUseActiveRun ? Text["Seeds.State.AvailableDescription"] : Text["Seeds.State.UnavailableDescription"])</span>
-    </div>
-
-    <SeedTokenExportPanel RecipeProvider="ExportRecipeAsync"
-                          Title="@Text["Seeds.Export.Title"]"
-                          Description="@Text["Seeds.Export.Description"]"
-                          Disabled="@(OperationLocked || !CanUseActiveRun)"
-                          BusyChanged="HandleExportBusyChanged" />
-
-    <section class="seed-action-card">
+    <div class="obsidian-sharing-availability @(CanUseActiveRun ? "available" : null)" role="status">
+        <ObsidianIcon Kind="@(CanUseActiveRun ? ObsidianIconKind.CheckCircle : ObsidianIconKind.Circle)" />
         <div>
-            <strong>@Text["Seeds.Import.Title"]</strong>
-            <small>@Text["Seeds.Import.Description"]</small>
+            <strong>@(CanUseActiveRun ? Text["Seeds.State.Available"] : Text["Seeds.State.Unavailable"])</strong>
+            <p>@(CanUseActiveRun ? Text["Redesign.Seeds.AvailableDescription"] : Text["Seeds.State.UnavailableDescription"])</p>
         </div>
-        <textarea value="@_importToken" @oninput="UpdateImportToken" rows="4" maxlength="@SeedTokenConstants.MaximumTokenLength" placeholder="@Text["Seeds.Import.Placeholder"]"></textarea>
-        <div class="access-input-actions">
-            <label class="access-file-button">
-                @Text["Seeds.Import.LoadFile"]
-                <InputFile OnChange="LoadImportFileAsync" accept=".ironmon-seed" />
+    </div>
+    <SeedTokenExportPanel RecipeProvider="ExportRecipeAsync" Title="@Text["Seeds.Export.Title"]" Description="@Text["Redesign.Seeds.ExportDescription"]" Disabled="@(OperationLocked || !CanUseActiveRun)" BusyChanged="HandleExportBusyChanged" />
+    <ObsidianSection Title="@Text["Seeds.Import.Title"]" Icon="ObsidianIconKind.Download">
+        <p class="obsidian-settings-description">@Text["Redesign.Seeds.ImportDescription"]</p>
+        <textarea class="obsidian-seed-token" value="@_importToken" @oninput="UpdateImportToken" rows="4" maxlength="@SeedTokenConstants.MaximumTokenLength" placeholder="@Text["Seeds.Import.Placeholder"]" aria-label="@Text["Seeds.Import.Placeholder"]" spellcheck="false" disabled="@OperationLocked"></textarea>
+        <div class="obsidian-settings-actions obsidian-sharing-input-actions">
+            <label class="obsidian-settings-button obsidian-seed-file">
+                <ObsidianIcon Kind="ObsidianIconKind.FolderOpen" />@Text["Seeds.Import.LoadFile"]
+                <InputFile OnChange="LoadImportFileAsync" accept="@SeedTokenConstants.FileExtension" disabled="@OperationLocked" aria-label="@Text["Seeds.Import.LoadFile"]" />
             </label>
-            <button type="button" class="access-primary" disabled="@(OperationLocked || !CanUseActiveRun || string.IsNullOrWhiteSpace(_importToken))" @onclick="ValidateImportAsync">@Text["Seeds.Import.Validate"]</button>
+            <button type="button" class="obsidian-settings-button obsidian-settings-primary" disabled="@(OperationLocked || !CanUseActiveRun || string.IsNullOrWhiteSpace(_importToken))" @onclick="ValidateImportAsync">@(_busy ? Text["Redesign.Seeds.Working"] : Text["Seeds.Import.Validate"])<ObsidianIcon Kind="ObsidianIconKind.ArrowRight" /></button>
         </div>
-    </section>
-
-    @if (_validatedToken is not null)
+        <p class="obsidian-sharing-note">@Text["Redesign.Seeds.ValidationNote"]</p>
+    </ObsidianSection>
+    @if (_validatedToken is null && !string.IsNullOrWhiteSpace(_operationMessage))
     {
-        <section class="seed-confirmation">
-            <strong>@Text["Seeds.Confirm.Title"]</strong>
-            <dl class="access-details">
-                <div><dt>@Text["Seeds.Details.Seed"]</dt><dd><code>@_validatedToken.Seed</code></dd></div>
+        <p class="obsidian-sharing-message @(_operationSucceeded ? "success" : "error")" role="status">@_operationMessage</p>
+    }
+</section>
+@if (_validatedToken is not null)
+{
+    <div class="obsidian-sharing-dialog">
+        <ObsidianDialog Title="@Text["Seeds.Confirm.Title"]" Eyebrow="@Text["Redesign.Seeds.SharedRun"]" Closed="CloseImportDialog">
+            <p class="obsidian-sharing-validated"><ObsidianIcon Kind="ObsidianIconKind.CheckCircle" />@Text["Redesign.Seeds.Recognized"]</p>
+            <dl class="obsidian-sharing-details">
+                <div><dt>@Text["Seeds.Details.Seed"]</dt><dd>@_validatedToken.Seed</dd></div>
                 <div><dt>@Text["Seeds.Details.Mode"]</dt><dd>@_validatedToken.DataMode</dd></div>
                 <div><dt>@Text["Seeds.Details.GameVersion"]</dt><dd>@_validatedToken.GameVersion</dd></div>
                 <div><dt>@Text["Seeds.Details.IronmonVersion"]</dt><dd>@_validatedToken.IronmonVersion</dd></div>
             </dl>
-            <p class="access-warning">@Text["Seeds.Confirm.Warning"]</p>
-            <button type="button" class="seed-destructive" disabled="@(OperationLocked || !CanUseActiveRun)" @onclick="ConfirmImportAsync">@Text["Seeds.Confirm.Button"]</button>
-        </section>
-    }
-
-    @if (!string.IsNullOrWhiteSpace(_operationMessage))
-    {
-        <p class="access-message @(_operationSucceeded ? "success" : "error")" role="status">@_operationMessage</p>
-    }
-</section>
+            <p class="obsidian-sharing-note">@Text["Redesign.Seeds.CompatibilityNote"]</p>
+            <p class="obsidian-sharing-warning">@Text["Seeds.Confirm.Warning"]</p>
+            <div class="obsidian-settings-actions">
+                <button type="button" class="obsidian-settings-button obsidian-sharing-danger" disabled="@(OperationLocked || !CanUseActiveRun)" @onclick="ConfirmImportAsync">@(_busy ? Text["Redesign.Seeds.Working"] : Text["Seeds.Confirm.Button"])</button>
+                <button type="button" class="obsidian-settings-button" disabled="@OperationLocked" @onclick="CloseImportDialog">@Text["Settings.Sprites.Cancel"]</button>
+            </div>
+            @if (!CanUseActiveRun)
+            {
+                <p class="obsidian-sharing-message error" role="status">@Text["Seeds.State.UnavailableDescription"]</p>
+            }
+            @if (!_operationSucceeded && !string.IsNullOrWhiteSpace(_operationMessage))
+            {
+                <p class="obsidian-sharing-message error" role="status">@_operationMessage</p>
+            }
+        </ObsidianDialog>
+    </div>
+}

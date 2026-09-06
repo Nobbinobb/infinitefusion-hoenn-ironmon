@@ -1,0 +1,4 @@
+@if (Total > State.PageSize)
+{
+    <ObsidianPagingControls Label="@Label" RangeText="@GetRange()" PreviousDisabled="@(Disabled || !State.HasPrevious)" NextDisabled="@(Disabled || !State.HasNext(Total))" Previous="Previous" Next="Next" />
+}

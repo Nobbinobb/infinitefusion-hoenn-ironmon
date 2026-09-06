@@ -1,0 +1,6 @@
+<ObsidianStatSection Heading="@Text["Redesign.Stats"]" Stages="Stages">
+    @foreach (TrackerStatValue stat in Stats)
+    {
+        <div><span>@stat.Label</span><strong class="@GetColor(stat.Adjustment)">@stat.Value</strong></div>
+    }
+</ObsidianStatSection>

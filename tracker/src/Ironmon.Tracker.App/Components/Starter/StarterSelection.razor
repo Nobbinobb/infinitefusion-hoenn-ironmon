@@ -1,44 +1,24 @@
-<section class="starter-selection" role="tabpanel" aria-label="@Text["Starter.Selection.StarterSelection"]">
-    <header class="starter-selection-heading">
-        <div>
-            <p class="card-kicker">@Text["Starter.Selection.RunStart"]</p>
-            <h2>@Text["Starter.Selection.ChooseStarter"]</h2>
-        </div>
-        <p>@Text["Starter.Selection.RevealInstructions"]</p>
+<section class="obsidian obsidian-starters" role="tabpanel" aria-label="@Text["Starter.Selection.StarterSelection"]">
+    <header class="obsidian-settings-heading">
+        <div><p class="card-kicker">@Text[Selection.AutoSelect ? "Starter.Selection.AutoHeading" : "Starter.Selection.ManualHeading"]</p><h2>@Text["Starter.Selection.ChooseStarter"]</h2></div>
     </header>
-
-    <div class="starter-choices">
+    <p class="starter-instructions">@Text[Selection.AutoSelect ? Selection.Choices.Any(choice => choice.CanSelect) ? "Starter.Selection.FavoriteInstructions" : "Starter.Selection.AutomaticInstructions" : "Starter.Selection.ManualInstructions"]</p>
+    <div class="starter-limit"><span>@Text["Starter.Selection.Choices"]</span>@if (Selection.MaximumBaseStatTotal is int ceiling) { <span>@Text["Starter.Selection.Ceiling"] <strong>@ceiling</strong></span> }</div>
+    <div class="starter-cards">
         @foreach (StarterChoiceSnapshot choice in Selection.Choices.OrderBy(choice => choice.Index))
         {
-            <article class="@GetChoiceClass(choice)" aria-label="@GetChoiceLabel(choice)">
-                @if (Selection.RandomPickIndex == choice.Index)
-                {
-                    <span class="starter-random-pick">@Text["Starter.Selection.RandomPick"]</span>
-                }
-                @if (choice.Revealed && choice.Favorite)
-                {
-                    <span class="starter-favorite">@Text["Starter.Selection.Favorite"]</span>
-                }
-                @if (choice.Revealed && Selection.MaximumBaseStatTotal is not null)
-                {
-                    <span class="starter-eligibility">@(choice.BstEligible ? Text["Starter.Selection.Eligible"] : Text["Starter.Selection.Ineligible"])</span>
-                }
-                <PokemonSprite GameRoot="@GameRoot"
-                               SpritePath="@(choice.Revealed ? choice.SpritePath : null)"
-                               Label="@(choice.SpeciesName ?? Text["Starter.Selection.Hidden"])"
-                               Size="86"
-                               CssClass="starter-sprite" />
-                @if (choice.Revealed)
-                {
-                    <strong>@choice.SpeciesName</strong>
-                    <small>BST <b>@choice.BaseStatTotal</b></small>
-                }
-                else
-                {
-                    <strong>@Text["Starter.Selection.Hidden"]</strong>
-                    <small>@Text["Starter.Selection.OpenBall"]</small>
-                }
-            </article>
+            <StarterChoiceCard @key="choice.Index" Choice="choice" RandomPick="@(Selection.RandomPickIndex == choice.Index)" Ceiling="Selection.MaximumBaseStatTotal" AutoSelect="Selection.AutoSelect" GameRoot="@GameRoot" CanSelect="CanChoose(choice)" Selected="() => RequestChoice(choice)" />
         }
     </div>
+    @if (_status is not null) { <p class="starter-request-status" role="status">@_status</p> }
 </section>
+@if (_pending is not null)
+{
+    <ObsidianDialog Title="@Text["Starter.Selection.ConfirmTitle", _pending.SpeciesName ?? string.Empty]" Eyebrow="@Text["Starter.Selection.StarterSelection"]" Closed="CancelChoice">
+        <p>@Text["Starter.Selection.ConfirmDescription", _pending.SpeciesName ?? string.Empty]</p>
+        <div class="starter-confirm-actions">
+            <button type="button" class="obsidian-button" disabled="@_busy" @onclick="CancelChoice">@Text["Development.Cancel"]</button>
+            <button type="button" class="obsidian-button obsidian-settings-primary" disabled="@(!CanChoose(_pending))" @onclick="ConfirmChoiceAsync">@Text["Starter.Selection.ChooseNamed", _pending.SpeciesName ?? string.Empty]</button>
+        </div>
+    </ObsidianDialog>
+}

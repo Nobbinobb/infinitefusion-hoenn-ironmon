@@ -1,0 +1,28 @@
+<article class="obsidian-lookup-trainer">
+    <header><strong>@Trainer.TrainerType @Trainer.TrainerName</strong><ObsidianStatus Complete="Trainer.Defeated" Label="@(Trainer.Defeated ? Text["Lookup.Areas.Defeated"] : Text["Lookup.Areas.NotDefeated"])" /></header>
+    @if (Trainer.DetailsRevealed && Trainer.Party.Count > 0)
+    {
+        <div class="obsidian-lookup-party">
+            @foreach (AreaTrainerPokemonPayload pokemon in Trainer.Party)
+            {
+                <div class="obsidian-lookup-party-member">
+                    <PokemonSprite GameRoot="@GameRoot" SpritePath="@pokemon.SpritePath" Label="@pokemon.SpeciesName" Size="49" FitVisibleBounds="true" CssClass="obsidian-lookup-sprite" />
+                    <div><strong>@pokemon.SpeciesName</strong><small>@Text["Lookup.Areas.Level", pokemon.Level]</small></div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <p class="obsidian-lookup-party-count">@Text["Lookup.Areas.PokemonCount", Trainer.PartySize]</p>
+        <div class="obsidian-lookup-party">
+            @foreach (int slot in Enumerable.Range(1, Trainer.PartySize))
+            {
+                <div class="obsidian-lookup-party-member">
+                    <span class="obsidian-lookup-mystery" aria-hidden="true">?</span>
+                    <div><strong>@Text["Lookup.Areas.UnknownPokemon"]</strong><small>@Text["Lookup.Areas.Slot", slot]</small></div>
+                </div>
+            }
+        </div>
+    }
+</article>

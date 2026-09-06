@@ -1,20 +1,20 @@
 <section class="diagnostic-tools" aria-label="@Text["Diagnostics.Page.Title"]">
-    <nav class="diagnostic-tool-tabs" role="tablist" aria-label="@Text["Diagnostics.Page.Tabs"]">
+    <nav class="obsidian diagnostic-tool-tabs" role="tablist" aria-label="@Text["Diagnostics.Page.Tabs"]">
         <button type="button"
                 class="@GetTabClass(false)"
                 role="tab"
-                aria-selected="@(!_toolsSelected)"
+                aria-selected="@(!_toolsSelected ? "true" : "false")"
                 @onclick="ShowAccess">
-            @Text["Diagnostics.Page.Access"]
+            <ObsidianIcon Kind="ObsidianIconKind.Key" />@Text["Diagnostics.Page.Access"]
         </button>
         @if (ToolsAvailable)
         {
             <button type="button"
                     class="@GetTabClass(true)"
                     role="tab"
-                    aria-selected="@_toolsSelected"
+                    aria-selected="@(_toolsSelected ? "true" : "false")"
                     @onclick="ShowTools">
-                @Text["Diagnostics.Page.Tools"]
+                <ObsidianIcon Kind="ObsidianIconKind.Wrench" />@Text["Diagnostics.Page.Tools"]
             </button>
         }
     </nav>

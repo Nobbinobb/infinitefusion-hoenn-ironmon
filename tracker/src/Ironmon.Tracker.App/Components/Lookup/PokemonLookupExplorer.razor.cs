@@ -22,6 +22,7 @@ public partial class PokemonLookupExplorer : IDisposable
     private int _matchTotal;
     private bool _loading;
     private bool _searched;
+    private bool _showDetail;
     private bool _observedDebugMode;
     private CompletedRunRecipePayload? _observedRecipe;
     private string? _observedRequestedSpeciesId;
@@ -83,6 +84,7 @@ public partial class PokemonLookupExplorer : IDisposable
             CancelRequest();
             _matches = [];
             _lookup = null;
+            _showDetail = false;
             _currentSpeciesId = null;
             _history.Clear();
             _searchPagination.Reset();
@@ -143,6 +145,7 @@ public partial class PokemonLookupExplorer : IDisposable
         _searched = false;
         _error = null;
         _lookup = null;
+        _showDetail = false;
         if (pageIndex == 0)
         {
             _currentSpeciesId = null;
@@ -277,7 +280,10 @@ public partial class PokemonLookupExplorer : IDisposable
     private async Task NavigateToPokemonAsync(string speciesId)
     {
         if (speciesId == _currentSpeciesId)
+        {
+            _showDetail = true;
             return;
+        }
 
         string? previousSpeciesId = _currentSpeciesId;
         PokemonSearchMatch? match = _matches.FirstOrDefault(candidate => candidate.SpeciesId == speciesId);
@@ -376,7 +382,7 @@ public partial class PokemonLookupExplorer : IDisposable
 
             _lookup = lookup;
             _currentSpeciesId = lookup.Identity.SpeciesId;
-            _matches = [];
+            _showDetail = true;
             StartLookupObtainabilityRefresh();
             return true;
         }
@@ -555,20 +561,6 @@ public partial class PokemonLookupExplorer : IDisposable
     }
 
     /// <summary>
-    /// Gets whether an earlier search page exists.
-    /// </summary>
-    /// <returns>Whether the current page starts after the first match.</returns>
-    private bool HasPreviousSearchPage()
-        => _searchPagination.HasPrevious;
-
-    /// <summary>
-    /// Gets whether a later search page exists.
-    /// </summary>
-    /// <returns>Whether matches remain after the current page.</returns>
-    private bool HasNextSearchPage()
-        => _searchPagination.HasNext(_matchTotal, _matches.Count);
-
-    /// <summary>
     /// Loads the previous search page.
     /// </summary>
     /// <returns>A task representing the search.</returns>
@@ -581,16 +573,6 @@ public partial class PokemonLookupExplorer : IDisposable
     /// <returns>A task representing the search.</returns>
     private Task NextSearchPageAsync()
         => SearchPageAsync(_searchPagination.PageIndex + 1);
-
-    /// <summary>
-    /// Formats the inclusive visible result range.
-    /// </summary>
-    /// <returns>The visible range and total count.</returns>
-    private string GetSearchRangeText()
-    {
-        (int first, int last) = _searchPagination.GetRange(_matchTotal, _matches.Count);
-        return Text["Lookup.Search.ResultRange", first, last, _matchTotal];
-    }
 
     /// <summary>
     /// Gets whether an exception represents an expected request failure.

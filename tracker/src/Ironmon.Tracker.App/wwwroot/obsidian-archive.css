@@ -1,0 +1,80 @@
+.obsidian-archive .obsidian-archive-content{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#48556c transparent;padding-right:2px}
+.obsidian-archive .obsidian-archive-surface{background:radial-gradient(ellipse at 8% 0%,#1b2330,transparent 70%),#11161e;border:1px solid #2a3544;border-radius:11px;margin-bottom:12px;overflow:hidden}
+.obsidian-archive .obsidian-archive-disclosure{list-style:none;display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer}
+.obsidian-archive .obsidian-archive-disclosure::-webkit-details-marker{display:none}
+.obsidian-archive .obsidian-archive-disclosure>svg:first-child{color:#b0a3ff}
+.obsidian-archive .obsidian-archive-disclosure>span{flex:1}
+.obsidian-archive .obsidian-archive-disclosure strong{display:block;font-size:14px;font-weight:600}
+.obsidian-archive .obsidian-archive-disclosure small{color:#9eafc6;font-size:11px}
+.obsidian-archive .obsidian-archive-disclosure>.obsidian-line-icon:last-child{width:14px;color:#b0a3ff;transition:transform .12s}
+.obsidian-archive details[open]>.obsidian-archive-disclosure>.obsidian-line-icon:last-child{transform:rotate(90deg)}
+.obsidian-archive .obsidian-archive-history-body{padding:0 14px 14px}
+.obsidian-archive .obsidian-archive-file-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 11px}
+.obsidian-archive .obsidian-archive-file-tabs button{padding:5px 12px;border:1px solid #354257;background:#151d29;border-radius:6px;color:#aebed4;font-size:12px}
+.obsidian-archive .obsidian-archive-file-tabs button[aria-selected=true]{color:#dcd4ff;border-color:#8276b9;background:#28273b}
+.obsidian-archive .obsidian-archive-counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.obsidian-archive .obsidian-archive-counts strong{display:block;font-size:21px;font-weight:600;letter-spacing:-.5px;font-variant-numeric:tabular-nums;color:#e7ecf7}
+.obsidian-archive .obsidian-archive-counts small{color:#acbad0;font-size:11px}
+.obsidian-archive .obsidian-archive-counts .obsidian-archive-lost strong{color:#ff819d}
+.obsidian-archive .obsidian-archive-counts .obsidian-archive-won strong{color:#55eaa5}
+.obsidian-archive .obsidian-archive-completed{margin:0 0 12px}
+.obsidian-archive .obsidian-archive-completed>.obsidian-archive-disclosure{padding:0 0 10px}
+.obsidian-archive .obsidian-archive-run-select{width:100%;background:#111823;border:1px solid #364459;color:#e4eaf5;border-radius:8px;padding:10px 32px 10px 12px;font-size:13px;min-width:0}
+.obsidian-archive .obsidian-archive-label{display:block;font-size:11px;color:#a8bad2;margin-bottom:5px}
+.obsidian-archive .obsidian-archive-run-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 13px}
+.obsidian-archive .obsidian-archive-run-context{font-size:11px;color:#acbad0;display:flex;gap:6px;align-items:center}
+.obsidian-archive .obsidian-archive-run-context svg{width:13px;color:#b0a3ff}
+.obsidian-archive .obsidian-archive-tabs{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px}
+.obsidian-archive .obsidian-archive-tabs button{display:flex;gap:6px;justify-content:center;align-items:center}
+.obsidian-archive .obsidian-archive-tabs svg{width:14px;height:14px}
+.obsidian-archive .obsidian-archive-stats{padding:14px}
+.obsidian-archive .obsidian-archive-section-heading{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.obsidian-archive .obsidian-archive-section-heading h3{font-size:16px;font-weight:600;margin:0;flex:1}
+.obsidian-archive .obsidian-archive-section-heading small{font-size:11px;color:#a6b6cc}
+.obsidian-archive .obsidian-archive-stat-tabs{display:flex;gap:16px;border-bottom:1px solid #2a3544;margin-bottom:14px}
+.obsidian-archive .obsidian-archive-stat-tabs button{padding:0 2px 9px;background:none;border:0;border-bottom:2px solid transparent;color:#a7b8cf;font-size:12px}
+.obsidian-archive .obsidian-archive-stat-tabs button[aria-selected=true]{border-bottom-color:#b0a3ff;color:#e4ddff}
+.obsidian-archive .obsidian-archive-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 18px}
+.obsidian-archive .obsidian-archive-overview>.obsidian-metric{display:flex;align-items:center;gap:11px;min-width:0}
+.obsidian-archive .obsidian-archive-overview strong{display:block;font-size:21px;font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums}
+.obsidian-archive .obsidian-archive-overview small{display:block;font-size:11px;color:#aabbd2;margin-top:3px}
+.obsidian-archive .obsidian-archive-pairs{margin:0}
+.obsidian-archive .obsidian-archive-pair{display:flex;gap:15px;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #2a354480}
+.obsidian-archive .obsidian-archive-pair:first-child{padding-top:0}
+.obsidian-archive .obsidian-archive-pair:last-child{border-bottom:0}
+.obsidian-archive .obsidian-archive-pair dt{color:#afbdd1;font-size:12px;flex:1;min-width:0}
+.obsidian-archive .obsidian-archive-pair dd{margin:0;text-align:right;font-size:13px;font-weight:600;max-width:62%;overflow-wrap:anywhere}
+.obsidian-archive .obsidian-archive-pair dd small{display:block;color:#9facbf;font-size:11px;font-weight:400;margin-top:2px}
+.obsidian-archive .obsidian-archive-item-usage{border-top:1px solid #2a3544;margin:0;padding:0;list-style:none}
+.obsidian-archive .obsidian-archive-used-item{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #2a354480}
+.obsidian-archive .obsidian-archive-used-item:last-child{border-bottom:0;padding-bottom:0}
+.obsidian-archive .obsidian-archive-used-item-icon{display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;border-radius:9px;background:#55eaa50d;color:#55eaa5}
+.obsidian-archive .obsidian-archive-used-item-icon svg{width:22px;height:22px}
+.obsidian-archive .obsidian-archive-used-item-name{flex:1;min-width:0;font-size:16px;font-weight:600;color:#e4ebf7;overflow-wrap:anywhere}
+.obsidian-archive .obsidian-archive-used-item-count{font-size:19px;font-weight:600;color:#dfe8f7;font-variant-numeric:tabular-nums}
+.obsidian-archive .obsidian-archive-note{color:#a2b3c9;font-size:11px;line-height:1.6;margin:10px 0 0}
+.obsidian-archive .obsidian-archive-items-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:15px}
+.obsidian-archive .obsidian-archive-items-totals strong{display:block;font-size:24px;font-weight:600}
+.obsidian-archive .obsidian-archive-items-totals small{display:block;color:#a6b7ce;font-size:11px}
+.tracker-shell.obsidian:has(>.obsidian-archive) { height:100vh; min-height:0; overflow:hidden; }
+.obsidian-archive { display:flex; flex-direction:column; min-height:0; min-width:0; color:#edf1f8; }
+.obsidian-archive [hidden] { display:none!important; }
+.obsidian-archive .obsidian-settings-heading { margin:0 1px 14px; }
+.obsidian-archive .obsidian-archive-tabs { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.obsidian-archive .obsidian-archive-tabs button { display:flex; align-items:center; justify-content:center; gap:6px; }
+.obsidian-archive .obsidian-archive-tabs .obsidian-line-icon { width:14px; height:14px; }
+.obsidian-archive .obsidian-archive-disclosure>.obsidian-line-icon:last-child { width:14px; color:#b0a3ff; }
+.obsidian-archive details[open]>.obsidian-archive-disclosure>.obsidian-line-icon:last-child { transform:rotate(90deg); }
+.obsidian-archive .obsidian-archive-label .obsidian-archive-run-select { margin-top:5px; }
+.obsidian-archive .obsidian-archive-export { text-align:right; }
+.obsidian-archive .obsidian-archive-export .obsidian-button { white-space:nowrap; }
+.obsidian-metric { display:flex; align-items:center; gap:11px; min-width:0; }
+.obsidian-metric-icon { width:34px; height:34px; display:grid; place-items:center; border-radius:8px; color:#b5c8e3; background:#202939; flex-shrink:0; }
+.obsidian-metric strong { display:block; font-size:21px; font-weight:600; line-height:1.2; font-variant-numeric:tabular-nums; }
+.obsidian-metric small { display:block; margin-top:3px; color:#aabbd2; font-size:11px; }
+@media(max-width:390px) {
+    .obsidian-archive .obsidian-archive-stats { padding:12px; }
+    .obsidian-archive .obsidian-archive-counts { gap:7px; }
+    .obsidian-archive .obsidian-archive-counts strong { font-size:19px; }
+    .obsidian-archive .obsidian-archive-tabs button { font-size:11px; gap:4px; }
+}

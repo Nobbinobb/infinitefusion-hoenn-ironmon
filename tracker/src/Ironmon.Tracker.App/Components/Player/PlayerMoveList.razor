@@ -1,13 +1,5 @@
 <div class="move-list" aria-label="@Text["Player.Moves.CurrentPokemonMoves"]">
-    <div class="move-table-heading">
-        <div class="move-table-title">
-            <p class="section-label">@Text["Player.Moves.MovesHeading"]</p>
-            <span>@FormatLearnsetProgress()</span>
-        </div>
-        <span>@Text["Common.Move.PowerHeader"]</span>
-        <span>@Text["Common.Move.PpHeader"]</span>
-        <span>@Text["Common.Move.AccuracyHeader"]</span>
-    </div>
+    <MoveTableHeading Title="@Text["Player.Moves.MovesHeading"]"><span>@FormatLearnsetProgress()</span></MoveTableHeading>
     @foreach (int slot in _moveSlots)
     {
         PlayerMoveSnapshot? move = Player?.Moves.ElementAtOrDefault(slot - 1);
@@ -40,7 +32,8 @@
 
 @if (_selectedMove is not null)
 {
-    <MoveDetailPanel Name="@_selectedMove.Name"
+
+    <MoveDetailPanel Stab="@MovePresentation.HasStab(_selectedMove.Type, _selectedMove.Category, Player?.Types)" Name="@_selectedMove.Name"
                      Type="@_selectedMove.Type"
                      Category="@_selectedMove.Category"
                      Description="@_selectedMove.Description"

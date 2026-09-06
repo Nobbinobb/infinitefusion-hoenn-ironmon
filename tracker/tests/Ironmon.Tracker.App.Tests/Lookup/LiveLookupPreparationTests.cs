@@ -46,6 +46,7 @@ public sealed class LiveLookupPreparationTests
         state.Publish(TrackerConnectionStatus.Connected, game, new GameCurrentStatePayload(true, _runId, null, 0));
         ServiceCollection services = new();
         services.AddLogging();
+        services.AddSingleton<Microsoft.JSInterop.IJSRuntime, Ironmon.Tracker.App.Tests.Settings.SettingsJsRuntime>();
         services.AddSingleton(state);
         services.AddSingleton(requests);
         services.AddSingleton(discoveries);
@@ -105,7 +106,9 @@ public sealed class LiveLookupPreparationTests
         /// </summary>
         public LocalizedString this[string name, params object[] arguments] => new(name, string.Format(this[name].Value, arguments));
 
-        /// <summary>Provides the unused resource enumeration contract.</summary>
+        /// <summary>
+        /// Provides the unused resource enumeration contract.
+        /// </summary>
         /// <param name="includeParentCultures">Whether parent cultures should be included.</param>
         /// <returns>An empty sequence because rendering requests keys directly.</returns>
         public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];

@@ -154,6 +154,7 @@ public partial class DebugDevelopmentControls
         }
         catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
         {
+            ApplyPlayerState(_state?.Player);
             _error = exception.Message;
         }
         finally
@@ -228,12 +229,12 @@ public partial class DebugDevelopmentControls
     {
         _evolutionId = null;
         _devolutionId = null;
+        Array.Clear(_moveIds);
+        _abilityId = player?.AbilityId;
+        _level = player?.Level ?? 1;
         if (player is null)
             return;
 
-        _level = player.Level;
-        _abilityId = player.AbilityId;
-        Array.Clear(_moveIds);
         for (int index = 0; index < Math.Min(_moveIds.Length, player.MoveIds.Count); index++)
             _moveIds[index] = player.MoveIds[index];
     }
@@ -241,10 +242,10 @@ public partial class DebugDevelopmentControls
     /// <summary>
     /// Applies the AutoRevive state from the toggle input.
     /// </summary>
-    /// <param name="args">The checkbox change.</param>
+    /// <param name="enabled">The requested automatic-revival state.</param>
     /// <returns>A task representing the development action.</returns>
-    private Task SetAutoReviveAsync(ChangeEventArgs args)
-        => ApplyAsync(new DebugDevelopmentActionRequestPayload { Action = DebugDevelopmentAction.SetAutoRevive, Enabled = args.Value is true }, "Development.Saved");
+    private Task SetAutoReviveAsync(bool enabled)
+        => ApplyAsync(new DebugDevelopmentActionRequestPayload { Action = DebugDevelopmentAction.SetAutoRevive, Enabled = enabled }, "Development.Saved");
 
     /// <summary>
     /// Fully heals the current player Pokémon.

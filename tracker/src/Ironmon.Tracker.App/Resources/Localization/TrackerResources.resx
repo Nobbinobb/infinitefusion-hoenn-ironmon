@@ -508,7 +508,7 @@
     <value>Player</value>
   </data>
   <data name="Debug.Inspector.Pokemon" xml:space="preserve">
-    <value>Pokemon</value>
+    <value>Pokémon</value>
   </data>
   <data name="Debug.Inspector.PokemonInspectorPages" xml:space="preserve">
     <value>Pokemon inspector pages</value>
@@ -520,7 +520,7 @@
     <value>Reading game-owned debug data…</value>
   </data>
   <data name="Debug.Inspector.RunDiagnostics" xml:space="preserve">
-    <value>Run Diagnostics</value>
+    <value>Run diagnostics</value>
   </data>
   <data name="Debug.Inspector.RunDiagnosticsNotLoaded" xml:space="preserve">
     <value>Run diagnostics are not loaded.</value>
@@ -598,7 +598,7 @@
     <value>Connection and protocol history</value>
   </data>
   <data name="Debug.Protocol.ConnectionAndProtocolHistoryHeading" xml:space="preserve">
-    <value>CONNECTION AND PROTOCOL HISTORY</value>
+    <value>Connection and protocol history</value>
   </data>
   <data name="Debug.Protocol.ConnectionStateCopied" xml:space="preserve">
     <value>Connection state copied.</value>
@@ -613,10 +613,10 @@
     <value>Copy report</value>
   </data>
   <data name="Debug.Protocol.CurrentConnectionStateHeading" xml:space="preserve">
-    <value>CURRENT CONNECTION STATE</value>
+    <value>Current connection state</value>
   </data>
   <data name="Debug.Protocol.CurrentTrackerStateHeading" xml:space="preserve">
-    <value>CURRENT TRACKER STATE</value>
+    <value>Current tracker state</value>
   </data>
   <data name="Debug.Protocol.DiagnosticHistoryCleared" xml:space="preserve">
     <value>Diagnostic history cleared.</value>
@@ -643,7 +643,7 @@
     <value>No diagnostic entries recorded.</value>
   </data>
   <data name="Debug.Protocol.PersistedKnowledgeHeading" xml:space="preserve">
-    <value>PERSISTED KNOWLEDGE</value>
+    <value>Persisted knowledge</value>
   </data>
   <data name="Debug.Protocol.Refresh" xml:space="preserve">
     <value>Refresh</value>
@@ -1177,7 +1177,7 @@
   <data name="Settings.Starter.Group" xml:space="preserve"><value>Starter selection</value></data>
   <data name="Settings.Starter.GroupDescription" xml:space="preserve"><value>Automatic selection and generated BST limit.</value></data>
   <data name="Settings.Starter.MaximumBst" xml:space="preserve"><value>Maximum starter BST</value></data>
-  <data name="Settings.Starter.MaximumBstDescription" xml:space="preserve"><value>Optional inclusive ceiling for autoselect. Attempts with no eligible starter reset immediately and still count.</value></data>
+  <data name="Settings.Starter.MaximumBstDescription" xml:space="preserve"><value>Inclusive ceiling for manual and automatic selection. Autoselect resets attempts with no eligible starter; they still count.</value></data>
   <data name="Settings.Starter.MaximumBstPlaceholder" xml:space="preserve"><value>No ceiling</value></data>
   <data name="Settings.Starter.MaximumBstValidation" xml:space="preserve"><value>Enter a whole number from {0} to {1}, or leave this empty.</value></data>
   <data name="Player.Card.ActivePokemon" xml:space="preserve">
@@ -1328,6 +1328,7 @@
   <data name="Settings.Favorites.Next" xml:space="preserve"><value>Next</value></data>
   <data name="Settings.Favorites.Page" xml:space="preserve"><value>{0} / {1}</value></data>
   <data name="Settings.Favorites.ConnectToSearch" xml:space="preserve"><value>Connect the game to search its normal Pokémon list.</value></data>
+  <data name="Settings.Favorites.SearchFailed" xml:space="preserve"><value>The Pokémon search failed. Please try again.</value></data>
   <data name="Starter.Selection.Favorite" xml:space="preserve"><value>Favorite</value></data>
   <data name="Lookup.Areas.Title" xml:space="preserve"><value>Area progress</value></data>
   <data name="Lookup.Areas.Kicker" xml:space="preserve"><value>WORLD LOOKUP</value></data>
@@ -1422,18 +1423,17 @@
   <data name="Access.State.Active" xml:space="preserve"><value>Diagnostic access active</value></data>
   <data name="Access.State.ActiveDescription" xml:space="preserve"><value>The signed capabilities remain available until the displayed expiration.</value></data>
   <data name="Access.State.Lifetime" xml:space="preserve"><value>Lifetime diagnostic access</value></data>
-  <data name="Access.State.LifetimeDescription" xml:space="preserve"><value>The signed capabilities remain active until this token is removed or replaced.</value></data>
+  <data name="Access.State.LifetimeDescription" xml:space="preserve"><value>The signed capabilities remain active until this token is removed.</value></data>
   <data name="Access.State.Expired" xml:space="preserve"><value>Diagnostic access expired</value></data>
   <data name="Access.State.ExpiredDescription" xml:space="preserve"><value>The stored token no longer grants any diagnostic capabilities.</value></data>
   <data name="Access.State.Invalid" xml:space="preserve"><value>Stored access is invalid</value></data>
-  <data name="Access.State.InvalidDescription" xml:space="preserve"><value>The stored token cannot be trusted. Remove it or replace it with a valid token.</value></data>
+  <data name="Access.State.InvalidDescription" xml:space="preserve"><value>The stored token cannot be trusted. Remove it before importing a valid token.</value></data>
   <data name="Access.State.Developer" xml:space="preserve"><value>Debug developer override</value></data>
   <data name="Access.State.DeveloperDescription" xml:space="preserve"><value>This Debug tracker build locally grants every supported diagnostic capability without a token.</value></data>
   <data name="Access.Input.Paste" xml:space="preserve"><value>Access token</value></data>
   <data name="Access.Input.Placeholder" xml:space="preserve"><value>Paste the complete signed token here</value></data>
   <data name="Access.Input.ImportFile" xml:space="preserve"><value>Import token file</value></data>
   <data name="Access.Input.Activate" xml:space="preserve"><value>Activate access</value></data>
-  <data name="Access.Input.ReplacementWarning" xml:space="preserve"><value>Activating a valid token will replace the currently active token. Invalid input will leave the current access unchanged.</value></data>
   <data name="Access.Messages.Activated" xml:space="preserve"><value>Diagnostic access activated.</value></data>
   <data name="Access.Messages.Removed" xml:space="preserve"><value>Diagnostic access removed.</value></data>
   <data name="Access.Errors.ImportFailed" xml:space="preserve"><value>The selected token file could not be read.</value></data>
@@ -1457,6 +1457,14 @@
   <data name="Access.Grants.Unknown" xml:space="preserve"><value>Unknown signed capabilities</value></data>
   <data name="Access.Grants.UnknownDescription" xml:space="preserve"><value>These signed identifiers are preserved for review but grant no access in this tracker version.</value></data>
   <data name="Access.Remove.Button" xml:space="preserve"><value>Remove diagnostic access</value></data>
+  <data name="Access.Capabilities.development.auto_revive.Name" xml:space="preserve"><value>Auto-revive</value></data>
+  <data name="Access.Capabilities.development.change_ability.Name" xml:space="preserve"><value>Change ability</value></data>
+  <data name="Access.Capabilities.development.change_moves.Name" xml:space="preserve"><value>Change moves</value></data>
+  <data name="Access.Capabilities.development.evolution.Name" xml:space="preserve"><value>Evolve / devolve</value></data>
+  <data name="Access.Capabilities.development.full_heal.Name" xml:space="preserve"><value>Full heal</value></data>
+  <data name="Access.Capabilities.development.give_item.Name" xml:space="preserve"><value>Give item</value></data>
+  <data name="Access.Capabilities.development.level.Name" xml:space="preserve"><value>Change level</value></data>
+  <data name="Access.Capabilities.development.swap_pokemon.Name" xml:space="preserve"><value>Swap Pokémon</value></data>
   <data name="Access.Capabilities.pokemon.current_player.Name" xml:space="preserve"><value>Current player</value></data>
   <data name="Access.Capabilities.pokemon.current_enemies.Name" xml:space="preserve"><value>Current enemies</value></data>
   <data name="Access.Capabilities.pokemon.all_active.Name" xml:space="preserve"><value>All active-run Pokemon</value></data>
@@ -1635,6 +1643,81 @@
   <data name="Defense.Recovery" xml:space="preserve"><value>Recovery</value></data>
   <data name="Player.Card.ActiveFusion" xml:space="preserve"><value>ACTIVE FUSION</value></data>
   <data name="Enemy.Card.OpposingFusionHeading" xml:space="preserve"><value>OPPOSING FUSION</value></data>
+  <data name="Redesign.Sprite" xml:space="preserve">
+    <value>Sprite</value>
+  </data>
+  <data name="Redesign.Stats" xml:space="preserve">
+    <value>Stats</value>
+  </data>
+  <data name="Redesign.Stages" xml:space="preserve">
+    <value>Stages</value>
+  </data>
+  <data name="Redesign.TransformedNature" xml:space="preserve">
+    <value>The copied battle stats do not use this Pokémon’s original nature.</value>
+  </data>
+  <data name="Redesign.DescriptionUnavailable" xml:space="preserve">
+    <value>No description is available for this item.</value>
+  </data>
+  <data name="Redesign.BothCategories" xml:space="preserve">
+    <value>Physical &amp; special</value>
+  </data>
+  <data name="Redesign.TypeMatchups" xml:space="preserve">
+    <value>Type matchups</value>
+  </data>
+  <data name="Redesign.BeforeAllTypes" xml:space="preserve">
+    <value>Before all-type effects</value>
+  </data>
+  <data name="Redesign.AllTypeEffects" xml:space="preserve">
+    <value>All-type effects</value>
+  </data>
+  <data name="Redesign.CombinedEffects" xml:space="preserve">
+    <value>With all active broad effects</value>
+  </data>
+  <data name="Redesign.RemainsImmune" xml:space="preserve">
+    <value>Remains immune · 0× damage</value>
+  </data>
+  <data name="Redesign.Hide" xml:space="preserve">
+    <value>Hide</value>
+  </data>
+  <data name="Redesign.Details" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="Redesign.Close" xml:space="preserve">
+    <value>Close dialog</value>
+  </data>
+  <data name="Redesign.YourPokemon" xml:space="preserve">
+    <value>Your Pokémon</value>
+  </data>
+  <data name="Redesign.YourFusion" xml:space="preserve">
+    <value>Your Fusion</value>
+  </data>
+  <data name="Redesign.Nature.Attack" xml:space="preserve">
+    <value>Attack</value>
+  </data>
+  <data name="Redesign.Nature.Defense" xml:space="preserve">
+    <value>Defense</value>
+  </data>
+  <data name="Redesign.Nature.SpecialAttack" xml:space="preserve">
+    <value>Special Attack</value>
+  </data>
+  <data name="Redesign.Nature.SpecialDefense" xml:space="preserve">
+    <value>Special Defense</value>
+  </data>
+  <data name="Redesign.Nature.Speed" xml:space="preserve">
+    <value>Speed</value>
+  </data>
+  <data name="Redesign.Nature.Increased" xml:space="preserve">
+    <value>{0} is increased by 10%.</value>
+  </data>
+  <data name="Redesign.Nature.Decreased" xml:space="preserve">
+    <value>{0} is reduced by 10%.</value>
+  </data>
+  <data name="Redesign.Nature.IncreaseValue" xml:space="preserve">
+    <value>+10%</value>
+  </data>
+  <data name="Redesign.Nature.DecreaseValue" xml:space="preserve">
+    <value>−10%</value>
+  </data>
   <data name="Development.Title" xml:space="preserve"><value>Development</value></data>
   <data name="Development.Heading" xml:space="preserve"><value>Authorized run controls</value></data>
   <data name="Development.Description" xml:space="preserve"><value>Each control appears only when its individual signed permission is active. Persistent changes are available outside battle.</value></data>
@@ -1650,12 +1733,12 @@
   <data name="Development.Confirm" xml:space="preserve"><value>Confirm</value></data>
   <data name="Development.Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Development.AutoRevive.Title" xml:space="preserve"><value>NoFail / AutoRevive</value></data>
-  <data name="Development.AutoRevive.ShortLabel" xml:space="preserve"><value>AutoRevive</value></data>
+  <data name="Development.AutoRevive.ShortLabel" xml:space="preserve"><value>Auto-revive</value></data>
   <data name="Development.AutoRevive.Description" xml:space="preserve"><value>A defeat or draw keeps the attempt active and fully revives the current Pokémon after battle cleanup.</value></data>
   <data name="Development.FullHeal.Title" xml:space="preserve"><value>Full Heal</value></data>
   <data name="Development.FullHeal.Description" xml:space="preserve"><value>Restore the current Pokémon's HP, status, and PP.</value></data>
   <data name="Development.FullHeal.Action" xml:space="preserve"><value>Heal</value></data>
-  <data name="Development.FullHeal.CompactAction" xml:space="preserve"><value>Full Heal</value></data>
+  <data name="Development.FullHeal.CompactAction" xml:space="preserve"><value>Full heal</value></data>
   <data name="Development.FullHeal.Done" xml:space="preserve"><value>The current Pokémon was fully healed.</value></data>
   <data name="Development.Level.Title" xml:space="preserve"><value>Level adjustment</value></data>
   <data name="Development.Level.Label" xml:space="preserve"><value>Level</value></data>
@@ -1702,4 +1785,256 @@
   <data name="Development.Lookup.Actions" xml:space="preserve"><value>Authorized Pokémon changes</value></data>
   <data name="Development.Lookup.Swap" xml:space="preserve"><value>Swap Pokémon</value></data>
   <data name="Development.Lookup.ConfirmSwap" xml:space="preserve"><value>Replace the current Pokémon with a new {0} at the same level?</value></data>
+  <data name="Redesign.Enemy.StatNotes" xml:space="preserve">
+    <value>Stat notes</value>
+  </data>
+  <data name="Redesign.Enemy.StatHelp" xml:space="preserve">
+    <value>How stat notes work</value>
+  </data>
+  <data name="Redesign.Enemy.ObservedAbilities" xml:space="preserve">
+    <value>Observed abilities</value>
+  </data>
+  <data name="Redesign.Enemy.YourObservations" xml:space="preserve">
+    <value>Your observations</value>
+  </data>
+  <data name="Redesign.Enemy.CycleNote" xml:space="preserve">
+    <value>Left-click to cycle forward; right-click to cycle backwards.</value>
+  </data>
+  <data name="Redesign.Enemy.CycleExplanation" xml:space="preserve">
+    <value>Click a stat to cycle through unmarked (·), plus (+), and minus (−). Right-click to go backwards.</value>
+  </data>
+  <data name="Redesign.Enemy.NoteExplanation" xml:space="preserve">
+    <value>These are your notes for this species. Actual enemy stats stay hidden; battle stages are shown separately.</value>
+  </data>
+  <data name="Redesign.Settings.Saved" xml:space="preserve">
+    <value>✓ Saved</value>
+  </data>
+  <data name="Redesign.Settings.SavedLocally" xml:space="preserve">
+    <value>Saved on this tracker.</value>
+  </data>
+  <data name="Redesign.Settings.AutomaticChanges" xml:space="preserve">
+    <value>Changes apply automatically.</value>
+  </data>
+  <data name="Redesign.Settings.AutoSelectDescription" xml:space="preserve">
+    <value>Reveal all three and select the Random Pick, or choose between it and your favorites.</value>
+  </data>
+  <data name="Redesign.Settings.MaximumBstDescription" xml:space="preserve">
+    <value>Applies to manual and automatic selection. Autoselect resets if none qualify.</value>
+  </data>
+  <data name="Redesign.Settings.ExpansionDepthDescription" xml:space="preserve">
+    <value>Predecessor and evolution layers around the initial Pokémon and each selected branch.</value>
+  </data>
+  <data name="Redesign.Settings.NodesPerRowDescription" xml:space="preserve">
+    <value>Wrap a level after this many Pokémon.</value>
+  </data>
+  <data name="Redesign.Settings.SpriteDescription" xml:space="preserve">
+    <value>Keep custom fusion and normal-species sheets current. Only missing or changed image data is downloaded.</value>
+  </data>
+  <data name="Redesign.Settings.KeepGameClosed" xml:space="preserve">
+    <value>Keep Infinite Fusion closed during synchronization.</value>
+  </data>
+  <data name="Redesign.Settings.FavoritesDescription" xml:space="preserve">
+    <value>Fusions count when either half is a favorite.</value>
+  </data>
+  <data name="Redesign.Settings.Manage" xml:space="preserve">
+    <value>Manage</value>
+  </data>
+  <data name="Redesign.Settings.YourPokemon" xml:space="preserve">
+    <value>YOUR POKÉMON</value>
+  </data>
+  <data name="Redesign.Settings.MoreFavorites" xml:space="preserve">
+    <value> +{0}</value>
+  </data>
+  <data name="Redesign.Settings.ViewProgress" xml:space="preserve">
+    <value>View synchronization</value>
+  </data>
+  <data name="Redesign.Settings.SheetsChecked" xml:space="preserve">
+    <value>Sheets checked</value>
+  </data>
+  <data name="Redesign.Settings.Downloaded" xml:space="preserve">
+    <value>Downloaded</value>
+  </data>
+  <data name="Redesign.Settings.FailedUnavailable" xml:space="preserve">
+    <value>Failed · unavailable (404)</value>
+  </data>
+  <data name="Redesign.Settings.Installed" xml:space="preserve">
+    <value>Already installed</value>
+  </data>
+  <data name="Redesign.Settings.SheetsToCheck" xml:space="preserve">
+    <value>Sheets to check</value>
+  </data>
+  <data name="Redesign.Settings.MatchingPokemon" xml:space="preserve">
+    <value>Matching Pokémon</value>
+  </data>
+  <data name="Redesign.Settings.FirstMatches" xml:space="preserve">
+    <value>First {0} matches. Keep typing to narrow the list.</value>
+  </data>
+  <data name="Redesign.Settings.MatchCount" xml:space="preserve">
+    <value>{0} matching Pokémon</value>
+  </data>
+  <data name="Redesign.Settings.FavoriteAdded" xml:space="preserve">
+    <value>{0} added to favorites.</value>
+  </data>
+  <data name="Redesign.Seeds.AvailableDescription" xml:space="preserve"><value>Share this world, or start an attempt from a shared seed.</value></data>
+  <data name="Redesign.Seeds.ExportDescription" xml:space="preserve"><value>Create a token with this run’s deterministic inputs so someone else can play the same randomized world.</value></data>
+  <data name="Redesign.Seeds.ChallengeNote" xml:space="preserve"><value>A shared seed is not an official or maintainer-approved challenge.</value></data>
+  <data name="Redesign.Seeds.ImportDescription" xml:space="preserve"><value>Paste a complete token or load an .ironmon-seed file.</value></data>
+  <data name="Redesign.Seeds.ValidationNote" xml:space="preserve"><value>Validation does not change your current attempt.</value></data>
+  <data name="Redesign.Seeds.Working" xml:space="preserve"><value>Working…</value></data>
+  <data name="Redesign.Seeds.SharedRun" xml:space="preserve"><value>SHARED RUN</value></data>
+  <data name="Redesign.Seeds.Recognized" xml:space="preserve"><value>Recognized tracker seed token</value></data>
+  <data name="Redesign.Seeds.CompatibilityNote" xml:space="preserve"><value>The game will verify compatibility again before changing the run.</value></data>
+  <data name="Redesign.Seeds.ShareRun" xml:space="preserve"><value>Share this run</value></data>
+  <data name="Redesign.Seeds.TokenReady" xml:space="preserve"><value>TOKEN READY</value></data>
+  <data name="Redesign.Seeds.ShareDescription" xml:space="preserve"><value>Share this token to recreate the same randomized world.</value></data>
+  <data name="Redesign.Access.InputDescription" xml:space="preserve"><value>Paste a signed token or import an .ironmon-access file.</value></data>
+  <data name="Redesign.Access.Current" xml:space="preserve"><value>Current access</value></data>
+  <data name="Redesign.Access.Stored" xml:space="preserve"><value>Stored access</value></data>
+  <data name="Redesign.Access.Identifiers" xml:space="preserve"><value>Token identifiers</value></data>
+  <data name="Redesign.Access.Untrusted" xml:space="preserve"><value>Stored permission details are unavailable. Remove this token before importing another.</value></data>
+  <data name="Lookup.Live.PrepareTitle" xml:space="preserve"><value>Prepare world lookup</value></data>
+  <data name="Lookup.Live.PreparingTitle" xml:space="preserve"><value>Preparing lookup data</value></data>
+  <data name="Lookup.Areas.Slots" xml:space="preserve"><value>Slots</value></data>
+  <data name="Lookup.Areas.ChanceFusions" xml:space="preserve"><value>Chance fusions</value></data>
+  <data name="Lookup.Areas.Count" xml:space="preserve"><value>{0} / {1}</value></data>
+  <data name="Lookup.Areas.SlotCountDescription" xml:space="preserve"><value>Encountered / total authored encounter slots, including independent fusion slots.</value></data>
+  <data name="Lookup.Areas.FusionCountDescription" xml:space="preserve"><value>Encountered / total chance-based fusions from same-environment and cross-environment rolls.</value></data>
+  <data name="Lookup.Areas.FusionRoll" xml:space="preserve"><value>{0:0.##}% fusion roll</value></data>
+  <data name="Lookup.Items.Category.hp_recovery" xml:space="preserve"><value>HP recovery</value></data>
+  <data name="Lookup.Items.Category.status_pp_recovery" xml:space="preserve"><value>Status / PP recovery</value></data>
+  <data name="Lookup.Items.Category.general_utility" xml:space="preserve"><value>General utility</value></data>
+  <data name="Lookup.Items.Category.evolution" xml:space="preserve"><value>Evolution items</value></data>
+  <data name="Lookup.Items.Category.poke_ball" xml:space="preserve"><value>Poké Balls</value></data>
+  <data name="Lookup.Items.Category.tm" xml:space="preserve"><value>TMs</value></data>
+  <data name="Lookup.Items.Category.battle_consumable" xml:space="preserve"><value>Battle consumables</value></data>
+  <data name="Lookup.Items.Category.held_combat" xml:space="preserve"><value>Held combat items</value></data>
+  <data name="Redesign.Archive.ArchivedRuns" xml:space="preserve"><value>Archived runs</value></data>
+  <data name="Redesign.Archive.SearchTitle" xml:space="preserve"><value>Explore this run’s Pokémon</value></data>
+  <data name="Redesign.Archive.SearchDescription" xml:space="preserve"><value>Search by Pokémon name. Results show the species identifier and whether it is obtainable in the selected archived run.</value></data>
+  <data name="Redesign.Archive.ItemUsage" xml:space="preserve"><value>Item usage</value></data>
+  <data name="Redesign.Archive.SearchMatchCount" xml:space="preserve"><value>{0} matches in this archived run</value></data>
+  <data name="Redesign.Research.ArchivedFusion" xml:space="preserve">
+    <value>Archived fusion</value>
+  </data>
+  <data name="Redesign.Research.ArchivedPokemon" xml:space="preserve">
+    <value>Archived Pokémon</value>
+  </data>
+  <data name="Redesign.Research.ActivePokemon" xml:space="preserve">
+    <value>Active run · Pokémon</value>
+  </data>
+  <data name="Redesign.Research.Results" xml:space="preserve">
+    <value>Results</value>
+  </data>
+  <data name="Redesign.Research.Seed" xml:space="preserve">
+    <value>· Seed {0}</value>
+  </data>
+  <data name="Redesign.Research.DescriptionUnavailable" xml:space="preserve">
+    <value>This game response does not include an ability description.</value>
+  </data>
+  <data name="Redesign.Research.FinalFusion" xml:space="preserve">
+    <value>Final fusion</value>
+  </data>
+  <data name="Redesign.Research.BodyGenerated" xml:space="preserve">
+    <value>Body generated</value>
+  </data>
+  <data name="Redesign.Research.HeadGenerated" xml:space="preserve">
+    <value>Head generated</value>
+  </data>
+  <data name="Redesign.Research.Generated" xml:space="preserve">
+    <value>Generated slots</value>
+  </data>
+  <data name="Redesign.Research.Current" xml:space="preserve">
+    <value>Current abilities</value>
+  </data>
+  <data name="Redesign.Research.FinalFusionSlots" xml:space="preserve">
+    <value>Final fusion slots</value>
+  </data>
+  <data name="Redesign.Research.WildLocations" xml:space="preserve">
+    <value>Wild locations</value>
+  </data>
+  <data name="Redesign.Research.Trainers" xml:space="preserve">
+    <value>Trainers</value>
+  </data>
+  <data name="Redesign.Research.DisplayedComponents" xml:space="preserve">
+    <value>Displayed components</value>
+  </data>
+  <data name="Redesign.Research.IronmonReverse" xml:space="preserve">
+    <value>Ironmon reverse</value>
+  </data>
+  <data name="Redesign.Research.FusionMaterials" xml:space="preserve">
+    <value>Fusion materials</value>
+  </data>
+  <data name="Redesign.Research.HeadCandidates" xml:space="preserve">
+    <value>Head candidates</value>
+  </data>
+  <data name="Redesign.Research.BodyCandidates" xml:space="preserve">
+    <value>Body candidates</value>
+  </data>
+  <data name="Redesign.Research.HeadEvolutions" xml:space="preserve">
+    <value>Head evolution candidates</value>
+  </data>
+  <data name="Redesign.Research.BodyEvolutions" xml:space="preserve">
+    <value>Body evolution candidates</value>
+  </data>
+  <data name="Redesign.Research.EvolutionCandidates" xml:space="preserve">
+    <value>Evolution candidates</value>
+  </data>
+  <data name="Redesign.Research.AbilityGenerator" xml:space="preserve">
+    <value>Ability generator</value>
+  </data>
+  <data name="Redesign.Research.StatGenerator" xml:space="preserve">
+    <value>Base stat generator</value>
+  </data>
+  <data name="Redesign.Research.MoveGenerator" xml:space="preserve">
+    <value>Move generator</value>
+  </data>
+  <data name="Redesign.Research.EvolutionGenerator" xml:space="preserve">
+    <value>Evolution generator</value>
+  </data>
+  <data name="Redesign.Tools.Inspect" xml:space="preserve"><value>Inspect</value></data>
+  <data name="Redesign.Tools.NoPlayer" xml:space="preserve"><value>No current Pokémon. Send your Pokémon into battle to initialize these controls.</value></data>
+  <data name="Redesign.Tools.MoveSlot" xml:space="preserve"><value>Slot {0}</value></data>
+  <data name="Redesign.Tools.RemoveMove" xml:space="preserve"><value>Remove move from slot {0}</value></data>
+  <data name="Redesign.Tools.NoMove" xml:space="preserve"><value>No move</value></data>
+  <data name="Redesign.Tools.Retained" xml:space="preserve"><value>{0} retained</value></data>
+  <data name="Redesign.Tools.CopyEntry" xml:space="preserve"><value>Copy {0}</value></data>
+  <data name="Redesign.Tools.Incoming" xml:space="preserve"><value>Incoming</value></data>
+  <data name="Redesign.Tools.Outgoing" xml:space="preserve"><value>Outgoing</value></data>
+  <data name="Redesign.Tools.Lifecycle" xml:space="preserve"><value>Lifecycle</value></data>
+  <data name="Redesign.Tools.SpeciesAbilitiesMoves" xml:space="preserve"><value>Species, abilities &amp; moves</value></data>
+  <data name="Redesign.Tools.GeneratorFingerprints" xml:space="preserve"><value>Generator fingerprints</value></data>
+  <data name="Redesign.Tools.ItemsPools" xml:space="preserve"><value>Items &amp; pools</value></data>
+  <data name="Redesign.Tools.Evolution" xml:space="preserve"><value>Evolution</value></data>
+  <data name="Redesign.Research.ActiveFusion" xml:space="preserve"><value>Active fusion</value></data>
+  <data name="Redesign.Tools.SearchDescription" xml:space="preserve"><value>Search by Pokémon name. Results show the species identifier and whether it is obtainable in the active run.</value></data>
+  <data name="Redesign.Tools.SearchMatchCount" xml:space="preserve"><value>{0} matches in this active run</value></data>
+  <data name="Redesign.Graph.PokemonCount" xml:space="preserve"><value>{0} Pokémon</value></data>
+  <data name="Redesign.Graph.Reachability" xml:space="preserve"><value>Evolution reachability</value></data>
+  <data name="Redesign.Graph.AllRoutes" xml:space="preserve"><value>All routes</value></data>
+  <data name="Redesign.Graph.ByReachability" xml:space="preserve"><value>By reachability</value></data>
+  <data name="Redesign.Graph.ReachableOnly" xml:space="preserve"><value>Reachable only</value></data>
+  <data name="Redesign.Graph.ShowAll" xml:space="preserve"><value>Show all</value></data>
+  <data name="Redesign.Graph.SingleRow" xml:space="preserve"><value>Single row</value></data>
+  <data name="Redesign.Graph.Loaded" xml:space="preserve"><value>{0} of {1} loaded Pokémon shown · {2} connections</value></data>
+  <data name="Redesign.Graph.Neighborhood" xml:space="preserve"><value>Neighborhood · {0} layers from tracker settings</value></data>
+  <data name="Redesign.Graph.Routes" xml:space="preserve"><value>Evolution routes</value></data>
+  <data name="Redesign.Graph.Incoming" xml:space="preserve"><value>Evolves from</value></data>
+  <data name="Redesign.Graph.Outgoing" xml:space="preserve"><value>Evolves into</value></data>
+  <data name="Redesign.Graph.NoRoutes" xml:space="preserve"><value>No evolution routes in the current scope.</value></data>
+  <data name="Starter.Selection.AutoHeading" xml:space="preserve"><value>AUTO-SELECT</value></data>
+  <data name="Starter.Selection.ManualHeading" xml:space="preserve"><value>RUN START · MANUAL SELECTION</value></data>
+  <data name="Starter.Selection.FavoriteInstructions" xml:space="preserve"><value>Your favorite differs from the random pick. Choose an eligible random pick or favorite.</value></data>
+  <data name="Starter.Selection.AutomaticInstructions" xml:space="preserve"><value>The game is selecting your random starter.</value></data>
+  <data name="Starter.Selection.ManualInstructions" xml:space="preserve"><value>Reveal each Pokémon in the game, then choose an eligible starter here or in the game.</value></data>
+  <data name="Starter.Selection.Choices" xml:space="preserve"><value>Starter choices</value></data>
+  <data name="Starter.Selection.Ceiling" xml:space="preserve"><value>BST ceiling</value></data>
+  <data name="Starter.Selection.Slot" xml:space="preserve"><value>Starter {0}</value></data>
+  <data name="Starter.Selection.Restricted" xml:space="preserve"><value>Random pick or favorite only</value></data>
+  <data name="Starter.Selection.Choose" xml:space="preserve"><value>Choose</value></data>
+  <data name="Starter.Selection.ChooseNamed" xml:space="preserve"><value>Choose {0}</value></data>
+  <data name="Starter.Selection.ConfirmTitle" xml:space="preserve"><value>Choose {0}?</value></data>
+  <data name="Starter.Selection.ConfirmDescription" xml:space="preserve"><value>{0} will become your starter.</value></data>
+  <data name="Starter.Selection.Accepted" xml:space="preserve"><value>Selection accepted. Waiting for the game.</value></data>
+  <data name="Starter.Selection.Rejected" xml:space="preserve"><value>This starter is no longer available for selection. Check the current choices.</value></data>
+  <data name="Starter.Selection.RequestFailed" xml:space="preserve"><value>The selection could not be confirmed. Check the game before trying again.</value></data>
 </root>

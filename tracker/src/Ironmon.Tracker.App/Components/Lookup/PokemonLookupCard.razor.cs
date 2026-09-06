@@ -325,32 +325,6 @@ public partial class PokemonLookupCard
         => Inspector?.Abilities?.Slots ?? AbilitySection.Slots;
 
     /// <summary>
-    /// Formats an authored encounter-table chance.
-    /// </summary>
-    /// <param name="chance">The percentage chance.</param>
-    /// <param name="conditional">Whether the chance assumes a fusion event already triggered.</param>
-    /// <returns>The compact percentage label.</returns>
-    private string FormatChance(decimal chance, bool conditional)
-        => conditional ? Text["Lookup.Card.ChanceWhenFused", chance] : $"{chance:0.##}%";
-
-    /// <summary>
-    /// Formats the authored slot or ordered slot pair for a wild occurrence.
-    /// </summary>
-    /// <param name="occurrence">The represented wild occurrence.</param>
-    /// <returns>The compact slot label.</returns>
-    private string FormatWildSlots(WildPokemonOccurrenceSnapshot occurrence)
-        => occurrence.SecondarySlot is null ? Text["Lookup.Card.SlotNumber", occurrence.Slot] : Text["Lookup.Card.CombinedSlots", occurrence.Slot, occurrence.SecondarySlot];
-
-    /// <summary>
-    /// Formats one authored wild-encounter level or level range.
-    /// </summary>
-    /// <param name="minimumLevel">The minimum encounter level.</param>
-    /// <param name="maximumLevel">The maximum encounter level.</param>
-    /// <returns>The compact level label.</returns>
-    private string FormatLevelRange(int minimumLevel, int maximumLevel)
-        => minimumLevel == maximumLevel ? Text["Lookup.Card.LevelValue", minimumLevel] : Text["Lookup.Card.LevelRange", minimumLevel, maximumLevel];
-
-    /// <summary>
     /// Opens full information for one generated ability.
     /// </summary>
     /// <param name="ability">The selected ability.</param>
@@ -418,7 +392,7 @@ public partial class PokemonLookupCard
     /// <returns>A task representing the development action.</returns>
     private async Task ConfirmDevelopmentActionAsync()
     {
-        if (_pendingDevelopmentAction is null)
+        if (_pendingDevelopmentAction is null || _developmentLoading)
             return;
 
         DebugDevelopmentAction action = _pendingDevelopmentAction.Value;

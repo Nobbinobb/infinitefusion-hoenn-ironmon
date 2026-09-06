@@ -8,9 +8,10 @@ namespace Ironmon.Tracker.App.Components.Enemy;
 /// </summary>
 public partial class EnemyCard : IDisposable
 {
-    private AbilitySnapshot? _selectedAbility;
+    private bool _abilitiesOpen;
     private bool _defenseOpen;
     private string? _defensePokemonId;
+    private string? _dialogBattleId;
 
     /// <summary>
     /// Returns to the card when the selected individual changes.
@@ -18,10 +19,14 @@ public partial class EnemyCard : IDisposable
     protected override void OnParametersSet()
     {
         string? pokemonId = SelectedEnemy?.EnemyId;
-        if (_defensePokemonId != pokemonId)
+        if (_defensePokemonId != pokemonId || _dialogBattleId != BattleId)
+        {
             _defenseOpen = false;
+            _abilitiesOpen = false;
+        }
 
         _defensePokemonId = pokemonId;
+        _dialogBattleId = BattleId;
     }
 
     /// <summary>
@@ -29,7 +34,7 @@ public partial class EnemyCard : IDisposable
     /// </summary>
     private void OpenDefense()
     {
-        _selectedAbility = null;
+        _abilitiesOpen = false;
         _defenseOpen = true;
     }
 
@@ -112,14 +117,6 @@ public partial class EnemyCard : IDisposable
         => SelectedEnemyIdChanged.InvokeAsync(enemyId);
 
     /// <summary>
-    /// Gets the CSS classes for one enemy selector button.
-    /// </summary>
-    /// <param name="enemy">The represented active enemy.</param>
-    /// <returns>The selector button CSS classes.</returns>
-    private string GetEnemySelectorClass(EnemyPokemonSnapshot enemy) =>
-        enemy.EnemyId == SelectedEnemy?.EnemyId ? "enemy-selector-button selected" : "enemy-selector-button";
-
-    /// <summary>
     /// Gets the visible enemy name or empty-state label.
     /// </summary>
     /// <returns>The card heading.</returns>
@@ -145,13 +142,6 @@ public partial class EnemyCard : IDisposable
         var abilities = GetAbilities();
         return abilities.Count > 0 ? abilities[0].Name : Text["Enemy.Card.Unknown"];
     }
-
-    /// <summary>
-    /// Gets the visible base-stat total.
-    /// </summary>
-    /// <returns>The base-stat total or placeholder.</returns>
-    private string GetBaseStatTotal()
-        => SelectedEnemy?.BaseStatTotal.ToString(CultureInfo.InvariantCulture) ?? "--";
 
     /// <summary>
     /// Formats the current ordinary Poke Ball capture chance.
@@ -183,17 +173,16 @@ public partial class EnemyCard : IDisposable
         => _ = InvokeAsync(StateHasChanged);
 
     /// <summary>
-    /// Opens full information for one discovered ability.
+    /// Opens descriptions of all remembered abilities for the selected species.
     /// </summary>
-    /// <param name="ability">The selected ability.</param>
-    private void SelectAbility(AbilitySnapshot ability)
-        => _selectedAbility = ability;
+    private void OpenAbilities()
+        => _abilitiesOpen = GetAbilities().Count > 0;
 
     /// <summary>
     /// Closes the selected ability information.
     /// </summary>
-    private void CloseAbility()
-        => _selectedAbility = null;
+    private void CloseAbilities()
+        => _abilitiesOpen = false;
 
     /// <summary>
     /// Removes the remembered-knowledge subscription when the card is disposed.

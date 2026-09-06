@@ -1,18 +1,11 @@
 <div class="move-list" aria-label="@Text["Enemy.Moves.DiscoveredEnemyMoves"]">
-    <div class="move-table-heading">
-        <div class="move-table-title">
-            <p class="section-label">@Text["Enemy.Moves.DiscoveredMovesHeading"]</p>
-        </div>
-        <span>@Text["Common.Move.PowerHeader"]</span>
-        <span>@Text["Common.Move.PpHeader"]</span>
-        <span>@Text["Common.Move.AccuracyHeader"]</span>
-    </div>
+    <MoveTableHeading Title="@Text["Enemy.Moves.DiscoveredMovesHeading"]" />
     @foreach (int slot in _moveSlots)
     {
         ObservedMoveSnapshot? move = GetMoves().ElementAtOrDefault(slot - 1);
         @if (move is null)
         {
-            <div class="move-placeholder unknown"><span>@Text["Enemy.Moves.UnknownMove"]</span><span>--</span></div>
+            <div class="move-placeholder unknown obsidian-unknown-move"><span>@Text["Enemy.Moves.UnknownMove"]</span><span>--</span><span>--</span><span>--</span></div>
         }
         else
         {
@@ -36,7 +29,9 @@
 
 @if (_selectedMove is not null)
 {
+
     <MoveDetailPanel Name="@_selectedMove.Name"
+                     Stab="@MovePresentation.HasStab(_selectedMove.Type, _selectedMove.Category, Enemy?.Types)"
                      Type="@_selectedMove.Type"
                      Category="@_selectedMove.Category"
                      Description="@_selectedMove.Description"

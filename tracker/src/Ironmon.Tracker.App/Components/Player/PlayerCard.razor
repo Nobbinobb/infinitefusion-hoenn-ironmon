@@ -1,106 +1,67 @@
+<section class="obsidian obsidian-player" role="tabpanel" aria-label="@Text["Player.Card.PlayerPokemon"]">
+    <ObsidianIdentityPanel GameRoot="@GameRoot" SpritePath="@Player?.SpritePath" SpriteLabel="@(Player?.SpeciesName ?? GetName())" Name="@GetName()" Kicker="@GetCardKicker()" DetailsLabel="@Text["Player.Card.PokemonDetails"]">
+        <Metadata>
+            @if (Player is not null)
+            {
+                <p class="obsidian-species">@if (HasDistinctNickname()) { @Player.SpeciesName } <GenderIcon Gender="@Player.Gender" /> · @Text["Player.Card.LevelValue", Player.Level]</p>
+                <div class="obsidian-types">
+                    @foreach (string type in Player.Types)
+                    {
+                        <button type="button" class="typing-type @MovePresentation.GetTypeColorClass(type)" title="@Text["Defense.OpenTypes"]" aria-label="@Text["Defense.OpenType", type]" @onclick="OpenDefense">@type</button>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="obsidian-species">@Text["Player.Card.PlayerWaitingDescription"]</p>
+            }
+        </Metadata>
+        <Details>
+            <button type="button" disabled="@(Player?.AbilityDetails is null)" @onclick="() => SelectAbility(Player!.AbilityDetails!)"><span>@Text["Player.Card.Ability"]</span><strong>@(Player?.Ability ?? "—")</strong></button>
+            <button type="button" disabled="@(Player?.HeldItem is null)" @onclick="OpenHeldItem"><span>@Text["Player.Card.Item"]</span><strong>@(Player?.HeldItem ?? (Player is null ? "—" : Text["Player.Card.None"]))</strong></button>
+            <button type="button" disabled="@(Player is null || Player.Evolutions.Count < 2)" @onclick="OpenEvolutions"><span>@Text["Player.Card.Evolution"]</span><strong>@GetEvolutionRequirement() @if (Player?.Evolutions.Count > 1) { <em>+@(Player.Evolutions.Count - 1)</em> }</strong></button>
+        </Details>
+        <Health>
+            <div class="obsidian-hp-caption"><span>HP <span class="obsidian-condition">@GetConditionText()</span></span><strong>@GetHpText()</strong></div>
+            <div class="obsidian-hp-track" aria-label="@GetHpLabel()"><span style="@GetHpStyle()"></span></div>
+        </Health>
+        <Footer>
+            <button type="button" disabled="@(Player?.Nature is null)" title="@GetNatureTooltip()" @onclick="OpenNature">@Text["Player.Card.Nature"] <strong>@(Player?.Nature ?? "—")</strong></button>
+            <button type="button" disabled="@(Player is null)" @onclick="OpenItems"><span class="obsidian-heal-symbol" aria-hidden="true">+</span>@Text["Player.Card.Heals"] <strong>@GetHealingText()</strong></button>
+        </Footer>
+    </ObsidianIdentityPanel>
+    <ObsidianStatRow Stats="GetStatValues()" Stages="@Player?.StatStages" />
+    <PlayerMoveList @key="Player?.PokemonId" Player="Player" TargetTypes="TargetTypes" TargetEvasionStage="TargetEvasionStage" />
+</section>
+
 @if (_defenseOpen && Player is not null)
 {
-    <PokemonDefenseView Name="@GetName()" Defense="@Player.DefensiveOverview" Closed="CloseDefense" />
+    <ObsidianDefenseDialog Name="@GetName()" Defense="Player.DefensiveOverview" Closed="CloseDefense" />
 }
-else
-{
-    <section class="pokemon-card" role="tabpanel" aria-label="@Text["Player.Card.PlayerPokemon"]">
-        <div class="card-heading action-heading">
-            <PokemonSprite GameRoot="@GameRoot"
-                           SpritePath="@Player?.SpritePath"
-                           Label="@(Player?.SpeciesName ?? Text["Player.Card.WaitingForPlayer"])"
-                           Size="80"
-                           CssClass="@(Player is null ? "sprite-placeholder" : "sprite-placeholder live")" />
-            <div class="identity-placeholder">
-                <p class="card-kicker">@GetCardKicker()</p>
-                <h2 class="identity-name">
-                    <span>@GetName()</span>
-                    @if (Player is not null)
-                    {
-                        <GenderIcon Gender="@Player.Gender" />
-                        <small>@Text["Player.Card.LevelValue", Player.Level]</small>
-                    }
-                </h2>
-                @if (Player is null)
-                {
-                    <p>@Text["Player.Card.PlayerWaitingDescription"]</p>
-                }
-                else
-                {
-                    <p class="typing-line">
-                        @if (HasDistinctNickname())
-                        {
-                            <span class="species-name">@Player.SpeciesName</span>
-                        }
-                        @foreach (string type in Player.Types)
-                        {
-                            <button type="button" class="typing-type pokemon-type-link @MovePresentation.GetTypeColorClass(type)" title="@Text["Defense.OpenTypes"]" aria-label="@Text["Defense.OpenType", type]" @onclick="OpenDefense">@type</button>
-                        }
-                    </p>
-                }
-            </div>
-            <div class="identity-actions placeholder-content" aria-label="@Text["Player.Card.PokemonDetails"]">
-                @if (Player?.AbilityDetails is not null)
-                {
-                    <button class="identity-action-button" type="button" @onclick="() => SelectAbility(Player.AbilityDetails)">@Text["Player.Card.Ability"] <strong>@Player.Ability</strong></button>
-                }
-                else
-                {
-                    <span>@Text["Player.Card.Ability"] <strong>@(Player?.Ability ?? "--")</strong></span>
-                }
-                <span>@Text["Player.Card.Item"] <strong>@(Player?.HeldItem ?? (Player is null ? "--" : Text["Player.Card.None"]))</strong></span>
-                @if (Player is not null && Player.Evolutions.Count > 1)
-                {
-                    <details class="compact-disclosure">
-                        <summary>@Text["Player.Card.Evolution"] <strong>@Player.Evolutions[0].Requirement</strong><span>+@(Player.Evolutions.Count - 1)</span></summary>
-                        <div class="disclosure-menu">
-                            @foreach (EvolutionSnapshot evolution in Player.Evolutions.Skip(1))
-                            {
-                                <span>@evolution.Requirement</span>
-                            }
-                        </div>
-                    </details>
-                }
-                else
-                {
-                    <span>@Text["Player.Card.Evolution"] <strong>@GetEvolutionRequirement()</strong></span>
-                }
-            </div>
-        </div>
-
-        <div class="hp-block @(Player is null ? "placeholder-content" : string.Empty)">
-            <div><span>HP</span><strong>@GetHpText()</strong></div>
-            <div class="hp-bar @(Player is null ? "unknown" : string.Empty)" aria-label="@GetHpLabel()"><span style="@GetHpStyle()"></span></div>
-        </div>
-
-        <div class="detail-strip placeholder-content" aria-label="@Text["Player.Card.PokemonConditionAndHealing"]">
-            <span>@GetConditionText()</span>
-            <button class="healing-summary-button" type="button" disabled="@(Player is null)" @onclick="OpenItems">@Text["Player.Card.Heals"] <strong>@GetHealingText()</strong></button>
-            <span title="@GetNatureTooltip()">@Text["Player.Card.Nature"] <strong>@(Player?.Nature ?? "--")</strong></span>
-        </div>
-
-        <PlayerStatGrid Player="@Player" />
-
-        <div class="summary-row placeholder-content" aria-label="@Text["Player.Card.PokemonSummary"]">
-            <span>BST <strong>@(Player?.BaseStatTotal.ToString(CultureInfo.InvariantCulture) ?? "--")</strong></span>
-            <BattleStatStageChips Stages="@Player?.StatStages" />
-        </div>
-
-        <PlayerMoveList Player="@Player" TargetTypes="@TargetTypes" TargetEvasionStage="@TargetEvasionStage" />
-    </section>
-}
-
 @if (_selectedAbility is not null)
 {
-    <AbilityDetailPanel Ability="@_selectedAbility" Closed="CloseAbility" />
+    <AbilityDetailPanel Ability="_selectedAbility" Closed="CloseAbility" />
 }
-
 @if (_itemsOpen && Player is not null)
 {
-    <BattleItemPanel Inventory="@Player.Healing"
-                     Moves="@GetPpItemMoves()"
-                     InBattle="@InBattle"
-                     BattleId="@BattleId"
-                     TargetPosition="@TargetPosition"
-                     Closed="CloseItems" />
+    <BattleItemPanel Inventory="Player.Healing" Moves="GetPpItemMoves()" InBattle="InBattle" BattleId="@BattleId" TargetPosition="TargetPosition" Closed="CloseItems" />
+}
+@if (_natureOpen && Player is not null)
+{
+    <ObsidianNatureDialog Nature="@(Player.Nature ?? Text["Player.Card.Nature"])"
+                          Adjustments="Player.NatureAdjustments"
+                          Transformed="Player.Transformed"
+                          Closed="CloseSupplement" />
+}
+@if (_heldItemOpen && Player is not null)
+{
+    <ObsidianDialog Title="@(Player.HeldItem!)" Eyebrow="@Text["Player.Card.Item"]" Closed="CloseSupplement">
+        <p class="detail-description">@(Player.HeldItemDescription ?? Text["Redesign.DescriptionUnavailable"])</p>
+    </ObsidianDialog>
+}
+@if (_evolutionsOpen && Player is not null)
+{
+    <ObsidianDialog Title="@Text["Player.Card.Evolution"]" Eyebrow="@GetName()" Closed="CloseSupplement">
+        <ul class="obsidian-evolutions">@foreach (EvolutionSnapshot evolution in Player.Evolutions) { <li>@evolution.Requirement</li> }</ul>
+    </ObsidianDialog>
 }

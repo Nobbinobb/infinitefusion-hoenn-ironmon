@@ -91,7 +91,41 @@ module IronmonEvolutionUpwardExpansionRuntimeTests
     $PokemonGlobal = original_global
   end
 
+  def self.assert_indexed_candidate_membership
+    original_service = Ironmon.method(:custom_fusion_pool_service)
+    accepted_id = NB_POKEMON + 1
+    rejected_id = NB_POKEMON + 2
+    checked_ids = []
+    service = Object.new
+    service.define_singleton_method(:include_number?) do |number|
+      checked_ids << number
+      number == accepted_id
+    end
+    service.define_singleton_method(:include_identity?) do |_identity|
+      raise "candidate validation must not scan the identity pool"
+    end
+    Ironmon.define_singleton_method(:custom_fusion_pool_service) { service }
+    values = [
+      (accepted_id << 11) | 300, (rejected_id << 11) | 500,
+      (accepted_id << 11) | 2047, 0
+    ]
+    result = Ironmon.tracker_fusion_evolution_candidates_for_assignments(
+      [values.pack("L<*")].pack("m0")
+    )
+    assert(result == [{ :target => "B1H1", :target_id => :B1H1,
+                        :target_bst => 2047 }],
+           "indexed candidates preserve membership, deduplication and BST bits")
+    assert(checked_ids == [accepted_id, rejected_id, accepted_id],
+           "candidate membership uses one numeric lookup per valid assignment")
+    assert(Ironmon.tracker_fusion_identity_for_numeric_id(
+             NB_POKEMON * NB_POKEMON + NB_POKEMON + 1
+           ).nil?, "out-of-range targets are rejected before pool lookup")
+  ensure
+    Ironmon.define_singleton_method(:custom_fusion_pool_service, original_service)
+  end
+
   def self.run
+    assert_indexed_candidate_membership
     original_game_temp = $game_temp
     reverse_diagnostics = nil
     begin

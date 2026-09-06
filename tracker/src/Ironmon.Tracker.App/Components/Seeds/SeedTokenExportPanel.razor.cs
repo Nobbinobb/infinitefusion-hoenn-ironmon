@@ -14,6 +14,15 @@ public partial class SeedTokenExportPanel
     private bool _succeeded;
     private bool _copied;
     private bool _busy;
+    private bool _dialogOpen;
+    private const string _clipboardFunction = "navigator.clipboard.writeText";
+    private const string _tokenIdFormat = "N";
+
+    /// <summary>
+    /// Gets or sets whether the redesigned export action appears as a compact archive button.
+    /// </summary>
+    [Parameter]
+    public bool Compact { get; set; }
 
     /// <summary>
     /// Gets or sets a fixed archived reproduction recipe.
@@ -30,13 +39,15 @@ public partial class SeedTokenExportPanel
     /// <summary>
     /// Gets or sets the export panel title.
     /// </summary>
-    [Parameter, EditorRequired]
+    [Parameter]
+    [EditorRequired]
     public required string Title { get; set; }
 
     /// <summary>
     /// Gets or sets the export panel description.
     /// </summary>
-    [Parameter, EditorRequired]
+    [Parameter]
+    [EditorRequired]
     public required string Description { get; set; }
 
     /// <summary>
@@ -80,15 +91,19 @@ public partial class SeedTokenExportPanel
     /// </summary>
     private async Task CreateAsync()
     {
+        if (Disabled || _busy)
+            return;
+
         await BeginAsync();
         try
         {
             RunReproductionRecipePayload recipe = Recipe ?? await (RecipeProvider?.Invoke()
                 ?? throw new InvalidOperationException("No seeded-run recipe is available."));
             _seed = recipe.Seed;
-            _token = Codec.Create(recipe, Guid.NewGuid().ToString("N"), TimeProvider.GetUtcNow());
+            _token = Codec.Create(recipe, Guid.NewGuid().ToString(_tokenIdFormat), TimeProvider.GetUtcNow());
             _succeeded = true;
-            _message = Text["Seeds.Messages.Exported"];
+            _message = null;
+            _dialogOpen = true;
         }
         catch (Exception exception) when (IsExportFailure(exception))
         {
@@ -105,10 +120,13 @@ public partial class SeedTokenExportPanel
     /// </summary>
     private async Task CopyAsync()
     {
+        if (Disabled || _busy)
+            return;
+
         await BeginAsync();
         try
         {
-            await JavaScript.InvokeVoidAsync("navigator.clipboard.writeText", _token);
+            await JavaScript.InvokeVoidAsync(_clipboardFunction, _token);
             _copied = true;
             _succeeded = true;
         }
@@ -127,6 +145,9 @@ public partial class SeedTokenExportPanel
     /// </summary>
     private async Task SaveAsync()
     {
+        if (Disabled || _busy)
+            return;
+
         await BeginAsync();
         try
         {
@@ -145,6 +166,12 @@ public partial class SeedTokenExportPanel
             await EndAsync();
         }
     }
+
+    /// <summary>
+    /// Dismisses the exported token while retaining it for the current component lifetime.
+    /// </summary>
+    private void CloseDialog()
+        => _dialogOpen = false;
 
     /// <summary>
     /// Starts one export operation and notifies the containing workflow.

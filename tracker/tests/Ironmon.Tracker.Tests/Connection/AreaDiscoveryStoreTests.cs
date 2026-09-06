@@ -79,6 +79,9 @@ public sealed class AreaDiscoveryStoreTests : IDisposable
         Assert.Equal(4, store.GetCount("run-fusions", "area:10", AreaContentCategory.Encounter));
         Assert.Equal(3, store.GetCount("run-fusions", "area:10", AreaContentCategory.Encounter, false));
         Assert.Equal(2, store.GetCount("run-fusions", "area:10", AreaContentCategory.Encounter, true));
+        Assert.Equal((1, 3), store.GetEncounterCounts("run-fusions", "area:10"));
+        Assert.Equal((1, 2), store.GetEncounterCounts("run-fusions", "area:10", false));
+        Assert.Equal((1, 1), store.GetEncounterCounts("run-fusions", "area:10", true));
     }
 
     /// <summary>

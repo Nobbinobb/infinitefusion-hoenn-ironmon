@@ -1,0 +1,6 @@
+<div class="grant-list">
+    @foreach (string capability in Capabilities)
+    {
+        <span><ObsidianIcon Kind="@(Selection.IsIncluded(capability) ? ObsidianIconKind.Included : ObsidianIconKind.Check)" />@Text[GeneratorLocalizationKeys.GetCapabilityName(capability)]</span>
+    }
+</div>

@@ -158,6 +158,9 @@ module Ironmon
             "message" => "Seeded run is waiting for a safe map boundary."
           }, message["run_id"])
         end
+      elsif message["command"] == "select_starter"
+        payload = Ironmon.request_tracker_starter(message["payload"], message["run_id"])
+        queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "use_battle_item"
         payload = Ironmon.request_tracker_battle_item(
           message["payload"], message["battle_id"]
@@ -166,7 +169,9 @@ module Ironmon
       elsif message["command"] == "favorite_pokemon_search"
         payload = message["payload"] || {}
         payload["normal_only"] = true
-        payload = Ironmon.tracker_pokemon_search_for_recipe(payload, nil)
+        payload = Ironmon.tracker_pokemon_search_for_recipe(
+          payload, nil, { :obtainability => false }
+        )
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "prepare_run_lookup"
         payload = Ironmon.tracker_run_lookup_preparation(

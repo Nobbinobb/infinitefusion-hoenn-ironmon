@@ -86,6 +86,10 @@ public partial class SeededRunPage : IDisposable
     /// <param name="args">The selected browser file.</param>
     private async Task LoadImportFileAsync(InputFileChangeEventArgs args)
     {
+        if (OperationLocked)
+            return;
+
+        _busy = true;
         ClearOperationMessage();
         _validatedToken = null;
         try
@@ -98,6 +102,10 @@ public partial class SeededRunPage : IDisposable
         {
             _operationMessage = Text["Seeds.Errors.LoadFailed"];
         }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     /// <summary>
@@ -105,6 +113,9 @@ public partial class SeededRunPage : IDisposable
     /// </summary>
     private async Task ValidateImportAsync()
     {
+        if (OperationLocked || !CanUseActiveRun || string.IsNullOrWhiteSpace(_importToken))
+            return;
+
         BeginOperation();
         _validatedToken = null;
         try
@@ -118,7 +129,6 @@ public partial class SeededRunPage : IDisposable
 
             _validatedToken = result.Data;
             _operationSucceeded = true;
-            _operationMessage = Text["Seeds.Messages.Validated"];
         }
         finally
         {
@@ -132,7 +142,7 @@ public partial class SeededRunPage : IDisposable
     private async Task ConfirmImportAsync()
     {
         SeedTokenData? token = _validatedToken;
-        if (token is null)
+        if (token is null || OperationLocked || !CanUseActiveRun)
             return;
 
         BeginOperation();
@@ -163,6 +173,16 @@ public partial class SeededRunPage : IDisposable
         {
             _busy = false;
         }
+    }
+
+    /// <summary>
+    /// Dismisses token review without submitting an import or cancelling an accepted request.
+    /// </summary>
+    private void CloseImportDialog()
+    {
+        _validatedToken = null;
+        if (!OperationLocked)
+            ClearOperationMessage();
     }
 
     /// <summary>

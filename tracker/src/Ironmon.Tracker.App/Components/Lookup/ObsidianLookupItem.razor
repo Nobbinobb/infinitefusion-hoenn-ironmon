@@ -1,0 +1,20 @@
+<article class="obsidian-lookup-item">
+    <header><span>@Text["Lookup.Areas.Coordinates", Item.X, Item.Y]</span><ObsidianStatus Complete="Item.Collected" Label="@(Item.Collected ? Text["Lookup.Areas.Collected"] : Text["Lookup.Areas.NotCollected"])" /></header>
+    @if (Item.DetailsRevealed && Item.Items.Count > 0)
+    {
+        @foreach (AreaItemIdentityPayload identity in Item.Items)
+        {
+            <div class="obsidian-lookup-item-identity">
+                <span class="obsidian-lookup-item-icon @(Item.Collected ? "collected" : null)" title="@Text[ItemCategoryPresentation.GetLabelKey(identity.Category)]"><ObsidianIcon Kind="@ItemCategoryPresentation.GetIcon(identity.Category)" /></span>
+                <div><strong>@identity.ItemName</strong><p>@(Item.Hidden ? Text["Lookup.Areas.HiddenItem"] : Text["Lookup.Areas.GroundItem"])</p></div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="obsidian-lookup-item-identity">
+            <span class="obsidian-lookup-item-icon"><ObsidianIcon Kind="ObsidianIconKind.Question" /></span>
+            <div><strong>@Text["Lookup.Areas.UnknownItem"]</strong><p>@(Item.Hidden ? Text["Lookup.Areas.HiddenItem"] : Text["Lookup.Areas.GroundItem"])</p></div>
+        </div>
+    }
+</article>

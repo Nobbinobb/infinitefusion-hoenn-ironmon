@@ -7,10 +7,11 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 /// </summary>
 public partial class LiveLookup : IDisposable
 {
+    private static readonly LiveLookupSection[] _sections = [LiveLookupSection.Encounters, LiveLookupSection.Trainers, LiveLookupSection.Items, LiveLookupSection.TypeCoverage];
     private TrackerConnectionSnapshot _connection = new(TrackerConnectionStatus.Stopped, null, null, null);
     private TrackerRunStateSnapshot _run = new(null, null);
     private readonly TypeCoverageSelectionState _coverageSelection = new();
-    private LiveLookupSection _selectedSection = LiveLookupSection.Trainers;
+    private LiveLookupSection _selectedSection = LiveLookupSection.Encounters;
 
     /// <summary>
     /// Gets or initializes the shared connection status service.
@@ -120,14 +121,6 @@ public partial class LiveLookup : IDisposable
         LiveLookupSection.Items => AreaContentCategory.Item,
         _ => throw new InvalidOperationException("Type Coverage does not use an area category.")
     };
-
-    /// <summary>
-    /// Gets the visual classes for one active-run Lookup tab.
-    /// </summary>
-    /// <param name="section">The represented section.</param>
-    /// <returns>The tab classes.</returns>
-    private string GetSectionTabClass(LiveLookupSection section)
-        => section == _selectedSection ? "live-lookup-tab selected" : "live-lookup-tab";
 
     /// <summary>
     /// Refreshes active-run availability after a connection change.

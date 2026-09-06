@@ -3,6 +3,9 @@
 
     function apply(state) {
         state.canvas.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) scale(${state.scale})`;
+        const zoomLabel = state.viewport.querySelector("[data-graph-zoom]");
+        if (zoomLabel)
+            zoomLabel.textContent = `${Math.round(state.scale * 100)}%`;
     }
 
     function setScale(state, requestedScale, focalX, focalY) {
@@ -21,7 +24,9 @@
         const width = state.viewport.clientWidth;
         const height = state.viewport.clientHeight;
         state.scale = Math.min(1, Math.max(0.7, (width - 32) / 524));
-        state.x = (width / 2) - (state.currentCenterX * state.scale);
+        const scaledWidth = state.canvasWidth * state.scale;
+        const focusedX = (width / 2) - (state.currentCenterX * state.scale);
+        state.x = scaledWidth <= width ? (width - scaledWidth) / 2 : Math.min(0, Math.max(width - scaledWidth, focusedX));
         state.y = (height / 2) - (state.currentCenterY * state.scale);
         apply(state);
     }

@@ -50,7 +50,7 @@
                             <span class="base-stat-fill generated" style="width: @GetBarWidth(stat.Generated)%"></span>
                         }
                     </div>
-                    <span class="base-stat-bar-value">@stat.Generated@if (_mode == BaseStatDisplayMode.DeltaBars) { <small class="@GetDeltaClass(stat.Original, stat.Generated)">@FormatDelta(stat.Original, stat.Generated)</small> }</span>
+                    <span class="base-stat-bar-value"><span>@stat.Generated</span>@if (_mode == BaseStatDisplayMode.DeltaBars) { <small class="@GetDeltaClass(stat.Original, stat.Generated)">@FormatDelta(stat.Original, stat.Generated)</small> }</span>
                 </div>
             }
         </div>

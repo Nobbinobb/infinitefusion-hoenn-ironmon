@@ -1,0 +1,30 @@
+<div class="permission-editor">
+    <nav class="group-nav" aria-label="@Text["Generator.Capabilities.Title"]">
+        @foreach (GeneratorCapabilityGroup group in _groups)
+        {
+            <button type="button" class="group-button" aria-pressed="@(group == _activeGroup ? "true" : "false")" @onclick="() => SelectGroup(group)">
+                <ObsidianIcon Kind="group.Icon" />
+                <span>@Text[group.ShortNameKey]</span>
+                <small>@group.Capabilities.Count(Selection.IsSelected)/@group.Capabilities.Count</small>
+            </button>
+        }
+    </nav>
+    <section class="permission-options" @key="_activeGroup" aria-label="@Text[_activeGroup.ResourceKey]">
+        <header><h3>@Text[_activeGroup.ResourceKey]</h3><p>@Text[_activeGroup.DescriptionKey]</p></header>
+        @foreach (string capability in _activeGroup.Capabilities)
+        {
+            bool included = Selection.IsIncluded(capability);
+            <label class="check-option @(included ? "included" : null)">
+                <input type="checkbox" checked="@Selection.IsSelected(capability)" @onchange="args => Changed.InvokeAsync((capability, args.Value is true))" disabled="@included" />
+                <span>
+                    <strong>@Text[GeneratorLocalizationKeys.GetCapabilityName(capability)]</strong>
+                    <small>@Text[GeneratorLocalizationKeys.GetCapabilityDescription(capability)]</small>
+                    @if (included)
+                    {
+                        <em><ObsidianIcon Kind="ObsidianIconKind.Included" />@Text["Generator.Capabilities.IncludedByAllActive"]</em>
+                    }
+                </span>
+            </label>
+        }
+    </section>
+</div>

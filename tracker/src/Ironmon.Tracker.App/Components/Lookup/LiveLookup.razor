@@ -1,62 +1,33 @@
-@if (!HasActiveRun())
-{
-    <section class="pokemon-card lookup-view" role="tabpanel" aria-label="@Text["Lookup.Live.Title"]">
-        <header class="lookup-heading">
-            <div>
-                <p class="card-kicker">@Text["Lookup.Live.Kicker"]</p>
-                <h2>@Text["Lookup.Live.Title"]</h2>
-            </div>
-        </header>
-        <div class="lookup-empty">
-            <strong>@Text["Lookup.Live.NoActiveRun"]</strong>
-            <p>@Text["Lookup.Live.NoActiveRunDescription"]</p>
-        </div>
-    </section>
-}
-else
-{
-    string activeRunId = GetActiveRunId()!;
-    <section class="pokemon-card lookup-view" role="tabpanel" aria-label="@Text["Lookup.Live.Title"]">
-        <header class="lookup-heading">
-            <div>
-                <p class="card-kicker">@Text["Lookup.Live.Kicker"]</p>
-                <h2>@Text["Lookup.Live.Title"]</h2>
-            </div>
-        </header>
-
-        @if (GetPreparationProgress().Status != TrackerObtainabilityProgressStatus.Complete)
-        {
-            <ActiveRunLookupPreparation @key="activeRunId" Progress="@GetPreparationProgress()" />
-        }
-        else
-        {
-            <nav class="live-lookup-tabs" role="tablist" aria-label="@Text["Lookup.Live.Sections"]">
-                @foreach (LiveLookupSection section in Enum.GetValues<LiveLookupSection>())
-                {
-                    <button type="button"
-                            class="@GetSectionTabClass(section)"
-                            role="tab"
-                            aria-selected="@(_selectedSection == section)"
-                            @onclick="() => SelectSection(section)">
-                        @GetSectionName(section)
-                    </button>
-                }
-            </nav>
-
+<section class="obsidian-lookup" role="tabpanel" aria-label="@Text["Lookup.Live.Title"]">
+    <header class="obsidian-settings-heading">
+        <div><p class="card-kicker">@Text["Lookup.Live.Kicker"]</p><h2>@Text["Lookup.Live.Title"]</h2></div>
+    </header>
+    @if (!HasActiveRun())
+    {
+        <div class="obsidian-lookup-state"><ObsidianIcon Kind="ObsidianIconKind.Circle" /><h3>@Text["Lookup.Live.NoActiveRun"]</h3><p>@Text["Lookup.Live.NoActiveRunDescription"]</p></div>
+    }
+    else if (GetPreparationProgress().Status != TrackerObtainabilityProgressStatus.Complete)
+    {
+        <ActiveRunLookupPreparation @key="GetActiveRunId()" Progress="@GetPreparationProgress()" />
+    }
+    else
+    {
+        string activeRunId = GetActiveRunId()!;
+        <nav class="obsidian-lookup-tabs" role="tablist" aria-label="@Text["Lookup.Live.Sections"]">
+            @foreach (LiveLookupSection section in _sections)
+            {
+                <button type="button" role="tab" aria-selected="@(_selectedSection == section ? "true" : "false")" @onclick="() => SelectSection(section)">@GetSectionName(section)</button>
+            }
+        </nav>
+        <div class="obsidian-lookup-content">
             @if (_selectedSection == LiveLookupSection.TypeCoverage)
             {
                 <TypeCoveragePanel Game="@_connection.Game" State="@_connection.CurrentState" Selection="@_coverageSelection" />
             }
             else
             {
-                <AreaLookupExplorer @key="@($"active-areas-{activeRunId}")"
-                                    SourceKey="@($"active:{activeRunId}:{_connection.CurrentState?.OverworldEncounters}")"
-                                    RunId="@activeRunId"
-                                    GameRoot="@GameRoot"
-                                    FixedCategory="@GetAreaCategory()"
-                                    ShowHeading="false"
-                                    ShowCategoryTabs="false" />
+                <AreaLookupExplorer @key="@($"active-areas-{activeRunId}")" SourceKey="@($"active:{activeRunId}:{_connection.CurrentState?.OverworldEncounters}")" RunId="@activeRunId" GameRoot="@GameRoot" FixedCategory="@GetAreaCategory()" ShowCategoryTabs="false" />
             }
-        }
-    </section>
-}
+        </div>
+    }
+</section>

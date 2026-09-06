@@ -36,4 +36,9 @@
     <ProjectReference Include="..\Ironmon.Tracker.AccessGenerator.Core\Ironmon.Tracker.AccessGenerator.Core.csproj" />
     <ProjectReference Include="..\..\src\Ironmon.Tracker.Access\Ironmon.Tracker.Access.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <RazorComponent Include="..\..\src\Ironmon.Tracker.App\Components\Common\ObsidianIcon.razor" Link="Components\Shared\ObsidianIcon.razor" />
+    <Compile Include="..\..\src\Ironmon.Tracker.App\Components\Common\ObsidianIcon.razor.cs" Link="Components\Shared\ObsidianIcon.razor.cs" />
+    <Compile Include="..\..\src\Ironmon.Tracker.App\Components\Common\ObsidianIconKind.cs" Link="Components\Shared\ObsidianIconKind.cs" />
+  </ItemGroup>
 </Project>
