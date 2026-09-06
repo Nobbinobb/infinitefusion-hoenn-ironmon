@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - main
-      - release-test/integration-20260906
     types: [opened, reopened, synchronize, ready_for_review]
   workflow_dispatch:
 
@@ -20,8 +19,23 @@ env:
   DOTNET_NOLOGO: true
 
 jobs:
+  validation:
+    name: PR validation
+    if: always()
+    needs: [inputs, current-catalogs, core-tests, app-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every gameplay, generation and tracker job to pass
+        env:
+          RESULTS: ${{ join(needs.*.result, ',') }}
+        run: test "$RESULTS" = 'success,success,success,success'
+
+  inputs:
+    uses: ./.github/workflows/upstream-inputs.yml
+
   current-catalogs:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    needs: inputs
     name: Generate current-source catalogs
     runs-on: windows-latest
     timeout-minutes: 45
@@ -29,21 +43,25 @@ jobs:
       game_version: ${{ steps.game.outputs.game_version }}
     steps:
       - name: Download newest Hoenn release
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: infinitefusion/infinitefusion-hoenn-public
-          ref: releases
+          ref: ${{ needs.inputs.outputs.game_commit }}
           path: game
           persist-credentials: false
       - name: Check out tested source
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           path: game/Ironmon
           persist-credentials: false
-      - name: Prepare software rendering for the hosted game
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: upstream-inputs
+          path: upstream-inputs
+      - name: Prepare fresh metadata and software rendering for the hosted game
         id: game
         shell: pwsh
-        run: ./game/Ironmon/tools/ci/Initialize-HostedGame.ps1
+        run: ./game/Ironmon/tools/ci/Initialize-HostedGame.ps1 -SnapshotDirectory upstream-inputs
       - name: Verify hosted game runtime
         shell: pwsh
         run: ./game/Ironmon/tools/ci/Test-HostedGameRuntime.ps1
@@ -51,8 +69,16 @@ jobs:
         shell: pwsh
         working-directory: game/Ironmon
         run: ./tools/Build-TrackerRelease.ps1 -GenerateOnly
+      - name: Validate gameplay and generated data
+        shell: pwsh
+        working-directory: game/Ironmon
+        run: |
+          ./tools/Test-GenerationProfile.ps1 -TimeoutSeconds 300
+          ./tools/Test-GameRuntime.ps1 -TimeoutSeconds 300
+          ./tools/Test-DefenseOverview.ps1
+          ./tools/Test-AreaEncounterLookup.ps1
       - name: Share catalogs with tracker tests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: current-source-catalogs
           path: |
@@ -62,6 +88,7 @@ jobs:
             game/Ironmon/data/type_coverage.json
             game/Ironmon/data/player_fusion_worker_catalog.json
           retention-days: 1
+          overwrite: true
           if-no-files-found: error
 
   core-tests:
@@ -73,15 +100,15 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Install .NET SDK
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: 10.0.400
 
       - name: Use catalogs generated for this workflow run
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: current-source-catalogs
           path: data
@@ -99,10 +126,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Install .NET SDK
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: 10.0.400
 
@@ -110,7 +137,7 @@ jobs:
         run: dotnet workload install maui-windows --skip-manifest-update
 
       - name: Use catalogs generated for this workflow run
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: current-source-catalogs
           path: data

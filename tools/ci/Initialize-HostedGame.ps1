@@ -1,3 +1,5 @@
+param([Parameter(Mandatory)][string]$SnapshotDirectory)
+
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_OS -ne 'Windows') {
@@ -5,6 +7,10 @@ if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_OS -ne 'Windows') {
 }
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $gameRoot = Split-Path -Parent $projectRoot
+. (Join-Path $PSScriptRoot 'UpstreamInputs.ps1')
+$inputs = Install-UpstreamInputs $SnapshotDirectory $gameRoot
+New-Item -ItemType Directory -Force -Path (Join-Path $projectRoot 'data') | Out-Null
+Copy-Item -LiteralPath (Join-Path $SnapshotDirectory 'upstream-inputs.json') -Destination (Join-Path $projectRoot 'data/upstream-inputs.json')
 $gameCommit = git -C $gameRoot rev-parse HEAD
 if ($gameCommit -notmatch '^[0-9a-f]{40}$') { throw 'Downloaded game revision is invalid.' }
 $settings = Get-Content (Join-Path $gameRoot 'Data/Scripts/001_Settings.rb') -Raw
