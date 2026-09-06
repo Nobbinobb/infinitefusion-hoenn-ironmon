@@ -11,6 +11,7 @@ public sealed class TypeCoverageDatasetJsonTests
 {
     private const string _coverageFileName = "type_coverage.json";
     private const string _expectedGameVersion = "6.8.2";
+    private const string _gameVersionEnvironmentVariable = "IRONMON_EXPECTED_GAME_VERSION";
     private const string _fingerprintFormat = "x16";
     private const string _fusionBodyPrefix = "B";
     private const string _fusionComponentFileName = "generation_custom_fusion_pool.bin";
@@ -88,7 +89,8 @@ public sealed class TypeCoverageDatasetJsonTests
         GenerationAlgorithmPayload fusionAlgorithm = profile.Algorithms.Single(algorithm => StringComparer.Ordinal.Equals(algorithm.Name, GenerationAlgorithmNames.CustomFusionEligibility));
         GenerationComponentPayload fusionComponent = profile.Components.Single(component => StringComparer.Ordinal.Equals(component.Name, _fusionComponentName));
 
-        Assert.Equal(_expectedGameVersion, dataset.GameVersion);
+        string expectedGameVersion = Environment.GetEnvironmentVariable(_gameVersionEnvironmentVariable) ?? _expectedGameVersion;
+        Assert.Equal(expectedGameVersion, dataset.GameVersion);
         Assert.Equal(GenerationProfileFingerprint.Create(profile), profileId);
         Assert.Equal(fusionAlgorithm.Version, dataset.FusionPoolSchemaVersion);
         Assert.Equal(pool.NormalSpeciesCount, dataset.NormalPoolSize);

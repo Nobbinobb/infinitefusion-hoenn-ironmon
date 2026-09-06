@@ -4,9 +4,7 @@ on:
   pull_request:
     branches:
       - main
-  push:
-    branches:
-      - main
+    types: [opened, reopened, synchronize, ready_for_review]
   workflow_dispatch:
 
 permissions:
@@ -21,24 +19,99 @@ env:
   DOTNET_NOLOGO: true
 
 jobs:
+  validation:
+    name: PR validation
+    if: always()
+    needs: [inputs, current-catalogs, core-tests, app-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every gameplay, generation and tracker job to pass
+        env:
+          RESULTS: ${{ join(needs.*.result, ',') }}
+        run: test "$RESULTS" = 'success,success,success,success'
+
+  inputs:
+    uses: ./.github/workflows/upstream-inputs.yml
+
+  current-catalogs:
+    needs: inputs
+    name: Generate current-source catalogs
+    runs-on: windows-latest
+    timeout-minutes: 45
+    outputs:
+      game_version: ${{ steps.game.outputs.game_version }}
+    steps:
+      - name: Download newest Hoenn release
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: infinitefusion/infinitefusion-hoenn-public
+          ref: ${{ needs.inputs.outputs.game_commit }}
+          path: game
+          persist-credentials: false
+      - name: Check out tested source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          path: game/Ironmon
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: upstream-inputs
+          path: upstream-inputs
+      - name: Prepare fresh metadata and software rendering for the hosted game
+        id: game
+        shell: pwsh
+        run: ./game/Ironmon/tools/ci/Initialize-HostedGame.ps1 -SnapshotDirectory upstream-inputs
+      - name: Verify hosted game runtime
+        shell: pwsh
+        run: ./game/Ironmon/tools/ci/Test-HostedGameRuntime.ps1
+      - name: Generate catalogs from this source revision
+        shell: pwsh
+        working-directory: game/Ironmon
+        run: ./tools/Build-TrackerRelease.ps1 -GenerateOnly
+      - name: Validate gameplay and generated data
+        shell: pwsh
+        working-directory: game/Ironmon
+        run: |
+          ./tools/Test-GenerationProfile.ps1 -TimeoutSeconds 300
+          ./tools/Test-GameRuntime.ps1 -TimeoutSeconds 300
+          ./tools/Test-DefenseOverview.ps1
+          ./tools/Test-AreaEncounterLookup.ps1
+      - name: Share catalogs with tracker tests
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: current-source-catalogs
+          path: |
+            game/Ironmon/data/generation_custom_fusion_pool.bin
+            game/Ironmon/data/generation_profile.json
+            game/Ironmon/data/obtainability_source_catalog.json
+            game/Ironmon/data/type_coverage.json
+            game/Ironmon/data/player_fusion_worker_catalog.json
+          retention-days: 1
+          overwrite: true
+          if-no-files-found: error
+
   core-tests:
+    needs: current-catalogs
+    env:
+      IRONMON_EXPECTED_GAME_VERSION: ${{ needs.current-catalogs.outputs.game_version }}
     name: Core tracker tests
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Install .NET SDK
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: 10.0.400
 
-      - name: Restore published release catalogs
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: ./tools/ci/Restore-Release-Catalogs.ps1
+      - name: Use catalogs generated for this workflow run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: current-source-catalogs
+          path: data
 
       - name: Restore
         run: dotnet restore tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj
@@ -47,26 +120,27 @@ jobs:
         run: dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj --configuration Release --no-restore --nologo --disable-build-servers --maxcpucount:1 -p:UseSharedCompilation=false -- xUnit.ParallelizeTestCollections=false
 
   app-tests:
+    needs: current-catalogs
     name: Windows app tests
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Install .NET SDK
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: 10.0.400
 
       - name: Install Windows MAUI workload
         run: dotnet workload install maui-windows --skip-manifest-update
 
-      - name: Restore published release catalogs
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: ./tools/ci/Restore-Release-Catalogs.ps1
+      - name: Use catalogs generated for this workflow run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: current-source-catalogs
+          path: data
 
       - name: Restore
         run: dotnet restore tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj --runtime win-x64 -p:Configuration=Release -m:1

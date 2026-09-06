@@ -1,3 +1,5 @@
+param([switch]$GenerateOnly)
+
 $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -25,7 +27,7 @@ $releaseArtifactNames = @(
 $existingReleaseArtifacts = $releaseArtifactNames | Where-Object {
   Test-Path -LiteralPath (Join-Path $releaseDirectory $_)
 }
-if ($existingReleaseArtifacts) {
+if (-not $GenerateOnly -and $existingReleaseArtifacts) {
   throw "Release version $releaseVersion already has published artifacts: $($existingReleaseArtifacts -join ', '). Bump ApplicationDisplayVersion, ApplicationVersion, and Version before building another release. Existing release artifacts are immutable."
 }
 $areaCatalog = Join-Path $projectRoot "data\area_catalog.dat"
@@ -331,18 +333,9 @@ try {
     -ErrorAction SilentlyContinue
 }
 
-& dotnet test (Join-Path $projectRoot "tracker\tests\Ironmon.Tracker.Tests\Ironmon.Tracker.Tests.csproj") `
-  --configuration Release `
-  --maxcpucount:1
-if ($LASTEXITCODE -ne 0) {
-  throw "Tracker tests failed."
-}
-
-& dotnet test (Join-Path $projectRoot "tracker\tests\Ironmon.Tracker.App.Tests\Ironmon.Tracker.App.Tests.csproj") `
-  --configuration Release `
-  --maxcpucount:1
-if ($LASTEXITCODE -ne 0) {
-  throw "Tracker app tests failed."
+if ($GenerateOnly) {
+  Write-Output "Generated current-source release catalogs and distribution."
+  return
 }
 
 & (Join-Path $PSScriptRoot "Test-GenerationProfile.ps1") `
@@ -352,6 +345,22 @@ if ($LASTEXITCODE -ne 0) {
 & (Join-Path $PSScriptRoot "Test-GameRuntime.ps1") `
   -GameRoot $gameRoot `
   -TimeoutSeconds 300
+
+& dotnet test (Join-Path $projectRoot "tracker\tests\Ironmon.Tracker.Tests\Ironmon.Tracker.Tests.csproj") `
+  --configuration Release `
+  --maxcpucount:1 `
+  -- xUnit.ParallelizeTestCollections=false
+if ($LASTEXITCODE -ne 0) {
+  throw "Tracker tests failed."
+}
+
+& dotnet test (Join-Path $projectRoot "tracker\tests\Ironmon.Tracker.App.Tests\Ironmon.Tracker.App.Tests.csproj") `
+  --configuration Release `
+  --runtime win-x64 `
+  --maxcpucount:1
+if ($LASTEXITCODE -ne 0) {
+  throw "Tracker app tests failed."
+}
 
 & (Join-Path $PSScriptRoot "Test-DefenseOverview.ps1")
 & (Join-Path $PSScriptRoot "Test-AreaEncounterLookup.ps1") -GameRoot $gameRoot

@@ -512,7 +512,7 @@ begin
   GameData.load_all
   $game_temp = Game_Temp.new
   Game.load_sprites_list_caches
-  IronmonScriptLoader.load_manifest(source_root, manifest_path)
+  IronmonScriptLoader.load_manifest(source_root, manifest_path, false)
   summary = IronmonObtainabilityFoundationAuditExporter.run(
     output_path, source_catalog_path
   )

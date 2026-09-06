@@ -296,6 +296,10 @@ function Invoke-IronmonGameRuntime {
         if (-not $ShowGameWindow) {
             $startArguments.WindowStyle = "Hidden"
         }
+        if ($env:GITHUB_ACTIONS -eq 'true') {
+            $startArguments.RedirectStandardOutput = Join-Path $env:RUNNER_TEMP 'ironmon-runtime.stdout.log'
+            $startArguments.RedirectStandardError = Join-Path $env:RUNNER_TEMP 'ironmon-runtime.stderr.log'
+        }
         $gameProcess = Start-Process @startArguments
         $runtimeTimer = [Diagnostics.Stopwatch]::StartNew()
         $lastProgressText = $null
@@ -376,6 +380,14 @@ function Invoke-IronmonGameRuntime {
         if ($gameProcess -and -not $gameProcess.HasExited) {
             Stop-Process -Id $gameProcess.Id
             $gameProcess.WaitForExit()
+        }
+        if ($env:GITHUB_ACTIONS -eq 'true') {
+            foreach ($runtimeLog in 'ironmon-runtime.stdout.log', 'ironmon-runtime.stderr.log') {
+                $runtimeLogPath = Join-Path $env:RUNNER_TEMP $runtimeLog
+                if (Test-Path -LiteralPath $runtimeLogPath) {
+                    Get-Content -LiteralPath $runtimeLogPath | Write-Output
+                }
+            }
         }
         if (Test-Path -LiteralPath $scriptsArchiveBackup) {
             Restore-IronmonGameRuntimeArchive -GameRoot $resolvedGameRoot | Out-Null
