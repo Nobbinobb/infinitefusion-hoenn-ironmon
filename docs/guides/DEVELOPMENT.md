@@ -28,12 +28,18 @@ the primary work item, and `release/<version>` for release preparation. Keep
 version numbers unchanged on feature, fix, and issue branches.
 
 Push the working branch and open a pull request into `main`. The repository's
-GitHub Actions workflow runs the platform-independent tracker tests and the
-Windows application tests. Ruby and full release validation remain local
-because they require the installed Infinite Fusion game and its bundled Ruby
-runtime. A clean CI checkout restores the generated catalogs needed to compile
-the tracker from the latest published runtime-required release; these ignored
-release artifacts remain outside source control.
+GitHub Actions workflow first downloads a pinned Hoenn revision and generates
+catalogs from the source being tested, using `tools/Build-TrackerRelease.ps1
+-GenerateOnly`. Both tracker test jobs consume those catalogs from the same
+workflow run. They never restore catalogs from a previous Ironmon release.
+Generated artifacts remain outside source control and expire after one day.
+Changing the pinned game revision is a reviewed dependency update.
+
+The isolated `release-rehearsal.yml` workflow exercises full hosted release
+validation and publication on disposable branches. It is experimental until
+the results in `docs/audits/RELEASE_AUTOMATION_REHEARSAL.md` confirm the hosted
+runtime, clean-checkout generation, and publication checks. The established
+production release procedure below remains in effect until adoption.
 
 After the desired feature and fix pull requests have merged, create a release
 branch from the updated `main`. Add the new release notes and synchronize the

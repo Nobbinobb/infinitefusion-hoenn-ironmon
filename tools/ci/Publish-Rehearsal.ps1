@@ -20,6 +20,10 @@ foreach ($archive in $manifest.archives) {
   if ((Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $archive.sha256 -or (Get-Item $path).Length -ne $archive.bytes) {
     throw "Candidate checksum mismatch: $($archive.name)"
   }
+  $checksumPath = $path -replace '\.zip$', '.sha256.txt'
+  if ((Get-Content $checksumPath -Raw).Trim() -ne "$($archive.sha256)  $($archive.name)") {
+    throw "Candidate checksum file mismatch: $($archive.name)"
+  }
 }
 $tag = "release-test-$($env:GITHUB_RUN_ID)"
 @"

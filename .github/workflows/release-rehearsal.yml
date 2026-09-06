@@ -33,6 +33,9 @@ jobs:
         with:
           path: game/Ironmon
           persist-credentials: false
+      - name: Verify hosted game runtime before toolchain installation
+        shell: pwsh
+        run: ./game/Ironmon/tools/ci/Test-HostedGameRuntime.ps1
       - name: Install .NET SDK
         uses: actions/setup-dotnet@v6
         with:
