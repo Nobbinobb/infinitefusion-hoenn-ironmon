@@ -461,7 +461,7 @@ module Ironmon
     return mark_persistent_trainer_species(pokemon)
   end
 
-  def self.accept_early_game_quest(id, show_description = false)
+  def self.accept_early_game_quest(id, show_description = false, announce = true)
     return false if isQuestAlreadyAccepted?(id)
     quest = QUESTS[id]
     return false if !quest
@@ -469,10 +469,12 @@ module Ironmon
       $game_variables[EARLY_GAME_VARIABLE_QUESTS_ACCEPTED].to_i + 1
     $game_variables[VAR_NB_QUEST_ACTIVE] =
       $game_variables[VAR_NB_QUEST_ACTIVE].to_i + 1
-    if quest.type == :MAIN_QUEST
-      showNewMainQuestMessage(quest.name, quest.desc, show_description)
-    else
-      showNewSideQuestMessage(quest.name, quest.desc, show_description)
+    if announce
+      if quest.type == :MAIN_QUEST
+        showNewMainQuestMessage(quest.name, quest.desc, show_description)
+      else
+        showNewSideQuestMessage(quest.name, quest.desc, show_description)
+      end
     end
     pbAddQuest(id)
     return true
