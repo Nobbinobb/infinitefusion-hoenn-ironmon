@@ -5,6 +5,41 @@ namespace Ironmon.Tracker.Tests.Protocol;
 /// </summary>
 public sealed class AreaLookupPayloadTests
 {
+    private const string _trainerSpecies = "LANTURN:0";
+    private const string _trainerSpeciesName = "Lanturn";
+    private const string _trainerAbility = "VOLTABSORB";
+    private const string _trainerAbilityName = "Volt Absorb";
+    private const string _trainerMove = "BUBBLEBEAM";
+    private const string _trainerMoveName = "Bubble Beam";
+    private const string _trainerMoveType = "WATER";
+    private const string _trainerMoveDescription = "May lower the target's Speed.";
+
+    /// <summary>
+    /// Keeps old peers undisclosed while preserving new trainer battle-set fields over the wire.
+    /// </summary>
+    [Fact]
+    public void TrainerBattleDetailsRoundTripWithoutInventingLegacyAccess()
+    {
+        AreaTrainerPokemonPayload legacy = new() { SpeciesId = _trainerSpecies, SpeciesName = _trainerSpeciesName };
+        Assert.False(legacy.AbilitiesRevealed);
+        Assert.False(legacy.MovesRevealed);
+        Assert.Empty(legacy.Abilities);
+        Assert.Empty(legacy.Moves);
+        AreaTrainerPokemonPayload member = new()
+        {
+            SpeciesId = _trainerSpecies, SpeciesName = _trainerSpeciesName, Slot = 2, Level = 35,
+            AbilitiesRevealed = true, MovesRevealed = true,
+            Abilities = [new() { Id = _trainerAbility, Name = _trainerAbilityName, Description = string.Empty }],
+            Moves = [new() { Id = _trainerMove, Name = _trainerMoveName, Type = _trainerMoveType, Category = MoveCategory.Special, Description = _trainerMoveDescription }]
+        };
+        AreaTrainerPokemonPayload restored = TrackerJson.DeserializePayload<AreaTrainerPokemonPayload>(TrackerJson.SerializePayload(member));
+        Assert.True(restored.AbilitiesRevealed);
+        Assert.True(restored.MovesRevealed);
+        Assert.Equal(_trainerAbility, Assert.Single(restored.Abilities).Id);
+        AreaTrainerMovePayload move = Assert.Single(restored.Moves);
+        Assert.Equal(MoveCategory.Special, move.Category);
+        Assert.Equal(_trainerMoveDescription, move.Description);
+    }
     private const string _preparationAreaId = "area:5";
     private const string _preparationAreaName = "Route 101";
     private const string _crossEnvironment = "cross";
