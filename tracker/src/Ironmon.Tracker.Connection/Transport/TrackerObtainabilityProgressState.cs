@@ -121,6 +121,7 @@ public sealed class TrackerObtainabilityProgressState
     private const int _maximumPreparedRuns = 4;
     private readonly Lock _sync = new();
     private readonly Dictionary<string, TrackerObtainabilityProgressSnapshot> _preparedActiveRuns = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, TrackerObtainabilityProgressSnapshot> _preparedArchivedRuns = new(StringComparer.Ordinal);
     private readonly HashSet<string> _startedActiveRuns = new(StringComparer.Ordinal);
     private string? _activeRunId;
     private TrackerObtainabilityProgressScope _scope;
@@ -172,6 +173,17 @@ public sealed class TrackerObtainabilityProgressState
                 ? _snapshot
                 : TrackerObtainabilityProgressSnapshot.Idle;
         }
+    }
+
+    /// <summary>
+    /// Gets whether this connection has confirmed full preparation for one active or archived run.
+    /// </summary>
+    /// <param name="runId">The run whose completed preparation should be checked.</param>
+    /// <returns>Whether full preparation is retained for the matching run.</returns>
+    public bool HasCompletedPreparation(string? runId)
+    {
+        lock (_sync)
+            return runId is not null && (_preparedActiveRuns.ContainsKey(runId) || _preparedArchivedRuns.ContainsKey(runId));
     }
 
     /// <summary>
@@ -238,11 +250,12 @@ public sealed class TrackerObtainabilityProgressState
             if (ownsProgress)
                 _snapshot = progress;
 
-            if (prepared && scope == TrackerObtainabilityProgressScope.ActiveRun && !string.IsNullOrWhiteSpace(runId))
+            if (prepared && !string.IsNullOrWhiteSpace(runId))
             {
-                _preparedActiveRuns[runId] = progress;
-                if (_preparedActiveRuns.Count > _maximumPreparedRuns)
-                    _preparedActiveRuns.Remove(_preparedActiveRuns.Keys.First());
+                Dictionary<string, TrackerObtainabilityProgressSnapshot> preparedRuns = scope == TrackerObtainabilityProgressScope.ActiveRun ? _preparedActiveRuns : _preparedArchivedRuns;
+                preparedRuns[runId] = progress;
+                if (preparedRuns.Count > _maximumPreparedRuns)
+                    preparedRuns.Remove(preparedRuns.Keys.First());
             }
         }
 
@@ -302,6 +315,7 @@ public sealed class TrackerObtainabilityProgressState
             _activeRunId = null;
             _scope = TrackerObtainabilityProgressScope.ActiveRun;
             _preparedActiveRuns.Clear();
+            _preparedArchivedRuns.Clear();
             _startedActiveRuns.Clear();
             _phase = string.Empty;
             _startedTimestamp = 0;
