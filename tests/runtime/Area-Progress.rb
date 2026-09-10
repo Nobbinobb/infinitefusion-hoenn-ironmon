@@ -301,6 +301,29 @@ module IronmonAreaProgressRuntimeTests
           Ironmon.tracker_lookup_trainer_id(trainer_data) &&
           entry["slot"] == 1
       end
+      trainer_index = Ironmon.tracker_trainer_occurrence_index(active_recipe)
+      assert(
+        trainer_index[GameData::Species.get(trainer_target).id_number].any? do |trainer, slot|
+          trainer.id == trainer_data.id && slot == 0
+        end,
+        "trainer occurrence index preserves generated trainer slots"
+      )
+      original_trainer_mode = Ironmon.method(:tracker_trainer_data_mode)
+      begin
+        Ironmon.define_singleton_method(:tracker_trainer_data_mode) do |_recipe|
+          raise "Cached trainer lookups must not rescan trainer parties"
+        end
+        another_target = (trainer_index.keys - [GameData::Species.get(trainer_target).id_number]).first
+        Ironmon.tracker_lookup_trainer_occurrences(
+          GameData::Species.get(another_target), active_recipe
+        ) if another_target
+        assert(
+          Ironmon.tracker_trainer_occurrence_index(active_recipe).equal?(trainer_index),
+          "different Pokemon lookups share the same trainer mapping index"
+        )
+      ensure
+        Ironmon.define_singleton_method(:tracker_trainer_data_mode, original_trainer_mode)
+      end
       assert(
         trainer_occurrence &&
           trainer_occurrence["level"] ==

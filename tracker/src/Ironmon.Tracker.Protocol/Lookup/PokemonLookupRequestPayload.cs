@@ -28,6 +28,16 @@ public sealed class PokemonLookupRequestPayload
     public PokemonLookupSection Section { get; init; } = PokemonLookupSection.Overview;
 
     /// <summary>
+    /// Gets or initializes whether occurrence lists are requested separately from the overview.
+    /// </summary>
+    public bool DeferOccurrences { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the numeric reverse partner from this run's completed fusion mapping.
+    /// </summary>
+    public int? ReverseFusionId { get; init; }
+
+    /// <summary>
     /// Gets or initializes exact tracker-computed outgoing fusion-evolution assignments when available.
     /// </summary>
     public IReadOnlyList<EvolutionTargetAssignmentPayload>? EvolutionAssignments { get; init; }

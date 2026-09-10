@@ -137,7 +137,8 @@ internal sealed class TrackerDiagnosticRequestClient
             ? _fusionMappings.GetActiveEvolutionTargetAssignments(runId, speciesId)
             : null;
 
-        DebugPokemonLookupRequestPayload request = new() { SpeciesId = speciesId, Section = section, EvolutionAssignments = evolutionAssignments };
+        int? reverseFusionId = section == PokemonLookupSection.Overview ? _fusionMappings.GetPreparedReverseFusion(runId, null, speciesId) : null;
+        DebugPokemonLookupRequestPayload request = new() { SpeciesId = speciesId, Section = section, EvolutionAssignments = evolutionAssignments, DeferOccurrences = true, ReverseFusionId = reverseFusionId };
         return _session.SendAsync<DebugPokemonLookupRequestPayload, PokemonLookupSnapshot>(TrackerCommands.DebugPokemonLookup, request, runId, cancellationToken);
     }
 

@@ -17,10 +17,20 @@ module Ironmon
   end
 
   def self.tracker_lookup_reverse_fusion(species, recipe,
-                                         obtainability = false)
+                                         obtainability = false, assigned_id = nil)
     return nil if !species.is_a?(GameData::FusedSpecies)
-    mapper = tracker_post_run_fusion_mapper(recipe)
-    reverse = GameData::Species.get(mapper.paired_species(species.id))
+    if assigned_id.nil?
+      mapper = tracker_post_run_fusion_mapper(recipe)
+      reverse = GameData::Species.get(mapper.paired_species(species.id))
+    else
+      reverse = assigned_id.is_a?(Integer) && assigned_id > NB_POKEMON &&
+        assigned_id < Settings::ZAPMOLCUNO_NB ? GameData::Species.try_get(assigned_id) : nil
+      if !reverse || !tracker_lookup_species_available?(reverse)
+        raise TrackerLookupError.new(
+          "invalid_reverse_fusion", "The prepared reverse fusion is not available in this run."
+        )
+      end
+    end
     return tracker_lookup_relation(
       reverse, "Ironmon reverse", recipe, obtainability
     )
@@ -170,6 +180,7 @@ module Ironmon
     @tracker_evolution_generators = nil
     @tracker_fusion_evolution_generators = nil
     @tracker_trainer_location_index = nil
+    @tracker_trainer_occurrence_indexes = nil
     @tracker_obtainability_services = nil
     @tracker_obtainability_ready_scene = nil
   end

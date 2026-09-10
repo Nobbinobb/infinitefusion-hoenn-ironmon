@@ -1338,6 +1338,40 @@ module IronmonTrackerStructureRuntimeTests
             normal_overview["overview"]["fusion_bases"].empty?,
           "normal Pokemon overviews return without touching the global fusion mapper"
         )
+        original_occurrence_search = Ironmon.method(:tracker_occurrence_search_for_recipe)
+        begin
+          Ironmon.define_singleton_method(:tracker_occurrence_search_for_recipe) do |*_arguments|
+            raise "Deferred overviews must not search trainer or wild locations"
+          end
+          deferred_overview = Ironmon.tracker_pokemon_lookup_for_recipe(
+            { "species_id" => "CHARMELEON:0", "section" => "overview", "defer_occurrences" => true },
+            active_recipe,
+            { :overview => true, :obtainability => false, :wild => true, :trainer => true }
+          )
+          assert(
+            deferred_overview["overview"]["trainer_occurrences"]["pending"] == true &&
+              deferred_overview["overview"]["wild_occurrences"]["pending"] == true,
+            "overview location lists defer all occurrence work"
+          )
+          fusion = GameData::Species.get(Ironmon.custom_fusion_pool.first)
+          assigned_reverse = GameData::Species.get(Ironmon.custom_fusion_pool.last)
+          reverse = Ironmon.tracker_lookup_reverse_fusion(
+            fusion, active_recipe, false, assigned_reverse.id_number
+          )
+          assert(
+            reverse["species_id"] == "#{assigned_reverse.id}:0",
+            "prepared reverse lookups do not initialize the Ruby fusion mapper"
+          )
+          rejected_reverse = false
+          begin
+            Ironmon.tracker_lookup_reverse_fusion(fusion, active_recipe, false, 1)
+          rescue Ironmon::TrackerLookupError => error
+            rejected_reverse = error.code == "invalid_reverse_fusion"
+          end
+          assert(rejected_reverse, "prepared reverse lookup rejects a normal species assignment")
+        ensure
+          Ironmon.define_singleton_method(:tracker_occurrence_search_for_recipe, original_occurrence_search)
+        end
       ensure
         Ironmon.define_singleton_method(:tracker_post_run_fusion_mapper, original_fusion_mapper)
       end
