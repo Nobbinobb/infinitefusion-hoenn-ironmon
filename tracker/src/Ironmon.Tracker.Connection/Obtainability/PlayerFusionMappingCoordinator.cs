@@ -316,6 +316,25 @@ internal sealed class PlayerFusionMappingCoordinator
     }
 
     /// <summary>
+    /// Reads a reverse partner from completed mapping work without starting or waiting for preparation.
+    /// </summary>
+    /// <param name="runId">The active or archived run identifier.</param>
+    /// <param name="recipe">The archived recipe, or null for active lookup.</param>
+    /// <param name="speciesId">The selected fusion identity.</param>
+    /// <returns>The prepared numeric reverse partner, or null when no compatible result is ready.</returns>
+    internal int? GetPreparedReverseFusion(string? runId, CompletedRunRecipePayload? recipe, string speciesId)
+    {
+        if (string.IsNullOrWhiteSpace(runId) || !TryParseFusionTargetId(speciesId, out int targetId) || !CanMapAreaFusions(runId, recipe))
+            return null;
+
+        PlayerFusionMaterialKey key = recipe is null ? _runMaterialKeys[runId] : PlayerFusionMaterialKey.From(recipe);
+        if (!_workerContexts.TryGetValue(key.TargetPoolFingerprint, out PlayerFusionWorkerContext? context))
+            return null;
+
+        return context.MappingWorker.GetPreparedReversePartner(key.Seed, key.GeneratorVersion, targetId);
+    }
+
+    /// <summary>
     /// Starts or reuses the active run's exact fusion assignments for one debug graph target when available.
     /// </summary>
     /// <param name="runId">The active run identifier.</param>

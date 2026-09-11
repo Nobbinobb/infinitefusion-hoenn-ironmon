@@ -34,6 +34,48 @@ public partial class AreaLookupExplorer : IDisposable
     private string? _observedSourceKey;
     private string? _error;
     private bool _loadingSummaries;
+    private string? _selectedPokemonId;
+    private string? _returnTrainerId;
+
+    /// <summary>
+    /// Gets whether species lookup is available under the existing Diagnostic Tools rules or an archive.
+    /// </summary>
+    private bool CanLookupPokemon => Recipe is not null || TrackerDiagnosticCapabilityRules.CanUseActivePokemonLookup(Connection);
+
+    /// <summary>
+    /// Gets whether the current source authorizes trainer ability information.
+    /// </summary>
+    private bool CanViewTrainerAbilities => Recipe is not null || Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonAllActive) && Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonAbilities);
+
+    /// <summary>
+    /// Gets whether the current source authorizes trainer move information.
+    /// </summary>
+    private bool CanViewTrainerMoves => Recipe is not null || Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonAllActive) && Connection.HasDiagnosticCapability(DiagnosticCapabilities.PokemonMoveAccess);
+
+    /// <summary>
+    /// Opens the existing species explorer while retaining the area list and its selections.
+    /// </summary>
+    /// <param name="trainerId">The trainer entry to return to.</param>
+    /// <param name="speciesId">The disclosed trainer species to look up.</param>
+    private void OpenPokemon(string trainerId, string speciesId)
+    {
+        if (CanLookupPokemon)
+        {
+            _selectedPokemonId = speciesId;
+            _returnTrainerId = trainerId;
+            _pendingScrollKey = string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Returns to the retained trainer list.
+    /// </summary>
+    private void ClosePokemon()
+    {
+        _selectedPokemonId = null;
+        _pendingScrollKey = _returnTrainerId;
+        _returnTrainerId = null;
+    }
 
     /// <summary>
     /// Gets or initializes the active game request client.
@@ -133,6 +175,7 @@ public partial class AreaLookupExplorer : IDisposable
 
         if (sourceChanged)
         {
+            _selectedPokemonId = null;
             ResetPendingRequests();
             _observedSourceKey = SourceKey;
             _areas = [];
@@ -335,6 +378,7 @@ public partial class AreaLookupExplorer : IDisposable
         if (Recipe is not null)
             return;
 
+        _selectedPokemonId = null;
         CancelDetailRequests();
         _details.Clear();
         _detailPagination.Clear();

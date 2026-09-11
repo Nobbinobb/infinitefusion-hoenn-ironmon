@@ -105,6 +105,11 @@ public sealed class TrainerOccurrenceSearchRequestPayload
 public sealed class TrainerOccurrenceSearchResponsePayload
 {
     /// <summary>
+    /// Gets or initializes whether the overview deferred this list to its occurrence request.
+    /// </summary>
+    public bool Pending { get; init; }
+
+    /// <summary>
     /// Initializes an empty trainer-occurrence response for protocol serialization.
     /// </summary>
     public TrainerOccurrenceSearchResponsePayload()

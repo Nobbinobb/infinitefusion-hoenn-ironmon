@@ -654,6 +654,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         PokemonLookupRequestPayload lookupPayload = TrackerJson.DeserializePayload<PokemonLookupRequestPayload>(lookupRequest!.Payload);
         Assert.Equal("CHARMANDER:0", lookupPayload.SpeciesId);
         Assert.Equal(100, lookupPayload.Level);
+        Assert.True(lookupPayload.DeferOccurrences);
         Assert.Equal(PokemonLookupSection.Overview, lookupPayload.Section);
         PokemonLookupSnapshot lookupResponse = new()
         {
@@ -956,6 +957,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         Assert.Equal("debug_pokemon_lookup", debugLookupRequest?.Command);
         DebugPokemonLookupRequestPayload debugLookupPayload = TrackerJson.DeserializePayload<DebugPokemonLookupRequestPayload>(debugLookupRequest!.Payload);
         Assert.Equal(PokemonLookupSection.Overview, debugLookupPayload.Section);
+        Assert.True(debugLookupPayload.DeferOccurrences);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(debugLookupRequest!.RequestId!, lookupResponse, "run-1"));
         PokemonLookupSnapshot receivedDebugLookup = await debugLookupTask;
         Assert.Equal(309, receivedDebugLookup.Stats!.GeneratedTotal);

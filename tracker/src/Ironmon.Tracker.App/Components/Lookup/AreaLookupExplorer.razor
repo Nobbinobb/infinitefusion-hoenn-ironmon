@@ -1,4 +1,5 @@
 <section class="obsidian-area-lookup" aria-label="@Text["Lookup.Areas.Title"]" @ref="_lookupElement">
+    <div hidden="@(_selectedPokemonId is not null && CanLookupPokemon)">
     @if (ShowCategoryTabs)
     {
         <nav class="obsidian-lookup-tabs obsidian-archive-tabs" role="tablist" aria-label="@Text["Lookup.Areas.Categories"]">
@@ -46,7 +47,7 @@
                                 {
                                     @foreach (AreaTrainerEntryPayload trainer in GetPagedEntries(area.AreaId, detail.Trainers))
                                     {
-                                        <ObsidianLookupTrainer Trainer="trainer" GameRoot="@GameRoot" />
+                                        <ObsidianLookupTrainer @key="trainer.EntryId" Trainer="trainer" GameRoot="@GameRoot" CanViewAbilities="@CanViewTrainerAbilities" CanViewMoves="@CanViewTrainerMoves" CanLookupPokemon="@CanLookupPokemon" PokemonSelected="speciesId => OpenPokemon(trainer.EntryId, speciesId)" />
                                     }
                                 }
                                 else if (_selectedCategory == AreaContentCategory.Item)
@@ -106,5 +107,13 @@
             </article>
         }
         <ObsidianPager State="_areaPagination" Total="visibleAreas.Count" Label="@Text["Lookup.Areas.AreaPages"]" Previous="PreviousAreaPage" Next="() => NextAreaPage(visibleAreas.Count)" />
+    }
+    </div>
+    @if (_selectedPokemonId is not null && CanLookupPokemon)
+    {
+        <div class="obsidian-area-pokemon-lookup">
+            <button type="button" class="obsidian-button obsidian-area-lookup-back" @onclick="ClosePokemon"><ObsidianIcon Kind="ObsidianIconKind.ChevronLeft" />@Text["Lookup.Trainer.Back"]</button>
+            <PokemonLookupExplorer Recipe="@Recipe" DebugMode="@(Recipe is null)" GameRoot="@GameRoot" RequestedSpeciesId="@_selectedPokemonId" />
+        </div>
     }
 </section>

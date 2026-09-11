@@ -51,7 +51,52 @@ public sealed class PokemonResearchTests
     private const string _fightingType = "Fighting";
     private const string _resourceName = "Ironmon.Tracker.App.Resources.Localization.TrackerResources";
     private const string _descriptionJson = "{\"ability_id\":\"SUPERLUCK\",\"ability_name\":\"Super Luck\",\"ability_description\":\"Heightens the critical-hit ratios of moves.\"}";
+    private const string _trainerOccurrencesField = "_trainerOccurrences";
+    private const string _trainerErrorField = "_trainerOccurrenceError";
+    private const string _trainerId = "trainer:1";
+    private const string _trainerName = "Ben";
+    private const string _trainerType = "Youngster";
     private const BindingFlags _instanceMembers = BindingFlags.Instance | BindingFlags.NonPublic;
+
+    /// <summary>
+    /// Verifies inline trainer results survive active lookup and only deferred lists make another request.
+    /// </summary>
+    /// <param name="pending">Whether the overview requires a separate trainer request.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TrainerOccurrencesReuseInlineResultsAndLoadDeferredLists(bool pending)
+    {
+        TrainerOccurrenceSearchResponsePayload trainers = new()
+        {
+            Pending = pending,
+            Total = pending ? 0 : 1,
+            Matches = pending ? [] : [new()
+            {
+                TrainerId = _trainerId, TrainerName = _trainerName, TrainerType = _trainerType,
+                SourceSpeciesId = _speciesId, SourceSpeciesName = _speciesName, Slot = 1, Level = 5
+            }]
+        };
+
+        await RenderAsync<PokemonLookupSupplementalData>(new()
+        {
+            [nameof(PokemonLookupSupplementalData.Pokemon)] = new PokemonLookupSnapshot
+            {
+                Identity = new() { SpeciesId = _speciesId, SpeciesName = _speciesName },
+                Overview = new() { TrainerOccurrences = trainers }
+            },
+            [nameof(PokemonLookupSupplementalData.DebugMode)] = true
+        }, true, (component, html) =>
+        {
+            Assert.Same(trainers, typeof(PokemonLookupSupplementalData).GetField(_trainerOccurrencesField, _instanceMembers)!.GetValue(component));
+            object? error = typeof(PokemonLookupSupplementalData).GetField(_trainerErrorField, _instanceMembers)!.GetValue(component);
+            Assert.Equal(pending, error is not null);
+            if (!pending)
+                Assert.Contains(_trainerName, html());
+
+            return Task.CompletedTask;
+        });
+    }
 
     /// <summary>
     /// Retains crowded identity details and accessible icon-only obtainability in a permanent compact header.

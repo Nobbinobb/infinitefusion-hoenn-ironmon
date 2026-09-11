@@ -1,14 +1,64 @@
-<article class="obsidian-lookup-trainer">
+<article class="obsidian-lookup-trainer" data-lookup-anchor="@Trainer.EntryId">
     <header><strong>@Trainer.TrainerType @Trainer.TrainerName</strong><ObsidianStatus Complete="Trainer.Defeated" Label="@(Trainer.Defeated ? Text["Lookup.Areas.Defeated"] : Text["Lookup.Areas.NotDefeated"])" /></header>
     @if (Trainer.DetailsRevealed && Trainer.Party.Count > 0)
     {
         <div class="obsidian-lookup-party">
-            @foreach (AreaTrainerPokemonPayload pokemon in Trainer.Party)
+            @for (int row = 0; row < Trainer.Party.Count; row += 2)
             {
-                <div class="obsidian-lookup-party-member">
-                    <PokemonSprite GameRoot="@GameRoot" SpritePath="@pokemon.SpritePath" Label="@pokemon.SpeciesName" Size="49" FitVisibleBounds="true" CssClass="obsidian-lookup-sprite" />
-                    <div><strong>@pokemon.SpeciesName</strong><small>@Text["Lookup.Areas.Level", pokemon.Level]</small></div>
-                </div>
+                AreaTrainerPokemonPayload[] members = [.. Trainer.Party.Skip(row).Take(2)];
+                @foreach (AreaTrainerPokemonPayload pokemon in members)
+                {
+                    <div class="obsidian-lookup-party-choice" @key="pokemon.Slot">
+                        <button type="button" class="obsidian-lookup-party-member" aria-expanded="@(_selectedSlot == pokemon.Slot ? "true" : "false")" @onclick="() => TogglePokemon(pokemon.Slot)">
+                            <PokemonSprite Interactive="false" GameRoot="@GameRoot" SpritePath="@pokemon.SpritePath" Label="@pokemon.SpeciesName" Size="40" FitVisibleBounds="true" CssClass="obsidian-lookup-sprite" />
+                            <span><strong>@pokemon.SpeciesName</strong><small>@Text["Lookup.Areas.Level", pokemon.Level]</small></span>
+                            <ObsidianIcon Kind="@(_selectedSlot == pokemon.Slot ? ObsidianIconKind.ChevronDown : ObsidianIconKind.ChevronRight)" />
+                        </button>
+                        @if (CanLookupPokemon)
+                        {
+                            <button type="button" class="obsidian-lookup-party-link" aria-label="@Text["Lookup.Trainer.OpenPokemon", pokemon.SpeciesName]" @onclick="() => OpenPokemonAsync(pokemon)"><ObsidianIcon Kind="ObsidianIconKind.ArrowUpRight" /></button>
+                        }
+                    </div>
+                }
+                @if (members.FirstOrDefault(pokemon => pokemon.Slot == _selectedSlot) is AreaTrainerPokemonPayload selected)
+                {
+                    <section class="obsidian-lookup-battle-set" aria-label="@Text["Lookup.Trainer.BattleSet", selected.SpeciesName]">
+                        <header><strong>@Text["Lookup.Trainer.BattleSet", selected.SpeciesName]</strong><small>@Text["Lookup.Areas.Level", selected.Level]</small></header>
+                        @if (CanViewAbilities && selected.AbilitiesRevealed)
+                        {
+                            <div class="obsidian-lookup-battle-ability"><span>@Text[selected.Abilities.Count > 1 ? "Lookup.Trainer.PossibleAbilities" : "Debug.Overview.Ability"]</span>
+                                @foreach (AbilitySnapshot ability in selected.Abilities)
+                                {
+                                    <button type="button" @onclick="() => SelectDescription(ability.Description)">@ability.Name</button>
+                                }
+                                @if (selected.Abilities.Count == 0) { <span>@Text["Lookup.Trainer.Unavailable"]</span> }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="obsidian-lookup-set-note">@Text[CanViewAbilities ? "Lookup.Trainer.Unavailable" : "Lookup.Trainer.AbilityRestricted"]</p>
+                        }
+                        @if (CanViewMoves && selected.MovesRevealed)
+                        {
+                            <div class="obsidian-lookup-battle-moves">
+                                @foreach (AreaTrainerMovePayload move in selected.Moves)
+                                {
+                                    <button type="button" class="obsidian-lookup-battle-move @MovePresentation.GetTypeColorClass(move.Type)" @onclick="() => SelectDescription(move.Description)"><MoveCategoryIcon Category="@move.Category" /><strong>@move.Name</strong></button>
+                                }
+                            </div>
+                            @if (selected.Moves.Count == 0) { <p class="obsidian-lookup-set-note">@Text["Lookup.Trainer.Unavailable"]</p> }
+                        }
+                        else
+                        {
+                            <p class="obsidian-lookup-set-note">@Text[CanViewMoves ? "Lookup.Trainer.Unavailable" : "Lookup.Trainer.MovesRestricted"]</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_description))
+                        {
+                            <p class="obsidian-lookup-set-effect" role="status">@_description</p>
+                        }
+                        <button type="button" class="obsidian-button obsidian-lookup-set-link" disabled="@(!CanLookupPokemon)" @onclick="() => OpenPokemonAsync(selected)">@Text[CanLookupPokemon ? "Lookup.Trainer.PokemonLookup" : "Lookup.Trainer.LookupRestricted"]<ObsidianIcon Kind="ObsidianIconKind.ArrowUpRight" /></button>
+                    </section>
+                }
             }
         </div>
     }

@@ -121,6 +121,11 @@ save-file totals and direct links to completed runs. History is outside the
 Summary, Areas, and Pokémon tabs, which always describe the selected run.
 Legacy runs without a recorded save file remain accessible.
 
+Selecting a run shows its content directly. The tracker reuses confirmed full
+preparation from the active run or archive instead of starting it again; an
+unprepared selected run prepares in the background. Save-file history stops
+archive preparation, and preparation updates do not navigate away from history.
+
 Pokémon identity headers in archive lookup and diagnostics stay compact at every
 scroll position. They retain the species ID, both types, and the obtainability
 icon with an accessible status label. Live inspection also keeps the nickname,

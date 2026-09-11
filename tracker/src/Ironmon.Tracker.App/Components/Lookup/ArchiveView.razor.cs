@@ -154,7 +154,7 @@ public partial class ArchiveView : IDisposable
             return;
 
         CompletedRunRecipePayload? recipe = GetSelectedRecipe();
-        if (recipe is null || _connectionStatus != TrackerConnectionStatus.Connected)
+        if (recipe is null || _connectionStatus != TrackerConnectionStatus.Connected || Connection.ObtainabilityProgress.HasCompletedPreparation(recipe.RunId))
             return;
 
         CancellationTokenSource cancellation = new();

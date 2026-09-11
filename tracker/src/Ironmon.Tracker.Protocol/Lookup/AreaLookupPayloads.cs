@@ -1,3 +1,5 @@
+using Ironmon.Tracker.Protocol.Pokemon;
+
 namespace Ironmon.Tracker.Protocol.Lookup;
 
 /// <summary>
@@ -423,6 +425,64 @@ public sealed class AreaTrainerPokemonPayload
     /// Gets or initializes the game-relative local sprite path.
     /// </summary>
     public string? SpritePath { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether the response authorizes this member's ability candidates.
+    /// </summary>
+    public bool AbilitiesRevealed { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether the response authorizes this member's battle moves.
+    /// </summary>
+    public bool MovesRevealed { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the possible battle abilities, with one entry for a fixed selection.
+    /// </summary>
+    public IReadOnlyList<AbilitySnapshot> Abilities { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes the reconstructed equipped moves in battle-slot order.
+    /// </summary>
+    public IReadOnlyList<AreaTrainerMovePayload> Moves { get; init; } = [];
+}
+
+/// <summary>
+/// Describes one reconstructed trainer move without current-battle state.
+/// </summary>
+public sealed class AreaTrainerMovePayload
+{
+    /// <summary>
+    /// Initializes an empty trainer move for protocol serialization.
+    /// </summary>
+    public AreaTrainerMovePayload()
+    {
+    }
+
+    /// <summary>
+    /// Gets or initializes the stable move identifier.
+    /// </summary>
+    public required string Id { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the localized move name.
+    /// </summary>
+    public required string Name { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the stable type identifier used by the tracker palette.
+    /// </summary>
+    public required string Type { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the physical, special, or status category.
+    /// </summary>
+    public MoveCategory Category { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the localized move effect text.
+    /// </summary>
+    public string Description { get; init; } = string.Empty;
 }
 
 /// <summary>

@@ -270,7 +270,7 @@ module Ironmon
     end
 
     visibility_key = visibility ? visibility.sort_by { |entry| entry[0].to_s }.to_s : "all"
-    cache_key = "#{recipe["run_id"]}|#{species.id}|#{section}|#{visibility_key}"
+    cache_key = "#{recipe["run_id"]}|#{species.id}|#{section}|#{visibility_key}|#{payload["defer_occurrences"] == true}"
     cached = tracker_lookup_cache[cache_key]
     return cached if cached
 
@@ -303,6 +303,8 @@ module Ironmon
           { "matches" => [], "total" => 0, "pending" => true },
         "trainer_occurrences" => visibility && !visibility[:trainer] ?
           { "matches" => [], "total" => 0 } :
+          payload["defer_occurrences"] == true ?
+          { "matches" => [], "total" => 0, "pending" => true } :
           tracker_occurrence_search_for_recipe(
             { "species_id" => species_id, "offset" => 0, "limit" => 50 },
             recipe, :trainer
@@ -314,7 +316,7 @@ module Ironmon
         "reverse_fusion" => visibility && !visibility[:overview] ?
           nil : tracker_lookup_reverse_fusion(
             species, recipe,
-            !visibility || visibility[:obtainability]
+            !visibility || visibility[:obtainability], payload["reverse_fusion_id"]
           ),
         "fusion_materials" => { "matches" => [], "total" => 0 }
       }

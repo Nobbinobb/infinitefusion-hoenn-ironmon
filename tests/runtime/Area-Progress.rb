@@ -1,5 +1,6 @@
 module IronmonAreaProgressRuntimeTests
   class DiscoveryConnection
+    attr_accessor :diagnostic_grants
     attr_reader :packages
     attr_reader :run_started_count
 
@@ -11,6 +12,10 @@ module IronmonAreaProgressRuntimeTests
 
     def connected?
       return @connected
+    end
+
+    def diagnostic_capabilities?(*capabilities)
+      return capabilities.all? { |capability| (@diagnostic_grants || []).include?(capability) }
     end
 
     def send_area_discovery(area_id, category, entry_keys)
@@ -300,6 +305,29 @@ module IronmonAreaProgressRuntimeTests
         entry["trainer_id"] ==
           Ironmon.tracker_lookup_trainer_id(trainer_data) &&
           entry["slot"] == 1
+      end
+      trainer_index = Ironmon.tracker_trainer_occurrence_index(active_recipe)
+      assert(
+        trainer_index[GameData::Species.get(trainer_target).id_number].any? do |trainer, slot|
+          trainer.id == trainer_data.id && slot == 0
+        end,
+        "trainer occurrence index preserves generated trainer slots"
+      )
+      original_trainer_mode = Ironmon.method(:tracker_trainer_data_mode)
+      begin
+        Ironmon.define_singleton_method(:tracker_trainer_data_mode) do |_recipe|
+          raise "Cached trainer lookups must not rescan trainer parties"
+        end
+        another_target = (trainer_index.keys - [GameData::Species.get(trainer_target).id_number]).first
+        Ironmon.tracker_lookup_trainer_occurrences(
+          GameData::Species.get(another_target), active_recipe
+        ) if another_target
+        assert(
+          Ironmon.tracker_trainer_occurrence_index(active_recipe).equal?(trainer_index),
+          "different Pokemon lookups share the same trainer mapping index"
+        )
+      ensure
+        Ironmon.define_singleton_method(:tracker_trainer_data_mode, original_trainer_mode)
       end
       assert(
         trainer_occurrence &&
@@ -671,6 +699,55 @@ module IronmonAreaProgressRuntimeTests
         end,
         "revealed trainer Pokemon include local sprite paths"
       )
+      assert(trainer_detail["party"].all? do |pokemon|
+        !pokemon["abilities_revealed"] && !pokemon["moves_revealed"] &&
+          !pokemon.key?("abilities") && !pokemon.key?("moves")
+      end, "defeated parties do not bypass diagnostic detail grants")
+      Ironmon.instance_variable_set(:@tracker_connection, connection)
+      connection.diagnostic_grants = ["pokemon.abilities", "pokemon.move_access"]
+      protected_party = Ironmon.tracker_area_trainer_entries(
+        area, active_recipe, { catalog_trainer["entry_id"] => true }, true, false
+      ).find { |entry| entry["entry_id"] == catalog_trainer["entry_id"] }["party"]
+      assert(protected_party.all? { |pokemon| !pokemon.key?("abilities") && !pokemon.key?("moves") },
+             "information grants alone do not bypass the active-species source grant")
+      connection.diagnostic_grants = ["pokemon.all_active", "pokemon.abilities"]
+      ability_party = Ironmon.tracker_area_trainer_entries(
+        area, active_recipe, {}, true, false
+      ).find { |entry| entry["entry_id"] == catalog_trainer["entry_id"] }["party"]
+      assert(ability_party.all? { |pokemon| pokemon["abilities_revealed"] && !pokemon.key?("moves") },
+             "ability access cannot disclose moves")
+      connection.diagnostic_grants = []
+      archive_party = Ironmon.tracker_area_trainer_entries(
+        area, active_recipe, {}, true, true
+      ).find { |entry| entry["entry_id"] == catalog_trainer["entry_id"] }["party"]
+      assert(archive_party.all? do |pokemon|
+        pokemon["abilities_revealed"] && pokemon["moves_revealed"] &&
+          !pokemon["abilities"].empty? && !pokemon["moves"].empty? &&
+          pokemon["moves"].all? { |move| move["description"].is_a?(String) }
+      end, "archives reconstruct abilities and described battle moves without grants")
+      probe_species = GameData::Species.get(:BULBASAUR)
+      fixed_abilities = Ironmon.tracker_area_trainer_abilities(
+        probe_species, { :ability_index => 0 }, active_recipe
+      )
+      assert(fixed_abilities.length == 1, "fixed trainer ability slots have one result")
+      possible_abilities = Ironmon.tracker_area_trainer_abilities(probe_species, {}, active_recipe)
+      assert(possible_abilities.map { |ability| ability["id"] }.include?(fixed_abilities[0]["id"]),
+             "unspecified trainer slots include the fixed normal candidate")
+      moves_recipe = active_recipe.merge(
+        "move_access_generator_version" => Ironmon::MoveAccessGenerator::SCHEMA_VERSION
+      )
+      generator = Ironmon.tracker_move_access_generator(moves_recipe)
+      probe = Pokemon.new(probe_species.id, 35)
+      probe.instance_variable_set(:@lookup_test_moves,
+        Ironmon.generated_level_up_moves_for(probe_species, generator))
+      def probe.getMoveList
+        return @lookup_test_moves
+      end
+      probe.reset_moves
+      expected_moves = probe.moves.map { |move| move.id.to_s }
+      actual_moves = Ironmon.tracker_area_trainer_moves(probe_species, 35, {}, moves_recipe)
+      assert(actual_moves.map { |move| move["id"] } == expected_moves,
+             "trainer reconstruction matches the engine's equipped move selection")
       begin
         Ironmon.tracker_area_lookup_detail(
           {
