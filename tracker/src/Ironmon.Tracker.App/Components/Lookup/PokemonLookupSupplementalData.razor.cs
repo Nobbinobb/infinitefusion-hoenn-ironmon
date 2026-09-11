@@ -134,7 +134,7 @@ public partial class PokemonLookupSupplementalData : IDisposable
         _occurrenceCancellation = new CancellationTokenSource();
         _observedPokemonKey = key;
         _fusionMaterials = new FusionMaterialSearchResponsePayload();
-        _trainerOccurrences = DebugMode ? new TrainerOccurrenceSearchResponsePayload() : Overview.TrainerOccurrences;
+        _trainerOccurrences = Overview.TrainerOccurrences;
         _wildOccurrences = DebugMode ? new WildOccurrenceSearchResponsePayload() : Overview.WildOccurrences;
         _fusionMaterialPagination.Reset();
         _trainerOccurrencePagination.Reset();
@@ -155,7 +155,7 @@ public partial class PokemonLookupSupplementalData : IDisposable
         if (DebugMode ? Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldWildEncounters) : Overview.WildOccurrences.Pending)
             loads.Add(LoadWildOccurrencePageAsync(0));
 
-        if (DebugMode && Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldTrainerParties))
+        if ((Overview.TrainerOccurrences.Pending || Pokemon.Overview is null) && (!DebugMode || Connection.HasDiagnosticCapability(DiagnosticCapabilities.WorldTrainerParties)))
             loads.Add(LoadTrainerOccurrencePageAsync(0));
 
         await Task.WhenAll(loads);

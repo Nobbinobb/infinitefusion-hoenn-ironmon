@@ -226,7 +226,42 @@ module Ironmon
   end
 
   def self.tracker_lookup_trainer_occurrences(target, recipe)
-    return [] if !SpeciesGenerator::SLOT_SCHEMA_VERSIONS.include?(
+    occurrences = []
+    entries = tracker_trainer_occurrence_index(recipe)[target.id_number] || []
+    entries.each do |trainer, slot|
+      pokemon = trainer.pokemon[slot]
+      source = GameData::Species.get(pokemon[:species])
+      trainer_type = GameData::TrainerType.try_get(trainer.trainer_type)
+      occurrence = {
+        "trainer_id" => tracker_lookup_trainer_id(trainer),
+        "trainer_name" => trainer.name,
+        "trainer_type" => trainer_type ? trainer_type.name :
+          trainer.trainer_type.to_s,
+        "slot" => slot + 1,
+        "level" => scaled_level(pokemon[:level]),
+        "source_species_id" => "#{source.id}:0",
+        "source_species_name" => source.name
+      }
+      tracker_append_trainer_locations(occurrences, occurrence, trainer)
+    end
+    occurrences.uniq! do |entry|
+      [entry["trainer_id"], entry["slot"], entry["source_species_id"],
+       entry["map_id"]]
+    end
+    return occurrences.sort_by do |entry|
+      [entry["trainer_type"], entry["trainer_name"], entry["slot"]]
+    end
+  end
+
+  def self.tracker_trainer_occurrence_index(recipe)
+    @tracker_trainer_occurrence_indexes ||= {}
+    key = [recipe["run_id"], recipe["seed"], recipe["active_run"],
+           recipe["data_mode"], recipe["configuration"],
+           recipe["species_generator_version"], recipe["generation_profile_id"]]
+    cached = @tracker_trainer_occurrence_indexes[key]
+    return cached if cached
+    index = {}
+    return index if !SpeciesGenerator::SLOT_SCHEMA_VERSIONS.include?(
       recipe["species_generator_version"]
     )
     configuration_value = Configuration.from(recipe["configuration"])
@@ -240,33 +275,21 @@ module Ironmon
                     recipe["species_generator_version"]
                   )
                 end
-    occurrences = []
     tracker_trainer_data_mode(recipe).list_all.each do |_trainer_id, trainer|
       trainer.pokemon.each_with_index do |pokemon, slot|
-        source = GameData::Species.get(pokemon[:species])
-        mapped = generator.map(source.id, [:pbs, trainer.id, slot])
-        next if mapped != target.id
-        trainer_type = GameData::TrainerType.try_get(trainer.trainer_type)
-        occurrence = {
-          "trainer_id" => tracker_lookup_trainer_id(trainer),
-          "trainer_name" => trainer.name,
-          "trainer_type" => trainer_type ? trainer_type.name :
-            trainer.trainer_type.to_s,
-          "slot" => slot + 1,
-          "level" => scaled_level(pokemon[:level]),
-          "source_species_id" => "#{source.id}:0",
-          "source_species_name" => source.name
-        }
-        tracker_append_trainer_locations(occurrences, occurrence, trainer)
+        source = GameData::Species.get(pokemon[:species]).id_number
+        mapped = if source <= 0 || source >= Settings::ZAPMOLCUNO_NB
+                   source
+                 else
+                   generator.map_number(source, [:pbs, trainer.id, slot])
+                 end
+        index[mapped] ||= []
+        index[mapped] << [trainer, slot].freeze
       end
     end
-    occurrences.uniq! do |entry|
-      [entry["trainer_id"], entry["slot"], entry["source_species_id"],
-       entry["map_id"]]
-    end
-    return occurrences.sort_by do |entry|
-      [entry["trainer_type"], entry["trainer_name"], entry["slot"]]
-    end
+    index.each_value { |entries| entries.freeze }
+    tracker_store_bounded(@tracker_trainer_occurrence_indexes, key, index.freeze, 4)
+    return index
   end
 
   def self.tracker_loaded_recipe?(recipe)

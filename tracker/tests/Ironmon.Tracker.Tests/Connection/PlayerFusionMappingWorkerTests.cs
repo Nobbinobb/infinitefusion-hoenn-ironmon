@@ -321,8 +321,11 @@ public sealed class PlayerFusionMappingWorkerTests
         PlayerFusionMappingWorker worker = new(catalog);
         PlayerFusionReferenceMapping reference = catalog.VerificationMappings[0];
 
+        Assert.Null(worker.GetPreparedReversePartner(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, reference.FirstResultId));
         Assert.Equal(reference.SecondResultId, worker.ReversePartner(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, reference.FirstResultId));
         Assert.Equal(reference.FirstResultId, worker.ReversePartner(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, reference.SecondResultId));
+        Assert.Equal(reference.SecondResultId, worker.GetPreparedReversePartner(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, reference.FirstResultId));
+        Assert.Null(worker.GetPreparedReversePartner(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, 1));
     }
 
     /// <summary>
@@ -546,6 +549,10 @@ public sealed class PlayerFusionMappingWorkerTests
         PlayerFusionMaterialPage? materialPage = await coordinator.GetActiveFusionMaterialAssignmentsAsync(WorkerRunId, $"{FusionBodyPrefix}{materialTargetBodyId}{FusionHeadSeparator}{materialTargetHeadId}{DefaultFormSuffix}", 0, int.MaxValue, CancellationToken.None);
         Assert.NotNull(materialPage);
         Assert.Contains(materialPage.Assignments, assignment => assignment.BodyId == materialReference.FirstMaterialId && assignment.HeadId == materialReference.SecondMaterialId);
+        string materialTargetSpeciesId = $"{FusionBodyPrefix}{materialTargetBodyId}{FusionHeadSeparator}{materialTargetHeadId}{DefaultFormSuffix}";
+        Assert.Equal(materialReference.SecondResultId, coordinator.GetPreparedReverseFusion(WorkerRunId, null, materialTargetSpeciesId));
+        Assert.Null(coordinator.GetPreparedReverseFusion(null, null, materialTargetSpeciesId));
+        Assert.Null(new PlayerFusionMappingCoordinator().GetPreparedReverseFusion(WorkerRunId, null, materialTargetSpeciesId));
 
         byte[]? membership = await coordinator.GetOccurrenceFusionMaterialsAsync(WorkerRunId, null, $"{FusionBodyPrefix}{materialTargetBodyId}{FusionHeadSeparator}{materialTargetHeadId}{DefaultFormSuffix}", CancellationToken.None);
         Assert.NotNull(membership);

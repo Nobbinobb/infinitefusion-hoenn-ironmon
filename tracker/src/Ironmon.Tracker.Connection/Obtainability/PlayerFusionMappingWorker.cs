@@ -124,6 +124,25 @@ internal sealed class PlayerFusionMappingWorker
     }
 
     /// <summary>
+    /// Reads an already-built reverse partner without rebuilding an evicted seed or waiting for work.
+    /// </summary>
+    /// <param name="seed">The Ironmon run seed.</param>
+    /// <param name="generatorVersion">The player-fusion generator schema version.</param>
+    /// <param name="resultId">The numeric custom-fusion identifier.</param>
+    /// <returns>The prepared reverse partner, or null when the state or species is unavailable.</returns>
+    internal int? GetPreparedReversePartner(long seed, int generatorVersion, int resultId)
+    {
+        if (!_states.TryGetValue(new(seed, generatorVersion), out Lazy<WorkerState>? prepared) || !prepared.IsValueCreated)
+            return null;
+
+        WorkerState state = prepared.Value;
+        if (resultId <= _catalog.NormalSpeciesCount || resultId >= state.ReversePartners.Count || state.ReversePartners[resultId] == 0)
+            return null;
+
+        return state.ReversePartners[resultId];
+    }
+
+    /// <summary>
     /// Gets or builds the expensive seed-specific mapping state shared by material requests and obtainability work.
     /// </summary>
     /// <param name="seed">The Ironmon run seed.</param>

@@ -78,7 +78,8 @@ internal sealed class TrackerCompletedRunRequestClient
             ? _fusionMappings.GetEvolutionTargetAssignments(recipe, speciesId)
             : null;
 
-        PokemonLookupRequestPayload payload = new() { SpeciesId = speciesId, Level = TrackerProtocol.CompatibilityLookupLevel, Section = section, EvolutionAssignments = evolutionAssignments, Recipe = recipe };
+        int? reverseFusionId = section == PokemonLookupSection.Overview ? _fusionMappings.GetPreparedReverseFusion(recipe.RunId, recipe, speciesId) : null;
+        PokemonLookupRequestPayload payload = new() { SpeciesId = speciesId, Level = TrackerProtocol.CompatibilityLookupLevel, Section = section, EvolutionAssignments = evolutionAssignments, Recipe = recipe, DeferOccurrences = true, ReverseFusionId = reverseFusionId };
         PokemonLookupSnapshot response = await _session.SendAsync<PokemonLookupRequestPayload, PokemonLookupSnapshot>(TrackerCommands.PokemonLookup, payload, recipe.RunId, cancellationToken);
         if (response.Identity.Obtainability.Status != PokemonObtainabilityStatus.Calculating)
             _cache.Set(TrackerCommands.PokemonLookup, cacheKey, response);

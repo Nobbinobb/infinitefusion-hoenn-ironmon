@@ -522,8 +522,54 @@ public sealed class TrackerRequestClient
     /// <param name="section">The independently requested information section.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The active-run generated Pokémon information.</returns>
-    public Task<PokemonLookupSnapshot> LookupDebugPokemonAsync(string speciesId, PokemonLookupSection section = PokemonLookupSection.Overview, CancellationToken cancellationToken = default)
-        => _diagnosticRequests.LookupPokemonAsync(speciesId, section, GetConnectedRunId(), cancellationToken);
+    public async Task<PokemonLookupSnapshot> LookupDebugPokemonAsync(string speciesId, PokemonLookupSection section = PokemonLookupSection.Overview, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        cancellationToken.ThrowIfCancellationRequested();
+        _authorization.EnsurePokemonLookup(section);
+        string? runId = GetConnectedRunId();
+        GameHandshakePayload? game = _state.Snapshot.Game;
+        string? cacheKey = GetActiveLookupCacheKey(runId, speciesId, section);
+        if (cacheKey is not null && _cache.TryGet(TrackerCommands.DebugPokemonLookup, cacheKey, out PokemonLookupSnapshot cached))
+            return cached;
+
+        PokemonLookupSnapshot response = await _diagnosticRequests.LookupPokemonAsync(speciesId, section, runId, cancellationToken).ConfigureAwait(false);
+        if (cacheKey is not null
+            && ReferenceEquals(game, _state.Snapshot.Game)
+            && runId == GetConnectedRunId()
+            && cacheKey == GetActiveLookupCacheKey(runId, speciesId, section)
+            && response.Identity.Obtainability.Status != PokemonObtainabilityStatus.Calculating
+            && (response.Overview is null || (response.Overview.TrainerOccurrences.Matches.Count == 0 && response.Overview.WildOccurrences.Matches.Count == 0)))
+        {
+            _cache.Set(TrackerCommands.DebugPokemonLookup, cacheKey, response);
+        }
+
+        return response;
+    }
+
+    /// <summary>
+    /// Identifies reusable generated sections only after this active run's preparation completes.
+    /// </summary>
+    /// <param name="runId">The connected active run identifier.</param>
+    /// <param name="speciesId">The selected stable species and form identifier.</param>
+    /// <param name="section">The independently requested information section.</param>
+    /// <returns>A run, encounter-mode, and access-specific cache key, or null while unavailable.</returns>
+    private string? GetActiveLookupCacheKey(string? runId, string speciesId, PokemonLookupSection section)
+    {
+        TrackerConnectionSnapshot connection = _state.Snapshot;
+        if (string.IsNullOrWhiteSpace(runId)
+            || connection.Status != TrackerConnectionStatus.Connected
+            || connection.Game is null
+            || !(connection.CurrentState?.IronmonActive ?? connection.Game.IronmonActive)
+            || connection.CurrentState?.CompletedRun is not null
+            || ObtainabilityProgress.GetActiveRunSnapshot(runId).Status != TrackerObtainabilityProgressStatus.Complete)
+        {
+            return null;
+        }
+
+        string capabilities = string.Join('|', _authorization.GetNegotiatedCapabilities(connection.Game));
+        return $"{runId}|{speciesId.ToUpperInvariant()}|{section}|{_authorization.DebugAuthorized}|{capabilities}|{connection.CurrentState?.OverworldEncounters}";
+    }
 
     /// <summary>
     /// Requests one filtered page of valid evolution candidates from the active debug run.
