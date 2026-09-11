@@ -112,8 +112,7 @@
     @if (_selectedPokemonId is not null && CanLookupPokemon)
     {
         <div class="obsidian-area-pokemon-lookup">
-            <button type="button" class="obsidian-button obsidian-area-lookup-back" @onclick="ClosePokemon"><ObsidianIcon Kind="ObsidianIconKind.ChevronLeft" />@Text["Lookup.Trainer.Back"]</button>
-            <PokemonLookupExplorer Recipe="@Recipe" DebugMode="@(Recipe is null)" GameRoot="@GameRoot" RequestedSpeciesId="@_selectedPokemonId" />
+            <PokemonLookupExplorer Recipe="@Recipe" DebugMode="@(Recipe is null)" GameRoot="@GameRoot" RequestedSpeciesId="@_selectedPokemonId" ReturnRequested="ClosePokemon" ReturnLabel="@Text["Lookup.Trainer.Back"]" />
         </div>
     }
 </section>

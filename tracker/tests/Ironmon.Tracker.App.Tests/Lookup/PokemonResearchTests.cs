@@ -2,6 +2,7 @@ using Ironmon.Tracker.App.Components.Common;
 using Ironmon.Tracker.App.Components.Debug;
 using Ironmon.Tracker.App.Components.Lookup;
 using Ironmon.Tracker.App.Tests.Settings;
+using Ironmon.Tracker.Connection.Access;
 using Ironmon.Tracker.Connection.Knowledge;
 using Ironmon.Tracker.Connection.Transport;
 using Ironmon.Tracker.Protocol.Connection;
@@ -56,7 +57,94 @@ public sealed class PokemonResearchTests
     private const string _trainerId = "trainer:1";
     private const string _trainerName = "Ben";
     private const string _trainerType = "Youngster";
+    private const string _return = "ReturnAsync";
+    private const string _returnToTrainer = "Back to trainers";
+    private const string _returnToResults = "Results";
+    private const string _lookupField = "_lookup";
+    private const string _detailField = "_showDetail";
+    private const string _queryField = "_query";
+    private const string _matchesField = "_matches";
+    private const string _searchedField = "_searched";
     private const BindingFlags _instanceMembers = BindingFlags.Instance | BindingFlags.NonPublic;
+
+    /// <summary>
+    /// Keeps trainer return navigation separate from the normal explorer's retained search results.
+    /// </summary>
+    /// <param name="fromTrainer">Whether the containing trainer view supplies the return destination.</param>
+    /// <returns>The return navigation rendering and interaction verification task.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReturnDestinationPreservesNormalResultsAndTrainerContext(bool fromTrainer)
+    {
+        int returns = 0;
+        Dictionary<string, object?> parameters = fromTrainer ? new()
+        {
+            [nameof(PokemonLookupExplorer.ReturnRequested)] = EventCallback.Factory.Create(this, () => returns++),
+            [nameof(PokemonLookupExplorer.ReturnLabel)] = _returnToTrainer
+        } : [];
+
+        await RenderAsync<PokemonLookupExplorer>(parameters, false, async (component, html) =>
+        {
+            PokemonSearchMatch[] matches = [new() { SpeciesId = _speciesId, SpeciesName = _speciesName }];
+            typeof(PokemonLookupExplorer).GetField(_matchesField, _instanceMembers)!.SetValue(component, matches);
+            typeof(PokemonLookupExplorer).GetField(_queryField, _instanceMembers)!.SetValue(component, _speciesName);
+            typeof(PokemonLookupExplorer).GetField(_searchedField, _instanceMembers)!.SetValue(component, true);
+            typeof(PokemonLookupExplorer).GetField(_lookupField, _instanceMembers)!.SetValue(component, new PokemonLookupSnapshot
+            {
+                Identity = new() { SpeciesId = _speciesId, SpeciesName = _speciesName },
+                Section = PokemonLookupSection.Abilities,
+                Abilities = new() { Values = [new() { Id = _abilityId, Name = _abilityName, Description = _description }] }
+            });
+            typeof(PokemonLookupExplorer).GetField(_detailField, _instanceMembers)!.SetValue(component, true);
+            await InvokeAsync(component, _render);
+            string breadcrumb = html().Split("research-breadcrumb", StringSplitOptions.None)[1].Split("</div>", StringSplitOptions.None)[0];
+            Assert.Contains(fromTrainer ? _returnToTrainer : _returnToResults, breadcrumb);
+            Assert.DoesNotContain(fromTrainer ? _returnToResults : _returnToTrainer, breadcrumb);
+            Assert.DoesNotContain("obsidian-button", breadcrumb);
+
+            await InvokeAsync(component, _return);
+            Assert.Equal(fromTrainer ? 1 : 0, returns);
+            Assert.Equal(fromTrainer, typeof(PokemonLookupExplorer).GetField(_detailField, _instanceMembers)!.GetValue(component));
+            Assert.Same(matches, typeof(PokemonLookupExplorer).GetField(_matchesField, _instanceMembers)!.GetValue(component));
+            Assert.Equal(_speciesName, typeof(PokemonLookupExplorer).GetField(_queryField, _instanceMembers)!.GetValue(component));
+            if (fromTrainer)
+            {
+                Assert.DoesNotContain("research-search-field", html());
+            }
+            else
+            {
+                Assert.Contains("research-search-field", html());
+                Assert.Contains("research-search-match", html());
+                Assert.Contains(_speciesName, html());
+            }
+        });
+    }
+
+    /// <summary>
+    /// Keeps a trainer return action available after a requested lookup fails without exposing unrelated search.
+    /// </summary>
+    /// <returns>The failed lookup navigation verification task.</returns>
+    [Fact]
+    public async Task FailedTrainerLookupRetainsReturnAndHidesSearch()
+    {
+        int returns = 0;
+        await RenderAsync<PokemonLookupExplorer>(new()
+        {
+            [nameof(PokemonLookupExplorer.DebugMode)] = true,
+            [nameof(PokemonLookupExplorer.RequestedSpeciesId)] = _speciesId,
+            [nameof(PokemonLookupExplorer.ReturnRequested)] = EventCallback.Factory.Create(this, () => returns++),
+            [nameof(PokemonLookupExplorer.ReturnLabel)] = _returnToTrainer
+        }, true, async (component, html) =>
+        {
+            Assert.Contains(_returnToTrainer, html());
+            Assert.Contains("role=\"alert\"", html());
+            Assert.DoesNotContain("research-search-field", html());
+            Assert.DoesNotContain(_returnToResults, html());
+            await InvokeAsync(component, _return);
+            Assert.Equal(1, returns);
+        });
+    }
 
     /// <summary>
     /// Verifies inline trainer results survive active lookup and only deferred lists make another request.
@@ -308,6 +396,7 @@ public sealed class PokemonResearchTests
         ServiceCollection services = new();
         services.AddLogging();
         services.AddSingleton(connection.Requests);
+        services.AddSingleton(new DiagnosticAccessService(storage, new(new([])), false));
         services.AddSingleton(state);
         services.AddSingleton(new PokemonSpriteDialogService());
         services.AddSingleton<IComponentActivator>(activator);

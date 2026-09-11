@@ -1,4 +1,4 @@
-# Ironmon 0.8.6
+# Ironmon 0.8.7
 
 This distribution targets Pokemon Infinite Fusion 2 version 6.8.2.
 
@@ -6,10 +6,10 @@ Copy the included `Data` directory into the game directory and merge it with
 the existing `Data` directory. Only Ruby files are installed beneath
 `Data/Scripts/997_Ironmon`.
 
-Version 0.8.6 redesigns the tracker, revises trainer randomization and boss
-parties, and adds live gym badge progress. Fusion preparation avoids impossible
-reverse-pair repair work, and new generation profiles use validated visible
-custom sprite variants while preserving existing runs' pinned data.
+Version 0.8.7 shortens the Devon rescue and delivery sequence, adds trainer
+battle details, and speeds up prepared Pokemon lookups. It restores the
+original type colors, streamlines archive navigation, and fixes scrolling and
+return navigation when opening Pokemon details from a trainer.
 The player package contains no maintainer generator, release-data generator,
 audit, or private signing-key material.
 

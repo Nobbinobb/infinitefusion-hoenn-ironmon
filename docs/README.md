@@ -28,6 +28,9 @@ also suitable for saving as PDF.
 
 ## Release history
 
+- [Ironmon 0.8.7](releases/RELEASE_NOTES_0.8.7.md): shorter Devon progression,
+  trainer battle details, faster Pokemon lookups, and tracker navigation fixes.
+
 - [Ironmon 0.8.6](releases/RELEASE_NOTES_0.8.6.md): redesigned tracker, trainer
   and boss parties, validated fusion sprites, gym badge progress, and automated
   release validation.

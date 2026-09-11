@@ -126,6 +126,11 @@ preparation from the active run or archive instead of starting it again; an
 unprepared selected run prepares in the background. Save-file history stops
 archive preparation, and preparation updates do not navigate away from history.
 
+Pokémon details opened from an area's trainer list return directly to that
+trainer list through the arrow-and-label return link. Normal Pokémon lookup
+retains its Results link and search state. Both views scroll the information
+below the compact identity header and information tabs.
+
 Pokémon identity headers in archive lookup and diagnostics stay compact at every
 scroll position. They retain the species ID, both types, and the obtainability
 icon with an accessible status label. Live inspection also keeps the nickname,

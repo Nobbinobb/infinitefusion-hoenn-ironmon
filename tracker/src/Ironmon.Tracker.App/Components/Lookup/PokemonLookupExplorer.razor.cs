@@ -65,6 +65,34 @@ public partial class PokemonLookupExplorer : IDisposable
     public string? RequestedSpeciesId { get; set; }
 
     /// <summary>
+    /// Gets or sets the optional callback returning to the containing view instead of search results.
+    /// </summary>
+    [Parameter]
+    public EventCallback ReturnRequested { get; set; }
+
+    /// <summary>
+    /// Gets or sets the localized return label used when a containing view handles navigation.
+    /// </summary>
+    [Parameter]
+    public string? ReturnLabel { get; set; }
+
+    /// <summary>
+    /// Returns to the containing view when supplied, or restores this explorer's search results.
+    /// </summary>
+    /// <returns>A task representing return navigation.</returns>
+    private async Task ReturnAsync()
+    {
+        if (ReturnRequested.HasDelegate)
+        {
+            await ReturnRequested.InvokeAsync();
+        }
+        else
+        {
+            _showDetail = false;
+        }
+    }
+
+    /// <summary>
     /// Subscribes active-run lookup state to diagnostic-access changes.
     /// </summary>
     protected override void OnInitialized()

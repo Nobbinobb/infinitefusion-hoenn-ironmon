@@ -52,6 +52,8 @@
 .archive-run-content[hidden]{display:none!important}
 .archive-run-content:not([hidden]):has(>.research-explorer){display:flex;flex-direction:column;overflow:hidden!important;padding:0!important}
 .archive-navigation-view .research-explorer,.archive-navigation-view .obsidian-research{flex:1;min-height:0;overflow:hidden}
+:is(.archive-run-content:not([hidden]),.obsidian-lookup-content):has(>.obsidian-area-lookup>.obsidian-area-pokemon-lookup){display:flex;flex-direction:column;overflow:hidden!important}
+.obsidian-area-lookup:has(>.obsidian-area-pokemon-lookup),.obsidian-area-pokemon-lookup,.obsidian-area-pokemon-lookup>.research-explorer,.obsidian-area-pokemon-lookup .obsidian-research{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
 .archive-navigation-view .research-search-match,.diagnostic-tools .research-search-match{padding-block:10px}
 .archive-navigation-view .obsidian-archive-run-actions{margin-top:0}
 .archive-history-scope{margin:0 0 7px;color:#a6b6cc;font-size:10px;text-transform:uppercase;letter-spacing:1px}
