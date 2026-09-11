@@ -101,7 +101,11 @@ internal static class AreaDiscoveryEntryComparer
             && left.SpeciesId == right.SpeciesId
             && left.SpeciesName == right.SpeciesName
             && left.Level == right.Level
-            && left.SpritePath == right.SpritePath;
+            && left.SpritePath == right.SpritePath
+            && left.AbilitiesRevealed == right.AbilitiesRevealed
+            && left.MovesRevealed == right.MovesRevealed
+            && left.Abilities.Select(ability => (ability.Id, ability.Name, ability.Description)).SequenceEqual(right.Abilities.Select(ability => (ability.Id, ability.Name, ability.Description)))
+            && left.Moves.Select(move => (move.Id, move.Name, move.Type, move.Category, move.Description)).SequenceEqual(right.Moves.Select(move => (move.Id, move.Name, move.Type, move.Category, move.Description)));
     }
 
     /// <summary>
