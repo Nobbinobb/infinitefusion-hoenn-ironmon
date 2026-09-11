@@ -5,7 +5,113 @@ namespace Ironmon.Tracker.Tests.Connection;
 /// </summary>
 public sealed class AreaDiscoveryStoreTests : IDisposable
 {
+    private const string _battleRun = "run-battle-details";
+    private const string _battleSpecies = "CARVANHA:0";
+    private const string _otherBattleSpecies = "SHARPEDO:0";
+    private const string _battleSpeciesName = "Carvanha";
+    private const string _battleAbility = "ROUGH SKIN";
+    private const string _battleMove = "BITE";
+    private const string _battleType = "DARK";
+    private const string _battleEffect = "May cause flinching.";
+    private const string _changedBattleEffect = "Updated effect.";
     private readonly List<string> _roots = [];
+
+    /// <summary>
+    /// Restores missing archive data without transferring a battle set between different party members.
+    /// </summary>
+    /// <param name="slot">The reconstructed party slot.</param>
+    /// <param name="sameSpecies">Whether the reconstructed identity matches the recorded member.</param>
+    /// <param name="level">The reconstructed level.</param>
+    /// <param name="expected">Whether the reconstructed set is compatible.</param>
+    [Theory]
+    [InlineData(1, true, 4, true)]
+    [InlineData(2, true, 4, false)]
+    [InlineData(1, false, 4, false)]
+    [InlineData(1, true, 5, false)]
+    public void ArchiveRestoresMissingTrainerBattleDetailsOnlyForMatchingMembers(int slot, bool sameSpecies, int level, bool expected)
+    {
+        string root = CreateRoot();
+        AreaDiscoveryStore store = new(new TrackerKnowledgeOptions(root));
+        Assert.True(store.RecordDetails(_battleRun, CreateBattleResponse(false, false)));
+        AreaDiscoveryStore reloaded = new(new TrackerKnowledgeOptions(root));
+        AreaLookupDetailResponsePayload response = reloaded.RestoreArchivedDetails(_battleRun, CreateBattleResponse(true, true, slot, sameSpecies, level), false);
+        AreaTrainerEntryPayload trainer = Assert.Single(response.Trainers);
+        AreaTrainerPokemonPayload member = Assert.Single(trainer.Party);
+        Assert.True(trainer.Defeated);
+        Assert.Equal(_battleSpecies, member.SpeciesId);
+        Assert.Equal(4, member.Level);
+        Assert.Equal(1, member.Slot);
+        Assert.Equal(expected, member.AbilitiesRevealed);
+        Assert.Equal(expected, member.MovesRevealed);
+        Assert.Equal(expected ? 1 : 0, member.Abilities.Count);
+        Assert.Equal(expected ? 1 : 0, member.Moves.Count);
+    }
+
+    /// <summary>
+    /// Keeps recorded battle details authoritative while supplementing independently missing information.
+    /// </summary>
+    [Fact]
+    public void ArchivePreservesRecordedMovesWhileRestoringAbilities()
+    {
+        AreaDiscoveryStore store = new(new TrackerKnowledgeOptions(CreateRoot()));
+        Assert.True(store.RecordDetails(_battleRun, CreateBattleResponse(false, true)));
+        AreaLookupDetailResponsePayload response = store.RestoreArchivedDetails(_battleRun, CreateBattleResponse(true, true, effect: _changedBattleEffect), false);
+        AreaTrainerPokemonPayload member = Assert.Single(Assert.Single(response.Trainers).Party);
+        Assert.True(member.AbilitiesRevealed);
+        Assert.Equal(_battleAbility, Assert.Single(member.Abilities).Id);
+        Assert.Equal(_battleEffect, Assert.Single(member.Moves).Description);
+    }
+
+    /// <summary>
+    /// Persists newly disclosed battle fields and effect changes without rewriting equivalent entries.
+    /// </summary>
+    [Fact]
+    public void TrainerBattleDetailChangesAdvanceTheStoredRevision()
+    {
+        string root = CreateRoot();
+        AreaDiscoveryStore store = new(new TrackerKnowledgeOptions(root));
+        Assert.True(store.RecordDetails(_battleRun, CreateBattleResponse(false, false)));
+        Assert.True(store.RecordDetails(_battleRun, CreateBattleResponse(true, false)));
+        Assert.True(store.RecordDetails(_battleRun, CreateBattleResponse(true, true)));
+        Assert.False(store.RecordDetails(_battleRun, CreateBattleResponse(true, true)));
+        Assert.True(store.RecordDetails(_battleRun, CreateBattleResponse(true, true, effect: _changedBattleEffect)));
+        Assert.Equal(4, store.GetRevision(_battleRun));
+        AreaDiscoveryStore reloaded = new(new TrackerKnowledgeOptions(root));
+        AreaLookupDetailResponsePayload response = reloaded.RestoreArchivedDetails(_battleRun, CreateBattleResponse(false, false), false);
+        Assert.Equal(_changedBattleEffect, Assert.Single(Assert.Single(Assert.Single(response.Trainers).Party).Moves).Description);
+    }
+
+    /// <summary>
+    /// Creates a trainer response with independently disclosed battle details.
+    /// </summary>
+    /// <param name="abilities">Whether abilities are disclosed.</param>
+    /// <param name="moves">Whether moves are disclosed.</param>
+    /// <param name="slot">The member's slot.</param>
+    /// <param name="sameSpecies">Whether to use the original species.</param>
+    /// <param name="level">The member's level.</param>
+    /// <param name="effect">The move description.</param>
+    /// <returns>A complete trainer response containing the requested member.</returns>
+    private static AreaLookupDetailResponsePayload CreateBattleResponse(bool abilities, bool moves, int slot = 1, bool sameSpecies = true, int level = 4, string effect = _battleEffect)
+    {
+        AreaLookupDetailResponsePayload original = CreateTrainerResponse(_battleSpeciesName);
+        AreaTrainerEntryPayload trainer = Assert.Single(original.Trainers);
+        return new AreaLookupDetailResponsePayload
+        {
+            AreaId = original.AreaId, Name = original.Name, Category = original.Category,
+            Trainers = [new()
+            {
+                EntryId = trainer.EntryId, TrainerType = trainer.TrainerType, TrainerName = trainer.TrainerName,
+                MapId = trainer.MapId, PartySize = 1, DetailsRevealed = true, Defeated = true,
+                Party = [new()
+                {
+                    Slot = slot, SpeciesId = sameSpecies ? _battleSpecies : _otherBattleSpecies, SpeciesName = _battleSpeciesName, Level = level,
+                    AbilitiesRevealed = abilities, MovesRevealed = moves,
+                    Abilities = abilities ? [new() { Id = _battleAbility, Name = _battleAbility, Description = _battleEffect }] : [],
+                    Moves = moves ? [new() { Id = _battleMove, Name = _battleMove, Type = _battleType, Category = MoveCategory.Physical, Description = effect }] : []
+                }]
+            }]
+        };
+    }
 
     /// <summary>
     /// Initializes area discovery store tests.

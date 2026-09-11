@@ -3,6 +3,8 @@
 #===============================================================================
 
 module Ironmon
+  TrackerTrainerAbilityContext = Struct.new(:species_data, :personalID)
+
   def self.tracker_area_trainer_index(recipe)
     mode = tracker_trainer_data_mode(recipe)
     @tracker_area_trainer_indexes ||= {}
@@ -23,6 +25,12 @@ module Ironmon
                                         full_details, archived)
     index = tracker_area_trainer_index(recipe)
     generator = tracker_area_species_generator(recipe, :trainer)
+    abilities_revealed = archived || tracker_connection.diagnostic_capabilities?(
+      "pokemon.all_active", "pokemon.abilities"
+    )
+    moves_revealed = archived || tracker_connection.diagnostic_capabilities?(
+      "pokemon.all_active", "pokemon.move_access"
+    )
     return area["trainers"].map do |entry|
       key = [entry["trainer_type"], entry["trainer_name"],
              entry["party_id"]]
@@ -45,16 +53,75 @@ module Ironmon
       }
       if revealed
         result["party"] = party.each_with_index.map do |pokemon, slot|
-          {
+          member = {
             "slot" => slot + 1,
             "species_id" => "#{pokemon["species"].id}:0",
             "species_name" => pokemon["species"].name,
             "level" => pokemon["level"],
-            "sprite_path" => tracker_lookup_sprite_path(pokemon["species"])
+            "sprite_path" => tracker_lookup_sprite_path(pokemon["species"]),
+            "abilities_revealed" => abilities_revealed,
+            "moves_revealed" => moves_revealed
           }
+          source = trainer.pokemon[slot] || {}
+          member["abilities"] = tracker_area_trainer_abilities(
+            pokemon["species"], source, recipe
+          ) if abilities_revealed
+          member["moves"] = tracker_area_trainer_moves(
+            pokemon["species"], pokemon["level"], source, recipe
+          ) if moves_revealed
+          member
         end
       end
       result
+    end
+  end
+
+  def self.tracker_area_trainer_abilities(species, source, recipe)
+    generator = AbilityGenerator.new(
+      recipe["seed"], allowed_ability_pool, ability_pool_fingerprint
+    )
+    slots = if fusion_ability_species?(species)
+              generator.fusion_slots_for(species)
+            elsif normal_ability_species?(species)
+              generator.slots_for(species)
+            else
+              { :normal => original_normal_abilities(species),
+                :hidden => original_hidden_abilities(species) }
+            end
+    requested = source[:ability_index]
+    candidates = [0, 1].map do |parity|
+      pokemon = TrackerTrainerAbilityContext.new(species, parity)
+      index = resolved_ability_index(
+        pokemon, requested.nil? ? parity : requested, slots
+      )
+      ability = index >= 2 ? slots[:hidden][index - 2] : nil
+      ability || slots[:normal][index] || slots[:normal][0]
+    end
+    return candidates.compact.uniq.map do |ability|
+      tracker_ability_snapshot(GameData::Ability.get(ability))
+    end
+  end
+
+  def self.tracker_area_trainer_moves(species, level, source, recipe)
+    return [] if source[:shadowness]
+    randomized = recipe["move_access_generator_version"] ==
+      MoveAccessGenerator::SCHEMA_VERSION
+    entries = randomized ? generated_level_up_moves_for(
+      species, tracker_move_access_generator(recipe)
+    ) : original_level_up_moves_for(species)
+    moves = entries.select { |entry| entry[0] <= level }.
+      map { |entry| entry[1] }.reverse.uniq.reverse.last(Pokemon::MAX_MOVES)
+    if !randomized && source[:species] == species.id
+      authored = source[:moves]
+      authored = source[:moves_hard] if
+        source[:moves_hard] && !source[:moves_hard].empty?
+      moves = authored.uniq.last(Pokemon::MAX_MOVES) if authored && !authored.empty?
+    end
+    return moves.map do |id|
+      move = GameData::Move.get(id)
+      { "id" => move.id.to_s, "name" => move.name,
+        "type" => move.type.to_s, "category" => tracker_move_category(move),
+        "description" => move.description }
     end
   end
 
