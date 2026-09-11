@@ -1,24 +1,31 @@
-    <article class="lookup-pokemon obsidian obsidian-research" aria-label="@Text["Lookup.Card.GeneratedPokemonInformation"]">
+    <article @key="Pokemon.Identity.SpeciesId" class="lookup-pokemon obsidian obsidian-research" aria-label="@Text["Lookup.Card.GeneratedPokemonInformation"]">
         <header class="research-identity">
-            <PokemonSprite FitVisibleBounds="true" GameRoot="@GameRoot" SpritePath="@Pokemon.Identity.SpritePath" Label="@Pokemon.Identity.SpeciesName" Size="79" />
+            <PokemonSprite FitVisibleBounds="true" GameRoot="@GameRoot" SpritePath="@Pokemon.Identity.SpritePath" Label="@Pokemon.Identity.SpeciesName" Size="34" />
             <div class="research-identity-copy">
-                <p class="card-kicker">@Text[DebugMode ? IsFusion() ? "Redesign.Research.ActiveFusion" : "Redesign.Research.ActivePokemon" : IsFusion() ? "Redesign.Research.ArchivedFusion" : "Redesign.Research.ArchivedPokemon"]</p>
-                <h2>@(Inspector?.Identity.Nickname ?? Pokemon.Identity.SpeciesName)</h2>
-                @if (Inspector is not null)
-                {
-                    <p class="tools-inspected-identity">@Pokemon.Identity.SpeciesName <GenderIcon Gender="@Inspector.Identity.Gender" /><span>@Text["Debug.Overview.LevelValue", Inspector.Identity.Level]</span></p>
-                }
-                <div class="research-types">
-                    @foreach (string type in Pokemon.Identity.Types)
+                <div class="research-name-line">
+                    <h2>@(Inspector?.Identity.Nickname ?? Pokemon.Identity.SpeciesName)</h2>
+                    @if (Inspector is not null)
                     {
-                        <span class="typing-type @MovePresentation.GetTypeColorClass(type)">@type</span>
-                    }
-                    @if (CanShowObtainability)
-                    {
-                        <PokemonObtainabilityMark Status="@_obtainability.Status" ShowLabel="true" IncludeIcon="true" />
+                        <span class="research-instance"><GenderIcon Gender="@Inspector.Identity.Gender" /><span>@Text["Debug.Overview.LevelValue", Inspector.Identity.Level]</span></span>
                     }
                 </div>
-                <small>@Pokemon.Identity.SpeciesId</small>
+                <div class="research-details-line">
+                    @if (Inspector is not null)
+                    {
+                        <span class="research-species-name">@Pokemon.Identity.SpeciesName</span>
+                    }
+                    <small class="research-species-id">@Pokemon.Identity.SpeciesId</small>
+                    <div class="research-types">
+                        @foreach (string type in Pokemon.Identity.Types)
+                        {
+                            <span class="typing-type @MovePresentation.GetTypeColorClass(type)">@type</span>
+                        }
+                    </div>
+                    @if (CanShowObtainability)
+                    {
+                        <PokemonObtainabilityMark Status="@_obtainability.Status" />
+                    }
+                </div>
             </div>
             @if (ShowDevelopmentActions)
             {
@@ -102,7 +109,7 @@
             }
             else if (_selectedPage == PokemonInformationPage.Moves)
             {
-                <MoveAccessTabs Access="@MovesSection.Access" />
+                <MoveAccessTabs @key="Pokemon.Identity.SpeciesId" Access="@MovesSection.Access" />
                 <GeneratorDiagnostics Heading="@Text["Redesign.Research.MoveGenerator"]"
                                       Diagnostics="@MovesSection.Generator" />
             }

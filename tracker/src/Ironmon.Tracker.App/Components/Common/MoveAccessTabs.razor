@@ -1,4 +1,4 @@
-<section class="move-access" aria-label="@Text["Common.MoveAccess.GeneratedMoveAccess"]">
+<section @ref="_element" class="move-access" aria-label="@Text["Common.MoveAccess.GeneratedMoveAccess"]">
     <nav class="move-access-tabs" aria-label="@Text["Common.MoveAccess.MoveAccessChannels"]">
         <button type="button" class="@GetTabClass(MoveAccessTabIds.Learnset)" @onclick="() => SelectTab(MoveAccessTabIds.Learnset)">@Text["Common.MoveAccess.Learnset"]</button>
         <button type="button" class="@GetTabClass(MoveAccessTabIds.Egg)" @onclick="() => SelectTab(MoveAccessTabIds.Egg)">@Text["Common.MoveAccess.Egg"]</button>
@@ -24,7 +24,7 @@
     else
     {
         <div class="move-list">
-            @foreach (MoveAccessEntrySnapshot move in GetRows())
+            @foreach (MoveAccessEntrySnapshot move in _pagination.GetPage(GetRows()))
             {
                 <button class="move-access-row @MovePresentation.GetTypeColorClass(move.Type)" type="button" @onclick="() => SelectMove(move)">
                     <strong class="move-access-acquisition">@GetPrimaryLabel(move)</strong>
@@ -33,6 +33,7 @@
                 </button>
             }
         </div>
+        <ObsidianPager State="_pagination" Total="GetRows().Count" Label="@Text["Common.MoveAccess.GeneratedMoveAccess"]" Previous="PreviousPage" Next="NextPage" />
     }
 </section>
 

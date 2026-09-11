@@ -1,4 +1,5 @@
 using Ironmon.Tracker.App.Components.Common;
+using Ironmon.Tracker.App.Components.Access;
 using Ironmon.Tracker.App.Components.Debug;
 using Ironmon.Tracker.App.Components.Lookup;
 using Ironmon.Tracker.App.Tests.Settings;
@@ -45,6 +46,32 @@ public sealed class DiagnosticToolsViewTests
     private const string _matchesField = "_matches";
     private const string _matchTotalField = "_matchTotal";
     private const BindingFlags _instanceMembers = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const string _showTools = "ShowTools";
+    private const string _showAccess = "ShowAccess";
+
+    /// <summary>
+    /// Keeps access as the entry point and replaces the tab row with one capability-gated heading action.
+    /// </summary>
+    /// <param name="authorized">Whether diagnostic tools are available.</param>
+    /// <returns>The diagnostic navigation verification task.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task HeadingNavigationRetainsAccessAndAuthorization(bool authorized)
+    {
+        await RenderAsync<DiagnosticToolsPage>([], authorized, async (component, html) =>
+        {
+            Assert.DoesNotContain("diagnostic-tool-tabs", html());
+            Assert.Contains("Diagnostic access", html());
+            Assert.Equal(authorized, html().Contains("diagnostic-page-switch", StringComparison.Ordinal));
+            await InvokeAsync(component, _showTools);
+            Assert.Equal(authorized, html().Contains("debug-pages", StringComparison.Ordinal));
+            Assert.Equal(1, html().Split("</h2>", StringSplitOptions.None).Length - 1);
+            await InvokeAsync(component, _showAccess);
+            Assert.DoesNotContain("debug-pages", html());
+            Assert.Contains("Diagnostic access", html());
+        });
+    }
 
     /// <summary>
     /// Keeps shared search wording specific to the active or archived run in empty and populated states.
@@ -221,6 +248,7 @@ public sealed class DiagnosticToolsViewTests
         ToolsActivator<T> activator = new();
         ServiceCollection services = new();
         services.AddLogging();
+        services.AddSingleton(connection);
         services.AddSingleton(connection.Requests);
         services.AddSingleton(state);
         services.AddSingleton(new Ironmon.Tracker.Connection.RunState.TrackerRunState());

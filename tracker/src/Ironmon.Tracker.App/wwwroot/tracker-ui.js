@@ -2,6 +2,10 @@ const ironmonSpriteFitObservers = new WeakMap();
 const ironmonSpriteVisibleBounds = new WeakMap();
 
 window.ironmonTrackerUi = {
+    scrollMoveAccess(element) {
+        const content = element?.closest(".research-page, .obsidian-lookup-content, .obsidian-archive-content");
+        if (content) content.scrollTop = 0;
+    },
     scrollLookup(element, key) {
         const content = element?.closest(".obsidian-lookup-content, .obsidian-archive-content");
         if (!content) return;

@@ -12,6 +12,14 @@
                 <span class="connection-work-spinner" aria-hidden="true"></span>
             }
         </div>
+        @if (!_accessOpen && !_settingsOpen && !_seedsOpen && _selectedView == TrackerView.Archive)
+        {
+            <SectionOutlet SectionName="archive-navigation" />
+        }
+        @if (_accessOpen)
+        {
+            <SectionOutlet SectionName="diagnostic-target-navigation" />
+        }
         <div class="header-actions" role="group" aria-label="@Text["App.Shell.ToolsLabel"]">
             <button class="@GetAccessButtonClass()" type="button" aria-label="@Text["Access.Page.Open"]" aria-pressed="@(_accessOpen ? "true" : "false")" title="@Text["Access.Page.Title"]" @onclick="ToggleAccess">
                 <span class="header-action-icon" aria-hidden="true">&#xE192;</span>

@@ -1,23 +1,41 @@
-@if (_slots.Count > 0)
-{
-    <details class="obsidian-archive-surface" open>
-        <summary class="obsidian-archive-disclosure"><ObsidianIcon Kind="ObsidianIconKind.Files" /><span><strong>@Text["Archive.SaveSlots.Title"]</strong><small>@(GetSelectedStatistics() is RunStatisticsPayload latest ? Text["Archive.SaveSlots.LatestAttempt", latest.AttemptNumber] : string.Empty)</small></span><ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></summary>
-        <div class="obsidian-archive-history-body">
-            <nav class="obsidian-archive-file-tabs" role="tablist" aria-label="@Text["Archive.SaveSlots.Tabs"]">
-                @foreach (KeyValuePair<string, RunStatisticsPayload> slot in _slots)
-                {
-                    <button type="button" role="tab" aria-selected="@(slot.Key == _selection.SelectedSaveSlot ? "true" : "false")" @onclick="() => SelectSlot(slot.Key)">@slot.Key</button>
-                }
-            </nav>
-            @if (GetSelectedStatistics() is RunStatisticsPayload statistics)
+<section class="archive-save-history" aria-label="@Text["Archive.Navigation.History"]">
+    <p class="archive-history-scope">@Text["Archive.Navigation.AllFiles"]</p>
+    <header class="archive-history-heading"><h2>@Text["Archive.Navigation.History"]</h2></header>
+    @if (_slots.Count > 0)
+    {
+        <nav class="obsidian-archive-file-tabs" role="tablist" aria-label="@Text["Archive.SaveSlots.Tabs"]">
+            @foreach (KeyValuePair<string, RunStatisticsPayload> slot in _slots)
             {
-                <div class="obsidian-archive-counts" role="tabpanel">
-                    <div><strong>@statistics.AttemptsStarted</strong><small>@Text["Lookup.Statistics.Started"]</small></div>
-                    <div class="obsidian-archive-lost"><strong>@statistics.AttemptsLost</strong><small>@Text["Lookup.Statistics.Lost"]</small></div>
-                    <div class="obsidian-archive-won"><strong>@statistics.AttemptsWon</strong><small>@Text["Lookup.Statistics.Won"]</small></div>
-                    <div><strong>@statistics.AttemptsAbandoned</strong><small>@Text["Lookup.Statistics.Abandoned"]</small></div>
-                </div>
+                <button type="button" role="tab" aria-selected="@(slot.Key == _selection.SelectedSaveSlot ? "true" : "false")" @onclick="() => SelectSlot(slot.Key)">@slot.Key</button>
             }
-        </div>
-    </details>
-}
+        </nav>
+        @if (GetSelectedStatistics() is RunStatisticsPayload statistics)
+        {
+            <div class="obsidian-archive-counts" role="group" aria-label="@Text["Archive.SaveSlots.Title"]">
+                <div><strong>@statistics.AttemptsStarted</strong><small>@Text["Lookup.Statistics.Started"]</small></div>
+                <div class="obsidian-archive-lost"><strong>@statistics.AttemptsLost</strong><small>@Text["Lookup.Statistics.Lost"]</small></div>
+                <div class="obsidian-archive-won"><strong>@statistics.AttemptsWon</strong><small>@Text["Lookup.Statistics.Won"]</small></div>
+                <div class="obsidian-archive-abandoned"><strong>@statistics.AttemptsAbandoned</strong><small>@Text["Lookup.Statistics.Abandoned"]</small></div>
+            </div>
+        }
+    }
+    <h3>@Text["Redesign.Archive.ArchivedRuns"]</h3>
+    <div class="archive-history-runs">
+        @foreach (CompletedRunRecipePayload recipe in SelectedRecipes)
+        {
+            <button type="button" class="archive-history-run" @onclick="() => RunSelected.InvokeAsync(recipe.RunId)"><ArchiveRunEntry Recipe="recipe" /><ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></button>
+        }
+    </div>
+    @if (SelectedRecipes.Count == 0)
+    {
+        <p class="lookup-message">@Text["Archive.NoCompletedRun"]</p>
+    }
+    @if (_slots.Count > 0 && UnidentifiedRecipes.Count > 0)
+    {
+        <h3>@Text["Archive.Navigation.UnknownFile"]</h3>
+        @foreach (CompletedRunRecipePayload recipe in UnidentifiedRecipes)
+        {
+            <button type="button" class="archive-history-run" @onclick="() => RunSelected.InvokeAsync(recipe.RunId)"><ArchiveRunEntry Recipe="recipe" /><ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></button>
+        }
+    }
+</section>

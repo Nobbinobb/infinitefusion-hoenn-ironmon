@@ -21,6 +21,12 @@ public partial class DiagnosticAccessPage : IDisposable
     private bool _identifiersOpen;
 
     /// <summary>
+    /// Gets or sets whether this page supplies its own heading when hosted independently.
+    /// </summary>
+    [Parameter]
+    public bool ShowHeading { get; set; } = true;
+
+    /// <summary>
     /// Gets or initializes the tracker-owned diagnostic-access lifecycle service.
     /// </summary>
     [Inject]

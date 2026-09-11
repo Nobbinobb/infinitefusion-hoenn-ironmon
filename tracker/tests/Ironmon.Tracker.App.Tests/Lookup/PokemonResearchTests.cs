@@ -39,9 +39,123 @@ public sealed class PokemonResearchTests
     private const string _confirmSwap = "ConfirmDevelopmentActionAsync";
     private const string _selectSlot = "SelectSlotAsync";
     private const string _render = "StateHasChanged";
+    private const string _nextPage = "NextPage";
+    private const string _previousPage = "PreviousPage";
+    private const string _selectTab = "SelectTab";
+    private const string _normalType = "Normal";
+    private const string _movePrefix = "Move ";
+    private const string _moveRow = "class=\"move-access-row ";
+    private const string _wideNickname = "WWWWWWWWWWWWWWWW";
+    private const string _female = "Female";
+    private const string _electricType = "Electric";
+    private const string _fightingType = "Fighting";
     private const string _resourceName = "Ironmon.Tracker.App.Resources.Localization.TrackerResources";
     private const string _descriptionJson = "{\"ability_id\":\"SUPERLUCK\",\"ability_name\":\"Super Luck\",\"ability_description\":\"Heightens the critical-hit ratios of moves.\"}";
     private const BindingFlags _instanceMembers = BindingFlags.Instance | BindingFlags.NonPublic;
+
+    /// <summary>
+    /// Retains crowded identity details and accessible icon-only obtainability in a permanent compact header.
+    /// </summary>
+    /// <param name="speciesId">A long ordinary, form, or fusion identifier.</param>
+    /// <param name="speciesName">The matching catalog display name.</param>
+    /// <param name="inspect">Whether an individual nickname, gender, and level are present.</param>
+    /// <param name="status">The three-state obtainability indicator.</param>
+    /// <returns>The production header rendering task.</returns>
+    [Theory]
+    [InlineData("FLETCHINDER", "Fletchinder", true, PokemonObtainabilityStatus.Obtainable)]
+    [InlineData("B377H367", "Chandeldreigon", true, PokemonObtainabilityStatus.Unobtainable)]
+    [InlineData("CASTFORM_SNOWY", "Castform", true, PokemonObtainabilityStatus.Calculating)]
+    [InlineData("B377H367", "Chandeldreigon", false, PokemonObtainabilityStatus.Obtainable)]
+    [InlineData(_speciesId, _speciesName, true, PokemonObtainabilityStatus.Obtainable)]
+    public async Task CompactIdentityRetainsNamesIdAndStatus(string speciesId, string speciesName, bool inspect, PokemonObtainabilityStatus status)
+    {
+        string nickname = speciesId == _speciesId ? speciesName : _wideNickname;
+        DebugPokemonInspectorSnapshot? inspector = inspect ? new()
+        {
+            Identity = new()
+            {
+                PokemonId = _version, Nickname = nickname, SpeciesId = speciesId, SpeciesName = speciesName,
+                Gender = _female, Level = 100, ActiveAbilitySlot = _version, ActiveAbilityId = _abilityId, ActiveAbilityName = _abilityName
+            }
+        } : null;
+        await RenderAsync<PokemonLookupCard>(new()
+        {
+            [nameof(PokemonLookupCard.Pokemon)] = new PokemonLookupSnapshot
+            {
+                Identity = new() { SpeciesId = speciesId, SpeciesName = speciesName, Types = [_electricType, _fightingType], Obtainability = new() { Status = status } },
+                Section = PokemonLookupSection.Abilities,
+                Abilities = new() { Values = [new() { Id = _abilityId, Name = _abilityName, Description = _description }] }
+            },
+            [nameof(PokemonLookupCard.Inspector)] = inspector,
+            [nameof(PokemonLookupCard.DebugMode)] = inspect
+        }, true, async (card, html) =>
+        {
+            string header = html().Split("</header>", StringSplitOptions.None)[0];
+            Assert.Contains(speciesName, header);
+            Assert.Contains(speciesId, header);
+            Assert.Contains(_electricType, header);
+            Assert.Contains(_fightingType, header);
+            Assert.Contains("pokemon-obtainability-mark", header);
+            Assert.DoesNotContain("research-header-toggle", html());
+            Assert.DoesNotContain("scrollResearch", html());
+            if (inspect)
+            {
+                Assert.Contains($">{nickname}</h2>", header);
+                Assert.Contains($"research-species-name\">{speciesName}</span>", header);
+                Assert.Contains("100", header);
+                Assert.Contains(_female, header);
+                Assert.Contains("research-instance", header);
+            }
+
+            Assert.Contains(status == PokemonObtainabilityStatus.Obtainable ? "aria-label=\"Obtainable\"" : status == PokemonObtainabilityStatus.Unobtainable ? "aria-label=\"Not obtainable\"" : "aria-label=\"Calculating\"", header);
+            await Task.CompletedTask;
+        });
+    }
+
+    /// <summary>
+    /// Pages each generated move channel without losing entries or overrunning a short final page.
+    /// </summary>
+    /// <param name="channel">The move channel to exercise.</param>
+    /// <returns>The rendering and paging verification task.</returns>
+    [Theory]
+    [InlineData(MoveAccessTabIds.Learnset)]
+    [InlineData(MoveAccessTabIds.Egg)]
+    [InlineData(MoveAccessTabIds.Machine)]
+    [InlineData(MoveAccessTabIds.Tutor)]
+    public async Task MoveChannelsPageInGroupsOfFifteen(string channel)
+    {
+        MoveAccessEntrySnapshot[] moves = [.. Enumerable.Range(1, 31).Select(index => new MoveAccessEntrySnapshot { Id = $"{_movePrefix}{index:00}", Name = $"{_movePrefix}{index:00}", Type = _normalType, LearnedLevel = index, Source = _version, SourceLabel = string.Empty })];
+        await RenderAsync<MoveAccessTabs>(new()
+        {
+            [nameof(MoveAccessTabs.Access)] = new MoveAccessSnapshot { Learnset = moves, EggMoves = moves, MachineMoves = moves, TutorMoves = moves }
+        }, false, async (component, html) =>
+        {
+            await InvokeAsync(component, _selectTab, channel);
+            Assert.Equal(15, html().Split(_moveRow, StringSplitOptions.None).Length - 1);
+            Assert.Contains("Move 01", html());
+            Assert.Contains("Move 15", html());
+            Assert.DoesNotContain("Move 16", html());
+            await InvokeAsync(component, _nextPage);
+            Assert.Equal(15, html().Split(_moveRow, StringSplitOptions.None).Length - 1);
+            Assert.DoesNotContain("Move 15", html());
+            Assert.Contains("Move 16", html());
+            Assert.Contains("Move 30", html());
+            await InvokeAsync(component, _nextPage);
+            Assert.Equal(1, html().Split(_moveRow, StringSplitOptions.None).Length - 1);
+            Assert.Contains("Move 31", html());
+            await InvokeAsync(component, _nextPage);
+            Assert.Contains("Move 31", html());
+            await InvokeAsync(component, _previousPage);
+            Assert.Contains("Move 16", html());
+            await InvokeAsync(component, _selectTab, MoveAccessTabIds.Learnset);
+            Assert.Contains("Move 01", html());
+            await InvokeAsync(component, _nextPage);
+            await component.SetParametersAsync(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(MoveAccessTabs.Access)] = new MoveAccessSnapshot { Learnset = [moves[0]] } }));
+            Assert.Equal(1, html().Split(_moveRow, StringSplitOptions.None).Length - 1);
+            Assert.Contains("Move 01", html());
+            Assert.DoesNotContain("obsidian-pager", html());
+        });
+    }
 
     /// <summary>
     /// Keeps swap unavailable for archives and unprivileged active-run lookup.

@@ -1,0 +1,87 @@
+.diagnostic-tools.obsidian{display:flex;flex-direction:column;gap:0;min-height:0;overflow:hidden}
+.tracker-shell.obsidian-access-shell>.view-tabs{margin-bottom:5px}
+.diagnostic-page-heading{display:grid;grid-template-columns:86px minmax(0,1fr) 86px;align-items:center;gap:6px;min-height:48px;padding:3px 0 9px;flex-shrink:0}
+.diagnostic-page-heading h2{margin:0;text-align:center;font-size:20px;line-height:1.25;letter-spacing:-.4px;font-weight:600;color:#e7edf7}
+.diagnostic-page-switch{display:flex;align-items:center;justify-content:center;gap:5px;width:86px;min-height:34px;padding:5px 0;border:0;border-radius:5px;background:none;color:#b0a3ff;font:12px "Segoe UI",sans-serif;cursor:pointer}
+.diagnostic-page-back>.obsidian-line-icon:first-child{transform:rotate(180deg)}
+.diagnostic-page-switch:hover{background:none;text-decoration:underline;text-underline-offset:3px}
+.diagnostic-page-switch .obsidian-line-icon{width:14px;height:14px}
+.diagnostic-page-authorized{display:flex;align-items:center;justify-content:center;gap:4px;font-size:10px;color:#55eaa5;white-space:nowrap}
+.diagnostic-page-authorized .obsidian-line-icon{width:13px;height:13px}
+.diagnostic-tools>.obsidian-access{flex:1;min-height:0;overflow:auto;scrollbar-width:thin}
+.diagnostic-tools>.obsidian-tools{flex:1;min-height:0;overflow:auto;scrollbar-width:thin}
+.diagnostic-tools>.obsidian-tools:has(.obsidian-research){display:flex;flex-direction:column;overflow:hidden}
+.diagnostic-tools .debug-pages{flex-shrink:0}
+.diagnostic-tools .debug-active-lookup:has(.research-explorer),.diagnostic-tools .research-explorer,.diagnostic-tools .obsidian-research{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+.tracker-header:has(.archive-run-picker,.debug-target-picker){position:relative;gap:8px}
+.tracker-header:has(.archive-run-picker,.debug-target-picker) .connection-state{flex:none;min-width:0;white-space:nowrap}
+.tracker-header:has(.archive-run-picker,.debug-target-picker) .header-actions{flex:none;margin:0}
+.archive-run-picker{flex:1;min-width:0;color:#e7edf7;font:12px/1.4 "Segoe UI",sans-serif}
+.archive-run-trigger{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-width:0;min-height:31px;padding:4px 7px;border:1px solid #2a3544;border-radius:6px;background:#131820;color:#e7edf7;font:inherit;cursor:pointer}
+.archive-run-trigger>span,.archive-run-trigger>small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.archive-run-trigger small{font-size:11px;color:#a6b6cc}
+.archive-run-trigger .obsidian-line-icon{width:12px;height:12px;flex:none;transform:rotate(90deg);color:#b0a3ff}
+.archive-picker-dismiss{position:fixed;inset:0;z-index:29;width:100%;height:100%;border:0;padding:0;background:transparent;cursor:default}
+.archive-run-menu{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:30;display:flex;flex-direction:column;max-height:min(450px,calc(100vh - 85px));padding:8px;border:1px solid #364459;border-radius:9px;background:#131820;box-shadow:0 12px 26px #0008}
+.archive-run-menu>header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-left:7px;flex:none}
+.archive-picker-close{display:grid;place-items:center;min-width:30px;min-height:30px;background:none;border:0;border-radius:5px;color:#a6b6cc;cursor:pointer}
+.archive-picker-close .obsidian-line-icon{width:14px;height:14px}
+.archive-history-link{display:flex;align-items:center;gap:9px;flex:none;width:100%;padding:11px 7px;margin:3px 0 5px;border:0;border-bottom:1px solid #2a3544;background:none;color:#b0a3ff;font:inherit;text-align:left;cursor:pointer}
+.archive-history-link>span{flex:1;min-width:0}
+.archive-history-link strong{display:block;font-size:12px;font-weight:600}
+.archive-history-link small{display:block;font-size:11px;color:#a6b6cc;margin-top:3px}
+.archive-history-link>.obsidian-line-icon{width:14px;height:14px;flex:none}
+.archive-run-options{overflow:auto;min-height:0;scrollbar-width:thin}
+.archive-run-group{font-size:11px;color:#a6b6cc;padding:9px 7px 4px;margin:0;overflow-wrap:anywhere}
+.archive-run-option{display:block;width:100%;padding:10px 7px;min-height:52px;border:0;border-radius:6px;background:none;color:#e7edf7;font:inherit;text-align:left;cursor:pointer}
+.archive-run-option[aria-pressed=true],.archive-history-link[aria-pressed=true]{background:#28263d;color:#ddd5ff}
+.archive-run-option:hover,.archive-history-link:hover,.archive-picker-close:hover{background:#1b2432}
+.archive-run-entry{display:block;flex:1;min-width:0}
+.archive-run-entry-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.archive-run-entry-title strong{font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.archive-run-entry-title>span{font-size:11px;color:#a6b6cc}
+.archive-run-entry{--run-outcome:#a6b6cc}
+.archive-run-entry[data-outcome=won]{--run-outcome:#55eaa5}
+.archive-run-entry[data-outcome=lost]{--run-outcome:#ff819d}
+.archive-run-entry[data-outcome=abandoned]{--run-outcome:#e3b96c}
+.archive-run-entry .archive-run-outcome{color:var(--run-outcome);background:color-mix(in srgb,var(--run-outcome) 10%,transparent);border-radius:4px;padding:2px 6px;line-height:1.3;white-space:nowrap}
+.archive-run-entry>small{display:block;font-size:11px;color:#a6b6cc;margin-top:5px}
+.tracker-shell.obsidian:has(>.archive-navigation-view){height:100vh;min-height:0;overflow:hidden}
+.archive-navigation-view{display:flex;flex:1;flex-direction:column;min-height:0;overflow:hidden}
+.archive-navigation-view>.obsidian-archive-tabs{margin:0 0 9px}
+.archive-run-content[hidden]{display:none!important}
+.archive-run-content:not([hidden]):has(>.research-explorer){display:flex;flex-direction:column;overflow:hidden!important;padding:0!important}
+.archive-navigation-view .research-explorer,.archive-navigation-view .obsidian-research{flex:1;min-height:0;overflow:hidden}
+.archive-navigation-view .research-search-match,.diagnostic-tools .research-search-match{padding-block:10px}
+.archive-navigation-view .obsidian-archive-run-actions{margin-top:0}
+.archive-history-scope{margin:0 0 7px;color:#a6b6cc;font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.archive-history-heading h2{margin:0 0 13px;font-size:20px;letter-spacing:-.4px}
+.archive-save-history .obsidian-archive-counts{gap:0;padding:12px 0;background:#11161e;border:1px solid #2a3544;border-radius:8px}
+.archive-save-history .obsidian-archive-counts>div{padding:0 5px;text-align:center}
+.archive-save-history .obsidian-archive-counts>div+div{border-left:1px solid #2a3544}
+.archive-save-history .obsidian-archive-counts small{display:block;margin-top:3px}
+.archive-save-history .obsidian-archive-counts .obsidian-archive-abandoned strong{color:#e3b96c}
+.archive-save-history>h3{margin:18px 0 6px;font-size:13px}
+.archive-history-run{display:flex;align-items:center;gap:10px;width:100%;padding:14px 5px;border:0;border-bottom:1px solid #2a3544;border-radius:0;background:none;color:#e7edf7;font:inherit;text-align:left;cursor:pointer}
+.archive-history-run:hover{background:#1b2432}
+.archive-history-run>.obsidian-line-icon{width:14px;height:14px;flex:none;color:#b0a3ff}
+.research-page{overscroll-behavior:contain;overflow-anchor:none}
+.archive-run-options,.obsidian-archive .archive-history-content{scrollbar-width:auto;scrollbar-color:auto}
+.archive-run-options::-webkit-scrollbar,.archive-history-content::-webkit-scrollbar{width:6px}
+.archive-run-options::-webkit-scrollbar-track,.archive-history-content::-webkit-scrollbar-track{background:transparent}
+.archive-run-options::-webkit-scrollbar-thumb,.archive-history-content::-webkit-scrollbar-thumb{background:#48556c;border-radius:6px}
+.archive-run-options::-webkit-scrollbar-thumb:hover,.archive-history-content::-webkit-scrollbar-thumb:hover{background:#65748d}
+.archive-run-options::-webkit-scrollbar-button,.archive-history-content::-webkit-scrollbar-button{display:none;width:0;height:0}
+@media(max-width:390px){
+    .diagnostic-page-heading h2{font-size:17px}
+    .tracker-header:has(.archive-run-picker,.debug-target-picker){gap:5px}
+    .tracker-header:has(.archive-run-picker,.debug-target-picker) .connection-state{font-size:11px;gap:5px}
+    .tracker-header:has(.archive-run-picker,.debug-target-picker) .header-actions{gap:3px}
+    .tracker-header:has(.archive-run-picker,.debug-target-picker) .settings-button{width:29px;min-width:29px}
+    .archive-run-trigger{padding-inline:4px;gap:4px}
+}
+
+.debug-target-picker{position:relative;flex:1;min-width:0;font:12px/1.4 "Segoe UI",sans-serif}
+.debug-target-picker select{appearance:none;width:100%;min-width:0;height:31px;padding:4px 23px 4px 7px;border:1px solid #2a3544;border-radius:6px;background:#131820;color:#e7edf7;font:inherit;text-overflow:ellipsis;cursor:pointer;color-scheme:dark}
+.debug-target-picker>.obsidian-line-icon{position:absolute;right:7px;top:10px;width:12px;height:12px;transform:rotate(90deg);color:#b0a3ff;pointer-events:none}
+.debug-target-picker select:disabled{opacity:.6;cursor:default}

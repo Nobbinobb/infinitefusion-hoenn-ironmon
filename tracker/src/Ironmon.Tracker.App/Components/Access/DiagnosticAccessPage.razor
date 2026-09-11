@@ -1,7 +1,10 @@
 <section class="obsidian obsidian-access @GetStateClass()" aria-label="@Text["Access.Page.Title"]">
-    <header class="obsidian-settings-heading">
-        <div><p class="card-kicker">@Text["Access.Page.Kicker"]</p><h2>@Text["Access.Page.Title"]</h2></div>
-    </header>
+    @if (ShowHeading)
+    {
+        <header class="obsidian-settings-heading">
+            <div><p class="card-kicker">@Text["Access.Page.Kicker"]</p><h2>@Text["Access.Page.Title"]</h2></div>
+        </header>
+    }
     <div class="obsidian-access-state" role="status">
         <ObsidianIcon Kind="ObsidianIconKind.ShieldCheck" />
         <div><strong>@GetStateHeading()</strong><p>@GetStateDescription()</p></div>

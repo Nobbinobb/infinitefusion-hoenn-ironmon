@@ -89,6 +89,10 @@ success, so the token remains available after the generator exits.
 
 ### Diagnostic Tools
 
+The header key opens Diagnostic access. Matching Access and Tools labels switch
+between authorization and inspection, with the page title fixed at the center.
+Tools retains its capability-filtered page navigation.
+
 The Tools area uses the shared redesigned Pokémon research views for current
 Pokémon inspection and active-run lookup. Current inspection also retains the
 individual Pokémon's nickname, level, gender, held item, form, identity, and
@@ -108,3 +112,22 @@ sections. Protocol uses the same disclosure component for raw state and history;
 copying an entry does not toggle it. Report copy and export include only authorized
 groups, and clearing history leaves the current state and persisted knowledge
 available under their existing grants.
+
+### Archive navigation
+
+The archive run selector lives in the application header. Runs are grouped by
+their recorded save file; its separate Save-file history entry opens cumulative
+save-file totals and direct links to completed runs. History is outside the
+Summary, Areas, and Pokémon tabs, which always describe the selected run.
+Legacy runs without a recorded save file remain accessible.
+
+Pokémon identity headers in archive lookup and diagnostics stay compact at every
+scroll position. They retain the species ID, both types, and the obtainability
+icon with an accessible status label. Live inspection also keeps the nickname,
+species name, level, and gender. Names wrap instead of being truncated, and the
+information navigation remains visible below the header.
+
+Pokémon search displays 14 matches per page. Generated Learnset, Egg, TM, and
+Tutor lists display 15 moves per page and reset to the first page when switching
+move categories. Run outcomes use green for won, red for lost, and amber for
+abandoned throughout archive summaries, navigation, and save-file history.
