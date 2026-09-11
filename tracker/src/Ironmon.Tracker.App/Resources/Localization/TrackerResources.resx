@@ -2051,4 +2051,13 @@
   <data name="Badges.Feather" xml:space="preserve"><value>Feather</value></data>
   <data name="Badges.Mind" xml:space="preserve"><value>Mind</value></data>
   <data name="Badges.Rain" xml:space="preserve"><value>Rain</value></data>
+  <data name="Lookup.Trainer.OpenPokemon" xml:space="preserve"><value>Open {0} in Pokémon lookup</value></data>
+  <data name="Lookup.Trainer.PokemonLookup" xml:space="preserve"><value>Pokémon lookup</value></data>
+  <data name="Lookup.Trainer.BattleSet" xml:space="preserve"><value>{0}’s battle set</value></data>
+  <data name="Lookup.Trainer.PossibleAbilities" xml:space="preserve"><value>Possible abilities</value></data>
+  <data name="Lookup.Trainer.Unavailable" xml:space="preserve"><value>Battle details unavailable.</value></data>
+  <data name="Lookup.Trainer.AbilityRestricted" xml:space="preserve"><value>Abilities require Diagnostic Tools access.</value></data>
+  <data name="Lookup.Trainer.MovesRestricted" xml:space="preserve"><value>Moves require Diagnostic Tools access.</value></data>
+  <data name="Lookup.Trainer.LookupRestricted" xml:space="preserve"><value>Pokémon lookup · access required</value></data>
+  <data name="Lookup.Trainer.Back" xml:space="preserve"><value>Back to trainers</value></data>
 </root>

@@ -1,11 +1,13 @@
 using Ironmon.Tracker.App.Components.Common;
 using Ironmon.Tracker.App.Components.Lookup;
 using Ironmon.Tracker.Protocol.Lookup;
+using Ironmon.Tracker.Protocol.Pokemon;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using System.Resources;
+using System.Reflection;
 
 namespace Ironmon.Tracker.App.Tests.Lookup;
 
@@ -35,6 +37,126 @@ public sealed class LookupPresentationTests
     private const string _land = "Land";
     private const string _water = "Water";
     private const string _environment = "grass";
+    private const string _abilityId = "VOLTABSORB";
+    private const string _abilityName = "Volt Absorb";
+    private const string _moveId = "BUBBLEBEAM";
+    private const string _moveName = "Bubble Beam";
+    private const string _moveType = "WATER";
+    private const string _moveDescription = "May lower the target's Speed.";
+    private const string _togglePokemon = "TogglePokemon";
+    private const string _selectDescription = "SelectDescription";
+    private const string _openPokemon = "OpenPokemonAsync";
+    private const string _stateHasChanged = "StateHasChanged";
+    private const string _renderPathVariable = "IRONMON_LOOKUP_RENDER_PATH";
+    private const string _longSpeciesName = "Feraligatross";
+    private const string _partyChoiceMarkup = "class=\"obsidian-lookup-party-choice\"";
+    private const string _partyLinkMarkup = "class=\"obsidian-lookup-party-link\"";
+    private const string _battleMoveMarkup = "class=\"obsidian-lookup-battle-move ";
+    private const string _expandedMarkup = "aria-expanded=\"true\"";
+    private const string _waterTypeClass = "type-water";
+    private const string _specialCategoryClass = "category-icon special";
+    private const string _effectMarkup = "role=\"status\">";
+    private const string _paragraphEnd = "</p>";
+    private const BindingFlags _privateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+
+    /// <summary>
+    /// Exercises a full party with a selected lower row and retains every direct lookup action.
+    /// </summary>
+    /// <returns>The dense production markup checks.</returns>
+    [Fact]
+    public async Task DenseTrainerPartyKeepsAllSixMembersAndTheirLookupActions()
+    {
+        AreaTrainerEntryPayload trainer = new()
+        {
+            EntryId = _trainerId, TrainerType = _trainerType, TrainerName = _trainerName,
+            DetailsRevealed = true, PartySize = 6,
+            Party = [.. Enumerable.Range(1, 6).Select(slot => new AreaTrainerPokemonPayload
+            {
+                Slot = slot, SpeciesId = _speciesId, SpeciesName = _longSpeciesName, Level = 100,
+                AbilitiesRevealed = true, MovesRevealed = true,
+                Abilities = [new() { Id = _abilityId, Name = _abilityName, Description = _moveDescription }],
+                Moves = [.. Enumerable.Range(1, 4).Select(_ => new AreaTrainerMovePayload { Id = _moveId, Name = _moveName, Type = _moveType, Category = MoveCategory.Special, Description = _moveDescription })]
+            })]
+        };
+        string html = await RenderAsync<ObsidianLookupTrainer>(new()
+        {
+            [nameof(ObsidianLookupTrainer.Trainer)] = trainer,
+            [nameof(ObsidianLookupTrainer.CanViewAbilities)] = true,
+            [nameof(ObsidianLookupTrainer.CanViewMoves)] = true,
+            [nameof(ObsidianLookupTrainer.CanLookupPokemon)] = true
+        }, (component, markup) =>
+        {
+            typeof(ObsidianLookupTrainer).GetMethod(_togglePokemon, _privateInstance)!.Invoke(component, [4]);
+            typeof(ObsidianLookupTrainer).GetMethod(_selectDescription, _privateInstance)!.Invoke(component, [_moveDescription]);
+            typeof(ComponentBase).GetMethod(_stateHasChanged, _privateInstance)!.Invoke(component, null);
+            Assert.Equal(6, markup().Split(_partyChoiceMarkup, StringSplitOptions.None).Length - 1);
+            Assert.Equal(6, markup().Split(_partyLinkMarkup, StringSplitOptions.None).Length - 1);
+            Assert.Equal(4, markup().Split(_battleMoveMarkup, StringSplitOptions.None).Length - 1);
+            Assert.Single(markup().Split(_expandedMarkup, StringSplitOptions.None).Skip(1));
+            return Task.CompletedTask;
+        });
+        string? renderPath = Environment.GetEnvironmentVariable(_renderPathVariable);
+        if (!string.IsNullOrEmpty(renderPath))
+            await File.WriteAllTextAsync(renderPath, html);
+    }
+
+    /// <summary>
+    /// Keeps trainer abilities, equipped moves, and direct navigation independently gated.
+    /// </summary>
+    /// <param name="abilities">Whether ability information is allowed.</param>
+    /// <param name="moves">Whether move information is allowed.</param>
+    /// <returns>The production component interaction checks.</returns>
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task TrainerBattleSetUsesIndependentGrantsAndEffectOnlyDescriptions(bool abilities, bool moves)
+    {
+        string? navigated = null;
+        AreaTrainerPokemonPayload pokemon = new()
+        {
+            Slot = 1, SpeciesId = _speciesId, SpeciesName = _speciesName, Level = 35,
+            AbilitiesRevealed = true, MovesRevealed = true,
+            Abilities = [new() { Id = _abilityId, Name = _abilityName, Description = _moveDescription }],
+            Moves = [new() { Id = _moveId, Name = _moveName, Type = _moveType, Category = MoveCategory.Special, Description = _moveDescription }]
+        };
+        AreaTrainerEntryPayload trainer = new()
+        {
+            EntryId = _trainerId, TrainerType = _trainerType, TrainerName = _trainerName,
+            DetailsRevealed = true, PartySize = 1, Party = [pokemon]
+        };
+        await RenderAsync<ObsidianLookupTrainer>(new()
+        {
+            [nameof(ObsidianLookupTrainer.Trainer)] = trainer,
+            [nameof(ObsidianLookupTrainer.CanViewAbilities)] = abilities,
+            [nameof(ObsidianLookupTrainer.CanViewMoves)] = moves,
+            [nameof(ObsidianLookupTrainer.CanLookupPokemon)] = abilities || moves,
+            [nameof(ObsidianLookupTrainer.PokemonSelected)] = EventCallback.Factory.Create<string>(this, species => navigated = species)
+        }, async (component, html) =>
+        {
+            Assert.DoesNotContain(_moveName, html());
+            typeof(ObsidianLookupTrainer).GetMethod(_togglePokemon, _privateInstance)!.Invoke(component, [1]);
+            typeof(ComponentBase).GetMethod(_stateHasChanged, _privateInstance)!.Invoke(component, null);
+            Assert.Equal(abilities, html().Contains(_abilityName, StringComparison.Ordinal));
+            Assert.Equal(moves, html().Contains(_moveName, StringComparison.Ordinal));
+            if (moves)
+            {
+                Assert.Contains(_waterTypeClass, html());
+                Assert.Contains(_specialCategoryClass, html());
+                typeof(ObsidianLookupTrainer).GetMethod(_selectDescription, _privateInstance)!.Invoke(component, [_moveDescription]);
+                typeof(ComponentBase).GetMethod(_stateHasChanged, _privateInstance)!.Invoke(component, null);
+                string effect = html().Split(_effectMarkup, StringSplitOptions.None)[1].Split(_paragraphEnd, StringSplitOptions.None)[0];
+                Assert.Contains("Speed", effect);
+                Assert.DoesNotContain(_moveName, effect);
+                Assert.DoesNotContain("Special", effect);
+                Assert.DoesNotContain(_moveType, effect);
+            }
+
+            await (Task)typeof(ObsidianLookupTrainer).GetMethod(_openPokemon, _privateInstance)!.Invoke(component, [pokemon])!;
+            Assert.Equal(abilities || moves ? _speciesId : null, navigated);
+        });
+    }
 
     /// <summary>
     /// Verifies hidden and ground pickups cannot expose identities or categories before disclosure.
@@ -177,16 +299,52 @@ public sealed class LookupPresentationTests
     /// </summary>
     /// <typeparam name="T">The component being exercised.</typeparam>
     /// <param name="parameters">The input payloads and presentation parameters.</param>
+    /// <param name="check">Optional interaction checks on the renderer dispatcher.</param>
     /// <returns>The rendered component markup.</returns>
-    private static async Task<string> RenderAsync<T>(Dictionary<string, object?> parameters) where T : IComponent
+    private static async Task<string> RenderAsync<T>(Dictionary<string, object?> parameters, Func<T, Func<string>, Task>? check = null) where T : IComponent
     {
         ServiceCollection services = new();
         services.AddLogging();
         services.AddSingleton<IStringLocalizer<TrackerResources>>(new LookupLocalizer());
         services.AddSingleton(new PokemonSpriteDialogService());
+        LookupActivator<T> activator = new();
+        services.AddSingleton<IComponentActivator>(activator);
         await using ServiceProvider provider = services.BuildServiceProvider();
         await using HtmlRenderer renderer = new(provider, provider.GetRequiredService<ILoggerFactory>());
-        return await renderer.Dispatcher.InvokeAsync(async () => (await renderer.RenderComponentAsync<T>(ParameterView.FromDictionary(parameters))).ToHtmlString());
+        return await renderer.Dispatcher.InvokeAsync(async () =>
+        {
+            var view = await renderer.RenderComponentAsync<T>(ParameterView.FromDictionary(parameters));
+            if (check is not null)
+                await check(activator.Component!, view.ToHtmlString);
+
+            return view.ToHtmlString();
+        });
+    }
+
+    /// <summary>
+    /// Captures a production component for interaction checks on the render dispatcher.
+    /// </summary>
+    /// <typeparam name="T">The component being tested.</typeparam>
+    private sealed class LookupActivator<T> : IComponentActivator where T : IComponent
+    {
+        /// <summary>
+        /// Gets the component created by the renderer.
+        /// </summary>
+        public T? Component { get; private set; }
+
+        /// <summary>
+        /// Creates and records the requested component.
+        /// </summary>
+        /// <param name="componentType">The renderer's component type.</param>
+        /// <returns>The requested component.</returns>
+        public IComponent CreateInstance(Type componentType)
+        {
+            IComponent component = (IComponent)Activator.CreateInstance(componentType)!;
+            if (component is T match)
+                Component = match;
+
+            return component;
+        }
     }
 
     /// <summary>

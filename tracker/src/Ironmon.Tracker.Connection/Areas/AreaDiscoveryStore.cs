@@ -176,7 +176,7 @@ public sealed class AreaDiscoveryStore
         lock (_sync)
         {
             PersistedAreaDiscoveries run = GetOrLoad(runId);
-            IReadOnlyList<AreaTrainerEntryPayload> trainers = [.. response.Trainers.Select(entry => run.Trainers.GetValueOrDefault(entry.EntryId) ?? entry)];
+            IReadOnlyList<AreaTrainerEntryPayload> trainers = [.. response.Trainers.Select(entry => run.Trainers.TryGetValue(entry.EntryId, out AreaTrainerEntryPayload? persisted) ? RestoreTrainerDetails(persisted, entry) : entry)];
             IReadOnlyList<AreaEncounterEntryPayload> encounters = [.. response.Encounters.Select(entry => run.Encounters.GetValueOrDefault(entry.EntryId) ?? entry)];
             IReadOnlyList<AreaItemEntryPayload> items = [.. response.Items.Select(entry =>
             {
@@ -306,6 +306,55 @@ public sealed class AreaDiscoveryStore
 
         if (package.EntryKeys is null || package.EntryKeys.Count == 0 || package.EntryKeys.Any(string.IsNullOrWhiteSpace))
             throw new ArgumentException("A discovery package requires non-empty entry keys.", nameof(package));
+    }
+
+    /// <summary>
+    /// Supplements recorded trainer identities with archived battle details missing from older discoveries.
+    /// </summary>
+    /// <param name="persisted">The authoritative recorded party and completion state.</param>
+    /// <param name="reconstructed">The party reconstructed under the archive's generation profile.</param>
+    /// <returns>The recorded entry with compatible missing battle details restored.</returns>
+    private static AreaTrainerEntryPayload RestoreTrainerDetails(AreaTrainerEntryPayload persisted, AreaTrainerEntryPayload reconstructed)
+    {
+        return new AreaTrainerEntryPayload
+        {
+            EntryId = persisted.EntryId,
+            MapId = persisted.MapId,
+            TrainerType = persisted.TrainerType,
+            TrainerName = persisted.TrainerName,
+            PartySize = persisted.PartySize,
+            Defeated = persisted.Defeated,
+            DetailsRevealed = persisted.DetailsRevealed,
+            Party = [.. persisted.Party.Select(member => RestoreTrainerPokemonDetails(member, reconstructed))]
+        };
+    }
+
+    /// <summary>
+    /// Restores missing archived battle data only when the recorded slot, species, and level agree.
+    /// </summary>
+    /// <param name="persisted">The recorded party member.</param>
+    /// <param name="reconstructed">The reconstructed trainer entry.</param>
+    /// <returns>The recorded member supplemented by authorized matching archive data.</returns>
+    private static AreaTrainerPokemonPayload RestoreTrainerPokemonDetails(AreaTrainerPokemonPayload persisted, AreaTrainerEntryPayload reconstructed)
+    {
+        AreaTrainerPokemonPayload? matching = reconstructed.DetailsRevealed ? reconstructed.Party.FirstOrDefault(member => member.Slot == persisted.Slot && member.SpeciesId == persisted.SpeciesId && member.Level == persisted.Level) : null;
+        if (matching is null)
+            return persisted;
+
+        bool restoreAbilities = !persisted.AbilitiesRevealed && matching.AbilitiesRevealed;
+        bool restoreMoves = !persisted.MovesRevealed && matching.MovesRevealed;
+        return new AreaTrainerPokemonPayload
+        {
+            Slot = persisted.Slot,
+            SpeciesId = persisted.SpeciesId,
+            SpeciesName = persisted.SpeciesName,
+            Level = persisted.Level,
+            SpritePath = persisted.SpritePath,
+            AbilitiesRevealed = persisted.AbilitiesRevealed || restoreAbilities,
+            MovesRevealed = persisted.MovesRevealed || restoreMoves,
+            Abilities = restoreAbilities ? matching.Abilities : persisted.Abilities,
+            Moves = restoreMoves ? matching.Moves : persisted.Moves
+        };
     }
 
     /// <summary>
