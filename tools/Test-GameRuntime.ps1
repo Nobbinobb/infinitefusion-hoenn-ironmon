@@ -36,6 +36,7 @@ $repelOverlayTestPath = Join-Path $projectRoot "tests\runtime\Repel-Overlay.rb"
 $itemRandomizationTestPath = Join-Path $projectRoot "tests\runtime\Item-Randomization.rb"
 $seededRunImportTestPath = Join-Path $projectRoot "tests\runtime\Seeded-Run-Import.rb"
 $runTransitionTestPath = Join-Path $projectRoot "tests\runtime\Run-Transitions.rb"
+$devonSequenceTestPath = Join-Path $projectRoot "tests\runtime\Devon-Sequence.rb"
 $earlyGameTestPath = Join-Path $projectRoot "tests\runtime\Early-Game.rb"
 $runtimeHookTestPath = Join-Path $projectRoot "tests\runtime\Runtime-Hooks.rb"
 $wildEncounterFusionTestPath = Join-Path $projectRoot "tests\runtime\Wild-Encounter-Fusions.rb"
@@ -62,6 +63,7 @@ $repelOverlayResultPath = Join-Path $projectRoot "runtime-repel-overlay.tests"
 $itemRandomizationResultPath = Join-Path $projectRoot "runtime-item-randomization.tests"
 $seededRunImportResultPath = Join-Path $projectRoot "runtime-seeded-run-import.tests"
 $runTransitionResultPath = Join-Path $projectRoot "runtime-run-transitions.tests"
+$devonSequenceResultPath = Join-Path $projectRoot "runtime-devon-sequence.tests"
 $earlyGameResultPath = Join-Path $projectRoot "runtime-early-game.tests"
 $runtimeHookResultPath = Join-Path $projectRoot "runtime-hooks.tests"
 $wildEncounterFusionResultPath = Join-Path $projectRoot "runtime-wild-encounter-fusions.tests"
@@ -158,6 +160,7 @@ $runTransitionTestSource = [IO.File]::ReadAllText(
     $runTransitionTestPath,
     [Text.Encoding]::UTF8
 )
+$devonSequenceTestSource = [IO.File]::ReadAllText($devonSequenceTestPath, [Text.Encoding]::UTF8)
 $earlyGameTestSource = [IO.File]::ReadAllText(
     $earlyGameTestPath,
     [Text.Encoding]::UTF8
@@ -211,6 +214,7 @@ $rubyRepelOverlayResultPath = $repelOverlayResultPath.Replace('\', '/')
 $rubyItemRandomizationResultPath = $itemRandomizationResultPath.Replace('\', '/')
 $rubySeededRunImportResultPath = $seededRunImportResultPath.Replace('\', '/')
 $rubyRunTransitionResultPath = $runTransitionResultPath.Replace('\', '/')
+$rubyDevonSequenceResultPath = $devonSequenceResultPath.Replace('\', '/')
 $rubyEarlyGameResultPath = $earlyGameResultPath.Replace('\', '/')
 $rubyRuntimeHookResultPath = $runtimeHookResultPath.Replace('\', '/')
 $rubyWildEncounterFusionResultPath = $wildEncounterFusionResultPath.Replace('\', '/')
@@ -248,6 +252,7 @@ $bootstrapSource = @(
     "`$ironmon_item_randomization_test_output_path = `"$rubyItemRandomizationResultPath`""
     "`$ironmon_seeded_run_import_test_output_path = `"$rubySeededRunImportResultPath`""
     "`$ironmon_run_transition_test_output_path = `"$rubyRunTransitionResultPath`""
+    "`$ironmon_devon_sequence_test_output_path = `"$rubyDevonSequenceResultPath`""
     "`$ironmon_early_game_test_output_path = `"$rubyEarlyGameResultPath`""
     "`$ironmon_runtime_hook_test_output_path = `"$rubyRuntimeHookResultPath`""
     "`$ironmon_wild_encounter_fusion_test_output_path = `"$rubyWildEncounterFusionResultPath`""
@@ -280,6 +285,7 @@ $bootstrapSource = @(
     $seededRunImportTestSource
     $runTransitionTestSource
     $earlyGameTestSource
+    $devonSequenceTestSource
     $runtimeHookTestSource
     $wildEncounterFusionTestSource
     $deterministicHashingTestSource
@@ -296,7 +302,7 @@ $bootstrapSource = @(
     "exit! 1"
     "end"
 ) -join "`n"
-Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $battleMoveTypeColorResultPath, $movePowerPresentationResultPath, $trainerRematchResultPath, $trainerBattleResultPath, $difficultyScalingResultPath, $newPlayerProtectionResultPath, $pivotTransformationResultPath, $healingNpcResultPath, $wallyTutorialResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $runtimeHookResultPath, $wildEncounterFusionResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
+Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $battleMoveTypeColorResultPath, $movePowerPresentationResultPath, $trainerRematchResultPath, $trainerBattleResultPath, $difficultyScalingResultPath, $newPlayerProtectionResultPath, $pivotTransformationResultPath, $healingNpcResultPath, $wallyTutorialResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $devonSequenceResultPath, $runtimeHookResultPath, $wildEncounterFusionResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath `
     -Force `
     -ErrorAction SilentlyContinue
 try {
@@ -420,6 +426,11 @@ try {
             "run-transition runtime tests passed") {
         throw "The bundled runtime did not complete the run-transition tests."
     }
+    if (-not (Test-Path -LiteralPath $devonSequenceResultPath) -or
+        (Get-Content -LiteralPath $devonSequenceResultPath -Raw) -notmatch
+            '^Devon sequence runtime tests passed \(\d+ assertions\)$') {
+        throw "The bundled runtime did not complete the Devon sequence tests."
+    }
     if (-not (Test-Path -LiteralPath $earlyGameResultPath) -or
         (Get-Content -LiteralPath $earlyGameResultPath -Raw).Trim() -ne
             "early-game runtime tests passed") {
@@ -500,7 +511,7 @@ try {
     )
 }
 finally {
-    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $movePowerPresentationResultPath, $battleMoveTypeColorResultPath, $trainerRematchResultPath, $trainerBattleResultPath, $difficultyScalingResultPath, $newPlayerProtectionResultPath, $pivotTransformationResultPath, $healingNpcResultPath, $wallyTutorialResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $runtimeHookResultPath, $wildEncounterFusionResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath, $debugPokemonSearchTracePath, $playerFusionPreparationTracePath `
+    Remove-Item -LiteralPath $diagnosticResultPath, $catchAssistanceResultPath, $battleItemResultPath, $battleRunHotkeyResultPath, $movePowerPresentationResultPath, $battleMoveTypeColorResultPath, $trainerRematchResultPath, $trainerBattleResultPath, $difficultyScalingResultPath, $newPlayerProtectionResultPath, $pivotTransformationResultPath, $healingNpcResultPath, $wallyTutorialResultPath, $repelOverlayResultPath, $itemRandomizationResultPath, $seededRunImportResultPath, $runTransitionResultPath, $earlyGameResultPath, $devonSequenceResultPath, $runtimeHookResultPath, $wildEncounterFusionResultPath, $deterministicHashingResultPath, $generatorMetadataResultPath, $evolutionUpwardExpansionResultPath, $fusionPredecessorBenchmarkResultPath, $moveAccessStructureResultPath, $trackerStructureResultPath, $diagnosticErrorPath, $debugPokemonSearchTracePath, $playerFusionPreparationTracePath `
         -Force `
         -ErrorAction SilentlyContinue
 }
@@ -511,4 +522,4 @@ if ($evolutionPredecessorDiagnostic) {
 if ($fusionPredecessorBenchmarkOutput.Count -gt 1) {
     $fusionPredecessorBenchmarkOutput | Select-Object -Skip 1
 }
-Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, battle item, battle Run hotkey, battle move type color, move-power presentation, trainer rematch, trainer battle, difficulty scaling, new-player protection, pivot transformation, healing NPC, Wally tutorial, Repel overlay, item randomization, seeded-run import, run-transition, early-game, runtime-hook, wild encounter fusion, deterministic-hashing, generator-metadata, evolution upward-expansion, move-access structure, and tracker structure tests passed."
+Write-Output "Bundled-runtime area progress, diagnostic access, catch assistance, battle item, battle Run hotkey, battle move type color, move-power presentation, trainer rematch, trainer battle, difficulty scaling, new-player protection, pivot transformation, healing NPC, Wally tutorial, Repel overlay, item randomization, seeded-run import, run-transition, early-game, Devon sequence, runtime-hook, wild encounter fusion, deterministic-hashing, generator-metadata, evolution upward-expansion, move-access structure, and tracker structure tests passed."
