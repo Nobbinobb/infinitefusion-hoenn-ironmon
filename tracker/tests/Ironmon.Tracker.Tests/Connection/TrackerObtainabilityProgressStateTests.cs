@@ -11,6 +11,33 @@ public sealed class TrackerObtainabilityProgressStateTests
     private const string _secondRunId = "progress-run-two";
 
     /// <summary>
+    /// Verifies archive readiness requires full preparation, stays run-specific, and expires on disconnect.
+    /// </summary>
+    /// <param name="scope">The surface that finishes preparing the run.</param>
+    [Theory]
+    [InlineData(TrackerObtainabilityProgressScope.ActiveRun)]
+    [InlineData(TrackerObtainabilityProgressScope.ArchivedRun)]
+    public void CompletedPreparationCanBeCheckedWithoutStartingWork(TrackerObtainabilityProgressScope scope)
+    {
+        TrackerObtainabilityProgressState state = new();
+        Assert.False(state.HasCompletedPreparation(null));
+        Assert.False(state.HasCompletedPreparation(_firstRunId));
+        state.Begin(_firstRunId, scope);
+        state.Report(_firstRunId, scope, new PokemonObtainabilityResponsePayload { Complete = true });
+        Assert.False(state.HasCompletedPreparation(_firstRunId));
+
+        state.Report(_firstRunId, scope, new PokemonObtainabilityResponsePayload { BackgroundComplete = true });
+        state.Begin(_secondRunId, TrackerObtainabilityProgressScope.ActiveRun);
+        Assert.True(state.HasCompletedPreparation(_firstRunId));
+        Assert.False(state.HasCompletedPreparation(_secondRunId));
+        if (scope == TrackerObtainabilityProgressScope.ArchivedRun)
+            Assert.Same(TrackerObtainabilityProgressSnapshot.Idle, state.GetActiveRunSnapshot(_firstRunId));
+
+        state.Reset();
+        Assert.False(state.HasCompletedPreparation(_firstRunId));
+    }
+
+    /// <summary>
     /// Verifies that progress remains complete for one run and resets for the next run.
     /// </summary>
     [Fact]
