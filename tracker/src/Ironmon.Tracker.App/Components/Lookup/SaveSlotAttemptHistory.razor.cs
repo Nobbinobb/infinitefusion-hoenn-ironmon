@@ -23,6 +23,30 @@ public partial class SaveSlotAttemptHistory
     public string? CurrentSaveSlot { get; set; }
 
     /// <summary>
+    /// Gets or sets the archived runs available for direct navigation.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<CompletedRunRecipePayload> Recipes { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the callback opening a recorded run.
+    /// </summary>
+    [Parameter]
+    public EventCallback<string> RunSelected { get; set; }
+
+    /// <summary>
+    /// Gets archived runs belonging to the selected save file.
+    /// </summary>
+    private IReadOnlyList<CompletedRunRecipePayload> SelectedRecipes
+        => _slots.Count == 0 ? Recipes : [.. Recipes.Where(recipe => string.Equals(recipe.Statistics?.SaveSlot, _selection.SelectedSaveSlot, StringComparison.OrdinalIgnoreCase))];
+
+    /// <summary>
+    /// Gets legacy archived runs with no recorded save-file identity.
+    /// </summary>
+    private IReadOnlyList<CompletedRunRecipePayload> UnidentifiedRecipes
+        => [.. Recipes.Where(recipe => string.IsNullOrWhiteSpace(recipe.Statistics?.SaveSlot))];
+
+    /// <summary>
     /// Rebuilds identified save-slot summaries when the archive changes.
     /// </summary>
     protected override void OnParametersSet()

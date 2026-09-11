@@ -1,18 +1,16 @@
-<div class="debug-target-controls">
-    <label>
-        @Text["Redesign.Tools.Inspect"]
-        <select value="@SelectedTarget" disabled="@(Loading || !HasAvailableTarget)" @onchange="HandleSelectedTargetChanged" @onkeydown:stopPropagation="true">
-            @if (PlayerAvailable && Player is not null)
+<div class="debug-target-picker">
+    <select aria-label="@Text["Redesign.Tools.Inspect"]" title="@Text["Redesign.Tools.Inspect"]" value="@SelectedTarget" disabled="@(Loading || !HasAvailableTarget)" @onchange="HandleSelectedTargetChanged" @onkeydown:stopPropagation="true">
+        @if (PlayerAvailable && Player is not null)
+        {
+            <option value="@DebugTargetIds.Player">@Text["Debug.Inspector.Player"] · @Player.Nickname</option>
+        }
+        @if (EnemiesAvailable)
+        {
+            @foreach (EnemyPokemonSnapshot enemy in Enemies)
             {
-                <option value="@DebugTargetIds.Player">@Text["Debug.Inspector.Player"] · @Player.Nickname</option>
+                <option value="@DebugTargetIds.CreateEnemy(enemy.Position)">@Text["Debug.Inspector.EnemyNumber", DebugTargetIds.GetDisplayPosition(enemy.Position)] · @enemy.SpeciesName</option>
             }
-            @if (EnemiesAvailable)
-            {
-                @foreach (EnemyPokemonSnapshot enemy in Enemies)
-                {
-                    <option value="@DebugTargetIds.CreateEnemy(enemy.Position)">@Text["Debug.Inspector.EnemyNumber", DebugTargetIds.GetDisplayPosition(enemy.Position)] · @enemy.SpeciesName</option>
-                }
-            }
-        </select>
-    </label>
+        }
+    </select>
+    <ObsidianIcon Kind="ObsidianIconKind.ChevronRight" />
 </div>

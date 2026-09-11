@@ -2051,6 +2051,14 @@
   <data name="Badges.Feather" xml:space="preserve"><value>Feather</value></data>
   <data name="Badges.Mind" xml:space="preserve"><value>Mind</value></data>
   <data name="Badges.Rain" xml:space="preserve"><value>Rain</value></data>
+  <data name="Archive.Navigation.Select" xml:space="preserve"><value>Select an archived run or save-file history</value></data>
+  <data name="Archive.Navigation.Close" xml:space="preserve"><value>Close archive navigation</value></data>
+  <data name="Archive.Navigation.SaveFiles" xml:space="preserve"><value>Save files</value></data>
+  <data name="Archive.Navigation.History" xml:space="preserve"><value>Save-file history</value></data>
+  <data name="Archive.Navigation.AllFiles" xml:space="preserve"><value>All save files</value></data>
+  <data name="Archive.Navigation.UnknownFile" xml:space="preserve"><value>Save file not recorded</value></data>
+  <data name="Archive.Navigation.Run" xml:space="preserve"><value>Run {0}</value></data>
+  <data name="Archive.Navigation.RunDetails" xml:space="preserve"><value>{0} badges · {1} played</value></data>
   <data name="Lookup.Trainer.OpenPokemon" xml:space="preserve"><value>Open {0} in Pokémon lookup</value></data>
   <data name="Lookup.Trainer.PokemonLookup" xml:space="preserve"><value>Pokémon lookup</value></data>
   <data name="Lookup.Trainer.BattleSet" xml:space="preserve"><value>{0}’s battle set</value></data>

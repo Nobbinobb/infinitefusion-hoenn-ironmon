@@ -1,30 +1,28 @@
-<section class="diagnostic-tools" aria-label="@Text["Diagnostics.Page.Title"]">
-    <nav class="obsidian diagnostic-tool-tabs" role="tablist" aria-label="@Text["Diagnostics.Page.Tabs"]">
-        <button type="button"
-                class="@GetTabClass(false)"
-                role="tab"
-                aria-selected="@(!_toolsSelected ? "true" : "false")"
-                @onclick="ShowAccess">
-            <ObsidianIcon Kind="ObsidianIconKind.Key" />@Text["Diagnostics.Page.Access"]
-        </button>
-        @if (ToolsAvailable)
+<section class="diagnostic-tools obsidian" aria-label="@Text["Diagnostics.Page.Title"]">
+    <header class="diagnostic-page-heading">
+        @if (_toolsSelected && ToolsAvailable)
         {
-            <button type="button"
-                    class="@GetTabClass(true)"
-                    role="tab"
-                    aria-selected="@(_toolsSelected ? "true" : "false")"
-                    @onclick="ShowTools">
-                <ObsidianIcon Kind="ObsidianIconKind.Wrench" />@Text["Diagnostics.Page.Tools"]
-            </button>
+            <button type="button" class="diagnostic-page-switch diagnostic-page-back" @onclick="ShowAccess"><ObsidianIcon Kind="ObsidianIconKind.ArrowRight" />@Text["Diagnostics.Page.Access"]<ObsidianIcon Kind="ObsidianIconKind.Key" /></button>
+            <h2>@Text["Debug.Inspector.IronmonInspector"]</h2>
+            <span class="diagnostic-page-authorized"><ObsidianIcon Kind="ObsidianIconKind.ShieldCheck" />@Text["Debug.Inspector.Authorized"]</span>
         }
-    </nav>
+        else
+        {
+            <span aria-hidden="true"></span>
+            <h2>@Text["Access.Page.Title"]</h2>
+            @if (ToolsAvailable)
+            {
+                <button type="button" class="diagnostic-page-switch" @onclick="ShowTools"><ObsidianIcon Kind="ObsidianIconKind.Wrench" />@Text["Diagnostics.Page.Tools"]<ObsidianIcon Kind="ObsidianIconKind.ArrowRight" /></button>
+            }
+        }
+    </header>
 
     @if (_toolsSelected && ToolsAvailable)
     {
-        <DebugInspector Player="@Player" Enemies="@Enemies" GameRoot="@GameRoot" />
+        <DebugInspector Player="@Player" Enemies="@Enemies" GameRoot="@GameRoot" ShowHeading="false" />
     }
     else
     {
-        <DiagnosticAccessPage />
+        <DiagnosticAccessPage ShowHeading="false" />
     }
 </section>

@@ -1,10 +1,13 @@
 <section class="obsidian obsidian-tools debug-view" role="tabpanel" aria-label="@Text["Debug.Inspector.AuthorizedDebugInspector"]">
-    <header class="debug-heading">
-        <div>
-            <h2>@Text["Debug.Inspector.IronmonInspector"]</h2>
-        </div>
-        <span class="debug-authorized"><ObsidianIcon Kind="ObsidianIconKind.ShieldCheck" />@Text["Debug.Inspector.Authorized"]</span>
-    </header>
+    @if (ShowHeading)
+    {
+        <header class="debug-heading">
+            <div>
+                <h2>@Text["Debug.Inspector.IronmonInspector"]</h2>
+            </div>
+            <span class="debug-authorized"><ObsidianIcon Kind="ObsidianIconKind.ShieldCheck" />@Text["Debug.Inspector.Authorized"]</span>
+        </header>
+    }
 
     <DebugInspectorTabs Pages="@_visiblePages" SelectedPage="@_selectedPage" SelectedPageChanged="SelectPageAsync" />
 
@@ -17,13 +20,15 @@
     }
     else if (_selectedPage == DebugInspectorPage.Pokemon)
     {
-        <DebugInspectionTargetSelector Player="@Player"
-                                       Enemies="@Enemies"
-                                       PlayerAvailable="@CanInspectPlayer"
-                                       EnemiesAvailable="@CanInspectEnemies"
-                                       SelectedTarget="@_selectedTarget"
-                                       Loading="@_loading"
-                                       SelectedTargetChanged="SelectTarget" />
+        <SectionContent SectionName="diagnostic-target-navigation">
+            <DebugInspectionTargetSelector Player="@Player"
+                                           Enemies="@Enemies"
+                                           PlayerAvailable="@CanInspectPlayer"
+                                           EnemiesAvailable="@CanInspectEnemies"
+                                           SelectedTarget="@_selectedTarget"
+                                           Loading="@_loading"
+                                           SelectedTargetChanged="SelectTarget" />
+        </SectionContent>
     }
 
     @if (HasAnyPage && _selectedPage == DebugInspectorPage.Lookup)

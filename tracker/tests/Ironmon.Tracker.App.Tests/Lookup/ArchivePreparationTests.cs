@@ -20,7 +20,7 @@ using System.Reflection;
 namespace Ironmon.Tracker.App.Tests.Lookup;
 
 /// <summary>
-/// Verifies archive disclosure follows completed preparation without starting automatic calculation.
+/// Verifies archive navigation reuses completed preparation and keeps history outside run preparation.
 /// </summary>
 public sealed class ArchivePreparationTests
 {
@@ -30,12 +30,15 @@ public sealed class ArchivePreparationTests
     private const string _profileId = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private const string _policy = "mixed";
     private const string _rootName = "IronmonArchivePreparationTests";
-    private const string _openDisclosure = "class=\"obsidian-archive-completed\" open";
-    private const string _toggle = "ToggleCompletedRuns";
+    private const string _runTabs = "obsidian-lookup-tabs obsidian-archive-tabs";
+    private const string _historyContent = "archive-history-content";
+    private const string _showHistory = "ShowHistory";
+    private const string _selectRun = "SelectRun";
     private const string _render = "StateHasChanged";
+    private const BindingFlags _members = BindingFlags.Instance | BindingFlags.NonPublic;
 
     /// <summary>
-    /// Verifies initial archive rendering opens only fully prepared runs from either calculation scope.
+    /// Verifies run content stays visible while only unprepared runs start archive preparation.
     /// </summary>
     /// <param name="prepared">Whether full preparation has completed.</param>
     /// <param name="scope">The surface reporting preparation.</param>
@@ -43,56 +46,86 @@ public sealed class ArchivePreparationTests
     [InlineData(false, TrackerObtainabilityProgressScope.ActiveRun)]
     [InlineData(true, TrackerObtainabilityProgressScope.ActiveRun)]
     [InlineData(true, TrackerObtainabilityProgressScope.ArchivedRun)]
-    public Task InitialDisclosureUsesCompletedPreparation(bool prepared, TrackerObtainabilityProgressScope scope)
+    public Task InitialNavigationReusesCompletedPreparation(bool prepared, TrackerObtainabilityProgressScope scope)
     {
         return RenderAsync(prepared, scope, (component, markup, archive, requests) =>
         {
-            Assert.Equal(prepared, markup().Contains(_openDisclosure, StringComparison.Ordinal));
+            Assert.Contains(_runTabs, markup());
+            Assert.Equal(prepared, requests.ObtainabilityProgress.HasCompletedPreparation(_runId));
+            if (prepared)
+            {
+                Assert.Equal(scope, requests.ObtainabilityProgress.Snapshot.Scope);
+                Assert.Equal(TrackerObtainabilityProgressStatus.Complete, requests.ObtainabilityProgress.Snapshot.Status);
+                Assert.False(requests.ArchiveObtainabilityPrecalculationSelected);
+            }
+            else
+            {
+                Assert.Equal(TrackerObtainabilityProgressScope.ArchivedRun, requests.ObtainabilityProgress.Snapshot.Scope);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Verifies preparation completion and recipe refresh preserve history until a run is explicitly selected.
+    /// </summary>
+    [Fact]
+    public Task PreparationAndRecipeRefreshRespectHistorySelection()
+    {
+        return RenderAsync(true, TrackerObtainabilityProgressScope.ActiveRun, (component, markup, archive, requests) =>
+        {
+            Invoke(component, _showHistory);
+            Assert.Contains(_historyContent, markup());
+            Assert.DoesNotContain(_runTabs, markup());
+            Assert.False(requests.ArchiveObtainabilityPrecalculationSelected);
+
+            requests.ObtainabilityProgress.Begin(_nextRunId, TrackerObtainabilityProgressScope.ActiveRun);
+            requests.ObtainabilityProgress.Report(_nextRunId, TrackerObtainabilityProgressScope.ActiveRun, new PokemonObtainabilityResponsePayload { BackgroundComplete = true });
+            TrackerObtainabilityProgressSnapshot completed = requests.ObtainabilityProgress.Snapshot;
+            archive.Store(CreateRecipe(_runId), false);
+            archive.Store(CreateRecipe(_nextRunId), false);
+            Assert.Contains(_historyContent, markup());
+            Assert.DoesNotContain(_runTabs, markup());
+            Assert.Same(completed, requests.ObtainabilityProgress.Snapshot);
+            Assert.False(requests.ArchiveObtainabilityPrecalculationSelected);
+
+            Invoke(component, _selectRun, _nextRunId);
+            Assert.Contains(_runTabs, markup());
+            Assert.DoesNotContain(_historyContent, markup());
+            Assert.Same(completed, requests.ObtainabilityProgress.Snapshot);
             Assert.False(requests.ArchiveObtainabilityPrecalculationSelected);
         });
     }
 
     /// <summary>
-    /// Verifies late completion opens the disclosure, explicit collapse survives refresh, and early losses stay collapsed.
+    /// Verifies completion navigation opens a newly prepared run without starting preparation again.
     /// </summary>
     [Fact]
-    public Task CompletionAndNewRunSelectionRespectManualCollapse()
+    public Task PreparedCompletionSelectionOpensWithoutStartingWork()
     {
-        return RenderAsync(false, TrackerObtainabilityProgressScope.ActiveRun, (component, markup, archive, requests) =>
+        return RenderAsync(true, TrackerObtainabilityProgressScope.ActiveRun, (component, markup, archive, requests) =>
         {
-            requests.ObtainabilityProgress.Report(_runId, TrackerObtainabilityProgressScope.ActiveRun, new PokemonObtainabilityResponsePayload { BackgroundComplete = true });
-            Assert.Contains(_openDisclosure, markup());
-            Assert.False(requests.ArchiveObtainabilityPrecalculationSelected);
-
-            typeof(ArchiveView).GetMethod(_toggle, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(component, null);
-            archive.Store(CreateRecipe(_runId));
-            Assert.DoesNotContain(_openDisclosure, markup());
-
-            archive.Store(CreateRecipe(_nextRunId));
-            Assert.DoesNotContain(_openDisclosure, markup());
-            Assert.False(requests.ArchiveObtainabilityPrecalculationSelected);
-
+            Invoke(component, _showHistory);
             requests.ObtainabilityProgress.Begin(_nextRunId, TrackerObtainabilityProgressScope.ActiveRun);
             requests.ObtainabilityProgress.Report(_nextRunId, TrackerObtainabilityProgressScope.ActiveRun, new PokemonObtainabilityResponsePayload { BackgroundComplete = true });
-            Assert.Contains(_openDisclosure, markup());
+            TrackerObtainabilityProgressSnapshot completed = requests.ObtainabilityProgress.Snapshot;
+            archive.Store(CreateRecipe(_nextRunId));
+            Assert.Contains(_runTabs, markup());
+            Assert.DoesNotContain(_historyContent, markup());
+            Assert.Same(completed, requests.ObtainabilityProgress.Snapshot);
             Assert.False(requests.ArchiveObtainabilityPrecalculationSelected);
         });
     }
 
     /// <summary>
-    /// Verifies a newly completed prepared run is expanded when completion navigation selects it.
+    /// Invokes a production navigation handler and renders its updated selection.
     /// </summary>
-    [Fact]
-    public Task PreparedCompletionSelectionExpandsWithoutStartingWork()
+    /// <param name="component">The rendered archive.</param>
+    /// <param name="method">The navigation handler name.</param>
+    /// <param name="arguments">The handler arguments.</param>
+    private static void Invoke(ArchiveView component, string method, params object[] arguments)
     {
-        return RenderAsync(false, TrackerObtainabilityProgressScope.ActiveRun, (component, markup, archive, requests) =>
-        {
-            requests.ObtainabilityProgress.Begin(_nextRunId, TrackerObtainabilityProgressScope.ActiveRun);
-            requests.ObtainabilityProgress.Report(_nextRunId, TrackerObtainabilityProgressScope.ActiveRun, new PokemonObtainabilityResponsePayload { BackgroundComplete = true });
-            archive.Store(CreateRecipe(_nextRunId));
-            Assert.Contains(_openDisclosure, markup());
-            Assert.False(requests.ArchiveObtainabilityPrecalculationSelected);
-        });
+        typeof(ArchiveView).GetMethod(method, _members)!.Invoke(component, arguments);
+        typeof(ComponentBase).GetMethod(_render, _members)!.Invoke(component, null);
     }
 
     /// <summary>
@@ -182,7 +215,7 @@ public sealed class ArchivePreparationTests
     }
 
     /// <summary>
-    /// Supplies stable labels for disclosure markup assertions.
+    /// Supplies stable labels for archive markup assertions.
     /// </summary>
     private sealed class ArchiveLocalizer : IStringLocalizer<TrackerResources>
     {

@@ -9,9 +9,10 @@ namespace Ironmon.Tracker.App.Components.Lookup;
 public partial class PokemonLookupExplorer : IDisposable
 {
     private const string _lookupRequestKey = "lookup";
+    private const int _searchPageSize = 14;
     private static readonly TimeSpan _obtainabilityRefreshInterval = TimeSpan.FromMilliseconds(500);
     private readonly NavigationHistory<string> _history = new();
-    private readonly PaginationState _searchPagination = new(TrackerProtocol.DefaultSearchPageSize);
+    private readonly PaginationState _searchPagination = new(_searchPageSize);
     private readonly LatestRequestCoordinator<string> _requests = new();
     private IReadOnlyList<PokemonSearchMatch> _matches = [];
     private CancellationTokenSource? _obtainabilityRefreshCancellation;
@@ -192,8 +193,8 @@ public partial class PokemonLookupExplorer : IDisposable
     private Task<PokemonSearchResponsePayload> SearchPokemonAsync(string query, int offset, CancellationToken cancellationToken)
     {
         return DebugMode
-            ? Connection.SearchDebugPokemonAsync(query, offset, TrackerProtocol.DefaultSearchPageSize, cancellationToken: cancellationToken)
-            : Connection.SearchPokemonAsync(Recipe!, query, offset, TrackerProtocol.DefaultSearchPageSize, cancellationToken: cancellationToken);
+            ? Connection.SearchDebugPokemonAsync(query, offset, _searchPageSize, cancellationToken: cancellationToken)
+            : Connection.SearchPokemonAsync(Recipe!, query, offset, _searchPageSize, cancellationToken: cancellationToken);
     }
 
     /// <summary>

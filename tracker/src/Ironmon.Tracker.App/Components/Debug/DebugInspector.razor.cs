@@ -8,6 +8,12 @@ namespace Ironmon.Tracker.App.Components.Debug;
 /// </summary>
 public partial class DebugInspector : IDisposable
 {
+    /// <summary>
+    /// Gets or sets whether this inspector supplies its own heading when hosted independently.
+    /// </summary>
+    [Parameter]
+    public bool ShowHeading { get; set; } = true;
+
     private DebugInspectorPage _selectedPage = DebugInspectorPage.Pokemon;
     private PokemonInformationPage _selectedPokemonPage = PokemonInformationPage.Overview;
     private DebugPokemonInspectorSnapshot? _pokemon;

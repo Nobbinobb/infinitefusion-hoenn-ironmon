@@ -1,0 +1,32 @@
+<div class="archive-run-picker" @onkeydown="HandleKeyDown" @onkeydown:stopPropagation="true">
+    <button @ref="_trigger" type="button" class="archive-run-trigger" aria-label="@Text["Archive.Navigation.Select"]" aria-expanded="@(_open ? "true" : "false")" @onclick="Toggle">
+        <span>@(HistorySelected ? Text["Archive.Navigation.SaveFiles"] : SelectedRecipe?.Statistics is RunStatisticsPayload statistics ? Text["Archive.Navigation.Run", statistics.AttemptNumber] : Text["Archive.Run"])</span>
+        @if (!HistorySelected && SelectedRecipe?.Statistics?.SaveSlot is string slot)
+        {
+            <small>@slot</small>
+        }
+        <ObsidianIcon Kind="ObsidianIconKind.ChevronRight" />
+    </button>
+    @if (_open)
+    {
+        <button type="button" class="archive-picker-dismiss" aria-label="@Text["Archive.Navigation.Close"]" @onclick="Close"></button>
+        <div class="archive-run-menu" role="group" aria-label="@Text["Archive.Title"]">
+            <header><strong>@Text["Archive.Title"]</strong><button type="button" class="archive-picker-close" aria-label="@Text["Archive.Navigation.Close"]" @onclick="Close"><ObsidianIcon Kind="ObsidianIconKind.Close" /></button></header>
+            <button type="button" class="archive-history-link" aria-pressed="@(HistorySelected ? "true" : "false")" @onclick="OpenHistoryAsync"><ObsidianIcon Kind="ObsidianIconKind.Files" /><span><strong>@Text["Archive.Navigation.History"]</strong><small>@Text["Archive.Navigation.AllFiles"]</small></span><ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></button>
+            <div class="archive-run-options">
+                @foreach (var group in Recipes.GroupBy(recipe => recipe.Statistics?.SaveSlot, StringComparer.OrdinalIgnoreCase))
+                {
+                    <p class="archive-run-group">@(group.Key ?? Text["Archive.Navigation.UnknownFile"])</p>
+                    @foreach (CompletedRunRecipePayload recipe in group)
+                    {
+                        <button type="button" class="archive-run-option" aria-pressed="@(!HistorySelected && recipe.RunId == SelectedRecipe?.RunId ? "true" : "false")" @onclick="() => SelectRunAsync(recipe.RunId)"><ArchiveRunEntry Recipe="recipe" /></button>
+                    }
+                }
+                @if (Recipes.Count == 0)
+                {
+                    <p class="lookup-message">@Text["Archive.NoCompletedRun"]</p>
+                }
+            </div>
+        </div>
+    }
+</div>

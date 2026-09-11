@@ -14,7 +14,7 @@ public partial class ArchiveView : IDisposable
     private IReadOnlyList<CompletedRunRecipePayload> _recipes = [];
     private ArchiveSection _selectedSection = ArchiveSection.Summary;
     private TrackerConnectionStatus _connectionStatus;
-    private bool _hasExplicitExpansion;
+    private bool _showHistory;
 
     /// <summary>
     /// Gets or initializes the completed-run recipe archive.
@@ -53,34 +53,46 @@ public partial class ArchiveView : IDisposable
     {
         _connectionStatus = ConnectionState.Snapshot.Status;
         RefreshRecipes(CompletedRuns.RequestedRunId);
+        _showHistory = _recipes.Count == 0;
+        _selection.SetExpanded(!_showHistory);
+        RestartObtainabilityPrecalculation();
         CompletedRuns.Changed += HandleCompletedRunsChanged;
         CompletedRuns.SelectionRequested += HandleCompletedRunSelectionRequested;
         ConnectionState.Changed += HandleConnectionChanged;
-        Connection.ObtainabilityProgress.Changed += HandlePreparationChanged;
     }
 
     /// <summary>
-    /// Opens or closes completed-run details and their optional background preparation.
+    /// Opens save-file history without starting run preparation.
     /// </summary>
-    private void ToggleCompletedRuns()
+    private void ShowHistory()
     {
-        _hasExplicitExpansion = true;
-        _selection.SetExpanded(!_selection.IsExpanded);
-        if (_selection.IsExpanded)
-            RestartObtainabilityPrecalculation();
-        else
-            StopObtainabilityPrecalculation();
+        _showHistory = true;
+        StopObtainabilityPrecalculation();
     }
 
     /// <summary>
-    /// Selects a completed run.
+    /// Selects a completed run while retaining its information tab.
     /// </summary>
-    /// <param name="args">The select element change.</param>
-    private void SelectRun(ChangeEventArgs args)
+    /// <param name="runId">The archived run identifier.</param>
+    private void SelectRun(string runId)
     {
-        _hasExplicitExpansion = true;
-        _selection.Select(args.Value?.ToString());
+        if (!_recipes.Any(recipe => recipe.RunId == runId))
+            return;
+
+        _selection.Select(runId);
+        _selection.SetExpanded(true);
+        _showHistory = false;
         RestartObtainabilityPrecalculation();
+    }
+
+    /// <summary>
+    /// Opens a run summary directly from save-file history.
+    /// </summary>
+    /// <param name="runId">The archived run identifier.</param>
+    private void OpenHistoryRun(string runId)
+    {
+        _selectedSection = ArchiveSection.Summary;
+        SelectRun(runId);
     }
 
     /// <summary>
@@ -89,14 +101,6 @@ public partial class ArchiveView : IDisposable
     /// <returns>The selected recipe or null.</returns>
     private CompletedRunRecipePayload? GetSelectedRecipe()
         => _recipes.FirstOrDefault(recipe => recipe.RunId == _selection.SelectedRunId);
-
-    /// <summary>
-    /// Formats one completed-run selection label.
-    /// </summary>
-    /// <param name="recipe">The selected recipe.</param>
-    /// <returns>The concise run label.</returns>
-    private string FormatRun(CompletedRunRecipePayload recipe)
-        => Text["Lookup.Runs.CompletedRunOption", recipe.Result, recipe.Seed];
 
     /// <summary>
     /// Selects one completed-run Archive section.
@@ -136,30 +140,8 @@ public partial class ArchiveView : IDisposable
     /// <param name="requestedRunId">An explicitly requested completed run.</param>
     private void RefreshRecipes(string? requestedRunId = null)
     {
-        string? previousRunId = _selection.SelectedRunId;
         _recipes = CompletedRuns.Recipes;
         _selection.Refresh([.. _recipes.Select(recipe => recipe.RunId)], requestedRunId);
-        if (!string.Equals(previousRunId, _selection.SelectedRunId, StringComparison.Ordinal))
-        {
-            _hasExplicitExpansion = false;
-            _selection.SetExpanded(Connection.ObtainabilityProgress.HasCompletedPreparation(_selection.SelectedRunId));
-        }
-    }
-
-    /// <summary>
-    /// Updates automatic disclosure when preparation completes without overriding a deliberate toggle.
-    /// </summary>
-    /// <param name="sender">The shared preparation state.</param>
-    /// <param name="args">The preparation change event arguments.</param>
-    private void HandlePreparationChanged(object? sender, EventArgs args)
-    {
-        _ = InvokeAsync(() =>
-        {
-            if (!_hasExplicitExpansion)
-                _selection.SetExpanded(Connection.ObtainabilityProgress.HasCompletedPreparation(_selection.SelectedRunId));
-
-            StateHasChanged();
-        });
     }
 
     /// <summary>
@@ -168,7 +150,7 @@ public partial class ArchiveView : IDisposable
     private void RestartObtainabilityPrecalculation()
     {
         StopObtainabilityPrecalculation();
-        if (!_selection.IsExpanded)
+        if (_showHistory || !_selection.IsExpanded)
             return;
 
         CompletedRunRecipePayload? recipe = GetSelectedRecipe();
@@ -249,8 +231,12 @@ public partial class ArchiveView : IDisposable
                 StringComparison.Ordinal);
         if (newlyRequestedRun)
         {
+            _selection.SetExpanded(true);
+            _showHistory = false;
+            _selectedSection = ArchiveSection.Summary;
             StopObtainabilityPrecalculation();
             RefreshRecipes(requestedRunId);
+            RestartObtainabilityPrecalculation();
         }
         else
         {
@@ -268,8 +254,12 @@ public partial class ArchiveView : IDisposable
     /// <param name="args">The selection event arguments.</param>
     private void HandleCompletedRunSelectionRequested(object? sender, EventArgs args)
     {
+        _selection.SetExpanded(true);
+        _showHistory = false;
+        _selectedSection = ArchiveSection.Summary;
         StopObtainabilityPrecalculation();
         RefreshRecipes(CompletedRuns.RequestedRunId);
+        RestartObtainabilityPrecalculation();
         _ = InvokeAsync(StateHasChanged);
     }
 
@@ -297,7 +287,6 @@ public partial class ArchiveView : IDisposable
         CompletedRuns.Changed -= HandleCompletedRunsChanged;
         CompletedRuns.SelectionRequested -= HandleCompletedRunSelectionRequested;
         ConnectionState.Changed -= HandleConnectionChanged;
-        Connection.ObtainabilityProgress.Changed -= HandlePreparationChanged;
         GC.SuppressFinalize(this);
     }
 }

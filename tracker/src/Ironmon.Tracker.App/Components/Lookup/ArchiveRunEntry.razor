@@ -1,0 +1,11 @@
+<span class="archive-run-entry" data-outcome="@Recipe.Result.ToLowerInvariant()">
+    <span class="archive-run-entry-title"><strong>@(Recipe.Statistics is RunStatisticsPayload statistics ? Text["Archive.Navigation.Run", statistics.AttemptNumber] : Text["Redesign.Research.Seed", Recipe.Seed])</strong><span class="archive-run-outcome">@ResultLabel</span></span>
+    @if (Recipe.Statistics is RunStatisticsPayload details)
+    {
+        <small>@Text["Archive.Navigation.RunDetails", details.BadgesEarned, FormatDuration(details.ActiveSeconds)]</small>
+    }
+    else
+    {
+        <small>@Text["Lookup.Statistics.UnavailableShort"]</small>
+    }
+</span>

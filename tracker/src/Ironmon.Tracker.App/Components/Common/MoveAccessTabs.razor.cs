@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace Ironmon.Tracker.App.Components.Common;
 
@@ -7,14 +8,65 @@ namespace Ironmon.Tracker.App.Components.Common;
 /// </summary>
 public partial class MoveAccessTabs
 {
+    private const int _pageSize = 15;
+    private const string _scrollPage = "ironmonTrackerUi.scrollMoveAccess";
+    private readonly PaginationState _pagination = new(_pageSize);
+    private ElementReference _element;
+    private bool _scrollToTop;
     private string _selectedTab = MoveAccessTabIds.Learnset;
     private MoveAccessEntrySnapshot? _selectedMove;
+
+    /// <summary>
+    /// Gets the browser runtime used to reveal the start of each move page.
+    /// </summary>
+    [Inject]
+    private IJSRuntime JavaScript { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the generated move-access channels.
     /// </summary>
     [Parameter]
     public MoveAccessSnapshot Access { get; set; } = new();
+
+    /// <summary>
+    /// Keeps the selected page within updated move-access bounds.
+    /// </summary>
+    protected override void OnParametersSet()
+        => _pagination.Clamp(GetRows().Count);
+
+    /// <summary>
+    /// Reveals the first move after a page or category change.
+    /// </summary>
+    /// <param name="firstRender">Whether this is the initial render.</param>
+    /// <returns>The content scrolling task.</returns>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_scrollToTop)
+            return;
+
+        _scrollToTop = false;
+        await JavaScript.InvokeVoidAsync(_scrollPage, _element);
+    }
+
+    /// <summary>
+    /// Opens the preceding page of moves.
+    /// </summary>
+    private void PreviousPage()
+    {
+        _pagination.Previous();
+        _selectedMove = null;
+        _scrollToTop = true;
+    }
+
+    /// <summary>
+    /// Opens the following page without passing the final move.
+    /// </summary>
+    private void NextPage()
+    {
+        _pagination.Next(GetRows().Count);
+        _selectedMove = null;
+        _scrollToTop = true;
+    }
 
     /// <summary>
     /// Selects one move-access channel.
@@ -24,6 +76,8 @@ public partial class MoveAccessTabs
     {
         _selectedTab = tab;
         _selectedMove = null;
+        _pagination.Reset();
+        _scrollToTop = true;
     }
 
     /// <summary>
