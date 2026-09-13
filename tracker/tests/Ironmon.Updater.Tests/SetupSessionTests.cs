@@ -1,6 +1,7 @@
 using System.Net;
 using Ironmon.Setup.Core;
 using Ironmon.Tracker.Connection.Sprites;
+using Ironmon.Updater.Core;
 using Ironmon.Updater.Infrastructure;
 
 namespace Ironmon.Updater.Tests;
@@ -152,7 +153,7 @@ public sealed class SetupSessionTests
         Assert.Null(session.Destination?.InstalledFlavor);
         Assert.False(Directory.Exists(destination));
         await session.ReviewAsync(destination, ReleaseProtocol.SelfContained, false);
-        Assert.Contains("publicly accessible", session.Error);
+        Assert.Equal(UpdaterText.ReleaseDiscoveryNoPubliclyAccessibleIronmonReleaseWasFoundCheckThat, session.Error);
         Assert.DoesNotContain("Checking", session.Status);
         Assert.False(session.NeedsRunConfirmation);
         Assert.False(session.CanInstall);

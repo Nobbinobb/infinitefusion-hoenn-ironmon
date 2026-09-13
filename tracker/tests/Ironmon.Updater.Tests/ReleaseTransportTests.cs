@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using Ironmon.Updater.Core;
 using Ironmon.Updater.Infrastructure;
 
 namespace Ironmon.Updater.Tests;
@@ -95,8 +96,8 @@ public sealed class ReleaseTransportTests
         using var discovery = new ReleaseDiscovery(http, fixture.Verifier, workspace.PathFor(CacheName));
         var result = await discovery.CheckAsync(true);
         Assert.Null(result.Release);
-        Assert.Contains("publicly accessible", result.Error);
-        Assert.Contains("Private rehearsal", result.Error);
+        Assert.Equal(UpdaterText.ReleaseDiscoveryNoPubliclyAccessibleIronmonReleaseWasFoundCheckThat, result.Error);
+        Assert.DoesNotContain("rehearsal", result.Error, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Response status code", result.Error);
         Assert.Equal(1, handler.Calls);
     }
