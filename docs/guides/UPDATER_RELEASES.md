@@ -102,12 +102,13 @@ identifiers to base64 DER SubjectPublicKeyInfo public keys. The algorithm is ECD
 P-256 with SHA-256 and 64-byte IEEE P1363 signatures. Keep this identity separate
 from tracker access-code and other signing keys.
 
-The checked-in document is empty until the release owner provisions production
-trust. Developer builds can run with empty trust; release candidate generation
-fails with a configuration error. No fixture private key is checked in or used
-as production trust.
+The production signing identity is `ironmon-updater-2026`. Its public key is
+checked in, and the matching private key and identifier are configured in the
+protected `release` environment. That environment permits only `main`. No
+fixture private key is checked in or used as production trust. Developer builds
+can run with empty trust, but release candidate generation rejects it.
 
-Before the first real release, the owner must:
+When provisioning a new signing identity, the owner must:
 
 1. Create and securely retain a dedicated P-256 signing key outside the repository.
 2. Add only its public SubjectPublicKeyInfo bytes and identifier to the reviewed
