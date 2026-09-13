@@ -24,6 +24,8 @@ hidden-information boundaries.
   and save-slot-specific equipped appearances.
 - A local companion tracker with area lookup, Pokémon lookup, evolution graphs,
   run statistics, and completed-run archives.
+- A standalone installer with optional sprite-sheet downloads, plus signed
+  updates from inside the tracker.
 - Privacy-aware tracker communication: concealed gameplay information is
   filtered by the game before it reaches the tracker.
 
@@ -35,38 +37,71 @@ The complete rules and edge cases are documented in the
 Download the latest version from
 [GitHub Releases](https://github.com/Nobbinobb/infinitefusion-hoenn-ironmon/releases/latest).
 
-Each release provides two Windows x64 packages:
+Choose the installer or one of the two Windows x64 ZIP packages:
 
 | Package | Recommended for |
 | --- | --- |
-| `Ironmon-vX.Y.Z-win-x64.zip` | Most players. Includes the required .NET runtime. |
-| `Ironmon-vX.Y.Z-win-x64-runtime-required.zip` | Smaller download for players who already have the Windows x64 .NET runtime installed. |
+| `Ironmon-Setup-vX.Y.Z-win-x64.exe` | Recommended. Installs the game and Ironmon together, or uses a supported existing game folder. |
+| `Ironmon-vX.Y.Z-win-x64.zip` | Manual installation into an existing game folder. Includes the required .NET runtime. |
+| `Ironmon-vX.Y.Z-win-x64-runtime-required.zip` | Smaller manual download for players who already have the Windows x64 .NET 10 Runtime installed. |
 
-Download only one package. The game scripts and tracker included in an archive
-must be kept together. Corresponding SHA-256 checksum files are provided with
-every package.
+You only need one of these downloads. Setup downloads the required game and
+Ironmon files for you. The JSON files on the release page are read automatically
+by the updater; `SHA256SUMS.txt` provides one checksum list for the release.
 
 ## Installation
 
-1. Install the supported version of Pokémon Infinite Fusion 2.
-2. Fully close the game.
-3. Back up any saves you care about.
-4. Download one Ironmon release package.
-5. Extract it into the directory containing `InfiniteFusion2.exe`.
-6. Allow the package's `Data` directory to merge with the existing `Data`
-   directory.
-7. Start `Ironmon Tracker/Ironmon Tracker.exe`.
-8. Start the game and select Ironmon when beginning a supported Hoenn run.
+### Recommended: use the installer
+
+Setup can download the game for you and does not require Git to be installed.
+It includes its own .NET runtime.
+
+1. Download and open `Ironmon-Setup-vX.Y.Z-win-x64.exe` from the latest release.
+2. Choose an empty folder for a full installation, or select your supported
+   existing Infinite Fusion folder. Back up existing saves before making changes.
+3. Optionally select the sprite-sheet download and a desktop tracker shortcut.
+   For a new installation, keep **Runtime included** unless you want to use an
+   already installed .NET runtime. Existing installations retain their package type.
+4. Review the installation, save and close any running game, then choose
+   **Install**. Setup downloads, verifies, and installs the required files and
+   shows progress. Windows may request permission for a protected folder.
+5. Open the tracker when Setup finishes. Start the game and select Ironmon when
+   beginning a supported Hoenn run.
+
+You can delete Setup afterward. Future updates are available inside the tracker.
+Sprite sheets can also be downloaded later from **Settings > Custom sprite
+library**. Setup offers to install WebView2 if the tracker needs it.
+
+### Manual installation
+
+1. Install the supported version of Pokémon Infinite Fusion 2, fully close the
+   game, and back up any saves you care about.
+2. Download one Ironmon ZIP package and extract the complete archive into the
+   directory containing `InfiniteFusion2.exe`. Allow its `Data` directory to merge
+   with the existing `Data` directory; keep the scripts and tracker together.
+3. Start `Ironmon Tracker/Ironmon Tracker.exe`, then start the game and select
+   Ironmon when beginning a supported Hoenn run.
 
 The archive installs:
 
 - Ironmon game scripts under `Data/Scripts/997_Ironmon`.
+- The compatibility guard at `Data/Scripts/000_Ironmon_Guard.rb`.
 - Generated runtime data under `Data/Ironmon`.
 - The companion application under `Ironmon Tracker`.
 
-See the [installation guide](docs/guides/INSTALLATION.md) for update
-instructions, compatibility details, sprite-library preparation, seeded runs,
-and troubleshooting.
+### Updating
+
+From Ironmon 0.8.8 onward, the tracker checks for updates at startup. Choose
+**Update** to review an available release or **Later** to dismiss it for this
+launch. You can also use **Check for updates** beside the Settings heading.
+Save your game before approving an update. If the update requires a finished
+Ironmon run, complete that run first; closing the game does not finish it.
+
+To move from 0.8.7 or an older tracker without the updater, use Setup with a
+supported existing installation or follow the manual installation instructions.
+
+See the [installation guide](docs/guides/INSTALLATION.md) for compatibility,
+recovery, sprite-library preparation, seeded runs, and troubleshooting.
 
 ## Version compatibility
 
@@ -102,6 +137,7 @@ Tracker features include:
 - Attempt statistics and completed-run archives.
 - Seeded-run export and import.
 - Custom sprite-library synchronization.
+- Signed release updates with startup notifications and a manual Settings check.
 - Capability-limited diagnostic access.
 
 Concealed species, fusion materials, sprites, and generated outcomes are not
