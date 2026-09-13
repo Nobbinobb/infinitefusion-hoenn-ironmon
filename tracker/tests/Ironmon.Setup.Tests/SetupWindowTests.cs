@@ -42,13 +42,17 @@ public sealed class SetupWindowTests
     private const string Other = "other";
     private const string UnsignedFile = "unsigned.exe";
     private const string ProgressImage = "installation-progress.png";
+    private const string WaitingImage = "waiting-for-applications.png";
     private const string BusyField = "_busy";
 
     /// <summary>
-    /// Keeps measured progress and elapsed time visible at the minimum window size without scrolling.
+    /// Keeps download progress or the application-wait instruction visible at the minimum size without scrolling.
     /// </summary>
-    [Fact]
-    public async Task BusyInstallationShowsCountsWithoutScrolling()
+    /// <param name="waiting">Whether applications still need to close.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BusyInstallationShowsProgressWithoutScrolling(bool waiting)
     {
         using var fixture = new TrackerUpdateTestFixture();
         fixture.Release.Write(GameExe, [77, 90, 0]);
@@ -59,7 +63,7 @@ public sealed class SetupWindowTests
         await session.ReviewAsync(fixture.Release.Root, null, noActiveRun: true);
         Assert.NotNull(session.Review);
         typeof(SetupSession).GetField(BusyField, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(session, 1);
-        var value = new InstallationProgress(InstallationStage.DownloadingGame, 15234, 24243, 1384090310);
+        var value = waiting ? new InstallationProgress(InstallationStage.WaitingForApplications) : new InstallationProgress(InstallationStage.DownloadingGame, 15234, 24243, 1384090310);
         typeof(SetupSession).GetProperty(nameof(SetupSession.Progress))!.SetValue(session, value);
         typeof(SetupSession).GetProperty(nameof(SetupSession.StartedAt))!.SetValue(session, Environment.TickCount64 - 120000);
         typeof(SetupSession).GetProperty(nameof(SetupSession.ProgressAt))!.SetValue(session, Environment.TickCount64);
@@ -68,11 +72,12 @@ public sealed class SetupWindowTests
             var window = new SetupWindow(session);
             typeof(SetupWindow).GetField(PageField, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, 2);
             typeof(SetupWindow).GetMethod(RenderMethod, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)!.Invoke(window, null);
-            Capture(window, ProgressImage);
+            Capture(window, waiting ? WaitingImage : ProgressImage);
             var bar = Descendants<ProgressBar>((DependencyObject)window.Content).Single();
-            Assert.False(bar.IsIndeterminate);
+            Assert.Equal(waiting, bar.IsIndeterminate);
             Assert.Equal(value.Completed, bar.Value);
-            Assert.Equal(value.Total, bar.Maximum);
+            Assert.Equal(Math.Max(1, value.Total), bar.Maximum);
+            Assert.True(Buttons(window).Single(button => Equals(button.Content, UpdaterText.SetupWindowCancel)).IsEnabled);
             Assert.Contains(Descendants<TextBlock>((DependencyObject)window.Content), text => text.Text.Contains(value.Text, StringComparison.Ordinal));
             typeof(SetupSession).GetField(BusyField, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(session, 0);
             window.Close();

@@ -98,6 +98,7 @@ internal sealed class UpdaterWindow : Window
                     await request.Game.WaitForExitAsync(requestClose: true, SetStatus, _cancellation.Token);
 
                 await request.Tracker.WaitForExitAsync(requestClose: false, SetStatus, _cancellation.Token);
+                await UpdateProcessIdentity.WaitForInstallationIdleAsync(request.InstallationRoot, UpdaterHandoff.TrackerRelativePath, _cancellation.Token);
                 if (request.Recover || _retryRecovery)
                 {
                     result = request.ProtectedPreparation is { } recovery
@@ -188,6 +189,8 @@ internal sealed class UpdaterWindow : Window
     /// <returns>The independently authenticated restoration result.</returns>
     private async Task<TransactionResult> RecoverDirectAsync(string root, Guid id, CancellationToken cancellationToken)
     {
+        await UpdateProcessIdentity.WaitForInstallationIdleAsync(root, UpdaterHandoff.TrackerRelativePath, cancellationToken);
+
         if (!ProtectedUpdateClient.RequiresElevation(root))
             return await Engine(root).RecoverAsync(root, id, cancellationToken);
 

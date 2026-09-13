@@ -32,6 +32,37 @@ public sealed class FreshInstallationTests(ITestOutputHelper output)
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(30);
 
     /// <summary>
+    /// Allows a cancelled fresh-install destination to be selected again while retaining its recovery evidence.
+    /// </summary>
+    [Fact]
+    public async Task DiscardedFreshPreparationCanBeSelectedAgain()
+    {
+        using var fixture = new TransactionFixture();
+        await fixture.PrepareFreshAsync(_files);
+        await fixture.Engine().DiscardPreparedAsync(fixture.Root, fixture.Description.TransactionId);
+        Assert.Null(UpdateTransaction.ReadActiveId(fixture.Root));
+        Assert.True(Directory.Exists(fixture.DirectoryPath));
+        Assert.Empty(await InstallationFileSnapshot.ReadAsync(fixture.Root));
+        var destination = SetupPreparation.InspectDestination(fixture.Root);
+        Assert.Equal(fixture.Root, destination.Root);
+        Assert.Null(destination.InstalledFlavor);
+    }
+
+    /// <summary>
+    /// Retained updater state does not make an unrelated folder eligible for a fresh installation.
+    /// </summary>
+    [Fact]
+    public async Task DiscardedFreshPreparationStillRejectsUnrelatedContent()
+    {
+        using var fixture = new TransactionFixture();
+        await fixture.PrepareFreshAsync(_files);
+        await fixture.Engine().DiscardPreparedAsync(fixture.Root, fixture.Description.TransactionId);
+        TransactionFixture.Write(fixture.Root, ExtraFile, 7);
+        Assert.Throws<InvalidDataException>(() => SetupPreparation.InspectDestination(fixture.Root));
+        Assert.True(File.Exists(Path.Combine(fixture.Root, ExtraFile)));
+    }
+
+    /// <summary>
     /// Commits with three folder/file moves and one intent whether extraction is transferred or copied.
     /// </summary>
     /// <param name="consumePayload">Whether extraction ownership is available.</param>

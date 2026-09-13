@@ -1605,4 +1605,7 @@
   <data name="ProgressInstallationInProgress" xml:space="preserve">
     <value>Installing Ironmon</value>
   </data>
+  <data name="ProgressWaitingForApplications" xml:space="preserve">
+    <value>Close Infinite Fusion, the tracker, and the Infinite Fusion launcher or installer. This operation will continue automatically.</value>
+  </data>
 </root>

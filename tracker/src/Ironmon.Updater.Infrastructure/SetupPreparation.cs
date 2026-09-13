@@ -174,6 +174,20 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
     }
 
     /// <summary>
+    /// Distinguishes game content from the updater's retained workspace after a cancelled fresh installation.
+    /// </summary>
+    /// <param name="root">The existing destination directory.</param>
+    /// <returns>Whether the directory contains anything outside the updater's ordinary state directory.</returns>
+    private static bool HasInstallationContent(string root)
+    {
+        var state = PlainPaths.Child(root, InstallationLease.StateDirectory);
+        if (File.Exists(state))
+            throw new InvalidDataException(UpdaterText.InstallationFileSnapshotGitAndUpdaterMetadataMustBeOrdinaryDirectories);
+
+        return Directory.EnumerateFileSystemEntries(root).Any(path => !path.Equals(state, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
     /// Identifies the selected folder and installed package without downloading releases or changing any files.
     /// </summary>
     /// <param name="destination">The selected absolute game directory or new empty directory.</param>
@@ -184,7 +198,7 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
         if (Path.GetPathRoot(root) == root || File.Exists(root))
             throw new IOException(UpdaterText.SetupPreparationChooseAnInstallationFolderNotADriveRootOr);
 
-        if (Directory.Exists(root) && UpdateTransaction.ReadActiveId(root) is null && Directory.EnumerateFileSystemEntries(root).Any())
+        if (Directory.Exists(root) && UpdateTransaction.ReadActiveId(root) is null && HasInstallationContent(root))
             GameInstallationLocator.ValidateCandidate(root);
 
         var installed = File.Exists(PlainPaths.Child(root, UpdaterHandoff.TrackerRelativePath));

@@ -54,7 +54,11 @@ public enum InstallationStage
     /// <summary>
     /// Downloads an authenticated release package.
     /// </summary>
-    DownloadingPackage = 11
+    DownloadingPackage = 11,
+    /// <summary>
+    /// Waits for running applications while retaining prepared installation files.
+    /// </summary>
+    WaitingForApplications = 12
 }
 
 /// <summary>
@@ -90,6 +94,7 @@ public sealed record InstallationProgress(InstallationStage Stage, long Complete
                 InstallationStage.InstallingFiles => UpdaterText.ProgressInstallingFiles,
                 InstallationStage.RestoringFiles => UpdaterText.ProgressRestoringFiles,
                 InstallationStage.DownloadingSprites => UpdaterText.ProgressDownloadingSprites,
+                InstallationStage.WaitingForApplications => UpdaterText.ProgressWaitingForApplications,
                 _ => UpdaterText.ProgressDownloadingPackage
             };
             if (Total > 0 && Stage != InstallationStage.DownloadingPackage)
