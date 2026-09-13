@@ -1,0 +1,191 @@
+@using Ironmon.Updater.Core
+@using Ironmon.Updater.Infrastructure
+
+@if (DialogVisible)
+{
+    <div class="tracker-update-overlay @(Session.ShowStartupPrompt ? "tracker-update-invitation" : string.Empty)" @ref="_root" @onkeydown="HandleKeyDown">
+        <section class="tracker-update-panel" role="dialog" aria-modal="true" aria-labelledby="tracker-update-title" tabindex="-1">
+            @if (Session.ShowStartupPrompt)
+            {
+                <p class="tracker-update-kicker">@Text[UpdateText.Updates]</p>
+                <h1 id="tracker-update-title">@Text[Session.NeedsRecovery ? UpdateText.RecoveryTitle : UpdateText.PromptTitle]</h1>
+                <p class="tracker-update-muted">@Text[Session.NeedsRecovery ? UpdateText.RecoveryDescription : UpdateText.PromptDescription]</p>
+                @if (!Session.NeedsRecovery)
+                {
+                    <div class="tracker-update-version-card">
+                        <span>@Text[UpdateText.TrackerLabel]</span>
+                        <strong>@Session.CurrentVersion <span aria-hidden="true">→</span> @Session.AvailableVersion</strong>
+                    </div>
+                }
+                <div class="tracker-update-prompt-actions">
+                    <button type="button" class="tracker-update-secondary" @onclick="Session.DismissStartupPrompt">@Text[UpdateText.Later]</button>
+                    <button type="button" class="tracker-update-primary" @onclick="Session.OpenAsync">@Text[Session.NeedsRecovery ? UpdateText.ReviewRecovery : UpdateText.Update]</button>
+                </div>
+            }
+            else
+            {
+                <header class="tracker-update-heading">
+                    <button type="button" class="tracker-update-link" disabled="@Session.IsBusy" @onclick="Session.Close"><span aria-hidden="true">← </span>@Text[Session.OpenedFromSettings ? UpdateText.BackSettings : UpdateText.Back]</button>
+                    <h1 id="tracker-update-title">@Text[UpdateText.Updates]</h1>
+                </header>
+                <div class="tracker-update-body">
+                    @if (Session.AvailableVersion is { } version && !Session.NeedsRecovery)
+                    {
+                        <section class="tracker-update-release-card">
+                            <p class="tracker-update-kicker">@Text[UpdateText.Available]</p>
+                            <div class="tracker-update-release-versions">
+                                <div><small>@Text[UpdateText.InstalledLabel]</small><strong>@Session.CurrentVersion</strong></div>
+                                <span aria-hidden="true">→</span>
+                                <div><small>@Text[UpdateText.AvailableLabel]</small><strong>@version</strong></div>
+                            </div>
+                            <div class="tracker-update-game-version">
+                                <span>@Text[UpdateText.GameLabel]</span>
+                                <strong>
+                                    @(Session.CurrentGameVersion ?? Text[UpdateText.UnknownVersion].Value)
+                                    @if (Session.Review is { Authorization.PreviousGameCommit: not null } gameReview)
+                                    {
+                                        <span> → @gameReview.Manifest.Game.VersionLabel</span>
+                                    }
+                                </strong>
+                            </div>
+                        </section>
+                    }
+                    @if (Session.NeedsRecovery)
+                    {
+                        <p>@Text[UpdateText.RecoveryDescription]</p>
+                    }
+                    @if (Session.Review is { } review)
+                    {
+                        @if (review.Authorization.PreviousGameCommit is not null)
+                        {
+                            <p class="tracker-update-notice">@Text[UpdateText.Combined, review.Manifest.Game.VersionLabel]</p>
+                        }
+                        @if (review.FirstPreparation)
+                        {
+                            <p>@Text[UpdateText.FirstPreparation]</p>
+                        }
+                        <section aria-labelledby="tracker-update-notes">
+                            <h2 id="tracker-update-notes">@Text[UpdateText.WhatsNew]</h2>
+                            <pre class="tracker-update-notes">@review.Notes</pre>
+                        </section>
+                        @if (review.Plan.Entries.Any(entry => entry.Action == FilePlanAction.Conflict))
+                        {
+                            <section class="tracker-update-conflicts" aria-labelledby="tracker-update-conflicts">
+                                <h2 id="tracker-update-conflicts">@Text[UpdateText.Conflicts]</h2>
+                                <p>@Text[UpdateText.ConflictDescription]</p>
+                                @foreach (var entry in review.Plan.Entries.Where(entry => entry.Action == FilePlanAction.Conflict))
+                                {
+                                    <div @key="entry.Path" class="tracker-update-conflict">
+                                        @if (entry.CanReplaceAfterBackup)
+                                        {
+                                            <label><input type="checkbox" checked="@Session.IsApproved(entry.Path)" disabled="@Session.IsBusy" @onchange="args => Session.Approve(entry.Path, args.Value is true)" /><span>@Text[UpdateText.Replace]<code>@entry.Path</code></span></label>
+                                        }
+                                        else
+                                        {
+                                            <code>@entry.Path</code><p>@Text[UpdateText.StructuralConflict]</p>
+                                        }
+                                    </div>
+                                }
+                            </section>
+                        }
+                    }
+                    @if ((Session.Review is not null || Session.NeedsRecovery) && !Session.IsBusy)
+                    {
+                        <p class="tracker-update-notice">@Text[Session.NeedsRecovery ? UpdateText.RecoveryCloseWarning : UpdateText.CloseWarning]</p>
+                    }
+                    <div role="status" aria-live="polite" class="tracker-update-status">
+                        @if (Session.Error is { } error)
+                        {
+                            <div class="tracker-update-result tracker-update-result-error">
+                                <h2>@Text[Session.Review is null && !Session.NeedsRecovery ? UpdateText.CheckUnavailable : UpdateText.Error]</h2><p>@error</p>
+                            </div>
+                        }
+                        else if (Session.IsBusy || Session.Phase == TrackerUpdatePhase.Cancelled)
+                        {
+                            <p>@Text[UpdateText.PhasePrefix + Session.Phase]</p>
+                        }
+                        else if (Session.CheckedAt is not null && Session.AvailableVersion is null && !Session.NeedsRecovery)
+                        {
+                            <div class="tracker-update-result tracker-update-result-current">
+                                <span class="tracker-update-result-icon" aria-hidden="true">✓</span>
+                                <div><h2>@Text[UpdateText.CurrentTitle]</h2><p>@Text[UpdateText.UpToDate]</p></div>
+                            </div>
+                        }
+                    </div>
+                    @if (!Session.IsBusy && Session.AvailableVersion is null && !Session.NeedsRecovery)
+                    {
+                        <section class="tracker-update-installed" aria-labelledby="tracker-update-installed">
+                            <h2 id="tracker-update-installed">@Text[UpdateText.Installed]</h2>
+                            <dl>
+                                <div><dt>@Text[UpdateText.TrackerLabel]</dt><dd>@(Session.CurrentVersion ?? Text[UpdateText.UnknownVersion].Value)</dd></div>
+                                <div><dt>@Text[UpdateText.GameLabel]</dt><dd>@(Session.CurrentGameVersion ?? Text[UpdateText.UnknownVersion].Value)</dd></div>
+                            </dl>
+                        </section>
+                    }
+                    @if (!Session.IsBusy)
+                    {
+                        <div class="tracker-update-last-check">
+                            @if (Session.CheckedAt is { } checkedAt)
+                            {
+                                <span>@Text[UpdateText.CheckedAt, checkedAt.ToLocalTime().ToString(DateFormat, System.Globalization.CultureInfo.CurrentCulture)]</span>
+                            }
+                            <button type="button" class="tracker-update-link" @onclick="Session.CheckAsync">@Text[UpdateText.CheckAgainShort]</button>
+                        </div>
+                    }
+                    @if (Session.IsBusy)
+                    {
+                        @if (Session.Progress is { } measured)
+                        {
+                            <p class="tracker-update-muted">@measured.Text</p>
+                            @if (measured.Total > 0)
+                            {
+                                <progress max="@measured.Total" value="@measured.Completed" aria-label="@measured.Text"></progress>
+                            }
+                            else
+                            {
+                                <progress aria-label="@measured.Text"></progress>
+                            }
+                        }
+                        else if (Session.Download is { } download)
+                        {
+                            <progress max="@download.Total" value="@download.Received" aria-label="@Text[UpdateText.Downloading]"></progress>
+                            <p class="tracker-update-muted">@Text[UpdateText.DownloadBytes, Megabytes(download.Received), Megabytes(download.Total)]</p>
+                        }
+                        else
+                        {
+                            <progress aria-label="@Text[UpdateText.PhasePrefix + Session.Phase]"></progress>
+                        }
+                    }
+                    @if (Session.RetryAt is { } retry && Session.Error is not null)
+                    {
+                        <p class="tracker-update-muted">@Text[UpdateText.RetryAt, retry.ToLocalTime().ToString(DateFormat, System.Globalization.CultureInfo.CurrentCulture)]</p>
+                    }
+                </div>
+                @if (Session.IsBusy || Session.NeedsRecovery || Session.AvailableVersion is not null)
+                {
+                    <div class="tracker-update-actions">
+                        @if (Session.IsBusy)
+                        {
+                            <button type="button" class="tracker-update-secondary" @onclick="Session.Cancel">@Text[UpdateText.Cancel]</button>
+                        }
+                        else
+                        {
+                            @if (Session.NeedsRecovery)
+                            {
+                                <button type="button" class="tracker-update-primary" disabled="@(Session.Recovery is null)" @onclick="Session.RecoverAsync">@Text[UpdateText.Recover]</button>
+                            }
+                            else if (Session.AvailableVersion is not null)
+                            {
+                                @if (Session.Review is { } packageReview)
+                                {
+                                    <span class="tracker-update-muted">@Text[UpdateText.PackageSize, Megabytes(packageReview.PackageBytes)] @(packageReview.Authorization.PreviousGameCommit is not null ? Text[UpdateText.ExtraGameSize].Value : string.Empty)</span>
+                                }
+                                <button type="button" class="tracker-update-primary" disabled="@(!Session.CanUpdate)" @onclick="Session.UpdateAsync">@Text[UpdateText.Update]</button>
+                            }
+                        }
+                    </div>
+                }
+            }
+        </section>
+    </div>
+}

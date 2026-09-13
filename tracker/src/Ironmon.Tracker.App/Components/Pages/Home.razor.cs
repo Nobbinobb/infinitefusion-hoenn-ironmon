@@ -106,6 +106,7 @@ public partial class Home : IDisposable
         CompletedRuns.SelectionRequested += HandleCompletedRunSelectionRequested;
         ShortcutService.ViewRequested += HandleGlobalViewRequested;
         ShortcutService.EnemyCycleRequested += HandleGlobalEnemyCycleRequested;
+        InitializeUpdateNavigation();
     }
 
     /// <summary>
@@ -114,6 +115,10 @@ public partial class Home : IDisposable
     /// <param name="view">The view selected by the user.</param>
     private void SelectView(TrackerView view)
     {
+        if (UpdateNavigation?.IsUpdateOpen == true)
+            return;
+
+        _updateNavigationResuming = false;
         _completedRunNavigationPending = false;
         _accessOpen = false;
         _seedsOpen = false;
@@ -305,6 +310,9 @@ public partial class Home : IDisposable
     {
         _ = InvokeAsync(() =>
         {
+            if (UpdateNavigation?.IsUpdateOpen == true)
+                return;
+
             IReadOnlyList<EnemyPokemonSnapshot> enemies = [.. _run.Enemies.OrderBy(enemy => enemy.Position)];
             bool cycleExistingSelection = _selectedView == TrackerView.Enemy;
             SelectView(TrackerView.Enemy);
@@ -511,6 +519,16 @@ public partial class Home : IDisposable
         if (_selectedEnemyId is null || _run.Enemies.All(enemy => enemy.EnemyId != _selectedEnemyId))
             _selectedEnemyId = _run.Enemies.Count > 0 ? _run.Enemies[0].EnemyId : null;
 
+        if (UpdateNavigation?.IsUpdateOpen == true || _updateNavigationResuming)
+        {
+            _lastMoveMenuPokemonId = _run.MoveMenuPokemonId;
+            if (_run.Player is not null || _run.Enemies.Count > 0 || _run.StarterSelection is not null)
+                _updateNavigationResuming = false;
+
+            _ = InvokeAsync(StateHasChanged);
+            return;
+        }
+
         bool moveMenuOpened = _run.MoveMenuPokemonId is not null && _run.MoveMenuPokemonId != _lastMoveMenuPokemonId;
         if (enemyAppeared)
             _completedRunNavigationPending = false;
@@ -543,7 +561,7 @@ public partial class Home : IDisposable
     /// <param name="args">The change event arguments.</param>
     private void HandleCompletedRunSelectionRequested(object? sender, EventArgs args)
     {
-        if (_seedsOpen)
+        if (_seedsOpen || UpdateNavigation?.IsUpdateOpen == true)
             return;
 
         _completedRunNavigationPending = true;
@@ -558,6 +576,7 @@ public partial class Home : IDisposable
     /// </summary>
     public void Dispose()
     {
+        UpdateNavigation?.Unregister(UpdateNavigationKey);
         ConnectionState.Changed -= HandleConnectionChanged;
         TrackerConnection.Requests.ObtainabilityProgress.Changed -= HandleObtainabilityProgressChanged;
         RunState.Changed -= HandleRunChanged;

@@ -14,13 +14,18 @@ $sharedData = $null
 foreach ($name in "Ironmon-v$version-win-x64.zip", "Ironmon-v$version-win-x64-runtime-required.zip") {
   $path = Join-Path $AssetDirectory $name
   $hash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
-  if ((Get-Content ($path -replace '\.zip$', '.sha256.txt') -Raw).Trim() -cne "$hash  $name") { throw 'Archive checksum sidecar mismatch.' }
+  $checksumList = Join-Path $AssetDirectory 'SHA256SUMS.txt'
+  if (Test-Path -LiteralPath $checksumList) {
+    if (@(Get-Content -LiteralPath $checksumList | Where-Object { $_ -ceq "$hash  $name" }).Count -ne 1) { throw 'Archive checksum list mismatch.' }
+  } else {
+    if ((Get-Content ($path -replace '\.zip$', '.sha256.txt') -Raw).Trim() -cne "$hash  $name") { throw 'Archive checksum sidecar mismatch.' }
+  }
   $zip = [IO.Compression.ZipFile]::OpenRead($path)
   try {
     $files = @($zip.Entries | Where-Object { -not $_.FullName.EndsWith('/') })
     $names = @($files.FullName)
     if (@($names | Sort-Object -Unique).Count -ne $names.Count) { throw 'Duplicate archive paths.' }
-    foreach ($required in 'README.md', 'INSTALLATION.md', 'RELEASE_NOTES.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'OPEN-SANS-LICENSE.txt', 'Ironmon Tracker/Ironmon Tracker.exe') {
+    foreach ($required in 'README.md', 'INSTALLATION.md', 'RELEASE_NOTES.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'OPEN-SANS-LICENSE.txt', 'Ironmon Tracker/Ironmon Tracker.exe', 'Ironmon Tracker/Updater/Ironmon.Updater.exe', 'Ironmon Tracker/Updater/trusted-keys.json', 'Ironmon Tracker/Updater/THIRD_PARTY_NOTICES.md', 'Ironmon Tracker/update-package.json') {
       if ($required -cnotin $names) { throw "Missing release file: $required." }
     }
     $notesReader = [IO.StreamReader]::new($zip.GetEntry('RELEASE_NOTES.md').Open())
@@ -37,10 +42,11 @@ foreach ($name in "Ironmon-v$version-win-x64.zip", "Ironmon-v$version-win-x64-ru
       try { $digest = [Convert]::ToHexString($sha.ComputeHash($stream)).ToLowerInvariant() } finally { $sha.Dispose(); $stream.Dispose() }
       if ($entry.FullName.StartsWith('Data/')) { $data[$entry.FullName] = $digest }
     }
-    $rubyFiles = @($names | Where-Object { $_ -match '^Data/Scripts/997_Ironmon/.*\.rb$' })
+    $rubyFiles = @($names | Where-Object { $_ -match '^Data/Scripts/.*\.rb$' })
     if ($rubyFiles.Count -ne $sourceManifest.Count) { throw 'Runtime script count mismatch.' }
     foreach ($script in $sourceManifest) {
-      $entry = $zip.GetEntry("Data/Scripts/997_Ironmon/$($script.output)")
+      $directory = if ($script.bootstrap) { 'Data/Scripts' } else { 'Data/Scripts/997_Ironmon' }
+      $entry = $zip.GetEntry("$directory/$($script.output)")
       if (-not $entry) { throw "Missing runtime script: $($script.output)." }
       $reader = [IO.StreamReader]::new($entry.Open())
       try { $actual = $reader.ReadToEnd().Replace("`r`n", "`n") } finally { $reader.Dispose() }
@@ -57,3 +63,6 @@ foreach ($name in "Ironmon-v$version-win-x64.zip", "Ironmon-v$version-win-x64-ru
 New-Item -ItemType Directory -Force -Path (Join-Path $ProjectRoot 'data') | Out-Null
 $receipts | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $ProjectRoot 'data/release-archives.audit.json') -Encoding utf8NoBOM
 Write-Output 'Both player archives verified: all entries readable, checksums, source scripts, required documents, sensitive-file exclusions and shared Data parity.'
+. (Join-Path $PSScriptRoot 'UpdateArtifacts.ps1')
+$tool = Join-Path $ProjectRoot 'tracker/tools/Ironmon.ReleaseTool/bin/Release/net10.0/Ironmon.ReleaseTool.dll'
+Invoke-UpdateCandidateTool $tool @('verify', $AssetDirectory, (Join-Path $ProjectRoot 'resources/updater/trusted-keys.json'), 'unsigned')

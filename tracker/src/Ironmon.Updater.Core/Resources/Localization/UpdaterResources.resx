@@ -1,0 +1,1608 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data name="CombinedGamePreparationANewGameInstallationRequiresAnEmptyDestination" xml:space="preserve">
+    <value>A new game installation requires an empty destination.</value>
+  </data>
+  <data name="CombinedGamePreparationGamePreparationAndPrivateGitMustRemainOutsideThe" xml:space="preserve">
+    <value>Game preparation and private Git must remain outside the installation.</value>
+  </data>
+  <data name="CombinedGamePreparationTheExactApprovedGameRevisionCouldNotBeFetched" xml:space="preserve">
+    <value>The exact approved game revision could not be fetched or verified as a forward update. The installed game remains unchanged.</value>
+  </data>
+  <data name="CombinedGamePreparationTheGameTreeContainsLinksSubmodulesOrUnsupportedObjects" xml:space="preserve">
+    <value>The game tree contains links, submodules or unsupported objects.</value>
+  </data>
+  <data name="CombinedGamePreparationTheGameWasChangedExternallyOrIsAlreadyNewer" xml:space="preserve">
+    <value>The game was changed externally or is already newer; an automatic downgrade is not permitted.</value>
+  </data>
+  <data name="CombinedGamePreparationTheInstallationChangedWhileTheCombinedUpdateWasBeing" xml:space="preserve">
+    <value>The installation changed while the combined update was being prepared.</value>
+  </data>
+  <data name="CombinedGamePreparationTheSignedGameIdentityMustResolveToAnExact" xml:space="preserve">
+    <value>The signed game identity must resolve to an exact commit object.</value>
+  </data>
+  <data name="CombinedGamePreparationTheSignedGameInventoryDoesNotCoverTheComplete" xml:space="preserve">
+    <value>The signed game inventory does not cover the complete fetched commit.</value>
+  </data>
+  <data name="CombinedGitVerificationCombinedUpdatesCannotDowngradeOrCrossUnrelatedGameHistories" xml:space="preserve">
+    <value>Combined updates cannot downgrade or cross unrelated game histories.</value>
+  </data>
+  <data name="CombinedGitVerificationCombinedUpdatesRequirePreparedGitMetadata" xml:space="preserve">
+    <value>Combined updates require prepared Git metadata.</value>
+  </data>
+  <data name="CombinedGitVerificationTheInstalledGitBranchAndIndexDoNotMatch" xml:space="preserve">
+    <value>The installed Git branch and index do not match the approved game revision.</value>
+  </data>
+  <data name="CombinedGitVerificationThePreparedBranchOrIndexDoesNotIdentifyThe" xml:space="preserve">
+    <value>The prepared branch or index does not identify the signed game target.</value>
+  </data>
+  <data name="CombinedGitVerificationTheTransactionSGitStateDiffersFromItsIndependently" xml:space="preserve">
+    <value>The transaction's Git state differs from its independently verified recovery evidence.</value>
+  </data>
+  <data name="CombinedGitVerificationThisInstallationPathIsTooLongForSafeGame" xml:space="preserve">
+    <value>This installation path is too long for safe game recovery. Choose a shorter folder path before installing.</value>
+  </data>
+  <data name="CombinedGitVerificationThisTransactionAlreadyHasGitVerificationEvidence" xml:space="preserve">
+    <value>This transaction already has Git verification evidence.</value>
+  </data>
+  <data name="CombinedUpdateAnotherLauncherChangedTheGameRepositoryDuringPreparation" xml:space="preserve">
+    <value>Another launcher changed the game repository during preparation.</value>
+  </data>
+  <data name="CombinedUpdateCombinedUpdateDownloadsMustRemainOutsideTheInstalledGame" xml:space="preserve">
+    <value>Combined update downloads must remain outside the installed game.</value>
+  </data>
+  <data name="CombinedUpdateFinishTheActiveRunBeforeUpdatingTheGameRetained" xml:space="preserve">
+    <value>Finish the active run before updating the game. Retained generation data does not guarantee save compatibility.</value>
+  </data>
+  <data name="CombinedUpdateTheCombinedRecoveryEvidenceExceedsItsSupportedSize" xml:space="preserve">
+    <value>The combined recovery evidence exceeds its supported size.</value>
+  </data>
+  <data name="FileManagementPolicyAGameFileOverlapsAnIronmonOwnedDestination" xml:space="preserve">
+    <value>A game file overlaps an Ironmon-owned destination.</value>
+  </data>
+  <data name="FileManagementPolicyHistoricalGenerationProfilesRequireImmutableFileOwnership" xml:space="preserve">
+    <value>Historical generation profiles require immutable file ownership.</value>
+  </data>
+  <data name="FileManagementPolicyImmutableFilesMustSpecifyOneExactByteRepresentation" xml:space="preserve">
+    <value>Immutable files must specify one exact byte representation.</value>
+  </data>
+  <data name="FileManagementPolicyTheInventoryContainsAnUnsupportedOwnershipPolicy" xml:space="preserve">
+    <value>The inventory contains an unsupported ownership policy.</value>
+  </data>
+  <data name="FileManagementPolicyTheIronmonInventoryClaimsAFileOutsideItsManaged" xml:space="preserve">
+    <value>The Ironmon inventory claims a file outside its managed destinations.</value>
+  </data>
+  <data name="FileManagementPolicyTheReleaseInventoryOverlapsProtectedUserOrUpdaterData" xml:space="preserve">
+    <value>The release inventory overlaps protected user or updater data at '{0}'.</value>
+  </data>
+  <data name="FileUpdatePlannerAReleaseAttemptsToChangeAnImmutableFileUnder" xml:space="preserve">
+    <value>A release attempts to change an immutable file under its existing identity.</value>
+  </data>
+  <data name="FileUpdatePlannerCaseOnlyPathChangesRequireASeparateSupportedRename" xml:space="preserve">
+    <value>Case-only path changes require a separate supported rename policy.</value>
+  </data>
+  <data name="FileUpdatePlannerChangingFileOwnershipOrRetentionPolicyRequiresAnExplicit" xml:space="preserve">
+    <value>Changing file ownership or retention policy requires an explicit migration policy.</value>
+  </data>
+  <data name="FileUpdatePlannerTheInstallationSnapshotHasMissingDirectoriesOrAFile" xml:space="preserve">
+    <value>The installation snapshot has missing directories or a file/directory collision.</value>
+  </data>
+  <data name="FileUpdatePlannerTheInstallationSnapshotIsTooLargeOrContainsDuplicate" xml:space="preserve">
+    <value>The installation snapshot is too large or contains duplicate paths.</value>
+  </data>
+  <data name="FileUpdatePlannerTheInventoryIsTooLargeOrClaimsAPath" xml:space="preserve">
+    <value>The inventory is too large or claims a path more than once.</value>
+  </data>
+  <data name="FileUpdatePlannerTheInventoryUsesOnePathAsBothAFile" xml:space="preserve">
+    <value>The inventory uses one path as both a file and a directory.</value>
+  </data>
+  <data name="FileUpdatePlanOnlyAnExplicitlyListedReplaceableFileConflictCanBe" xml:space="preserve">
+    <value>Only an explicitly listed replaceable file conflict can be approved.</value>
+  </data>
+  <data name="FileUpdatePlanUnresolvedFileConflictsBlockTheCompleteUpdate" xml:space="preserve">
+    <value>Unresolved file conflicts block the complete update.</value>
+  </data>
+  <data name="GameCompatibilityCheckAnUpdateIsIncompleteFinishOrRecoverItBefore" xml:space="preserve">
+    <value>An update is incomplete. Finish or recover it before starting Ironmon.</value>
+  </data>
+  <data name="GameCompatibilityCheckARequiredGameFileIsMissing" xml:space="preserve">
+    <value>A required game file is missing.</value>
+  </data>
+  <data name="GameCompatibilityCheckInstalledGameCodeOrDataDiffersFromThisIronmon" xml:space="preserve">
+    <value>Installed game code or data differs from this Ironmon release.</value>
+  </data>
+  <data name="GameCompatibilityCheckLinkedGitLayoutsAreUnsupported" xml:space="preserve">
+    <value>Linked Git layouts are unsupported.</value>
+  </data>
+  <data name="GameCompatibilityCheckTheGameChangedDuringInspectionCheckTheInstallationAgain" xml:space="preserve">
+    <value>The game changed during inspection. Check the installation again.</value>
+  </data>
+  <data name="GameCompatibilityCheckTheGameCompatibilityBaselineIsEmpty" xml:space="preserve">
+    <value>The game compatibility baseline is empty.</value>
+  </data>
+  <data name="GameCompatibilityCheckTheGameHEADReferenceIsMissing" xml:space="preserve">
+    <value>The game HEAD reference is missing.</value>
+  </data>
+  <data name="GameCompatibilityCheckTheGameHEADReferenceIsUnsupported" xml:space="preserve">
+    <value>The game HEAD reference is unsupported.</value>
+  </data>
+  <data name="GameCompatibilityCheckTheGameMatchesThisIronmonRelease" xml:space="preserve">
+    <value>The game matches this Ironmon release.</value>
+  </data>
+  <data name="GameCompatibilityCheckTheGameWasChangedOutsideIronmonAMatchingIronmon" xml:space="preserve">
+    <value>The game was changed outside Ironmon. A matching Ironmon release is required.</value>
+  </data>
+  <data name="GameCompatibilityCheckTheGitReferenceExceedsItsSizeLimit" xml:space="preserve">
+    <value>The Git reference exceeds its size limit.</value>
+  </data>
+  <data name="GameCompatibilityCheckTheInstalledGameCouldNotBeVerifiedCheckThe" xml:space="preserve">
+    <value>The installed game could not be verified. Check the installation before starting Ironmon.</value>
+  </data>
+  <data name="GameDirectorySnapshotAFolderContainingGitMetadataCannotBeAdoptedAs" xml:space="preserve">
+    <value>A folder containing Git metadata cannot be adopted as a ZIP installation.</value>
+  </data>
+  <data name="GameDirectorySnapshotTheInstallationHasTooManyEntriesForAutomaticPreparation" xml:space="preserve">
+    <value>The installation has too many entries for automatic preparation.</value>
+  </data>
+  <data name="GameInstallationLocatorNoSupportedGameWasFoundAboveTheTracker" xml:space="preserve">
+    <value>No supported game was found above the tracker.</value>
+  </data>
+  <data name="GameInstallationLocatorTheFolderDoesNotContainTheExpectedGameExecutable" xml:space="preserve">
+    <value>The folder does not contain the expected game executable and INI.</value>
+  </data>
+  <data name="GameInstallationLocatorTheGameExecutableHasAnUnsupportedHeader" xml:space="preserve">
+    <value>The game executable has an unsupported header.</value>
+  </data>
+  <data name="GameInstallationLocatorTheGameINIDoesNotIdentifyTheSupportedInfinite" xml:space="preserve">
+    <value>The game INI does not identify the supported Infinite Fusion game.</value>
+  </data>
+  <data name="GameInstallationLocatorTheGameINIHasDuplicateGameSections" xml:space="preserve">
+    <value>The game INI has duplicate game sections.</value>
+  </data>
+  <data name="GameInstallationLocatorTheGameINIHasDuplicateTitles" xml:space="preserve">
+    <value>The game INI has duplicate titles.</value>
+  </data>
+  <data name="GameInstallationLocatorTheInstalledTrackerExecutableWasNotFound" xml:space="preserve">
+    <value>The installed tracker executable was not found.</value>
+  </data>
+  <data name="GitProcessGitOutputExceededTheSupportedSize" xml:space="preserve">
+    <value>Git output exceeded the supported size.</value>
+  </data>
+  <data name="GitProcessThePrivateGitOperationTimedOut" xml:space="preserve">
+    <value>The private Git operation timed out.</value>
+  </data>
+  <data name="GitProcessThePrivateGitProcessCouldNotStart" xml:space="preserve">
+    <value>The private Git process could not start.</value>
+  </data>
+  <data name="HoennGameBaselineTheGameInventoryDoesNotMatchItsReleaseChecksum" xml:space="preserve">
+    <value>The game inventory does not match its release checksum.</value>
+  </data>
+  <data name="HoennGameBaselineTheGameInventoryDoesNotMatchItsReleaseIdentity" xml:space="preserve">
+    <value>The game inventory does not match its release identity.</value>
+  </data>
+  <data name="HoennGameBaselineTheReleaseGameInventoryIsEmpty" xml:space="preserve">
+    <value>The release game inventory is empty.</value>
+  </data>
+  <data name="HoennGameBaselineTheReleaseGameInventoryIsMissing" xml:space="preserve">
+    <value>The release game inventory is missing.</value>
+  </data>
+  <data name="HoennGameBaselineTheReleaseGameInventoryManifestIsEmpty" xml:space="preserve">
+    <value>The release game inventory manifest is empty.</value>
+  </data>
+  <data name="HoennGameBaselineTheReleaseGameInventoryManifestIsMissing" xml:space="preserve">
+    <value>The release game inventory manifest is missing.</value>
+  </data>
+  <data name="IArtifactSourceMissingDownloadRedirect" xml:space="preserve">
+    <value>Missing download redirect.</value>
+  </data>
+  <data name="IArtifactSourceTheArtifactExceedsItsDeclaredSize" xml:space="preserve">
+    <value>The artifact exceeds its declared size.</value>
+  </data>
+  <data name="IArtifactSourceTheArtifactSourceIsNotAnAllowedPublicHTTPS" xml:space="preserve">
+    <value>The artifact source is not an allowed public HTTPS host.</value>
+  </data>
+  <data name="IArtifactSourceTooManyDownloadRedirects" xml:space="preserve">
+    <value>Too many download redirects.</value>
+  </data>
+  <data name="InstallationFileSnapshotGitAndUpdaterMetadataMustBeOrdinaryDirectories" xml:space="preserve">
+    <value>Git and updater metadata must be ordinary directories.</value>
+  </data>
+  <data name="InstallationFileSnapshotTheInstallationHasTooManyEntriesForAutomaticFile" xml:space="preserve">
+    <value>The installation has too many entries for automatic file planning.</value>
+  </data>
+  <data name="InstallationIdentityTheInstallationDirectoryIdentityCouldNotBeRead" xml:space="preserve">
+    <value>The installation directory identity could not be read.</value>
+  </data>
+  <data name="InstallationIdentityUpdaterAncestorsMustBeOrdinaryDirectories" xml:space="preserve">
+    <value>Updater ancestors must be ordinary directories.</value>
+  </data>
+  <data name="InstallationIdentityUpdaterInputMustBeAnOrdinaryFileWithOne" xml:space="preserve">
+    <value>Updater input must be an ordinary file with one filesystem link.</value>
+  </data>
+  <data name="InstallationLeaseAnUnfinishedUpdateMustBeRecoveredBeforeAnotherInstallation" xml:space="preserve">
+    <value>An unfinished update must be recovered before another installation writer can start.</value>
+  </data>
+  <data name="InstallationLeaseTheInstallationDirectoryNoLongerExists" xml:space="preserve">
+    <value>The installation directory no longer exists.</value>
+  </data>
+  <data name="InstallationWriterCoordinatorInstallationWorkIsAlreadyRunningOrPausedForAn" xml:space="preserve">
+    <value>Installation work is already running or paused for an update.</value>
+  </data>
+  <data name="IronmonOnlyUpdateAFileChangedAfterYouReviewedItsReplacementCheck" xml:space="preserve">
+    <value>A file changed after you reviewed its replacement. Check the update again and review the new file conflicts.</value>
+  </data>
+  <data name="IronmonOnlyUpdateFinishTheActiveRunBeforeInstallingThisRelease" xml:space="preserve">
+    <value>Finish the active run before installing this release.</value>
+  </data>
+  <data name="IronmonOnlyUpdateSomeInstalledFilesNeedAnExplicitReplacementDecisionBefore" xml:space="preserve">
+    <value>Some installed files need an explicit replacement decision before this update can continue.</value>
+  </data>
+  <data name="IronmonOnlyUpdateTheCompleteSignedRecoveryEvidenceExceedsTheSupportedMetadata" xml:space="preserve">
+    <value>The complete signed recovery evidence exceeds the supported metadata budget.</value>
+  </data>
+  <data name="IronmonOnlyUpdateTheCurrentSignedReleaseDoesNotMatchTheSelected" xml:space="preserve">
+    <value>The current signed release does not match the selected upgrade baseline.</value>
+  </data>
+  <data name="IronmonOnlyUpdateTheInstallationPurposeDoesNotMatchTheSelectedBaseline" xml:space="preserve">
+    <value>The installation purpose does not match the selected baseline.</value>
+  </data>
+  <data name="IronmonOnlyUpdateTheRequiredProgramFileWasChangedOrRemovedLocally" xml:space="preserve">
+    <value>The required program file '{0}' was changed or removed locally. Restore it from the installed release before updating.</value>
+  </data>
+  <data name="IronmonOnlyUpdateTheSelectedUpdateIsNotASupportedForwardVersion" xml:space="preserve">
+    <value>The selected update is not a supported forward version or package flavor.</value>
+  </data>
+  <data name="IronmonOnlyUpdateTheSignedInventoryExceedsTheSupportedMetadataBudget" xml:space="preserve">
+    <value>The signed inventory exceeds the supported metadata budget.</value>
+  </data>
+  <data name="IronmonOnlyUpdateThisReleaseNeedsACombinedGameUpdateTheIronmon" xml:space="preserve">
+    <value>This release needs a combined game update; the Ironmon-only path cannot change the game.</value>
+  </data>
+  <data name="IronmonOnlyUpdateThisReleaseRequiresANewerVerifiedUpdaterUseThe" xml:space="preserve">
+    <value>This release requires a newer verified updater. Use the release's installer before updating this installation.</value>
+  </data>
+  <data name="IronmonOnlyUpdateUpdateDownloadsMustRemainOutsideTheInstalledGameAnd" xml:space="preserve">
+    <value>Update downloads must remain outside the installed game and tracker.</value>
+  </data>
+  <data name="MinGitCacheTheArchiveContainsADuplicateOrUnsupportedEntry" xml:space="preserve">
+    <value>The archive contains a duplicate or unsupported entry.</value>
+  </data>
+  <data name="MinGitCacheTheArchiveHasTooManyEntries" xml:space="preserve">
+    <value>The archive has too many entries.</value>
+  </data>
+  <data name="MinGitCacheTheExpandedGitArchiveIsTooLarge" xml:space="preserve">
+    <value>The expanded Git archive is too large.</value>
+  </data>
+  <data name="MinGitCacheTheExtractedGitRuntimeFailedVerification" xml:space="preserve">
+    <value>The extracted Git runtime failed verification.</value>
+  </data>
+  <data name="MinGitCacheTheGitArchiveIsMissingItsExecutableOrLicense" xml:space="preserve">
+    <value>The Git archive is missing its executable or license.</value>
+  </data>
+  <data name="MinGitCacheTheMinGitArchiveFailedSizeOrSHA256Verification" xml:space="preserve">
+    <value>The MinGit archive failed size or SHA-256 verification.</value>
+  </data>
+  <data name="PlainPathsRedirectedFilesAreNotSupported" xml:space="preserve">
+    <value>Redirected files are not supported.</value>
+  </data>
+  <data name="PlainPathsRedirectedInstallationOrCachePathsAreNotSupported" xml:space="preserve">
+    <value>Redirected installation or cache paths are not supported.</value>
+  </data>
+  <data name="PlainPathsRefusingToRemoveADirectoryOutsideTheOwnedParent" xml:space="preserve">
+    <value>Refusing to remove a directory outside the owned parent.</value>
+  </data>
+  <data name="PlainPathsTheArchiveContainsAnUnsafePath" xml:space="preserve">
+    <value>The archive contains an unsafe path.</value>
+  </data>
+  <data name="PlainPathsTheArchivePathEscapesItsDestination" xml:space="preserve">
+    <value>The archive path escapes its destination.</value>
+  </data>
+  <data name="PlainPathsUpdaterPathsMustBeFullyQualifiedLocalPaths" xml:space="preserve">
+    <value>Updater paths must be fully qualified local paths.</value>
+  </data>
+  <data name="PrivateGitProviderAnExactLowercaseSHA1CommitIsRequired" xml:space="preserve">
+    <value>An exact lowercase SHA-1 commit is required.</value>
+  </data>
+  <data name="PrivateGitProviderGitCouldNotVerifyOrPrepareTheRequestedRepository" xml:space="preserve">
+    <value>Git could not verify or prepare the requested repository state.</value>
+  </data>
+  <data name="PrivateGitProviderGitDidNotIdentifyTheExpectedInstallationRoot" xml:space="preserve">
+    <value>Git did not identify the expected installation root.</value>
+  </data>
+  <data name="PrivateGitProviderHiddenIndexChangesAreNotSupported" xml:space="preserve">
+    <value>Hidden index changes are not supported.</value>
+  </data>
+  <data name="PrivateGitProviderObjectStagingAndTheInstallationMustBeSeparateDirectories" xml:space="preserve">
+    <value>Object staging and the installation must be separate directories.</value>
+  </data>
+  <data name="PrivateGitProviderOnlyOrdinaryGitCheckoutsAreSupportedInThisStep" xml:space="preserve">
+    <value>Only ordinary Git checkouts are supported in this step.</value>
+  </data>
+  <data name="PrivateGitProviderRepositoriesWithSubmodulesAreNotSupported" xml:space="preserve">
+    <value>Repositories with submodules are not supported.</value>
+  </data>
+  <data name="PrivateGitProviderSubmodulesInAnApprovedRevisionRequireASeparatePolicy" xml:space="preserve">
+    <value>Submodules in an approved revision require a separate policy.</value>
+  </data>
+  <data name="PrivateGitProviderTheApprovedObjectIsNotACommit" xml:space="preserve">
+    <value>The approved object is not a commit.</value>
+  </data>
+  <data name="PrivateGitProviderTheIndexContainsUnsupportedModesOrSubmodules" xml:space="preserve">
+    <value>The index contains unsupported modes or submodules.</value>
+  </data>
+  <data name="PrivateGitProviderTheInstallationChangedDuringPreparation" xml:space="preserve">
+    <value>The installation changed during preparation.</value>
+  </data>
+  <data name="PrivateGitProviderTheInstallationDoesNotExist" xml:space="preserve">
+    <value>The installation does not exist.</value>
+  </data>
+  <data name="PrivateGitProviderTheInstallationIsNotOnItsExpectedReleaseBranch" xml:space="preserve">
+    <value>The installation is not on its expected release branch.</value>
+  </data>
+  <data name="PrivateGitProviderTheRepositoryContainsCustomHooks" xml:space="preserve">
+    <value>The repository contains custom hooks.</value>
+  </data>
+  <data name="PrivateGitProviderThisRepositoryLayoutRequiresAnUnsupportedMetadataPolicy" xml:space="preserve">
+    <value>This repository layout requires an unsupported metadata policy.</value>
+  </data>
+  <data name="ProtectedUpdateClientAdministratorInstallationIsSupportedOnWindowsOnly" xml:space="preserve">
+    <value>Administrator installation is supported on Windows only.</value>
+  </data>
+  <data name="ProtectedUpdateClientAdministratorWorkWasCancelledSafelyRecoveryFilesWereRetained" xml:space="preserve">
+    <value>Administrator work was cancelled safely. Recovery files were retained when needed.</value>
+  </data>
+  <data name="ProtectedUpdateClientAnUnexpectedProcessOwnsTheAdministratorEndpoint" xml:space="preserve">
+    <value>An unexpected process owns the administrator endpoint.</value>
+  </data>
+  <data name="ProtectedUpdateClientNoAdministratorSessionIsAttachedToThisInstallation" xml:space="preserve">
+    <value>No administrator session is attached to this installation.</value>
+  </data>
+  <data name="ProtectedUpdateClientNoAdministratorSessionIsAvailable" xml:space="preserve">
+    <value>No administrator session is available.</value>
+  </data>
+  <data name="ProtectedUpdateClientTheAdministratorHelperChangedBeforeLaunch" xml:space="preserve">
+    <value>The administrator helper changed before launch.</value>
+  </data>
+  <data name="ProtectedUpdateClientTheAdministratorHelperDidNotBecomeAvailableRetryThe" xml:space="preserve">
+    <value>The administrator helper did not become available. Retry the operation; if an update was interrupted, use recovery before starting the game.</value>
+  </data>
+  <data name="ProtectedUpdateClientTheAdministratorHelperDidNotReturnAPreparedInstallation" xml:space="preserve">
+    <value>The administrator helper did not return a prepared installation.</value>
+  </data>
+  <data name="ProtectedUpdateClientTheAdministratorHelperHasNotConfirmedCompletionKeepThe" xml:space="preserve">
+    <value>The administrator helper has not confirmed completion. Keep the game closed and use recovery if the operation was interrupted.</value>
+  </data>
+  <data name="ProtectedUpdateClientTheAdministratorHelperOmittedTheInstallationResult" xml:space="preserve">
+    <value>The administrator helper omitted the installation result.</value>
+  </data>
+  <data name="ProtectedUpdateClientTheAdministratorHelperOmittedTheRecoveryResult" xml:space="preserve">
+    <value>The administrator helper omitted the recovery result.</value>
+  </data>
+  <data name="ProtectedUpdateClientTheAdministratorHelperOmittedTheSpriteResult" xml:space="preserve">
+    <value>The administrator helper omitted the sprite result.</value>
+  </data>
+  <data name="ProtectedUpdateClientTheAdministratorResultDoesNotMatchTheReviewedRelease" xml:space="preserve">
+    <value>The administrator result does not match the reviewed release.</value>
+  </data>
+  <data name="ProtectedUpdateClientTheInstallationParentNoLongerExists" xml:space="preserve">
+    <value>The installation parent no longer exists.</value>
+  </data>
+  <data name="ProtectedUpdateClientTheInstalledReleaseRecordBelongsToAnotherFolder" xml:space="preserve">
+    <value>The installed release record belongs to another folder.</value>
+  </data>
+  <data name="ProtectedUpdateClientTheInstalledReleaseVerificationRecordsAreMissingRepairThis" xml:space="preserve">
+    <value>The installed release verification records are missing. Repair this folder with Ironmon Setup before downloading sprites with administrator access.</value>
+  </data>
+  <data name="ProtectedUpdateClientTheRecoveryEvidenceBelongsToAnotherInstallation" xml:space="preserve">
+    <value>The recovery evidence belongs to another installation.</value>
+  </data>
+  <data name="ProtectedUpdateProtocolTheAdministratorMessageExceedsItsSizeLimit" xml:space="preserve">
+    <value>The administrator message exceeds its size limit.</value>
+  </data>
+  <data name="ProtectedUpdateProtocolTheAdministratorMessageLengthIsInvalid" xml:space="preserve">
+    <value>The administrator message length is invalid.</value>
+  </data>
+  <data name="ProtectedUpdateProtocolTheAdministratorPipeClientCouldNotBeVerified" xml:space="preserve">
+    <value>The administrator pipe client could not be verified.</value>
+  </data>
+  <data name="ProtectedUpdateProtocolTheAdministratorPipeOwnerCouldNotBeVerified" xml:space="preserve">
+    <value>The administrator pipe owner could not be verified.</value>
+  </data>
+  <data name="ProtectedUpdateProtocolTheAdministratorSessionIdentityIsInvalid" xml:space="preserve">
+    <value>The administrator session identity is invalid.</value>
+  </data>
+  <data name="ProtectedUpdateServerAnUnexpectedProcessConnectedToTheAdministratorSession" xml:space="preserve">
+    <value>An unexpected process connected to the administrator session.</value>
+  </data>
+  <data name="ProtectedUpdateServerTheAdministratorCapabilityDoesNotMatchThisSession" xml:space="preserve">
+    <value>The administrator capability does not match this session.</value>
+  </data>
+  <data name="ProtectedUpdateServerTheHelperExecutableCouldNotBeLocated" xml:space="preserve">
+    <value>The helper executable could not be located.</value>
+  </data>
+  <data name="ProtectedUpdateServerWindowsDidNotGrantAdministratorPermission" xml:space="preserve">
+    <value>Windows did not grant administrator permission.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerAnAdministratorSessionAcceptsOnlyOneInstallationSelection" xml:space="preserve">
+    <value>An administrator session accepts only one installation selection.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerANewPreparationCannotSelectAnExistingTransaction" xml:space="preserve">
+    <value>A new preparation cannot select an existing transaction.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerARecoverySessionCannotApplyANewInstallation" xml:space="preserve">
+    <value>A recovery session cannot apply a new installation.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerFinishRecoveryBeforeDownloadingOptionalSprites" xml:space="preserve">
+    <value>Finish recovery before downloading optional sprites.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerFinishTheActiveRunBeforeChangingTheGame" xml:space="preserve">
+    <value>Finish the active run before changing the game.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerOptionalSpriteWorkRequiresACommittedCoreInstallation" xml:space="preserve">
+    <value>Optional sprite work requires a committed core installation.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerRepairTheInstalledIronmonPackageBeforeDownloadingSpritesWith" xml:space="preserve">
+    <value>Repair the installed Ironmon package before downloading sprites with administrator access.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerSignedInstallationEvidenceIsRequired" xml:space="preserve">
+    <value>Signed installation evidence is required.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerTheAdministratorInstallationHasNotBeenPrepared" xml:space="preserve">
+    <value>The administrator installation has not been prepared.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerTheAdministratorInstallationRootDiffersFromTheReviewedSelection" xml:space="preserve">
+    <value>The administrator installation root differs from the reviewed selection.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerTheAdministratorRequestDiffersFromTheReviewedTransaction" xml:space="preserve">
+    <value>The administrator request differs from the reviewed transaction.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerTheElevatedExecutableDoesNotMatchTheAuthenticatedHelper" xml:space="preserve">
+    <value>The elevated executable does not match the authenticated helper package.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerTheInstallationDirectoryChangedWhileWindowsRequestedPermissionReview" xml:space="preserve">
+    <value>The installation directory changed while Windows requested permission. Review the folder again.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerTheInstalledReleaseChangedBeforeAdministratorAccessWasGranted" xml:space="preserve">
+    <value>The installed release changed before administrator access was granted.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerTheRecoveryAuthorizationChangedWhileWindowsRequestedPermission" xml:space="preserve">
+    <value>The recovery authorization changed while Windows requested permission.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerTheRecoveryTransactionIsMissing" xml:space="preserve">
+    <value>The recovery transaction is missing.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerTheReviewedInstallationParentIsMissing" xml:space="preserve">
+    <value>The reviewed installation parent is missing.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerTheRunningHelperIsUnavailable" xml:space="preserve">
+    <value>The running helper is unavailable.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerTheTrackerNavigationContextIsMissing" xml:space="preserve">
+    <value>The tracker navigation context is missing.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerThisAdministratorOperationIsNotSupported" xml:space="preserve">
+    <value>This administrator operation is not supported.</value>
+  </data>
+  <data name="ProtectedUpdateWorkerThisAdministratorSessionIsRestrictedToOptionalSpriteWork" xml:space="preserve">
+    <value>This administrator session is restricted to optional sprite work.</value>
+  </data>
+  <data name="RecoveryHelperPackageAnExistingImmutableUpdaterVersionHasDifferentContent" xml:space="preserve">
+    <value>An existing immutable updater version has different content.</value>
+  </data>
+  <data name="RecoveryHelperPackageTheAuthenticatedHelperPackageMustContainOneBoundedUpdater" xml:space="preserve">
+    <value>The authenticated helper package must contain one bounded updater executable.</value>
+  </data>
+  <data name="RecoveryHelperPackageTheEmbeddedHelperCannotBeAnArchiveLink" xml:space="preserve">
+    <value>The embedded helper cannot be an archive link.</value>
+  </data>
+  <data name="RecoveryHelperPackageTheEmbeddedHelperDiffersFromItsSignedExecutableIdentity" xml:space="preserve">
+    <value>The embedded helper differs from its signed executable identity.</value>
+  </data>
+  <data name="RecoveryHelperPackageTheEmbeddedHelperExceedsItsSignedSize" xml:space="preserve">
+    <value>The embedded helper exceeds its signed size.</value>
+  </data>
+  <data name="RecoveryHelperPackageTheEmbeddedHelperIdentityIsMissing" xml:space="preserve">
+    <value>The embedded helper identity is missing.</value>
+  </data>
+  <data name="RecoveryHelperPackageTheHelperExceedsItsDeclaredExpandedSize" xml:space="preserve">
+    <value>The helper exceeds its declared expanded size.</value>
+  </data>
+  <data name="RecoveryHelperPackageTheHelperPackageIsIncomplete" xml:space="preserve">
+    <value>The helper package is incomplete.</value>
+  </data>
+  <data name="RecoveryHelperPackageThePackageInventoryDisagreesWithTheSignedEmbeddedHelper" xml:space="preserve">
+    <value>The package inventory disagrees with the signed embedded helper.</value>
+  </data>
+  <data name="RecoveryHelperPackageThePlayerPackageHasNoUniqueBoundedEmbeddedHelper" xml:space="preserve">
+    <value>The player package has no unique bounded embedded helper.</value>
+  </data>
+  <data name="ReleaseArchiveAnExtractedFileFailedItsSignedContentVerification" xml:space="preserve">
+    <value>An extracted file failed its signed content verification.</value>
+  </data>
+  <data name="ReleaseArchiveAnUpdateArchiveMustBeExtractedIntoANew" xml:space="preserve">
+    <value>An update archive must be extracted into a new private directory.</value>
+  </data>
+  <data name="ReleaseArchiveTheDownloadedArchiveDoesNotMatchItsSignedFingerprint" xml:space="preserve">
+    <value>The downloaded archive does not match its signed fingerprint.</value>
+  </data>
+  <data name="ReleaseArchiveTheExpandedPackageExceedsItsSignedFileSize" xml:space="preserve">
+    <value>The expanded package exceeds its signed file size.</value>
+  </data>
+  <data name="ReleaseArchiveThePackageArchiveContainsTooManyEntries" xml:space="preserve">
+    <value>The package archive contains too many entries.</value>
+  </data>
+  <data name="ReleaseArchiveThePackageContainsAnUnlistedFileOrAnUnexpected" xml:space="preserve">
+    <value>The package contains an unlisted file or an unexpected file size.</value>
+  </data>
+  <data name="ReleaseArchiveThePackageContainsAnUnlistedOrIncorrectlyCasedDirectory" xml:space="preserve">
+    <value>The package contains an unlisted or incorrectly cased directory.</value>
+  </data>
+  <data name="ReleaseArchiveThePackageContainsDuplicatePathsLinksOrUnsupportedFile" xml:space="preserve">
+    <value>The package contains duplicate paths, links or unsupported file types.</value>
+  </data>
+  <data name="ReleaseArchiveThePackageIsMissingSignedInventoryFiles" xml:space="preserve">
+    <value>The package is missing signed inventory files.</value>
+  </data>
+  <data name="ReleaseDiscoveryAConditionalReleaseResponseHasNoAuthenticatedCachedRelease" xml:space="preserve">
+    <value>A conditional release response has no authenticated cached release.</value>
+  </data>
+  <data name="ReleaseDiscoveryNoPubliclyAccessibleIronmonReleaseWasFoundCheckThat" xml:space="preserve">
+    <value>No public Ironmon release is available right now. Try checking again later.</value>
+  </data>
+  <data name="ReleaseDiscoveryOnlyPublishedStableReleasesFromTheFixedRepositoryAre" xml:space="preserve">
+    <value>Only published stable releases from the fixed repository are eligible.</value>
+  </data>
+  <data name="ReleaseDiscoveryReleaseCheckingIsTemporarilyRateLimited" xml:space="preserve">
+    <value>Release checking is temporarily rate limited.</value>
+  </data>
+  <data name="ReleaseDiscoveryThePublicReleaseAssetNamesAreAmbiguous" xml:space="preserve">
+    <value>The public release asset names are ambiguous.</value>
+  </data>
+  <data name="ReleaseDiscoveryTheReleaseCacheWatermarkDoesNotMatchItsAuthenticated" xml:space="preserve">
+    <value>The release cache watermark does not match its authenticated observation.</value>
+  </data>
+  <data name="ReleaseDiscoveryTheReleaseFeedAttemptedToRollBackOrReplace" xml:space="preserve">
+    <value>The release feed attempted to roll back or replace a previously authenticated release sequence.</value>
+  </data>
+  <data name="ReleaseDiscoveryTheReleaseIsMissingItsRepositoryBoundManifestOr" xml:space="preserve">
+    <value>The release is missing its repository-bound manifest or signature.</value>
+  </data>
+  <data name="ReleaseDiscoveryTheReleaseServiceCouldNotBeReachedCheckYour" xml:space="preserve">
+    <value>The release service could not be reached. Check your internet connection and try again.</value>
+  </data>
+  <data name="ReleaseDiscoveryTheReleaseTagIsMissing" xml:space="preserve">
+    <value>The release tag is missing.</value>
+  </data>
+  <data name="ReleaseDownloadStoreTheMetadataContainerIsUnsupportedOrOversized" xml:space="preserve">
+    <value>The metadata container is unsupported or oversized.</value>
+  </data>
+  <data name="ReleaseDownloadStoreTheReleaseDownloadFailedItsSignedSizeOrSHA" xml:space="preserve">
+    <value>The release download failed its signed size or SHA-256 check.</value>
+  </data>
+  <data name="ReleaseHttpClientAnArtifactRequestReturnedNoBody" xml:space="preserve">
+    <value>An artifact request returned no body.</value>
+  </data>
+  <data name="ReleaseHttpClientReleaseCheckingIsTemporarilyRateLimited" xml:space="preserve">
+    <value>Release checking is temporarily rate limited.</value>
+  </data>
+  <data name="ReleaseHttpClientTheFixedReleaseAPIMustNotRedirectToAnother" xml:space="preserve">
+    <value>The fixed release API must not redirect to another repository.</value>
+  </data>
+  <data name="ReleaseHttpClientTheReleaseRedirectHasNoDestination" xml:space="preserve">
+    <value>The release redirect has no destination.</value>
+  </data>
+  <data name="ReleaseHttpClientTheReleaseRequestExceededItsRetryOrRedirectBudget" xml:space="preserve">
+    <value>The release request exceeded its retry or redirect budget.</value>
+  </data>
+  <data name="ReleaseHttpClientTheReleaseRequestOrRedirectIsOutsideTheFixed" xml:space="preserve">
+    <value>The release request or redirect is outside the fixed repository and allowed asset hosts.</value>
+  </data>
+  <data name="ReleaseHttpClientTheReleaseResponseExceedsItsSizeLimit" xml:space="preserve">
+    <value>The release response exceeds its size limit.</value>
+  </data>
+  <data name="ReleaseHttpClientTheReleaseURLIsNotACredentialFreePublic" xml:space="preserve">
+    <value>The release URL is not a credential-free public HTTPS address.</value>
+  </data>
+  <data name="ReleaseJsonDuplicateReleaseDocumentPropertiesAreNotAllowed" xml:space="preserve">
+    <value>Duplicate release document properties are not allowed.</value>
+  </data>
+  <data name="ReleaseJsonReleaseDocumentArraysMustNotContainNullEntries" xml:space="preserve">
+    <value>Release document arrays must not contain null entries.</value>
+  </data>
+  <data name="ReleaseJsonTheReleaseDocumentIsEmpty" xml:space="preserve">
+    <value>The release document is empty.</value>
+  </data>
+  <data name="ReleaseJsonTheReleaseDocumentIsEmptyOversizedOrHasAn" xml:space="preserve">
+    <value>The release document is empty, oversized or has an unsupported byte-order mark.</value>
+  </data>
+  <data name="ReleaseMetadataAnEmbeddedDocumentDiffersFromItsSignedIdentity" xml:space="preserve">
+    <value>An embedded document differs from its signed identity.</value>
+  </data>
+  <data name="ReleaseMetadataTheAssetHasNoMetadataContainer" xml:space="preserve">
+    <value>The asset has no metadata container.</value>
+  </data>
+  <data name="ReleaseMetadataTheMetadataContainerDiffersFromItsSignedIdentity" xml:space="preserve">
+    <value>The metadata container differs from its signed identity.</value>
+  </data>
+  <data name="ReleaseMetadataTheMetadataContainerIsUnsupportedAmbiguousOrOversized" xml:space="preserve">
+    <value>The metadata container is unsupported, ambiguous, or oversized.</value>
+  </data>
+  <data name="ReleaseMetadataTheSignedDocumentIsMissingFromItsMetadataContainer" xml:space="preserve">
+    <value>The signed document is missing from its metadata container.</value>
+  </data>
+  <data name="ReleaseProtocolTheHelperAssetNameDoesNotDeclareASupported" xml:space="preserve">
+    <value>The helper asset name does not declare a supported version.</value>
+  </data>
+  <data name="ReleaseProtocolTheReleaseAssetNameIsUnsafe" xml:space="preserve">
+    <value>The release asset name is unsafe.</value>
+  </data>
+  <data name="ReleaseProtocolTheReleaseContainsAnInvalidContentFingerprint" xml:space="preserve">
+    <value>The release contains an invalid content fingerprint.</value>
+  </data>
+  <data name="ReleaseProtocolTheReleaseGameCommitIsInvalid" xml:space="preserve">
+    <value>The release game commit is invalid.</value>
+  </data>
+  <data name="ReleaseProtocolTheReleaseVersionIsNotASupportedStableNumeric" xml:space="preserve">
+    <value>The release version is not a supported stable numeric version.</value>
+  </data>
+  <data name="ReleaseVerifierEachSupportedCommitRequiresOneUnambiguousGameInventory" xml:space="preserve">
+    <value>Each supported commit requires one unambiguous game inventory.</value>
+  </data>
+  <data name="ReleaseVerifierNoTrustedUpdaterSignatureIsAvailableForThisRelease" xml:space="preserve">
+    <value>No trusted updater signature is available for this release.</value>
+  </data>
+  <data name="ReleaseVerifierOnlyReplaceableGameTextFilesMayDeclareASigned" xml:space="preserve">
+    <value>Only replaceable game text files may declare a signed Windows checkout representation.</value>
+  </data>
+  <data name="ReleaseVerifierTheAssetURLSizeOrRoleIsOutsideThe" xml:space="preserve">
+    <value>The asset URL, size or role is outside the signed release contract.</value>
+  </data>
+  <data name="ReleaseVerifierTheBundledUpdaterIsOlderThanTheReleaseS" xml:space="preserve">
+    <value>The bundled updater is older than the release's minimum engine.</value>
+  </data>
+  <data name="ReleaseVerifierTheCompactReleaseRequiresOneMetadataContainerAndAn" xml:space="preserve">
+    <value>The compact release requires one metadata container and an embedded helper.</value>
+  </data>
+  <data name="ReleaseVerifierTheDetachedSignatureDocumentIsUnsupportedOrAmbiguous" xml:space="preserve">
+    <value>The detached signature document is unsupported or ambiguous.</value>
+  </data>
+  <data name="ReleaseVerifierTheFileInventoryRefersToAnUnsupportedGameCommit" xml:space="preserve">
+    <value>The file inventory refers to an unsupported game commit.</value>
+  </data>
+  <data name="ReleaseVerifierTheFileInventorySchemaOrEntryCountIsUnsupported" xml:space="preserve">
+    <value>The file inventory schema or entry count is unsupported.</value>
+  </data>
+  <data name="ReleaseVerifierTheGameInventoryDoesNotMatchItsSignedBaseline" xml:space="preserve">
+    <value>The game inventory does not match its signed baseline reference.</value>
+  </data>
+  <data name="ReleaseVerifierTheInventoryBytesDoNotMatchTheSignedRelease" xml:space="preserve">
+    <value>The inventory bytes do not match the signed release.</value>
+  </data>
+  <data name="ReleaseVerifierTheInventoryContainsAFileDirectoryPrefixCollision" xml:space="preserve">
+    <value>The inventory contains a file/directory prefix collision.</value>
+  </data>
+  <data name="ReleaseVerifierTheInventoryHasDuplicatePathsExcessiveSizeOrInconsistent" xml:space="preserve">
+    <value>The inventory has duplicate paths, excessive size or inconsistent ownership.</value>
+  </data>
+  <data name="ReleaseVerifierTheInventoryIsNotReferencedByThisSignedRelease" xml:space="preserve">
+    <value>The inventory is not referenced by this signed release.</value>
+  </data>
+  <data name="ReleaseVerifierTheIronmonInventoryHasAnUnsupportedScopeOrFlavor" xml:space="preserve">
+    <value>The Ironmon inventory has an unsupported scope or flavor.</value>
+  </data>
+  <data name="ReleaseVerifierTheLegacyInventoryIsNotExplicitlyAuthorizedForThis" xml:space="preserve">
+    <value>The legacy inventory is not explicitly authorized for this version and flavor.</value>
+  </data>
+  <data name="ReleaseVerifierTheLegacyReleaseRequiresOneSeparateHelperArchive" xml:space="preserve">
+    <value>The legacy release requires one separate helper archive.</value>
+  </data>
+  <data name="ReleaseVerifierTheMetadataStorageDiffersFromTheSignedReleaseSchema" xml:space="preserve">
+    <value>The metadata storage differs from the signed release schema.</value>
+  </data>
+  <data name="ReleaseVerifierThePackageInventoryVersionDoesNotMatchTheSigned" xml:space="preserve">
+    <value>The package inventory version does not match the signed tracker and scripts.</value>
+  </data>
+  <data name="ReleaseVerifierThePackageMustContainMatchingTrackerScriptsAndData" xml:space="preserve">
+    <value>The package must contain matching tracker, scripts and data without claiming the updater's local receipt.</value>
+  </data>
+  <data name="ReleaseVerifierTheReleaseAdoptionReferencesAreInvalidOrAmbiguous" xml:space="preserve">
+    <value>The release adoption references are invalid or ambiguous.</value>
+  </data>
+  <data name="ReleaseVerifierTheReleaseAssetListIsIncompleteOrAmbiguous" xml:space="preserve">
+    <value>The release asset list is incomplete or ambiguous.</value>
+  </data>
+  <data name="ReleaseVerifierTheReleaseContainsDuplicateOrMissingRequiredAssetRoles" xml:space="preserve">
+    <value>The release contains duplicate or missing required asset roles.</value>
+  </data>
+  <data name="ReleaseVerifierTheReleaseIdentityVersionChannelOrSchemaIsUnsupported" xml:space="preserve">
+    <value>The release identity, version, channel or schema is unsupported.</value>
+  </data>
+  <data name="ReleaseVerifierTheReleaseLacksAnAuthenticatedEmbeddedHelper" xml:space="preserve">
+    <value>The release lacks an authenticated embedded helper.</value>
+  </data>
+  <data name="ReleaseVerifierTheReleaseMetadataContainerIsUnsupportedOrOversized" xml:space="preserve">
+    <value>The release metadata container is unsupported or oversized.</value>
+  </data>
+  <data name="ReleaseVerifierTheReleaseMustBindBothPackageInventoriesAndIts" xml:space="preserve">
+    <value>The release must bind both package inventories and its release notes.</value>
+  </data>
+  <data name="ReleaseVerifierTheReleaseReferencesAnInvalidLegacyPackageInventory" xml:space="preserve">
+    <value>The release references an invalid legacy package inventory.</value>
+  </data>
+  <data name="ReleaseVerifierTheReleaseSignatureAlgorithmOrKeyIdentifierIsInvalid" xml:space="preserve">
+    <value>The release signature algorithm or key identifier is invalid.</value>
+  </data>
+  <data name="ReleaseVerifierTheReleaseSignatureIsNotCanonicalIEEEP1363Data" xml:space="preserve">
+    <value>The release signature is not canonical IEEE P1363 data.</value>
+  </data>
+  <data name="ReleaseVerifierTheSignedGameCompatibilityPolicyIsInvalid" xml:space="preserve">
+    <value>The signed game compatibility policy is invalid.</value>
+  </data>
+  <data name="ReleaseVerifierTheUpdateManifestHasNoValidSignatureFromAn" xml:space="preserve">
+    <value>The update manifest has no valid signature from an embedded updater key.</value>
+  </data>
+  <data name="ReleaseVerifierUpdaterTrustRequiresDedicatedP256PublicKeys" xml:space="preserve">
+    <value>Updater trust requires dedicated P-256 public keys.</value>
+  </data>
+  <data name="RepositoryPolicyTheApprovedBranchNameIsNotSupported" xml:space="preserve">
+    <value>The approved branch name is not supported.</value>
+  </data>
+  <data name="RepositoryPolicyTheApprovedUpstreamMustBeAPublicHTTPSRepository" xml:space="preserve">
+    <value>The approved upstream must be a public HTTPS repository.</value>
+  </data>
+  <data name="RepositoryPolicyTheRepositoryConfigurationIsAmbiguousOrUnsupported" xml:space="preserve">
+    <value>The repository configuration is ambiguous or unsupported.</value>
+  </data>
+  <data name="RepositoryPolicyTheRepositoryConfigurationIsTooLarge" xml:space="preserve">
+    <value>The repository configuration is too large.</value>
+  </data>
+  <data name="RepositoryPolicyTheRepositoryContainsUnapprovedGitConfiguration" xml:space="preserve">
+    <value>The repository contains unapproved Git configuration.</value>
+  </data>
+  <data name="RepositoryPolicyTheRepositoryHasUnsupportedConfigurationSections" xml:space="preserve">
+    <value>The repository has unsupported configuration sections.</value>
+  </data>
+  <data name="RepositoryPolicyTheRepositoryIsMissingExpectedRemoteOrBranchConfiguration" xml:space="preserve">
+    <value>The repository is missing expected remote or branch configuration.</value>
+  </data>
+  <data name="SetupPreparationAnInterruptedInstallationNeedsRecoveryBeforeSetupCanContinue" xml:space="preserve">
+    <value>An interrupted installation needs recovery before Setup can continue.</value>
+  </data>
+  <data name="SetupPreparationChooseAnInstallationFolderNotADriveRootOr" xml:space="preserve">
+    <value>Choose an installation folder, not a drive root or a file.</value>
+  </data>
+  <data name="SetupPreparationTheInstalledTrackerVersionCouldNotBeIdentifiedRestore" xml:space="preserve">
+    <value>The installed tracker version could not be identified. Restore its original package before installing.</value>
+  </data>
+  <data name="SetupPreparationThisGameFolderDoesNotMatchOneSupportedGame" xml:space="preserve">
+    <value>This game folder does not match one supported game version. Restore the original game files before installing.</value>
+  </data>
+  <data name="SetupPreparationThisIronmonVersionIsAlreadyInstalledWithADifferent" xml:space="preserve">
+    <value>This Ironmon version is already installed with a different game. Use a matching newer release; Setup will not downgrade the game.</value>
+  </data>
+  <data name="SetupPreparationThisReleaseChangesTheGameVersionFinishYourIronmon" xml:space="preserve">
+    <value>This release changes the game version. Finish your Ironmon run before continuing. Closing the game does not finish a run.</value>
+  </data>
+  <data name="SetupPreparationThisReleaseNeedsANewerIronmonSetupDownloadIts" xml:space="preserve">
+    <value>This release needs a newer Ironmon Setup. Download its current installer before making changes.</value>
+  </data>
+  <data name="SetupPreparationThisReleaseRequiresAFinishedIronmonRunFinishYour" xml:space="preserve">
+    <value>This release requires a finished Ironmon run. Finish your current run before continuing.</value>
+  </data>
+  <data name="SetupProgramIronmonSetup" xml:space="preserve">
+    <value>Ironmon Setup</value>
+  </data>
+  <data name="SetupSessionAnInterruptedInstallationNeedsRecoveryItsBackupsHaveBeen" xml:space="preserve">
+    <value>An interrupted installation needs recovery. Its backups have been kept.</value>
+  </data>
+  <data name="SetupSessionCancelledSafelyReviewTheInstallationBeforeTryingAgain" xml:space="preserve">
+    <value>Cancelled safely. Review the installation before trying again.</value>
+  </data>
+  <data name="SetupSessionCheckingTheLatestReleaseAndYourInstallation" xml:space="preserve">
+    <value>Checking the latest release and your installation…</value>
+  </data>
+  <data name="SetupSessionChooseWhereToInstallIronmon" xml:space="preserve">
+    <value>Choose where to install Ironmon.</value>
+  </data>
+  <data name="SetupSessionChooseYourInstallationOptions" xml:space="preserve">
+    <value>Choose your installation options.</value>
+  </data>
+  <data name="SetupSessionClosingTheGameAndTrackerCompleteAnyGameSave" xml:space="preserve">
+    <value>Closing the game and tracker. Complete any game save prompt to continue…</value>
+  </data>
+  <data name="SetupSessionDownloadingAndVerifyingYourInstallation" xml:space="preserve">
+    <value>Downloading and verifying your installation…</value>
+  </data>
+  <data name="SetupSessionFinishYourRunBeforeContinuing" xml:space="preserve">
+    <value>Finish your run before continuing.</value>
+  </data>
+  <data name="SetupSessionInstallationDidNotFinishYourPreviousFilesWereRestored" xml:space="preserve">
+    <value>Installation did not finish. Your previous files were restored or retained for recovery.</value>
+  </data>
+  <data name="SetupSessionInstallingAndVerifyingFiles" xml:space="preserve">
+    <value>Installing and verifying files…</value>
+  </data>
+  <data name="SetupSessionInstallingMicrosoftWebView2WindowsMayAskForPermission" xml:space="preserve">
+    <value>Installing Microsoft WebView2. Windows may ask for permission…</value>
+  </data>
+  <data name="SetupSessionIronmonIsInstalledButTheDesktopShortcutCouldNot" xml:space="preserve">
+    <value>Ironmon is installed, but the desktop shortcut could not be created. </value>
+  </data>
+  <data name="SetupSessionIronmonIsInstalledDownloadingTheOptionalSpriteLibrary" xml:space="preserve">
+    <value>Ironmon is installed. Downloading the optional sprite library…</value>
+  </data>
+  <data name="SetupSessionIronmonIsInstalledOptionalWorkIsIncomplete" xml:space="preserve">
+    <value>Ironmon is installed; optional work is incomplete.</value>
+  </data>
+  <data name="SetupSessionIronmonIsInstalledRemainingOptionalWorkCanContinueIn" xml:space="preserve">
+    <value>Ironmon is installed. Remaining optional work can continue in the tracker.</value>
+  </data>
+  <data name="SetupSessionIronmonIsInstalledSomeSpriteFilesCouldNotBe" xml:space="preserve">
+    <value>Ironmon is installed. Some sprite files could not be downloaded. Retry, or finish and continue in the tracker later.</value>
+  </data>
+  <data name="SetupSessionIronmonIsInstalledTheLastActionNeedsAttention" xml:space="preserve">
+    <value>Ironmon is installed; the last action needs attention.</value>
+  </data>
+  <data name="SetupSessionIronmonIsInstalledYouCanOpenTheTrackerAnd" xml:space="preserve">
+    <value>Ironmon is installed. You can open the tracker and discard Setup.</value>
+  </data>
+  <data name="SetupSessionMicrosoftWebView2CouldNotBeDetectedAfterInstallationRetry" xml:space="preserve">
+    <value>Microsoft WebView2 could not be detected after installation. Retry the prerequisite before continuing.</value>
+  </data>
+  <data name="SetupSessionNoInterruptedInstallationWasSelected" xml:space="preserve">
+    <value>No interrupted installation was selected.</value>
+  </data>
+  <data name="SetupSessionNoSupportedSignedReleaseIsAvailableYetTryAgain" xml:space="preserve">
+    <value>No supported signed release is available yet. Try again later.</value>
+  </data>
+  <data name="SetupSessionRecoveryCompleted" xml:space="preserve">
+    <value>Recovery completed.</value>
+  </data>
+  <data name="SetupSessionRecoveryNeedsAttentionYourBackupsHaveBeenKept" xml:space="preserve">
+    <value>Recovery needs attention. Your backups have been kept.</value>
+  </data>
+  <data name="SetupSessionRestoringYourPreviousFiles" xml:space="preserve">
+    <value>Restoring your previous files…</value>
+  </data>
+  <data name="SetupSessionReviewTheInstallationFolderFirst" xml:space="preserve">
+    <value>Review the installation folder first.</value>
+  </data>
+  <data name="SetupSessionReviewYourInstallationAndOptionsThenChooseInstall" xml:space="preserve">
+    <value>Review your installation and options, then choose Install.</value>
+  </data>
+  <data name="SetupSessionSelectTheMicrosoftWebView2PrerequisiteBeforeInstallingTheTracker" xml:space="preserve">
+    <value>Select the Microsoft WebView2 prerequisite before installing. The tracker needs it to open.</value>
+  </data>
+  <data name="SetupSessionSetupCouldNotCompleteThisStep" xml:space="preserve">
+    <value>Setup could not complete this step.</value>
+  </data>
+  <data name="SetupSessionSetupWillKeepYourInstalledTrackerPackage" xml:space="preserve">
+    <value>Setup will keep your installed tracker package.</value>
+  </data>
+  <data name="SetupSessionYourCoreInstallationIsCurrentYouCanAddThe" xml:space="preserve">
+    <value>Your core installation is current. You can add the optional items below.</value>
+  </data>
+  <data name="SetupSessionYourPreviousFilesWereRestoredReviewTheFolderAgain" xml:space="preserve">
+    <value>Your previous files were restored. Review the folder again to install.</value>
+  </data>
+  <data name="SetupWindow1Location" xml:space="preserve">
+    <value>1  Location</value>
+  </data>
+  <data name="SetupWindow2Options" xml:space="preserve">
+    <value>2  Options</value>
+  </data>
+  <data name="SetupWindow3Install" xml:space="preserve">
+    <value>3  Install</value>
+  </data>
+  <data name="SetupWindow4Ready" xml:space="preserve">
+    <value>4  Ready</value>
+  </data>
+  <data name="SetupWindowBack" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="SetupWindowBackUpAndReplaceThisFile" xml:space="preserve">
+    <value>Back up and replace this file</value>
+  </data>
+  <data name="SetupWindowBrowse" xml:space="preserve">
+    <value>Browse…</value>
+  </data>
+  <data name="SetupWindowCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="SetupWindowCheckAgain" xml:space="preserve">
+    <value>Check again</value>
+  </data>
+  <data name="SetupWindowCheckingYourInstallation" xml:space="preserve">
+    <value>Checking your installation</value>
+  </data>
+  <data name="SetupWindowChooseAnEmptyFolderForANewInstallationOr" xml:space="preserve">
+    <value>Choose an empty folder for a new installation, or select your existing Infinite Fusion folder.</value>
+  </data>
+  <data name="SetupWindowChooseTheInfiniteFusionInstallationFolder" xml:space="preserve">
+    <value>Choose the Infinite Fusion installation folder</value>
+  </data>
+  <data name="SetupWindowChooseYourGameFolder" xml:space="preserve">
+    <value>Choose your game folder</value>
+  </data>
+  <data name="SetupWindowContinue" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="SetupWindowCreateADesktopShortcut" xml:space="preserve">
+    <value>Create a desktop shortcut</value>
+  </data>
+  <data name="SetupWindowDesktopTrackerShortcutNotSelected" xml:space="preserve">
+    <value>Desktop tracker shortcut: not selected.</value>
+  </data>
+  <data name="SetupWindowDesktopTrackerShortcutSelected" xml:space="preserve">
+    <value>Desktop tracker shortcut: selected.</value>
+  </data>
+  <data name="SetupWindowDownloadedFromMicrosoftAfterYouChooseInstallWindowsMay" xml:space="preserve">
+    <value>Downloaded from Microsoft after you choose Install. Windows may ask for permission.</value>
+  </data>
+  <data name="SetupWindowDownloadSpriteSheets" xml:space="preserve">
+    <value>Download sprite sheets</value>
+  </data>
+  <data name="SetupWindowFileOf" xml:space="preserve">
+    <value>File {0} of {1}</value>
+  </data>
+  <data name="SetupWindowFinish" xml:space="preserve">
+    <value>Finish</value>
+  </data>
+  <data name="SetupWindowFinishSetup" xml:space="preserve">
+    <value>Finish setup</value>
+  </data>
+  <data name="SetupWindowFinishYourRunFirst" xml:space="preserve">
+    <value>Finish your run first</value>
+  </data>
+  <data name="SetupWindowForAnExistingGameSelectTheFolderContainingInfiniteFusion2" xml:space="preserve">
+    <value>For an existing game, select the folder containing InfiniteFusion2.exe.</value>
+  </data>
+  <data name="SetupWindowGoBackToOptionsAndSelectTheRequiredMicrosoft" xml:space="preserve">
+    <value>Go back to Options and select the required Microsoft WebView2 installation to continue.</value>
+  </data>
+  <data name="SetupWindowInstall" xml:space="preserve">
+    <value>Install</value>
+  </data>
+  <data name="SetupWindowInstallationFolder" xml:space="preserve">
+    <value>Installation folder</value>
+  </data>
+  <data name="SetupWindowFolderSection" xml:space="preserve">
+    <value>INSTALLATION FOLDER</value>
+  </data>
+  <data name="SetupWindowInstallMicrosoftWebView2RequiredByTheTracker" xml:space="preserve">
+    <value>Install Microsoft WebView2, required by the tracker</value>
+  </data>
+  <data name="SetupWindowIronmonInfiniteFusion" xml:space="preserve">
+    <value>Ironmon {0} · Infinite Fusion {1}</value>
+  </data>
+  <data name="SetupWindowIronmonSetup" xml:space="preserve">
+    <value>Ironmon Setup</value>
+  </data>
+  <data name="SetupWindowBrand" xml:space="preserve">
+    <value>IRONMON  /  SETUP</value>
+  </data>
+  <data name="SetupWindowLargeOptionalDownloadYouCanAlsoDownloadSpritesLater" xml:space="preserve">
+    <value>Large optional download. You can also download sprites later in the tracker.</value>
+  </data>
+  <data name="SetupWindowMakeItYours" xml:space="preserve">
+    <value>Make it yours</value>
+  </data>
+  <data name="SetupWindowMicrosoftWebView2InstallTheRequiredRuntime" xml:space="preserve">
+    <value>Microsoft WebView2: install the required runtime.</value>
+  </data>
+  <data name="SetupWindowMyIronmonRunIsFinished" xml:space="preserve">
+    <value>My Ironmon run is finished</value>
+  </data>
+  <data name="SetupWindowNextFile" xml:space="preserve">
+    <value>Next file</value>
+  </data>
+  <data name="SetupWindowOpenTracker" xml:space="preserve">
+    <value>Open tracker</value>
+  </data>
+  <data name="SetupWindowOptionalSpriteLibraryDownloadLaterInTheTracker" xml:space="preserve">
+    <value>Optional sprite library: download later in the tracker.</value>
+  </data>
+  <data name="SetupWindowOptionalSpriteLibrarySelectedSizeUnknown" xml:space="preserve">
+    <value>Optional sprite library: selected (size unknown).</value>
+  </data>
+  <data name="SetupWindowOptionalWorkIsIncompleteRetryNowOrFinishAnd" xml:space="preserve">
+    <value>Optional work is incomplete. Retry now, or finish and continue the sprite library from the tracker later. Your core installation is already complete.</value>
+  </data>
+  <data name="SetupWindowPreviousFile" xml:space="preserve">
+    <value>Previous file</value>
+  </data>
+  <data name="SetupWindowReadyToInstall" xml:space="preserve">
+    <value>Ready to install</value>
+  </data>
+  <data name="SetupWindowRecommendedNoSeparateNETInstallationNeeded" xml:space="preserve">
+    <value>Recommended. No separate .NET installation needed.</value>
+  </data>
+  <data name="SetupWindowRecoverInstallation" xml:space="preserve">
+    <value>Recover installation</value>
+  </data>
+  <data name="SetupWindowRecoveryRestoresACompleteInstallationFromItsVerifiedBackups" xml:space="preserve">
+    <value>Recovery restores a complete installation from its verified backups. Save your game; recovery will close the game and tracker.</value>
+  </data>
+  <data name="SetupWindowRetryOptionalWork" xml:space="preserve">
+    <value>Retry optional work</value>
+  </data>
+  <data name="SetupWindowReviewChangedFiles" xml:space="preserve">
+    <value>Review changed files</value>
+  </data>
+  <data name="SetupWindowChangedFilesCount" xml:space="preserve">
+    <value>Review changed files ({0})</value>
+  </data>
+  <data name="SetupWindowReviewInstallation" xml:space="preserve">
+    <value>Review installation</value>
+  </data>
+  <data name="SetupWindowRuntimeIncluded" xml:space="preserve">
+    <value>Runtime included</value>
+  </data>
+  <data name="SetupWindowRuntimeRequired" xml:space="preserve">
+    <value>Runtime required</value>
+  </data>
+  <data name="SetupWindowSaveYourGameBeforeInstallingSetupWillCloseThe" xml:space="preserve">
+    <value>Save your game before installing. Setup will close the game and tracker and wait for any game save prompt. Installation continues automatically in this window.</value>
+  </data>
+  <data name="SetupWindowSetupKeepsThePackageUsedByThisInstallation" xml:space="preserve">
+    <value>Setup keeps the package used by this installation.</value>
+  </data>
+  <data name="SetupWindowSheets" xml:space="preserve">
+    <value> {0} / {1} sheets.</value>
+  </data>
+  <data name="SetupWindowSmallerDownloadRequiresTheMatchingNETRuntime" xml:space="preserve">
+    <value>Smaller download. Requires the matching .NET runtime.</value>
+  </data>
+  <data name="SetupWindowTheGameAndItsSupportFilesAreAdditionalTheir" xml:space="preserve">
+    <value> The game and its support files are additional; their transfer size is not known in advance.</value>
+  </data>
+  <data name="SetupWindowTheSuggestedLocationInstallsForYourWindowsAccountWindows" xml:space="preserve">
+    <value>The suggested location installs for your Windows account. Windows may ask for permission if you choose a protected folder.</value>
+  </data>
+  <data name="SetupWindowThisFileDiffersFromTheReleasedVersionSetupWill" xml:space="preserve">
+    <value>This file differs from the released version. Setup will keep a backup before replacing it.</value>
+  </data>
+  <data name="SetupWindowThisFileOrFolderPreventsInstallationMoveItOut" xml:space="preserve">
+    <value>This file or folder prevents installation. Move it out of the way, then return to the installation review and choose Check again.</value>
+  </data>
+  <data name="SetupWindowTrackerAndUpdaterMiB" xml:space="preserve">
+    <value>Tracker and updater: {0} MiB.</value>
+  </data>
+  <data name="SetupWindowTrackerPackage" xml:space="preserve">
+    <value>Tracker package: </value>
+  </data>
+  <data name="SetupWindowPackageSection" xml:space="preserve">
+    <value>TRACKER PACKAGE</value>
+  </data>
+  <data name="SetupWindowUnableToReviewInstallation" xml:space="preserve">
+    <value>Unable to review installation</value>
+  </data>
+  <data name="SetupWindowYouReReadyToPlay" xml:space="preserve">
+    <value>You’re ready to play</value>
+  </data>
+  <data name="SetupWindowYourGameAndIronmonAreInstalledFutureUpdatesAnd" xml:space="preserve">
+    <value>Your game and Ironmon are installed. Future updates and sprite downloads are available in the tracker. You can delete the downloaded Setup after closing this window.</value>
+  </data>
+  <data name="SignedIronmonAuthorityACombinedReleaseMustContainTheEarlyGameStartup" xml:space="preserve">
+    <value>A combined release must contain the early game startup guard.</value>
+  </data>
+  <data name="SignedIronmonAuthorityAFreshInstallationCannotClaimOwnershipFromAPrior" xml:space="preserve">
+    <value>A fresh installation cannot claim ownership from a prior release.</value>
+  </data>
+  <data name="SignedIronmonAuthorityANewGameTransactionMustOriginateFromAnEmpty" xml:space="preserve">
+    <value>A new game transaction must originate from an empty destination.</value>
+  </data>
+  <data name="SignedIronmonAuthorityCombinedGameVerificationIsNotConfiguredInThisUpdater" xml:space="preserve">
+    <value>Combined game verification is not configured in this updater host.</value>
+  </data>
+  <data name="SignedIronmonAuthorityFinishTheActiveRunBeforeChangingItsGameVersion" xml:space="preserve">
+    <value>Finish the active run before changing its game version. Combined updates must select a different approved forward commit.</value>
+  </data>
+  <data name="SignedIronmonAuthorityRepairCannotChangeTheGameOrUseADifferent" xml:space="preserve">
+    <value>Repair cannot change the game or use a different release baseline.</value>
+  </data>
+  <data name="SignedIronmonAuthorityTheInstalledGameDoesNotMatchASupportedSigned" xml:space="preserve">
+    <value>The installed game does not match a supported signed inventory; a combined game update is required.</value>
+  </data>
+  <data name="SignedIronmonAuthorityTheInstalledTrackerScriptsOrDataDoNotMatch" xml:space="preserve">
+    <value>The installed tracker, scripts or data do not match the signed release.</value>
+  </data>
+  <data name="SignedIronmonAuthorityThePreviousSignedReleaseIsNotACompatibleForward" xml:space="preserve">
+    <value>The previous signed release is not a compatible forward-update baseline.</value>
+  </data>
+  <data name="SignedIronmonAuthorityTheRecoveryEvidenceContainsDuplicateInventoryDocuments" xml:space="preserve">
+    <value>The recovery evidence contains duplicate inventory documents.</value>
+  </data>
+  <data name="SignedIronmonAuthorityTheRecoveryEvidenceIsMissingAnAuthenticatedInventory" xml:space="preserve">
+    <value>The recovery evidence is missing an authenticated inventory.</value>
+  </data>
+  <data name="SignedIronmonAuthorityThereIsNoSignedInventoryForThisInstalledLegacy" xml:space="preserve">
+    <value>There is no signed inventory for this installed legacy package.</value>
+  </data>
+  <data name="SignedIronmonAuthorityTheReleaseAuthorizationSchemaIsUnsupported" xml:space="preserve">
+    <value>The release authorization schema is unsupported.</value>
+  </data>
+  <data name="SignedIronmonAuthorityTheReleaseMustDescribeBothDistinctTrackerPackageFlavors" xml:space="preserve">
+    <value>The release must describe both distinct tracker package flavors.</value>
+  </data>
+  <data name="SignedIronmonAuthorityTheTransactionBytesDoNotMatchTheirInterpretedDescription" xml:space="preserve">
+    <value>The transaction bytes do not match their interpreted description.</value>
+  </data>
+  <data name="SignedIronmonAuthorityTheTransactionClaimsFilesOrApprovalsOutsideItsAuthenticated" xml:space="preserve">
+    <value>The transaction claims files or approvals outside its authenticated release evidence.</value>
+  </data>
+  <data name="SignedIronmonAuthorityThisAuthorizationCannotRelocateTheInstallationOrModifyGame" xml:space="preserve">
+    <value>This authorization cannot relocate the installation or modify game Git state.</value>
+  </data>
+  <data name="TrackerRelaunchTheSavedTrackerNavigationDoesNotMatchThisUpdate" xml:space="preserve">
+    <value>The saved tracker navigation does not match this update.</value>
+  </data>
+  <data name="TrackerRelaunchTheTrackerNavigationContextIsTooLarge" xml:space="preserve">
+    <value>The tracker navigation context is too large.</value>
+  </data>
+  <data name="TrackerRelaunchTheUpdateFinishedButTheTrackerCouldNotStart" xml:space="preserve">
+    <value>The update finished, but the tracker could not start. Open it from your usual shortcut.</value>
+  </data>
+  <data name="TrackerRelaunchTheUpdateFinishedOpenTheTrackerNormallyFromYour" xml:space="preserve">
+    <value>The update finished. Open the tracker normally from your shortcut to continue without administrator privileges.</value>
+  </data>
+  <data name="TrackerRuntimeCompatibilityATrackerFrameworkNameIsMissing" xml:space="preserve">
+    <value>A tracker framework name is missing.</value>
+  </data>
+  <data name="TrackerRuntimeCompatibilityTheRuntimeRequiredPackageHasNoUnambiguousFrameworkConfiguration" xml:space="preserve">
+    <value>The runtime-required package has no unambiguous framework configuration.</value>
+  </data>
+  <data name="TrackerRuntimeCompatibilityTheSelfContainedTrackerPackageDoesNotContainIts" xml:space="preserve">
+    <value>The self-contained tracker package does not contain its declared runtime.</value>
+  </data>
+  <data name="TrackerRuntimeCompatibilityTheTrackerDeclaresAnUnsupportedFrameworkSet" xml:space="preserve">
+    <value>The tracker declares an unsupported framework set.</value>
+  </data>
+  <data name="TrackerRuntimeCompatibilityThisTrackerRequiresForWindowsX64InstallThatRuntime" xml:space="preserve">
+    <value>This tracker requires {0} {1} for Windows x64. Install that runtime or choose the self-contained package before updating.</value>
+  </data>
+  <data name="TrackerRuntimeCompatibilityThisTrackerRuntimePolicyRequiresANewerVerifiedInstaller" xml:space="preserve">
+    <value>This tracker runtime policy requires a newer verified installer.</value>
+  </data>
+  <data name="TrackerUpdatePreparationFinishTheActiveRunBeforeUpdatingTheGameConnect" xml:space="preserve">
+    <value>Finish the active run before updating the game. Connect the tracker to the game so it can check the run first.</value>
+  </data>
+  <data name="TrackerUpdatePreparationTheInstalledReleaseRecordDoesNotMatchThisTracker" xml:space="preserve">
+    <value>The installed release record does not match this tracker. Restore the matching tracker package before updating.</value>
+  </data>
+  <data name="TrackerUpdatePreparationTheInstalledReleaseSVerificationRecordCouldNotBe" xml:space="preserve">
+    <value>The installed release's verification record could not be found. Use the release's installer to repair the installation.</value>
+  </data>
+  <data name="TrackerUpdatePreparationTheInstalledReleaseSVerificationRecordNamesAnotherVersion" xml:space="preserve">
+    <value>The installed release's verification record names another version.</value>
+  </data>
+  <data name="TrackerUpdatePreparationTheInstalledReleaseSVerificationRecordsAreMissingUse" xml:space="preserve">
+    <value>The installed release's verification records are missing. Use the release's installer to repair the installation.</value>
+  </data>
+  <data name="TrackerUpdatePreparationTheReleaseNotesExceedTheSupportedSize" xml:space="preserve">
+    <value>The release notes exceed the supported size.</value>
+  </data>
+  <data name="TrackerUpdateSessionARunStartedWhileTheUpdateWasBeingPrepared" xml:space="preserve">
+    <value>A run started while the update was being prepared. Finish the run before updating the game.</value>
+  </data>
+  <data name="TrackerUpdateSessionTheInstallationChangedDuringReviewCheckTheUpdateAgain" xml:space="preserve">
+    <value>The installation changed during review. Check the update again before continuing.</value>
+  </data>
+  <data name="TransactionStorageAStagedOrBackupFileFailedContentVerification" xml:space="preserve">
+    <value>A staged or backup file failed content verification.</value>
+  </data>
+  <data name="TransactionStorageAStagedOrBackupFileHasAnUnexpectedSize" xml:space="preserve">
+    <value>A staged or backup file has an unexpected size.</value>
+  </data>
+  <data name="TransactionStorageDuplicateRecoveryDocumentPropertiesAreNotSupported" xml:space="preserve">
+    <value>Duplicate recovery document properties are not supported.</value>
+  </data>
+  <data name="TransactionStorageGitMetadataChangedAfterPreparation" xml:space="preserve">
+    <value>Git metadata changed after preparation.</value>
+  </data>
+  <data name="TransactionStorageTheCopiedGitMetadataFailedVerification" xml:space="preserve">
+    <value>The copied Git metadata failed verification.</value>
+  </data>
+  <data name="TransactionStorageTheMetadataTreeIsTooLarge" xml:space="preserve">
+    <value>The metadata tree is too large.</value>
+  </data>
+  <data name="TransactionStorageTheRecoveryDocumentExceedsItsSizeLimit" xml:space="preserve">
+    <value>The recovery document exceeds its size limit.</value>
+  </data>
+  <data name="TransactionStorageTheRecoveryDocumentIsEmpty" xml:space="preserve">
+    <value>The recovery document is empty.</value>
+  </data>
+  <data name="TransactionStorageTheTransactionJournalIsDamagedBackupsHaveBeenRetained" xml:space="preserve">
+    <value>The transaction journal is damaged; backups have been retained.</value>
+  </data>
+  <data name="UpdateFilePathTheFileInventoryContainsAnInvalidFingerprint" xml:space="preserve">
+    <value>The file inventory contains an invalid fingerprint.</value>
+  </data>
+  <data name="UpdateFilePathTheFileInventoryContainsAnUnsafeWindowsPath" xml:space="preserve">
+    <value>The file inventory contains an unsafe Windows path.</value>
+  </data>
+  <data name="UpdateProcessIdentityCloseTheInfiniteFusionLauncherAndInstallerBeforeUpdating" xml:space="preserve">
+    <value>Close the Infinite Fusion launcher and installer before updating Ironmon.</value>
+  </data>
+  <data name="UpdateProcessIdentityTheInstallationSGameOrTrackerIsRunningClose" xml:space="preserve">
+    <value>The installation's game or tracker is running. Close it to continue.</value>
+  </data>
+  <data name="UpdateProcessIdentityTheProcessExecutableCouldNotBeInspected" xml:space="preserve">
+    <value>The process executable could not be inspected.</value>
+  </data>
+  <data name="UpdateProcessIdentityTheProcessExitedDuringIdentityInspection" xml:space="preserve">
+    <value>The process exited during identity inspection.</value>
+  </data>
+  <data name="UpdateProcessIdentityTheProcessPathDoesNotMatchTheShutdownHandoff" xml:space="preserve">
+    <value>The process path does not match the shutdown handoff.</value>
+  </data>
+  <data name="UpdateProcessIdentityWaitingForTheGameOrTrackerToCloseSave" xml:space="preserve">
+    <value>Waiting for the game or tracker to close. Save your progress and close it to continue.</value>
+  </data>
+  <data name="UpdaterHandoffAnUnexpectedProcessConnectedToTheUpdaterHandoff" xml:space="preserve">
+    <value>An unexpected process connected to the updater handoff.</value>
+  </data>
+  <data name="UpdaterHandoffOnlyTheTrackerProcessNamedInTheHandoffCan" xml:space="preserve">
+    <value>Only the tracker process named in the handoff can initiate its shutdown.</value>
+  </data>
+  <data name="UpdaterHandoffTheAcknowledgedUpdaterAlreadyExited" xml:space="preserve">
+    <value>The acknowledged updater already exited.</value>
+  </data>
+  <data name="UpdaterHandoffTheAdministratorHandoffBelongsToAnotherTransaction" xml:space="preserve">
+    <value>The administrator handoff belongs to another transaction.</value>
+  </data>
+  <data name="UpdaterHandoffTheGameShutdownTargetIsOutsideThisInstallation" xml:space="preserve">
+    <value>The game shutdown target is outside this installation.</value>
+  </data>
+  <data name="UpdaterHandoffTheHandoffTrackerDoesNotOwnTheConnectedPipe" xml:space="preserve">
+    <value>The handoff tracker does not own the connected pipe.</value>
+  </data>
+  <data name="UpdaterHandoffTheIndependentHelperFailedAuthenticatedContentVerification" xml:space="preserve">
+    <value>The independent helper failed authenticated content verification.</value>
+  </data>
+  <data name="UpdaterHandoffTheIndependentUpdaterCouldNotStart" xml:space="preserve">
+    <value>The independent updater could not start.</value>
+  </data>
+  <data name="UpdaterHandoffTheTrackerExitedBeforeTheHelperAcknowledgedReadiness" xml:space="preserve">
+    <value>The tracker exited before the helper acknowledged readiness.</value>
+  </data>
+  <data name="UpdaterHandoffTheTrackerHandoffContextIsInvalidOrTooLarge" xml:space="preserve">
+    <value>The tracker handoff context is invalid or too large.</value>
+  </data>
+  <data name="UpdaterHandoffTheUpdaterHandoffIsTooLarge" xml:space="preserve">
+    <value>The updater handoff is too large.</value>
+  </data>
+  <data name="UpdaterHandoffTheUpdaterHandoffLengthIsInvalid" xml:space="preserve">
+    <value>The updater handoff length is invalid.</value>
+  </data>
+  <data name="UpdaterHandoffTheUpdaterHandoffPipeNameIsInvalid" xml:space="preserve">
+    <value>The updater handoff pipe name is invalid.</value>
+  </data>
+  <data name="UpdaterHandoffTheUpdaterHandoffSignalIsInvalid" xml:space="preserve">
+    <value>The updater handoff signal is invalid.</value>
+  </data>
+  <data name="UpdaterTrustEmbeddedUpdaterTrustIsMissing" xml:space="preserve">
+    <value>Embedded updater trust is missing.</value>
+  </data>
+  <data name="UpdaterTrustUpdaterTrustContainsInvalidKeyIdentifiers" xml:space="preserve">
+    <value>Updater trust contains invalid key identifiers.</value>
+  </data>
+  <data name="UpdaterWindowCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="UpdaterWindowCancellationNeedsAttentionYourRecoveryCopiesHaveBeenKept" xml:space="preserve">
+    <value>Cancellation needs attention. Your recovery copies have been kept. Open the tracker from your usual shortcut. </value>
+  </data>
+  <data name="UpdaterWindowCancellingSafelyPleaseWaitWhileAnyChangedFilesAre" xml:space="preserve">
+    <value>Cancelling safely. Please wait while any changed files are restored…</value>
+  </data>
+  <data name="UpdaterWindowCheckingTheInterruptedUpdateAndItsRecoveryBackup" xml:space="preserve">
+    <value>Checking the interrupted update and its recovery backup…</value>
+  </data>
+  <data name="UpdaterWindowClose" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="UpdaterWindowClosingTheTrackerAndWaitingForTheGameTo" xml:space="preserve">
+    <value>Closing the tracker and waiting for the game to finish saving…</value>
+  </data>
+  <data name="UpdaterWindowInstallingTheUpdateAndVerifyingFiles" xml:space="preserve">
+    <value>Installing the update and verifying files…</value>
+  </data>
+  <data name="UpdaterWindowIronmonUpdate" xml:space="preserve">
+    <value>Ironmon update</value>
+  </data>
+  <data name="UpdaterWindowPreparingIndependentRecovery" xml:space="preserve">
+    <value>Preparing independent recovery…</value>
+  </data>
+  <data name="UpdaterWindowRecoveryNeedsAttentionYourBackupsHaveBeenKept" xml:space="preserve">
+    <value>Recovery needs attention. Your backups have been kept. </value>
+  </data>
+  <data name="UpdaterWindowRecoveryWasCancelledBeforeRestorationYourBackupsHaveBeen" xml:space="preserve">
+    <value>Recovery was cancelled before restoration. Your backups have been kept. Reopen the tracker to resume recovery.</value>
+  </data>
+  <data name="UpdaterWindowRestoringThePreviousInstallation" xml:space="preserve">
+    <value>Restoring the previous installation…</value>
+  </data>
+  <data name="UpdaterWindowRetryRecovery" xml:space="preserve">
+    <value>Retry recovery</value>
+  </data>
+  <data name="UpdaterWindowStartThisHelperFromTheTrackerOrUseThe" xml:space="preserve">
+    <value>Start this helper from the tracker, or use the recovery command for the affected installation and transaction.</value>
+  </data>
+  <data name="UpdaterWindowThePreviousInstallationHasBeenRestored" xml:space="preserve">
+    <value>The previous installation has been restored. </value>
+  </data>
+  <data name="UpdaterWindowTheUpdateFinishedSuccessfully" xml:space="preserve">
+    <value>The update finished successfully.</value>
+  </data>
+  <data name="UpdaterWindowTheUpdateWasCancelledYourInstalledGameAndTracker" xml:space="preserve">
+    <value>The update was cancelled. Your installed game and tracker have not been replaced.</value>
+  </data>
+  <data name="UpdateTransactionADestinationChangedImmediatelyBeforeItsPlannedMutation" xml:space="preserve">
+    <value>A destination changed immediately before its planned mutation.</value>
+  </data>
+  <data name="UpdateTransactionAManagedFileChangedOutsideTheTransactionItsBackup" xml:space="preserve">
+    <value>A managed file changed outside the transaction; its backup has been retained.</value>
+  </data>
+  <data name="UpdateTransactionAManagedFileIsUnexpectedlyADirectoryDuringRecovery" xml:space="preserve">
+    <value>A managed file is unexpectedly a directory during recovery.</value>
+  </data>
+  <data name="UpdateTransactionANewDirectoryWasReplacedWithAnUnexpectedFile" xml:space="preserve">
+    <value>A new directory was replaced with an unexpected file during recovery.</value>
+  </data>
+  <data name="UpdateTransactionAPlannedNewDirectoryIsUnexpectedlyOccupied" xml:space="preserve">
+    <value>A planned new directory is unexpectedly occupied.</value>
+  </data>
+  <data name="UpdateTransactionARecoveryBackupFailedVerification" xml:space="preserve">
+    <value>A recovery backup failed verification.</value>
+  </data>
+  <data name="UpdateTransactionARemovedDirectoryIsUnexpectedlyOccupiedDuringRecovery" xml:space="preserve">
+    <value>A removed directory is unexpectedly occupied during recovery.</value>
+  </data>
+  <data name="UpdateTransactionAReplacementPayloadFailedVerification" xml:space="preserve">
+    <value>A replacement payload failed verification.</value>
+  </data>
+  <data name="UpdateTransactionGitMetadataChangedOutsideTheTransactionRecoveryRequiresAttention" xml:space="preserve">
+    <value>Git metadata changed outside the transaction; recovery requires attention.</value>
+  </data>
+  <data name="UpdateTransactionGitMetadataIsUnexpectedlyAFile" xml:space="preserve">
+    <value>Git metadata is unexpectedly a file.</value>
+  </data>
+  <data name="UpdateTransactionGitMetadataNoLongerMatchesTheReviewedState" xml:space="preserve">
+    <value>Git metadata no longer matches the reviewed state.</value>
+  </data>
+  <data name="UpdateTransactionInstallationFilesChangedSinceReviewApplicationOrRecoveryCannot" xml:space="preserve">
+    <value>Installation files changed since review; application or recovery cannot safely continue.</value>
+  </data>
+  <data name="UpdateTransactionTheActiveTransactionDoesNotMatchItsDescriptor" xml:space="preserve">
+    <value>The active transaction does not match its descriptor.</value>
+  </data>
+  <data name="UpdateTransactionTheFinalInstallationDoesNotMatchTheCompleteReviewed" xml:space="preserve">
+    <value>The final installation does not match the complete reviewed result.</value>
+  </data>
+  <data name="UpdateTransactionTheGitRollbackBackupFailedVerification" xml:space="preserve">
+    <value>The Git rollback backup failed verification.</value>
+  </data>
+  <data name="UpdateTransactionTheInstallationIdentityChangedAfterReview" xml:space="preserve">
+    <value>The installation identity changed after review.</value>
+  </data>
+  <data name="UpdateTransactionThePendingUpdateRecordIsInvalid" xml:space="preserve">
+    <value>The pending update record is invalid.</value>
+  </data>
+  <data name="UpdateTransactionThePendingUpdateRecordIsTooLarge" xml:space="preserve">
+    <value>The pending update record is too large.</value>
+  </data>
+  <data name="UpdateTransactionThePreparedGitTreeFailedVerification" xml:space="preserve">
+    <value>The prepared Git tree failed verification.</value>
+  </data>
+  <data name="UpdateTransactionThereIsInsufficientFreeSpaceToUpdateAndRetain" xml:space="preserve">
+    <value>There is insufficient free space to update and retain a complete recovery backup.</value>
+  </data>
+  <data name="UpdateTransactionTheSavedInstallationIdentityDoesNotMatchThisDirectory" xml:space="preserve">
+    <value>The saved installation identity does not match this directory.</value>
+  </data>
+  <data name="UpdateTransactionTheTransactionDirectoryIdentityDoesNotMatchItsDescriptor" xml:space="preserve">
+    <value>The transaction directory identity does not match its descriptor.</value>
+  </data>
+  <data name="UpdateTransactionTheTransactionJournalHasUnsupportedOrInconsistentProgress" xml:space="preserve">
+    <value>The transaction journal has unsupported or inconsistent progress.</value>
+  </data>
+  <data name="UpdateTransactionTheUnfinishedTransactionRequiresRecoveryBeforeAnotherUpdateCan" xml:space="preserve">
+    <value>The unfinished transaction requires recovery before another update can start.</value>
+  </data>
+  <data name="UpdateTransactionThisRecoveryEngineInstallationPathOrDirectoryIdentityDoes" xml:space="preserve">
+    <value>This recovery engine, installation path or directory identity does not match the transaction.</value>
+  </data>
+  <data name="UpdateTransactionThisTransactionIdentifierAlreadyHasRecoveryData" xml:space="preserve">
+    <value>This transaction identifier already has recovery data.</value>
+  </data>
+  <data name="UpdateTransactionThisTransactionMustUseRecoveryRatherThanReplayingApplication" xml:space="preserve">
+    <value>This transaction must use recovery rather than replaying application.</value>
+  </data>
+  <data name="UpdateTransactionThisUpdateHasAlreadyStartedReplacingFilesAndRequires" xml:space="preserve">
+    <value>This update has already started replacing files and requires independent recovery.</value>
+  </data>
+  <data name="WindowsSetupPlatformADifferentIronmonTrackerShortcutAlreadyExistsOnThe" xml:space="preserve">
+    <value>A different Ironmon Tracker shortcut already exists on the desktop. It was left unchanged.</value>
+  </data>
+  <data name="WindowsSetupPlatformFinishRecoveryAndInstallMicrosoftWebView2BeforeOpeningThe" xml:space="preserve">
+    <value>Finish recovery and install Microsoft WebView2 before opening the tracker.</value>
+  </data>
+  <data name="WindowsSetupPlatformIronmonSetupRequiresWindows10Version1809OrNewer" xml:space="preserve">
+    <value>Ironmon Setup requires Windows 10 version 1809 or newer on x64 Windows.</value>
+  </data>
+  <data name="WindowsSetupPlatformMicrosoftSDownloadRedirectIsIncomplete" xml:space="preserve">
+    <value>Microsoft's download redirect is incomplete.</value>
+  </data>
+  <data name="WindowsSetupPlatformMicrosoftWebView2CouldNotBeDetectedAfterInstallationComplete" xml:space="preserve">
+    <value>Microsoft WebView2 could not be detected after installation. Complete any Windows prompt and retry.</value>
+  </data>
+  <data name="WindowsSetupPlatformOpenTheIronmonTracker" xml:space="preserve">
+    <value>Open the Ironmon tracker</value>
+  </data>
+  <data name="WindowsSetupPlatformTheInstalledTrackerCouldNotBeFoundForIts" xml:space="preserve">
+    <value>The installed tracker could not be found for its shortcut.</value>
+  </data>
+  <data name="WindowsSetupPlatformTheInstalledTrackerCouldNotBeOpened" xml:space="preserve">
+    <value>The installed tracker could not be opened.</value>
+  </data>
+  <data name="WindowsSetupPlatformThePrerequisiteBootstrapperExceedsTheSupportedSize" xml:space="preserve">
+    <value>The prerequisite bootstrapper exceeds the supported size.</value>
+  </data>
+  <data name="WindowsSetupPlatformThePrerequisiteDidNotHaveAValidMicrosoftCorporation" xml:space="preserve">
+    <value>The prerequisite did not have a valid Microsoft Corporation signature. It was not run.</value>
+  </data>
+  <data name="WindowsSetupPlatformThePrerequisiteDownloadDidNotRemainOnMicrosoftS" xml:space="preserve">
+    <value>The prerequisite download did not remain on Microsoft's secure download service.</value>
+  </data>
+  <data name="WindowsSetupPlatformWindowsCouldNotStartTheMicrosoftPrerequisiteInstaller" xml:space="preserve">
+    <value>Windows could not start the Microsoft prerequisite installer.</value>
+  </data>
+  <data name="WindowsSetupPlatformWindowsCouldNotVerifyThePrerequisitePublisher" xml:space="preserve">
+    <value>Windows could not verify the prerequisite publisher.</value>
+  </data>
+  <data name="WindowsSetupPlatformWindowsShortcutSupportIsUnavailable" xml:space="preserve">
+    <value>Windows shortcut support is unavailable.</value>
+  </data>
+  <data name="WindowsUpdateAccessAdministratorPermissionWasDeclinedTheInstallationWasNotReplaced" xml:space="preserve">
+    <value>Administrator permission was declined. The installation was not replaced.</value>
+  </data>
+  <data name="WindowsUpdateAccessIronmonTracker" xml:space="preserve">
+    <value>Ironmon Tracker</value>
+  </data>
+  <data name="WindowsUpdateAccessTheInstallationHasNoExistingParentDirectory" xml:space="preserve">
+    <value>The installation has no existing parent directory.</value>
+  </data>
+  <data name="WindowsUpdateAccessTheInstallationHelperNeedsAdministratorPermission" xml:space="preserve">
+    <value>The installation helper needs administrator permission.</value>
+  </data>
+  <data name="WindowsUpdateAccessTheInstallationPathCouldNotBeHeldStable" xml:space="preserve">
+    <value>The installation path could not be held stable.</value>
+  </data>
+  <data name="WindowsUpdateAccessTheProtectedUpdaterCacheAllowsOrdinaryUserModification" xml:space="preserve">
+    <value>The protected updater cache allows ordinary-user modification.</value>
+  </data>
+  <data name="WindowsUpdateAccessTheProtectedUpdaterCacheHasAnUnexpectedOwner" xml:space="preserve">
+    <value>The protected updater cache has an unexpected owner.</value>
+  </data>
+  <data name="WindowsUpdateAccessTheUpdaterFileCannotBeReadWithTheCurrent" xml:space="preserve">
+    <value>The updater file cannot be read with the current permissions.</value>
+  </data>
+  <data name="WindowsUpdateAccessTheUpdaterFileCouldNotBeFound" xml:space="preserve">
+    <value>The updater file could not be found.</value>
+  </data>
+  <data name="WindowsUpdateAccessTheUpdaterFileCouldNotBeOpenedSafely" xml:space="preserve">
+    <value>The updater file could not be opened safely.</value>
+  </data>
+  <data name="WindowsUpdateAccessWindowsDidNotStartTheAdministratorHelper" xml:space="preserve">
+    <value>Windows did not start the administrator helper.</value>
+  </data>
+  <data name="ZipAdoptionPreparationTheZIPInstallationChangedAfterPreparationPrepareItAgain" xml:space="preserve">
+    <value>The ZIP installation changed after preparation; prepare it again before updating.</value>
+  </data>
+  <data name="ZipGameAdopterAdoptionRequiresExactCommitObjectsNotTagsOrOther" xml:space="preserve">
+    <value>Adoption requires exact commit objects, not tags or other object types.</value>
+  </data>
+  <data name="ZipGameAdopterAnExactLowercaseGitObjectIDIsRequired" xml:space="preserve">
+    <value>An exact lowercase Git object ID is required.</value>
+  </data>
+  <data name="ZipGameAdopterGitCouldNotVerifyOrPrepareZIPAdoption" xml:space="preserve">
+    <value>Git could not verify or prepare ZIP adoption.</value>
+  </data>
+  <data name="ZipGameAdopterTheApprovedGameTreeContainsUnsupportedEntries" xml:space="preserve">
+    <value>The approved game tree contains unsupported entries.</value>
+  </data>
+  <data name="ZipGameAdopterTheBaselineContainsAnInvalidByteFingerprint" xml:space="preserve">
+    <value>The baseline contains an invalid byte fingerprint.</value>
+  </data>
+  <data name="ZipGameAdopterTheBaselineInventoryContainsDuplicatePathsOrUnsupportedFile" xml:space="preserve">
+    <value>The baseline inventory contains duplicate paths or unsupported file modes.</value>
+  </data>
+  <data name="ZipGameAdopterTheBaselineInventoryHasAnUnsupportedFileCount" xml:space="preserve">
+    <value>The baseline inventory has an unsupported file count.</value>
+  </data>
+  <data name="ZipGameAdopterTheBaselineInventoryMustAuthenticateTheExecutableAndGame" xml:space="preserve">
+    <value>The baseline inventory must authenticate the executable and game INI.</value>
+  </data>
+  <data name="ZipGameAdopterTheGameDoesNotMatchOneUnambiguousApprovedZIP" xml:space="preserve">
+    <value>The game does not match one unambiguous approved ZIP baseline. Modified or mixed installations require a separate supported inventory.</value>
+  </data>
+  <data name="ZipGameAdopterTheGameInventoryRequiresAnUnsupportedMetadataOrAttribute" xml:space="preserve">
+    <value>The game inventory requires an unsupported metadata or attribute policy.</value>
+  </data>
+  <data name="ZipGameAdopterTheGameTreeHasAFileThatAlsoServes" xml:space="preserve">
+    <value>The game tree has a file that also serves as a directory on Windows.</value>
+  </data>
+  <data name="ZipGameAdopterTheGameTreeHasPathsThatCollideOnWindows" xml:space="preserve">
+    <value>The game tree has paths that collide on Windows.</value>
+  </data>
+  <data name="ZipGameAdopterTheHistoricalInventoryDoesNotCoverTheCompleteApproved" xml:space="preserve">
+    <value>The historical inventory does not cover the complete approved Git tree.</value>
+  </data>
+  <data name="ZipGameAdopterZIPAdoptionRequiresCacheAndPreparationDirectoriesOutsideThe" xml:space="preserve">
+    <value>ZIP adoption requires cache and preparation directories outside the installation.</value>
+  </data>
+  <data name="ProgressPreparingDownload" xml:space="preserve">
+    <value>Preparing the game download…</value>
+  </data>
+  <data name="ProgressDownloadingGame" xml:space="preserve">
+    <value>Downloading the game</value>
+  </data>
+  <data name="ProgressProcessingGame" xml:space="preserve">
+    <value>Processing the game download</value>
+  </data>
+  <data name="ProgressVerifyingGame" xml:space="preserve">
+    <value>Verifying the game revision…</value>
+  </data>
+  <data name="ProgressPreparingGame" xml:space="preserve">
+    <value>Preparing the downloaded game…</value>
+  </data>
+  <data name="ProgressExtractingFiles" xml:space="preserve">
+    <value>Extracting and verifying files</value>
+  </data>
+  <data name="ProgressPreparingRecovery" xml:space="preserve">
+    <value>Preparing installation and recovery files</value>
+  </data>
+  <data name="ProgressVerifyingFiles" xml:space="preserve">
+    <value>Verifying installation files</value>
+  </data>
+  <data name="ProgressInstallingFiles" xml:space="preserve">
+    <value>Installing files</value>
+  </data>
+  <data name="ProgressRestoringFiles" xml:space="preserve">
+    <value>Restoring the previous installation</value>
+  </data>
+  <data name="ProgressDownloadingSprites" xml:space="preserve">
+    <value>Downloading sprite sheets</value>
+  </data>
+  <data name="ProgressDownloadingPackage" xml:space="preserve">
+    <value>Downloading the Ironmon package</value>
+  </data>
+  <data name="ProgressCounts" xml:space="preserve">
+    <value> — {0:N0} / {1:N0}</value>
+  </data>
+  <data name="ProgressReceived" xml:space="preserve">
+    <value> — {0:N1} MiB received</value>
+  </data>
+  <data name="ProgressPackageBytes" xml:space="preserve">
+    <value> — {0:N1} / {1:N1} MiB</value>
+  </data>
+  <data name="ProgressElapsed" xml:space="preserve">
+    <value>Elapsed: {0:N1} min · Last progress: {1:N0}s ago</value>
+  </data>
+  <data name="ProgressProcessed" xml:space="preserve">
+    <value> — {0:N0} completed</value>
+  </data>
+  <data name="ProgressInvalidResponse" xml:space="preserve">
+    <value>The administrator helper returned an invalid progress response.</value>
+  </data>
+  <data name="ProgressInstallationInProgress" xml:space="preserve">
+    <value>Installing Ironmon</value>
+  </data>
+</root>

@@ -167,6 +167,7 @@ public partial class AreaLookupExplorer : IDisposable
     /// <returns>A task representing summary loading.</returns>
     protected override async Task OnParametersSetAsync()
     {
+        UpdateNavigation?.Register(UpdateNavigationKey, CaptureUpdateNavigation);
         AreaContentCategory desiredCategory = FixedCategory ?? _selectedCategory;
         bool sourceChanged = _observedSourceKey != SourceKey;
         bool categoryChanged = desiredCategory != _selectedCategory;
@@ -196,6 +197,7 @@ public partial class AreaLookupExplorer : IDisposable
         _expandedEnvironments.Clear();
         _loadingDetails.Clear();
         await LoadSummariesAsync(true);
+        await RestoreUpdateNavigationAsync();
     }
 
     /// <summary>
@@ -682,6 +684,7 @@ public partial class AreaLookupExplorer : IDisposable
     /// </summary>
     public void Dispose()
     {
+        UpdateNavigation?.Unregister(UpdateNavigationKey);
         Discoveries.Changed -= HandleDiscoveryChanged;
         AccessService.Changed -= HandleDiagnosticAccessChanged;
         _summaryRequests.Dispose();

@@ -5,6 +5,7 @@ docs/ROADMAP.md
 tracker/.vs/
 tracker/**/bin/
 tracker/**/obj/
+tracker/**/TestResults/
 dist/
 dist-runtime-required/
 release/

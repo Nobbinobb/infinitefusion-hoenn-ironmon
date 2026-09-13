@@ -50,6 +50,7 @@ public partial class DiagnosticToolsPage : IDisposable
     /// </summary>
     protected override void OnInitialized()
     {
+        InitializeUpdateNavigation();
         AccessService.Changed += HandleAvailabilityChanged;
         ConnectionState.Changed += HandleAvailabilityChanged;
     }
@@ -92,6 +93,7 @@ public partial class DiagnosticToolsPage : IDisposable
     /// </summary>
     public void Dispose()
     {
+        UpdateNavigation?.Unregister(UpdateNavigationKey);
         AccessService.Changed -= HandleAvailabilityChanged;
         ConnectionState.Changed -= HandleAvailabilityChanged;
     }

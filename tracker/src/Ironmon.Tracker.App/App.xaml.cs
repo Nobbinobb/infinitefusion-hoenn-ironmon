@@ -17,7 +17,8 @@ public partial class App : Application
     /// <param name="shortcutService">The foreground-safe global shortcut service.</param>
     /// <param name="text">The localized tracker text.</param>
     /// <param name="windowService">The native tracker-window coordinator.</param>
-    public App(TrackerConnectionService connectionService, TrackerGlobalShortcutService shortcutService, IStringLocalizer<TrackerResources> text, TrackerWindowService windowService)
+    /// <param name="compatibility">The background installation revalidation service.</param>
+    public App(TrackerConnectionService connectionService, TrackerGlobalShortcutService shortcutService, IStringLocalizer<TrackerResources> text, TrackerWindowService windowService, TrackerInstallationCompatibility compatibility)
     {
         ArgumentNullException.ThrowIfNull(connectionService);
         ArgumentNullException.ThrowIfNull(shortcutService);
@@ -27,6 +28,7 @@ public partial class App : Application
         _shortcutService = shortcutService;
         _text = text;
         _windowService = windowService;
+        _ = compatibility.Inspection;
         InitializeComponent();
         _connectionService.Start();
         _shortcutService.Start();

@@ -1,3 +1,5 @@
+using Ironmon.SpriteLibrary;
+
 namespace Ironmon.Tracker.Tests.Connection;
 
 /// <summary>

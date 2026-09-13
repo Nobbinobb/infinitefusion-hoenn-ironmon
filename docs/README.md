@@ -13,6 +13,10 @@ also suitable for saving as PDF.
 ## Guides
 
 - [Installation](guides/INSTALLATION.md): install, update, and remove Ironmon.
+- [Updater release production](guides/UPDATER_RELEASES.md): package contracts,
+  generated history and protected signing.
+- [Updater acceptance and recovery](guides/UPDATER_ACCEPTANCE.md): repeatable
+  local and clean-Windows checks, evidence boundaries and independent recovery.
 - [Configuration](guides/CONFIGURATION.md): run settings and reset behavior.
 - [Development and diagnostic access](guides/DEVELOPMENT.md): tracker builds,
   runtime validation, and capability-limited diagnostic access.

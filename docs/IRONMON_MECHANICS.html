@@ -1634,6 +1634,7 @@ footer { padding:2rem 9% 4rem; color:var(--muted); font-size:.88rem; }
 <li><code>tools/Build-Distribution.ps1</code> validates the manifest and generates the flat Ruby layout in both the distribution and the local game installation.</li>
 </ul>
 <p>Canonical source paths do not control runtime order. The manifest is the single load-order definition, and the build rejects missing, duplicated, unlisted, unsafe, or out-of-order entries. Generated files retain numeric prefixes because Infinite Fusion evaluates the flat files in <code>Data/Scripts/997_Ironmon</code> as Ruby.</p>
+<p>Updater-enabled packages add an early <code>Data/Scripts/000_Ironmon_Guard.rb</code> bootstrap. Before the game enters the Ironmon script folder, it checks pending recovery, the installed Git revision when available, and release-generated fingerprints of executable game code and data. A mismatch skips all Ironmon hooks and rejects Ironmon saves before the ordinary reader can convert and resave them. It does not modify or reset saves; ordinary non-Ironmon saves still use the base loader. Artwork, audio and the game's independently downloaded <code>DownloadedSettings.rb</code> are outside this startup fingerprint check. Future upstream loader changes require renewed validation.</p>
 <h3 id="architecture-source-responsibilities">Source responsibilities</h3>
 <ol>
 <li><code>foundation/</code>: constants, compatibility, deterministic hashing, generator metadata, and centralized runtime dispatch.</li>

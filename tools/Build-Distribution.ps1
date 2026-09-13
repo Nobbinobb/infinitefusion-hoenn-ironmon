@@ -1,8 +1,31 @@
+<#
+.SYNOPSIS
+Builds canonical runtime scripts and player data for the selected game installation.
+
+.PARAMETER GameRoot
+The existing game directory. Defaults to the normal local installation;
+acceptance checks supply an owned copy.
+
+.PARAMETER DistributionRoot
+Optional isolated distribution output below ignored data. Defaults to the normal dist folder.
+
+.PARAMETER ReuseGeneratedAssets
+Use presentation assets already verified by the release generation cache.
+Standalone builds regenerate these assets by default.
+#>
+param([string]$GameRoot, [string]$DistributionRoot, [switch]$ReuseGeneratedAssets)
+
 $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$gameRoot = Split-Path -Parent $projectRoot
 . (Join-Path $PSScriptRoot "generation\GameRuntime-Tooling.ps1")
+if (-not $GameRoot) { $GameRoot = Split-Path -Parent $projectRoot }
+$gameRoot = [IO.Path]::GetFullPath($GameRoot)
+if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'InfiniteFusion2.exe') -PathType Leaf)) { throw 'The selected game directory has no InfiniteFusion2.exe.' }
+if ($DistributionRoot) {
+    $DistributionRoot = [IO.Path]::GetFullPath($DistributionRoot)
+    Assert-PathWithinDirectory -Path $DistributionRoot -Directory (Join-Path $projectRoot 'data')
+} else { $DistributionRoot = Join-Path $projectRoot 'dist' }
 Restore-IronmonGameRuntimeArchive -GameRoot $gameRoot | Out-Null
 $sourceRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot "src"))
 $sourceManifest = Join-Path $sourceRoot "load_order.json"
@@ -16,10 +39,9 @@ $movePowerPresentationCatalog = Join-Path $projectRoot "data\move_power_presenta
 $defensePresentationCatalog = Join-Path $projectRoot "data\defense_presentation.json"
 $fusionPredecessorIndex = Join-Path $projectRoot "data\fusion_predecessor_index.dat"
 $battleMoveColorSource = Join-Path $projectRoot "data\graphics\Battle"
-$distribution = Join-Path $projectRoot "dist\Data\Scripts\997_Ironmon"
-$distributionData = Join-Path $projectRoot "dist\Data\Ironmon"
+$distribution = Join-Path $DistributionRoot "Data\Scripts\997_Ironmon"
+$distributionData = Join-Path $DistributionRoot "Data\Ironmon"
 $distributionBattleGraphics = Join-Path $distributionData "graphics\Battle"
-$distributionRoot = Join-Path $projectRoot "dist"
 $distributionReadme = Join-Path $projectRoot "packaging\README.md"
 $installationGuide = Join-Path $projectRoot "docs\guides\INSTALLATION.md"
 [xml]$trackerVersionDocument = Get-Content -LiteralPath (Join-Path $projectRoot 'tracker/src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj') -Raw
@@ -43,14 +65,24 @@ $installationProfileStore = Join-Path $installationData "generation_profiles"
 $distributionProfileDirectory = Join-Path $distributionProfileStore $generationProfileId
 $installationProfileDirectory = Join-Path $installationProfileStore $generationProfileId
 
-& (Join-Path $PSScriptRoot "generation\Generate-Move-Power-Presentation.ps1") `
-    -OutputPath $movePowerPresentationCatalog
+if ($ReuseGeneratedAssets) {
+    foreach ($asset in @($movePowerPresentationCatalog, $defensePresentationCatalog,
+        (Join-Path $battleMoveColorSource 'cursor_fight.png'),
+        (Join-Path $battleMoveColorSource 'cursor_fight_dark.png'))) {
+        if (-not (Test-Path -LiteralPath $asset -PathType Leaf) -or (Get-Item -LiteralPath $asset).Length -eq 0) {
+            throw "Prepared presentation asset is missing or empty: '$asset'."
+        }
+    }
+} else {
+    & (Join-Path $PSScriptRoot "generation\Generate-Move-Power-Presentation.ps1") `
+        -OutputPath $movePowerPresentationCatalog
+    & (Join-Path $PSScriptRoot "generation\Generate-Battle-Move-Type-Colors.ps1") `
+        -GameRoot $gameRoot `
+        -OutputDirectory $battleMoveColorSource
+}
 if (-not (Test-Path -LiteralPath $defensePresentationCatalog)) {
     & (Join-Path $PSScriptRoot "generation\Generate-Defense-Presentation.ps1") -GameRoot $gameRoot -OutputPath $defensePresentationCatalog
 }
-& (Join-Path $PSScriptRoot "generation\Generate-Battle-Move-Type-Colors.ps1") `
-    -GameRoot $gameRoot `
-    -OutputDirectory $battleMoveColorSource
 
 $manifestDocument = Get-Content -LiteralPath $sourceManifest -Raw |
     ConvertFrom-Json
@@ -108,6 +140,7 @@ $scripts = foreach ($entry in $manifest) {
         Source = $sourcePath
         Output = $outputName
         Hash = (Get-FileHash -LiteralPath $sourcePath).Hash
+        Bootstrap = ($entry.bootstrap -eq $true)
     }
 }
 
@@ -131,6 +164,8 @@ for ($index = 0; $index -lt $scripts.Count; $index++) {
         throw "Ruby manifest entries must follow ordinal runtime load order."
     }
 }
+
+& (Join-Path $PSScriptRoot 'generation/Generate-Game-Compatibility.ps1')
 
 New-Item -ItemType Directory -Force -Path $distribution | Out-Null
 New-Item -ItemType Directory -Force -Path $distributionData | Out-Null
@@ -161,6 +196,7 @@ Get-ChildItem -LiteralPath $installation -Filter "*.rb" | Remove-Item -Force
 Remove-Item -LiteralPath (Join-Path $distributionData "area_catalog.json") -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath (Join-Path $installationData "area_catalog.json") -Force -ErrorAction SilentlyContinue
 foreach ($script in $scripts) {
+    if ($script.Bootstrap) { continue }
     Copy-Item -LiteralPath $script.Source -Destination (
         Join-Path $distribution $script.Output
     )
@@ -175,10 +211,11 @@ foreach ($runtimeRoot in $distribution, $installation) {
         })
     $runtimeRuby = @(Get-ChildItem -LiteralPath $runtimeRoot -File `
         -Filter "*.rb")
-    if ($nestedRuby.Count -gt 0 -or $runtimeRuby.Count -ne $scripts.Count) {
+    if ($nestedRuby.Count -gt 0 -or $runtimeRuby.Count -ne @($scripts | Where-Object { !$_.Bootstrap }).Count) {
         throw "Generated Ironmon runtime scripts must be complete and flat."
     }
     foreach ($script in $scripts) {
+        if ($script.Bootstrap) { continue }
         $runtimePath = Join-Path $runtimeRoot $script.Output
         if ($script.Hash -ne (Get-FileHash -LiteralPath $runtimePath).Hash) {
             throw "Generated runtime Ruby differs from '$($script.Source)'."
@@ -239,5 +276,17 @@ Copy-Item -LiteralPath $releaseNotes -Destination (Join-Path $distributionRoot "
 Copy-Item -LiteralPath $projectLicense -Destination (Join-Path $distributionRoot "LICENSE")
 Copy-Item -LiteralPath $thirdPartyNotices -Destination (Join-Path $distributionRoot "THIRD_PARTY_NOTICES.md")
 Copy-Item -LiteralPath $openSansLicense -Destination (Join-Path $distributionRoot "OPEN-SANS-LICENSE.txt")
+
+
+$bootstrap = @($scripts | Where-Object { $_.Bootstrap })
+if ($bootstrap.Count -ne 1 -or $bootstrap[0].Output -cne '000_Ironmon_Guard.rb') { throw 'The fixed early bootstrap is required.' }
+foreach ($scriptsRoot in (Split-Path -Parent $distribution), (Split-Path -Parent $installation)) {
+    $bootstrapPath = Join-Path $scriptsRoot $bootstrap[0].Output
+    Copy-Item -LiteralPath $bootstrap[0].Source -Destination $bootstrapPath -Force
+    if ((Get-FileHash -LiteralPath $bootstrapPath).Hash -cne $bootstrap[0].Hash) { throw "The early bootstrap was not copied exactly." }
+}
+foreach ($dataRoot in $distributionData, $installationData) {
+    Copy-Item -LiteralPath (Join-Path $projectRoot 'data/updater/game-compatibility.json') -Destination (Join-Path $dataRoot 'game-compatibility.json') -Force
+}
 
 Write-Output "Ironmon source and data copied to the distribution and local game."

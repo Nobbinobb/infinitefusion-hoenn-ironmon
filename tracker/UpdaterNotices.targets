@@ -1,0 +1,15 @@
+<Project>
+  <Target Name="EmbedUpdaterRuntimeNotices" BeforeTargets="AssignTargetPaths" DependsOnTargets="ResolveFrameworkReferences" Condition="'$(SelfContained)' == 'true'">
+    <ItemGroup>
+      <_UpdaterRuntimeNotice Include="%(ResolvedRuntimePack.PackageDirectory)/LICENSE*;%(ResolvedRuntimePack.PackageDirectory)/THIRD-PARTY-NOTICES.TXT">
+        <PackName>%(ResolvedRuntimePack.Identity)</PackName>
+      </_UpdaterRuntimeNotice>
+      <_UpdaterRuntimeNotice Remove="@(_UpdaterRuntimeNotice)" Condition="!Exists('%(_UpdaterRuntimeNotice.Identity)')" />
+      <EmbeddedResource Include="@(_UpdaterRuntimeNotice)">
+        <LogicalName>Ironmon.RuntimeNotices.%(_UpdaterRuntimeNotice.PackName).%(_UpdaterRuntimeNotice.Filename)%(_UpdaterRuntimeNotice.Extension)</LogicalName>
+        <WithCulture>false</WithCulture>
+      </EmbeddedResource>
+    </ItemGroup>
+    <Error Condition="'@(_UpdaterRuntimeNotice)' == ''" Text="The self-contained updater requires the resolved runtime pack licenses and notices." />
+  </Target>
+</Project>

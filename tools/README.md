@@ -1,15 +1,26 @@
 # Ironmon tools
 
+Updater and Setup packaging, generated metadata, historical adoption inventories,
+and protected signing are documented in
+[Updater release production](../docs/guides/UPDATER_RELEASES.md).
+
 ## Main commands
 
 - `Build-Distribution.ps1` synchronizes canonical Ruby scripts and runtime data
   into the local game and the ignored player-distribution staging directory.
+  Pass `-GameRoot <owned-game-copy>` to target an acceptance installation and
+  `-DistributionRoot <repository>/data/updater/acceptance/dist` to isolate its
+  distribution output. The alternate output must stay below ignored `data`.
 - `Build-TrackerRelease.ps1` runs tracker and bundled-runtime tests, regenerates
   release data, publishes both tracker deployment variants, validates both
   player packages, and creates their release archives and checksums. Versioned
   release artifacts are immutable: the command fails before doing any work when
   either archive or checksum already exists, so the tracker project version must
   be bumped deliberately before another release.
+  Hosted workflows pass `-GenerationCacheDirectory` to reuse catalogs whose
+  generator sources and resolved upstream inputs match exactly. The default
+  local command still generates fresh data. Cache reuse verifies all generated
+  file hashes and never skips tests or package validation.
 - `Publish-Tracker.ps1` publishes the self-contained tracker application by
   default. Pass `-DeploymentMode RuntimeRequired` for the smaller package
   that requires the Windows x64 .NET 10 Runtime.
@@ -17,6 +28,22 @@
   including deterministic seeded-run import, against synchronized scripts. Pass
   `-BenchmarkFusionPredecessors` to run the isolated and sequential reverse
   evolution lookup benchmark in addition to the regression suite.
+  Its `-GameRoot` also controls the preceding distribution build. This option
+  alone does not isolate every test's Windows user-data access; use the dedicated
+  updater guard fixture for save-isolated updater checks.
+- `Test-UpdaterBootGuard.ps1 -GameRoot <synchronized-game-copy>` copies the
+  selected bundled runtime into an owned fixture and isolates its save directory
+  before loading game scripts. It tests compatibility and interrupted-update
+  blocking, including byte-identical Ironmon saves and ordinary save reads.
+- `Test-UpdaterGameStartup.ps1 -GameRoot <synchronized-game-copy>` requires an
+  owned copy below ignored `data`; it verifies installed canonical hashes, the
+  full game compatibility inventory and Ironmon/game-catalog script loading with
+  isolated saves. It retains local evidence without navigating the title screen.
+
+The [updater acceptance checklist](../docs/guides/UPDATER_ACCEPTANCE.md) records
+automated coverage and the remaining native/clean-Windows checks. Put acceptance
+reports under `data/updater/acceptance`; generated `tracker/**/TestResults` are
+also ignored and must not be committed.
 
 ## Generation helpers
 
@@ -24,6 +51,28 @@
 and the shared game-runtime and modular-script loading helpers. They are
 implementation details of the release pipeline but remain directly runnable for
 focused dataset regeneration.
+
+`Generate-Game-Adoption-Inventory.ps1` reads the exact Hoenn revision selected
+for the release and writes the ZIP-recognition inventory and checksum manifest under ignored
+`data/updater/baselines/`. `Build-TrackerRelease.ps1`, including `-GenerateOnly`,
+generates and verifies these inputs with the other release data. The hosted catalog
+and release workflows already check out the resolved newest game revision;
+generation uses that checkout without resolving a different upstream revision.
+Commit identity, file count and checksum are generated together, with no manual
+version pins. The shared catalog artifact includes both outputs. Ordinary IDE and .NET builds
+only embed the existing files and never trigger generation or Git operations.
+
+`Test-GameAdoptionInventory.ps1` runs automatically in the full release gate and
+ordinary CI validation; generation-only preparation does not repeat those tests.
+
+Release and CI orchestration pass `-SkipBuild` to runtime test helpers after
+preparing the distribution. Direct helper commands still prepare it by default.
+The exact-input generation cache also contains move-power presentation and
+battle color sheets. Only after verifying that cache does the release script use
+`Build-Distribution.ps1 -ReuseGeneratedAssets`; scripts and package metadata are
+still assembled from current source.
+It checks two isolated Git revisions, explicit commit selection, refreshed metadata,
+shallow CI checkouts, Unicode paths, CRLF alternatives and preservation of local modifications.
 
 `Generate-Fusion-Predecessor-Index.ps1` produces the compact release-stable
 superset used by reverse fusion evolution lookups. It indexes structural stage
@@ -160,3 +209,31 @@ to `0` when only forward randomization statistics are needed.
 The runtime timeout scales automatically with the requested seed and sample
 counts, up to 24 hours. Pass `-TimeoutSeconds` to replace the automatic budget
 when a slower machine or an especially deep run needs more time.
+
+
+## Updater startup protection
+
+`Test-Updater.ps1` provisions the pinned private Git test archive and runs the
+updater and native Setup suites in disposable folders. Use `-Offline` after the
+archive and dependencies are available; `-IncludeNetwork` additionally checks the
+production network boundaries. Process fixtures run with test collections
+serialized. Setup checks render the actual native controls into ignored test
+output and test shortcut collisions in fixture directories, without changing the
+player's desktop or installing Windows prerequisites.
+
+`generation/Generate-Game-Compatibility.ps1` reduces the existing authenticated
+Hoenn baseline to executable game code and data for the early game guard.
+`Build-Distribution.ps1` invokes it during packaging, using the release workflow's
+already selected commit. Generated outputs stay under ignored `data/updater/`;
+ordinary IDE builds do not run this generator.
+
+`Test-UpdaterBootGuard.ps1` copies the bundled runtime and game scripts into a
+short, disposable `ironmon-guard` fixture under the system temporary directory,
+including runtime libraries and the software renderer provisioned by hosted CI.
+It isolates the save directory before
+loading game code and tests compatibility, early folder interception and save
+protection. Keeping the fixture outside the checkout avoids the bundled runtime's
+startup path limits in deeply nested working folders. It never runs or changes
+the installed game. The release gate and tracker CI invoke it after the existing
+gameplay suite. Run Build-Distribution
+before invoking it separately so the copied bootstrap matches canonical source.

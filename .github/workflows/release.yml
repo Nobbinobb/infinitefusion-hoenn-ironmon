@@ -95,10 +95,20 @@ jobs:
         with:
           name: release-candidate
           path: candidate
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: 10.0.400
+      - name: Build trusted metadata validator before exposing the signing secret
+        shell: pwsh
+        run: |
+          dotnet publish automation/tracker/tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj -c Release -p:UpdaterMetadataOnly=true -p:UseSharedCompilation=false -o (Join-Path $env:RUNNER_TEMP 'release-tools')
+          if ($LASTEXITCODE -ne 0) { throw 'Trusted release tools failed to build.' }
       - name: Publish verified bytes, or automatically rebuild if upstream changed
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          IRONMON_UPDATER_SIGNING_KEY: ${{ secrets.IRONMON_UPDATER_SIGNING_KEY }}
+          IRONMON_UPDATER_SIGNING_KEY_ID: ${{ vars.IRONMON_UPDATER_SIGNING_KEY_ID }}
           SOURCE_COMMIT: ${{ needs.plan.outputs.source_commit }}
           REFRESH_ATTEMPT: ${{ inputs.refresh_attempt || '0' }}
-        run: ./automation/tools/ci/Publish-Release.ps1 -SourceCommit $env:SOURCE_COMMIT -RefreshAttempt ([int]$env:REFRESH_ATTEMPT)
+        run: ./automation/tools/ci/Publish-Release.ps1 -SourceCommit $env:SOURCE_COMMIT -RefreshAttempt ([int]$env:REFRESH_ATTEMPT) -UpdateTool (Join-Path $env:RUNNER_TEMP 'release-tools/Ironmon.ReleaseTool.dll')

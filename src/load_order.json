@@ -1,4 +1,5 @@
 [
+  { "source": "compatibility/Boot_Guard.rb", "output": "000_Ironmon_Guard.rb", "bootstrap": true },
   { "source": "foundation/Core.rb", "output": "001_Core.rb" },
   { "source": "compatibility/Custom_Fusion_Component.rb", "output": "001_Custom_Fusion_Component.rb" },
   { "source": "foundation/Deterministic_Hashing.rb", "output": "001_Deterministic_Hashing.rb" },

@@ -2068,4 +2068,154 @@
   <data name="Lookup.Trainer.MovesRestricted" xml:space="preserve"><value>Moves require Diagnostic Tools access.</value></data>
   <data name="Lookup.Trainer.LookupRestricted" xml:space="preserve"><value>Pokémon lookup · access required</value></data>
   <data name="Lookup.Trainer.Back" xml:space="preserve"><value>Back to trainers</value></data>
+  <data name="Updates.Updates" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="Updates.Available" xml:space="preserve">
+    <value>Update available</value>
+  </data>
+  <data name="Updates.RecoveryLink" xml:space="preserve">
+    <value>Update needs recovery</value>
+  </data>
+  <data name="Updates.Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="Updates.Title" xml:space="preserve">
+    <value>An update is ready</value>
+  </data>
+  <data name="Updates.CheckTitle" xml:space="preserve">
+    <value>Ironmon updates</value>
+  </data>
+  <data name="Updates.VersionChange" xml:space="preserve">
+    <value>Ironmon {0} → {1}</value>
+  </data>
+  <data name="Updates.RecoveryTitle" xml:space="preserve">
+    <value>Finish an interrupted update</value>
+  </data>
+  <data name="Updates.RecoveryDescription" xml:space="preserve">
+    <value>An earlier update did not finish. Recovery checks the saved backup and restores a complete installation before you continue.</value>
+  </data>
+  <data name="Updates.Combined" xml:space="preserve">
+    <value>This release also updates Infinite Fusion to {0}. Finish any active run before updating the game.</value>
+  </data>
+  <data name="Updates.FirstPreparation" xml:space="preserve">
+    <value>This first update also prepares your game for future updates. It can take a little longer. No additional tools or setup are needed.</value>
+  </data>
+  <data name="Updates.WhatsNew" xml:space="preserve">
+    <value>What’s new</value>
+  </data>
+  <data name="Updates.PackageSize" xml:space="preserve">
+    <value>Tracker and updater: {0} MiB.</value>
+  </data>
+  <data name="Updates.ExtraGameSize" xml:space="preserve">
+    <value>The game download is additional; its size is not known yet.</value>
+  </data>
+  <data name="Updates.Conflicts" xml:space="preserve">
+    <value>Review changed files</value>
+  </data>
+  <data name="Updates.ConflictDescription" xml:space="preserve">
+    <value>These files differ from the installed release. Select each replacement you approve. The updater keeps a recovery copy before replacing them.</value>
+  </data>
+  <data name="Updates.Replace" xml:space="preserve">
+    <value>Back up and replace</value>
+  </data>
+  <data name="Updates.StructuralConflict" xml:space="preserve">
+    <value>This file or folder cannot be replaced automatically. Resolve the obstruction, then check again.</value>
+  </data>
+  <data name="Updates.CloseWarning" xml:space="preserve">
+    <value>Save your game before choosing Update. Windows may request administrator permission for a protected folder. The updater will close the game and tracker, finish in its own window, and reopen the tracker. If the game asks you to save, complete that prompt to continue.</value>
+  </data>
+  <data name="Updates.RecoveryCloseWarning" xml:space="preserve">
+    <value>Save your game before choosing Recover. Windows may request administrator permission for a protected folder. Recovery will close the game and tracker, restore a complete installation in its own window, and reopen the tracker. If the game asks you to save, complete that prompt to continue.</value>
+  </data>
+  <data name="Updates.Error" xml:space="preserve">
+    <value>The update needs attention</value>
+  </data>
+  <data name="Updates.UpToDate" xml:space="preserve">
+    <value>You have the latest available Ironmon release.</value>
+  </data>
+  <data name="Updates.Downloading" xml:space="preserve">
+    <value>Downloading a verified release package</value>
+  </data>
+  <data name="Updates.DownloadBytes" xml:space="preserve">
+    <value>{0} of {1} MiB downloaded</value>
+  </data>
+  <data name="Updates.RetryAt" xml:space="preserve">
+    <value>Try checking again after {0}.</value>
+  </data>
+  <data name="Updates.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Updates.CheckAgain" xml:space="preserve">
+    <value>Check for updates</value>
+  </data>
+  <data name="Updates.Recover" xml:space="preserve">
+    <value>Recover</value>
+  </data>
+  <data name="Updates.Update" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="Updates.Phase.Checking" xml:space="preserve">
+    <value>Checking for an update…</value>
+  </data>
+  <data name="Updates.Phase.Reviewing" xml:space="preserve">
+    <value>Checking release details and your installed files…</value>
+  </data>
+  <data name="Updates.Phase.Preparing" xml:space="preserve">
+    <value>Downloading the update, checking files and preparing your recovery backup…</value>
+  </data>
+  <data name="Updates.Phase.Handoff" xml:space="preserve">
+    <value>Opening the independent updater. The tracker will close after it is ready…</value>
+  </data>
+  <data name="Updates.Phase.Cancelled" xml:space="preserve">
+    <value>Cancelled. Your installed game and tracker have not been replaced.</value>
+  </data>
+  <data name="Updates.Phase.Ready" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="Updates.PromptTitle" xml:space="preserve">
+    <value>Update available</value>
+  </data>
+  <data name="Updates.PromptDescription" xml:space="preserve">
+    <value>A new Ironmon release is ready. Review what’s changed and update when you’re ready.</value>
+  </data>
+  <data name="Updates.Later" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="Updates.BackSettings" xml:space="preserve">
+    <value>Back to Settings</value>
+  </data>
+  <data name="Updates.CurrentTitle" xml:space="preserve">
+    <value>You’re up to date</value>
+  </data>
+  <data name="Updates.Installed" xml:space="preserve">
+    <value>Installed versions</value>
+  </data>
+  <data name="Updates.TrackerLabel" xml:space="preserve">
+    <value>Ironmon tracker</value>
+  </data>
+  <data name="Updates.GameLabel" xml:space="preserve">
+    <value>Infinite Fusion</value>
+  </data>
+  <data name="Updates.UnknownVersion" xml:space="preserve">
+    <value>Not available</value>
+  </data>
+  <data name="Updates.CheckedAt" xml:space="preserve">
+    <value>Last checked {0}</value>
+  </data>
+  <data name="Updates.CheckUnavailable" xml:space="preserve">
+    <value>Couldn’t check for updates</value>
+  </data>
+  <data name="Updates.CheckAgainShort" xml:space="preserve">
+    <value>Check again</value>
+  </data>
+  <data name="Updates.InstalledLabel" xml:space="preserve">
+    <value>Installed</value>
+  </data>
+  <data name="Updates.AvailableLabel" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="Updates.ReviewRecovery" xml:space="preserve">
+    <value>Review recovery</value>
+  </data>
 </root>

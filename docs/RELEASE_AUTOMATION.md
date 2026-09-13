@@ -8,7 +8,7 @@ Develop through PRs to `main`. Every opening, update, reopening and ready-for-re
 
 For a release, prepare a PR that increases `Ironmon::VERSION` in `src/foundation/Core.rb`, `ApplicationDisplayVersion` and `Version` in the tracker app project, and its numeric `ApplicationVersion`. Add `docs/releases/RELEASE_NOTES_<version>.md` headed `# Ironmon <version>`, and update example package names in `packaging/README.md` and `docs/guides/INSTALLATION.md`. The distribution builder automatically selects the notes matching the project version, and archive validation checks their content. Branch names and labels do not control publication; the reviewed version increase does. An agent can prepare these source changes locally without generating or committing binary data.
 
-The release PR automatically produces both Windows player packages, checksums, `candidate.json`, and `release-evidence.zip`. Review its notes, full test results and fusion-pool membership comparison before merging. Release notes and versions are validated together. Ordinary PRs still receive the `Release readiness` check, which validates metadata without building packages.
+The release PR automatically produces both Windows player packages, the installer, updater metadata, checksums, `candidate.json`, and `release-evidence.zip` in its Actions artifacts. Review its notes, full test results and fusion-pool membership comparison before merging. Release notes and versions are validated together. Ordinary PRs still receive the `Release readiness` check, which validates metadata without building packages.
 
 Merging a version increase starts publication. If the reviewed candidate's source tree and upstream fingerprint match the approved merge and current inputs, its bytes are reused. Otherwise, the approved source is regenerated, fully retested and packaged. This includes expired candidates, changed game/sprite inputs, and merge methods that produce a different tree. A failed build publishes nothing.
 
@@ -16,17 +16,27 @@ Immediately before publication, the publisher resolves upstream inputs again. A 
 
 Uploads first go to a draft release. All seven remote asset sizes and SHA-256 digests are verified before it becomes public. Rerunning publication accepts identical existing assets and never overwrites a published artifact or tag. A partial draft can be resumed if its assets match. A failed or conflicting draft remains inspectable.
 
+The seven uploaded files are the two Ironmon ZIPs, the installer, `update-manifest.json`, `update-manifest.sig.json`, `update-data.json`, and one `SHA256SUMS.txt`. GitHub additionally displays its automatic source ZIP and tar archive. Build evidence and individual checksum sidecars stay in Actions artifacts. The helper comes from the selected player package; all current and historical inventories share the metadata file, so later releases do not grow the public asset list.
+
 ## Validation and fresh inputs
 
 `Tracker CI` downloads the newest commit on the upstream Hoenn `releases` branch, using an immutable commit only for that run. It obtains the current settings, custom sprite list and base sprite list from one resolved `pif-downloadables` commit, plus current online credits. Destination paths, content formats, file lengths and SHA-256 hashes are checked before installation. Refresh failure never falls back to bundled lists. Each generator starts a new game process and sprite cache.
 
-All generated catalogs come from the tested source and this input snapshot. Previous release data is used only for the membership audit, never as a generation cache. The full runtime and generation-profile suites, defense tests and encounter/fusion probe run on ordinary PRs, followed by serialized core tracker tests and Windows app tests. Release candidates run the full existing `Build-TrackerRelease.ps1` gate and both package builds.
+`Tracker CI` owns both PR paths. Ordinary PRs run the runtime and generation-profile suites, defense tests, encounter/fusion probe, core tracker tests and Windows app tests. Release PRs run the full `Build-TrackerRelease.ps1` gate and package builds instead of repeating those suites in a second workflow. `PR validation` and `Release readiness` both require the selected path to succeed.
+
+Generated catalogs and audits use an exact-input cache. Its identity includes the upstream game commit and downloaded metadata fingerprint, canonical Ruby source, generator and sprite tooling, resources, distribution/generation scripts and defense rules. The displayed Ironmon release version is excluded because these gameplay components have their own schema versions; packages and versioned ownership metadata are always rebuilt. Tracker-only and test-only edits reuse the same generated data. Generator, gameplay, sprite, settings or game changes invalidate it. No fallback prefix keys are used.
+
+Only an explicit list of generated data files is cached. A manifest checks every path, size and SHA-256 before any file is restored. Generated catalogs are saved before later tests or packaging, so a failure there does not discard expensive successful generation. Tests, executables, release history and signing material are not cached. A reused release candidate carries a separate generation artifact bound by its manifest hash; after verifying it against the approved candidate and current inputs, the main build seeds the cache for later PRs. A missing cache regenerates data; a corrupt or mismatched cache fails visibly.
+
+The cached data includes move-power presentation and battle move color sheets. Distribution assembly still copies current scripts, documentation and version metadata, but uses these verified assets without regenerating them. Runtime test helpers receive `-SkipBuild` after preparation; running a helper directly still prepares its distribution by default. The area extraction inside runtime validation remains because it also checks installed scripts and executes area-progress regressions.
+
+Only the explicitly bounded generation recipe in the release script enters the cache identity; changes to its test or publication orchestration do not invalidate catalogs. Generated game inventories and restored history are validated before the full release tests begin. Game inventories retain protected upstream files as evidence of the complete commit, without authorizing their replacement or requiring the player's copies to remain unchanged.
 
 The `Check upstream updates` workflow resolves inputs every six hours and reruns current open same-repository PR checks when the fingerprint changes or their snapshot expires. It does not build on unchanged inputs. The scheduler reads downloaded manifests as data and never executes PR source with write permissions. Scheduling is best effort; GitHub can delay scheduled jobs. New PR iterations and every publication independently resolve current inputs.
 
 GitHub only permits rerunning workflows for 30 days after the original run. If a dormant PR exceeds that window and needs refreshed validation, the watcher fails with the affected PR identified; a branch update starts a new run. Fork PRs retain GitHub's contributor approval flow and are not automatically rerun by the privileged scheduler. Maintainers can approve/rerun them, and merged release source always receives the fresh production gate. [Rerun limits](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs), [fork approval](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/approve-runs-from-forks).
 
-Input snapshots and release candidates are retained for seven days; tracker-only catalogs for one day; failure diagnostics for three days. A rerun replaces same-run artifacts so scheduled refresh does not fail on an existing artifact name. Published evidence contains the game revision, metadata URLs/hashes, generation profile, audits, test reports, and complete added/removed fusion identities. Upstream may legitimately remove entries: reductions are exposed for review, not silently discarded or forced to be monotonic.
+Input snapshots and release candidates are retained for seven days; tracker-only catalogs for one day; failure diagnostics for three days. A rerun replaces same-run artifacts so scheduled refresh does not fail on an existing artifact name. Actions evidence contains the game revision, metadata URLs/hashes, generation profile, audits, test reports, and complete added/removed fusion identities. The release notes link to the verified workflow and retain the approved source and upstream fingerprints. Upstream may legitimately remove entries: reductions are exposed for review, not silently discarded or forced to be monotonic.
 
 ## Active repository settings
 
@@ -51,6 +61,8 @@ The public-transition audit inspected Git history, historic ZIPs, release downlo
 
 ## Costs and iteration planning
 
+The measurements and estimates below describe the earlier separate CI and candidate workflows, before test consolidation and generated-data caching. They are historical comparisons, not timings or cost forecasts for the current workflow.
+
 As verified on 2026-09-06, standard Windows runners cost $0.010 per actual minute and standard Linux runners $0.006 above included usage. Standard hosted execution is free for public repositories. Larger runners and storage have separate billing. [Runner pricing](https://docs.github.com/en/billing/reference/actions-runner-pricing), [Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
 
 The new hosted rehearsal measured **22 rounded Windows minutes** for PR validation (12 generation/gameplay, 3 core tests, 7 Windows app tests), plus two Linux minutes. Including the ordinary release-metadata/readiness jobs adds two Linux minutes: **$0.244 per ordinary PR iteration**. The full release candidate used another 20 Windows minutes and one input-resolution Linux minute, making a release PR iteration **$0.450**. These are rounded job-duration measurements from the first passing runs, not an invoice or a guarantee of future duration. Account allowance/storage figures in the handoff are a prior authenticated snapshot, not a fresh billing check.
@@ -72,7 +84,7 @@ The testing policy should remain intact. If public release is already intended a
 
 ## Recovery
 
-- Failed PR checks: fix the source; the next update regenerates and retests current inputs.
+- Failed PR checks: fix the source; the next update retests current inputs and reuses generated data when its exact dependencies still match.
 - Expired or changed candidate at merge: handled automatically by a full rebuild.
 - Failed post-merge gate or temporary network error: rerun the failed workflow, or dispatch `Publish release` on main with the approved 40-character source commit and refresh attempt `0`.
 - Upstream changes during the build: automatic full-gate retry, bounded to three refreshes; repeated changes leave a failure for inspection.

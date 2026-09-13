@@ -107,6 +107,8 @@ public partial class PokemonLookupCard
 
         if (speciesChanged && !_sections.ContainsKey(_selectedPage))
             await LoadSectionAsync(_selectedPage);
+
+        await RestoreUpdateNavigationAsync();
     }
 
     /// <summary>

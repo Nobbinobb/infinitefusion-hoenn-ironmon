@@ -84,6 +84,9 @@ public partial class DebugInspector : IDisposable
     /// <returns>A task representing any inspection refresh required by new parameters.</returns>
     protected override async Task OnParametersSetAsync()
     {
+        if (await RestoreUpdateNavigationAsync())
+            return;
+
         if (!_targetInitialized)
         {
             _selectedTarget = GetFirstAvailableTarget();
@@ -515,6 +518,7 @@ public partial class DebugInspector : IDisposable
     /// </summary>
     public void Dispose()
     {
+        UpdateNavigation?.Unregister(UpdateNavigationKey);
         AccessService.Changed -= HandleAuthorizationChanged;
         ConnectionState.Changed -= HandleAuthorizationChanged;
         _inspectionCancellation?.Cancel();

@@ -37,19 +37,32 @@ module IronmonDifficultyScalingRuntimeTests
   end
 
   def self.with_terminal_fusion_pool_fixture
-    original = Ironmon.instance_variable_get(:@custom_fusion_pool_service)
+    singleton = class << Ironmon; self; end
+    singleton.send(
+      :alias_method, :difficulty_scaling_test_original_pool_service,
+      :custom_fusion_pool_service
+    )
     terminal = Ironmon.fully_evolved_normal_species_pool.first(2).map do |species|
       GameData::Species.get(species).id_number
     end
     fusion = :"B#{terminal[0]}H#{terminal[1]}"
     service = Object.new
     service.define_singleton_method(:pool) { [fusion].freeze }
-    Ironmon.instance_variable_set(:@custom_fusion_pool_service, service)
+    service.define_singleton_method(:include_identity?) do |identity|
+      identity.to_s == fusion.to_s
+    end
+    singleton.send(:define_method, :custom_fusion_pool_service) { service }
     Ironmon.instance_variable_set(:@fully_evolved_custom_fusion_pool, nil)
     Ironmon.instance_variable_set(:@fully_evolved_custom_fusion_index, nil)
+    assert(Ironmon.custom_fusion_pool == [fusion],
+           "terminal-pool tests use the bounded fixture in profile mode")
     return yield
   ensure
-    Ironmon.instance_variable_set(:@custom_fusion_pool_service, original)
+    if singleton && singleton.method_defined?(:difficulty_scaling_test_original_pool_service)
+      singleton.send(:alias_method, :custom_fusion_pool_service,
+                     :difficulty_scaling_test_original_pool_service)
+      singleton.send(:remove_method, :difficulty_scaling_test_original_pool_service)
+    end
     Ironmon.instance_variable_set(:@fully_evolved_custom_fusion_pool, nil)
     Ironmon.instance_variable_set(:@fully_evolved_custom_fusion_index, nil)
   end

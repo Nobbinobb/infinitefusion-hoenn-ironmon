@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Ironmon.Updater.Core/Ironmon.Updater.Core.csproj" />
+    <InternalsVisibleTo Include="Ironmon.Setup.Tests" />
+    <InternalsVisibleTo Include="Ironmon.SpriteLibrary" />
+    <InternalsVisibleTo Include="Ironmon.Updater.Tests" />
+    <InternalsVisibleTo Include="Ironmon.Tracker.App.Tests" />
+    <InternalsVisibleTo Include="Ironmon.Updater.CrashHost" />
+    <InternalsVisibleTo Include="Ironmon.ReleaseTool" />
+    <EmbeddedResource Include="../../../resources/updater/trusted-keys.json" LogicalName="Ironmon.Updater.Infrastructure.TrustedKeys.json" />
+    <EmbeddedResource Include="../../../THIRD_PARTY_NOTICES.md" LogicalName="Ironmon.Updater.Infrastructure.ThirdPartyNotices.md" />
+    <EmbeddedResource Condition="'$(UpdaterMetadataOnly)' != 'true'" Include="../../../data/updater/baselines/hoenn.json.gz" LogicalName="Ironmon.Updater.Infrastructure.Baselines.hoenn.json.gz" />
+    <EmbeddedResource Condition="'$(UpdaterMetadataOnly)' != 'true'" Include="../../../data/updater/baselines/hoenn.manifest.json" LogicalName="Ironmon.Updater.Infrastructure.Baselines.hoenn.manifest.json" />
+  </ItemGroup>
+</Project>

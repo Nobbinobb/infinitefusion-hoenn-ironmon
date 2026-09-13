@@ -1,9 +1,17 @@
+<#
+.SYNOPSIS
+Runs gameplay regressions in the bundled game runtime.
+.PARAMETER SkipBuild
+Use the distribution prepared by the calling release or CI workflow.
+The installed-script and area-progress regression checks still run.
+#>
 param(
     [string]$GameRoot = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)),
     [ValidateRange(1, 600)]
     [int]$TimeoutSeconds = 90,
     [switch]$BenchmarkFusionPredecessors,
-    [switch]$ShowGameWindow
+    [switch]$ShowGameWindow,
+    [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -79,7 +87,9 @@ $fusionPredecessorBenchmarkOutput = @()
 
 . (Join-Path $generationRoot "GameRuntime-Tooling.ps1")
 
-& (Join-Path $PSScriptRoot "Build-Distribution.ps1")
+if (-not $SkipBuild) {
+    & (Join-Path $PSScriptRoot "Build-Distribution.ps1") -GameRoot $resolvedGameRoot
+}
 & (Join-Path $PSScriptRoot "Test-Cosmetics.ps1") -GameRoot $resolvedGameRoot -TimeoutSeconds $TimeoutSeconds -SkipBuild
 & (Join-Path $generationRoot "Generate-Area-Catalog.ps1") `
     -GameRoot $resolvedGameRoot `
@@ -310,7 +320,7 @@ try {
         -GameRoot $resolvedGameRoot `
         -RubySource $bootstrapSource `
         -TimeoutSeconds $TimeoutSeconds `
-        -OperationName "diagnostic access runtime tests" `
+        -OperationName "gameplay regression suite" `
         -ErrorReportPath $diagnosticResultPath `
         -ShowGameWindow:$ShowGameWindow
 

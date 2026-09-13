@@ -1,6 +1,7 @@
 param(
   [Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{40}$')][string]$SourceCommit,
-  [ValidateRange(0, 3)][int]$RefreshAttempt = 0
+  [ValidateRange(0, 3)][int]$RefreshAttempt = 0,
+  [Parameter(Mandatory)][string]$UpdateTool
 )
 
 $ErrorActionPreference = 'Stop'
@@ -34,10 +35,16 @@ if ($latest.fingerprint -ne $manifest.inputs.fingerprint) {
 }
 
 $tag = "v$version"
-$releases = @(gh release list --repo $env:GITHUB_REPOSITORY --limit 1000 --json tagName,isDraft | ConvertFrom-Json)
+$releases = @(gh release list --repo $env:GITHUB_REPOSITORY --limit 1000 --json tagName,isDraft,isPrerelease | ConvertFrom-Json)
 $existing = $releases | Where-Object tagName -eq $tag | Select-Object -First 1
 if ($releases | Where-Object { -not $_.isDraft -and $_.tagName -match '^v(\d+\.\d+\.\d+)$' -and [version]$Matches[1] -gt [version]$version }) {
   throw 'A newer version is already published; refusing to make this older release latest.'
+}
+if (-not (Test-ReleaseHistoryCurrent $directory $releases $version)) {
+  if ($RefreshAttempt -ge 3) { throw 'Release history changed during three consecutive builds. No release was published.' }
+  gh workflow run release.yml --repo $env:GITHUB_REPOSITORY --ref main -f "source_commit=$SourceCommit" -f "refresh_attempt=$($RefreshAttempt + 1)"
+  'Another stable release changed updater history. Publication deferred; dispatched a fresh candidate with the current release sequence and adoption inventories.' >> $env:GITHUB_STEP_SUMMARY
+  return
 }
 $notes = Join-Path $sourceRoot "docs/releases/RELEASE_NOTES_$version.md"
 $releaseNotes = Join-Path $env:RUNNER_TEMP 'release-notes.md'
@@ -48,7 +55,7 @@ $releaseNotes = Join-Path $env:RUNNER_TEMP 'release-notes.md'
   "Infinite Fusion: $($manifest.inputs.game_commit)"
   "Input fingerprint: $($manifest.inputs.fingerprint)"
   "Verified build: https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$($manifest.run_id)"
-  "`nThe evidence archive contains generated audits, test reports and input provenance. SHA-256 sidecars accompany every ZIP."
+  "`nDownload the installer or one of the two Ironmon ZIPs. SHA256SUMS.txt lists the published checksums. The updater reads the JSON metadata automatically. Build audits, test reports and detailed provenance remain in the verified workflow's Actions artifacts."
 ) | Set-Content -LiteralPath $releaseNotes -Encoding utf8NoBOM
 if (-not $existing) {
   # Detect an existing tag before creating a draft; never silently target the wrong source.
@@ -64,7 +71,21 @@ if ($releaseId -notmatch '^[1-9]\d*$') { throw 'Release identity is unavailable.
 $release = gh api "repos/$env:GITHUB_REPOSITORY/releases/$releaseId" | ConvertFrom-Json
 if ($release.tag_name -cne $tag) { throw 'Resolved release tag mismatch.' }
 if ($release.target_commitish -ne $SourceCommit) { throw 'Existing release targets different source.' }
-$assets = @(Get-ChildItem -LiteralPath $directory -File)
+$trust = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'resources/updater/trusted-keys.json'
+Invoke-UpdateCandidateTool $UpdateTool @('verify', $directory, $trust, 'unsigned')
+$signatures = Join-Path $directory 'update-manifest.sig.json'
+# Retried publication must reuse the exact original signature bytes, including an incomplete draft.
+$prior = @(gh release list --repo $env:GITHUB_REPOSITORY --limit 1000 --json tagName,isDraft | ConvertFrom-Json) | Where-Object tagName -CEQ $tag | Select-Object -First 1
+if ($prior -and -not (Test-Path -LiteralPath $signatures)) {
+  $existingAssets = gh release view $tag --repo $env:GITHUB_REPOSITORY --json assets | ConvertFrom-Json
+  if ($existingAssets.assets | Where-Object name -CEQ 'update-manifest.sig.json') {
+    gh release download $tag --repo $env:GITHUB_REPOSITORY --pattern 'update-manifest.sig.json' --dir $directory
+    Invoke-UpdateCandidateTool $UpdateTool @('verify', $directory, $trust, 'signed')
+  }
+}
+Invoke-UpdateCandidateTool $UpdateTool @('sign', $directory, $trust)
+$assets = @(Get-PublishedReleaseFiles $directory $version)
+$assets += Write-ReleaseChecksums $directory $assets
 foreach ($asset in $assets) {
   $remote = $release.assets | Where-Object name -eq $asset.Name | Select-Object -First 1
   $digest = 'sha256:' + (Get-FileHash -LiteralPath $asset.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
