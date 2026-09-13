@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Ironmon.Updater.Infrastructure/Ironmon.Updater.Infrastructure.csproj" />
+    <InternalsVisibleTo Include="Ironmon.Tracker.Connection" />
+    <InternalsVisibleTo Include="Ironmon.Tracker.Tests" />
+    <InternalsVisibleTo Include="Ironmon.Tracker.App.Tests" />
+    <InternalsVisibleTo Include="Ironmon.Updater.Tests" />
+    <InternalsVisibleTo Include="Ironmon.Setup.Tests" />
+  </ItemGroup>
+</Project>

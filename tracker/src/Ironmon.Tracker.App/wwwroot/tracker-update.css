@@ -1,0 +1,59 @@
+html:has(.tracker-update-overlay) { overflow:hidden; }
+.tracker-update-link { border:0; padding:0; background:none; color:#b0a3ff; font:inherit; font-size:12px; cursor:pointer; }
+.tracker-update-link:hover { color:#d6ceff; }
+.tracker-update-link:focus-visible { outline:2px solid #b0a3ff; outline-offset:4px; }
+.tracker-update-link:disabled { opacity:.45; cursor:default; }
+.tracker-settings-heading-actions { display:flex; flex-direction:column; align-items:flex-end; gap:5px; padding-top:20px; }
+.tracker-update-overlay { position:fixed; inset:0; z-index:100; background:#090e13; color:#e7eaf2; }
+.tracker-update-panel { box-sizing:border-box; height:100dvh; display:flex; flex-direction:column; max-width:600px; margin:auto; padding:22px; outline:none; font-size:13px; line-height:1.55; }
+.tracker-update-heading { flex:none; }
+.tracker-update-kicker { color:#a99bcf; text-transform:uppercase; letter-spacing:.13em; font-size:10px; margin:0 0 8px; }
+.tracker-update-panel h1 { font-size:22px; line-height:1.25; margin:23px 0 20px; font-weight:600; }
+.tracker-update-panel h2 { font-size:14px; margin:20px 0 8px; font-weight:600; }
+.tracker-update-body { overflow-y:auto; overflow-x:hidden; flex:1; min-height:0; }
+.tracker-update-notes { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; color:#bac4d2; }
+.tracker-update-muted { color:#95a3b8; font-size:12px; }
+.tracker-update-notice { padding:12px; border:1px solid #33374a; border-radius:8px; background:#141924; color:#bcc5d5; }
+.tracker-update-conflict { border-top:1px solid #28323b; padding:12px 0; }
+.tracker-update-conflict label { display:flex; gap:10px; align-items:flex-start; cursor:pointer; }
+.tracker-update-conflict input { margin-top:4px; accent-color:#a899e5; flex:none; }
+.tracker-update-conflict code { display:block; overflow-wrap:anywhere; color:#e1bd89; font-size:11px; margin-top:4px; }
+.tracker-update-panel progress { display:block; width:100%; height:7px; accent-color:#a899e5; margin:14px 0; }
+.tracker-update-actions { display:flex; align-items:center; justify-content:flex-end; gap:15px; padding-top:16px; border-top:1px solid #28323b; flex:none; margin-top:12px; }
+.tracker-update-primary, .tracker-update-secondary { padding:9px 22px; border:1px solid #4b486a; border-radius:7px; font:inherit; font-weight:600; cursor:pointer; color:#f0edff; }
+.tracker-update-primary { background:#66528f; margin-left:auto; }
+.tracker-update-secondary { background:#171e29; border-color:#344053; }
+.tracker-update-primary:hover { background:#7760a5; }
+.tracker-update-secondary:hover { background:#232c3a; }
+.tracker-update-primary:disabled { opacity:.4; cursor:default; }
+.tracker-update-panel button:focus-visible, .tracker-update-panel input:focus-visible { outline:2px solid #c4b4ef; outline-offset:3px; }
+.tracker-update-invitation { background:#02060bb8; display:flex; align-items:center; justify-content:center; padding:22px; }
+.tracker-update-invitation .tracker-update-panel { height:auto; max-height:calc(100dvh - 44px); overflow-y:auto; width:100%; max-width:440px; margin:0; padding:23px; border:1px solid #4b486a; border-radius:13px; background:#161b26; box-shadow:0 20px 65px #0008; }
+.tracker-update-invitation h1 { margin:0 0 9px; }
+.tracker-update-invitation p { margin-top:0; }
+.tracker-update-version-card { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; padding:14px; margin:9px 0 22px; border:1px solid #30394a; border-radius:8px; background:#10161e; font-size:12px; }
+.tracker-update-version-card strong { color:#ddd4ff; }
+.tracker-update-version-card strong span { padding:0 8px; color:#8897ad; }
+.tracker-update-prompt-actions { display:flex; justify-content:flex-end; gap:9px; }
+.tracker-update-result { padding:18px; border:1px solid #30453e; border-radius:10px; background:#121e1c; }
+.tracker-update-result h2 { margin:0 0 5px; font-size:16px; }
+.tracker-update-result p { margin:0; color:#a6b9b4; font-size:12px; overflow-wrap:anywhere; }
+.tracker-update-result-current { display:flex; gap:13px; align-items:flex-start; }
+.tracker-update-result-icon { display:grid; place-items:center; width:28px; height:28px; flex:none; background:#26473b; color:#ace0c2; border-radius:50%; }
+.tracker-update-result-error { border-color:#63443f; background:#261c1e; }
+.tracker-update-result-error p { color:#dfb8b0; }
+.tracker-update-installed { margin-top:27px; }
+.tracker-update-installed h2 { color:#97a5ba; font-size:10px; text-transform:uppercase; letter-spacing:.12em; }
+.tracker-update-installed dl { margin:12px 0 0; }
+.tracker-update-installed dl div { display:flex; justify-content:space-between; gap:15px; padding:15px 0; border-bottom:1px solid #25303d; }
+.tracker-update-installed dt { color:#b1bed0; }
+.tracker-update-installed dd { margin:0; font-weight:600; }
+.tracker-update-last-check { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin:18px 0; font-size:11px; color:#8190a5; }
+.tracker-update-release-card { border:1px solid #4b486a; border-radius:10px; padding:17px; background:#171b29; }
+.tracker-update-release-card h2 { margin:0; font-size:17px; }
+.tracker-update-release-versions { display:flex; align-items:center; gap:26px; padding:10px 0 15px; }
+.tracker-update-release-versions div { display:flex; flex-direction:column; gap:4px; }
+.tracker-update-release-versions small { color:#9aa7be; font-size:11px; }
+.tracker-update-release-versions strong { font-size:23px; font-weight:600; }
+.tracker-update-release-versions > span { color:#9588bf; }
+.tracker-update-game-version { display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; padding-top:12px; border-top:1px solid #35384d; font-size:12px; color:#b1bdd0; }

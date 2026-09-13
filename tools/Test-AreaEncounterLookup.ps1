@@ -1,6 +1,8 @@
 <#
 .SYNOPSIS
 Exercises real seeded encounter lookup work in the bundled game without loading or saving through gameplay hooks.
+.PARAMETER SkipBuild
+Use the distribution prepared by the calling release or CI workflow.
 #>
 param(
     [string]$GameRoot = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)),
@@ -10,7 +12,8 @@ param(
     [ValidateSet('diagnostic', 'automatic', 'manual')]
     [string]$PreparationMode = 'diagnostic',
     [ValidateRange(1, 600)]
-    [int]$TimeoutSeconds = 180
+    [int]$TimeoutSeconds = 180,
+    [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -68,7 +71,9 @@ $bootstrap = @(
     'exit! 1'
     'end'
 ) -join "`n"
-& (Join-Path $PSScriptRoot 'Build-Distribution.ps1')
+if (-not $SkipBuild) {
+    & (Join-Path $PSScriptRoot 'Build-Distribution.ps1') -GameRoot $GameRoot
+}
 Invoke-IronmonGameRuntime -GameRoot $GameRoot -RubySource $bootstrap -TimeoutSeconds $TimeoutSeconds -OperationName 'area encounter lookup probe' -ErrorReportPath "$reportPath.error"
 }
 finally {

@@ -122,6 +122,9 @@ public partial class PokemonLookupExplorer : IDisposable
             _searched = false;
         }
 
+        if (await RestoreUpdateNavigationAsync())
+            return;
+
         if (string.IsNullOrWhiteSpace(RequestedSpeciesId) || RequestedSpeciesId == _observedRequestedSpeciesId)
             return;
 
@@ -638,6 +641,7 @@ public partial class PokemonLookupExplorer : IDisposable
     /// </summary>
     public void Dispose()
     {
+        UpdateNavigation?.Unregister(UpdateNavigationKey);
         AccessService.Changed -= HandleDiagnosticAccessChanged;
         _obtainabilityRefreshCancellation?.Cancel();
         _obtainabilityRefreshCancellation?.Dispose();

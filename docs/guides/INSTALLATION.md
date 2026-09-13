@@ -9,6 +9,14 @@ official game's Git repository.
 Use an Ironmon release only with the Infinite Fusion version listed for it.
 The game scripts and tracker must come from the same Ironmon archive.
 
+Updater-enabled packages also include `Data/Scripts/000_Ironmon_Guard.rb` and
+`Data/Ironmon/game-compatibility.json`. Install these with the rest of the archive.
+An incomplete update or incompatible game prevents Ironmon hooks and Ironmon saves
+from loading; the guard does not convert, delete or reset the save. Ordinary
+non-Ironmon saves remain eligible for the normal game loader. Finish recovery or
+install a matching complete release before continuing Ironmon. When removing
+Ironmon, also remove `Data/Scripts/000_Ironmon_Guard.rb`.
+
 | Ironmon version | Infinite Fusion 2 version | Status |
 | --- | --- | --- |
 | 0.8.7 | 6.8.2 | Current |
@@ -25,6 +33,116 @@ completed-run lookup continue to use their original game data, audits, custom
 fusion pool, and pinned algorithm versions. Ironmon never migrates a run to the
 current package. If a pinned package is missing or damaged, the run is reported
 as unavailable rather than reconstructed with different data.
+
+## Install with Setup (updater-enabled releases)
+
+These instructions apply when a release provides an `Ironmon-Setup-...exe`
+download. They do not add an installer or updater to older published packages.
+
+1. Download and open the release's standalone Setup executable. Setup includes
+   its own .NET runtime; you do not need to install or configure Git.
+2. Choose a new installation folder or a supported existing game folder. The
+   default new folder is inside your Windows user account. For a protected folder,
+   Windows requests administrator permission after you choose Install. Declining
+   leaves the installed program files unchanged. Setup itself stays under your
+   normal Windows account.
+3. Optionally select the sprite-sheet download and desktop shortcut. Both are
+   off by default. You can download the sprite library later from the tracker.
+4. Review the release, game version and any file conflicts, then choose Install.
+   Save your game before continuing. Setup downloads and verifies the required
+   files, asks the game to close normally if necessary, and installs the game,
+   Ironmon scripts and tracker together. If the game cannot close, the operation
+   waits or stops; it does not force-terminate the game.
+5. Open the tracker when installation finishes. You can delete the downloaded
+   Setup executable afterward; future updates start inside the tracker.
+
+During installation, Setup shows the current stage, measured download or file
+counts, elapsed time, and the time since the last progress report. Each progress
+bar describes the current stage; it starts over when the next stage begins.
+A moving bar means that stage's total is not known yet. Game preparation,
+verification, and recovery backups can continue after downloading finishes.
+Optional sprite sheets download after the core installation succeeds.
+
+New installations default to the self-contained tracker, which includes .NET.
+Existing installations keep their tracker package type unless you choose another
+option. Setup does not automatically choose a smaller package just because .NET
+is installed. If you explicitly choose the runtime-required package, it checks
+for a compatible Windows x64 .NET runtime before replacing the installation.
+WebView2 is a separate tracker prerequisite; Setup offers its installation with
+your consent when needed.
+
+The optional sprite download happens after the main installation. A failed or
+cancelled sprite download does not undo a successful game installation; complete
+it later through **Settings > Custom sprite library**. Setup does not change the
+game's **Download data** setting.
+
+Start Setup and the tracker normally, including for protected folders. A verified
+helper requests administrator access for installation, recovery or protected
+sprite downloads when needed. The tracker and your desktop shortcut continue to
+run under your own Windows account. Windows may require administrator credentials
+if your account cannot approve the request itself.
+
+## Update from the tracker (updater-enabled releases)
+
+The tracker checks for a newer stable Ironmon release at startup. An available
+update opens a small dialog over the tracker. Choose **Later** to dismiss it for
+this launch, or **Update** to read the release notes and review any affected local
+files. The dialog appears again on the next launch until you install the update.
+You can also select **Check for updates** beside the Settings heading at any time.
+This opens the update view and performs a fresh check. A successful check with no
+newer release shows your installed versions and the last check time; an unavailable
+check shows an explanation instead. Use the back link to return to your previous
+tracker view without updating.
+
+Save your game, approve any displayed replaceable file conflicts, and choose
+**Update**. Downloading, verification and preparation then proceed automatically.
+Protected folders can show a Windows administrator-permission prompt during
+preparation. The reviewed release and file approvals are checked again afterward.
+The update warns that it will close the game and tracker. After the tracker
+closes, a separate updater window shows installation and recovery progress. The
+tracker cannot display progress while it is closed. Successful updates relaunch
+the tracker; start the game when you are ready to play.
+
+Ironmon and its tracker always update together. If that release needs another
+game revision, the same operation updates the game too. An active Ironmon run
+blocks a game-changing update. Postpone it until the attempt has ended. The
+updater supplies its own private Git tools when needed; there is no system Git
+installation, account or configuration step.
+
+Supported existing Git installations and recognized ZIP installations can be
+adopted. Unknown game versions, unsupported Git states and protected local files
+stop the update with an explanation. A replaceable conflict needs approval for
+that exact file and is backed up before replacement. Saves, tracker history,
+settings, access tokens and historical generation profiles are preserved.
+Unrelated extra files are retained. Do not run the official launcher and Ironmon
+updater at the same time. An independent launcher update can make the game
+incompatible with the installed Ironmon release; the startup guard then prevents
+Ironmon saves from loading until a matching release is installed.
+
+If checking or downloading fails while offline, continue using the current
+installation and retry later. Cancellation during preparation leaves the current
+installation intact. Once replacement has started, the updater must finish or
+restore the previous installation; it retains recovery information if it cannot.
+
+### Interrupted updates and recovery
+
+Reopen the tracker and follow its recovery link, or use **Retry recovery** in
+the updater window. Recovery verifies the recorded transaction and backups before
+restoring files. If the tracker cannot start, retain the entire game folder and
+ask for help using the independent recovery helper retained under
+`.ironmon-update/recovery`. Keep this copy even if the tracker executable is
+temporarily unavailable.
+
+Protected-folder recovery may request administrator permission again after a
+restart. The retained helper is verified against signed release records and does
+not need another download when those records and the recovery copy are intact.
+Combined game recovery also needs the verified private Git cache retained from
+preparation; if it was removed or damaged, restoring it requires a connection.
+
+Do not delete or edit the game's `.ironmon-update` folder while recovery is
+pending. Keep the error message and backups if recovery needs attention. A
+completed update currently retains its transaction records and backups; automatic
+backup cleanup is not implemented. Recovery does not migrate or reset saves.
 
 ## Install from the release archive
 
@@ -128,6 +246,9 @@ running.
 
 ## Remove Ironmon
 
-Fully close the game and tracker, then remove `Data/Scripts/997_Ironmon` and
-`Ironmon Tracker`. This does not remove or modify save files or tracker data in
-the user's local application-data directory.
+Finish any pending recovery, then fully close the game and tracker. Remove
+`Data/Scripts/997_Ironmon`, `Data/Scripts/000_Ironmon_Guard.rb` when present, and
+`Ironmon Tracker`. Keep a backup of `Data/Ironmon` if you intend to resume old
+Ironmon runs after reinstalling: it contains their historical generation profiles.
+These removals do not remove or modify save files or tracker data in the user's
+local application-data directory.

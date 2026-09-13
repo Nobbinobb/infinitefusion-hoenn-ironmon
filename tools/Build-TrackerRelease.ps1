@@ -1,8 +1,20 @@
-param([switch]$GenerateOnly)
+param([switch]$GenerateOnly, [string]$UpdateHistoryDirectory, [string]$GenerationCacheDirectory)
 
 $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
+if (-not $GenerateOnly) {
+  & dotnet build (Join-Path $projectRoot 'tracker/tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj') -c Release -p:UpdaterMetadataOnly=true -p:UseSharedCompilation=false
+  if ($LASTEXITCODE -ne 0) { throw 'Release metadata tools failed to build.' }
+  $updateTool = Join-Path $projectRoot 'tracker/tools/Ironmon.ReleaseTool/bin/Release/net10.0/Ironmon.ReleaseTool.dll'
+  & dotnet $updateTool trust (Join-Path $projectRoot 'resources/updater/trusted-keys.json')
+  if ($LASTEXITCODE -ne 0) { throw 'Configure dedicated updater public trust before release generation.' }
+  if ($env:GITHUB_ACTIONS -eq 'true' -and -not $UpdateHistoryDirectory) {
+    $history = Join-Path $projectRoot 'data/updater/published-history'
+    & (Join-Path $PSScriptRoot 'ci/Restore-UpdateHistory.ps1') -Tool $updateTool -OutputDirectory $history
+    if (Test-Path -LiteralPath $history) { $UpdateHistoryDirectory = $history }
+  }
+}
 $gameRoot = Split-Path -Parent $projectRoot
 $distribution = Join-Path $projectRoot "dist"
 $runtimeRequiredDistribution = Join-Path $projectRoot "dist-runtime-required"
@@ -218,133 +230,195 @@ function New-DeterministicReleaseArchive {
   Write-Output "SHA256 $hash"
 }
 
-$generatedPlayerFusionWorkerCatalog = "$playerFusionWorkerCatalog.release.tmp"
-try {
-  & (Join-Path $PSScriptRoot "generation\Generate-Player-Fusion-Worker-Catalog.ps1") `
-    -GameRoot $gameRoot `
-    -OutputPath $generatedPlayerFusionWorkerCatalog
-  if (-not (Test-Path -LiteralPath $generatedPlayerFusionWorkerCatalog) -or
-      (Get-Item -LiteralPath $generatedPlayerFusionWorkerCatalog).Length -eq 0) {
-    throw "Release generation did not produce the player-fusion worker catalog."
-  }
-  if (-not (Test-Path -LiteralPath $playerFusionWorkerCatalog) -or
-      (Get-FileHash -LiteralPath $generatedPlayerFusionWorkerCatalog -Algorithm SHA256).Hash -ne
-        (Get-FileHash -LiteralPath $playerFusionWorkerCatalog -Algorithm SHA256).Hash) {
-    Copy-Item -LiteralPath $generatedPlayerFusionWorkerCatalog -Destination $playerFusionWorkerCatalog -Force
-  }
-} finally {
-  Remove-Item -LiteralPath $generatedPlayerFusionWorkerCatalog -Force -ErrorAction SilentlyContinue
+$gameCommit = git --no-replace-objects -C $gameRoot rev-parse --verify 'HEAD^{commit}'
+if ($LASTEXITCODE -ne 0 -or $gameCommit -cnotmatch '\A[0-9a-f]{40}\z') { throw 'Cannot resolve the selected game revision.' }
+$reusedGeneration = $false
+if ($GenerationCacheDirectory) {
+  . (Join-Path $PSScriptRoot 'ci/GenerationCache.ps1')
+  $snapshot = Get-Content (Join-Path $projectRoot 'data/upstream-inputs.json') -Raw | ConvertFrom-Json
+  if ($snapshot.game_commit -cne $gameCommit) { throw 'Generation snapshot differs from the selected game checkout.' }
+  $generationKey = Get-GenerationCacheKey $projectRoot $snapshot.fingerprint
+  $reusedGeneration = Restore-GenerationCache $projectRoot $GenerationCacheDirectory $generationKey
 }
 
-$generationStarted = [DateTime]::UtcNow.AddSeconds(-2)
-try {
-  & (Join-Path $PSScriptRoot "generation\Generate-Cosmetic-Audit.ps1") `
-    -GameRoot $gameRoot -OutputPath $generatedCosmeticAudit -PreviousPath $cosmeticAudit
-  & (Join-Path $PSScriptRoot "generation\Generate-Defense-Presentation.ps1") `
-    -GameRoot $gameRoot `
-    -OutputPath $generatedDefensePresentationCatalog `
-    -AuditPath $generatedDefensePresentationAudit
-  & (Join-Path $PSScriptRoot "generation\Generate-Area-Catalog.ps1") `
-    -GameRoot $gameRoot `
-    -OutputPath $generatedAreaCatalog `
-    -AuditPath $generatedAreaAudit
-  & (Join-Path $PSScriptRoot "generation\Generate-Fusion-Predecessor-Index.ps1") `
-    -GameRoot $gameRoot `
-    -OutputPath $generatedFusionPredecessorIndex
-  & (Join-Path $PSScriptRoot "generation\Generate-Item-Randomization-Audit.ps1") `
-    -GameRoot $gameRoot `
-    -AuditPath $generatedItemAudit
-  & (Join-Path $PSScriptRoot "generation\Generate-Obtainability-Foundation-Audit.ps1") `
-    -GameRoot $gameRoot `
-    -AreaCatalogPath $generatedAreaCatalog `
-    -SourceCatalogPath $generatedObtainabilitySourceCatalog `
-    -AuditPath $generatedObtainabilityAudit
-  foreach ($generatedPath in $generatedCosmeticAudit, $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedItemAudit, $generatedObtainabilityAudit, $generatedObtainabilitySourceCatalog, $generatedDefensePresentationCatalog, $generatedDefensePresentationAudit) {
-    if (-not (Test-Path -LiteralPath $generatedPath) -or
-        (Get-Item -LiteralPath $generatedPath).Length -eq 0) {
-      throw "Release generation did not produce '$generatedPath'."
+if (-not $GenerateOnly) { & (Join-Path $PSScriptRoot 'Test-GameAdoptionInventory.ps1') }
+# BEGIN GENERATED CATALOG RECIPE
+if (-not $reusedGeneration) {
+  $gameAdoptionInventory = Join-Path $projectRoot "data\updater\baselines\hoenn.json.gz"
+  $gameAdoptionManifest = Join-Path $projectRoot "data\updater\baselines\hoenn.manifest.json"
+  $generatedGameAdoptionInventory = "$gameAdoptionInventory.release.tmp"
+  $generatedGameAdoptionManifest = "$gameAdoptionManifest.release.tmp"
+  try {
+    & (Join-Path $PSScriptRoot "generation\Generate-Game-Adoption-Inventory.ps1") `
+      -GameRoot $gameRoot `
+      -GameCommit $gameCommit `
+      -OutputPath $generatedGameAdoptionInventory `
+      -ManifestPath $generatedGameAdoptionManifest
+    $inventoryManifest = Get-Content -LiteralPath $generatedGameAdoptionManifest -Raw | ConvertFrom-Json
+    if ($inventoryManifest.Commit -cne $gameCommit -or $inventoryManifest.FileCount -le 0 -or
+        (Get-FileHash -LiteralPath $generatedGameAdoptionInventory -Algorithm SHA256).Hash -cne $inventoryManifest.Sha256) {
+      throw "Release generation produced inconsistent game adoption metadata."
     }
-    if ((Get-Item -LiteralPath $generatedPath).LastWriteTimeUtc -lt $generationStarted) {
-      throw "Release generation left stale data at '$generatedPath'."
+    foreach ($generatedFile in @(
+      @{ Generated = $generatedGameAdoptionInventory; Canonical = $gameAdoptionInventory },
+      @{ Generated = $generatedGameAdoptionManifest; Canonical = $gameAdoptionManifest }
+    )) {
+      if (-not (Test-Path -LiteralPath $generatedFile.Canonical) -or
+          (Get-FileHash -LiteralPath $generatedFile.Generated -Algorithm SHA256).Hash -ne
+            (Get-FileHash -LiteralPath $generatedFile.Canonical -Algorithm SHA256).Hash) {
+        Copy-Item -LiteralPath $generatedFile.Generated -Destination $generatedFile.Canonical -Force
+      }
     }
+  } finally {
+    Remove-Item -LiteralPath $generatedGameAdoptionInventory, $generatedGameAdoptionManifest -Force -ErrorAction SilentlyContinue
   }
 
-  foreach ($generatedFile in @(
-    @{ Generated = $generatedCosmeticAudit; Canonical = $cosmeticAudit },
-    @{ Generated = $generatedDefensePresentationCatalog; Canonical = $defensePresentationCatalog },
-    @{ Generated = $generatedDefensePresentationAudit; Canonical = $defensePresentationAudit },
-    @{ Generated = $generatedAreaCatalog; Canonical = $areaCatalog },
-    @{ Generated = $generatedAreaAudit; Canonical = $areaAudit },
-    @{ Generated = $generatedFusionPredecessorIndex; Canonical = $fusionPredecessorIndex },
-    @{ Generated = $generatedItemAudit; Canonical = $itemAudit },
-    @{ Generated = $generatedObtainabilityAudit; Canonical = $obtainabilityAudit },
-    @{ Generated = $generatedObtainabilitySourceCatalog; Canonical = $obtainabilitySourceCatalog }
-  )) {
-    $canonicalExists = Test-Path -LiteralPath $generatedFile.Canonical
-    $contentChanged = -not $canonicalExists -or
-      (Get-FileHash -LiteralPath $generatedFile.Generated -Algorithm SHA256).Hash -ne
-        (Get-FileHash -LiteralPath $generatedFile.Canonical -Algorithm SHA256).Hash
-    if ($contentChanged) {
-      Copy-Item -LiteralPath $generatedFile.Generated -Destination $generatedFile.Canonical -Force
+  $generatedPlayerFusionWorkerCatalog = "$playerFusionWorkerCatalog.release.tmp"
+  try {
+    & (Join-Path $PSScriptRoot "generation\Generate-Player-Fusion-Worker-Catalog.ps1") `
+      -GameRoot $gameRoot `
+      -OutputPath $generatedPlayerFusionWorkerCatalog
+    if (-not (Test-Path -LiteralPath $generatedPlayerFusionWorkerCatalog) -or
+        (Get-Item -LiteralPath $generatedPlayerFusionWorkerCatalog).Length -eq 0) {
+      throw "Release generation did not produce the player-fusion worker catalog."
     }
+    if (-not (Test-Path -LiteralPath $playerFusionWorkerCatalog) -or
+        (Get-FileHash -LiteralPath $generatedPlayerFusionWorkerCatalog -Algorithm SHA256).Hash -ne
+          (Get-FileHash -LiteralPath $playerFusionWorkerCatalog -Algorithm SHA256).Hash) {
+      Copy-Item -LiteralPath $generatedPlayerFusionWorkerCatalog -Destination $playerFusionWorkerCatalog -Force
+    }
+  } finally {
+    Remove-Item -LiteralPath $generatedPlayerFusionWorkerCatalog -Force -ErrorAction SilentlyContinue
   }
-} finally {
-  Remove-Item -LiteralPath $generatedCosmeticAudit, $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedItemAudit, $generatedObtainabilityAudit, $generatedObtainabilitySourceCatalog, $generatedDefensePresentationCatalog, $generatedDefensePresentationAudit `
-    -Force `
-    -ErrorAction SilentlyContinue
+
+  $generationStarted = [DateTime]::UtcNow.AddSeconds(-2)
+  try {
+    & (Join-Path $PSScriptRoot "generation\Generate-Cosmetic-Audit.ps1") `
+      -GameRoot $gameRoot -OutputPath $generatedCosmeticAudit -PreviousPath $cosmeticAudit
+    & (Join-Path $PSScriptRoot "generation\Generate-Defense-Presentation.ps1") `
+      -GameRoot $gameRoot `
+      -OutputPath $generatedDefensePresentationCatalog `
+      -AuditPath $generatedDefensePresentationAudit
+    & (Join-Path $PSScriptRoot "generation\Generate-Area-Catalog.ps1") `
+      -GameRoot $gameRoot `
+      -OutputPath $generatedAreaCatalog `
+      -AuditPath $generatedAreaAudit
+    & (Join-Path $PSScriptRoot "generation\Generate-Fusion-Predecessor-Index.ps1") `
+      -GameRoot $gameRoot `
+      -OutputPath $generatedFusionPredecessorIndex
+    & (Join-Path $PSScriptRoot "generation\Generate-Item-Randomization-Audit.ps1") `
+      -GameRoot $gameRoot `
+      -AuditPath $generatedItemAudit
+    & (Join-Path $PSScriptRoot "generation\Generate-Obtainability-Foundation-Audit.ps1") `
+      -GameRoot $gameRoot `
+      -AreaCatalogPath $generatedAreaCatalog `
+      -SourceCatalogPath $generatedObtainabilitySourceCatalog `
+      -AuditPath $generatedObtainabilityAudit
+    foreach ($generatedPath in $generatedCosmeticAudit, $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedItemAudit, $generatedObtainabilityAudit, $generatedObtainabilitySourceCatalog, $generatedDefensePresentationCatalog, $generatedDefensePresentationAudit) {
+      if (-not (Test-Path -LiteralPath $generatedPath) -or
+          (Get-Item -LiteralPath $generatedPath).Length -eq 0) {
+        throw "Release generation did not produce '$generatedPath'."
+      }
+      if ((Get-Item -LiteralPath $generatedPath).LastWriteTimeUtc -lt $generationStarted) {
+        throw "Release generation left stale data at '$generatedPath'."
+      }
+    }
+
+    foreach ($generatedFile in @(
+      @{ Generated = $generatedCosmeticAudit; Canonical = $cosmeticAudit },
+      @{ Generated = $generatedDefensePresentationCatalog; Canonical = $defensePresentationCatalog },
+      @{ Generated = $generatedDefensePresentationAudit; Canonical = $defensePresentationAudit },
+      @{ Generated = $generatedAreaCatalog; Canonical = $areaCatalog },
+      @{ Generated = $generatedAreaAudit; Canonical = $areaAudit },
+      @{ Generated = $generatedFusionPredecessorIndex; Canonical = $fusionPredecessorIndex },
+      @{ Generated = $generatedItemAudit; Canonical = $itemAudit },
+      @{ Generated = $generatedObtainabilityAudit; Canonical = $obtainabilityAudit },
+      @{ Generated = $generatedObtainabilitySourceCatalog; Canonical = $obtainabilitySourceCatalog }
+    )) {
+      $canonicalExists = Test-Path -LiteralPath $generatedFile.Canonical
+      $contentChanged = -not $canonicalExists -or
+        (Get-FileHash -LiteralPath $generatedFile.Generated -Algorithm SHA256).Hash -ne
+          (Get-FileHash -LiteralPath $generatedFile.Canonical -Algorithm SHA256).Hash
+      if ($contentChanged) {
+        Copy-Item -LiteralPath $generatedFile.Generated -Destination $generatedFile.Canonical -Force
+      }
+    }
+  } finally {
+    Remove-Item -LiteralPath $generatedCosmeticAudit, $generatedAreaCatalog, $generatedAreaAudit, $generatedFusionPredecessorIndex, $generatedItemAudit, $generatedObtainabilityAudit, $generatedObtainabilitySourceCatalog, $generatedDefensePresentationCatalog, $generatedDefensePresentationAudit `
+      -Force `
+      -ErrorAction SilentlyContinue
+  }
+
+  & (Join-Path $PSScriptRoot "generation\Generate-Generation-Profile.ps1") `
+    -GameRoot $gameRoot
+
+  & (Join-Path $PSScriptRoot "Build-Distribution.ps1")
+
+  $coverageGenerationStarted = [DateTime]::UtcNow.AddSeconds(-2)
+  try {
+    & (Join-Path $PSScriptRoot "generation\Generate-Type-Coverage-Dataset.ps1") `
+      -GameRoot $gameRoot `
+      -OutputPath $generatedCoverageDataset `
+      -AuditPath $generatedCoverageAudit
+    foreach ($generatedPath in $generatedCoverageDataset, $generatedCoverageAudit) {
+      if (-not (Test-Path -LiteralPath $generatedPath) -or
+          (Get-Item -LiteralPath $generatedPath).Length -eq 0) {
+        throw "Release generation did not produce '$generatedPath'."
+      }
+      if ((Get-Item -LiteralPath $generatedPath).LastWriteTimeUtc -lt $coverageGenerationStarted) {
+        throw "Release generation left stale data at '$generatedPath'."
+      }
+    }
+
+    foreach ($generatedFile in @(
+      @{ Generated = $generatedCoverageDataset; Canonical = $coverageDataset },
+      @{ Generated = $generatedCoverageAudit; Canonical = $coverageAudit }
+    )) {
+      $canonicalExists = Test-Path -LiteralPath $generatedFile.Canonical
+      $contentChanged = -not $canonicalExists -or
+        (Get-FileHash -LiteralPath $generatedFile.Generated -Algorithm SHA256).Hash -ne
+          (Get-FileHash -LiteralPath $generatedFile.Canonical -Algorithm SHA256).Hash
+      if ($contentChanged) {
+        Copy-Item -LiteralPath $generatedFile.Generated -Destination $generatedFile.Canonical -Force
+      }
+    }
+  } finally {
+    Remove-Item -LiteralPath $generatedCoverageDataset, $generatedCoverageAudit `
+      -Force `
+      -ErrorAction SilentlyContinue
+  }
+
+  if ($GenerationCacheDirectory) { Save-GenerationCache $projectRoot $GenerationCacheDirectory $generationKey }
+} else {
+  & (Join-Path $PSScriptRoot 'Build-Distribution.ps1') -ReuseGeneratedAssets
 }
-
-& (Join-Path $PSScriptRoot "generation\Generate-Generation-Profile.ps1") `
-  -GameRoot $gameRoot
-
-& (Join-Path $PSScriptRoot "Build-Distribution.ps1")
-
-$coverageGenerationStarted = [DateTime]::UtcNow.AddSeconds(-2)
-try {
-  & (Join-Path $PSScriptRoot "generation\Generate-Type-Coverage-Dataset.ps1") `
-    -GameRoot $gameRoot `
-    -OutputPath $generatedCoverageDataset `
-    -AuditPath $generatedCoverageAudit
-  foreach ($generatedPath in $generatedCoverageDataset, $generatedCoverageAudit) {
-    if (-not (Test-Path -LiteralPath $generatedPath) -or
-        (Get-Item -LiteralPath $generatedPath).Length -eq 0) {
-      throw "Release generation did not produce '$generatedPath'."
-    }
-    if ((Get-Item -LiteralPath $generatedPath).LastWriteTimeUtc -lt $coverageGenerationStarted) {
-      throw "Release generation left stale data at '$generatedPath'."
-    }
-  }
-
-  foreach ($generatedFile in @(
-    @{ Generated = $generatedCoverageDataset; Canonical = $coverageDataset },
-    @{ Generated = $generatedCoverageAudit; Canonical = $coverageAudit }
-  )) {
-    $canonicalExists = Test-Path -LiteralPath $generatedFile.Canonical
-    $contentChanged = -not $canonicalExists -or
-      (Get-FileHash -LiteralPath $generatedFile.Generated -Algorithm SHA256).Hash -ne
-        (Get-FileHash -LiteralPath $generatedFile.Canonical -Algorithm SHA256).Hash
-    if ($contentChanged) {
-      Copy-Item -LiteralPath $generatedFile.Generated -Destination $generatedFile.Canonical -Force
-    }
-  }
-} finally {
-  Remove-Item -LiteralPath $generatedCoverageDataset, $generatedCoverageAudit `
-    -Force `
-    -ErrorAction SilentlyContinue
-}
+# END GENERATED CATALOG RECIPE
 
 if ($GenerateOnly) {
-  Write-Output "Generated current-source release catalogs and distribution."
+  Write-Output 'Prepared current-source release catalogs and distribution.'
   return
 }
 
+$settings = Get-Content -LiteralPath (Join-Path $gameRoot 'Data/Scripts/001_Settings.rb') -Raw
+$gameVersionMatch = [regex]::Match($settings, '(?m)^\s*GAME_VERSION_NUMBER\s*=\s*["''](?<version>\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)["'']')
+if (-not $gameVersionMatch.Success) { throw 'The selected game version is unavailable.' }
+$historyArgument = if ($UpdateHistoryDirectory) { $UpdateHistoryDirectory } else { '-' }
+& dotnet $updateTool validate-inputs (Join-Path $projectRoot 'data/updater/baselines/hoenn.json.gz') (Join-Path $projectRoot 'data/updater/baselines/hoenn.manifest.json') $gameVersionMatch.Groups['version'].Value $historyArgument (Join-Path $projectRoot 'resources/updater/trusted-keys.json')
+if ($LASTEXITCODE -ne 0) { throw 'Generated game or historical release metadata is invalid; release tests and packaging were not started.' }
+
 & (Join-Path $PSScriptRoot "Test-GenerationProfile.ps1") `
+  -SkipBuild `
   -GameRoot $gameRoot `
   -TimeoutSeconds 300
 
 & (Join-Path $PSScriptRoot "Test-GameRuntime.ps1") `
+  -SkipBuild `
   -GameRoot $gameRoot `
-  -TimeoutSeconds 300
+  -TimeoutSeconds 600
+
+& (Join-Path $PSScriptRoot "Test-UpdaterBootGuard.ps1") `
+  -GameRoot $gameRoot `
+  -TimeoutSeconds 90
 
 & dotnet test (Join-Path $projectRoot "tracker\tests\Ironmon.Tracker.Tests\Ironmon.Tracker.Tests.csproj") `
   --configuration Release `
@@ -362,8 +436,9 @@ if ($LASTEXITCODE -ne 0) {
   throw "Tracker app tests failed."
 }
 
-& (Join-Path $PSScriptRoot "Test-DefenseOverview.ps1")
-& (Join-Path $PSScriptRoot "Test-AreaEncounterLookup.ps1") -GameRoot $gameRoot
+& (Join-Path $PSScriptRoot "Test-DefenseOverview.ps1") -SkipBuild
+& (Join-Path $PSScriptRoot 'Test-Updater.ps1') -Configuration Release
+& (Join-Path $PSScriptRoot "Test-AreaEncounterLookup.ps1") -GameRoot $gameRoot -SkipBuild
 
 & (Join-Path $PSScriptRoot "Publish-Tracker.ps1") -DeploymentMode SelfContained
 
@@ -388,6 +463,12 @@ foreach ($distributionEntry in "Data", "README.md", "INSTALLATION.md", "RELEASE_
   -DeploymentMode RuntimeRequired `
   -OutputDirectory (Join-Path $resolvedRuntimeRequiredDistribution "Ironmon Tracker")
 
+& (Join-Path $PSScriptRoot 'Build-UpdaterArtifacts.ps1') -Version $releaseVersion -HistoryDirectory $UpdateHistoryDirectory
+foreach ($item in @(@{Root=$distribution;Flavor='self-contained'}, @{Root=$resolvedRuntimeRequiredDistribution;Flavor='runtime-required'})) {
+  & dotnet $updateTool package $item.Root $releaseVersion $item.Flavor $gameCommit
+  if ($LASTEXITCODE -ne 0) { throw 'Package ownership generation failed.' }
+}
+
 Test-PlayerDistribution -DistributionPath $distribution
 Test-PlayerDistribution -DistributionPath $resolvedRuntimeRequiredDistribution
 
@@ -395,3 +476,4 @@ New-Item -ItemType Directory -Force -Path $releaseDirectory | Out-Null
 Add-Type -AssemblyName System.IO.Compression
 New-DeterministicReleaseArchive -DistributionPath $distribution -ArchiveName $selfContainedArchiveName
 New-DeterministicReleaseArchive -DistributionPath $resolvedRuntimeRequiredDistribution -ArchiveName $runtimeRequiredArchiveName
+& (Join-Path $PSScriptRoot 'ci/New-UpdateMetadata.ps1') -Version $releaseVersion -GameCommit $gameCommit -HistoryDirectory $UpdateHistoryDirectory

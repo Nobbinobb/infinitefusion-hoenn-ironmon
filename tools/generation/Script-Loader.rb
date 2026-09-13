@@ -58,6 +58,7 @@ module IronmonScriptLoader
       end
       next if !initialize_catalogs &&
         relative_source == "tracker/area_lookup/Initialize.rb"
+      next if entry["bootstrap"] || entry[:bootstrap]
       code = File.open(source_path, "rb") { |file| file.read }
       eval(code, TOPLEVEL_BINDING, output_name)
     end

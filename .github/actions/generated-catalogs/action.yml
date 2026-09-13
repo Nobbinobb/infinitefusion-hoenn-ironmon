@@ -1,0 +1,46 @@
+name: Prepare generated catalogs
+description: Reuse exact verified generation inputs, or generate and retain the missing catalogs.
+inputs:
+  project-root:
+    required: true
+    description: Checked-out Ironmon source directory.
+  snapshot-directory:
+    required: true
+    description: Verified upstream input snapshot directory.
+outputs:
+  key:
+    description: Exact content-derived cache identity.
+    value: ${{ steps.identity.outputs.key }}
+  directory:
+    description: Directory containing the verified cache manifest and generated data.
+    value: ${{ steps.identity.outputs.directory }}
+runs:
+  using: composite
+  steps:
+    - name: Identify generation inputs
+      id: identity
+      shell: pwsh
+      env:
+        PROJECT_ROOT: ${{ inputs.project-root }}
+        SNAPSHOT_DIRECTORY: ${{ inputs.snapshot-directory }}
+      run: |
+        & (Join-Path $env:PROJECT_ROOT 'tools/ci/Initialize-GenerationCache.ps1') -ProjectRoot $env:PROJECT_ROOT -SnapshotDirectory $env:SNAPSHOT_DIRECTORY
+    - name: Restore exact catalog cache
+      id: cache
+      uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+      with:
+        path: ${{ steps.identity.outputs.directory }}
+        key: ${{ steps.identity.outputs.key }}
+    - name: Verify cached catalogs or generate missing data
+      shell: pwsh
+      env:
+        PROJECT_ROOT: ${{ inputs.project-root }}
+        CACHE_DIRECTORY: ${{ steps.identity.outputs.directory }}
+      run: |
+        & (Join-Path $env:PROJECT_ROOT 'tools/Build-TrackerRelease.ps1') -GenerateOnly -GenerationCacheDirectory $env:CACHE_DIRECTORY
+    - name: Retain catalogs before testing and packaging
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+      with:
+        path: ${{ steps.identity.outputs.directory }}
+        key: ${{ steps.identity.outputs.key }}

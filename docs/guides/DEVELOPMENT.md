@@ -28,10 +28,12 @@ the primary work item, and `release/<version>` for release preparation. Keep
 version numbers unchanged on feature, fix, and issue branches.
 
 Push the working branch and open a pull request into `main`. The repository's
-GitHub Actions workflow first downloads the newest Hoenn `releases` revision and generates
-catalogs from the source being tested, using `tools/Build-TrackerRelease.ps1
--GenerateOnly`. Both tracker test jobs consume those catalogs from the same
-workflow run. They never restore catalogs from a previous Ironmon release.
+GitHub Actions workflow first resolves the newest Hoenn `releases` revision and
+online metadata. It restores verified catalogs only when the exact generation
+inputs match, or generates them using `tools/Build-TrackerRelease.ps1
+-GenerateOnly`. Ordinary PR tracker jobs consume those catalogs from the same
+run. A release PR uses the full release gate instead of also running the ordinary
+gameplay and tracker jobs; each test suite runs once.
 Generated artifacts remain outside source control. Tracker-only catalogs expire
 after one day; upstream snapshots and release candidates are retained for seven
 days. Each run records the game revision and refreshed online sprite metadata.
@@ -48,7 +50,7 @@ wording can be reviewed.
 
 The release PR runs `tools/Build-TrackerRelease.ps1` on a hosted runner and
 produces both packages, checksums, provenance, and audit evidence. Review the
-candidate and fusion-pool comparison, then merge after all four required checks
+candidate and fusion-pool comparison, then merge after all required checks
 pass. Merging the version increase starts automatic publication. A changed
 upstream input triggers a complete rebuild and retest before publication; a
 failed gate publishes nothing. No manual tag or local package upload is needed.

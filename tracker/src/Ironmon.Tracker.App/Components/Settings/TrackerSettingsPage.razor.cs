@@ -1,3 +1,4 @@
+using Ironmon.SpriteLibrary;
 using Microsoft.AspNetCore.Components;
 
 namespace Ironmon.Tracker.App.Components.Settings;
@@ -7,6 +8,19 @@ namespace Ironmon.Tracker.App.Components.Settings;
 /// </summary>
 public partial class TrackerSettingsPage : IDisposable
 {
+    /// <summary>
+    /// Gets the mounted updater navigation bridge without coupling settings to the installation workflow.
+    /// </summary>
+    [CascadingParameter]
+    public TrackerUpdateNavigation? UpdateNavigation { get; set; }
+
+    /// <summary>
+    /// Opens the update view and refreshes the available release.
+    /// </summary>
+    /// <returns>The renderer-owned update check.</returns>
+    private Task OpenUpdatesAsync()
+        => UpdateNavigation?.OpenUpdates?.Invoke() ?? Task.CompletedTask;
+
     private const int FavoritePageSize = 8;
     private const string MegabyteUnit = "MB";
     private const string AvailableSpritesCompleteKey = "Settings.Sprites.AvailableComplete";

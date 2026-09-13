@@ -13,15 +13,18 @@ $snapshot = Get-Content (Join-Path $SnapshotDirectory 'upstream-inputs.json') -R
 $pulls = gh api "repos/$env:GITHUB_REPOSITORY/commits/$sourceCommit/pulls" | ConvertFrom-Json
 $pull = $pulls | Where-Object { $_.merged_at -and $_.merge_commit_sha -eq $sourceCommit -and $_.base.ref -eq 'main' -and $_.head.repo.full_name -eq $env:GITHUB_REPOSITORY } | Select-Object -First 1
 if (-not $pull) { Write-Output 'No matching same-repository release PR; building approved source.'; return }
-$runs = gh run list --repo $env:GITHUB_REPOSITORY --workflow release-candidate.yml --commit $pull.head.sha --event pull_request --status success --limit 20 --json databaseId,headSha | ConvertFrom-Json
+$runs = gh run list --repo $env:GITHUB_REPOSITORY --workflow tracker-ci.yml --commit $pull.head.sha --event pull_request --status success --limit 20 --json databaseId,headSha | ConvertFrom-Json
 foreach ($run in $runs) {
   $directory = Join-Path $env:RUNNER_TEMP "candidate-$($run.databaseId)"
   try {
     gh run download $run.databaseId --repo $env:GITHUB_REPOSITORY --name release-candidate --dir $directory
     $manifest = Assert-ReleaseCandidate $directory $tree $snapshot.fingerprint $version
     if ($manifest.repository -cne $env:GITHUB_REPOSITORY -or $manifest.run_id -ne [string]$run.databaseId) { throw 'Candidate run identity mismatch.' }
+    $published = @(gh release list --repo $env:GITHUB_REPOSITORY --limit 1000 --json tagName,isDraft,isPrerelease | ConvertFrom-Json)
+    if (-not (Test-ReleaseHistoryCurrent $directory $published $version)) { throw 'Another stable release changed the required updater history; rebuild the candidate.' }
     Copy-Item -LiteralPath $directory -Destination (Join-Path $projectRoot 'release') -Recurse
     'reused=true' >> $env:GITHUB_OUTPUT
+    "run_id=$($run.databaseId)" >> $env:GITHUB_OUTPUT
     "Reusing exact verified candidate bytes from run $($run.databaseId)." >> $env:GITHUB_STEP_SUMMARY
     return
   } catch {

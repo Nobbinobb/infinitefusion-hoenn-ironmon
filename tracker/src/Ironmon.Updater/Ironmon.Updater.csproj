@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Ironmon.Updater</AssemblyName>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Ironmon.Updater.Infrastructure/Ironmon.Updater.Infrastructure.csproj" />
+    <ProjectReference Include="../Ironmon.SpriteLibrary/Ironmon.SpriteLibrary.csproj" />
+  </ItemGroup>
+  <Import Project="../../UpdaterNotices.targets" />
+</Project>

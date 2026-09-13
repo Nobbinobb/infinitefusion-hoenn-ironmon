@@ -55,6 +55,7 @@ public partial class ArchiveView : IDisposable
         RefreshRecipes(CompletedRuns.RequestedRunId);
         _showHistory = _recipes.Count == 0;
         _selection.SetExpanded(!_showHistory);
+        InitializeUpdateNavigation();
         RestartObtainabilityPrecalculation();
         CompletedRuns.Changed += HandleCompletedRunsChanged;
         CompletedRuns.SelectionRequested += HandleCompletedRunSelectionRequested;
@@ -283,6 +284,7 @@ public partial class ArchiveView : IDisposable
     /// </summary>
     public void Dispose()
     {
+        UpdateNavigation?.Unregister(UpdateNavigationKey);
         StopObtainabilityPrecalculation();
         CompletedRuns.Changed -= HandleCompletedRunsChanged;
         CompletedRuns.SelectionRequested -= HandleCompletedRunSelectionRequested;

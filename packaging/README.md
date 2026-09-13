@@ -3,8 +3,10 @@
 This distribution targets Pokemon Infinite Fusion 2 version 6.8.2.
 
 Copy the included `Data` directory into the game directory and merge it with
-the existing `Data` directory. Only Ruby files are installed beneath
-`Data/Scripts/997_Ironmon`.
+the existing `Data` directory. Ironmon's main Ruby scripts are installed beneath
+`Data/Scripts/997_Ironmon`. Updater-enabled packages also install the early
+`Data/Scripts/000_Ironmon_Guard.rb` and compatibility data under `Data/Ironmon`;
+copy the complete archive so these files stay together.
 
 Version 0.8.7 shortens the Devon rescue and delivery sequence, adds trainer
 battle details, and speeds up prepared Pokemon lookups. It restores the
@@ -20,7 +22,10 @@ archive whose name ends in `win-x64-runtime-required` requires the Windows x64
 and tracker features; install only one of them.
 
 See the included `INSTALLATION.md` for complete installation, compatibility,
-diagnostics, and removal instructions.
+diagnostics, and removal instructions. Releases that include the standalone Setup
+download also support installation without a preinstalled game or system Git.
+Their tracker shows available updates through a footer link. Setup can be
+discarded after installation; updates continue inside the tracker.
 
 Ironmon's original source code and documentation are licensed under the MIT
 License in `LICENSE`. Third-party components retain their own terms; see

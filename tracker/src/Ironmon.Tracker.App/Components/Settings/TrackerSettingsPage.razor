@@ -1,10 +1,13 @@
 <section class="obsidian-settings" aria-label="@Text["Settings.Page.Settings"]">
     <header class="obsidian-settings-heading">
         <div><p class="card-kicker">@Text["Settings.Page.TrackerPreferences"]</p><h2>@Text["Settings.Page.Settings"]</h2></div>
-        @if (!string.IsNullOrWhiteSpace(Status) || _graphSettingsSaved)
-        {
-            <span class="obsidian-settings-saved">@Text["Redesign.Settings.Saved"]</span>
-        }
+        <div class="tracker-settings-heading-actions">
+            <button type="button" class="tracker-update-link" @onclick="OpenUpdatesAsync">@Text[Ironmon.Tracker.App.Components.Updates.UpdateText.CheckAgain]<span aria-hidden="true"> ↗</span></button>
+            @if (!string.IsNullOrWhiteSpace(Status) || _graphSettingsSaved)
+            {
+                <span class="obsidian-settings-saved">@Text["Redesign.Settings.Saved"]</span>
+            }
+        </div>
     </header>
     <ObsidianSection Title="@Text["Settings.Starter.Group"]" Icon="ObsidianIconKind.Shuffle">
         <ObsidianToggle Class="obsidian-setting-row" Label="@Text["Settings.Starter.AutoSelectStarter"]" Description="@Text["Redesign.Settings.AutoSelectDescription"]" LabelFirst="true" Value="AutoSelectStarter" ValueChanged="HandleAutoSelectChanged" />

@@ -24,5 +24,8 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../../src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj" />
     <Using Include="Xunit" />
+    <Compile Include="../Ironmon.Updater.Tests/SignedReleaseFixture.cs" Link="Updates/SignedReleaseFixture.cs" />
+    <Compile Include="../Ironmon.Updater.Tests/TestWorkspace.cs" Link="Updates/TestWorkspace.cs" />
+    <Compile Include="../Ironmon.Updater.Tests/TrackerUpdateTestFixture.cs" Link="Updates/TrackerUpdateTestFixture.cs" />
   </ItemGroup>
 </Project>

@@ -45,6 +45,7 @@ public partial class LiveLookup : IDisposable
         _connection = ConnectionState.Snapshot;
         _run = RunState.Snapshot;
         UpdateCoverageSelection();
+        InitializeUpdateNavigation();
         ConnectionState.Changed += HandleConnectionChanged;
         RunState.Changed += HandleRunChanged;
         Connection.ObtainabilityProgress.Changed += HandlePreparationChanged;
@@ -152,6 +153,7 @@ public partial class LiveLookup : IDisposable
     {
         IReadOnlyList<string> moveTypes = TrackerTypeCoverageMoveSelector.SelectCurrentMoveTypes(_run.Player?.Moves ?? []);
         _coverageSelection.UpdateCurrentPokemon(_run.Player?.PokemonId, moveTypes);
+        RestoreUpdateCoverage();
     }
 
     /// <summary>
@@ -159,6 +161,8 @@ public partial class LiveLookup : IDisposable
     /// </summary>
     public void Dispose()
     {
+        UpdateNavigation?.Unregister(UpdateNavigationKey);
+        UpdateNavigation?.Unregister(UpdateCoverageKey);
         ConnectionState.Changed -= HandleConnectionChanged;
         RunState.Changed -= HandleRunChanged;
         Connection.ObtainabilityProgress.Changed -= HandlePreparationChanged;

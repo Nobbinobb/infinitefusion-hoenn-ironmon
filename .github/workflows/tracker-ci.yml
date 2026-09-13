@@ -9,6 +9,8 @@ on:
 
 permissions:
   contents: read
+  actions: read
+  pull-requests: read
 
 concurrency:
   group: tracker-ci-${{ github.workflow }}-${{ github.ref }}
@@ -17,19 +19,57 @@ concurrency:
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   DOTNET_NOLOGO: true
+  IRONMON_RUNTIME_TRACE: true
 
 jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      release: ${{ steps.version.outputs.release }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate mod, tracker and release-note versions
+        id: version
+        shell: pwsh
+        env:
+          BASE_COMMIT: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if ($env:BASE_COMMIT) { ./tools/ci/Test-ReleaseMetadata.ps1 -BaseCommit $env:BASE_COMMIT } else { ./tools/ci/Test-ReleaseMetadata.ps1; 'release=false' >> $env:GITHUB_OUTPUT }
+      - name: Validate automation contracts
+        shell: pwsh
+        run: |
+          ./tools/ci/Test-ReleaseAutomation.ps1
+          ./tools/ci/Test-ReleasePublication.ps1
+          ./tools/ci/Test-UpstreamWatch.ps1
+          ./tools/ci/Test-GenerationCache.ps1
   validation:
     name: PR validation
     if: always()
-    needs: [inputs, current-catalogs, core-tests, app-tests, sprite-contracts]
+    needs: [metadata, inputs, current-catalogs, core-tests, app-tests, sprite-contracts, candidate]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Require every gameplay, generation and tracker job to pass
+      - name: Require the selected validation path to pass
         env:
-          RESULTS: ${{ join(needs.*.result, ',') }}
-        run: test "$RESULTS" = 'success,success,success,success,success'
+          METADATA: ${{ needs.metadata.result }}
+          INPUTS: ${{ needs.inputs.result }}
+          SPRITES: ${{ needs.sprite-contracts.result }}
+          RELEASE_CHANGE: ${{ needs.metadata.outputs.release }}
+          CANDIDATE: ${{ needs.candidate.result }}
+          CATALOGS: ${{ needs.current-catalogs.result }}
+          CORE: ${{ needs.core-tests.result }}
+          APP: ${{ needs.app-tests.result }}
+        run: |
+          test "$METADATA,$INPUTS,$SPRITES" = 'success,success,success'
+          if [ "$RELEASE_CHANGE" = true ]; then
+            test "$CANDIDATE" = success
+          else
+            test "$CATALOGS,$CORE,$APP" = 'success,success,success'
+          fi
 
   sprite-contracts:
     name: Offline sprite catalogue tests
@@ -43,10 +83,12 @@ jobs:
       - run: python3 -m unittest discover -s tools/sprites -p 'test_*.py'
 
   inputs:
+    needs: metadata
     uses: ./.github/workflows/upstream-inputs.yml
 
   current-catalogs:
-    needs: [inputs, sprite-contracts]
+    needs: [metadata, inputs, sprite-contracts]
+    if: needs.metadata.outputs.release != 'true'
     name: Generate current-source catalogs
     runs-on: windows-latest
     timeout-minutes: 45
@@ -76,18 +118,21 @@ jobs:
       - name: Verify hosted game runtime
         shell: pwsh
         run: ./game/Ironmon/tools/ci/Test-HostedGameRuntime.ps1
-      - name: Generate catalogs from this source revision
-        shell: pwsh
-        working-directory: game/Ironmon
-        run: ./tools/Build-TrackerRelease.ps1 -GenerateOnly
+      - name: Reuse or generate catalogs for these exact inputs
+        uses: ./game/Ironmon/.github/actions/generated-catalogs
+        with:
+          project-root: game/Ironmon
+          snapshot-directory: upstream-inputs
       - name: Validate gameplay and generated data
         shell: pwsh
         working-directory: game/Ironmon
         run: |
-          ./tools/Test-GenerationProfile.ps1 -TimeoutSeconds 300
-          ./tools/Test-GameRuntime.ps1 -TimeoutSeconds 300
-          ./tools/Test-DefenseOverview.ps1
-          ./tools/Test-AreaEncounterLookup.ps1
+          ./tools/Test-GameAdoptionInventory.ps1
+          ./tools/Test-GenerationProfile.ps1 -TimeoutSeconds 300 -SkipBuild
+          ./tools/Test-GameRuntime.ps1 -TimeoutSeconds 600 -SkipBuild
+          ./tools/Test-UpdaterBootGuard.ps1 -TimeoutSeconds 90
+          ./tools/Test-DefenseOverview.ps1 -SkipBuild
+          ./tools/Test-AreaEncounterLookup.ps1 -SkipBuild
       - name: Share catalogs with tracker tests
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -99,6 +144,8 @@ jobs:
             game/Ironmon/data/obtainability_source_catalog.json
             game/Ironmon/data/type_coverage.json
             game/Ironmon/data/player_fusion_worker_catalog.json
+            game/Ironmon/data/updater/baselines/hoenn.json.gz
+            game/Ironmon/data/updater/baselines/hoenn.manifest.json
           retention-days: 1
           overwrite: true
           if-no-files-found: error
@@ -159,3 +206,30 @@ jobs:
 
       - name: Test
         run: dotnet test tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj --configuration Release --runtime win-x64 --no-restore --nologo --disable-build-servers --maxcpucount:1 -p:UseSharedCompilation=false
+
+      - name: Test updater and native installer
+        shell: pwsh
+        run: ./tools/Test-Updater.ps1 -Configuration Release
+
+  candidate:
+    needs: [metadata, inputs, sprite-contracts]
+    if: needs.metadata.outputs.release == 'true'
+    uses: ./.github/workflows/release-build.yml
+    with:
+      source_ref: ${{ github.sha }}
+      game_commit: ${{ needs.inputs.outputs.game_commit }}
+  ready:
+    name: Release readiness
+    if: always()
+    needs: [metadata, inputs, candidate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require a successful candidate for a version change
+        env:
+          METADATA_RESULT: ${{ needs.metadata.result }}
+          RELEASE_CHANGE: ${{ needs.metadata.outputs.release }}
+          CANDIDATE_RESULT: ${{ needs.candidate.result }}
+        run: |
+          test "$METADATA_RESULT" = success
+          if [ "$RELEASE_CHANGE" = true ]; then test "$CANDIDATE_RESULT" = success; fi

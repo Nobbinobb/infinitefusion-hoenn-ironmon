@@ -23,7 +23,8 @@ function gh {
     return (ConvertTo-Json -InputObject @(@($state.pull)) -Depth 8 -Compress)
   }
   if ($endpoint -like '*/workflows/*/runs?*') {
-    $workflow = if ($endpoint -like '*/tracker-ci.yml/*') { 'tracker' } else { 'candidate' }
+    if ($endpoint -notlike '*/tracker-ci.yml/*') { throw 'The scheduler must only dispatch the consolidated PR workflow.' }
+    $workflow = 'tracker'
     return (ConvertTo-Json -InputObject @{workflow_runs=@($state.runs[$workflow])} -Depth 8)
   }
   if ($endpoint -match '/runs/(\d+)/artifacts\?') {
@@ -37,10 +38,6 @@ function gh {
   if ($endpoint -like '*/pulls/1') {
     return (ConvertTo-Json -InputObject @{state='open';head=@{sha=$state.currentHead}} -Depth 6)
   }
-  if ($endpoint -like '*/runs/102/jobs?*') {
-    $jobs = if ($state.releaseCandidateBuilt) { @(@{name='candidate / build';conclusion='success'}) } else { @(@{name='candidate';conclusion='skipped'}) }
-    return (ConvertTo-Json -InputObject @{jobs=$jobs} -Depth 6)
-  }
   if ($endpoint -match '/runs/(\d+)/rerun$' -and $arguments[1] -eq '--method' -and $arguments[2] -eq 'POST') {
     $state.requested += [int]$Matches[1]
     return
@@ -49,11 +46,11 @@ function gh {
 }
 function Invoke-WatchCase([string]$Name, [scriptblock]$Arrange, [int[]]$Expected, [bool]$ExpectFailure = $false) {
   $state = @{
-    oldFingerprint='current'; currentHead=('a' * 40); requested=@(); missingArtifact=@(); expiredArtifact=@(); releaseCandidateBuilt=$false
+    oldFingerprint='current'; currentHead=('a' * 40); requested=@(); missingArtifact=@(); expiredArtifact=@()
     pull=@{number=1;head=@{sha=('a' * 40);repo=@{full_name='owner/repo'}}}
     runs=@{}
   }
-  foreach ($entry in @{tracker=101;candidate=102}.GetEnumerator()) {
+  foreach ($entry in @{tracker=101}.GetEnumerator()) {
     $state.runs[$entry.Key] = @{
       id=$entry.Value; head_sha=('a' * 40); pull_requests=@(@{number=1})
       status='completed';conclusion='success';run_attempt=1;created_at=[DateTimeOffset]::UtcNow.ToString('o')
@@ -82,23 +79,23 @@ New-Item -ItemType Directory -Path $OutputDirectory | Out-Null
 '@ | Set-Content "$testRoot/tools/Get-UpstreamInputs.ps1"
   $env:GITHUB_REPOSITORY = 'owner/repo'
   Invoke-WatchCase 'unchanged' {} @()
-  Invoke-WatchCase 'changed' { param($s) $s.oldFingerprint='old' } @(101,102)
+  Invoke-WatchCase 'changed' { param($s) $s.oldFingerprint='old' } @(101)
   $savedCulture = [Threading.Thread]::CurrentThread.CurrentCulture
   try {
     [Threading.Thread]::CurrentThread.CurrentCulture = [Globalization.CultureInfo]::GetCultureInfo('de-DE')
-    Invoke-WatchCase 'german-date-culture' { param($s) $s.oldFingerprint='old' } @(101,102)
+    Invoke-WatchCase 'german-date-culture' { param($s) $s.oldFingerprint='old' } @(101)
     Invoke-WatchCase 'string-dates' {
       param($s) $s.oldFingerprint='old'
       foreach ($run in $s.runs.Values) { $run.created_at=[DateTimeOffset]::UtcNow.ToString('r',[Globalization.CultureInfo]::InvariantCulture) }
-    } @(101,102)
+    } @(101)
   } finally { [Threading.Thread]::CurrentThread.CurrentCulture = $savedCulture }
   Invoke-WatchCase 'expired-artifact' { param($s) $s.expiredArtifact=@(101) } @(101)
   Invoke-WatchCase 'ordinary-pr' { param($s) $s.oldFingerprint='old'; $s.missingArtifact=@(102) } @(101)
   Invoke-WatchCase 'pruned-successful-runs' {
-    param($s) $s.missingArtifact=@(101,102); $s.releaseCandidateBuilt=$true
+    param($s) $s.missingArtifact=@(101)
     foreach ($run in $s.runs.Values) { $run.run_attempt=3 }
-  } @(101,102)
-  Invoke-WatchCase 'running' { param($s) $s.oldFingerprint='old'; $s.runs.tracker.status='in_progress' } @(102)
+  } @(101)
+  Invoke-WatchCase 'running' { param($s) $s.oldFingerprint='old'; $s.runs.tracker.status='in_progress' } @()
   Invoke-WatchCase 'head-moved' { param($s) $s.oldFingerprint='old'; $s.currentHead=('b' * 40) } @()
   Invoke-WatchCase 'fork' { param($s) $s.oldFingerprint='old'; $s.pull.head.repo.full_name='outside/fork' } @()
   Invoke-WatchCase 'rerun-window' {
@@ -106,7 +103,7 @@ New-Item -ItemType Directory -Path $OutputDirectory | Out-Null
     foreach ($run in $s.runs.Values) { $run.created_at=[DateTimeOffset]::UtcNow.AddDays(-31).ToString('o') }
   } @() $true
   Invoke-WatchCase 'resolution-failure-limit' {
-    param($s) $s.missingArtifact=@(101,102)
+    param($s) $s.missingArtifact=@(101)
     foreach ($run in $s.runs.Values) { $run.conclusion='failure'; $run.run_attempt=3 }
   } @()
   Write-Output 'Upstream scheduler contracts passed: unchanged/changed inputs, expired artifacts, ordinary PRs, running checks, moved heads, forks, rerun window and resolution retry limit.'

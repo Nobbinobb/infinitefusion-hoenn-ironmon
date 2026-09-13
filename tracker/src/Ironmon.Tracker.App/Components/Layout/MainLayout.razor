@@ -1,4 +1,8 @@
 ﻿@inherits LayoutComponentBase
 
-@Body
+@inject TrackerUpdateNavigation UpdateNavigation
+<CascadingValue Value="UpdateNavigation" IsFixed="true">
+    @Body
+</CascadingValue>
+<Ironmon.Tracker.App.Components.Updates.TrackerUpdatePanel />
 <PokemonSpriteDialogHost />

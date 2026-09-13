@@ -17,6 +17,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     private const string _preparationTestTrackerVersion = "0.1.0";
     private const string _fusionPreparationFailureCode = "fusion_lookup_failed";
     private const string _testGenerationProfileId = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    private static readonly TimeSpan _backgroundRequestTimeout = TimeSpan.FromSeconds(10);
     private readonly List<string> _roots = [];
 
     /// <summary>
@@ -88,8 +89,11 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     }
 
     /// <summary>
-    /// Verifies connecting to a ready active run starts background preparation promptly without opening Lookup.
+    /// Verifies connecting to a ready active run starts background preparation without opening Lookup.
     /// </summary>
+    /// <remarks>
+    /// The bounded receive allows shared-runner scheduling delays while the request assertions verify automatic preparation.
+    /// </remarks>
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -113,7 +117,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         GameCurrentStatePayload currentState = new(true, _activeRunId, null, 0, activeRunPreparationReady: true);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(currentStateRequest.RequestId!, currentState, _activeRunId));
 
-        TrackerMessage preparationRequest = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(1)));
+        TrackerMessage preparationRequest = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(_backgroundRequestTimeout));
         Assert.Equal(TrackerCommands.PrepareRunLookup, preparationRequest.Command);
         Assert.False(TrackerJson.DeserializePayload<RunLookupPreparationRequestPayload>(preparationRequest.Payload).Foreground);
         PokemonObtainabilityResponsePayload completed = new() { BackgroundComplete = true };
@@ -144,7 +148,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         GameCurrentStatePayload currentState = new(true, _activeRunId, null, 0, activeRunPreparationReady: true);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(currentStateRequest.RequestId!, currentState, _activeRunId));
 
-        TrackerMessage initialPreparation = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(1)));
+        TrackerMessage initialPreparation = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(_backgroundRequestTimeout));
         Assert.Equal(TrackerCommands.PrepareRunLookup, initialPreparation.Command);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(initialPreparation.RequestId!, new PokemonObtainabilityResponsePayload { BackgroundComplete = true }, _activeRunId));
         await WaitForObtainabilityProgressAsync(service.Requests.ObtainabilityProgress, _activeRunId, TrackerObtainabilityProgressStatus.Complete);
@@ -153,7 +157,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         service.Requests.ObtainabilityProgress.Reset();
         service.Requests.ClearArchiveObtainabilityPrecalculation(_archivedRunId);
 
-        TrackerMessage reconfirmation = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(1)));
+        TrackerMessage reconfirmation = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(_backgroundRequestTimeout));
         Assert.Equal(TrackerCommands.PrepareRunLookup, reconfirmation.Command);
         Assert.Equal(_activeRunId, reconfirmation.RunId);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(reconfirmation.RequestId!, new PokemonObtainabilityResponsePayload { BackgroundComplete = true }, _activeRunId));

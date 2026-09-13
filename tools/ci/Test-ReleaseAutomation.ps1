@@ -69,20 +69,30 @@ try {
   $candidate = Join-Path $testRoot 'candidate'
   New-Item -ItemType Directory -Path $candidate | Out-Null
   $version = '1.2.3'
-  $assets = @("Ironmon-v$version-win-x64.zip", "Ironmon-v$version-win-x64-runtime-required.zip", 'release-evidence.zip') | ForEach-Object {
-    $path = Join-Path $candidate $_
-    [IO.File]::WriteAllBytes($path, [byte[]]@(1,2,3,4))
-    $digest = (Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant()
-    "$digest  $_" | Set-Content ($path -replace '\.zip$', '.sha256.txt')
-    @{name=$_;sha256=$digest;bytes=4}
-  }
-  $manifest = @{schema_version=1;version=$version;source_commit=$sha;source_tree=$sha;run_id='123';inputs=@{fingerprint=$fingerprint;game_commit=$sha};assets=@($assets)}
-  $manifest | ConvertTo-Json -Depth 8 | Set-Content "$candidate/candidate.json"
+  . (Join-Path $PSScriptRoot 'ReleaseTestFixture.ps1')
+  $manifest = New-TestReleaseCandidate $candidate $version $sha $fingerprint 'owner/repo'
+  $assets = $manifest.assets
+  Assert-Equal $true (Test-ReleaseHistoryCurrent $candidate @() $version) 'First release needs no history'
+  Assert-Equal $true (Test-ReleaseHistoryCurrent $candidate @(@{tagName="v$version";isDraft=$false}) $version) 'Immutable publication retry keeps its original sequence'
+  Assert-Equal $false (Test-ReleaseHistoryCurrent $candidate @(@{tagName='v1.2.2';isDraft=$false}) $version) 'A newly published intermediate release invalidates missing history'
+  Assert-Equal $true (Test-ReleaseHistoryCurrent $candidate @(@{tagName='v1.2.2';isDraft=$true}) $version) 'Drafts do not advance release history'
   $null = Assert-ReleaseCandidate $candidate $sha $fingerprint $version
   $script:assertions++
   Assert-Rejected { Assert-ReleaseCandidate $candidate ('b' * 40) $fingerprint $version } 'Merged source tree must equal validated tree'
   Assert-Rejected { Assert-ReleaseCandidate $candidate $sha ('c' * 64) $version } 'Changed metadata requires a rebuild'
   Assert-Rejected { Assert-ReleaseCandidate $candidate $sha $fingerprint '1.2.4' } 'Candidate must match approved version'
+  $changedAsset = $manifest.assets | Where-Object role -CEQ 'tracker-self-contained'
+  $originalRole = $changedAsset.role
+  $changedAsset.role = 'setup'
+  $manifest | ConvertTo-Json -Depth 10 | Set-Content "$candidate/candidate.json"
+  Assert-Rejected { Assert-ReleaseCandidate $candidate $sha $fingerprint $version } 'A Setup role cannot replace the tracker payload role'
+  $changedAsset.role = $originalRole
+  $manifest | ConvertTo-Json -Depth 10 | Set-Content "$candidate/candidate.json"
+  $setup = Join-Path $candidate "Ironmon-Setup-v$version-win-x64.exe"
+  $setupBytes = [IO.File]::ReadAllBytes($setup)
+  Remove-Item -LiteralPath $setup
+  Assert-Rejected { Assert-ReleaseCandidate $candidate $sha $fingerprint $version } 'Missing Setup prevents candidate reuse and publication'
+  [IO.File]::WriteAllBytes($setup, $setupBytes)
   'extra' | Set-Content "$candidate/unexpected.txt"
   Assert-Rejected { Assert-ReleaseCandidate $candidate $sha $fingerprint $version } 'Unlisted assets cannot be published'
   Remove-Item "$candidate/unexpected.txt"
@@ -103,6 +113,7 @@ try {
     if ($parseErrors) { throw ($parseErrors | Out-String) }
   }
   Write-Output "Release automation contracts passed: $script:assertions assertions; all CI PowerShell scripts parsed."
+  & (Join-Path $PSScriptRoot 'Test-UpdateHistory.ps1')
 } finally {
   if (Test-Path Function:git) { Remove-Item Function:git }
   $resolved = [IO.Path]::GetFullPath($testRoot)

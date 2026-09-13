@@ -1,8 +1,10 @@
 <#
 .SYNOPSIS
 Validates defense presentation and enemy privacy in the bundled game runtime without loading a save.
+.PARAMETER SkipBuild
+Use the distribution prepared by the calling release or CI workflow.
 #>
-param([int]$TimeoutSeconds = 90)
+param([int]$TimeoutSeconds = 90, [switch]$SkipBuild)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'generation\GameRuntime-Tooling.ps1')
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -27,7 +29,9 @@ $bootstrap = @(
     'exit! 1'
     'end'
 ) -join "`n"
-& (Join-Path $PSScriptRoot 'Build-Distribution.ps1')
+if (-not $SkipBuild) {
+    & (Join-Path $PSScriptRoot 'Build-Distribution.ps1')
+}
 Remove-Item -LiteralPath "$reportPath.error" -Force -ErrorAction SilentlyContinue
 Invoke-IronmonGameRuntime -GameRoot $gameRoot -RubySource $bootstrap -TimeoutSeconds $TimeoutSeconds -OperationName 'defense overview tests' -ErrorReportPath "$reportPath.error"
 $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
