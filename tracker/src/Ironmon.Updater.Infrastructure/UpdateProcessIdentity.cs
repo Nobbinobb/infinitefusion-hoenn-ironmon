@@ -104,6 +104,50 @@ public sealed record UpdateProcessIdentity(int Id, long StartedUtcTicks, string 
     /// <returns>A completed idle check or an explicit running/inaccessible process blocker.</returns>
     public static Task EnsureInstallationIdleAsync(string installationRoot, string trackerRelativePath, CancellationToken cancellationToken = default)
     {
+        if (FindInstallationBlocker(installationRoot, trackerRelativePath, cancellationToken) is { } blocker)
+            throw new IOException(blocker);
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Retains prepared files while waiting for the selected installation and external launchers to become idle.
+    /// </summary>
+    /// <param name="installationRoot">The selected installation.</param>
+    /// <param name="trackerRelativePath">The fixed tracker executable path.</param>
+    /// <param name="cancellationToken">The token that cancels waiting without terminating applications.</param>
+    /// <returns>A task completing when installation can continue automatically.</returns>
+    public static Task WaitForInstallationIdleAsync(string installationRoot, string trackerRelativePath, CancellationToken cancellationToken = default)
+        => WaitForInstallationIdleAsync(token => FindInstallationBlocker(installationRoot, trackerRelativePath, token), cancellationToken);
+
+    /// <summary>
+    /// Waits on an independently supplied process probe while keeping other inspection failures visible.
+    /// </summary>
+    /// <param name="findBlocker">The process probe returning a running-application message or null.</param>
+    /// <param name="cancellationToken">The cancellable wait token.</param>
+    /// <returns>A task completing after the blocker disappears.</returns>
+    internal static async Task WaitForInstallationIdleAsync(Func<CancellationToken, string?> findBlocker, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (findBlocker(cancellationToken) is null)
+                return;
+
+            InstallationProgressScope.Report(new(InstallationStage.WaitingForApplications));
+            await Task.Delay(TimeSpan.FromMilliseconds(500), cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Identifies running game, tracker and launcher processes without closing them or changing installation files.
+    /// </summary>
+    /// <param name="installationRoot">The selected installation.</param>
+    /// <param name="trackerRelativePath">The fixed tracker executable path.</param>
+    /// <param name="cancellationToken">The process inspection token.</param>
+    /// <returns>The localized blocker, or null when no relevant application is running.</returns>
+    private static string? FindInstallationBlocker(string installationRoot, string trackerRelativePath, CancellationToken cancellationToken)
+    {
         var paths = new[] { PlainPaths.Child(installationRoot, GameInstallationLocator.GameExecutable), PlainPaths.Child(installationRoot, trackerRelativePath) };
         foreach (var path in paths)
         {
@@ -114,7 +158,7 @@ public sealed record UpdateProcessIdentity(int Id, long StartedUtcTicks, string 
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     if (!process.HasExited && string.Equals(Capture(process).ExecutablePath, path, StringComparison.OrdinalIgnoreCase))
-                        throw new IOException(UpdaterText.UpdateProcessIdentityTheInstallationSGameOrTrackerIsRunningClose);
+                        return UpdaterText.UpdateProcessIdentityTheInstallationSGameOrTrackerIsRunningClose;
                 }
             }
             finally
@@ -131,7 +175,7 @@ public sealed record UpdateProcessIdentity(int Id, long StartedUtcTicks, string 
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (processes.Any(process => !process.HasExited))
-                    throw new IOException(UpdaterText.UpdateProcessIdentityCloseTheInfiniteFusionLauncherAndInstallerBeforeUpdating);
+                    return UpdaterText.UpdateProcessIdentityCloseTheInfiniteFusionLauncherAndInstallerBeforeUpdating;
             }
             finally
             {
@@ -140,6 +184,6 @@ public sealed record UpdateProcessIdentity(int Id, long StartedUtcTicks, string 
             }
         }
 
-        return Task.CompletedTask;
+        return null;
     }
 }

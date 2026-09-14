@@ -21,6 +21,56 @@ public sealed class UpdateProcessTests
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(15);
 
     /// <summary>
+    /// Reports a normal waiting stage and continues after a process blocker clears without bypassing the next probe.
+    /// </summary>
+    [Fact]
+    public async Task WaitingForLauncherContinuesAutomatically()
+    {
+        var blocked = 1;
+        var checks = 0;
+        var waiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var progress = new InstallationProgressScope(value =>
+        {
+            Assert.Equal(InstallationStage.WaitingForApplications, value.Stage);
+            Assert.Equal(Ironmon.Updater.Core.UpdaterText.ProgressWaitingForApplications, value.Text);
+            waiting.TrySetResult();
+        });
+        using var cancellation = new CancellationTokenSource(_timeout);
+        var operation = UpdateProcessIdentity.WaitForInstallationIdleAsync(_ =>
+        {
+            Interlocked.Increment(ref checks);
+            return Volatile.Read(ref blocked) != 0 ? Ironmon.Updater.Core.UpdaterText.UpdateProcessIdentityCloseTheInfiniteFusionLauncherAndInstallerBeforeUpdating : null;
+        }, cancellation.Token);
+        await waiting.Task.WaitAsync(_timeout);
+        Assert.False(operation.IsCompleted);
+        Volatile.Write(ref blocked, 0);
+        await operation.WaitAsync(_timeout);
+        Assert.True(checks >= 2);
+    }
+
+    /// <summary>
+    /// Cancels the wait without retrying indefinitely or converting cancellation into an installation error.
+    /// </summary>
+    [Fact]
+    public async Task WaitingForLauncherCanBeCancelled()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var operation = UpdateProcessIdentity.WaitForInstallationIdleAsync(_ => Ironmon.Updater.Core.UpdaterText.UpdateProcessIdentityCloseTheInfiniteFusionLauncherAndInstallerBeforeUpdating, cancellation.Token);
+        Assert.False(operation.IsCompleted);
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => operation);
+    }
+
+    /// <summary>
+    /// Does not mistake access or process-inspection failures for a running launcher that can be waited out.
+    /// </summary>
+    [Fact]
+    public async Task WaitingDoesNotSwallowInspectionFailures()
+    {
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => UpdateProcessIdentity.WaitForInstallationIdleAsync(_ => throw new UnauthorizedAccessException(), CancellationToken.None));
+    }
+
+    /// <summary>
     /// Does not mistake a reused PID for its former process or accept the same PID with a different executable path.
     /// </summary>
     [Fact]

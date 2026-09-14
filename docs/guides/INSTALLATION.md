@@ -51,8 +51,9 @@ download. They do not add an installer or updater to older published packages.
 4. Review the release, game version and any file conflicts, then choose Install.
    Save your game before continuing. Setup downloads and verifies the required
    files, asks the game to close normally if necessary, and installs the game,
-   Ironmon scripts and tracker together. If the game cannot close, the operation
-   waits or stops; it does not force-terminate the game.
+   Ironmon scripts and tracker together. If the game, tracker or official launcher
+   is still running, Setup keeps the prepared files and waits. Close the named
+   applications; installation continues automatically without another download.
 5. Open the tracker when installation finishes. You can delete the downloaded
    Setup executable afterward; future updates start inside the tracker.
 
@@ -62,6 +63,10 @@ bar describes the current stage; it starts over when the next stage begins.
 A moving bar means that stage's total is not known yet. Game preparation,
 verification, and recovery backups can continue after downloading finishes.
 Optional sprite sheets download after the core installation succeeds.
+
+You can cancel while Setup waits for applications to close. After cleanup, you
+can select the same new-install folder again; retained updater recovery files
+do not make it an occupied game folder.
 
 New installations default to the self-contained tracker, which includes .NET.
 Existing installations keep their detected tracker package type. Setup does not
@@ -101,7 +106,8 @@ preparation. The reviewed release and file approvals are checked again afterward
 The update warns that it will close the game and tracker. After the tracker
 closes, a separate updater window shows installation and recovery progress. The
 tracker cannot display progress while it is closed. Successful updates relaunch
-the tracker; start the game when you are ready to play.
+the tracker; start the game when you are ready to play. If the official launcher
+is open, the updater waits and continues automatically after you close it.
 
 Ironmon and its tracker always update together. If that release needs another
 game revision, the same operation updates the game too. An active Ironmon run

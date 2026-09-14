@@ -328,11 +328,11 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
                 {
                     if (prepared.Elevation is not null)
                     {
-                        await ProtectedUpdateClient.DiscardAsync(prepared, token).ConfigureAwait(false);
+                        await ProtectedUpdateClient.DiscardAsync(prepared, CancellationToken.None).ConfigureAwait(false);
                     }
                     else
                     {
-                        await Engine(prepared.InstallationRoot).DiscardPreparedAsync(prepared.InstallationRoot, prepared.TransactionId, token).ConfigureAwait(false);
+                        await Engine(prepared.InstallationRoot).DiscardPreparedAsync(prepared.InstallationRoot, prepared.TransactionId, CancellationToken.None).ConfigureAwait(false);
                     }
                 }
 

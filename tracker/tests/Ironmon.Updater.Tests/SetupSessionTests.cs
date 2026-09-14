@@ -29,6 +29,79 @@ public sealed class SetupSessionTests
     private const string NewInstallation = "new";
 
     /// <summary>
+    /// Keeps the original prepared transaction while applications are open and commits it without another review or download.
+    /// </summary>
+    [Fact]
+    public async Task LauncherClosureContinuesThePreparedInstallation()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        PrepareGame(fixture);
+        using var sprites = new CustomSpriteSheetInstaller();
+        var waiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var platform = new Platform { CloseAction = async token => { waiting.TrySetResult(); await closed.Task.WaitAsync(token); } };
+        using var session = Create(fixture, sprites, platform);
+        await session.ReviewAsync(fixture.Release.Root, null, true);
+        var install = session.InstallAsync(false, false, false);
+        try
+        {
+            await waiting.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(session.IsBusy);
+            Assert.Null(session.Error);
+            Assert.False(session.CoreInstalled);
+            Assert.NotNull(UpdateTransaction.ReadActiveId(fixture.Release.Root));
+            var requests = fixture.Release.Requests.Count;
+            closed.SetResult();
+            await install.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(session.CoreInstalled, session.Error);
+            Assert.Equal(requests, fixture.Release.Requests.Count);
+            Assert.Equal(1, platform.Closures);
+            Assert.Null(UpdateTransaction.ReadActiveId(fixture.Release.Root));
+        }
+        finally
+        {
+            session.Cancel();
+            closed.TrySetResult();
+            await install;
+        }
+    }
+
+    /// <summary>
+    /// Completes preparation cleanup with a live token when the player cancels while waiting for applications to close.
+    /// </summary>
+    [Fact]
+    public async Task CancellingApplicationWaitReleasesThePreparedTransaction()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        PrepareGame(fixture);
+        using var sprites = new CustomSpriteSheetInstaller();
+        var waiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var platform = new Platform { CloseAction = async token => { waiting.TrySetResult(); await closed.Task.WaitAsync(token); } };
+        using var session = Create(fixture, sprites, platform);
+        await session.ReviewAsync(fixture.Release.Root, null, true);
+        var install = session.InstallAsync(false, false, false);
+        try
+        {
+            await waiting.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.NotNull(UpdateTransaction.ReadActiveId(fixture.Release.Root));
+            session.Cancel();
+            await install.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.False(session.CoreInstalled);
+            Assert.Null(session.Error);
+            Assert.Null(UpdateTransaction.ReadActiveId(fixture.Release.Root));
+            await session.ReviewAsync(fixture.Release.Root, null, true);
+            Assert.True(session.CanInstall, session.Error);
+        }
+        finally
+        {
+            session.Cancel();
+            closed.TrySetResult();
+            await install;
+        }
+    }
+
+    /// <summary>
     /// Keeps optional downloads opt-in and retries a failed shortcut without reinstalling verified core files.
     /// </summary>
     [Fact]
@@ -318,6 +391,11 @@ public sealed class SetupSessionTests
         public bool WebViewAvailable { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets an isolated cancellable process wait.
+        /// </summary>
+        internal Func<CancellationToken, Task>? CloseAction { get; set; }
+
+        /// <summary>
         /// Gets or sets whether the shortcut action fails.
         /// </summary>
         internal bool FailShortcut { get; set; }
@@ -363,7 +441,7 @@ public sealed class SetupSessionTests
         public Task CloseInstallationAsync(string root, CancellationToken cancellationToken)
         {
             Closures++;
-            return Task.CompletedTask;
+            return CloseAction?.Invoke(cancellationToken) ?? Task.CompletedTask;
         }
 
         /// <summary>

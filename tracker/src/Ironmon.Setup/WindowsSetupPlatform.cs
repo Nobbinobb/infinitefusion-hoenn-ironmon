@@ -168,12 +168,12 @@ internal sealed class WindowsSetupPlatform : ISetupPlatform
 
                     var identity = UpdateProcessIdentity.Capture(process);
                     if (identity.ExecutablePath.Equals(expected, StringComparison.OrdinalIgnoreCase))
-                        await identity.WaitForExitAsync(requestClose: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        await identity.WaitForExitAsync(requestClose: true, waiting: _ => InstallationProgressScope.Report(new(InstallationStage.WaitingForApplications)), cancellationToken: cancellationToken).ConfigureAwait(false);
                 }
             }
         }
 
-        await UpdateProcessIdentity.EnsureInstallationIdleAsync(root, UpdaterHandoff.TrackerRelativePath, cancellationToken).ConfigureAwait(false);
+        await UpdateProcessIdentity.WaitForInstallationIdleAsync(root, UpdaterHandoff.TrackerRelativePath, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

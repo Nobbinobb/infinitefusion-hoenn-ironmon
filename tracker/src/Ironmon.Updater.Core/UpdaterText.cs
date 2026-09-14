@@ -3249,4 +3249,10 @@ public static class UpdaterText
     /// </summary>
     public static string ProgressInstallationInProgress
         => Get(nameof(ProgressInstallationInProgress));
+
+    /// <summary>
+    /// Gets the instruction for automatically continuing after running applications close.
+    /// </summary>
+    public static string ProgressWaitingForApplications
+        => Get(nameof(ProgressWaitingForApplications));
 }
