@@ -2,6 +2,8 @@ name: Publish release
 on:
   push:
     branches: [main]
+    paths:
+      - 'tracker/src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj'
   workflow_dispatch:
     inputs:
       source_commit:
@@ -68,6 +70,7 @@ jobs:
       reuse_candidate: true
   publish:
     needs: [plan, inputs, candidate]
+    if: needs.plan.outputs.release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: release

@@ -81,6 +81,11 @@ jobs:
           persist-credentials: false
       - run: python3 -m pip install -r tools/sprites/requirements.txt
       - run: python3 -m unittest discover -s tools/sprites -p 'test_*.py'
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build sprite measurement tool without generated installer data
+        run: dotnet build tracker/tools/Ironmon.SpriteSizeTool -c Release -p:UpdaterMetadataOnly=true
 
   inputs:
     needs: metadata
