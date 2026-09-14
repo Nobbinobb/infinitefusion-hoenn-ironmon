@@ -231,7 +231,8 @@ public sealed class SetupWindowTests
             Assert.DoesNotContain("Checking", session.Status);
             Assert.Empty(Descendants<RadioButton>((DependencyObject)window.Content));
             Buttons(window).Single(button => Equals(button.Content, "Review installation")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            PumpUntil(() => !session.IsBusy && Buttons(window).Any(button => Equals(button.Content, "Check again")));
+            PumpUntil(() => !session.IsBusy && Buttons(window).Any(button => Equals(button.Content, "Check again"))
+                && (confirmation ? Descendants<CheckBox>((DependencyObject)window.Content).Any() : Buttons(window).Any(button => Equals(button.Content, "Check again") && button.IsEnabled)));
             Assert.Equal(confirmation, session.NeedsRunConfirmation);
             Assert.NotNull(session.Error);
             if (confirmation)
