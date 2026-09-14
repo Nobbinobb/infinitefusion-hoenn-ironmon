@@ -16,6 +16,14 @@ public interface ISetupPlatform
     bool WebViewAvailable { get; }
 
     /// <summary>
+    /// Observes the full prerequisite download size without downloading or installing the runtime.
+    /// </summary>
+    /// <param name="cancellationToken">The metadata query token.</param>
+    /// <returns>The current installer size, or null when the server does not provide it.</returns>
+    Task<long?> GetWebViewDownloadBytesAsync(CancellationToken cancellationToken)
+        => Task.FromResult<long?>(null);
+
+    /// <summary>
     /// Rejects unsupported operating systems before installation.
     /// </summary>
     void EnsureSupported();
@@ -61,7 +69,8 @@ public interface ISetupPlatform
 /// <param name="platform">The narrow Windows integration boundary.</param>
 /// <param name="downloads">The measured shared release cache.</param>
 /// <param name="protectedUpdates">The optional Windows administrator boundary.</param>
-public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation preparation, Func<string, Action<TransactionProgress>, UpdateTransaction> transactions, CustomSpriteSheetInstaller sprites, ISetupPlatform platform, ReleaseDownloadStore downloads, ProtectedUpdateClient? protectedUpdates = null) : IDisposable
+/// <param name="spriteEstimates">The optional public size reader; estimates never authorize installed content.</param>
+public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation preparation, Func<string, Action<TransactionProgress>, UpdateTransaction> transactions, CustomSpriteSheetInstaller sprites, ISetupPlatform platform, ReleaseDownloadStore downloads, ProtectedUpdateClient? protectedUpdates = null, Func<string, CancellationToken, Task<SpriteDownloadEstimate?>>? spriteEstimates = null) : IDisposable
 {
     private readonly ReleaseDiscovery _discovery = discovery;
     private readonly SetupPreparation _preparation = preparation;
@@ -131,6 +140,16 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
     public bool NeedsWebView => !_platform.WebViewAvailable;
 
     /// <summary>
+    /// Gets the full prerequisite download size observed during review, when available.
+    /// </summary>
+    public long? WebViewDownloadBytes { get; private set; }
+
+    /// <summary>
+    /// Gets the latest complete daily sprite estimate for the selected supported game version.
+    /// </summary>
+    public SpriteDownloadEstimate? SpriteDownloadEstimate { get; private set; }
+
+    /// <summary>
     /// Gets actual byte progress for the current package.
     /// </summary>
     public ReleaseDownloadProgress? Download { get; private set; }
@@ -173,14 +192,14 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
     /// <summary>
     /// Checks a chosen folder locally before presenting installation options.
     /// </summary>
-    /// <param name="destination">The selected game directory.</param>
+    /// <param name="destination">The selected parent or existing game directory.</param>
     /// <returns>The local inspection without network requests or installation writes.</returns>
     public Task SelectDestinationAsync(string destination) => RunAsync(_ =>
     {
         _platform.EnsureSupported();
         ResetReview();
         Destination = null;
-        Destination = SetupPreparation.InspectDestination(destination);
+        Destination = SetupPreparation.ResolveDestination(destination);
         Status = Destination.InstalledFlavor is null ? UpdaterText.SetupSessionChooseYourInstallationOptions : UpdaterText.SetupSessionSetupWillKeepYourInstalledTrackerPackage;
         return Task.CompletedTask;
     });
@@ -203,6 +222,8 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
     {
         Review = null;
         Error = null;
+        WebViewDownloadBytes = null;
+        SpriteDownloadEstimate = null;
         RecoveryId = null;
         NeedsRunConfirmation = false;
         _approvals.Clear();
@@ -212,7 +233,7 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
     /// <summary>
     /// Reviews a destination and stable release before any program package or optional sprite download.
     /// </summary>
-    /// <param name="destination">The chosen local destination.</param>
+    /// <param name="destination">The resolved installation root returned by local folder selection.</param>
     /// <param name="flavor">An explicit package choice, or null to preserve the installed flavor.</param>
     /// <param name="noActiveRun">Whether the player explicitly confirmed no active Ironmon run.</param>
     /// <returns>The completed metadata review.</returns>
@@ -221,6 +242,7 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
         _platform.EnsureSupported();
         Review = null;
         NeedsRunConfirmation = false;
+        SpriteDownloadEstimate = null;
         CoreInstalled = false;
         OptionalIncomplete = false;
         _approvals.Clear();
@@ -237,6 +259,11 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
         var found = await _discovery.CheckAsync(true, token).ConfigureAwait(false);
         var release = found.Release ?? throw new IOException(found.Error ?? UpdaterText.SetupSessionNoSupportedSignedReleaseIsAvailableYetTryAgain);
         Review = await _preparation.ReviewAsync(InstallationRoot, release, flavor, noActiveRun, token).ConfigureAwait(false);
+        var webViewSize = NeedsWebView ? _platform.GetWebViewDownloadBytesAsync(token) : Task.FromResult<long?>(0);
+        var spriteSize = spriteEstimates is null ? Task.FromResult<SpriteDownloadEstimate?>(null) : spriteEstimates(Review.Authorization.Request.GameCommit, token);
+        await Task.WhenAll(webViewSize, spriteSize).ConfigureAwait(false);
+        WebViewDownloadBytes = await webViewSize.ConfigureAwait(false);
+        SpriteDownloadEstimate = await spriteSize.ConfigureAwait(false);
         Status = Review.AlreadyCurrent ? UpdaterText.SetupSessionYourCoreInstallationIsCurrentYouCanAddThe : UpdaterText.SetupSessionReviewYourInstallationAndOptionsThenChooseInstall;
     });
 

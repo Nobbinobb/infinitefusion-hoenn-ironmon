@@ -200,6 +200,13 @@ internal static class ReleaseBundle
         assets.Add(Asset(directory, request.Version, SetupName(request.Version), ReleaseProtocol.SetupRole));
         assets.Add(Asset(directory, request.Version, NotesName, ReleaseProtocol.NotesRole));
         ReleaseMetadataFile[] metadataFiles = [.. assets.Where(asset => asset.Role is ReleaseProtocol.InventoryRole or ReleaseProtocol.LegacyRole or ReleaseProtocol.GameInventoryRole or ReleaseProtocol.NotesRole).OrderBy(asset => asset.Name, StringComparer.Ordinal).Select(asset => new ReleaseMetadataFile(asset.Name, File.ReadAllBytes(PlainPaths.Child(directory, asset.Name))))];
+        if (request.GameDownloadBytes is { } gameDownloadBytes)
+        {
+            var sizes = new ReleaseDownloadSizeDocument(ReleaseDownloadSizes.DocumentType, 1, game.Commit, gameDownloadBytes);
+            metadataFiles = [.. metadataFiles, new ReleaseMetadataFile(ReleaseDownloadSizes.FileName, ReleaseJson.Serialize(sizes))];
+        }
+
+        ReleaseDownloadSizes.Read(new ReleaseMetadataDocument(ReleaseMetadata.DocumentType, 1, metadataFiles), game.Commit, game.Commit);
         WriteImmutable(directory, ReleaseMetadata.Name, ReleaseJson.Serialize(new ReleaseMetadataDocument(ReleaseMetadata.DocumentType, 1, metadataFiles)));
         var metadataAsset = Asset(directory, request.Version, ReleaseMetadata.Name, ReleaseMetadata.Role);
         var container = new ReleaseContainer(metadataAsset.Name, metadataAsset.Bytes, metadataAsset.Sha256);
@@ -231,6 +238,7 @@ internal static class ReleaseBundle
             throw new InvalidDataException("The release's historical inventories exceed the installed clients' metadata budget.");
 
         var metadata = ReadMetadata(directory, manifest);
+        ReleaseDownloadSizes.Read(metadata, manifest.Game.PreferredCommit, manifest.Game.PreferredCommit);
         var inventories = new List<ReleaseFileInventory>();
         foreach (var asset in manifest.Assets)
         {

@@ -14,4 +14,5 @@ namespace Ironmon.ReleaseTool;
 /// <param name="GameManifest">Its generated identity and checksum companion.</param>
 /// <param name="TrustFile">The reviewed public key document used to build every executable.</param>
 /// <param name="HistoryDirectory">The previous published metadata, or null for the first release.</param>
-internal sealed record BundleRequest(string Directory, string Version, string GameVersion, string GameCommit, string GameInventory, string GameManifest, string TrustFile, string? HistoryDirectory);
+/// <param name="GameDownloadBytes">The pipeline-measured compressed game snapshot size, or null for legacy producer fixtures.</param>
+internal sealed record BundleRequest(string Directory, string Version, string GameVersion, string GameCommit, string GameInventory, string GameManifest, string TrustFile, string? HistoryDirectory, long? GameDownloadBytes = null);

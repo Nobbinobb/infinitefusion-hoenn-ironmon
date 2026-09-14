@@ -2,7 +2,6 @@ using Ironmon.Updater.Core;
 using System.Net.Http;
 using System.IO;
 using System.Diagnostics;
-using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 using Ironmon.Setup.Core;
@@ -18,10 +17,7 @@ internal sealed class WindowsSetupPlatform : ISetupPlatform
 {
     private const string WebViewKey = @"SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
     private const string VersionValue = "pv";
-    private const string BootstrapperUrl = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
-    private const string MicrosoftDomain = ".microsoft.com";
-    private const string MicrosoftHost = "microsoft.com";
-    private const string BootstrapperName = "MicrosoftEdgeWebview2Setup.exe";
+    private const string RuntimeInstallerName = "MicrosoftEdgeWebView2RuntimeInstallerX64.exe";
     private const string CacheDirectory = "Ironmon/Updater/prerequisites";
     private const string PowerShellPath = @"WindowsPowerShell\v1.0\powershell.exe";
     private const string SignaturePathVariable = "IRONMON_PREREQUISITE_PATH";
@@ -38,7 +34,7 @@ internal sealed class WindowsSetupPlatform : ISetupPlatform
     private const string ShortcutName = "Ironmon Tracker.lnk";
     private const string ShortcutExtension = ".lnk";
     private const string GuidFormat = "N";
-    private const int BootstrapperLimit = 20 * 1024 * 1024;
+    private readonly WebViewPackageDownload _webViewDownload = new();
 
     /// <summary>
     /// Detects the installed Evergreen runtime in Microsoft's documented per-user and per-machine registration.
@@ -69,7 +65,19 @@ internal sealed class WindowsSetupPlatform : ISetupPlatform
     }
 
     /// <summary>
-    /// Downloads only Microsoft's bootstrapper after consent, authenticates it, installs, then detects the runtime again.
+    /// Reads the standalone runtime's current download size without downloading any installer body.
+    /// </summary>
+    /// <param name="cancellationToken">The review token.</param>
+    /// <returns>The complete runtime package size, when Microsoft supplies it.</returns>
+    public async Task<long?> GetWebViewDownloadBytesAsync(CancellationToken cancellationToken)
+    {
+        using var handler = new HttpClientHandler { AllowAutoRedirect = false };
+        using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
+        return await _webViewDownload.InspectAsync(client, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Downloads only Microsoft's full x64 runtime installer after consent, authenticates it, installs, then detects the runtime again.
     /// </summary>
     /// <param name="cancellationToken">The pre-launch cancellation token.</param>
     /// <returns>The independently rechecked runtime availability.</returns>
@@ -80,40 +88,11 @@ internal sealed class WindowsSetupPlatform : ISetupPlatform
 
         var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), CacheDirectory, Guid.NewGuid().ToString(GuidFormat));
         Directory.CreateDirectory(directory);
-        var file = Path.Combine(directory, BootstrapperName);
+        var file = Path.Combine(directory, RuntimeInstallerName);
         using var handler = new HttpClientHandler { AllowAutoRedirect = false };
         using var client = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(3) };
-        var uri = new Uri(BootstrapperUrl);
-        for (var redirects = 0; ; redirects++)
-        {
-            if (redirects > 5 || uri.Scheme != Uri.UriSchemeHttps || uri.UserInfo.Length != 0 || !(uri.Host.Equals(MicrosoftHost, StringComparison.OrdinalIgnoreCase) || uri.Host.EndsWith(MicrosoftDomain, StringComparison.OrdinalIgnoreCase)))
-                throw new IOException(UpdaterText.WindowsSetupPlatformThePrerequisiteDownloadDidNotRemainOnMicrosoftS);
-
-            using var response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-            if (response.StatusCode is HttpStatusCode.MovedPermanently or HttpStatusCode.Redirect or HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect or HttpStatusCode.SeeOther)
-            {
-                uri = new Uri(uri, response.Headers.Location ?? throw new IOException(UpdaterText.WindowsSetupPlatformMicrosoftSDownloadRedirectIsIncomplete));
-                continue;
-            }
-
-            response.EnsureSuccessStatusCode();
-            if (response.Content.Headers.ContentLength is > BootstrapperLimit)
-                throw new IOException(UpdaterText.WindowsSetupPlatformThePrerequisiteBootstrapperExceedsTheSupportedSize);
-
-            await using var input = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            await using var output = new FileStream(file, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-            var buffer = new byte[81920];
-            int count;
-            while ((count = await input.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) != 0)
-            {
-                if (output.Length + count > BootstrapperLimit)
-                    throw new IOException(UpdaterText.WindowsSetupPlatformThePrerequisiteBootstrapperExceedsTheSupportedSize);
-
-                await output.WriteAsync(buffer.AsMemory(0, count), cancellationToken).ConfigureAwait(false);
-            }
-
-            break;
-        }
+        await using (var output = new FileStream(file, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            await _webViewDownload.DownloadAsync(client, output, cancellationToken).ConfigureAwait(false);
 
         using var locked = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
         await VerifyMicrosoftPublisherAsync(file, cancellationToken).ConfigureAwait(false);
@@ -130,7 +109,7 @@ internal sealed class WindowsSetupPlatform : ISetupPlatform
     /// <summary>
     /// Requires Windows Authenticode validation and the Microsoft Corporation signer before prerequisite execution.
     /// </summary>
-    /// <param name="file">The locked downloaded bootstrapper.</param>
+    /// <param name="file">The locked downloaded runtime installer.</param>
     /// <param name="cancellationToken">The verification token.</param>
     /// <returns>The publisher verification, or a failure without executing the downloaded file.</returns>
     internal static async Task VerifyMicrosoftPublisherAsync(string file, CancellationToken cancellationToken)

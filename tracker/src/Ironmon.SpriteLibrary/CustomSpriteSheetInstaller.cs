@@ -139,16 +139,7 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
         if (!File.Exists(customManifestPath) || !File.Exists(baseManifestPath))
             throw new InvalidOperationException(InvalidManifestMessage);
 
-        IEnumerable<CustomSpriteSheetTarget?> targets = File.ReadLines(customManifestPath)
-            .Select(CreateCustomTarget)
-            .Concat(File.ReadLines(baseManifestPath).Select(CreateBaseTarget));
-
-        List<CustomSpriteSheetTarget> allSheets = [.. targets
-            .Where(static target => target is not null)
-            .Select(target => target!)
-            .DistinctBy(static target => (target.Kind, target.RelativePath))
-            .OrderBy(static target => target.Kind)
-            .ThenBy(static target => target.RelativePath, StringComparer.OrdinalIgnoreCase)
+        List<CustomSpriteSheetTarget> allSheets = [.. GetSheetTargets(File.ReadLines(customManifestPath), File.ReadLines(baseManifestPath))
             .Select(target => target with { DestinationPath = GetDestinationPath(resolvedRoot, target) })
             .Select(target => target with { HasValidLocalFile = IsValidPng(target.DestinationPath) })];
 
@@ -514,8 +505,24 @@ public sealed partial class CustomSpriteSheetInstaller : IDisposable
     /// </summary>
     /// <param name="target">The parsed sprite-sheet target.</param>
     /// <returns>The absolute official resource URI.</returns>
-    private static Uri GetResourceUri(CustomSpriteSheetTarget target)
+    internal static Uri GetResourceUri(CustomSpriteSheetTarget target)
         => new(target.Kind == CustomSpriteSheetKind.Base ? _baseSpriteSheetBaseUri : _customSpriteSheetBaseUri, target.RelativePath);
+
+    /// <summary>
+    /// Shares the exact deduplicated sheet selection between player downloads and daily size measurement.
+    /// </summary>
+    /// <param name="customManifest">The custom-fusion manifest lines.</param>
+    /// <param name="baseManifest">The base-species manifest lines.</param>
+    /// <returns>The ordered official sheet targets without inspecting or modifying local files.</returns>
+    internal static IReadOnlyList<CustomSpriteSheetTarget> GetSheetTargets(IEnumerable<string> customManifest, IEnumerable<string> baseManifest)
+    {
+        return [.. customManifest.Select(CreateCustomTarget)
+            .Concat(baseManifest.Select(CreateBaseTarget))
+            .OfType<CustomSpriteSheetTarget>()
+            .DistinctBy(static target => (target.Kind, target.RelativePath))
+            .OrderBy(static target => target.Kind)
+            .ThenBy(static target => target.RelativePath, StringComparer.OrdinalIgnoreCase)];
+    }
 
     /// <summary>
     /// Resolves the game-owned destination for one library-specific sheet target.

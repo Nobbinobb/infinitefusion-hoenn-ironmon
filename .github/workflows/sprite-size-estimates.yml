@@ -1,0 +1,52 @@
+name: Refresh sprite download estimates
+on:
+  schedule:
+    - cron: '37 3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sprite-size-estimates
+  cancel-in-progress: false
+jobs:
+  measure:
+    if: github.repository == 'Nobbinobb/infinitefusion-hoenn-ironmon' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Measure the published release's pinned sprite sheets
+        shell: pwsh
+        run: |
+          dotnet run --project tracker/tools/Ironmon.SpriteSizeTool -c Release -- latest estimates.json "$env:RUNNER_TEMP/sprite-release-discovery"
+          if ($LASTEXITCODE -ne 0) { throw 'Sprite measurement failed; the published estimate is unchanged.' }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sprite-size-estimates
+          path: estimates.json
+          if-no-files-found: error
+          retention-days: 7
+  publish:
+    needs: measure
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: sprite-size-estimates
+          path: sprite-estimate-data
+      - name: Update only the dedicated public estimate branch
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./tools/ci/Publish-SpriteDownloadEstimates.ps1 -Path sprite-estimate-data/estimates.json

@@ -18,9 +18,10 @@ namespace Ironmon.Setup;
 /// </summary>
 internal sealed class SetupWindow : Window
 {
-    private const string DefaultDirectory = @"Programs\InfiniteFusion2";
+    private const string DefaultDirectory = "Programs";
     private const string FontName = "Segoe UI";
     private const string NumberFormat = "N1";
+    private const string DateFormat = "g";
     private const string ThemeUri = "/Ironmon Setup;component/SetupTheme.xaml";
     private const string BackgroundResource = "SetupBackground";
     private const string ForegroundResource = "SetupForeground";
@@ -29,6 +30,8 @@ internal sealed class SetupWindow : Window
     private const string SurfaceResource = "SetupSurface";
     private const string AccentResource = "SetupAccent";
     private const string WarningResource = "SetupWarning";
+    private const string SelectedResource = "SetupSelected";
+    private const string NotSelectedResource = "SetupNotSelected";
     private const string PackageGroup = "TrackerPackage";
     private readonly SetupSession _session;
     private bool _displayedBusy;
@@ -36,6 +39,7 @@ internal sealed class SetupWindow : Window
     private readonly StackPanel _body = new() { Margin = new Thickness(24, 12, 24, 12) };
     private readonly StackPanel _actions = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap, FontSize = 12, Margin = new Thickness(0, 0, 0, 8) };
+    private readonly TextBlock _reviewHelp = new() { FontSize = 12, Margin = new Thickness(14, 0, 0, 8), HorizontalAlignment = HorizontalAlignment.Right, Visibility = Visibility.Collapsed };
     private readonly TextBlock _error = new() { TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.CharacterEllipsis, MaxHeight = 36, Margin = new Thickness(0, 0, 0, 8) };
     private readonly StackPanel _steps = new() { Orientation = Orientation.Horizontal };
     private readonly ProgressBar _progress = new() { Height = 5, Margin = new Thickness(0, 0, 0, 14) };
@@ -86,7 +90,16 @@ internal sealed class SetupWindow : Window
         layout.Children.Add(header);
         var footer = new StackPanel { Margin = new Thickness(24, 0, 24, 16) };
         footer.Children.Add(new Border { Height = 1, Background = Brush(BorderResource), Margin = new Thickness(0, 0, 0, 8) });
-        footer.Children.Add(_status);
+        var statusRow = new Grid();
+        statusRow.ColumnDefinitions.Add(new ColumnDefinition());
+        statusRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        statusRow.Children.Add(_status);
+        Grid.SetColumn(_reviewHelp, 1);
+        var help = new System.Windows.Documents.Hyperlink(new System.Windows.Documents.Run(UpdaterText.SetupReviewWhatHappensNext)) { Foreground = Brush(AccentResource) };
+        help.Click += (_, _) => MessageBox.Show(this, UpdaterText.SetupWindowSaveYourGameBeforeInstallingSetupWillCloseThe, UpdaterText.SetupReviewWhatHappensNext, MessageBoxButton.OK, MessageBoxImage.Information);
+        _reviewHelp.Inlines.Add(help);
+        statusRow.Children.Add(_reviewHelp);
+        footer.Children.Add(statusRow);
         footer.Children.Add(_error);
         footer.Children.Add(_progress);
         footer.Children.Add(_actions);
@@ -134,7 +147,7 @@ internal sealed class SetupWindow : Window
         if (_page == 0)
         {
             Heading(UpdaterText.SetupWindowChooseYourGameFolder);
-            Paragraph(UpdaterText.SetupWindowChooseAnEmptyFolderForANewInstallationOr);
+            Paragraph(UpdaterText.SetupWindowChooseAParentOrExistingGameFolder(SetupPreparation.InstallationDirectoryName));
             var folder = new Grid();
             folder.ColumnDefinitions.Add(new ColumnDefinition());
             folder.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -194,21 +207,23 @@ internal sealed class SetupWindow : Window
             else if (_session.Review is { } review)
             {
                 _displayedReview = review;
+                _body.Children.Add(new TextBlock { Text = UpdaterText.SetupWindowInstallationFolder, FontSize = 10, Foreground = Brush(MutedResource), Margin = new Thickness(0, 0, 0, 3) });
                 _body.Children.Add(new TextBlock { Text = review.Authorization.Request.InstallationRoot, ToolTip = review.Authorization.Request.InstallationRoot, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 0, 0, 8) });
-                Paragraph(UpdaterText.SetupWindowIronmonInfiniteFusion(review.Manifest.IronmonVersion, review.Manifest.Game.VersionLabel));
-                Paragraph(UpdaterText.SetupWindowTrackerPackage + PackageLabel(review.Authorization.Request.Flavor));
-                Paragraph(UpdaterText.SetupWindowTrackerAndUpdaterMiB((review.PackageBytes / 1048576d).ToString(NumberFormat, CultureInfo.CurrentCulture)) + (review.IncludesGame ? UpdaterText.SetupWindowTheGameAndItsSupportFilesAreAdditionalTheir : string.Empty));
-                Paragraph(_sprites ? UpdaterText.SetupWindowOptionalSpriteLibrarySelectedSizeUnknown : UpdaterText.SetupWindowOptionalSpriteLibraryDownloadLaterInTheTracker);
-                Paragraph(_shortcut ? UpdaterText.SetupWindowDesktopTrackerShortcutSelected : UpdaterText.SetupWindowDesktopTrackerShortcutNotSelected);
-                if (_session.NeedsWebView && !_session.IsBusy)
-                    Paragraph(_webViewConsent ? UpdaterText.SetupWindowMicrosoftWebView2InstallTheRequiredRuntime : UpdaterText.SetupWindowGoBackToOptionsAndSelectTheRequiredMicrosoft);
+                RenderReviewDetails(review);
 
                 var conflicts = review.Plan.Entries.Count(entry => entry.Action == FilePlanAction.Conflict);
                 if (conflicts > 0)
-                    _body.Children.Add(Action(UpdaterText.SetupWindowChangedFilesCount(conflicts), () => { _conflictIndex = 0; _showConflicts = true; Render(); }));
+                {
+                    var changes = new Grid();
+                    changes.Children.Add(new TextBlock { Text = UpdaterText.SetupReviewLocalChanges, Foreground = Brush(MutedResource), VerticalAlignment = VerticalAlignment.Center });
+                    var button = Action(UpdaterText.SetupWindowChangedFilesCount(conflicts), () => { _conflictIndex = 0; _showConflicts = true; Render(); });
+                    button.HorizontalAlignment = HorizontalAlignment.Right;
+                    button.Margin = new Thickness(0);
+                    button.Padding = new Thickness(12, 5, 12, 5);
+                    changes.Children.Add(button);
+                    Card(changes);
+                }
 
-                if (!_session.IsBusy)
-                    Paragraph(UpdaterText.SetupWindowSaveYourGameBeforeInstallingSetupWillCloseThe);
                 _install = AsyncAction(review.AlreadyCurrent ? UpdaterText.SetupWindowFinishSetup : UpdaterText.SetupWindowInstall, () => _session.InstallAsync(_sprites, _shortcut, _webViewConsent), true);
             }
             else if (_session.RecoveryId is not null)
@@ -360,7 +375,8 @@ internal sealed class SetupWindow : Window
         _showConflicts = false;
         _page = 2;
         Render();
-        await _session.ReviewAsync(_destination.Text, _session.Destination?.InstalledFlavor ?? _flavor, _noActiveRun);
+        var destination = _session.Destination ?? throw new InvalidOperationException(UpdaterText.SetupSessionReviewTheInstallationFolderFirst);
+        await _session.ReviewAsync(destination.Root, destination.InstalledFlavor ?? _flavor, _noActiveRun);
         Render();
     }
 
@@ -370,6 +386,11 @@ internal sealed class SetupWindow : Window
     private void Refresh()
     {
         _status.Text = _session.Status;
+        var showReminder = _page == 2 && !_showConflicts && !_session.IsBusy && !_session.CoreInstalled && _session.Review is not null;
+        _status.Foreground = Brush(showReminder ? WarningResource : MutedResource);
+        _reviewHelp.Visibility = showReminder ? Visibility.Visible : Visibility.Collapsed;
+        if (showReminder)
+            _status.Text = UpdaterText.SetupReviewSaveReminder;
         _error.Text = _session.Error ?? string.Empty;
         _error.ToolTip = _session.Error;
         _error.Visibility = _session.Error is null || _session.NeedsRunConfirmation || _session.Error == _bodyError ? Visibility.Collapsed : Visibility.Visible;
@@ -473,6 +494,118 @@ internal sealed class SetupWindow : Window
 
         _body.Children.Add(new Border { Child = content, Background = Brush(SurfaceResource), BorderBrush = Brush(BorderResource), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(11), Padding = new Thickness(12), Margin = new Thickness(0, 0, 0, 10) });
     }
+
+    /// <summary>
+    /// Aligns review labels and values in a compact group while keeping selection states explicit in text.
+    /// </summary>
+    /// <param name="rows">The labels, displayed values and selected option emphasis.</param>
+    private void ReviewGroup(params ReviewDetail[] rows)
+    {
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(225) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(115) });
+        for (var index = 0; index < rows.Length; index++)
+        {
+            var row = rows[index];
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var label = new TextBlock { Foreground = Brush(MutedResource), Margin = new Thickness(0, 3, 12, 3) };
+            label.Inlines.Add(new System.Windows.Documents.Run(row.Label));
+            if (row.Required)
+                label.Inlines.Add(new System.Windows.Documents.Run(UpdaterText.SetupReviewRequiredBadge) { FontSize = 9, Foreground = Brush(WarningResource) });
+
+            var foreground = row.Selected is { } selected ? Brush(selected ? SelectedResource : NotSelectedResource) : Foreground;
+            var value = new TextBlock { Text = row.Value, Foreground = foreground, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 8, 3) };
+            var size = new TextBlock { Text = row.Size, ToolTip = row.SizeHint, Foreground = row.Selected == false ? Brush(MutedResource) : Foreground, TextAlignment = TextAlignment.Right, FontSize = 12, Margin = new Thickness(0, 3, 0, 3) };
+            Grid.SetRow(label, index);
+            Grid.SetRow(value, index);
+            Grid.SetColumn(value, 1);
+            Grid.SetRow(size, index);
+            Grid.SetColumn(size, 2);
+            grid.Children.Add(label);
+            grid.Children.Add(value);
+            grid.Children.Add(size);
+        }
+
+        _body.Children.Add(new Border { Child = grid, Background = Brush(SurfaceResource), BorderBrush = Brush(BorderResource), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(9), Padding = new Thickness(12, 6, 12, 6), Margin = new Thickness(0, 0, 0, 8) });
+    }
+
+    /// <summary>
+    /// Shows versions, independent option statuses, component sizes and the selected known download total.
+    /// </summary>
+    /// <param name="review">The authenticated installation review.</param>
+    private void RenderReviewDetails(SetupReview review)
+    {
+        ReviewDetail[] versions =
+        [
+            new(UpdaterText.SetupReviewIronmon, review.Manifest.IronmonVersion, UpdaterText.SetupReviewDownload),
+            new(UpdaterText.SetupReviewGame, review.Manifest.Game.VersionLabel, DownloadSize(review.IncludesGame ? review.GameDownloadBytes : 0, review.IncludesGame), SizeHint: UpdaterText.SetupReviewGameEstimateHint),
+            new(UpdaterText.SetupReviewTrackerPackage, PackageLabel(review.Authorization.Request.Flavor), DownloadSize(review.PackageBytes))
+        ];
+
+        ReviewGroup(versions);
+        var spriteEstimate = _session.SpriteDownloadEstimate;
+        var spriteSize = spriteEstimate is null ? UpdaterText.SetupReviewVaries : DownloadSize(spriteEstimate.Bytes, true);
+        var spriteHint = spriteEstimate is null ? UpdaterText.SetupReviewSpritesSizeHint : UpdaterText.SetupReviewSpritesMeasuredHint(spriteEstimate.MeasuredAt.ToLocalTime().ToString(DateFormat, CultureInfo.CurrentCulture));
+        List<ReviewDetail> options =
+        [
+            new(UpdaterText.SetupReviewSpriteLibrary, Selection(_sprites), _sprites ? spriteSize : string.Empty, _sprites, SizeHint: spriteHint),
+            new(UpdaterText.SetupReviewDesktopShortcut, Selection(_shortcut), string.Empty, _shortcut)
+        ];
+
+        if (_session.NeedsWebView && !_session.IsBusy)
+            options.Add(new(UpdaterText.SetupReviewWebView, Selection(_webViewConsent), DownloadSize(_session.WebViewDownloadBytes), _webViewConsent, true));
+
+        ReviewGroup([.. options]);
+        var summary = SetupDownloadSummary.Create(review, _session.NeedsWebView && _webViewConsent, _session.WebViewDownloadBytes, _sprites, _session.SpriteDownloadEstimate?.Bytes);
+        var totalHint = review.SupportDownloadBytes > 0 ? UpdaterText.SetupReviewTotalHint(DownloadSize(review.SupportDownloadBytes)) : UpdaterText.SetupReviewCachedTotalHint;
+        if (summary.Incomplete)
+            totalHint += Environment.NewLine + UpdaterText.SetupReviewIncompleteHint;
+
+        var total = new Grid { Margin = new Thickness(0, 2, 0, 14), ToolTip = totalHint };
+        var title = UpdaterText.SetupReviewEstimatedDownload;
+        total.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold });
+        var totalSize = DownloadSize(summary.KnownBytes, summary.Estimated || summary.Incomplete);
+        total.Children.Add(new TextBlock { Text = summary.Incomplete ? UpdaterText.SetupReviewPartialSize(totalSize) : totalSize, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Right });
+        _body.Children.Add(total);
+    }
+
+    /// <summary>
+    /// Formats a known or estimated transfer size separately from option status.
+    /// </summary>
+    /// <param name="bytes">The published bytes or null when unavailable.</param>
+    /// <param name="estimated">Whether the size represents a measured estimate.</param>
+    /// <returns>The localized size or unavailable label.</returns>
+    private static string DownloadSize(long? bytes, bool estimated = false)
+    {
+        if (bytes is null)
+            return UpdaterText.SetupReviewSizeUnavailable;
+        if (bytes == 0)
+            return UpdaterText.SetupReviewNoDownload;
+
+        var size = bytes >= 1073741824L ? UpdaterText.SetupReviewGiB((bytes.Value / 1073741824d).ToString(NumberFormat, CultureInfo.CurrentCulture)) : UpdaterText.SetupReviewMiB((bytes.Value / 1048576d).ToString(NumberFormat, CultureInfo.CurrentCulture));
+        return estimated ? UpdaterText.SetupReviewEstimatedSize(size) : size;
+    }
+
+    /// <summary>
+    /// Formats a selection without mixing requirements or download details into its status.
+    /// </summary>
+    /// <param name="selected">The explicit option state.</param>
+    /// <returns>The localized selection status.</returns>
+    private static string Selection(bool selected)
+        => selected ? UpdaterText.SetupReviewSelected : UpdaterText.SetupReviewNotSelected;
+
+    /// <summary>
+    /// Describes one review row without combining its status, requirement and download size.
+    /// </summary>
+    /// <remarks>Constructs a presentation row for a version or selected installation component.</remarks>
+    /// <param name="Label">The component label.</param>
+    /// <param name="Value">The version, package type or selection status.</param>
+    /// <param name="Size">The independently formatted download size.</param>
+    /// <param name="Selected">The optional selected state, or null for plain version rows.</param>
+    /// <param name="Required">Whether to display the separate requirement badge.</param>
+    /// <param name="SizeHint">The explanation of an estimated or variable size.</param>
+    private sealed record ReviewDetail(string Label, string Value, string Size, bool? Selected = null, bool Required = false, string? SizeHint = null);
 
     /// <summary>
     /// Creates a restrained section label matching the tracker hierarchy.

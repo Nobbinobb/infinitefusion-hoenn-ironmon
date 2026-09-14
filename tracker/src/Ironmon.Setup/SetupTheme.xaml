@@ -6,6 +6,8 @@
     <SolidColorBrush x:Key="SetupBorder" Color="#2A3544" />
     <SolidColorBrush x:Key="SetupAccent" Color="#B0A3FF" />
     <SolidColorBrush x:Key="SetupWarning" Color="#E3B96C" />
+    <SolidColorBrush x:Key="SetupSelected" Color="#79CAA0" />
+    <SolidColorBrush x:Key="SetupNotSelected" Color="#E39B9B" />
     <LinearGradientBrush x:Key="SetupSurface" StartPoint="0,0" EndPoint="1,1">
         <GradientStop Color="#1B2330" Offset="0" />
         <GradientStop Color="#11161E" Offset="0.85" />

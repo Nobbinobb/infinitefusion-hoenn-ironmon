@@ -17,6 +17,11 @@ namespace Ironmon.Updater.Infrastructure;
 /// <param name="protectedUpdates">The optional Windows administrator boundary configured by Setup.</param>
 public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadStore downloads, ITrackerRuntimeCompatibility runtime, CombinedGamePreparation gamePreparation, CombinedGitVerification gameVerification, ProtectedUpdateClient? protectedUpdates = null)
 {
+    /// <summary>
+    /// Names the game folder created beneath a selected parent for a new installation.
+    /// </summary>
+    public const string InstallationDirectoryName = "Pokémon Infinite Fusion 2";
+
     private const string GitDirectory = ".git";
     private const string CoreRuntime = "Ironmon Tracker/coreclr.dll";
     private readonly Func<string, string> _readVersion = ReadVersion;
@@ -135,7 +140,8 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
         var plan = new FileUpdatePlanner(new FileManagementPolicy()).Create(baseline, local, desired);
         IronmonOnlyUpdate.RequireCompleteTarget(plan);
         var bytes = manifest.Assets.Where(asset => asset.Role == ReleaseProtocol.TrackerRolePrefix + flavor || asset.Role == ReleaseProtocol.UpdaterRole).Sum(asset => asset.Bytes);
-        return new SetupReview(authorization, manifest, plan, bytes, includeGit, purpose == InstallationPurpose.Repair && plan.Entries.All(entry => entry.Action == FilePlanAction.Keep));
+        var gameBytes = includeGit ? await ReleaseDownloadSizes.ReadGameAsync(manifest, _downloads, gameCommit, cancellationToken).ConfigureAwait(false) : 0L;
+        return new SetupReview(authorization, manifest, plan, bytes, includeGit, purpose == InstallationPurpose.Repair && plan.Entries.All(entry => entry.Action == FilePlanAction.Keep)) { GameDownloadBytes = gameBytes };
     }
 
     /// <summary>
@@ -188,7 +194,45 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
     }
 
     /// <summary>
-    /// Identifies the selected folder and installed package without downloading releases or changing any files.
+    /// Resolves a selected parent to its game folder without downloading releases or creating directories.
+    /// </summary>
+    /// <param name="selection">The selected absolute local folder, which may contain unrelated files.</param>
+    /// <returns>The existing game or recovery destination, or the validated named child for a new installation.</returns>
+    public static SetupDestination ResolveDestination(string selection)
+    {
+        var root = PlainPaths.Full(selection);
+        if (File.Exists(root))
+            throw new IOException(UpdaterText.SetupPreparationChooseAnInstallationFolderNotADriveRootOr);
+
+        if (Path.Exists(PlainPaths.Full(Path.Combine(root, InstallationLease.StateDirectory))))
+            return InspectDestination(root);
+
+        if (Directory.Exists(root) && IsGameFolder(root))
+            return InspectDestination(root);
+
+        return InspectDestination(PlainPaths.Full(Path.Combine(root, InstallationDirectoryName)));
+    }
+
+    /// <summary>
+    /// Recognizes game identity while allowing unrelated parent content and preserving path access failures.
+    /// </summary>
+    /// <param name="root">The selected existing directory.</param>
+    /// <returns>Whether the directory contains the expected game executable and INI identity.</returns>
+    private static bool IsGameFolder(string root)
+    {
+        try
+        {
+            GameInstallationLocator.ValidateCandidate(root);
+            return true;
+        }
+        catch (InvalidDataException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Inspects an exact installation root without appending another folder or changing any files.
     /// </summary>
     /// <param name="destination">The selected absolute game directory or new empty directory.</param>
     /// <returns>The normalized destination and observed package flavor, if a tracker is installed.</returns>
@@ -244,7 +288,18 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
 /// <param name="PackageBytes">The known tracker and helper download bytes.</param>
 /// <param name="IncludesGame">Whether ordinary game Git metadata participates.</param>
 /// <param name="AlreadyCurrent">Whether no program operation is necessary.</param>
-public sealed record SetupReview(IronmonUpdateAuthorization Authorization, ReleaseManifest Manifest, FileUpdatePlan Plan, long PackageBytes, bool IncludesGame, bool AlreadyCurrent);
+public sealed record SetupReview(IronmonUpdateAuthorization Authorization, ReleaseManifest Manifest, FileUpdatePlan Plan, long PackageBytes, bool IncludesGame, bool AlreadyCurrent)
+{
+    /// <summary>
+    /// Gets the signed full-game download estimate, zero when no game transfer is needed, or null for older metadata.
+    /// </summary>
+    public long? GameDownloadBytes { get; init; }
+
+    /// <summary>
+    /// Gets the pinned installation-support package size when game preparation needs private Git.
+    /// </summary>
+    public long SupportDownloadBytes => IncludesGame ? MinGitPackage.Pinned.Size : 0;
+}
 
 /// <summary>
 /// Describes a local folder observation used to present applicable installer choices.

@@ -83,8 +83,9 @@ internal sealed class ReleaseBundleFixture : IDisposable, IArtifactSource
     /// <param name="history">The preceding signed bundle, when present.</param>
     /// <param name="commit">The selected synthetic game commit.</param>
     /// <param name="customize">An optional deliberate package defect introduced before ownership is hashed.</param>
+    /// <param name="gameDownloadBytes">The synthetic measured game estimate, or null for older releases.</param>
     /// <returns>The exact producer inputs, allowing deliberate corruption tests before signing.</returns>
-    internal BundleRequest Build(string version, string? history = null, string commit = CommitA, Action<string, string>? customize = null)
+    internal BundleRequest Build(string version, string? history = null, string commit = CommitA, Action<string, string>? customize = null, long? gameDownloadBytes = 4096)
     {
         var directory = DirectoryFor(version);
         Directory.CreateDirectory(directory);
@@ -124,7 +125,7 @@ internal sealed class ReleaseBundleFixture : IDisposable, IArtifactSource
             JsonSerializer.Serialize(gzip, game);
 
         File.WriteAllBytes(companion, JsonSerializer.SerializeToUtf8Bytes(new { Commit = commit, FileCount = game.Files.Count, Sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(baseline))) }));
-        var request = new BundleRequest(directory, version, GameVersion, commit, baseline, companion, Trust, history);
+        var request = new BundleRequest(directory, version, GameVersion, commit, baseline, companion, Trust, history, gameDownloadBytes);
         ReleaseBundle.Create(request);
         return request;
     }

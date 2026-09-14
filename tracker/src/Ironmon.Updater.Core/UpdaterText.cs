@@ -1854,10 +1854,12 @@ public static class UpdaterText
         => Get(nameof(SetupWindowCheckingYourInstallation));
 
     /// <summary>
-    /// Gets the localized text: Choose an empty folder for a new installation, or select your existing Infinite Fusion folder.
+    /// Formats the folder selection explanation with the new installation directory name.
     /// </summary>
-    public static string SetupWindowChooseAnEmptyFolderForANewInstallationOr
-        => Get(nameof(SetupWindowChooseAnEmptyFolderForANewInstallationOr));
+    /// <param name="directoryName">The folder created inside the selected parent.</param>
+    /// <returns>The localized folder selection explanation.</returns>
+    public static string SetupWindowChooseAParentOrExistingGameFolder(string directoryName)
+        => string.Format(CultureInfo.CurrentCulture, Get(nameof(SetupWindowChooseAParentOrExistingGameFolder)), directoryName);
 
     /// <summary>
     /// Gets the localized text: Choose the Infinite Fusion installation folder
@@ -3255,4 +3257,196 @@ public static class UpdaterText
     /// </summary>
     public static string ProgressWaitingForApplications
         => Get(nameof(ProgressWaitingForApplications));
+
+    /// <summary>
+    /// Gets the localized review text: Ironmon.
+    /// </summary>
+    public static string SetupReviewIronmon
+        => Get(nameof(SetupReviewIronmon));
+
+    /// <summary>
+    /// Gets the localized review text: Infinite Fusion.
+    /// </summary>
+    public static string SetupReviewGame
+        => Get(nameof(SetupReviewGame));
+
+    /// <summary>
+    /// Gets the localized review text: Tracker package.
+    /// </summary>
+    public static string SetupReviewTrackerPackage
+        => Get(nameof(SetupReviewTrackerPackage));
+
+    /// <summary>
+    /// Gets the localized review text: Sprite library.
+    /// </summary>
+    public static string SetupReviewSpriteLibrary
+        => Get(nameof(SetupReviewSpriteLibrary));
+
+    /// <summary>
+    /// Gets the localized review text: Desktop shortcut.
+    /// </summary>
+    public static string SetupReviewDesktopShortcut
+        => Get(nameof(SetupReviewDesktopShortcut));
+
+    /// <summary>
+    /// Gets the localized review text: Microsoft WebView2.
+    /// </summary>
+    public static string SetupReviewWebView
+        => Get(nameof(SetupReviewWebView));
+
+    /// <summary>
+    /// Gets the localized review text: Selected.
+    /// </summary>
+    public static string SetupReviewSelected
+        => Get(nameof(SetupReviewSelected));
+
+    /// <summary>
+    /// Gets the localized review text: Not selected.
+    /// </summary>
+    public static string SetupReviewNotSelected
+        => Get(nameof(SetupReviewNotSelected));
+
+    /// <summary>
+    /// Gets the localized review text: Download.
+    /// </summary>
+    public static string SetupReviewDownload
+        => Get(nameof(SetupReviewDownload));
+
+    /// <summary>
+    /// Gets the localized review text: REQUIRED.
+    /// </summary>
+    public static string SetupReviewRequiredBadge
+        => Get(nameof(SetupReviewRequiredBadge));
+
+    /// <summary>
+    /// Gets the localized review text: Varies.
+    /// </summary>
+    public static string SetupReviewVaries
+        => Get(nameof(SetupReviewVaries));
+
+    /// <summary>
+    /// Gets the localized review text: Unavailable.
+    /// </summary>
+    public static string SetupReviewSizeUnavailable
+        => Get(nameof(SetupReviewSizeUnavailable));
+
+    /// <summary>
+    /// Gets the localized review text: No download.
+    /// </summary>
+    public static string SetupReviewNoDownload
+        => Get(nameof(SetupReviewNoDownload));
+
+    /// <summary>
+    /// Gets the localized review text: Save your game, then choose Install.
+    /// </summary>
+    public static string SetupReviewSaveReminder
+        => Get(nameof(SetupReviewSaveReminder));
+
+    /// <summary>
+    /// Gets the localized review text: What happens next?.
+    /// </summary>
+    public static string SetupReviewWhatHappensNext
+        => Get(nameof(SetupReviewWhatHappensNext));
+
+    /// <summary>
+    /// Gets the localized review text: Measured for this release's exact game snapshot. Git transfer size can vary with existing files and required history..
+    /// </summary>
+    public static string SetupReviewGameEstimateHint
+        => Get(nameof(SetupReviewGameEstimateHint));
+
+    /// <summary>
+    /// Gets the localized review text: Sprite sheets change independently of Ironmon releases. Their size is measured as they download..
+    /// </summary>
+    public static string SetupReviewSpritesSizeHint
+        => Get(nameof(SetupReviewSpritesSizeHint));
+
+    /// <summary>
+    /// Formats the localized review text: Includes {0} of installation support. Cached downloads can reduce the transfer. A ~ marks an estimate..
+    /// </summary>
+    /// <param name="value">The formatted download size.</param>
+    /// <returns>The localized size text.</returns>
+    public static string SetupReviewTotalHint(string value)
+        => string.Format(CultureInfo.CurrentCulture, Get(nameof(SetupReviewTotalHint)), value);
+
+    /// <summary>
+    /// Formats the localized review text: {0} MiB.
+    /// </summary>
+    /// <param name="value">The formatted download size.</param>
+    /// <returns>The localized size text.</returns>
+    public static string SetupReviewMiB(string value)
+        => string.Format(CultureInfo.CurrentCulture, Get(nameof(SetupReviewMiB)), value);
+
+    /// <summary>
+    /// Formats the localized review text: {0} GiB.
+    /// </summary>
+    /// <param name="value">The formatted download size.</param>
+    /// <returns>The localized size text.</returns>
+    public static string SetupReviewGiB(string value)
+        => string.Format(CultureInfo.CurrentCulture, Get(nameof(SetupReviewGiB)), value);
+
+    /// <summary>
+    /// Formats the localized review text: ~{0}.
+    /// </summary>
+    /// <param name="value">The formatted download size.</param>
+    /// <returns>The localized size text.</returns>
+    public static string SetupReviewEstimatedSize(string value)
+        => string.Format(CultureInfo.CurrentCulture, Get(nameof(SetupReviewEstimatedSize)), value);
+
+    /// <summary>
+    /// Gets the localized explanation when a runtime download differs from the reviewed package size.
+    /// </summary>
+    public static string SetupRuntimePackageChanged
+        => Get(nameof(SetupRuntimePackageChanged));
+
+    /// <summary>
+    /// Gets the localized explanation when runtime bytes exceed the supported or advertised size.
+    /// </summary>
+    public static string SetupRuntimePackageTooLarge
+        => Get(nameof(SetupRuntimePackageTooLarge));
+
+    /// <summary>
+    /// Gets the localized explanation when a runtime download is empty or truncated.
+    /// </summary>
+    public static string SetupRuntimePackageIncomplete
+        => Get(nameof(SetupRuntimePackageIncomplete));
+
+    /// <summary>
+    /// Gets the localized explanation of cached downloads and estimated totals without installation support.
+    /// </summary>
+    public static string SetupReviewCachedTotalHint
+        => Get(nameof(SetupReviewCachedTotalHint));
+
+    /// <summary>
+    /// Gets the concise estimated-download label.
+    /// </summary>
+    public static string SetupReviewEstimatedDownload
+        => Get(nameof(SetupReviewEstimatedDownload));
+
+    /// <summary>
+    /// Gets the label for the independent local-file review action.
+    /// </summary>
+    public static string SetupReviewLocalChanges
+        => Get(nameof(SetupReviewLocalChanges));
+
+    /// <summary>
+    /// Describes the time and cache limitations of a daily full-library measurement.
+    /// </summary>
+    /// <param name="date">The localized measurement timestamp.</param>
+    /// <returns>The dated size tooltip.</returns>
+    public static string SetupReviewSpritesMeasuredHint(string date)
+        => string.Format(CultureInfo.CurrentCulture, Get(nameof(SetupReviewSpritesMeasuredHint)), date);
+
+    /// <summary>
+    /// Gets the tooltip explanation of an incomplete estimated total.
+    /// </summary>
+    public static string SetupReviewIncompleteHint
+        => Get(nameof(SetupReviewIncompleteHint));
+
+    /// <summary>
+    /// Adds a compact plus marker when an estimated total is missing one component.
+    /// </summary>
+    /// <param name="size">The formatted known estimate.</param>
+    /// <returns>The size with an incomplete-total marker.</returns>
+    public static string SetupReviewPartialSize(string size)
+        => string.Format(CultureInfo.CurrentCulture, Get(nameof(SetupReviewPartialSize)), size);
 }

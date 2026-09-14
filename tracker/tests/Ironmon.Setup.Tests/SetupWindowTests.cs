@@ -1,4 +1,5 @@
 using Ironmon.Setup.Core;
+using Ironmon.SpriteLibrary;
 using Ironmon.Updater.Core;
 using Ironmon.Tracker.Connection.Sprites;
 using Ironmon.Updater.Infrastructure;
@@ -19,6 +20,8 @@ namespace Ironmon.Setup.Tests;
 public sealed class SetupWindowTests
 {
     private const string Artifacts = "rendered-setup";
+    private const string PreviewGameVersion = "6.8.2";
+    private const string PreviewIronmonVersion = "0.8.8";
     private const string LocationImage = "location.png";
     private const string OptionsImage = "options.png";
     private const string ExistingOptionsImage = "options-existing.png";
@@ -44,6 +47,54 @@ public sealed class SetupWindowTests
     private const string ProgressImage = "installation-progress.png";
     private const string WaitingImage = "waiting-for-applications.png";
     private const string BusyField = "_busy";
+    private const string ParentReviewImage = "parent-folder-review.png";
+    private const string ParentContent = "personal files stay here";
+    private const string ReviewWorkspacePrefix = "setup-";
+    private const string SelectedReviewImage = "review-selected.png";
+    private const string UnselectedReviewImage = "review-unselected.png";
+    private const string SpritesField = "_sprites";
+    private const string ShortcutField = "_shortcut";
+    private const string WebViewConsentField = "_webViewConsent";
+
+    /// <summary>
+    /// Carries an occupied parent through actual navigation and repeated review using only the resolved child path.
+    /// </summary>
+    [Fact]
+    public void ParentSelectionShowsResolvedInstallationPathAndSurvivesBackNavigation()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        using var workspace = new TestWorkspace(ReviewWorkspacePrefix);
+        File.WriteAllText(workspace.PathFor(Other), ParentContent);
+        using var sprites = new CustomSpriteSheetInstaller();
+        using var session = CreateSession(fixture, sprites);
+        var expected = workspace.PathFor(SetupPreparation.InstallationDirectoryName);
+        RunSta(() =>
+        {
+            var window = new SetupWindow(session);
+            Descendants<TextBox>((DependencyObject)window.Content).Single().Text = workspace.Root;
+            Buttons(window).Single(button => Equals(button.Content, UpdaterText.SetupWindowContinue)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            PumpUntil(() => Buttons(window).Any(button => Equals(button.Content, UpdaterText.SetupWindowReviewInstallation)));
+            Assert.Equal(expected, session.Destination?.Root);
+            Buttons(window).Single(button => Equals(button.Content, UpdaterText.SetupWindowReviewInstallation)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            PumpUntil(() => !session.IsBusy && Buttons(window).Any(button => Equals(button.Content, UpdaterText.SetupWindowCheckAgain)));
+            Assert.True(session.Review is not null, session.Error);
+            Assert.Equal(expected, session.Review!.Authorization.Request.InstallationRoot);
+            Assert.Contains(Descendants<TextBlock>((DependencyObject)window.Content), text => text.Text == expected);
+            Capture(window, ParentReviewImage);
+            Buttons(window).Single(button => Equals(button.Content, UpdaterText.SetupWindowCheckAgain)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            PumpUntil(() => !session.IsBusy && session.Review is not null);
+            Assert.Equal(expected, session.Review!.Authorization.Request.InstallationRoot);
+            Buttons(window).Single(button => Equals(button.Content, UpdaterText.SetupWindowBack)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Buttons(window).Single(button => Equals(button.Content, UpdaterText.SetupWindowBack)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.Equal(workspace.Root, Descendants<TextBox>((DependencyObject)window.Content).Single().Text);
+            Buttons(window).Single(button => Equals(button.Content, UpdaterText.SetupWindowContinue)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            PumpUntil(() => Buttons(window).Any(button => Equals(button.Content, UpdaterText.SetupWindowReviewInstallation)));
+            Assert.Equal(expected, session.Destination?.Root);
+            Assert.False(Directory.Exists(expected));
+            Assert.Equal(ParentContent, File.ReadAllText(workspace.PathFor(Other)));
+            window.Close();
+        });
+    }
 
     /// <summary>
     /// Keeps download progress or the application-wait instruction visible at the minimum size without scrolling.
@@ -201,8 +252,11 @@ public sealed class SetupWindowTests
     /// <summary>
     /// Keeps every changed file reachable without scrolling and retains independent approvals across file navigation.
     /// </summary>
-    [Fact]
-    public async Task ChangedFilesArePagedAndRequireEachApproval()
+    /// <param name="selected">Whether the dense review displays selected or unselected optional work.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ChangedFilesArePagedAndRequireEachApproval(bool selected)
     {
         using var fixture = new TrackerUpdateTestFixture();
         fixture.Release.Write(GameExe, [77, 90, 0]);
@@ -215,11 +269,28 @@ public sealed class SetupWindowTests
         await session.ReviewAsync(fixture.Release.Root, null, true);
         Assert.Null(session.Error);
         Assert.False(session.CanInstall);
+        var previewManifest = session.Review!.Manifest with { IronmonVersion = PreviewIronmonVersion, Game = session.Review.Manifest.Game with { VersionLabel = PreviewGameVersion } };
+        typeof(SetupSession).GetProperty(nameof(SetupSession.Review))!.SetValue(session, session.Review with { Manifest = previewManifest, IncludesGame = true, GameDownloadBytes = 1262930260, PackageBytes = 149736652 });
+        typeof(SetupSession).GetProperty(nameof(SetupSession.WebViewDownloadBytes))!.SetValue(session, 212745424L);
+        typeof(SetupSession).GetProperty(nameof(SetupSession.SpriteDownloadEstimate))!.SetValue(session, new SpriteDownloadEstimate(673572208, new DateTimeOffset(2026, 9, 14, 19, 52, 31, TimeSpan.Zero), 3946, 24));
         RunSta(() =>
         {
             var window = new SetupWindow(session);
+            foreach (var field in new[] { SpritesField, ShortcutField, WebViewConsentField })
+                typeof(SetupWindow).GetField(field, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, selected);
+
             typeof(SetupWindow).GetField(PageField, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, 2);
             typeof(SetupWindow).GetMethod(RenderMethod, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)!.Invoke(window, null);
+            TextBlock[] details = [.. Descendants<TextBlock>((DependencyObject)window.Content)];
+            TextBlock[] states = [.. details.Where(text => text.Text == (selected ? UpdaterText.SetupReviewSelected : UpdaterText.SetupReviewNotSelected))];
+            Assert.Equal(3, states.Length);
+            Assert.All(states, text => Assert.Equal(selected ? Color.FromRgb(121, 202, 160) : Color.FromRgb(227, 155, 155), Assert.IsType<SolidColorBrush>(text.Foreground).Color));
+            Assert.Contains(details, text => text.Inlines.OfType<System.Windows.Documents.Run>().Any(run => run.Text == UpdaterText.SetupReviewRequiredBadge));
+            Assert.Contains(details, text => text.Text == UpdaterText.SetupReviewSaveReminder);
+            Assert.Contains(details, text => text.Text == UpdaterText.SetupReviewEstimatedDownload);
+            Assert.DoesNotContain(details, text => text.Text == UpdaterText.SetupReviewIncompleteHint);
+            Assert.DoesNotContain(details, text => text.Text == UpdaterText.SetupWindowSaveYourGameBeforeInstallingSetupWillCloseThe);
+            Capture(window, selected ? SelectedReviewImage : UnselectedReviewImage);
             Buttons(window).Single(button => Equals(button.Content, UpdaterText.SetupWindowChangedFilesCount(2))).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Capture(window, ConflictImage);
             var first = Descendants<CheckBox>((DependencyObject)window.Content).Single();

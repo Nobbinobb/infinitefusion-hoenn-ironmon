@@ -238,10 +238,10 @@ public sealed class SetupSessionTests
     }
 
     /// <summary>
-    /// Rejects an unrelated nonempty folder during local selection without contacting the release service.
+    /// Resolves an unrelated nonempty parent locally and reviews only its named child without touching parent files.
     /// </summary>
     [Fact]
-    public async Task UnrelatedFolderCannotAdvanceToInstallationOptions()
+    public async Task UnrelatedFolderResolvesToNamedChildBeforeReview()
     {
         using var fixture = new TrackerUpdateTestFixture();
         using var workspace = new TestWorkspace();
@@ -251,9 +251,16 @@ public sealed class SetupSessionTests
         Directory.CreateDirectory(destination);
         await File.WriteAllTextAsync(Path.Combine(destination, GameIni), Ini);
         await session.SelectDestinationAsync(destination);
-        Assert.NotNull(session.Error);
-        Assert.Null(session.Destination);
+        Assert.Null(session.Error);
+        Assert.Equal(Path.Combine(destination, SetupPreparation.InstallationDirectoryName), session.Destination?.Root);
         Assert.Empty(fixture.Release.Requests);
+        await session.ReviewAsync(session.Destination!.Root, ReleaseProtocol.SelfContained, false);
+        Assert.Null(session.Error);
+        Assert.Equal(session.Destination.Root, session.InstallationRoot);
+        Assert.Equal(session.Destination.Root, session.Review?.Authorization.Request.InstallationRoot);
+        Assert.Equal(InstallationPurpose.InstallGame, session.Review?.Authorization.Purpose);
+        Assert.False(Directory.Exists(session.Destination.Root));
+        Assert.Equal(Ini, await File.ReadAllTextAsync(Path.Combine(destination, GameIni)));
         Assert.Single(Directory.GetFiles(destination));
     }
 

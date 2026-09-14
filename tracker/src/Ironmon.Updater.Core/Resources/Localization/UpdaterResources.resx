@@ -921,8 +921,8 @@
   <data name="SetupWindowCheckingYourInstallation" xml:space="preserve">
     <value>Checking your installation</value>
   </data>
-  <data name="SetupWindowChooseAnEmptyFolderForANewInstallationOr" xml:space="preserve">
-    <value>Choose an empty folder for a new installation, or select your existing Infinite Fusion folder.</value>
+  <data name="SetupWindowChooseAParentOrExistingGameFolder" xml:space="preserve">
+    <value>Choose any folder. Setup uses an existing game there, or installs in a {0} folder inside it.</value>
   </data>
   <data name="SetupWindowChooseTheInfiniteFusionInstallationFolder" xml:space="preserve">
     <value>Choose the Infinite Fusion installation folder</value>
@@ -1036,7 +1036,7 @@
     <value>Review changed files</value>
   </data>
   <data name="SetupWindowChangedFilesCount" xml:space="preserve">
-    <value>Review changed files ({0})</value>
+    <value>Review {0} files</value>
   </data>
   <data name="SetupWindowReviewInstallation" xml:space="preserve">
     <value>Review installation</value>
@@ -1608,4 +1608,84 @@
   <data name="ProgressWaitingForApplications" xml:space="preserve">
     <value>Close Infinite Fusion, the tracker, and the Infinite Fusion launcher or installer. This operation will continue automatically.</value>
   </data>
+  <data name="SetupReviewIronmon" xml:space="preserve">
+    <value>Ironmon</value>
+  </data>
+  <data name="SetupReviewGame" xml:space="preserve">
+    <value>Infinite Fusion</value>
+  </data>
+  <data name="SetupReviewTrackerPackage" xml:space="preserve">
+    <value>Tracker package</value>
+  </data>
+  <data name="SetupReviewSpriteLibrary" xml:space="preserve">
+    <value>Sprite library</value>
+  </data>
+  <data name="SetupReviewDesktopShortcut" xml:space="preserve">
+    <value>Desktop shortcut</value>
+  </data>
+  <data name="SetupReviewWebView" xml:space="preserve">
+    <value>Microsoft WebView2</value>
+  </data>
+  <data name="SetupReviewSelected" xml:space="preserve">
+    <value>Selected</value>
+  </data>
+  <data name="SetupReviewNotSelected" xml:space="preserve">
+    <value>Not selected</value>
+  </data>
+  <data name="SetupReviewDownload" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="SetupReviewRequiredBadge" xml:space="preserve">
+    <value>  REQUIRED</value>
+  </data>
+  <data name="SetupReviewVaries" xml:space="preserve">
+    <value>Varies</value>
+  </data>
+  <data name="SetupReviewSizeUnavailable" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
+  <data name="SetupReviewNoDownload" xml:space="preserve">
+    <value>No download</value>
+  </data>
+  <data name="SetupReviewSaveReminder" xml:space="preserve">
+    <value>Save your game, then choose Install.</value>
+  </data>
+  <data name="SetupReviewWhatHappensNext" xml:space="preserve">
+    <value>What happens next?</value>
+  </data>
+  <data name="SetupReviewGameEstimateHint" xml:space="preserve">
+    <value>Measured for this release's exact game snapshot. Git transfer size can vary with existing files and required history.</value>
+  </data>
+  <data name="SetupReviewSpritesSizeHint" xml:space="preserve">
+    <value>Sprite sheets change independently of Ironmon releases. Their size is measured as they download.</value>
+  </data>
+  <data name="SetupReviewTotalHint" xml:space="preserve">
+    <value>Includes {0} of installation support. Cached downloads can reduce the transfer. A ~ marks an estimate.</value>
+  </data>
+  <data name="SetupReviewMiB" xml:space="preserve">
+    <value>{0} MiB</value>
+  </data>
+  <data name="SetupReviewGiB" xml:space="preserve">
+    <value>{0} GiB</value>
+  </data>
+  <data name="SetupReviewEstimatedSize" xml:space="preserve">
+    <value>~{0}</value>
+  </data>
+  <data name="SetupRuntimePackageChanged" xml:space="preserve">
+    <value>The Microsoft runtime package changed. Review the installation again.</value>
+  </data>
+  <data name="SetupRuntimePackageTooLarge" xml:space="preserve">
+    <value>The Microsoft runtime package exceeds its expected size.</value>
+  </data>
+  <data name="SetupRuntimePackageIncomplete" xml:space="preserve">
+    <value>The Microsoft runtime download is incomplete. Try installing again.</value>
+  </data>
+  <data name="SetupReviewCachedTotalHint" xml:space="preserve">
+    <value>Cached downloads can reduce the transfer. A ~ marks an estimate.</value>
+  </data>
+  <data name="SetupReviewEstimatedDownload" xml:space="preserve"><value>Estimated download</value></data>
+  <data name="SetupReviewLocalChanges" xml:space="preserve"><value>Local file changes</value></data>
+  <data name="SetupReviewSpritesMeasuredHint" xml:space="preserve"><value>Full sprite library checked {0}. Updated daily; existing sheets can reduce your download.</value></data>
+  <data name="SetupReviewIncompleteHint" xml:space="preserve"><value>+ excludes components whose size is currently unavailable.</value></data>
+  <data name="SetupReviewPartialSize" xml:space="preserve"><value>{0}+</value></data>
 </root>
