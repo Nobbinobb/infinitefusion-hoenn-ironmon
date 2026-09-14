@@ -23,11 +23,12 @@ internal sealed class TestWorkspace : IDisposable
     /// <summary>
     /// Creates a uniquely named fixture including spaces and Unicode.
     /// </summary>
-    internal TestWorkspace()
+    /// <param name="prefix">The fixture prefix, optionally shortened when testing bounded installation paths.</param>
+    internal TestWorkspace(string prefix = FixturePrefix)
     {
         _parent = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, FixtureFolder));
         Directory.CreateDirectory(_parent);
-        Root = Path.Combine(_parent, FixturePrefix + Guid.NewGuid());
+        Root = Path.Combine(_parent, prefix + Guid.NewGuid());
         Directory.CreateDirectory(Root);
     }
 

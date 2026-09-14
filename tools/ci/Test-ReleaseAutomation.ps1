@@ -114,6 +114,8 @@ try {
   }
   Write-Output "Release automation contracts passed: $script:assertions assertions; all CI PowerShell scripts parsed."
   & (Join-Path $PSScriptRoot 'Test-UpdateHistory.ps1')
+  & (Join-Path $PSScriptRoot 'Test-GameDownloadEstimate.ps1')
+  & (Join-Path $PSScriptRoot 'Test-SpriteDownloadEstimates.ps1')
 } finally {
   if (Test-Path Function:git) { Remove-Item Function:git }
   $resolved = [IO.Path]::GetFullPath($testRoot)

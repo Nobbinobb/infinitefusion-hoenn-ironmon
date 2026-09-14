@@ -39,6 +39,7 @@ public sealed class FreshInstallationTests(ITestOutputHelper output)
     {
         using var fixture = new TransactionFixture();
         await fixture.PrepareFreshAsync(_files);
+        Assert.Equal(fixture.Root, SetupPreparation.ResolveDestination(fixture.Root).Root);
         await fixture.Engine().DiscardPreparedAsync(fixture.Root, fixture.Description.TransactionId);
         Assert.Null(UpdateTransaction.ReadActiveId(fixture.Root));
         Assert.True(Directory.Exists(fixture.DirectoryPath));
@@ -46,6 +47,7 @@ public sealed class FreshInstallationTests(ITestOutputHelper output)
         var destination = SetupPreparation.InspectDestination(fixture.Root);
         Assert.Equal(fixture.Root, destination.Root);
         Assert.Null(destination.InstalledFlavor);
+        Assert.Equal(fixture.Root, SetupPreparation.ResolveDestination(fixture.Root).Root);
     }
 
     /// <summary>
@@ -59,6 +61,7 @@ public sealed class FreshInstallationTests(ITestOutputHelper output)
         await fixture.Engine().DiscardPreparedAsync(fixture.Root, fixture.Description.TransactionId);
         TransactionFixture.Write(fixture.Root, ExtraFile, 7);
         Assert.Throws<InvalidDataException>(() => SetupPreparation.InspectDestination(fixture.Root));
+        Assert.Throws<InvalidDataException>(() => SetupPreparation.ResolveDestination(fixture.Root));
         Assert.True(File.Exists(Path.Combine(fixture.Root, ExtraFile)));
     }
 

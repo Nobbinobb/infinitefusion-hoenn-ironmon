@@ -41,14 +41,23 @@ download. They do not add an installer or updater to older published packages.
 
 1. Download and open the release's standalone Setup executable. Setup includes
    its own .NET runtime; you do not need to install or configure Git.
-2. Choose a new installation folder or a supported existing game folder. The
-   default new folder is inside your Windows user account. For a protected folder,
+2. Choose any folder, empty or not. Setup uses a supported existing game directly
+   in that folder. Otherwise, it installs inside a **Pokémon Infinite Fusion 2**
+   subfolder, creating it when you choose Install. An existing installation in
+   that subfolder is reused; unrelated files there must be moved before continuing.
+   The review shows the final installation path. The default location is inside
+   your Windows user account. For a protected folder,
    Windows requests administrator permission after you choose Install. Declining
    leaves the installed program files unchanged. Setup itself stays under your
    normal Windows account.
 3. Optionally select the sprite-sheet download and desktop shortcut. Both are
    off by default. You can download the sprite library later from the tracker.
 4. Review the release, game version and any file conflicts, then choose Install.
+   The review groups version and tracker-package details separately from sprite,
+   shortcut and prerequisite selections, with green selected and red unselected
+   statuses. Requirements and download sizes have their own labels. Local file
+   changes have a separate review row. The save reminder sits beside the bottom
+   actions, with **What happens next?** for the application-closing explanation.
    Save your game before continuing. Setup downloads and verifies the required
    files, asks the game to close normally if necessary, and installs the game,
    Ironmon scripts and tracker together. If the game, tracker or official launcher
@@ -65,8 +74,8 @@ verification, and recovery backups can continue after downloading finishes.
 Optional sprite sheets download after the core installation succeeds.
 
 You can cancel while Setup waits for applications to close. After cleanup, you
-can select the same new-install folder again; retained updater recovery files
-do not make it an occupied game folder.
+can select the same parent or new-install folder again; retained updater recovery
+files do not make it an occupied game folder or cause another subfolder to be added.
 
 New installations default to the self-contained tracker, which includes .NET.
 Existing installations keep their detected tracker package type. Setup does not
@@ -74,7 +83,25 @@ automatically choose a smaller package just because .NET
 is installed. If you explicitly choose the runtime-required package, it checks
 for a compatible Windows x64 .NET runtime before replacing the installation.
 WebView2 is a separate tracker prerequisite; Setup offers its installation with
-your consent when needed.
+your consent when needed. Setup reads the complete Microsoft runtime installer's
+download size before installation when Microsoft's response provides it.
+
+The review shows the selected tracker archive size and, for releases that publish
+it, an estimated Infinite Fusion download size measured for the release's pinned
+game commit. A `~` marks an estimate: actual Git transfers depend on existing content
+and the history needed to obtain that commit. When the existing installation needs
+no game preparation, the review shows **No download**. Releases published before size metadata was added show
+**Unavailable** for an unmeasured game download.
+
+**Estimated download** includes the selected components and installation support.
+The sprite library estimate comes from a daily header-only scan of official sheet
+sizes, using the same sheet-selection rules as the downloader. The scan covers the
+supported game's bundled list and newly listed upstream sheets; existing local
+files can reduce the actual download. Hover over its size to see when it was checked.
+If the feed is unavailable, does not cover this game, or is more than seven days old,
+sprites show **Varies**. A compact `+` marks a total missing a component's size, with
+details on hover. These are download estimates, not the final disk space used by
+installed files and recovery backups.
 
 The optional sprite download happens after the main installation. A failed or
 cancelled sprite download does not undo a successful game installation; complete

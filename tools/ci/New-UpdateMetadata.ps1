@@ -11,11 +11,13 @@ if ($LASTEXITCODE -ne 0) { throw 'Cannot read the selected game version.' }
 $match = [regex]::Match($settings, '(?m)^\s*GAME_VERSION_NUMBER\s*=\s*["''](?<version>\d+\.\d+\.\d+)["'']')
 if (-not $match.Success) { throw 'The selected game has no supported version label.' }
 $release = Join-Path $projectRoot 'release'
+$gameDownloadBytes = & (Join-Path $PSScriptRoot 'Get-GameDownloadEstimate.ps1') -Repository (Split-Path -Parent $projectRoot) -Commit $GameCommit
 [IO.File]::Copy((Join-Path $projectRoot "docs/releases/RELEASE_NOTES_$Version.md"), (Join-Path $release 'update-notes.md'), $false)
 $request = [ordered]@{
   directory=$release; version=$Version; gameVersion=$match.Groups['version'].Value; gameCommit=$GameCommit
   gameInventory=(Join-Path $projectRoot 'data/updater/baselines/hoenn.json.gz')
   gameManifest=(Join-Path $projectRoot 'data/updater/baselines/hoenn.manifest.json')
+  gameDownloadBytes=$gameDownloadBytes
   trustFile=(Join-Path $projectRoot 'resources/updater/trusted-keys.json')
   historyDirectory=$(if ($HistoryDirectory) { $HistoryDirectory } else { $null })
 }

@@ -1,9 +1,11 @@
-using Ironmon.Updater.Core;
-using System.IO;
-using System.Windows;
 using Ironmon.Setup.Core;
+using Ironmon.SpriteLibrary;
 using Ironmon.Tracker.Connection.Sprites;
+using Ironmon.Updater.Core;
 using Ironmon.Updater.Infrastructure;
+using System.IO;
+using System.Net.Http;
+using System.Windows;
 
 namespace Ironmon.Setup;
 
@@ -36,6 +38,8 @@ internal static class Program
             using var http = new ReleaseHttpClient();
             using var source = new GitHubArtifactSource();
             using var sprites = new CustomSpriteSheetInstaller();
+            using var estimateHandler = new HttpClientHandler { AllowAutoRedirect = false };
+            using var estimates = new HttpClient(estimateHandler) { Timeout = TimeSpan.FromSeconds(5) };
             var verifier = UpdaterTrust.CreateVerifier();
             var downloads = new ReleaseDownloadStore(Path.Combine(cache, Downloads), http);
             var gitCache = new MinGitCache(Path.Combine(cache, GitCache), source);
@@ -46,7 +50,7 @@ internal static class Program
             var protectedUpdates = new ProtectedUpdateClient(verifier, downloads);
             var preparation = new SetupPreparation(verifier, downloads, runtime, game, verification, protectedUpdates);
             var authority = new SignedIronmonAuthority(verifier, runtime, verification);
-            using var session = new SetupSession(new ReleaseDiscovery(http, verifier, Path.Combine(cache, Discovery)), preparation, (root, progress) => new UpdateTransaction(authority, token => UpdateProcessIdentity.EnsureInstallationIdleAsync(root, UpdaterHandoff.TrackerRelativePath, token), progress), sprites, platform, downloads, protectedUpdates);
+            using var session = new SetupSession(new ReleaseDiscovery(http, verifier, Path.Combine(cache, Discovery)), preparation, (root, progress) => new UpdateTransaction(authority, token => UpdateProcessIdentity.EnsureInstallationIdleAsync(root, UpdaterHandoff.TrackerRelativePath, token), progress), sprites, platform, downloads, protectedUpdates, (commit, token) => SpriteDownloadEstimates.ReadAsync(estimates, commit, token));
             application.Run(new SetupWindow(session));
         }
         catch (Exception error)

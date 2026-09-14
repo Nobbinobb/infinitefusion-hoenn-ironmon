@@ -260,20 +260,30 @@ public sealed class CombinedUpdateTests(PinnedGitFixture tool) : IClassFixture<P
     }
 
     /// <summary>
-    /// Installs into an empty destination and verifies independently recoverable ownership after disposable Setup removal.
+    /// Installs into the resolved child and preserves parent files through commit, rollback and subsequent updates.
     /// </summary>
     /// <param name="failFinal">Whether final validation must roll back the entire fresh installation.</param>
+    /// <param name="occupiedParent">Whether the selected parent already contains unrelated content.</param>
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task SetupInstallsEmptyFolderThroughTheSharedTransaction(bool failFinal)
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task SetupInstallsNamedChildThroughTheSharedTransaction(bool failFinal, bool occupiedParent)
     {
         using var game = new ZipGameFixture(tool);
         using var release = new SignedReleaseFixture(distributionDocuments: true);
         using var workspace = new TestWorkspace();
         await game.InitializeAsync();
         await ConfigureAsync(game, release, false);
-        var root = workspace.PathFor(SetupDestination);
+        var parent = workspace.PathFor(SetupDestination);
+        Directory.CreateDirectory(parent);
+        var unrelated = Path.Combine(parent, PreservedPath);
+        if (occupiedParent)
+            await File.WriteAllTextAsync(unrelated, PlayerEdit);
+
+        var root = SetupPreparation.ResolveDestination(parent).Root;
+        Assert.Equal(Path.Combine(parent, SetupPreparation.InstallationDirectoryName), root);
         var downloads = new ReleaseDownloadStore(release.Cache, release);
         var preparation = new SetupPreparation(release.Verifier, downloads, SignedReleaseFixture.Runtime(), new CombinedGamePreparation(tool.Cache, game.Policy, game.Staging), Verification(game, release), _ => SignedReleaseFixture.VersionB);
         var review = await preparation.ReviewAsync(root, release.Evidence, failFinal ? ReleaseProtocol.RuntimeRequired : null);
@@ -288,6 +298,12 @@ public sealed class CombinedUpdateTests(PinnedGitFixture tool) : IClassFixture<P
         var result = await engine.ApplyAsync(root, prepared.TransactionId);
         Assert.Equal(failFinal ? TransactionPhase.RolledBack : TransactionPhase.Committed, result.Phase);
         Assert.Null(UpdateTransaction.ReadActiveId(root));
+        Assert.Equal(root, SetupPreparation.ResolveDestination(parent).Root);
+        Assert.Equal(root, SetupPreparation.ResolveDestination(root).Root);
+        if (occupiedParent)
+            Assert.Equal(PlayerEdit, await File.ReadAllTextAsync(unrelated));
+
+        Assert.False(File.Exists(Path.Combine(parent, SignedReleaseFixture.Script)));
         foreach (var document in SignedReleaseFixture.DistributionDocuments)
             Assert.False(File.Exists(Path.Combine(root, document)));
 
