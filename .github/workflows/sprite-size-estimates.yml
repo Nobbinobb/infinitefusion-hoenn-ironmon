@@ -23,7 +23,7 @@ jobs:
       - name: Measure the published release's pinned sprite sheets
         shell: pwsh
         run: |
-          dotnet run --project tracker/tools/Ironmon.SpriteSizeTool -c Release -- latest estimates.json "$env:RUNNER_TEMP/sprite-release-discovery"
+          dotnet run --project tracker/tools/Ironmon.SpriteSizeTool -c Release -p:UpdaterMetadataOnly=true -- latest estimates.json "$env:RUNNER_TEMP/sprite-release-discovery"
           if ($LASTEXITCODE -ne 0) { throw 'Sprite measurement failed; the published estimate is unchanged.' }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
