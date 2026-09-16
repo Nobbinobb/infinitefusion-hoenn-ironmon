@@ -22,6 +22,7 @@
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj" />
+    <Project Path="tools/Ironmon.SpriteSizeTool/Ironmon.SpriteSizeTool.csproj" />
     <Project Path="tools/Ironmon.Tracker.AccessGenerator.App/Ironmon.Tracker.AccessGenerator.App.csproj" />
     <Project Path="tools/Ironmon.Tracker.AccessGenerator.Core/Ironmon.Tracker.AccessGenerator.Core.csproj" />
   </Folder>

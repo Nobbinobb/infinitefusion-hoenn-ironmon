@@ -10,6 +10,7 @@
     <InternalsVisibleTo Include="Ironmon.Tracker.App.Tests" />
     <InternalsVisibleTo Include="Ironmon.Updater.CrashHost" />
     <InternalsVisibleTo Include="Ironmon.ReleaseTool" />
+    <InternalsVisibleTo Include="Ironmon.SpriteSizeTool" />
     <EmbeddedResource Include="../../../resources/updater/trusted-keys.json" LogicalName="Ironmon.Updater.Infrastructure.TrustedKeys.json" />
     <EmbeddedResource Include="../../../THIRD_PARTY_NOTICES.md" LogicalName="Ironmon.Updater.Infrastructure.ThirdPartyNotices.md" />
     <EmbeddedResource Condition="'$(UpdaterMetadataOnly)' != 'true'" Include="../../../data/updater/baselines/hoenn.json.gz" LogicalName="Ironmon.Updater.Infrastructure.Baselines.hoenn.json.gz" />
