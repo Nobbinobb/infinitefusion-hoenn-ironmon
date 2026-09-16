@@ -22,6 +22,8 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Measure the published release's pinned sprite sheets
         shell: pwsh
+        env:
+          IRONMON_SPRITE_GITHUB_TOKEN: ${{ github.token }}
         run: |
           dotnet run --project tracker/tools/Ironmon.SpriteSizeTool -c Release -p:UpdaterMetadataOnly=true -- latest estimates.json "$env:RUNNER_TEMP/sprite-release-discovery"
           if ($LASTEXITCODE -ne 0) { throw 'Sprite measurement failed; the published estimate is unchanged.' }

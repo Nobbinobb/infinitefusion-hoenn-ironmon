@@ -24,6 +24,7 @@ internal static class Program
     private const string ShaProperty = "sha";
     private const string CurrentCustom = "/CUSTOM_SPRITES";
     private const string CurrentBase = "/BASE_SPRITES";
+    private const string WorkflowTokenVariable = "IRONMON_SPRITE_GITHUB_TOKEN";
 
     /// <summary>
     /// Measures the latest release or one explicit game commit without publishing, downloading images or touching game files.
@@ -38,16 +39,18 @@ internal static class Program
                 throw new ArgumentException("Usage: latest output.json discovery-cache | game output.json game-commit");
 
             using var cancellation = new CancellationTokenSource(TimeSpan.FromMinutes(25));
-            using var handler = new HttpClientHandler { AllowAutoRedirect = false };
+            var workflowToken = Environment.GetEnvironmentVariable(WorkflowTokenVariable);
+            var requests = new WorkflowGitHubRequests();
+            using var handler = new WorkflowGitHubHandler(workflowToken);
             using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
             client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
             string[] commits;
             if (args[0] == Latest)
             {
-                using var transport = new ReleaseHttpClient();
+                using var transport = new ReleaseHttpClient(new WorkflowGitHubHandler(workflowToken), TimeProvider.System);
                 var verifier = UpdaterTrust.CreateVerifier();
                 using var discovery = new ReleaseDiscovery(transport, verifier, Path.GetFullPath(args[2]));
-                var result = await discovery.CheckAsync(true, cancellation.Token);
+                var result = await requests.CheckReleaseAsync(discovery, cancellation.Token);
                 var release = result.Release ?? throw new IOException(result.Error ?? "No signed published release is available.");
                 commits = verifier.Verify(release.Manifest, release.Signatures).Game.SupportedCommits;
             }
@@ -57,7 +60,7 @@ internal static class Program
             }
 
             var measuredAt = DateTimeOffset.UtcNow;
-            using var metadata = JsonDocument.Parse(await client.GetByteArrayAsync(MetadataReference, cancellation.Token));
+            using var metadata = JsonDocument.Parse(await requests.RetryAsync(() => client.GetByteArrayAsync(MetadataReference, cancellation.Token), cancellation.Token));
             var metadataCommit = metadata.RootElement.GetProperty(ObjectProperty).GetProperty(ShaProperty).GetString() ?? throw new InvalidDataException("The current sprite manifest revision is missing.");
             if (!Regex.IsMatch(metadataCommit, CommitPattern, RegexOptions.CultureInvariant))
                 throw new InvalidDataException("The sprite manifest revision is invalid.");
