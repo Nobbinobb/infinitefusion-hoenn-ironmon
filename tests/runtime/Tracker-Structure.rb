@@ -766,10 +766,15 @@ module IronmonTrackerStructureRuntimeTests
     ensure
       $game_player = original_game_player
     end
-    assert(
-      Scene_Map.instance_method(:update).source_location[0].end_with?(
-        "006_Scene_Hooks.rb"
-      ),
+    map_update = Scene_Map.instance_method(:update)
+    assert_source(
+      map_update,
+      "027_Tracker_Controls.rb",
+      "map updates establish the field control context"
+    )
+    assert_source(
+      map_update.super_method,
+      "006_Scene_Hooks.rb",
       "map updates own the obtainability startup-ready signal"
     )
     ready_scene = Object.new
