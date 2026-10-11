@@ -7,6 +7,10 @@ namespace Ironmon.Tracker.App.Components.Common;
 /// </summary>
 public partial class ObsidianToggle
 {
+    private const string ControlIdPrefix = "setting-switch-";
+    private const string IdFormat = "N";
+    private readonly string _controlId = ControlIdPrefix + Guid.NewGuid().ToString(IdFormat);
+
     /// <summary>
     /// Gets or sets the visible and accessible switch label.
     /// </summary>
@@ -44,7 +48,7 @@ public partial class ObsidianToggle
     public bool LabelFirst { get; set; }
 
     /// <summary>
-    /// Gets or sets secondary explanation displayed in the label-first layout.
+    /// Gets or sets help text available beside the label in the label-first layout.
     /// </summary>
     [Parameter]
     public string? Description { get; set; }

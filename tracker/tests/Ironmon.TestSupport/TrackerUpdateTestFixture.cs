@@ -1,7 +1,7 @@
 using System.Net;
 using Ironmon.Updater.Infrastructure;
 
-namespace Ironmon.Updater.Tests;
+namespace Ironmon.TestSupport;
 
 /// <summary>
 /// Exercises the production tracker session against isolated signed releases and a recorded shutdown boundary.

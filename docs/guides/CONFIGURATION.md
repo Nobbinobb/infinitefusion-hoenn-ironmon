@@ -1,5 +1,25 @@
 # Ironmon configuration
 
+## Tracker startup
+
+In the tracker's **Settings > Startup**, enable **Start game with tracker** to
+open Infinite Fusion automatically on subsequent tracker launches. The setting
+defaults to Off and is saved locally, independently of game saves and run seeds.
+Changing it does not start or close the game immediately.
+
+This works when opening the installed tracker directly or through a shortcut,
+for both manual ZIP installations and standalone Setup installations. The tracker
+locates the game from its own executable location and starts `InfiniteFusion2.exe`
+with the game folder as its working directory. An existing normal or performance
+game process from that installation is retained without starting another copy.
+
+Automatic startup waits for the existing installation compatibility check. An
+installation requiring update or recovery is not started automatically. A launch
+failure leaves the tracker open and shows an explanation. Closing the tracker
+does not close the game; closing the game does not cause it to reopen automatically.
+
+## Game configuration
+
 Ironmon stores an `Ironmon::Configuration` object in `PokemonGlobalMetadata`.
 It is serialized automatically with the rest of the save data.
 

@@ -2,7 +2,7 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using Ironmon.Updater.Infrastructure;
 
-namespace Ironmon.Updater.Tests;
+namespace Ironmon.TestSupport;
 
 /// <summary>
 /// Owns one disposable fixture beneath ignored test output, outside all installed game data.

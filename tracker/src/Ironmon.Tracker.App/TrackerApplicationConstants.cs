@@ -21,6 +21,11 @@ internal static class TrackerApplicationConstants
     internal const string AutoSelectStarterPreferenceKey = "auto_select_starter";
 
     /// <summary>
+    /// Gets the persisted automatic game-start preference key.
+    /// </summary>
+    internal const string AutoStartGamePreferenceKey = "auto_start_game";
+
+    /// <summary>
     /// Gets the persisted maximum-starter-BST preference key.
     /// </summary>
     internal const string MaximumStarterBaseStatTotalPreferenceKey = "maximum_starter_base_stat_total";

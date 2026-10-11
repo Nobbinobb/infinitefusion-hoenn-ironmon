@@ -69,6 +69,9 @@ It includes its own .NET runtime.
    beginning a supported Hoenn run.
 
 You can delete Setup afterward. Future updates are available inside the tracker.
+To open the game alongside the tracker, enable **Settings > Startup > Start game
+with tracker**. This optional setting also works with manual ZIP installations
+and when opening the tracker directly without a shortcut.
 Sprite sheets can also be downloaded later from **Settings > Custom sprite
 library**. Setup offers to install WebView2 if the tracker needs it.
 

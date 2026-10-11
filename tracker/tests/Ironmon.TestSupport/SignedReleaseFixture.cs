@@ -4,7 +4,7 @@ using System.Text;
 using Ironmon.Updater.Infrastructure;
 using Ironmon.Updater.Core;
 
-namespace Ironmon.Updater.Tests;
+namespace Ironmon.TestSupport;
 
 /// <summary>
 /// Builds disposable signed releases whose private key exists only inside the fixture.

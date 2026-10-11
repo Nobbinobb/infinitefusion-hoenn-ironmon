@@ -9,6 +9,8 @@ public partial class App : Application
     private readonly TrackerGlobalShortcutService _shortcutService;
     private readonly IStringLocalizer<TrackerResources> _text;
     private readonly TrackerWindowService _windowService;
+    private readonly TrackerGameLauncher _gameLauncher;
+    private readonly CancellationTokenSource _startupCancellation = new();
 
     /// <summary>
     /// Initializes the tracker application.
@@ -18,16 +20,19 @@ public partial class App : Application
     /// <param name="text">The localized tracker text.</param>
     /// <param name="windowService">The native tracker-window coordinator.</param>
     /// <param name="compatibility">The background installation revalidation service.</param>
-    public App(TrackerConnectionService connectionService, TrackerGlobalShortcutService shortcutService, IStringLocalizer<TrackerResources> text, TrackerWindowService windowService, TrackerInstallationCompatibility compatibility)
+    /// <param name="gameLauncher">The optional automatic game-start coordinator.</param>
+    public App(TrackerConnectionService connectionService, TrackerGlobalShortcutService shortcutService, IStringLocalizer<TrackerResources> text, TrackerWindowService windowService, TrackerInstallationCompatibility compatibility, TrackerGameLauncher gameLauncher)
     {
         ArgumentNullException.ThrowIfNull(connectionService);
         ArgumentNullException.ThrowIfNull(shortcutService);
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(windowService);
+        ArgumentNullException.ThrowIfNull(gameLauncher);
         _connectionService = connectionService;
         _shortcutService = shortcutService;
         _text = text;
         _windowService = windowService;
+        _gameLauncher = gameLauncher;
         _ = compatibility.Inspection;
         InitializeComponent();
         _connectionService.Start();
@@ -53,8 +58,25 @@ public partial class App : Application
             MaximumHeight = TrackerApplicationConstants.WindowHeight
         };
         window.HandlerChanged += HandleWindowHandlerChanged;
+        window.Created += HandleWindowCreated;
         window.Destroying += HandleWindowDestroying;
         return window;
+    }
+
+    /// <summary>
+    /// Starts the game after the tracker window exists and reports a failure without closing the tracker.
+    /// </summary>
+    /// <param name="sender">The newly created tracker window.</param>
+    /// <param name="args">The native window creation event.</param>
+    private async void HandleWindowCreated(object? sender, EventArgs args)
+    {
+        if (sender is not Window window)
+            return;
+
+        window.Created -= HandleWindowCreated;
+        string? errorKey = await _gameLauncher.StartAsync(_startupCancellation.Token);
+        if (errorKey is not null && !_startupCancellation.IsCancellationRequested)
+            await window.Page!.DisplayAlertAsync(_text[TrackerGameLauncher.ErrorTitleKey], _text[errorKey], _text[TrackerGameLauncher.CloseKey]);
     }
 
     /// <summary>
@@ -83,6 +105,7 @@ public partial class App : Application
     /// <param name="args">The window destruction event arguments.</param>
     private async void HandleWindowDestroying(object? sender, EventArgs args)
     {
+        _startupCancellation.Cancel();
         await _shortcutService.StopAsync();
         await _connectionService.StopAsync();
     }

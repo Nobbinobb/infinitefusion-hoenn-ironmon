@@ -1534,17 +1534,73 @@ body:has(.tracker-shell:is(.obsidian,.obsidian-access-shell)) {
     margin-top:8px;
     border-top:1px solid #2a3442;
 }
-.obsidian-setting-row strong {
-    display:block;
+.obsidian-setting-row.obsidian-toggle {
+    display:grid;
+}
+.obsidian-setting-row .obsidian-setting-label {
     font-size:13px;
     font-weight:500;
 }
-.obsidian-setting-row small {
-    display:block;
+.obsidian-setting-label {
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    min-width:0;
+}
+.obsidian-setting-label label {
+    cursor:pointer;
+}
+.obsidian .obsidian-help-button {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+    width:22px;
+    height:22px;
+    min-height:0;
+    margin:0;
+    padding:0;
+    border:0;
+    border-radius:50%;
+    background:transparent;
+    box-shadow:none;
     color:#9eacbf;
-    font-size:11px;
-    line-height:1.45;
-    margin-top:2px;
+    cursor:help;
+}
+.obsidian-help-button>span {
+    display:grid;
+    place-items:center;
+    width:15px;
+    height:15px;
+    border:1px solid currentColor;
+    border-radius:50%;
+    font:600 10px/1 "Segoe UI",sans-serif;
+}
+.obsidian .obsidian-help-button:hover,.obsidian .obsidian-help-button:focus-visible {
+    color:#c4b8ff;
+    background:#b0a3ff15;
+}
+.obsidian .obsidian-help-button:focus-visible {
+    outline:2px solid #b0a3ff;
+    outline-offset:2px;
+}
+.obsidian-help-tooltip {
+    position:fixed;
+    inset:auto;
+    margin:0;
+    box-sizing:border-box;
+    width:min(300px,calc(100% - 24px));
+    max-height:calc(100% - 24px);
+    overflow:auto;
+    padding:10px 12px;
+    border:1px solid #685d91;
+    border-radius:8px;
+    background:#202634;
+    color:#e0e6f0;
+    box-shadow:0 8px 24px #0008;
+    font:400 12px/1.5 "Segoe UI",sans-serif;
+    letter-spacing:normal;
+    white-space:normal;
 }
 .obsidian-setting-row input[type="number"] {
     width:86px;
@@ -1569,6 +1625,7 @@ body:has(.tracker-shell:is(.obsidian,.obsidian-access-shell)) {
 .obsidian-setting-switch {
     appearance:none;
     justify-self:end;
+    flex-shrink:0;
     width:38px;
     height:22px;
     border:1px solid #455166;
@@ -1649,11 +1706,6 @@ body:has(.tracker-shell:is(.obsidian,.obsidian-access-shell)) {
 }
 .obsidian .obsidian-settings-link:hover {
     text-decoration:underline;
-}
-.obsidian-settings-warning {
-    font-size:11px;
-    color:#b6a992;
-    margin:9px 0 0;
 }
 .obsidian-settings-count {
     font-size:11px;

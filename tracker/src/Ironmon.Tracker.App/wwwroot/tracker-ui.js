@@ -1,5 +1,75 @@
 const ironmonSpriteFitObservers = new WeakMap();
 const ironmonSpriteVisibleBounds = new WeakMap();
+const ironmonSettingHelpCloseTimers = new WeakMap();
+
+function ironmonSettingHelpFor(button) {
+    return document.getElementById(button.getAttribute("popovertarget"));
+}
+
+function ironmonShowSettingHelp(button) {
+    const tooltip = ironmonSettingHelpFor(button);
+    if (!tooltip) return;
+    clearTimeout(ironmonSettingHelpCloseTimers.get(tooltip));
+    if (!tooltip.matches(":popover-open")) tooltip.showPopover();
+    const anchor = button.getBoundingClientRect();
+    const bounds = tooltip.getBoundingClientRect();
+    const margin = 12;
+    const gap = 6;
+    const viewportWidth = document.documentElement.clientWidth;
+    const viewportHeight = document.documentElement.clientHeight;
+    const left = Math.max(margin, Math.min(anchor.left, viewportWidth - bounds.width - margin));
+    const roomBelow = viewportHeight - anchor.bottom - margin;
+    const roomAbove = anchor.top - margin;
+    const top = roomBelow < bounds.height + gap && roomAbove > roomBelow
+        ? anchor.top - bounds.height - gap
+        : anchor.bottom + gap;
+    tooltip.style.left = left + "px";
+    tooltip.style.top = Math.max(margin, Math.min(top, viewportHeight - bounds.height - margin)) + "px";
+}
+
+function ironmonHideSettingHelpLater(tooltip) {
+    if (!tooltip) return;
+    clearTimeout(ironmonSettingHelpCloseTimers.get(tooltip));
+    const timer = setTimeout(() => {
+        const button = document.querySelector(`[popovertarget="${tooltip.id}"]`);
+        if (tooltip.matches(":hover") || button?.matches(":hover") || document.activeElement === button) return;
+        if (tooltip.matches(":popover-open")) tooltip.hidePopover();
+    }, 120);
+    ironmonSettingHelpCloseTimers.set(tooltip, timer);
+}
+
+document.addEventListener("pointerover", event => {
+    const button = event.target.closest?.(".obsidian-help-button");
+    if (button && !button.contains(event.relatedTarget)) ironmonShowSettingHelp(button);
+    const tooltip = event.target.closest?.(".obsidian-help-tooltip");
+    if (tooltip) clearTimeout(ironmonSettingHelpCloseTimers.get(tooltip));
+});
+
+document.addEventListener("pointerout", event => {
+    const button = event.target.closest?.(".obsidian-help-button");
+    if (button && !button.contains(event.relatedTarget)) ironmonHideSettingHelpLater(ironmonSettingHelpFor(button));
+    const tooltip = event.target.closest?.(".obsidian-help-tooltip");
+    if (tooltip && !tooltip.contains(event.relatedTarget)) ironmonHideSettingHelpLater(tooltip);
+});
+
+document.addEventListener("focusin", event => {
+    const button = event.target.closest?.(".obsidian-help-button");
+    if (button) ironmonShowSettingHelp(button);
+});
+
+document.addEventListener("focusout", event => {
+    const button = event.target.closest?.(".obsidian-help-button");
+    if (button) ironmonHideSettingHelpLater(ironmonSettingHelpFor(button));
+});
+
+function ironmonHideSettingHelp() {
+    document.querySelectorAll(".obsidian-help-tooltip:popover-open").forEach(tooltip => tooltip.hidePopover());
+}
+
+document.addEventListener("scroll", event => {
+    if (!event.target.closest?.(".obsidian-help-tooltip")) ironmonHideSettingHelp();
+}, true);
+window.addEventListener("resize", ironmonHideSettingHelp);
 
 window.ironmonTrackerUi = {
     scrollMoveAccess(element) {

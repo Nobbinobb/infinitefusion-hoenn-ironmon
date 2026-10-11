@@ -1809,6 +1809,9 @@
   <data name="Redesign.Settings.Saved" xml:space="preserve">
     <value>✓ Saved</value>
   </data>
+  <data name="Settings.Help.Label" xml:space="preserve">
+    <value>Help for {0}</value>
+  </data>
   <data name="Redesign.Settings.SavedLocally" xml:space="preserve">
     <value>Saved on this tracker.</value>
   </data>
@@ -2218,4 +2221,11 @@
   <data name="Updates.ReviewRecovery" xml:space="preserve">
     <value>Review recovery</value>
   </data>
+  <data name="Settings.Startup.Group" xml:space="preserve"><value>Startup</value></data>
+  <data name="Settings.Startup.AutoStartGame" xml:space="preserve"><value>Start game with tracker</value></data>
+  <data name="Settings.Startup.AutoStartGameDescription" xml:space="preserve"><value>Automatically open Infinite Fusion when you next start the tracker. An already running game stays open.</value></data>
+  <data name="Startup.GameLaunch.ErrorTitle" xml:space="preserve"><value>Game could not start automatically</value></data>
+  <data name="Startup.GameLaunch.Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Startup.GameLaunch.Failed" xml:space="preserve"><value>The tracker could not find or start Infinite Fusion. You can keep using the tracker and start the game manually from its installation folder.</value></data>
+  <data name="Startup.GameLaunch.InstallationNotReady" xml:space="preserve"><value>The game installation requires an update or recovery before it can start automatically. Open Check for updates in Settings to review the installation.</value></data>
 </root>

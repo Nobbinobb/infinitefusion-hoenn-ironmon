@@ -9,11 +9,13 @@
     <Project Path="src/Ironmon.Tracker.Core/Ironmon.Tracker.Core.csproj" />
     <Project Path="src/Ironmon.Tracker.Protocol/Ironmon.Tracker.Protocol.csproj" />
     <Project Path="src/Ironmon.Tracker.Seeds/Ironmon.Tracker.Seeds.csproj" />
+    <Project Path="src/Ironmon.Tracker.UI/Ironmon.Tracker.UI.csproj" />
     <Project Path="src/Ironmon.Updater.Core/Ironmon.Updater.Core.csproj" />
     <Project Path="src/Ironmon.Updater.Infrastructure/Ironmon.Updater.Infrastructure.csproj" />
     <Project Path="src/Ironmon.Updater/Ironmon.Updater.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Ironmon.TestSupport/Ironmon.TestSupport.csproj" />
     <Project Path="tests/Ironmon.Setup.Tests/Ironmon.Setup.Tests.csproj" />
     <Project Path="tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj" />
     <Project Path="tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj" />
