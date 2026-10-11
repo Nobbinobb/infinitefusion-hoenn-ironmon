@@ -106,8 +106,15 @@ public partial class Home : IDisposable
         CompletedRuns.SelectionRequested += HandleCompletedRunSelectionRequested;
         ShortcutService.ViewRequested += HandleGlobalViewRequested;
         ShortcutService.EnemyCycleRequested += HandleGlobalEnemyCycleRequested;
+        ShortcutService.ControlsChanged += HandleShortcutControlsChanged;
         InitializeUpdateNavigation();
     }
+
+    /// <summary>
+    /// Refreshes navigation tooltips after shortcut bindings change.
+    /// </summary>
+    private void HandleShortcutControlsChanged()
+        => _ = InvokeAsync(StateHasChanged);
 
     /// <summary>
     /// Selects the requested primary tracker view.
@@ -274,17 +281,7 @@ public partial class Home : IDisposable
     /// <param name="args">The browser keyboard event.</param>
     private void HandleKeyDown(KeyboardEventArgs args)
     {
-        if (!args.CtrlKey)
-            return;
-
-        TrackerView? requestedView = args.Key.ToUpperInvariant() switch
-        {
-            TrackerKeyboardKeys.PlayerNumber => TrackerView.Player,
-            TrackerKeyboardKeys.EnemyNumber => TrackerView.Enemy,
-            TrackerKeyboardKeys.LookupNumber => TrackerView.Lookup,
-            TrackerKeyboardKeys.ArchiveNumber => TrackerView.Archive,
-            _ => null
-        };
+        TrackerView? requestedView = ShortcutService.TrackerKeyDown(args);
 
         if (requestedView is not null)
             SelectView(requestedView.Value);
@@ -382,11 +379,8 @@ public partial class Home : IDisposable
     /// <returns>The accessible connection description.</returns>
     private string GetConnectionAccessibleText()
     {
-        if (_connection.Status == TrackerConnectionStatus.Connected
-            && _obtainabilityProgress.Status == TrackerObtainabilityProgressStatus.Running)
-        {
+        if (_connection.Status == TrackerConnectionStatus.Connected && _obtainabilityProgress.Status == TrackerObtainabilityProgressStatus.Running)
             return Text[_gameConnectedCalculatingResourceKey];
-        }
 
         return GetConnectionText();
     }
@@ -471,6 +465,7 @@ public partial class Home : IDisposable
         EnemyPokemonSnapshot? target = targetPosition is null
             ? null
             : _run.Enemies.FirstOrDefault(enemy => enemy.Position == targetPosition);
+
         return target ?? GetSelectedEnemy();
     }
 
@@ -583,5 +578,6 @@ public partial class Home : IDisposable
         CompletedRuns.SelectionRequested -= HandleCompletedRunSelectionRequested;
         ShortcutService.ViewRequested -= HandleGlobalViewRequested;
         ShortcutService.EnemyCycleRequested -= HandleGlobalEnemyCycleRequested;
+        ShortcutService.ControlsChanged -= HandleShortcutControlsChanged;
     }
 }

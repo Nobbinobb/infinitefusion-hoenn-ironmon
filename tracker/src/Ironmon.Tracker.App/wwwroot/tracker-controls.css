@@ -1,0 +1,506 @@
+.tracker-settings-tabs {
+    display: flex;
+    gap: 12px;
+    margin: 12px 0 16px;
+    border-bottom: 1px solid #2a3544;
+}
+
+.tracker-settings-tabs button {
+    padding: 10px 1px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: #9eacbf;
+    font: inherit;
+    cursor: pointer;
+}
+
+.tracker-settings-tabs button[aria-pressed="true"] {
+    border-bottom-color: #b0a3ff;
+    color: #e7edf7;
+}
+
+.tracker-controls {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+    container-type: inline-size;
+    color: #e7edf7;
+    font-size: 12px;
+}
+
+.tracker-controls-warning {
+    margin: 0;
+    padding: 9px 11px;
+    border: 1px solid #685536;
+    border-radius: 6px;
+    background: #272319;
+    color: #f0cc8c;
+    font-size: 11px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.tracker-controls-profile-heading,
+.tracker-controls-profile-tools,
+.tracker-controls-panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.tracker-controls-profile-heading {
+    margin-bottom: -5px;
+}
+
+.tracker-controls-status {
+    color: #9eacbf;
+    font-size: 11px;
+}
+
+.tracker-controls-status[data-connected] {
+    color: #55eaa5;
+}
+
+.tracker-controls-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 4px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: #9eacbf;
+    cursor: pointer;
+}
+
+.tracker-controls-reset svg {
+    width: 18px;
+    height: 18px;
+}
+
+.tracker-controls-reset:hover {
+    background: #1b222e;
+    color: #b0a3ff;
+}
+
+.tracker-controls select {
+    width: 100%;
+    min-height: 37px;
+    padding: 7px 11px;
+    border: 1px solid #2a3544;
+    border-radius: 7px;
+    background: #131820;
+    color: #e7edf7;
+    font: inherit;
+}
+
+.tracker-controls-categories {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    margin: 8px 0 7px;
+}
+
+.tracker-controls-categories button {
+    padding: 8px 3px;
+    border: 1px solid #2a3544;
+    border-radius: 6px;
+    background: #131820;
+    color: #9eacbf;
+    font: inherit;
+    cursor: pointer;
+}
+
+.tracker-controls-categories button[aria-selected="true"] {
+    background: #28263d;
+    border-color: #8176b5;
+    color: #ddd5ff;
+}
+
+.tracker-controls-panel-heading {
+    margin-bottom: 5px;
+}
+
+.tracker-controls-panel-heading > span:last-child {
+    color: #9eacbf;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.tracker-controls-panel-heading h3 {
+    margin: 0;
+    color: #e7edf7;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.tracker-controls-category-hint {
+    margin: 0 0 13px;
+    color: #9eacbf;
+    font-size: 12px;
+}
+
+.tracker-controls-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.tracker-controls-action-column {
+    width: 40%;
+}
+
+.tracker-controls-table th,
+.tracker-controls-table td {
+    padding: 7px 3px;
+    border-bottom: 1px solid #202b38;
+    vertical-align: middle;
+    font-weight: 400;
+}
+
+.tracker-controls-table thead th {
+    padding: 0 3px 8px;
+    border-bottom-color: #2a3544;
+    color: #9eacbf;
+    font-size: 11px;
+    text-align: center;
+}
+
+.tracker-controls-table th:first-child {
+    padding-left: 0;
+    text-align: left;
+}
+
+.tracker-controls-table tbody tr {
+    height: 53px;
+}
+
+.tracker-control-binding {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    padding: 3px 2px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: #dfe7f6;
+    font: inherit;
+    cursor: pointer;
+}
+
+.tracker-control-binding:hover:not(:disabled) {
+    background: #1b2030;
+    border-color: #625b84;
+}
+
+.tracker-control-binding:disabled {
+    cursor: default;
+}
+
+.tracker-control-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    white-space: nowrap;
+}
+
+.tracker-control-cap,
+.tracker-control-unbound {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 29px;
+    min-height: 29px;
+    padding: 3px 7px;
+    border: 1px solid #364358;
+    border-radius: 5px;
+    background: #1b222e;
+    color: #dfe7f6;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.tracker-control-unbound {
+    border-style: dashed;
+    background: transparent;
+    color: #9eacbf;
+    font-weight: 400;
+}
+
+.tracker-control-combination {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 3px 5px;
+    border: 1px solid #364358;
+    border-radius: 5px;
+    background: #1b222e;
+    line-height: 22px;
+}
+
+.tracker-control-combination .tracker-control-cap {
+    display: inline-block;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    gap: 3px;
+    vertical-align: baseline;
+    line-height: 22px;
+}
+
+.tracker-control-plus {
+    display: inline-block;
+    margin: 0 3px;
+    color: #9eacbf;
+    font-size: 11px;
+    vertical-align: baseline;
+}
+
+.tracker-control-direction {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 18px;
+}
+
+.tracker-control-direction svg {
+    width: 15px;
+    height: 15px;
+}
+
+.tracker-control-combination .tracker-control-direction-cap {
+    display: inline-block;
+}
+
+.tracker-control-combination .tracker-control-direction {
+    position: relative;
+    display: inline-block;
+    width: 11px;
+    height: 1cap;
+    margin-left: 3px;
+    vertical-align: baseline;
+}
+
+.tracker-control-combination .tracker-control-direction svg {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 11px;
+    height: 11px;
+}
+
+.tracker-control-pad {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 18px;
+}
+
+.tracker-control-pad svg {
+    width: 14px;
+    height: 14px;
+}
+
+.tracker-control-combination .tracker-control-pad {
+    position: relative;
+    display: inline-block;
+    width: 12px;
+    height: 1cap;
+    vertical-align: baseline;
+}
+
+.tracker-control-combination .tracker-control-pad svg {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+}
+
+.tracker-control-face {
+    width: 17px;
+    height: 17px;
+    color: #ddd5ff;
+    overflow: visible;
+}
+
+.tracker-control-face path {
+    vector-effect: non-scaling-stroke;
+    stroke-width: 1.6;
+}
+
+.tracker-control-combination .tracker-control-face,
+.tracker-control-combination .tracker-control-click,
+.tracker-control-combination .tracker-control-menu-symbol {
+    vertical-align: middle;
+}
+
+.tracker-control-cross {
+    width: 28px;
+    height: 28px;
+    margin: -5px -5.5px;
+}
+
+.tracker-control-square {
+    width: 19px;
+    height: 19px;
+}
+
+.tracker-control-click {
+    width: 13px;
+    height: 13px;
+}
+
+.tracker-control-menu-symbol {
+    display: none;
+}
+
+.tracker-controls-dialog {
+    max-width: 460px;
+}
+
+.tracker-controls-capture-instruction {
+    margin: 0;
+    color: #9eacbf;
+    font-size: 12px;
+}
+
+.tracker-controls-capture-input {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 61px;
+    margin: 15px 0 12px;
+    padding: 12px;
+    border: 1px solid #8176b5;
+    border-radius: 8px;
+    background: #232439;
+    color: #e4dcff;
+    text-align: center;
+}
+
+.tracker-controls-input-options {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    margin-bottom: 16px;
+}
+
+.tracker-controls-input-options button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 2px;
+    border: 1px solid #354155;
+    border-radius: 5px;
+    background: #1b222e;
+    color: #e7edf7;
+    cursor: pointer;
+}
+
+.tracker-controls-input-options .tracker-control-cap {
+    border: 0;
+    background: transparent;
+    padding: 2px;
+}
+
+.tracker-controls-input-options button[aria-pressed="true"] {
+    background: #342e49;
+    border-color: #b0a3ff;
+}
+
+.tracker-controls-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid #2a3544;
+}
+
+.tracker-controls-dialog-actions > button:first-child {
+    margin-right: auto;
+}
+
+.tracker-controls button:focus-visible,
+.tracker-controls select:focus-visible,
+.tracker-controls-capture-input:focus-visible,
+.tracker-settings-tabs button:focus-visible {
+    outline: 2px solid #b0a3ff;
+    outline-offset: 2px;
+}
+
+@container (max-width: 360px) {
+    .tracker-controls-table th,
+    .tracker-controls-table td {
+        padding-right: 2px;
+        padding-left: 2px;
+    }
+
+    .tracker-control-binding {
+        padding: 3px 0;
+    }
+
+    .tracker-control-combination {
+        padding: 3px;
+    }
+
+    .tracker-control-combination .tracker-control-cap {
+        gap: 1px;
+        font-size: 11px;
+    }
+
+    .tracker-control-plus {
+        margin: 0 1px;
+        font-size: 9px;
+    }
+
+    .tracker-control-combination .tracker-control-direction {
+        width: 10px;
+        margin-left: 1px;
+    }
+
+    .tracker-control-combination .tracker-control-direction svg {
+        width: 10px;
+        height: 10px;
+    }
+
+    .tracker-control-combination .tracker-control-pad {
+        width: 11px;
+    }
+
+    .tracker-control-combination .tracker-control-pad svg {
+        width: 11px;
+        height: 11px;
+    }
+
+    .tracker-control-combination .tracker-control-menu-label {
+        display: none;
+    }
+
+    .tracker-control-combination .tracker-control-menu-symbol {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+    }
+}

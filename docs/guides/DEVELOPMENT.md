@@ -4,10 +4,27 @@
 catalog into both the local game installation and the ignored `dist` staging
 directory. Run it before testing game-script changes in Infinite Fusion.
 
+Visual Studio rebuilds the tracker; it does not synchronize the Ruby game
+scripts. Automatic game startup finds the game installation above the tracker
+executable, including when the tracker is launched from a worktree's Debug
+output. Before testing changes to controller overrides, run the following from
+that worktree with the actual game installation selected:
+
+```powershell
+./tools/Build-Distribution.ps1 -GameRoot 'C:\Program Files (x86)\InfiniteFusion2' -ReuseGeneratedAssets
+```
+
+Restart a game that was already running when scripts were synchronized. Testing
+an owned runtime copy with `Test-ControlsRuntime.ps1` updates that copy only.
+The Controls tab reports when the connected game lacks override support.
+
 `tools/Test-GameRuntime.ps1` performs the automated bundled-runtime checks. It
 loads the synchronized ordinary scripts, validates area progress, deterministic
 seeded-run import, and diagnostic capability authorization without leaving
 development hooks in the game installation.
+It also runs `tools/Test-ControlsRuntime.ps1`, which validates transient tracker
+input ownership, independent field/menu/battle bindings, nested input contexts,
+native fallback, disconnect cleanup, and the crash timeout.
 
 `tools/Build-TrackerRelease.ps1` also regenerates correctness audits. The
 obtainability foundation audit is one of those release gates and must be

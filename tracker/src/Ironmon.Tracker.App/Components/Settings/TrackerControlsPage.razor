@@ -1,0 +1,118 @@
+@using Ironmon.Tracker.App.Controls
+@implements IDisposable
+
+<div class="tracker-controls">
+    @if (ConnectionState.Snapshot.Status == TrackerConnectionStatus.Connected && ConnectionState.Snapshot.Game?.ControlOverridesSupported != true)
+    {
+        <p class="obsidian-setting-error" role="alert">Update the Ironmon game scripts to use game control overrides.</p>
+    }
+    @if (Shortcuts.ControllerError is not null)
+    {
+        <p class="obsidian-setting-error" role="alert">@Shortcuts.ControllerError</p>
+    }
+    <div class="tracker-controls-profile-heading">
+        <ObsidianSettingLabel Label="Control profile" ControlId="@_profileControlId" Description="@_profileHelp" />
+        <div class="tracker-controls-profile-tools">
+            <span class="tracker-controls-status" data-connected="@(_controllerIdentity is null || IsConnected(_controllerIdentity))">@ProfileStatus</span>
+            <button type="button" class="tracker-controls-reset" title="Restore profile defaults" aria-label="Restore profile defaults" @onclick="RestoreDefaults">
+                <ObsidianIcon Kind="ObsidianIconKind.Reset" />
+            </button>
+        </div>
+    </div>
+    <select id="@_profileControlId" value="@(_controllerIdentity ?? _keyboardProfile)" @onchange="SelectProfile">
+        <option value="@_keyboardProfile">Keyboard</option>
+        @foreach (ControllerProfile controller in Profiles.Controllers)
+        {
+            <option value="@controller.Identity">@controller.Name</option>
+        }
+    </select>
+    <div class="tracker-controls-categories" role="tablist" aria-label="Control categories">
+        @for (int index = 0; index < ControlCatalog.Groups.Count; index++)
+        {
+            int category = index;
+            <button id="@CategoryId(category)" type="button" role="tab" aria-controls="@_actionsPanelId" aria-selected="@((_selectedGroup == category).ToString().ToLowerInvariant())" tabindex="@(_selectedGroup == category ? 0 : -1)" @ref="_categoryButtons[category]" @onclick="() => SelectCategory(category)" @onkeydown="args => HandleCategoryKey(args, category)">@ControlCatalog.Groups[category].Label</button>
+        }
+    </div>
+    @if (_error is not null)
+    {
+        <p class="obsidian-setting-error" role="alert">@_error</p>
+    }
+    @if (ExistingConflictWarning is string conflictWarning)
+    {
+        <p class="tracker-controls-warning" role="alert">@conflictWarning</p>
+    }
+    @if (Shortcuts.BindingWarning is string bindingWarning)
+    {
+        <p class="tracker-controls-warning" role="status">@bindingWarning</p>
+    }
+    <section id="@_actionsPanelId" role="tabpanel" aria-labelledby="@CategoryId(_selectedGroup)" class="tracker-controls-actions">
+        <div class="tracker-controls-panel-heading">
+            <h3>@(SelectedGroup.Label + _controlsSuffix)</h3>
+            <span>@SelectedGroup.Actions.Length actions</span>
+        </div>
+        <p class="tracker-controls-category-hint">@SelectedGroup.Description</p>
+        <table class="tracker-controls-table">
+            <colgroup><col class="tracker-controls-action-column" /><col /><col /></colgroup>
+            <thead><tr><th scope="col">Action</th><th scope="col">Binding 1</th><th scope="col">Binding 2</th></tr></thead>
+            <tbody>
+                @foreach (ControlAction action in SelectedActions)
+                {
+                    <tr @key="action.Id">
+                        <th scope="row">@action.Label</th>
+                        @for (int index = 0; index < 2; index++)
+                        {
+                            int slot = index;
+                            <td>
+                                <button class="tracker-control-binding" type="button" disabled="@(_controllerIdentity is not null && !IsConnected(_controllerIdentity))" aria-label="@BindingAccessibleLabel(action, slot)" title="@BindingAccessibleLabel(action, slot)" @onclick="() => BeginCapture(action.Id, slot)">
+                                    <ControlBindingChip Keyboard="@KeyboardChord(action, slot)" Controller="@ControllerChord(action, slot)" PlayStation="@IsPlayStation" />
+                                </button>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+    @if (Shortcuts.CaptureAction is string actionId)
+    {
+        <ObsidianDialog Title="@ControlCatalog.Actions.Single(action => action.Id == actionId).Label" Eyebrow="@CaptureContext" Closed="Shortcuts.CancelCapture" Class="tracker-controls-dialog">
+            <p class="tracker-controls-capture-instruction">Press a key, button, or combination, then release it.</p>
+            <div class="tracker-controls-capture-input" tabindex="0" @ref="_captureRoot" @onkeydown="Shortcuts.CaptureKeyDown" @onkeyup="Shortcuts.CaptureKeyUp" @onkeydown:stopPropagation="true" @onkeyup:stopPropagation="true" @onkeydown:preventDefault="true">
+                @if (Shortcuts.CaptureReady)
+                {
+                    <span role="status" aria-label="@CapturedLabel">
+                        <ControlBindingChip Keyboard="@Shortcuts.CapturedKeyboard" Controller="@Shortcuts.CapturedController" PlayStation="@IsPlayStation" />
+                    </span>
+                }
+                else
+                {
+                    <span role="status">Waiting for input…</span>
+                }
+            </div>
+            @if (SelectedController?.Mapped == true)
+            {
+                <div class="tracker-controls-input-options" aria-label="Controller inputs">
+                    @foreach (string token in ControlCatalog.ControllerInputs)
+                    {
+                        <button type="button" aria-label="@ControlNames.Controller(token, IsPlayStation)" aria-pressed="@(Shortcuts.CapturedController.Contains(token).ToString().ToLowerInvariant())" @onclick="() => ToggleControllerInput(token)">
+                            <ControlBindingChip Controller="@([token])" PlayStation="@IsPlayStation" />
+                        </button>
+                    }
+                </div>
+            }
+            @if (_error is not null || Shortcuts.BindingError is not null)
+            {
+                <p class="obsidian-setting-error" role="alert">@(_error ?? Shortcuts.BindingError)</p>
+            }
+            @if (Shortcuts.CaptureWarning is string captureWarning)
+            {
+                <p class="tracker-controls-warning" role="alert">@captureWarning</p>
+            }
+            <div class="tracker-controls-dialog-actions">
+                <button type="button" class="obsidian-settings-link" @onclick="ClearCapture">Clear binding</button>
+                <button type="button" class="obsidian-settings-button" @onclick="Shortcuts.CancelCapture">Cancel</button>
+                <button type="button" class="obsidian-settings-button obsidian-settings-primary" @ref="_useBindingButton" disabled="@(!Shortcuts.CaptureReady)" @onclick="UseCapture">Use binding</button>
+            </div>
+        </ObsidianDialog>
+    }
+</div>

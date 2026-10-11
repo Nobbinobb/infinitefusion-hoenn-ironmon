@@ -5,6 +5,7 @@
     <RootNamespace>Ironmon.Tracker.App.Tests</RootNamespace>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WindowsPackageType>None</WindowsPackageType>
     <!-- Managed test tasks are not published with trimming or AOT and do not cross the WinRT ABI. -->
     <CsWinRTAotOptimizerEnabled>false</CsWinRTAotOptimizerEnabled>

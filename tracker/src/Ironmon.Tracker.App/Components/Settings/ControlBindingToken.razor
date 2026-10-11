@@ -1,0 +1,29 @@
+<span class="tracker-control-cap @(DirectionPath is not null ? _directionCapClass : null)">
+    @if (FacePath is not null)
+    {
+        <svg class="tracker-control-face @FaceClass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="@FacePath" /></svg>
+    }
+    else if (IsDirectionalPad)
+    {
+        <span class="tracker-control-pad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z" /></svg></span>
+    }
+    else
+    {
+        @if (IsStickClick && !PlayStation)
+        {
+            <svg class="tracker-control-click" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="2" fill="currentColor" /></svg>
+        }
+        @if (Label.Length > 0)
+        {
+            <span class="tracker-control-token-label @(IsMenu ? _menuLabelClass : null)">@Label</span>
+        }
+        @if (IsMenu)
+        {
+            <svg class="tracker-control-menu-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+        }
+    }
+    @if (DirectionPath is not null)
+    {
+        <span class="tracker-control-direction"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="@DirectionPath" /></svg></span>
+    }
+</span>

@@ -2,7 +2,7 @@
 
 <PageTitle>@Text["App.Shell.AppTitle"]</PageTitle>
 
-<main class="tracker-shell @(_accessOpen ? "obsidian-access-shell" : null) @(!_accessOpen ? "obsidian" : null)" tabindex="0" @onkeydown="HandleKeyDown">
+<main class="tracker-shell @(_accessOpen ? "obsidian-access-shell" : null) @(!_accessOpen ? "obsidian" : null)" tabindex="0" @onkeydown="HandleKeyDown" @onkeyup="ShortcutService.TrackerKeyUp" @onfocusout="ShortcutService.ClearTrackerKeys">
     <header class="tracker-header">
         <div class="connection-state" role="status" title="@GetConnectionDetail()" aria-label="@GetConnectionAccessibleText()">
             <span class="@GetConnectionDotClass()" aria-hidden="true"></span>
@@ -37,7 +37,7 @@
         <button class="@GetTabClass(TrackerView.Player)"
                 type="button"
                 role="tab"
-                title="Ctrl+1"
+                title="@ShortcutService.ShortcutLabel(TrackerView.Player)"
                 aria-selected="@(!_accessOpen && !_settingsOpen && !_seedsOpen && _selectedView == TrackerView.Player ? "true" : "false")"
                 @onclick="() => SelectView(TrackerView.Player)">
             <span class="tab-key" aria-hidden="true">1</span>
@@ -46,7 +46,7 @@
         <button class="@GetTabClass(TrackerView.Enemy)"
                 type="button"
                 role="tab"
-                title="Ctrl+2"
+                title="@ShortcutService.ShortcutLabel(TrackerView.Enemy)"
                 aria-selected="@(!_accessOpen && !_settingsOpen && !_seedsOpen && _selectedView == TrackerView.Enemy ? "true" : "false")"
                 @onclick="() => SelectView(TrackerView.Enemy)">
             <span class="tab-key" aria-hidden="true">2</span>
@@ -55,7 +55,7 @@
         <button class="@GetTabClass(TrackerView.Lookup)"
                 type="button"
                 role="tab"
-                title="Ctrl+3"
+                title="@ShortcutService.ShortcutLabel(TrackerView.Lookup)"
                 aria-selected="@(!_accessOpen && !_settingsOpen && !_seedsOpen && _selectedView == TrackerView.Lookup ? "true" : "false")"
                 @onclick="() => SelectView(TrackerView.Lookup)">
             <span class="tab-key" aria-hidden="true">3</span>
@@ -64,7 +64,7 @@
         <button class="@GetTabClass(TrackerView.Archive)"
                 type="button"
                 role="tab"
-                title="Ctrl+4"
+                title="@ShortcutService.ShortcutLabel(TrackerView.Archive)"
                 aria-selected="@(!_accessOpen && !_settingsOpen && !_seedsOpen && _selectedView == TrackerView.Archive ? "true" : "false")"
                 @onclick="() => SelectView(TrackerView.Archive)">
             <span class="tab-key" aria-hidden="true">4</span>

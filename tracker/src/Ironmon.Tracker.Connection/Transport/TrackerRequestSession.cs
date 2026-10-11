@@ -151,7 +151,8 @@ internal sealed class TrackerRequestSession : IDisposable
         try
         {
             await writer.WriteAsync(request, cancellationToken).ConfigureAwait(false);
-            _diagnostics.RecordOutgoing(request);
+            if (request.Event != ControlProtocol.StateEvent)
+                _diagnostics.RecordOutgoing(request);
         }
         finally
         {

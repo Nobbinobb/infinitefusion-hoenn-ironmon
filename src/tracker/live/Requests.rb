@@ -51,6 +51,8 @@ module Ironmon
           payload["favorite_species_ids"]
         )
         Ironmon.reset_tracker_obtainability_worker_failures
+      elsif message["type"] == "event" && message["event"] == "controls_state"
+        Ironmon.receive_tracker_controls(message["payload"])
       elsif message["type"] == "event" &&
             message["event"] == "diagnostic_access_changed"
         payload = message["payload"] || {}
