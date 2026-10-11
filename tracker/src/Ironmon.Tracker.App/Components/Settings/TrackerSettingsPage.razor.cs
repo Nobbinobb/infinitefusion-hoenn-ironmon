@@ -49,6 +49,7 @@ public partial class TrackerSettingsPage : IDisposable
     private bool _spriteDialogOpen;
     private bool _favoritesOpen;
     private bool _localSettingsSaved;
+    private bool _controlsOpen;
     private const string _favoriteSeparator = ", ";
 
     /// <summary>

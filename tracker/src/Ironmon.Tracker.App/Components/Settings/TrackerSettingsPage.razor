@@ -1,4 +1,4 @@
-<section class="obsidian-settings" aria-label="@Text["Settings.Page.Settings"]">
+<section class="obsidian-settings" aria-label="@Text["Settings.Page.Settings"]" @onkeydown:stopPropagation="true" @onkeyup:stopPropagation="true">
     <header class="obsidian-settings-heading">
         <div><p class="card-kicker">@Text["Settings.Page.TrackerPreferences"]</p><h2>@Text["Settings.Page.Settings"]</h2></div>
         <div class="tracker-settings-heading-actions">
@@ -9,51 +9,62 @@
             }
         </div>
     </header>
-    <ObsidianSection Title="@Text[StartupGroupKey]" Icon="ObsidianIconKind.Plug">
-        <ObsidianToggle Class="obsidian-setting-row" Label="@Text[AutoStartGameKey]" Description="@Text[AutoStartGameDescriptionKey]" LabelFirst="true" Value="TrackerStartupSettings.AutoStartGame" ValueChanged="HandleAutoStartGameChanged" />
-    </ObsidianSection>
-    <ObsidianSection Title="@Text["Settings.Starter.Group"]" Icon="ObsidianIconKind.Shuffle">
-        <ObsidianToggle Class="obsidian-setting-row" Label="@Text["Settings.Starter.AutoSelectStarter"]" Description="@Text["Redesign.Settings.AutoSelectDescription"]" LabelFirst="true" Value="AutoSelectStarter" ValueChanged="HandleAutoSelectChanged" />
-        <div class="obsidian-setting-row">
-            <ObsidianSettingLabel Label="@Text["Settings.Starter.MaximumBst"]" ControlId="@MaximumBstControlId" Description="@Text["Redesign.Settings.MaximumBstDescription"]" />
-            <input id="@MaximumBstControlId" type="number" min="@StarterSelectionConstants.MinimumBaseStatTotal" max="@StarterSelectionConstants.MaximumBaseStatTotal" value="@MaximumStarterBaseStatTotal" placeholder="@Text["Settings.Starter.MaximumBstPlaceholder"]" aria-invalid="@((!string.IsNullOrEmpty(_maximumBstError)).ToString().ToLowerInvariant())" @onchange="HandleMaximumBstChanged" />
-        </div>
-        @if (_maximumBstError is not null)
-        {
-            <p class="obsidian-setting-error" role="alert">@_maximumBstError</p>
-        }
-    </ObsidianSection>
-    <ObsidianSection Title="@Text["Settings.EvolutionGraph.Group"]" Icon="ObsidianIconKind.Branch">
-        <div class="obsidian-setting-row">
-            <ObsidianSettingLabel Label="@Text["Settings.EvolutionGraph.ExpansionDepth"]" ControlId="@ExpansionDepthControlId" Description="@Text["Redesign.Settings.ExpansionDepthDescription"]" />
-            <input id="@ExpansionDepthControlId" type="number" min="@EvolutionGraphSettings.MinimumExpansionDepth" max="@EvolutionGraphSettings.MaximumExpansionDepth" value="@EvolutionGraphSettings.ExpansionDepth" aria-invalid="@((!string.IsNullOrEmpty(_graphDepthError)).ToString().ToLowerInvariant())" @onchange="HandleExpansionDepthChanged" />
-        </div>
-        @if (_graphDepthError is not null)
-        {
-            <p class="obsidian-setting-error" role="alert">@_graphDepthError</p>
-        }
-        <div class="obsidian-setting-row">
-            <ObsidianSettingLabel Label="@Text["Settings.EvolutionGraph.NodesPerRow"]" ControlId="@NodesPerRowControlId" Description="@Text["Redesign.Settings.NodesPerRowDescription"]" />
-            <input id="@NodesPerRowControlId" type="number" min="@EvolutionGraphSettings.MinimumNodesPerRow" max="@EvolutionGraphSettings.MaximumNodesPerRow" value="@EvolutionGraphSettings.NodesPerRow" aria-invalid="@((!string.IsNullOrEmpty(_nodesPerRowError)).ToString().ToLowerInvariant())" @onchange="HandleNodesPerRowChanged" />
-        </div>
-        @if (_nodesPerRowError is not null)
-        {
-            <p class="obsidian-setting-error" role="alert">@_nodesPerRowError</p>
-        }
-    </ObsidianSection>
-    <ObsidianSection Title="@Text["Settings.Sprites.Group"]" Icon="ObsidianIconKind.Images" Description="@SpriteLibraryDescription">
-        <div class="obsidian-settings-actions">
-            <button class="obsidian-settings-button obsidian-settings-primary" type="button" disabled="@_spriteInstallPreparing" aria-busy="@((_spriteInstallPreparing && !_spriteReviewIncludesUnavailable).ToString().ToLowerInvariant())" @onclick="OpenSpriteReviewAsync">@(_spriteInstallPreparing && !_spriteReviewIncludesUnavailable ? Text["Settings.Sprites.Preparing"] : _spriteInstallRunning ? Text["Redesign.Settings.ViewProgress"] : Text["Settings.Sprites.Review"]) <span aria-hidden="true">↗</span></button>
-            <button class="obsidian-settings-link" type="button" disabled="@(_spriteInstallRunning || _spriteInstallPreparing)" aria-busy="@((_spriteInstallPreparing && _spriteReviewIncludesUnavailable).ToString().ToLowerInvariant())" @onclick="ReviewUnavailableSpritesAsync">@(_spriteInstallPreparing && _spriteReviewIncludesUnavailable ? Text["Settings.Sprites.Preparing"] : Text["Settings.Sprites.RecheckUnavailable"])</button>
-        </div>
-    </ObsidianSection>
-    <ObsidianSection Title="@Text["Settings.Favorites.FavoriteClause"]" Icon="ObsidianIconKind.Heart" Description="@Text["Redesign.Settings.FavoritesDescription"]">
-        <HeadingContent><span class="obsidian-settings-count">@Text["Settings.Favorites.Count", _favorites.Count]</span></HeadingContent>
-        <ChildContent>
-            <div class="obsidian-favorites-overview"><span>@FavoriteSummary</span><button class="obsidian-settings-button" type="button" @onclick="OpenFavorites">@Text["Redesign.Settings.Manage"] <span aria-hidden="true">›</span></button></div>
-        </ChildContent>
-    </ObsidianSection>
-    <p class="obsidian-settings-status" role="status">@(_localSettingsSaved ? Text["Redesign.Settings.SavedLocally"] : Status ?? Text["Redesign.Settings.AutomaticChanges"])</p>
+    <nav class="tracker-settings-tabs" aria-label="Settings pages">
+        <button type="button" aria-pressed="@(!_controlsOpen ? "true" : "false")" @onclick="() => _controlsOpen = false">General</button>
+        <button type="button" aria-pressed="@(_controlsOpen ? "true" : "false")" @onclick="() => _controlsOpen = true">Controls</button>
+    </nav>
+    @if (_controlsOpen)
+    {
+        <TrackerControlsPage />
+    }
+    else
+    {
+        <ObsidianSection Title="@Text[StartupGroupKey]" Icon="ObsidianIconKind.Plug">
+            <ObsidianToggle Class="obsidian-setting-row" Label="@Text[AutoStartGameKey]" Description="@Text[AutoStartGameDescriptionKey]" LabelFirst="true" Value="TrackerStartupSettings.AutoStartGame" ValueChanged="HandleAutoStartGameChanged" />
+        </ObsidianSection>
+        <ObsidianSection Title="@Text["Settings.Starter.Group"]" Icon="ObsidianIconKind.Shuffle">
+            <ObsidianToggle Class="obsidian-setting-row" Label="@Text["Settings.Starter.AutoSelectStarter"]" Description="@Text["Redesign.Settings.AutoSelectDescription"]" LabelFirst="true" Value="AutoSelectStarter" ValueChanged="HandleAutoSelectChanged" />
+            <div class="obsidian-setting-row">
+                <ObsidianSettingLabel Label="@Text["Settings.Starter.MaximumBst"]" ControlId="@MaximumBstControlId" Description="@Text["Redesign.Settings.MaximumBstDescription"]" />
+                <input id="@MaximumBstControlId" type="number" min="@StarterSelectionConstants.MinimumBaseStatTotal" max="@StarterSelectionConstants.MaximumBaseStatTotal" value="@MaximumStarterBaseStatTotal" placeholder="@Text["Settings.Starter.MaximumBstPlaceholder"]" aria-invalid="@((!string.IsNullOrEmpty(_maximumBstError)).ToString().ToLowerInvariant())" @onchange="HandleMaximumBstChanged" />
+            </div>
+            @if (_maximumBstError is not null)
+            {
+                <p class="obsidian-setting-error" role="alert">@_maximumBstError</p>
+            }
+        </ObsidianSection>
+        <ObsidianSection Title="@Text["Settings.EvolutionGraph.Group"]" Icon="ObsidianIconKind.Branch">
+            <div class="obsidian-setting-row">
+                <ObsidianSettingLabel Label="@Text["Settings.EvolutionGraph.ExpansionDepth"]" ControlId="@ExpansionDepthControlId" Description="@Text["Redesign.Settings.ExpansionDepthDescription"]" />
+                <input id="@ExpansionDepthControlId" type="number" min="@EvolutionGraphSettings.MinimumExpansionDepth" max="@EvolutionGraphSettings.MaximumExpansionDepth" value="@EvolutionGraphSettings.ExpansionDepth" aria-invalid="@((!string.IsNullOrEmpty(_graphDepthError)).ToString().ToLowerInvariant())" @onchange="HandleExpansionDepthChanged" />
+            </div>
+            @if (_graphDepthError is not null)
+            {
+                <p class="obsidian-setting-error" role="alert">@_graphDepthError</p>
+            }
+            <div class="obsidian-setting-row">
+                <ObsidianSettingLabel Label="@Text["Settings.EvolutionGraph.NodesPerRow"]" ControlId="@NodesPerRowControlId" Description="@Text["Redesign.Settings.NodesPerRowDescription"]" />
+                <input id="@NodesPerRowControlId" type="number" min="@EvolutionGraphSettings.MinimumNodesPerRow" max="@EvolutionGraphSettings.MaximumNodesPerRow" value="@EvolutionGraphSettings.NodesPerRow" aria-invalid="@((!string.IsNullOrEmpty(_nodesPerRowError)).ToString().ToLowerInvariant())" @onchange="HandleNodesPerRowChanged" />
+            </div>
+            @if (_nodesPerRowError is not null)
+            {
+                <p class="obsidian-setting-error" role="alert">@_nodesPerRowError</p>
+            }
+        </ObsidianSection>
+        <ObsidianSection Title="@Text["Settings.Sprites.Group"]" Icon="ObsidianIconKind.Images" Description="@SpriteLibraryDescription">
+            <div class="obsidian-settings-actions">
+                <button class="obsidian-settings-button obsidian-settings-primary" type="button" disabled="@_spriteInstallPreparing" aria-busy="@((_spriteInstallPreparing && !_spriteReviewIncludesUnavailable).ToString().ToLowerInvariant())" @onclick="OpenSpriteReviewAsync">@(_spriteInstallPreparing && !_spriteReviewIncludesUnavailable ? Text["Settings.Sprites.Preparing"] : _spriteInstallRunning ? Text["Redesign.Settings.ViewProgress"] : Text["Settings.Sprites.Review"]) <span aria-hidden="true">↗</span></button>
+                <button class="obsidian-settings-link" type="button" disabled="@(_spriteInstallRunning || _spriteInstallPreparing)" aria-busy="@((_spriteInstallPreparing && _spriteReviewIncludesUnavailable).ToString().ToLowerInvariant())" @onclick="ReviewUnavailableSpritesAsync">@(_spriteInstallPreparing && _spriteReviewIncludesUnavailable ? Text["Settings.Sprites.Preparing"] : Text["Settings.Sprites.RecheckUnavailable"])</button>
+            </div>
+        </ObsidianSection>
+        <ObsidianSection Title="@Text["Settings.Favorites.FavoriteClause"]" Icon="ObsidianIconKind.Heart" Description="@Text["Redesign.Settings.FavoritesDescription"]">
+            <HeadingContent><span class="obsidian-settings-count">@Text["Settings.Favorites.Count", _favorites.Count]</span></HeadingContent>
+            <ChildContent>
+                <div class="obsidian-favorites-overview"><span>@FavoriteSummary</span><button class="obsidian-settings-button" type="button" @onclick="OpenFavorites">@Text["Redesign.Settings.Manage"] <span aria-hidden="true">›</span></button></div>
+            </ChildContent>
+        </ObsidianSection>
+        <p class="obsidian-settings-status" role="status">@(_localSettingsSaved ? Text["Redesign.Settings.SavedLocally"] : Status ?? Text["Redesign.Settings.AutomaticChanges"])</p>
+    }
 </section>
 
 @if (_favoritesOpen)

@@ -231,6 +231,7 @@ module Ironmon
         "game_version" => Ironmon.tracker_game_version,
         "ironmon_version" => Ironmon::VERSION,
         "ironmon_active" => Ironmon.active?,
+        "control_overrides_supported" => true,
         "debug_available" => ($DEBUG == true),
         "supported_diagnostic_capabilities" => TRACKER_DIAGNOSTIC_CAPABILITIES,
         "game_root" => File.expand_path("."),
@@ -325,6 +326,7 @@ module Ironmon
     end
 
     def disconnect(error = nil)
+      Ironmon.clear_tracker_controls if Ironmon.respond_to?(:clear_tracker_controls)
       was_connected = @state == :connected
       begin
         @connect_thread.kill if @connect_thread && @connect_thread.alive?

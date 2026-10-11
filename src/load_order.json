@@ -120,5 +120,6 @@
   { "source": "cosmetics/Catalog.rb", "output": "026_Cosmetics_Catalog.rb" },
   { "source": "cosmetics/Profile.rb", "output": "026_Cosmetics_Profile.rb" },
   { "source": "cosmetics/Runtime.rb", "output": "026_Cosmetics_Runtime.rb" },
-  { "source": "cosmetics/Wardrobe.rb", "output": "026_Cosmetics_Wardrobe.rb" }
+  { "source": "cosmetics/Wardrobe.rb", "output": "026_Cosmetics_Wardrobe.rb" },
+  { "source": "tracker/live/Controls.rb", "output": "027_Tracker_Controls.rb" }
 ]

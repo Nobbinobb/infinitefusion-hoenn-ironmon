@@ -1,0 +1,20 @@
+
+@if (Keyboard.Length == 0 && Controller.Length == 0)
+{
+    <span class="tracker-control-unbound">Unbound</span>
+}
+else
+{
+    <span class="tracker-control-chip @(Keyboard.Length + Controller.Length > 1 ? _combinationClass : null)" aria-hidden="true">
+        @for (int index = 0; index < Keyboard.Length; index++)
+        {
+            if (index > 0) { <span class="tracker-control-plus">+</span> }
+            <ControlBindingToken KeyCode="Keyboard[index]" />
+        }
+        @for (int index = 0; index < Controller.Length; index++)
+        {
+            if (index > 0) { <span class="tracker-control-plus">+</span> }
+            <ControlBindingToken Token="@Controller[index]" PlayStation="PlayStation" />
+        }
+    </span>
+}

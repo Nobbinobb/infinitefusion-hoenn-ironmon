@@ -59,6 +59,11 @@ public sealed class GameHandshakePayload
     public string GameRoot { get; }
 
     /// <summary>
+    /// Gets or initializes whether this runtime supports temporary tracker input overrides.
+    /// </summary>
+    public bool ControlOverridesSupported { get; init; }
+
+    /// <summary>
     /// Gets the current run identifier when one exists.
     /// </summary>
     public string? RunId { get; }

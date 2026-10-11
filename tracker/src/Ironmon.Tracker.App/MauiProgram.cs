@@ -36,6 +36,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<CompletedRunArchive>();
         builder.Services.AddSingleton<TrackerConnectionService>();
         builder.Services.AddSingleton<TrackerGlobalShortcutService>();
+        builder.Services.AddSingleton<Controls.ControlProfiles>();
         builder.Services.AddSingleton<TrackerUpdateLifecycle>();
         builder.Services.AddSingleton<TrackerInstallationCompatibility>();
         builder.Services.AddSingleton<TrackerGameLauncher>();

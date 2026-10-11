@@ -56,6 +56,15 @@ public sealed class TrackerRequestClient
     public bool DebugAuthorized => _authorization.DebugAuthorized;
 
     /// <summary>
+    /// Sends a temporary input snapshot without waiting for a correlated game request.
+    /// </summary>
+    /// <param name="payload">The current managed game input state.</param>
+    /// <param name="cancellationToken">The cancellation token for the bounded write.</param>
+    /// <returns>The event write.</returns>
+    public Task SendControlStateAsync(ControlStatePayload payload, CancellationToken cancellationToken = default)
+        => _session.SendEventAsync(ControlProtocol.StateEvent, payload, null, cancellationToken);
+
+    /// <summary>
     /// Gets the shared active-run obtainability progress source.
     /// </summary>
     public TrackerObtainabilityProgressState ObtainabilityProgress { get; } = new();
