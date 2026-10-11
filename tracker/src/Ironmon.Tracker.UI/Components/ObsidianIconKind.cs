@@ -1,4 +1,4 @@
-namespace Ironmon.Tracker.App.Components.Common;
+namespace Ironmon.Tracker.UI.Components;
 
 /// <summary>
 /// Identifies the outline icons shared by redesigned views.

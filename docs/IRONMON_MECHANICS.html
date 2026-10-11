@@ -1202,6 +1202,7 @@ footer { padding:2rem 9% 4rem; color:var(--muted); font-size:.88rem; }
 <p>The tracker is an optional companion application for an Ironmon run. It shows legal live information about the player's active Pokemon, records information discovered about opposing Pokemon, and provides unrestricted generated-data inspection only after a run has ended or when explicit development mode is active.</p>
 <p>The game remains authoritative for gameplay state and information visibility. The tracker owns presentation, remembered move discoveries, manual enemy-stat annotations, user settings, and compact completed-run recipes.</p>
 <p>The tracker must never be required to play Ironmon. If it is absent, closed, or incompatible, the game continues normally without delay or repeated visible errors.</p>
+<p><strong>Settings &gt; Startup &gt; Start game with tracker</strong> optionally opens the installed game on the next tracker launch. It defaults to Off, is saved locally outside game saves, and works for manual ZIP and Setup installations with or without a shortcut. An already running normal or performance game from the same installation is left open. Automatic startup waits for installation compatibility verification; required update or recovery and launch errors leave the tracker usable. Changing the setting does not immediately start or close the game, and neither closing the tracker nor reconnecting automatically closes or restarts it.</p>
 <h3 id="tracker-technology-and-application-model">Technology and application model</h3>
 <p>The tracker uses:</p>
 <ul>

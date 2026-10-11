@@ -66,6 +66,20 @@ builds write only to ignored `bin` and `obj` directories. Player publication is
 handled by `tools/Publish-Tracker.ps1`; the complete release pipeline uses
 `tools/Build-TrackerRelease.ps1`.
 
+Source files belong physically to the project that compiles them. Shared code
+uses normal project references: `tracker/tests/Ironmon.TestSupport` owns the
+shared updater, installer, and tracker test fixtures, and
+`tracker/src/Ironmon.Tracker.UI` owns the outline icon component used by both
+desktop apps. Both projects are visible in the solution. Do not add linked
+source files or compile files from another project's directory.
+
+Each desktop app owns its icons, splash image, and fonts in its own `Resources`
+directory. Repository-wide catalogs, updater metadata, and cross-language test
+fixtures retain their canonical locations. `EmbeddedResourceInput` and
+`TestDataInput` in project files identify those build inputs;
+`tracker/Directory.Build.targets` copies them into local intermediate resources
+or test output. They are not linked files in Solution Explorer.
+
 ## Diagnostic access
 
 Normal support and testing should use a signed diagnostic-access token so each

@@ -1,4 +1,4 @@
-using Ironmon.Tracker.App.Components.Common;
+using Ironmon.Tracker.UI.Components;
 
 namespace Ironmon.Tracker.AccessGenerator.App.Components;
 

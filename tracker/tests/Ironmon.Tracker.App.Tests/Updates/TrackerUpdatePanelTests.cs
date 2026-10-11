@@ -1,7 +1,6 @@
 using Ironmon.Tracker.App.Components.Updates;
 using Ironmon.Tracker.App.Tests.Settings;
 using Ironmon.Updater.Infrastructure;
-using Ironmon.Updater.Tests;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;

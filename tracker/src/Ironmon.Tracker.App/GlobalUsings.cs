@@ -1,10 +1,7 @@
 global using Ironmon.Tracker.Access;
-global using Ironmon.Tracker.App.Components.Access;
 global using Ironmon.Tracker.App.Components.Common;
-global using Ironmon.Tracker.App.Components.Debug;
 global using Ironmon.Tracker.App.Components.Lookup;
 global using Ironmon.Tracker.App.Components.Navigation;
-global using Ironmon.Tracker.App.Components.Seeds;
 global using Ironmon.Tracker.App.Seeds;
 global using Ironmon.Tracker.Connection;
 global using Ironmon.Tracker.Connection.Access;
@@ -26,4 +23,5 @@ global using Ironmon.Tracker.Protocol.Lookup;
 global using Ironmon.Tracker.Protocol.Pokemon;
 global using Ironmon.Tracker.Protocol.Transport;
 global using Ironmon.Tracker.Seeds;
+global using Ironmon.Tracker.UI.Components;
 global using Microsoft.Extensions.Localization;

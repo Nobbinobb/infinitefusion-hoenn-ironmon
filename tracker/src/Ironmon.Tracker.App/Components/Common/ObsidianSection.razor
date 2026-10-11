@@ -1,6 +1,6 @@
 <section class="obsidian-section-card @Class">
     <header>
-        <h3><ObsidianIcon Kind="Icon" />@Title</h3>
+        <h3 aria-label="@Title"><ObsidianIcon Kind="Icon" />@if (Description is not null) { <ObsidianSettingLabel Label="@Title" Description="@Description" /> } else { @Title }</h3>
         @HeadingContent
     </header>
     @ChildContent

@@ -23,7 +23,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\..\..\data\type_coverage.json" LogicalName="Ironmon.Tracker.App.Resources.Coverage.type_coverage.json" />
+    <EmbeddedResourceInput Include="..\..\..\data\type_coverage.json" LogicalName="Ironmon.Tracker.App.Resources.Coverage.type_coverage.json" />
     <EmbeddedResource Include="Resources\Catalogs\item-presentation.json" LogicalName="Ironmon.Tracker.App.Resources.Catalogs.item-presentation.json" />
     <EmbeddedResource Include="Resources\Keys\ironmon-access-public.pem" />
     <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#16131F" />
@@ -43,5 +43,6 @@
     <ProjectReference Include="..\Ironmon.Tracker.Core\Ironmon.Tracker.Core.csproj" />
     <ProjectReference Include="..\Ironmon.Tracker.Protocol\Ironmon.Tracker.Protocol.csproj" />
     <ProjectReference Include="..\Ironmon.Tracker.Seeds\Ironmon.Tracker.Seeds.csproj" />
+    <ProjectReference Include="..\Ironmon.Tracker.UI\Ironmon.Tracker.UI.csproj" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,15 @@
+<span class="obsidian-setting-label">
+    @if (ControlId is not null)
+    {
+        <label for="@ControlId">@Label</label>
+    }
+    else
+    {
+        <span>@Label</span>
+    }
+    @if (!string.IsNullOrWhiteSpace(Description))
+    {
+        <button class="obsidian-help-button" type="button" aria-label="@Text[HelpLabelKey, Label]" aria-describedby="@_helpId" popovertarget="@_helpId" popovertargetaction="show"><span aria-hidden="true">?</span></button>
+        <span id="@_helpId" class="obsidian-help-tooltip" role="tooltip" popover="auto">@Description</span>
+    }
+</span>

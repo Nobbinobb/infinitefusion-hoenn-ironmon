@@ -3,7 +3,6 @@ using Ironmon.SpriteLibrary;
 using Ironmon.Updater.Core;
 using Ironmon.Tracker.Connection.Sprites;
 using Ironmon.Updater.Infrastructure;
-using Ironmon.Updater.Tests;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Windows;

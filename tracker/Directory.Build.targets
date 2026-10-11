@@ -1,0 +1,22 @@
+<Project>
+  <!-- Canonical repository data stays outside project trees; only generated local copies become resources. -->
+  <Target Name="PrepareEmbeddedResourceInputs" BeforeTargets="AssignTargetPaths" Condition="'@(EmbeddedResourceInput)' != ''">
+    <ItemGroup>
+      <_PreparedEmbeddedResource Include="@(EmbeddedResourceInput)">
+        <OutputPath>$(IntermediateOutputPath)Resources/%(Filename)%(Extension)</OutputPath>
+      </_PreparedEmbeddedResource>
+    </ItemGroup>
+    <Copy SourceFiles="@(_PreparedEmbeddedResource)" DestinationFiles="@(_PreparedEmbeddedResource->'%(OutputPath)')" SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <EmbeddedResource Include="%(_PreparedEmbeddedResource.OutputPath)" LogicalName="%(_PreparedEmbeddedResource.LogicalName)" Visible="false" />
+      <FileWrites Include="@(_PreparedEmbeddedResource->'%(OutputPath)')" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CopyTestDataInputs" BeforeTargets="CopyFilesToOutputDirectory" Condition="'@(TestDataInput)' != ''">
+    <Copy SourceFiles="@(TestDataInput)" DestinationFiles="@(TestDataInput->'$(TargetDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <FileWrites Include="@(TestDataInput->'$(TargetDir)%(Filename)%(Extension)')" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -1,13 +1,7 @@
+@using System.Globalization
 @using System.Net.Http
 @using System.Net.Http.Json
-@using System.Globalization
-@using Microsoft.AspNetCore.Components.Forms
-@using Microsoft.AspNetCore.Components.Sections
-@using Microsoft.AspNetCore.Components.Routing
-@using Microsoft.AspNetCore.Components.Web
-@using Microsoft.AspNetCore.Components.Web.Virtualization
-@using Microsoft.JSInterop
-@using Microsoft.Extensions.Localization
+@using Ironmon.Tracker.Access
 @using Ironmon.Tracker.App
 @using Ironmon.Tracker.App.Components
 @using Ironmon.Tracker.App.Components.Access
@@ -18,10 +12,9 @@
 @using Ironmon.Tracker.App.Components.Lookup
 @using Ironmon.Tracker.App.Components.Navigation
 @using Ironmon.Tracker.App.Components.Player
-@using Ironmon.Tracker.App.Components.Settings
 @using Ironmon.Tracker.App.Components.Seeds
+@using Ironmon.Tracker.App.Components.Settings
 @using Ironmon.Tracker.App.Components.Starter
-@using Ironmon.Tracker.Access
 @using Ironmon.Tracker.Connection
 @using Ironmon.Tracker.Connection.Access
 @using Ironmon.Tracker.Connection.Areas
@@ -39,4 +32,12 @@
 @using Ironmon.Tracker.Protocol.Pokemon
 @using Ironmon.Tracker.Protocol.Transport
 @using Ironmon.Tracker.Seeds
+@using Ironmon.Tracker.UI.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Sections
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.Extensions.Localization
+@using Microsoft.JSInterop
 @inject IStringLocalizer<TrackerResources> Text

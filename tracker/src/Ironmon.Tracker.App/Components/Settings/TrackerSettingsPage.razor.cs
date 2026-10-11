@@ -22,6 +22,12 @@ public partial class TrackerSettingsPage : IDisposable
         => UpdateNavigation?.OpenUpdates?.Invoke() ?? Task.CompletedTask;
 
     private const int FavoritePageSize = 8;
+    private const string MaximumBstControlId = "settings-maximum-bst";
+    private const string ExpansionDepthControlId = "settings-expansion-depth";
+    private const string NodesPerRowControlId = "settings-nodes-per-row";
+    private const string StartupGroupKey = "Settings.Startup.Group";
+    private const string AutoStartGameKey = "Settings.Startup.AutoStartGame";
+    private const string AutoStartGameDescriptionKey = "Settings.Startup.AutoStartGameDescription";
     private const string MegabyteUnit = "MB";
     private const string AvailableSpritesCompleteKey = "Settings.Sprites.AvailableComplete";
     private const string SpriteDownloadWithUnavailableKey = "Settings.Sprites.CompleteWithUnavailable";
@@ -42,8 +48,13 @@ public partial class TrackerSettingsPage : IDisposable
     private bool _spriteInstallRunning;
     private bool _spriteDialogOpen;
     private bool _favoritesOpen;
-    private bool _graphSettingsSaved;
+    private bool _localSettingsSaved;
     private const string _favoriteSeparator = ", ";
+
+    /// <summary>
+    /// Gets synchronization guidance and the game-closed reminder for the library help tooltip.
+    /// </summary>
+    private string SpriteLibraryDescription => $"{Text["Redesign.Settings.SpriteDescription"]} {Text["Redesign.Settings.KeepGameClosed"]}";
 
     /// <summary>
     /// Gets or initializes the persisted favorite-Pokemon store.
@@ -133,8 +144,18 @@ public partial class TrackerSettingsPage : IDisposable
     /// <returns>A task representing callback dispatch.</returns>
     private Task HandleAutoSelectChanged(bool enabled)
     {
-        _graphSettingsSaved = false;
+        _localSettingsSaved = false;
         return AutoSelectStarterChanged.InvokeAsync(enabled);
+    }
+
+    /// <summary>
+    /// Saves the automatic game-start preference for the next tracker launch without opening the game now.
+    /// </summary>
+    /// <param name="enabled">Whether the game should start with the tracker.</param>
+    private void HandleAutoStartGameChanged(bool enabled)
+    {
+        TrackerStartupSettings.AutoStartGame = enabled;
+        _localSettingsSaved = true;
     }
 
     /// <summary>
@@ -152,7 +173,7 @@ public partial class TrackerSettingsPage : IDisposable
 
         _graphDepthError = null;
         EvolutionGraphSettings.ExpansionDepth = value;
-        _graphSettingsSaved = true;
+        _localSettingsSaved = true;
     }
 
     /// <summary>
@@ -170,7 +191,7 @@ public partial class TrackerSettingsPage : IDisposable
 
         _nodesPerRowError = null;
         EvolutionGraphSettings.NodesPerRow = value;
-        _graphSettingsSaved = true;
+        _localSettingsSaved = true;
     }
 
     /// <summary>
@@ -184,7 +205,7 @@ public partial class TrackerSettingsPage : IDisposable
         if (text.Length == 0)
         {
             _maximumBstError = null;
-            _graphSettingsSaved = false;
+            _localSettingsSaved = false;
             return MaximumStarterBaseStatTotalChanged.InvokeAsync(null);
         }
 
@@ -195,7 +216,7 @@ public partial class TrackerSettingsPage : IDisposable
         }
 
         _maximumBstError = null;
-        _graphSettingsSaved = false;
+        _localSettingsSaved = false;
         return MaximumStarterBaseStatTotalChanged.InvokeAsync(value);
     }
 
@@ -445,7 +466,7 @@ public partial class TrackerSettingsPage : IDisposable
     /// <returns>A task representing callback dispatch.</returns>
     private Task PublishFavoritesAsync()
     {
-        _graphSettingsSaved = false;
+        _localSettingsSaved = false;
         return FavoriteSpeciesIdsChanged.InvokeAsync([.. _favorites.Select(favorite => favorite.SpeciesId)]);
     }
 

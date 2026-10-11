@@ -21,9 +21,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <MauiIcon Include="..\..\src\Ironmon.Tracker.App\Resources\AppIcon\appicon.svg" ForegroundFile="..\..\src\Ironmon.Tracker.App\Resources\AppIcon\appiconfg.svg" Color="#16131F" Link="Resources\AppIcon\appicon.svg" />
-    <MauiSplashScreen Include="..\..\src\Ironmon.Tracker.App\Resources\Splash\splash.svg" Color="#16131F" BaseSize="128,128" Link="Resources\Splash\splash.svg" />
-    <MauiFont Include="..\..\src\Ironmon.Tracker.App\Resources\Fonts\OpenSans-Regular.ttf" Link="Resources\Fonts\OpenSans-Regular.ttf" />
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#16131F" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#16131F" BaseSize="128,128" />
+    <MauiFont Include="Resources\Fonts\OpenSans-Regular.ttf" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,10 +35,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Ironmon.Tracker.AccessGenerator.Core\Ironmon.Tracker.AccessGenerator.Core.csproj" />
     <ProjectReference Include="..\..\src\Ironmon.Tracker.Access\Ironmon.Tracker.Access.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <RazorComponent Include="..\..\src\Ironmon.Tracker.App\Components\Common\ObsidianIcon.razor" Link="Components\Shared\ObsidianIcon.razor" />
-    <Compile Include="..\..\src\Ironmon.Tracker.App\Components\Common\ObsidianIcon.razor.cs" Link="Components\Shared\ObsidianIcon.razor.cs" />
-    <Compile Include="..\..\src\Ironmon.Tracker.App\Components\Common\ObsidianIconKind.cs" Link="Components\Shared\ObsidianIconKind.cs" />
+    <ProjectReference Include="..\..\src\Ironmon.Tracker.UI\Ironmon.Tracker.UI.csproj" />
   </ItemGroup>
 </Project>

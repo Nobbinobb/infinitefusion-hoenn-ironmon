@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 
-namespace Ironmon.Tracker.App.Components.Common;
+namespace Ironmon.Tracker.UI.Components;
 
 /// <summary>
 /// Renders reusable outline icons independently of the installed platform icon font.

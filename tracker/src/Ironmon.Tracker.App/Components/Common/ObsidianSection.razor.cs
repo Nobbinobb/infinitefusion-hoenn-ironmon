@@ -20,6 +20,12 @@ public partial class ObsidianSection
     public string Title { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets optional explanatory help beside the section heading.
+    /// </summary>
+    [Parameter]
+    public string? Description { get; set; }
+
+    /// <summary>
     /// Gets or sets the decorative section icon.
     /// </summary>
     [Parameter]

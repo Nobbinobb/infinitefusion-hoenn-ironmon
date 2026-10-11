@@ -6,6 +6,8 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <WindowsPackageType>None</WindowsPackageType>
+    <!-- Managed test tasks are not published with trimming or AOT and do not cross the WinRT ABI. -->
+    <CsWinRTAotOptimizerEnabled>false</CsWinRTAotOptimizerEnabled>
     <!-- The test host consumes the compiled app without generating its own MAUI assets. -->
     <EnableMauiAssetProcessing>false</EnableMauiAssetProcessing>
     <EnableMauiSplashScreenProcessing>false</EnableMauiSplashScreenProcessing>
@@ -23,9 +25,9 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../../src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj" />
+    <ProjectReference Include="../Ironmon.TestSupport/Ironmon.TestSupport.csproj" />
     <Using Include="Xunit" />
-    <Compile Include="../Ironmon.Updater.Tests/SignedReleaseFixture.cs" Link="Updates/SignedReleaseFixture.cs" />
-    <Compile Include="../Ironmon.Updater.Tests/TestWorkspace.cs" Link="Updates/TestWorkspace.cs" />
-    <Compile Include="../Ironmon.Updater.Tests/TrackerUpdateTestFixture.cs" Link="Updates/TrackerUpdateTestFixture.cs" />
+    <Using Include="Ironmon.TestSupport" />
+    <Using Include="Ironmon.Tracker.UI.Components" />
   </ItemGroup>
 </Project>
