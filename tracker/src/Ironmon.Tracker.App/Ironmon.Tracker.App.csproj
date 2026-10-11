@@ -8,10 +8,10 @@
     <EnableDefaultCssItems>false</EnableDefaultCssItems>
     <ApplicationTitle>Ironmon Tracker</ApplicationTitle>
     <ApplicationId>com.ironmon.tracker</ApplicationId>
-    <ApplicationDisplayVersion>0.8.8</ApplicationDisplayVersion>
-    <ApplicationVersion>808</ApplicationVersion>
+    <ApplicationDisplayVersion>0.8.9</ApplicationDisplayVersion>
+    <ApplicationVersion>809</ApplicationVersion>
     <AssemblyName>Ironmon Tracker</AssemblyName>
-    <Version>0.8.8</Version>
+    <Version>0.8.9</Version>
     <NeutralLanguage>en-US</NeutralLanguage>
     <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
     <WindowsPackageType>None</WindowsPackageType>

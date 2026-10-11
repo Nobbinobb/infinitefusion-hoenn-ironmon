@@ -1,6 +1,6 @@
 # Ironmon Tracker protocol v1
 
-This document records the implemented protocol through the 0.8.8 tracker UI,
+This document records the implemented protocol through the 0.8.9 tracker UI,
 native fusion closure, and run-aware evolution additions. Later parts extend
 the payload catalog without changing the common envelope or transport.
 
@@ -41,8 +41,9 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.2",
-    "ironmon_version": "0.8.8",
+    "ironmon_version": "0.8.9",
     "ironmon_active": false,
+    "control_overrides_supported": true,
     "debug_available": true,
     "supported_diagnostic_capabilities": ["pokemon.current_player", "run.seed"],
     "game_root": "C:/Games/InfiniteFusion2",
@@ -54,6 +55,8 @@ handshake and state-recovery sequence without restarting the game.
 
 `run_id` is present after an Ironmon run begins. `battle_id` is present while a
 battle is active.
+`control_overrides_supported` advertises the transient input override described
+below. An absent or false value means the game does not support that override.
 
 ## Tracker handshake
 
@@ -106,10 +109,38 @@ The game applies and echoes the complete settings payload. When the tracker is
 not connected, the preference remains local and is supplied by the next
 handshake.
 
-The foreground controller shortcut sends a `reset_run` request with an empty
-payload. The game responds with `accepted`, queues the request until a safe map
-scene boundary, and then opens the same confirmation flow as F7. Keyboard input
-is not synthesized by the tracker.
+For older games without control override support, the foreground controller
+reset shortcut sends a `reset_run` request with an empty payload. The game
+responds with `accepted`, queues the request until a safe map scene boundary,
+and then opens the same confirmation flow as F7. Keyboard input is not
+synthesized by the tracker.
+
+### Transient control state
+
+A supporting tracker sends `controls_state` events while the connected game
+has focus. Their payload contains the managed logical actions and the subset
+currently held:
+
+```json
+{
+  "enabled": true,
+  "managed": ["up", "confirm", "interact", "menu", "reset"],
+  "pressed": ["up"]
+}
+```
+
+The game suppresses native input for managed actions and derives triggers,
+repeats, releases, and movement from the received state. `interact` and `menu`
+apply in the field; `confirm` and `cancel` apply in menus and dialogs.
+`battle_run` applies only to the guarded wild-battle Run context. The `reset`
+action reaches the existing F7 reset guard. Tracker navigation shortcuts remain
+local to the tracker.
+
+These events have no request ID or response. Valid state refreshes a one-second
+lease. Disabling the override with `{"enabled": false}`, disconnecting, or
+allowing the lease to expire restores native input. Unknown actions or malformed
+action arrays cannot renew the lease. The game never saves this transient state
+to its native control configuration.
 
 ### Explicit seeded-run export
 
@@ -242,7 +273,7 @@ action path. Non-cancellable nested screens such as Summary reject the request
 until closed. The native battle checks, turn consumption, item consumption, and
 effect handlers remain authoritative.
 
-An active 0.8.8 run also includes optional aggregate type-coverage context:
+An active 0.8.9 run also includes optional aggregate type-coverage context:
 
 ```json
 {
@@ -670,7 +701,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "result": "lost",
   "generation_profile_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "game_version": "6.8.2",
-  "ironmon_version": "0.8.8",
+  "ironmon_version": "0.8.9",
   "configuration": {
     "schema_version": 1,
     "wild_policy": "mixed",

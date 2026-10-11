@@ -11,7 +11,7 @@ internal sealed class TestWorkspace : IDisposable
 {
     private readonly string _parent;
     private const string FixtureFolder = "../../../../../../data/updater/tests";
-    private const string FixturePrefix = "updater space ü-";
+    private const string FixturePrefix = "t ü-";
     private const int CleanupRetries = 20;
     private const int CleanupRetryMilliseconds = 100;
 

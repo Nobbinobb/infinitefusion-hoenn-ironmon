@@ -6,7 +6,7 @@ challenge rules, rapid resets, and a companion tracker designed around
 hidden-information boundaries.
 
 > [!IMPORTANT]
-> Ironmon **0.8.8** targets **Pokémon Infinite Fusion 2 version 6.8.2**.
+> Ironmon **0.8.9** targets **Pokémon Infinite Fusion 2 version 6.8.2**.
 > The included tracker currently targets Windows x64.
 
 ## Features
@@ -26,6 +26,8 @@ hidden-information boundaries.
   run statistics, and completed-run archives.
 - A standalone installer with optional sprite-sheet downloads, plus signed
   updates from inside the tracker.
+- Configurable keyboard and controller profiles for game controls and tracker
+  shortcuts, with optional automatic game startup.
 - Privacy-aware tracker communication: concealed gameplay information is
   filtered by the game before it reaches the tracker.
 
@@ -57,8 +59,8 @@ Setup can download the game for you and does not require Git to be installed.
 It includes its own .NET runtime.
 
 1. Download and open `Ironmon-Setup-vX.Y.Z-win-x64.exe` from the latest release.
-2. Choose an empty folder for a full installation, or select your supported
-   existing Infinite Fusion folder. Back up existing saves before making changes.
+2. Choose any folder. Setup reuses a supported existing game or installs into a
+   **Pokémon Infinite Fusion 2** subfolder. Back up existing saves before making changes.
 3. Optionally select the sprite-sheet download and a desktop tracker shortcut.
    For a new installation, keep **Runtime included** unless you want to use an
    already installed .NET runtime. Existing installations retain their package type.
@@ -110,8 +112,8 @@ recovery, sprite-library preparation, seeded runs, and troubleshooting.
 
 | Ironmon version | Infinite Fusion 2 version | Status |
 | --- | --- | --- |
-| 0.8.8 | 6.8.2 | Current |
-| 0.8.0–0.8.7 | 6.8.2 | Legacy |
+| 0.8.9 | 6.8.2 | Current |
+| 0.8.0–0.8.8 | 6.8.2 | Legacy |
 | 0.2.1–0.7.9 | 6.8.0 | Legacy |
 
 Use an Ironmon release only with its listed Infinite Fusion version.

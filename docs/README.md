@@ -32,6 +32,9 @@ also suitable for saving as PDF.
 
 ## Release history
 
+- [Ironmon 0.8.9](releases/RELEASE_NOTES_0.8.9.md): keyboard and controller
+  profiles, optional automatic game startup, and installer improvements.
+
 - [Ironmon 0.8.8](releases/RELEASE_NOTES_0.8.8.md): standalone installation,
   signed tracker updates, optional sprite downloads, and recovery support.
 
