@@ -36,10 +36,12 @@ public sealed class SpriteDownloadSettingsTests
     private const string StartAction = "StartSpriteInstallAsync";
     private const string CancelReviewAction = "CancelSpriteReview";
     private const string RenderAction = "StateHasChanged";
+    private const string SettingsPreview = "settings";
 
     /// <summary>
     /// Verifies missing-server resources are never described as installed and the recheck action can recover them.
     /// </summary>
+    /// <returns>A task representing sprite-settings rendering and recovery assertions.</returns>
     [Fact]
     public async Task SettingsDistinguishUnavailableSheetsAndAllowAnExplicitRecheck()
     {
@@ -68,6 +70,7 @@ public sealed class SpriteDownloadSettingsTests
             services.AddLogging();
             services.AddSingleton<Microsoft.JSInterop.IJSRuntime, SettingsJsRuntime>();
             services.AddSingleton(state);
+            services.AddSingleton(new TrackerConnectionOptions(0, Version, false, TimeSpan.FromSeconds(2)));
             services.AddSingleton(requests);
             services.AddSingleton(installer);
             services.AddSingleton(new FavoritePokemonStore(storage));
@@ -79,6 +82,14 @@ public sealed class SpriteDownloadSettingsTests
             await renderer.Dispatcher.InvokeAsync(async () =>
             {
                 var view = await renderer.RenderComponentAsync<TrackerSettingsPage>(ParameterView.Empty);
+                string settingsHtml = view.ToHtmlString();
+                Assert.Contains("Game session", settingsHtml);
+                Assert.DoesNotContain("aria-label=\"Startup\"", settingsHtml);
+                Assert.DoesNotContain("aria-label=\"Ironmon\"", settingsHtml);
+                Assert.DoesNotContain("aria-label=\"Favorite Clause\"", settingsHtml);
+                Assert.True(settingsHtml.IndexOf("Starter selection", StringComparison.Ordinal) < settingsHtml.IndexOf("Favorite Clause", StringComparison.Ordinal));
+                Assert.True(settingsHtml.IndexOf("Favorite Clause", StringComparison.Ordinal) < settingsHtml.IndexOf("Evolution graph", StringComparison.Ordinal));
+                RunManagementViewTests.ExportPreview(SettingsPreview, settingsHtml);
                 Assert.Contains("Recheck unavailable files", view.ToHtmlString());
                 await InvokeActionAsync(activator.Page!, ReviewAction);
                 Assert.Contains("Check 2 sheets for updates? 0 of 2 sheets are already installed.", view.ToHtmlString());
@@ -110,7 +121,9 @@ public sealed class SpriteDownloadSettingsTests
         }
     }
 
-    /// <summary>Invokes a production button handler and flushes its resulting component render.</summary>
+    /// <summary>
+    /// Invokes a production button handler and flushes its resulting component render.
+    /// </summary>
     /// <param name="page">The actual settings component created by the renderer.</param>
     /// <param name="methodName">The button handler to invoke.</param>
     /// <returns>A task representing the handler and updated render.</returns>
@@ -123,13 +136,19 @@ public sealed class SpriteDownloadSettingsTests
         typeof(ComponentBase).GetMethod(RenderAction, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(page, null);
     }
 
-    /// <summary>Captures the production component so its existing handlers can be exercised.</summary>
+    /// <summary>
+    /// Captures the production component so its existing handlers can be exercised.
+    /// </summary>
     private sealed class CapturingActivator : IComponentActivator
     {
-        /// <summary>Gets the rendered settings component.</summary>
+        /// <summary>
+        /// Gets the rendered settings component.
+        /// </summary>
         internal TrackerSettingsPage? Page { get; private set; }
 
-        /// <summary>Creates a component and retains the settings instance.</summary>
+        /// <summary>
+        /// Creates a component and retains the settings instance.
+        /// </summary>
         /// <param name="componentType">The renderer-requested component type.</param>
         /// <returns>The newly constructed component.</returns>
         public IComponent CreateInstance(Type componentType)
@@ -142,16 +161,22 @@ public sealed class SpriteDownloadSettingsTests
         }
     }
 
-    /// <summary>Returns 404s until an explicit test recovery makes PNG content available.</summary>
+    /// <summary>
+    /// Returns 404s until an explicit test recovery makes PNG content available.
+    /// </summary>
     private sealed class RecoverableResponseHandler : HttpMessageHandler
     {
-        /// <summary>Gets or sets whether the remote resources have recovered.</summary>
+        /// <summary>
+        /// Gets or sets whether the remote resources have recovered.
+        /// </summary>
         internal bool Available { get; set; }
 
-        /// <summary>Returns a controlled server result for each request.</summary>
+        /// <summary>
+        /// Returns a controlled server result for each request.
+        /// </summary>
         /// <param name="request">The outgoing resource request.</param>
         /// <param name="cancellationToken">The request cancellation token.</param>
-        /// <returns>The controlled response.</returns>
+        /// <returns>A completed task containing the controlled server response.</returns>
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (!Available)
@@ -166,49 +191,74 @@ public sealed class SpriteDownloadSettingsTests
         }
     }
 
-    /// <summary>Loads the real settings text without desktop startup services.</summary>
+    /// <summary>
+    /// Loads the real settings text without desktop startup services.
+    /// </summary>
     private sealed class SettingsLocalizer : IStringLocalizer<TrackerResources>
     {
         private readonly ResourceManager _resources = new(ResourceName, typeof(TrackerResources).Assembly);
 
-        /// <summary>Gets a production text resource.</summary>
+        /// <summary>
+        /// Gets a production text resource.
+        /// </summary>
+        /// <param name="name">The localization resource key.</param>
+        /// <returns>The localized value, or the resource key when the value is missing.</returns>
         public LocalizedString this[string name] => new(name, _resources.GetString(name) ?? name);
 
-        /// <summary>Gets a formatted production text resource.</summary>
+        /// <summary>
+        /// Gets a formatted production text resource.
+        /// </summary>
+        /// <param name="name">The localization resource key.</param>
+        /// <param name="arguments">The arguments substituted into the resource value.</param>
+        /// <returns>The formatted resource value.</returns>
         public LocalizedString this[string name, params object[] arguments] => new(name, string.Format(this[name].Value, arguments));
 
-        /// <summary>Provides the unused enumeration contract.</summary>
+        /// <summary>
+        /// Provides the unused enumeration contract.
+        /// </summary>
         /// <param name="includeParentCultures">Whether parent resources should be included.</param>
         /// <returns>An empty sequence because tests resolve individual keys.</returns>
         public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];
     }
 
-    /// <summary>Supplies unrelated graph defaults without reading or changing desktop user preferences.</summary>
+    /// <summary>
+    /// Supplies unrelated graph defaults without reading or changing desktop user preferences.
+    /// </summary>
     private sealed class DefaultPreferences : IPreferences
     {
-        /// <summary>Reports that no user preference is stored in this isolated test.</summary>
+        /// <summary>
+        /// Reports that no user preference is stored in this isolated test.
+        /// </summary>
         /// <param name="key">The preference key.</param>
         /// <param name="sharedName">The preference group.</param>
         /// <returns>False for every key.</returns>
         public bool ContainsKey(string key, string? sharedName = null) => false;
 
-        /// <summary>Leaves the empty isolated preferences unchanged.</summary>
+        /// <summary>
+        /// Leaves the empty isolated preferences unchanged.
+        /// </summary>
         /// <param name="key">The preference key.</param>
         /// <param name="sharedName">The preference group.</param>
         public void Remove(string key, string? sharedName = null) { }
 
-        /// <summary>Leaves the empty isolated preferences unchanged.</summary>
+        /// <summary>
+        /// Leaves the empty isolated preferences unchanged.
+        /// </summary>
         /// <param name="sharedName">The preference group.</param>
         public void Clear(string? sharedName = null) { }
 
-        /// <summary>Ignores unrelated preference writes.</summary>
+        /// <summary>
+        /// Ignores unrelated preference writes.
+        /// </summary>
         /// <typeparam name="T">The preference value type.</typeparam>
         /// <param name="key">The preference key.</param>
         /// <param name="value">The unused preference value.</param>
         /// <param name="sharedName">The preference group.</param>
         public void Set<T>(string key, T value, string? sharedName = null) { }
 
-        /// <summary>Returns the default without accessing desktop storage.</summary>
+        /// <summary>
+        /// Returns the default without accessing desktop storage.
+        /// </summary>
         /// <typeparam name="T">The preference value type.</typeparam>
         /// <param name="key">The preference key.</param>
         /// <param name="defaultValue">The normal application default.</param>
@@ -218,6 +268,8 @@ public sealed class SpriteDownloadSettingsTests
     }
 }
 
-/// <summary>Isolates tests that replace the platform's process-wide preferences dependency.</summary>
+/// <summary>
+/// Isolates tests that replace the platform's process-wide preferences dependency.
+/// </summary>
 [CollectionDefinition(nameof(SpriteSettingsCollection), DisableParallelization = true)]
 public sealed class SpriteSettingsCollection { }

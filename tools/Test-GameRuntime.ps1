@@ -92,6 +92,7 @@ if (-not $SkipBuild) {
 }
 & (Join-Path $PSScriptRoot "Test-Cosmetics.ps1") -GameRoot $resolvedGameRoot -TimeoutSeconds $TimeoutSeconds -SkipBuild
 & (Join-Path $PSScriptRoot "Test-ControlsRuntime.ps1") -GameRoot $resolvedGameRoot -SkipBuild
+& (Join-Path $PSScriptRoot "Test-GameManagementRuntime.ps1") -GameRoot $resolvedGameRoot -SkipBuild
 & (Join-Path $generationRoot "Generate-Area-Catalog.ps1") `
     -GameRoot $resolvedGameRoot `
     -TimeoutSeconds $TimeoutSeconds `

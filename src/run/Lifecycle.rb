@@ -245,7 +245,7 @@ module Ironmon
     return false if !failed_run_locked?
     attempt = current_run_attempt
     run_id = attempt["run_id"]
-    if configuration.automatic_reset &&
+    if automatic_reset_enabled? &&
        @automatic_reset_attempted_id != run_id
       @automatic_reset_attempted_id = run_id
       start_checkpoint_reset(true)

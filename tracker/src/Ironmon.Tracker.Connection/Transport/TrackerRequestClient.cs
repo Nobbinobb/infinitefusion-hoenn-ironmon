@@ -158,6 +158,30 @@ public sealed class TrackerRequestClient
     }
 
     /// <summary>
+    /// Requests the game state and save-slot snapshots available at the title screen or main menu.
+    /// </summary>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>A task containing the current game state and any available title-screen or main-menu save slots.</returns>
+    public Task<GameManagementPayload> GetGameManagementAsync(CancellationToken cancellationToken = default)
+        => _session.SendAsync<Dictionary<string, object?>, GameManagementPayload>(RunManagementProtocol.SnapshotCommand, [], null, cancellationToken);
+
+    /// <summary>
+    /// Requests a new or continued Ironmon run against the reviewed menu and save revision.
+    /// </summary>
+    /// <param name="command">The start or continue command defined by <see cref="RunManagementProtocol"/>.</param>
+    /// <param name="payload">The selected menu, save revision, and optional new-run rules.</param>
+    /// <param name="cancellationToken">Cancels waiting for the game response.</param>
+    /// <returns>A task containing the game response indicating whether the action was queued.</returns>
+    /// <exception cref="ArgumentException">Thrown when the command is neither the start nor the continue command.</exception>
+    public Task<GameManagementResponsePayload> ManageGameAsync(string command, GameManagementRequestPayload payload, CancellationToken cancellationToken = default)
+    {
+        if (command != RunManagementProtocol.StartCommand && command != RunManagementProtocol.ContinueCommand)
+            throw new ArgumentException("Invalid title action.", nameof(command));
+
+        return _session.SendAsync<GameManagementRequestPayload, GameManagementResponsePayload>(command, payload, null, cancellationToken);
+    }
+
+    /// <summary>
     /// Updates tracker-owned settings in the connected game.
     /// </summary>
     /// <param name="settings">The complete current tracker settings.</param>
@@ -166,6 +190,7 @@ public sealed class TrackerRequestClient
     public Task<TrackerSettingsPayload> UpdateSettingsAsync(TrackerSettingsPayload settings, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
+        _options.AutomaticReset = settings.AutomaticReset;
         _options.AutoSelectStarter = settings.AutoSelectStarter;
         _options.FavoriteSpeciesIds = settings.FavoriteSpeciesIds;
         return _session.SendAsync<TrackerSettingsPayload, TrackerSettingsPayload>(TrackerCommands.UpdateSettings, settings, GetConnectedRunId(), cancellationToken);

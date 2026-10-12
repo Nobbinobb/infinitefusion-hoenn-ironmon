@@ -6,6 +6,11 @@ namespace Ironmon.Tracker.Protocol.Connection;
 public sealed class TrackerHandshakePayload
 {
     /// <summary>
+    /// Gets or sets the live automatic-reset preference.
+    /// </summary>
+    public bool AutomaticReset { get; set; } = true;
+
+    /// <summary>
     /// Initializes a tracker handshake payload.
     /// </summary>
     /// <param name="trackerVersion">The tracker application version.</param>
@@ -32,6 +37,21 @@ public sealed class TrackerHandshakePayload
         FavoriteSpeciesIds = favoriteSpeciesIds ?? [];
         DiagnosticCapabilities = ValidateDiagnosticCapabilities(diagnosticCapabilities);
     }
+
+    /// <summary>
+    /// Gets or initializes the game-management protocol version.
+    /// </summary>
+    public int ManagementProtocolVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the current game process session identifier.
+    /// </summary>
+    public string? SessionId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the installation echoed from the game handshake.
+    /// </summary>
+    public string? GameRoot { get; init; }
 
     /// <summary>
     /// Gets the tracker application version.

@@ -11,11 +11,17 @@ public sealed partial class FileManagementPolicy
     /// Names the sole Ironmon-owned script outside its normal script directory.
     /// </summary>
     public const string BootstrapPath = "Data/Scripts/000_Ironmon_Guard.rb";
+
+    /// <summary>
+    /// Names the tracker's private browser state, which must remain outside package ownership and content snapshots.
+    /// </summary>
+    public const string TrackerBrowserDataPath = "Ironmon Tracker/Ironmon Tracker.exe.WebView2";
+
     private const string TrackerRoot = "Ironmon Tracker";
     private const string ScriptRoot = "Data/Scripts/997_Ironmon";
     private const string DataRoot = "Data/Ironmon";
     private const string ProfileRoot = "Data/Ironmon/generation_profiles";
-    private const string ProtectedRoots = ".git|.ironmon-update|Data/Ironmon/unavailable_sprite_sheets.json|Data/Ironmon/custom_sprite_sheet_sync.json|Graphics/CustomBattlers/spritesheets|Graphics/CustomBattlers/local_sprites/IronmonTracker";
+    private const string ProtectedRoots = ".git|.ironmon-update|Data/Ironmon/unavailable_sprite_sheets.json|Data/Ironmon/custom_sprite_sheet_sync.json|Graphics/CustomBattlers/spritesheets|Graphics/CustomBattlers/local_sprites/IronmonTracker|" + TrackerBrowserDataPath;
     private const string ProtectedSegments = "saves|save|runs|settings|diagnostics|.git|.ironmon-update";
     private const string LegacyDocuments = "README.md|LICENSE|INSTALLATION.md|RELEASE_NOTES.md|THIRD_PARTY_NOTICES.md|OPEN-SANS-LICENSE.txt";
     private const string SavePattern = "\\A(?:(?:Game|File [^/]+|Save[^/]*|IronmonCheckpoint_[^/]+|Autosave[^/]*)\\.rxdata(?:\\..*)?|.+\\.(?:sav|rvdata|rvdata2)(?:\\..*)?)\\z";

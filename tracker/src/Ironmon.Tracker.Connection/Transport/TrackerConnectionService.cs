@@ -222,7 +222,13 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         _events.SelectRun(game.RunId);
         Requests.ObtainabilityProgress.Reset();
         IReadOnlyList<string> diagnosticCapabilities = Requests.GetNegotiatedDiagnosticCapabilities(game);
-        TrackerHandshakePayload tracker = new(_options.TrackerVersion, _options.DebugRequested, _options.AutoSelectStarter, _options.MaximumStarterBaseStatTotal, _options.FavoriteSpeciesIds, diagnosticCapabilities);
+        TrackerHandshakePayload tracker = new(_options.TrackerVersion, _options.DebugRequested, _options.AutoSelectStarter, _options.MaximumStarterBaseStatTotal, _options.FavoriteSpeciesIds, diagnosticCapabilities)
+        {
+            AutomaticReset = _options.AutomaticReset,
+            ManagementProtocolVersion = game.ManagementProtocolVersion == RunManagementProtocol.Version ? RunManagementProtocol.Version : 0,
+            SessionId = game.SessionId,
+            GameRoot = game.GameRoot
+        };
         TrackerMessage trackerHandshake = TrackerMessageFactory.CreateEvent(TrackerEvents.TrackerConnected, TrackerProtocol.InitialEventSequence, tracker, game.RunId, game.BattleId);
         await writer.WriteAsync(trackerHandshake, cancellationToken).ConfigureAwait(false);
         _diagnostics.RecordOutgoing(trackerHandshake);
@@ -239,6 +245,9 @@ public sealed class TrackerConnectionService : IAsyncDisposable
 
         using CancellationTokenSource precalculationCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         Task precalculation = RunObtainabilityPrecalculationAsync(precalculationCancellation.Token);
+        Task heartbeat = game.ManagementProtocolVersion == RunManagementProtocol.Version
+            ? RunHeartbeatAsync(game.SessionId, precalculationCancellation.Token)
+            : Task.CompletedTask;
         try
         {
             await ReadMessagesAsync(reader, requestId, game, cancellationToken).ConfigureAwait(false);
@@ -248,7 +257,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             precalculationCancellation.Cancel();
             try
             {
-                await precalculation.ConfigureAwait(false);
+                await Task.WhenAll(precalculation, heartbeat).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (precalculationCancellation.IsCancellationRequested)
             {
@@ -257,6 +266,19 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             Requests.ObtainabilityProgress.Reset();
             ClearRequestSession();
         }
+    }
+
+    /// <summary>
+    /// Sends independent heartbeats even while game requests are busy.
+    /// </summary>
+    /// <param name="sessionId">The connected game process identity.</param>
+    /// <param name="cancellationToken">Stops heartbeats when this connection ends.</param>
+    /// <returns>A task representing the heartbeat loop until the connection is canceled or an event write fails.</returns>
+    private async Task RunHeartbeatAsync(string? sessionId, CancellationToken cancellationToken)
+    {
+        using PeriodicTimer timer = new(TimeSpan.FromSeconds(1));
+        while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+            await _requests.SendEventAsync(RunManagementProtocol.HeartbeatEvent, new { SessionId = sessionId }, null, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

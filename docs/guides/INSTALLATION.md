@@ -133,7 +133,7 @@ preparation. The reviewed release and file approvals are checked again afterward
 The update warns that it will close the game and tracker. After the tracker
 closes, a separate updater window shows installation and recovery progress. The
 tracker cannot display progress while it is closed. Successful updates relaunch
-the tracker; start the game when you are ready to play. If the official launcher
+the tracker, which automatically starts the game. If the official launcher
 is open, the updater waits and continues automatically after you close it.
 
 Ironmon and its tracker always update together. If that release needs another
@@ -146,16 +146,21 @@ Supported existing Git installations and recognized ZIP installations can be
 adopted. Unknown game versions, unsupported Git states and protected local files
 stop the update with an explanation. A replaceable conflict needs approval for
 that exact file and is backed up before replacement. Saves, tracker history,
-settings, access tokens and historical generation profiles are preserved.
-Unrelated extra files are retained. Do not run the official launcher and Ironmon
-updater at the same time. An independent launcher update can make the game
-incompatible with the installed Ironmon release; the startup guard then prevents
-Ironmon saves from loading until a matching release is installed.
+settings, browser data, access tokens and historical generation profiles are
+preserved. Unrelated extra files are retained. Do not run the official launcher
+and Ironmon updater at the same time. An independent launcher update can make
+the game incompatible with the installed Ironmon release; the startup guard then
+prevents Ironmon saves from loading until a matching release is installed.
 
 If checking or downloading fails while offline, continue using the current
 installation and retry later. Cancellation during preparation leaves the current
 installation intact. Once replacement has started, the updater must finish or
 restore the previous installation; it retains recovery information if it cannot.
+
+If an older tracker finds a release but review reports **The updater file could
+not be opened safely**, close the tracker and game, then run the latest Setup
+download and select your existing game folder. Setup updates that installation
+while preserving its saves, tracker history, settings and browser data.
 
 ### Interrupted updates and recovery
 

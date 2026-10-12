@@ -37,12 +37,17 @@ module Ironmon
       validate_envelope(message)
       if message["type"] == "event" && message["event"] == "tracker_connected"
         payload = message["payload"] || {}
+        @session_ready = payload["management_protocol_version"] == GAME_MANAGEMENT_PROTOCOL &&
+          payload["session_id"] == Ironmon.game_session_id &&
+          payload["game_root"] == File.expand_path(".")
+        @last_heartbeat = Ironmon.tracker_uptime_seconds
         @debug_requested = payload["debug_requested"] == true
         @diagnostic_capabilities = normalize_diagnostic_capabilities(
           payload["diagnostic_capabilities"]
         )
         Ironmon.disable_tracker_auto_revive if
           !diagnostic_capability?("development.auto_revive")
+        @automatic_reset = payload["automatic_reset"] != false
         @auto_select_starter = payload["auto_select_starter"] == true
         @maximum_starter_base_stat_total = Ironmon.valid_starter_bst_ceiling(
           payload["maximum_starter_base_stat_total"]
@@ -51,6 +56,9 @@ module Ironmon
           payload["favorite_species_ids"]
         )
         Ironmon.reset_tracker_obtainability_worker_failures
+      elsif message["type"] == "event" && message["event"] == "tracker_heartbeat"
+        @last_heartbeat = Ironmon.tracker_uptime_seconds if
+          (message["payload"] || {})["session_id"] == Ironmon.game_session_id
       elsif message["type"] == "event" && message["event"] == "controls_state"
         Ironmon.receive_tracker_controls(message["payload"])
       elsif message["type"] == "event" &&
@@ -122,8 +130,14 @@ module Ironmon
       end
       if message["command"] == "current_state"
         queue_message(success_response(request_id, Ironmon.tracker_current_state))
+      elsif message["command"] == "game_management"
+        queue_message(success_response(request_id, Ironmon.game_management_snapshot))
+      elsif ["start_ironmon", "continue_ironmon"].include?(message["command"])
+        result = Ironmon.request_game_management(message["command"], message["payload"])
+        queue_message(success_response(request_id, result))
       elsif message["command"] == "update_settings"
         payload = message["payload"] || {}
+        @automatic_reset = payload["automatic_reset"] != false
         @auto_select_starter = payload["auto_select_starter"] == true
         @maximum_starter_base_stat_total = Ironmon.valid_starter_bst_ceiling(
           payload["maximum_starter_base_stat_total"]
@@ -133,6 +147,7 @@ module Ironmon
         )
         queue_message(success_response(
           request_id, {
+            "automatic_reset" => @automatic_reset,
             "auto_select_starter" => @auto_select_starter,
             "maximum_starter_base_stat_total" =>
               @maximum_starter_base_stat_total,

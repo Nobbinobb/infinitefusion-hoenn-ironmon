@@ -42,6 +42,18 @@ public sealed class TrackerWindowService
     }
 
     /// <summary>
+    /// Minimizes the window while connection services keep running.
+    /// </summary>
+    internal void Minimize()
+        => _presenter?.Minimize();
+
+    /// <summary>
+    /// Restores the attached tracker window to display startup failures.
+    /// </summary>
+    internal void Show()
+        => _presenter?.Restore();
+
+    /// <summary>
     /// Toggles the tracker between its compact placement and the current monitor work area.
     /// </summary>
     /// <returns>Whether the window is maximized after the operation.</returns>

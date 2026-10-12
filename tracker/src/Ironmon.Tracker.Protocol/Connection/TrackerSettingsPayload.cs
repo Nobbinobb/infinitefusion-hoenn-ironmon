@@ -6,6 +6,11 @@ namespace Ironmon.Tracker.Protocol.Connection;
 public sealed class TrackerSettingsPayload
 {
     /// <summary>
+    /// Gets or sets the live automatic-reset preference.
+    /// </summary>
+    public bool AutomaticReset { get; set; } = true;
+
+    /// <summary>
     /// Initializes an empty tracker-settings payload for protocol serialization.
     /// </summary>
     public TrackerSettingsPayload()

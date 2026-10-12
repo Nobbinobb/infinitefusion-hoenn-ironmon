@@ -12,10 +12,12 @@ public static class InstallationFileSnapshot
     private const int MaximumEntries = 200000;
 
     /// <summary>
-    /// Hashes all regular files and records directories, including protected and unrelated content.
+    /// Hashes regular installation files and records directories without reading the tracker's private browser state.
     /// </summary>
     /// <remarks>
-    /// Root Git and updater directories belong to separate transaction participants and are excluded. Existing repository validation remains the private Git provider's responsibility. Call again immediately before applying while holding the later transaction lock.
+    /// Root Git and updater directories belong to separate transaction participants and are excluded.
+    /// The protected browser directory is recorded as an opaque boundary because the running tracker owns mutable, locked files inside it.
+    /// Existing repository validation remains the private Git provider's responsibility. Call again immediately before applying while holding the later transaction lock.
     /// </remarks>
     /// <param name="installationRoot">The fully qualified validated game root.</param>
     /// <param name="cancellationToken">The token used to cancel inspection.</param>
@@ -50,7 +52,9 @@ public static class InstallationFileSnapshot
 
                 if ((attributes & FileAttributes.Directory) != 0)
                 {
-                    pending.Push(path);
+                    if (!relative.Equals(FileManagementPolicy.TrackerBrowserDataPath, StringComparison.OrdinalIgnoreCase))
+                        pending.Push(path);
+
                     result.Add(new LocalFileEntry(relative, null));
                 }
                 else

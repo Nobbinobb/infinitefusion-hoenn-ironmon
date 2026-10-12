@@ -42,8 +42,8 @@ module IronmonCosmeticRuntimeTests
     draft = appearance(catalog)
     fresh = profile.read
     assert(!fresh["initial_claimed"], "a fresh profile has one free choice")
-    assert(C.default_outfit_keys.all? { |key| fresh["owned"][key] },
-           "both gender default outfits are permanently owned from the start")
+    assert(C.default_appearance_keys.all? { |key| fresh["owned"][key] },
+           "both gender default outfits and hairstyles are permanently owned from the start")
     legacy = C::Profile.new(File.join(profile.directory, "legacy-defaults"))
     legacy.synchronize do
       state = legacy.empty
@@ -52,11 +52,11 @@ module IronmonCosmeticRuntimeTests
     end
     migrated = legacy.read
     assert(migrated["points"] == 75 && !migrated["initial_claimed"] &&
-           C.default_outfit_keys.all? { |key| migrated["owned"][key] },
-           "existing profiles gain both defaults without changing progression")
+           C.default_appearance_keys.all? { |key| migrated["owned"][key] },
+           "existing profiles gain all starting defaults without changing progression")
     profile.confirm(catalog, draft, "slot:File A", true)
     state = profile.read
-    expected_owned = (C.default_outfit_keys + C.appearance_keys(draft)).uniq.sort
+    expected_owned = (C.default_appearance_keys + C.appearance_keys(draft)).uniq.sort
     assert(state["initial_claimed"] && state["owned"].keys.sort == expected_owned,
            "defaults and only the final selected pieces are unlocked, not the browsed catalog")
     reject("a different new game cannot claim a second outfit") { profile.confirm(catalog, draft, "slot:File B", true) }
@@ -83,6 +83,29 @@ module IronmonCosmeticRuntimeTests
     File.binwrite(File.join(profile.directory, "profile-writing.tmp"), "interrupted uncommitted write")
     assert(profile.read["points"] == points, "interrupted staging retains the committed snapshot")
     return draft
+  end
+
+  def self.test_unchanged_default_appearance(catalog, profile)
+    previous_trainer = $Trainer
+    before = profile.read
+    assert(before["initial_claimed"], "default confirmation regression runs after the free selection is already used")
+    [GENDER_MALE, GENDER_FEMALE].each do |gender|
+      $Trainer = Player.new("Default appearance", :POKEMONTRAINER_Red)
+      draft = { "clothes" => getDefaultClothes(gender), "hair" => "3_#{getDefaultHair(gender)}",
+        "hat" => nil, "hat2" => nil, "skin_tone" => 1,
+        "hair_color" => 0, "clothes_color" => 0, "hat_color" => 0,
+        "hat2_color" => 0, "bike_color" => 0 }
+      C.apply(draft)
+      key = "slot:default-#{gender}"
+      screen = C::WardrobeScreen.new(catalog, profile, key)
+      assert(screen.appearance == draft, "the unedited gender #{gender} starting appearance is retained")
+      state = profile.confirm(catalog, screen.appearance, key, false)
+      assert(state["appearances"][key] == draft, "the unedited starting appearance can be confirmed after the free claim")
+      assert(state["points"] == before["points"] && state["initial_appearance"] == before["initial_appearance"],
+        "default confirmation spends no points and does not replace the one-time free selection")
+    end
+  ensure
+    $Trainer = previous_trainer
   end
 
   def self.test_corruption(root)
@@ -268,6 +291,7 @@ module IronmonCosmeticRuntimeTests
       assert(catalog.entries.values.select { |entry| entry["available"] && entry["category"] != "hair" }.all? { |entry| entry["issues"].empty? }, "incomplete movement sprites are excluded")
       test_prices
       draft = test_profile(catalog, C.profile)
+      test_unchanged_default_appearance(catalog, C.profile)
       test_corruption(root)
       test_game_hooks(catalog, draft)
       test_screen(catalog)
