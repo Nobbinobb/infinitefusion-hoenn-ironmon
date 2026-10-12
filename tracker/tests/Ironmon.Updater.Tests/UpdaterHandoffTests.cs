@@ -26,6 +26,7 @@ public sealed class UpdaterHandoffTests
     private const string Quiesced = "quiesced";
     private const string Closing = "closing";
     private const string Continued = "continued";
+    private const int StartupAttempts = 10;
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(35);
 
     /// <summary>
@@ -36,6 +37,17 @@ public sealed class UpdaterHandoffTests
     [InlineData(false)]
     [InlineData(true)]
     public async Task HelperAcknowledgesBeforeTrackerShutdown(bool reject)
+    {
+        for (var attempt = 0; attempt < StartupAttempts; attempt++)
+            await CheckHandoffAsync(reject);
+    }
+
+    /// <summary>
+    /// Checks real startup, acknowledgement and cleanup for one independently launched tracker and helper pair.
+    /// </summary>
+    /// <param name="reject">Whether the helper must reject readiness without closing the tracker.</param>
+    /// <returns>A task completing after the exact fixture processes have exited.</returns>
+    private static async Task CheckHandoffAsync(bool reject)
     {
         using var workspace = new TestWorkspace();
         TransactionFixture.Write(workspace.Root, TransactionFixture.FixtureMarker, 1);

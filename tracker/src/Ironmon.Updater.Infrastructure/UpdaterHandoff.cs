@@ -58,6 +58,7 @@ public static partial class UpdaterHandoff
     /// </summary>
     /// <remarks>
     /// Expected helper content must come from authenticated release metadata. This method never requests elevation or accepts a helper pathname from a journal.
+    /// The helper's executable identity is captured after its pipe connection initializes the runtime modules, while the connected client PID must still match the process launched here.
     /// </remarks>
     /// <param name="request">The bound process and transaction context.</param>
     /// <param name="expectedHelper">The independently authenticated helper content identity.</param>
@@ -90,14 +91,14 @@ public static partial class UpdaterHandoff
         start.ArgumentList.Add(HandoffArgument);
         start.ArgumentList.Add(pipeName);
         using var child = Process.Start(start) ?? throw new IOException(UpdaterText.UpdaterHandoffTheIndependentUpdaterCouldNotStart);
-        var childIdentity = UpdateProcessIdentity.Capture(child);
         var quiesced = false;
         try
         {
             await pipe.WaitForConnectionAsync(timeout.Token).ConfigureAwait(false);
-            if (!GetNamedPipeClientProcessId(pipe.SafePipeHandle, out var clientId) || clientId != childIdentity.Id)
+            if (!GetNamedPipeClientProcessId(pipe.SafePipeHandle, out var clientId) || clientId != child.Id)
                 throw new IOException(UpdaterText.UpdaterHandoffAnUnexpectedProcessConnectedToTheUpdaterHandoff);
 
+            var childIdentity = UpdateProcessIdentity.Capture(child);
             await WriteMessageAsync(pipe, request, timeout.Token).ConfigureAwait(false);
             await ReadSignalAsync(pipe, Ready, timeout.Token).ConfigureAwait(false);
             using var acknowledged = childIdentity.Open() ?? throw new IOException(UpdaterText.UpdaterHandoffTheAcknowledgedUpdaterAlreadyExited);
