@@ -1,4 +1,4 @@
-# Ironmon 0.8.9
+# Ironmon 0.8.10
 
 This distribution targets Pokemon Infinite Fusion 2 version 6.8.2.
 
@@ -8,9 +8,12 @@ the existing `Data` directory. Ironmon's main Ruby scripts are installed beneath
 `Data/Scripts/000_Ironmon_Guard.rb` and compatibility data under `Data/Ironmon`;
 copy the complete archive so these files stay together.
 
-Version 0.8.9 adds configurable keyboard and controller profiles in Settings,
-plus optional automatic game startup. Profiles cover game controls and tracker
-shortcuts, with two bindings per action and separate settings for each controller.
+Starting with version 0.8.10, the tracker is required while playing Ironmon.
+It starts the game automatically, manages run setup and save selection, and
+handles work moved out of the game's Ruby runtime to improve performance.
+Use the Play header action from the title screen or main menu to create or
+continue a run. Settings can start the tracker minimized while its background
+services remain active. A lost connection pauses Ironmon until reconnecting.
 
 Since version 0.8.8, Ironmon includes a standalone installer and signed updates
 inside the tracker.

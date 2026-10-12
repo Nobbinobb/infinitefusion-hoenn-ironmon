@@ -32,6 +32,9 @@ also suitable for saving as PDF.
 
 ## Release history
 
+- [Ironmon 0.8.10](releases/RELEASE_NOTES_0.8.10.md): required tracker sessions,
+  tracker-owned run setup, automatic game startup, and wardrobe/update fixes.
+
 - [Ironmon 0.8.9](releases/RELEASE_NOTES_0.8.9.md): keyboard and controller
   profiles, optional automatic game startup, and installer improvements.
 

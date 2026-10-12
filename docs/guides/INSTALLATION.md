@@ -1,8 +1,15 @@
-# Installing Ironmon 0.8.9
+# Installing Ironmon 0.8.10
 
-Ironmon `0.8.9` targets Pokemon Infinite Fusion 2 version 6.8.2.
+Ironmon `0.8.10` targets Pokemon Infinite Fusion 2 version 6.8.2.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
+
+From 0.8.10 onward, the tracker must be running and connected while playing
+Ironmon. Opening it starts the game automatically. Use the Play header action
+from the game's title screen or main menu to create or continue a run.
+**Settings > Game session > Start tracker minimized** keeps its background
+services active with its window minimized. If its connection is
+lost, Ironmon pauses until reconnecting, preserving the current attempt.
 
 ## Version compatibility
 
@@ -19,8 +26,8 @@ Ironmon, also remove `Data/Scripts/000_Ironmon_Guard.rb`.
 
 | Ironmon version | Infinite Fusion 2 version | Status |
 | --- | --- | --- |
-| 0.8.9 | 6.8.2 | Current |
-| 0.8.0–0.8.8 | 6.8.2 | Legacy |
+| 0.8.10 | 6.8.2 | Current |
+| 0.8.0–0.8.9 | 6.8.2 | Legacy |
 | 0.2.1–0.7.9 | 6.8.0 | Legacy |
 
 The documented release history begins with Ironmon 0.2.1. Historical release
@@ -188,9 +195,9 @@ backup cleanup is not implemented. Recovery does not migrate or reset saves.
 2. Keep a backup of saves you care about.
 3. Choose and extract one release archive into the game's root directory—the
    directory containing `InfiniteFusion2.exe`:
-   - `Ironmon-v0.8.9-win-x64.zip` is self-contained and includes the .NET
+   - `Ironmon-v0.8.10-win-x64.zip` is self-contained and includes the .NET
      runtime.
-   - `Ironmon-v0.8.9-win-x64-runtime-required.zip` is smaller and
+   - `Ironmon-v0.8.10-win-x64-runtime-required.zip` is smaller and
      requires the Windows x64 .NET 10 Runtime to be installed.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
    directory. The package installs Ruby files under
@@ -198,7 +205,8 @@ backup cleanup is not implemented. Recovery does not migrate or reset saves.
 5. Double-click `Ironmon Tracker/Ironmon Tracker.exe`. The self-contained
    archive requires no .NET installation. The runtime-required archive
    requires the Windows x64 .NET 10 Runtime, but not the SDK or MAUI
-   workload. Starting the game first also works.
+   workload. Opening the tracker starts the game automatically and reuses a
+   game already running from the same installation.
 6. Leave `Download data` enabled in Gameplay Options so missing sprites are
    downloaded automatically. On a new or reinstalled game, the first tracker
    views containing many Pokemon—especially evolution graphs—can take longer
@@ -214,7 +222,9 @@ backup cleanup is not implemented. Recovery does not migrate or reset saves.
    individual-sprite cache so new custom fusion sprites and normal-species
    variants appear immediately. The tracker does not change Infinite Fusion's
    `Download data` setting or its normal download limit.
-7. Start the game and select Ironmon when beginning a supported Hoenn run.
+7. Use the tracker's **Play header action** from the game's title screen or main
+   menu to create or continue an Ironmon run. New runs use File A–H; replacing
+   an occupied file requires a separate overwrite confirmation.
 
 ## Activate diagnostic access
 
@@ -240,11 +250,12 @@ Only accept access files received through a channel you trust. A token grants
 exactly its listed diagnostic information; it does not run code and does not
 modify gameplay state.
 
-Existing non-Ironmon saves retain their normal behavior. Pre-release Ironmon
-saves and archive recipes from before the version reset are intentionally not
-upgraded. Start a new run after installing this build. From this baseline onward,
-compatible runs retain their original profile and deterministic implementation;
-incompatible or incomplete metadata is rejected without rewriting the save.
+Existing non-Ironmon saves retain their normal behavior. Compatible Ironmon
+runs retain their original profile and deterministic implementation across
+updates; connect the matching tracker before continuing. Saves and archive
+recipes predating the immutable generation-profile baseline cannot be upgraded
+safely and need a new run. Incompatible or incomplete metadata is rejected
+without rewriting the save.
 
 ## Share a seeded run
 
