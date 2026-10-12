@@ -6,6 +6,11 @@ namespace Ironmon.Tracker.Connection.Transport;
 public sealed class TrackerConnectionOptions
 {
     /// <summary>
+    /// Gets or sets the live automatic-reset preference.
+    /// </summary>
+    public bool AutomaticReset { get; set; } = true;
+
+    /// <summary>
     /// Initializes tracker connection options.
     /// </summary>
     /// <param name="port">The IPv4 loopback port, or zero for an ephemeral test port.</param>

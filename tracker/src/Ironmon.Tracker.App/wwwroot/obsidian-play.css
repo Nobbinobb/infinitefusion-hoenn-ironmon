@@ -1,0 +1,80 @@
+.obsidian .ironmon-play { display:grid; gap:14px; min-width:0; }
+.ironmon-play .obsidian-settings-heading { margin:0 1px 2px; gap:12px; }
+.ironmon-play .obsidian-settings-heading h2 { font-size:21px; }
+.ironmon-play .obsidian-section-card { margin:0; padding:14px; min-width:0; }
+.ironmon-play .obsidian-section-card>header { margin-bottom:13px; }
+.ironmon-play .run-empty { margin:0; color:#9eacbf; font-size:13px; line-height:1.6; }
+.ironmon-play .run-save-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:6px 12px; padding:14px 0; border-top:1px solid #2a3442; }
+.ironmon-play .run-save-row:first-of-type { border-top:0; padding-top:0; }
+.ironmon-play .run-save-row:last-child { padding-bottom:0; }
+.ironmon-play .run-save-copy { min-width:0; }
+.ironmon-play .run-save-heading { display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px; }
+.ironmon-play .run-save-heading strong { font-size:14px; }
+.ironmon-play .run-save-heading>span { color:#a7b5ca; font-size:11px; }
+.ironmon-play .run-save-trainer { margin:7px 0 3px; font-size:13px; overflow-wrap:anywhere; }
+.ironmon-play .run-save-meta { margin:0; color:#9eacbf; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+.ironmon-play .run-save-row>button { justify-self:end; }
+.ironmon-play .run-save-row>.run-save-meta { grid-column:1/-1; }
+.ironmon-play .run-saved-rules { grid-column:1/-1; min-width:0; font-size:12px; }
+.ironmon-play .run-saved-rules summary { display:flex; justify-content:space-between; align-items:baseline; gap:12px; cursor:pointer; list-style:none; }
+.ironmon-play .run-saved-rules summary::-webkit-details-marker { display:none; }
+.ironmon-play .run-saved-rules summary .run-save-meta { min-width:0; }
+.ironmon-play .run-rules-toggle { display:inline-flex; align-items:center; gap:7px; flex-shrink:0; color:#b0a3ff; white-space:nowrap; }
+.ironmon-play .run-rules-toggle::after { content:''; width:5px; height:5px; border-right:1px solid currentColor; border-bottom:1px solid currentColor; transform:translateY(-2px) rotate(45deg); }
+.ironmon-play .run-saved-rules[open] .run-rules-toggle::after { transform:translateY(1px) rotate(225deg); }
+.ironmon-play .run-saved-rules summary:hover .run-rules-toggle { color:#ded5ff; }
+.ironmon-play .run-saved-rules summary:focus-visible { outline:2px solid #b0a3ff; outline-offset:4px; border-radius:2px; }
+.ironmon-play .run-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); list-style:none; margin:0; padding:0; gap:10px; }
+.ironmon-play .run-steps li { display:flex; align-items:center; gap:7px; padding:0 0 10px; border-bottom:2px solid #2a3442; color:#9eacbf; font-size:12px; }
+.ironmon-play .run-steps li>span { display:grid; place-items:center; width:23px; height:23px; border-radius:50%; background:#1b2330; font-size:11px; }
+.ironmon-play .run-steps .selected { color:#ded5ff; border-color:#b0a3ff; }
+.ironmon-play .run-steps .selected>span { background:#b0a3ff25; color:#ded5ff; }
+.ironmon-play .run-slot-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.obsidian .ironmon-play .run-slot { display:grid; position:relative; min-width:0; gap:5px; padding:12px 32px 12px 12px; border:1px solid #354153; border-radius:8px; background:#111923; color:#e8edf5; text-align:left; cursor:pointer; font:inherit; line-height:1.4; box-shadow:none; }
+.ironmon-play .run-slot strong { font-size:13px; font-weight:600; }
+.ironmon-play .run-slot span { color:#9eacbf; font-size:11px; }
+.ironmon-play .run-slot>.obsidian-line-icon { position:absolute; right:10px; top:13px; color:#cbbfff; width:14px; height:14px; }
+.obsidian .ironmon-play .run-slot:hover { border-color:#6d688c; background:#1c2332; }
+.obsidian .ironmon-play .run-slot.selected { background:#b0a3ff14; border-color:#b0a3ff; }
+.obsidian .ironmon-play .run-slot:focus-visible { outline:2px solid #c7baff; outline-offset:2px; }
+.ironmon-play .run-save-warning { display:grid; gap:5px; margin-top:13px; padding:11px 12px; border:1px solid #b8965c60; border-radius:8px; background:#b8965c0b; color:#dfc493; font-size:12px; line-height:1.5; }
+.ironmon-play .run-save-warning>span { color:#c4b59c; overflow-wrap:anywhere; }
+.ironmon-play .run-save-warning p { margin:0; color:#a9b3c4; font-size:11px; }
+.ironmon-play .obsidian-setting-row { grid-template-columns:minmax(0,1fr) 190px; gap:10px; padding-top:9px; }
+.ironmon-play .obsidian-setting-row:first-of-type { padding-top:0; }
+.ironmon-play select,.ironmon-play .run-profile-save input { min-width:0; width:100%; box-sizing:border-box; height:36px; border:1px solid #354153; border-radius:7px; background:#0e151f; color:#e8edf5; padding:7px 9px; font:inherit; font-size:12px; color-scheme:dark; }
+.ironmon-play select { padding-right:5px; }
+.ironmon-play :is(select,input):focus-visible { outline:2px solid #b0a3ff; outline-offset:2px; }
+.ironmon-play .run-profile-editor { border-top:1px solid #2a3442; margin-top:15px; padding-top:12px; }
+.ironmon-play .run-profile-editor>label { display:block; margin-bottom:8px; color:#9eacbf; font-size:11px; }
+.ironmon-play .run-profile-save { display:flex; gap:8px; }
+.ironmon-play .run-profile-save input { flex:1; }
+.ironmon-play .run-review-save { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.ironmon-play .run-review-save>strong { font-size:17px; }
+.ironmon-play .run-review-save>span { color:#a7b5ca; font-size:12px; }
+.ironmon-play .run-review-owner { margin:7px 0 0; color:#9eacbf; font-size:12px; }
+.ironmon-play .run-rule-summary { display:grid; gap:11px; margin:15px 0 0; padding-top:13px; border-top:1px solid #2a3442; font-size:12px; }
+.ironmon-play .run-rule-summary>div { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); gap:12px; }
+.ironmon-play .run-rule-summary dt { color:#9eacbf; }
+.ironmon-play .run-rule-summary dd { margin:0; text-align:right; color:#e8edf5; overflow-wrap:anywhere; }
+.ironmon-play .run-saved-rules .run-rule-summary { gap:9px; margin-top:12px; padding-top:12px; font-size:11px; }
+.run-wizard-actions { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:0; }
+.obsidian .run-wizard-actions .obsidian-settings-button { min-height:36px; padding:7px 12px; }
+.run-overwrite-dialog { max-width:430px; }
+.run-overwrite-save { display:grid; gap:5px; margin:0 0 15px; padding:12px; border:1px solid #354153; border-radius:8px; background:#0e151f; }
+.run-overwrite-save strong { font-size:14px; }
+.run-overwrite-save span { color:#9eacbf; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+.run-overwrite-dialog .run-wizard-actions { margin-top:20px; }
+.obsidian .run-replace-button { background:#b8965c20; border-color:#b8965c80; color:#f0d3a1; }
+.obsidian .run-replace-button:hover { background:#b8965c30; border-color:#dfc493; }
+.obsidian-setting-row.obsidian-favorites-setting { grid-template-columns:minmax(0,1fr) auto; }
+.obsidian-favorites-setting .obsidian-favorites-copy { display:grid; gap:6px; min-width:0; }
+.obsidian-favorites-copy>span:not(.obsidian-setting-label) { color:#9eacbf; font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.obsidian-favorites-setting .obsidian-favorites-action { display:flex; align-items:center; gap:8px; }
+@media(max-width:380px) {
+    .ironmon-play .obsidian-setting-row { grid-template-columns:1fr; gap:7px; }
+    .ironmon-play .obsidian-settings-heading h2 { font-size:19px; }
+    .ironmon-play .run-save-row { gap:8px; }
+    .ironmon-play .run-save-heading { gap:4px 7px; }
+    .obsidian-favorites-setting .obsidian-favorites-action { flex-direction:column; align-items:end; gap:4px; }
+}

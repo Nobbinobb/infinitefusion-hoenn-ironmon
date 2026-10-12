@@ -149,11 +149,18 @@ module Ironmon
   end
 
   def self.restore_live_save_snapshot(save_data)
+    @restoring_live_snapshot = true
     SaveData.mark_values_as_unloaded
     Game.load(save_data)
     return nil
   rescue Exception => e
     return e.message.to_s
+  ensure
+    @restoring_live_snapshot = false
+  end
+
+  def self.restoring_live_snapshot?
+    return @restoring_live_snapshot == true
   end
 
   def self.fail_checkpoint_reset_transaction(error)

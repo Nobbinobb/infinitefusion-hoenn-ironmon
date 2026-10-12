@@ -11,6 +11,8 @@ Ironmon.register_graphics_update_hook(
   :tracker,
   proc do
     Ironmon.update_tracker_connection
+    Ironmon.dispatch_game_management
+    Ironmon.wait_for_tracker_session
     Ironmon.update_tracker_player
     Ironmon.update_tracker_enemies
     Ironmon.update_tracker_obtainability

@@ -15,7 +15,9 @@ the payload catalog without changing the common envelope or transport.
 
 The game performs connection creation on a background Ruby thread. Established
 socket reads and writes occur on the game thread only after a zero-timeout
-`IO.select` readiness check. A missing tracker therefore never blocks gameplay.
+`IO.select` readiness check. A missing tracker leaves classic play and the main menu available. Ironmon
+loads require a negotiated session; active Ironmon pauses and reconnects
+without unwinding its battle or event stack.
 
 ## Connection sequence
 
@@ -1091,3 +1093,32 @@ recover, archive, navigate to Lookup, and select the missed completion.
 - Port-binding failures appear as tracker connection errors rather than
   crashing the desktop window.
 - Game-side connection errors are rate-limited and never escape into gameplay.
+
+## Tracker-owned title actions
+
+Handshakes advertise `management_protocol_version: 1`. The game adds a
+process-scoped `session_id`; the tracker echoes it and `game_root`. A socket
+alone does not authorize Ironmon. `tracker_heartbeat` carries that session
+every second independently of correlated requests. Eight seconds without a
+matching heartbeat revokes the connection. Buffered input is read before the
+timeout check to avoid false timeouts after lengthy game-owned work.
+
+`game_management` returns `protocol_version`, `state`, `menu_id`, and `slots`.
+The native main-menu chooser reports `main_menu`; the animated title loop
+awaiting player input reports `title_screen`. Both expose saves and accept run
+actions. Gameplay and startup dialogs report `gameplay`. Slots contain the game's actual names, `manual`,
+`occupied`, `ironmon`, `loadable`, SHA-256 `revision` (or `empty`), trainer,
+location, badge count, attempt number, and saved rules. Filesystem paths are
+never accepted from the client.
+
+`start_ironmon` requires current `menu_id`, manual `slot`, exact `revision`,
+explicit `overwrite: true` for occupied files, and `rules` containing only
+`wild_policy`, `trainer_policy`, and `unfusion_setting`. `continue_ironmon`
+uses the same menu/slot/revision checks, requires a valid Ironmon save, and
+includes autosaves. Both return `accepted` when queued. The response is flushed
+before unwinding the native chooser or title loop; the game checks again before action and
+reports creation/loading failures using its normal message UI.
+
+Handshake and `update_settings` carry `automatic_reset` (default true). This live
+preference changes loss handling independently of saved rules and historical
+seed recipes. Existing shared-seed commands remain separate from title actions.

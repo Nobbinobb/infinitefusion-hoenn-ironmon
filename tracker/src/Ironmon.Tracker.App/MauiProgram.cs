@@ -85,6 +85,7 @@ public static class MauiProgram
 #endif
         TrackerConnectionOptions options = new(TrackerProtocol.Port, version, debugRequested, TimeSpan.FromSeconds(TrackerProtocol.HandshakeTimeoutSeconds))
         {
+            AutomaticReset = TrackerStartupSettings.AutomaticReset,
             AutoSelectStarter = Preferences.Default.Get(TrackerApplicationConstants.AutoSelectStarterPreferenceKey, false),
             MaximumStarterBaseStatTotal = ReadMaximumStarterBaseStatTotal(),
             FavoriteSpeciesIds = favorites.Favorites.Select(favorite => favorite.SpeciesId).ToArray()

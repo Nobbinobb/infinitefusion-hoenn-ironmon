@@ -24,6 +24,13 @@ module Ironmon
       return [GENDER_MALE, GENDER_FEMALE].map { |gender| "clothes:#{getDefaultClothes(gender)}" }.uniq
     end
 
+    def self.default_appearance_keys
+      keys = default_outfit_keys
+      keys << "clothes:#{STARTING_OUTFIT}" if Settings::KANTO
+      [GENDER_MALE, GENDER_FEMALE].each { |gender| keys << "hair:#{getDefaultHair(gender)}" }
+      return keys.uniq
+    end
+
     def self.encode(value)
       return "{" + value.map { |key, child| "#{encode(key.to_s)}:#{encode(child)}" }.join(",") + "}" if value.is_a?(Hash)
       return "[" + value.map { |child| encode(child) }.join(",") + "]" if value.is_a?(Array)

@@ -42,6 +42,7 @@ public partial class Home : IDisposable
     private string? _lastMoveMenuPokemonId;
     private bool _completedRunNavigationPending;
     private bool _accessOpen;
+    private bool _playOpen;
     private bool _seedsOpen;
     private bool _settingsOpen;
     private bool _autoSelectStarter;
@@ -127,10 +128,22 @@ public partial class Home : IDisposable
 
         _updateNavigationResuming = false;
         _completedRunNavigationPending = false;
+        _playOpen = false;
         _accessOpen = false;
         _seedsOpen = false;
         _settingsOpen = false;
         _selectedView = view;
+    }
+
+    /// <summary>
+    /// Opens or closes the header's Ironmon run manager.
+    /// </summary>
+    private void TogglePlay()
+    {
+        _playOpen = !_playOpen;
+        _accessOpen = false;
+        _settingsOpen = false;
+        _seedsOpen = false;
     }
 
     /// <summary>
@@ -139,6 +152,7 @@ public partial class Home : IDisposable
     private void ToggleSettings()
     {
         _settingsOpen = !_settingsOpen;
+        _playOpen = false;
         _accessOpen = false;
         _seedsOpen = false;
         _settingsStatus = null;
@@ -149,6 +163,7 @@ public partial class Home : IDisposable
     /// </summary>
     private void ToggleAccess()
     {
+        _playOpen = false;
         _accessOpen = !_accessOpen;
         _seedsOpen = false;
         _settingsOpen = false;
@@ -160,6 +175,7 @@ public partial class Home : IDisposable
     private void ToggleSeeds()
     {
         _seedsOpen = !_seedsOpen;
+        _playOpen = false;
         _accessOpen = false;
         _settingsOpen = false;
     }
@@ -273,7 +289,7 @@ public partial class Home : IDisposable
     /// </summary>
     /// <returns>The settings synchronized to the game.</returns>
     private TrackerSettingsPayload CreateSettingsPayload()
-        => new() { AutoSelectStarter = _autoSelectStarter, MaximumStarterBaseStatTotal = _maximumStarterBaseStatTotal, FavoriteSpeciesIds = ConnectionOptions.FavoriteSpeciesIds };
+        => new() { AutoSelectStarter = _autoSelectStarter, MaximumStarterBaseStatTotal = _maximumStarterBaseStatTotal, FavoriteSpeciesIds = ConnectionOptions.FavoriteSpeciesIds, AutomaticReset = ConnectionOptions.AutomaticReset };
 
     /// <summary>
     /// Handles keyboard shortcuts for switching between primary tracker views.
@@ -338,7 +354,7 @@ public partial class Home : IDisposable
     /// <param name="view">The tab's tracker view.</param>
     /// <returns>The tab CSS classes.</returns>
     private string GetTabClass(TrackerView view)
-        => view == _selectedView && !_accessOpen && !_settingsOpen && !_seedsOpen ? TrackerUiConstants.SelectedViewTabCssClass : TrackerUiConstants.ViewTabCssClass;
+        => view == _selectedView && !_accessOpen && !_settingsOpen && !_seedsOpen && !_playOpen ? TrackerUiConstants.SelectedViewTabCssClass : TrackerUiConstants.ViewTabCssClass;
 
     /// <summary>
     /// Gets the concise connection state shown in the tracker header.
@@ -531,6 +547,7 @@ public partial class Home : IDisposable
         if (starterSelectionAppeared && !_completedRunNavigationPending && !_seedsOpen)
         {
             _completedRunNavigationPending = false;
+            _playOpen = false;
             _accessOpen = false;
             _settingsOpen = false;
             _selectedView = TrackerView.Player;
@@ -560,6 +577,7 @@ public partial class Home : IDisposable
             return;
 
         _completedRunNavigationPending = true;
+        _playOpen = false;
         _accessOpen = false;
         _settingsOpen = false;
         _selectedView = TrackerView.Archive;

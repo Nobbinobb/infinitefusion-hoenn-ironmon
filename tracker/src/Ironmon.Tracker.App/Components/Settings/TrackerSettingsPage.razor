@@ -19,8 +19,9 @@
     }
     else
     {
-        <ObsidianSection Title="@Text[StartupGroupKey]" Icon="ObsidianIconKind.Plug">
-            <ObsidianToggle Class="obsidian-setting-row" Label="@Text[AutoStartGameKey]" Description="@Text[AutoStartGameDescriptionKey]" LabelFirst="true" Value="TrackerStartupSettings.AutoStartGame" ValueChanged="HandleAutoStartGameChanged" />
+        <ObsidianSection Title="Game session" Icon="ObsidianIconKind.Plug">
+            <ObsidianToggle Class="obsidian-setting-row" Label="Start tracker minimized" Description="Open the tracker minimized while its background services stay active. The game always starts with the tracker." LabelFirst="true" Value="TrackerStartupSettings.StartMinimized" ValueChanged="HandleStartMinimizedChanged" />
+            <ObsidianToggle Class="obsidian-setting-row" Label="Automatic reset after a loss" Description="Automatically return to starter selection with a fresh seed after losing. This applies immediately and does not change saved run rules or shared seeds." LabelFirst="true" Value="TrackerStartupSettings.AutomaticReset" ValueChanged="HandleAutomaticResetChanged" />
         </ObsidianSection>
         <ObsidianSection Title="@Text["Settings.Starter.Group"]" Icon="ObsidianIconKind.Shuffle">
             <ObsidianToggle Class="obsidian-setting-row" Label="@Text["Settings.Starter.AutoSelectStarter"]" Description="@Text["Redesign.Settings.AutoSelectDescription"]" LabelFirst="true" Value="AutoSelectStarter" ValueChanged="HandleAutoSelectChanged" />
@@ -32,6 +33,13 @@
             {
                 <p class="obsidian-setting-error" role="alert">@_maximumBstError</p>
             }
+            <div class="obsidian-setting-row obsidian-favorites-setting">
+                <div class="obsidian-favorites-copy">
+                    <ObsidianSettingLabel Label="@Text["Settings.Favorites.FavoriteClause"]" Description="@Text["Redesign.Settings.FavoritesDescription"]" />
+                    <span>@FavoriteSummary</span>
+                </div>
+                <div class="obsidian-favorites-action"><span class="obsidian-settings-count">@Text["Settings.Favorites.Count", _favorites.Count]</span><button class="obsidian-settings-button" type="button" @onclick="OpenFavorites">@Text["Redesign.Settings.Manage"] <span aria-hidden="true">›</span></button></div>
+            </div>
         </ObsidianSection>
         <ObsidianSection Title="@Text["Settings.EvolutionGraph.Group"]" Icon="ObsidianIconKind.Branch">
             <div class="obsidian-setting-row">
@@ -56,12 +64,6 @@
                 <button class="obsidian-settings-button obsidian-settings-primary" type="button" disabled="@_spriteInstallPreparing" aria-busy="@((_spriteInstallPreparing && !_spriteReviewIncludesUnavailable).ToString().ToLowerInvariant())" @onclick="OpenSpriteReviewAsync">@(_spriteInstallPreparing && !_spriteReviewIncludesUnavailable ? Text["Settings.Sprites.Preparing"] : _spriteInstallRunning ? Text["Redesign.Settings.ViewProgress"] : Text["Settings.Sprites.Review"]) <span aria-hidden="true">↗</span></button>
                 <button class="obsidian-settings-link" type="button" disabled="@(_spriteInstallRunning || _spriteInstallPreparing)" aria-busy="@((_spriteInstallPreparing && _spriteReviewIncludesUnavailable).ToString().ToLowerInvariant())" @onclick="ReviewUnavailableSpritesAsync">@(_spriteInstallPreparing && _spriteReviewIncludesUnavailable ? Text["Settings.Sprites.Preparing"] : Text["Settings.Sprites.RecheckUnavailable"])</button>
             </div>
-        </ObsidianSection>
-        <ObsidianSection Title="@Text["Settings.Favorites.FavoriteClause"]" Icon="ObsidianIconKind.Heart" Description="@Text["Redesign.Settings.FavoritesDescription"]">
-            <HeadingContent><span class="obsidian-settings-count">@Text["Settings.Favorites.Count", _favorites.Count]</span></HeadingContent>
-            <ChildContent>
-                <div class="obsidian-favorites-overview"><span>@FavoriteSummary</span><button class="obsidian-settings-button" type="button" @onclick="OpenFavorites">@Text["Redesign.Settings.Manage"] <span aria-hidden="true">›</span></button></div>
-            </ChildContent>
         </ObsidianSection>
         <p class="obsidian-settings-status" role="status">@(_localSettingsSaved ? Text["Redesign.Settings.SavedLocally"] : Status ?? Text["Redesign.Settings.AutomaticChanges"])</p>
     }

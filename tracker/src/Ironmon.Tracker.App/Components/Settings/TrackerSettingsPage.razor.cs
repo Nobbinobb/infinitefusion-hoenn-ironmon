@@ -21,13 +21,16 @@ public partial class TrackerSettingsPage : IDisposable
     private Task OpenUpdatesAsync()
         => UpdateNavigation?.OpenUpdates?.Invoke() ?? Task.CompletedTask;
 
+    /// <summary>
+    /// Gets or sets the injected connection options used to synchronize live gameplay preferences.
+    /// </summary>
+    [Inject]
+    private TrackerConnectionOptions ConnectionOptions { get; set; } = null!;
+
     private const int FavoritePageSize = 8;
     private const string MaximumBstControlId = "settings-maximum-bst";
     private const string ExpansionDepthControlId = "settings-expansion-depth";
     private const string NodesPerRowControlId = "settings-nodes-per-row";
-    private const string StartupGroupKey = "Settings.Startup.Group";
-    private const string AutoStartGameKey = "Settings.Startup.AutoStartGame";
-    private const string AutoStartGameDescriptionKey = "Settings.Startup.AutoStartGameDescription";
     private const string MegabyteUnit = "MB";
     private const string AvailableSpritesCompleteKey = "Settings.Sprites.AvailableComplete";
     private const string SpriteDownloadWithUnavailableKey = "Settings.Sprites.CompleteWithUnavailable";
@@ -150,13 +153,36 @@ public partial class TrackerSettingsPage : IDisposable
     }
 
     /// <summary>
-    /// Saves the automatic game-start preference for the next tracker launch without opening the game now.
+    /// Saves the minimized startup preference for the next tracker launch.
     /// </summary>
-    /// <param name="enabled">Whether the game should start with the tracker.</param>
-    private void HandleAutoStartGameChanged(bool enabled)
+    /// <param name="enabled">Whether the tracker should start minimized.</param>
+    private void HandleStartMinimizedChanged(bool enabled)
     {
-        TrackerStartupSettings.AutoStartGame = enabled;
+        TrackerStartupSettings.StartMinimized = enabled;
         _localSettingsSaved = true;
+    }
+
+    /// <summary>
+    /// Persists and synchronizes the live automatic-reset preference.
+    /// </summary>
+    /// <param name="enabled">Whether lost attempts should reset automatically.</param>
+    /// <returns>A task representing preference persistence and synchronization when the game is connected.</returns>
+    private async Task HandleAutomaticResetChanged(bool enabled)
+    {
+        TrackerStartupSettings.AutomaticReset = enabled;
+        ConnectionOptions.AutomaticReset = enabled;
+        _localSettingsSaved = true;
+        if (ConnectionState.Snapshot.Status != TrackerConnectionStatus.Connected)
+            return;
+
+        try
+        {
+            await Requests.UpdateSettingsAsync(new() { AutomaticReset = enabled, AutoSelectStarter = ConnectionOptions.AutoSelectStarter, MaximumStarterBaseStatTotal = ConnectionOptions.MaximumStarterBaseStatTotal, FavoriteSpeciesIds = ConnectionOptions.FavoriteSpeciesIds });
+        }
+        catch (Exception error) when (error is IOException or InvalidOperationException or TimeoutException or TrackerProtocolException)
+        {
+            _localSettingsSaved = false;
+        }
     }
 
     /// <summary>

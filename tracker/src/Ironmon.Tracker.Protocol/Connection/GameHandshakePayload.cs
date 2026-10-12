@@ -34,6 +34,16 @@ public sealed class GameHandshakePayload
     }
 
     /// <summary>
+    /// Gets or initializes the game-management protocol version.
+    /// </summary>
+    public int ManagementProtocolVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the current game process session identifier.
+    /// </summary>
+    public string? SessionId { get; init; }
+
+    /// <summary>
     /// Gets the Infinite Fusion version.
     /// </summary>
     public string GameVersion { get; }

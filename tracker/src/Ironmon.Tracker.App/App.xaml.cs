@@ -74,9 +74,15 @@ public partial class App : Application
             return;
 
         window.Created -= HandleWindowCreated;
+        if (TrackerStartupSettings.StartMinimized)
+            _windowService.Minimize();
+
         string? errorKey = await _gameLauncher.StartAsync(_startupCancellation.Token);
         if (errorKey is not null && !_startupCancellation.IsCancellationRequested)
+        {
+            _windowService.Show();
             await window.Page!.DisplayAlertAsync(_text[TrackerGameLauncher.ErrorTitleKey], _text[errorKey], _text[TrackerGameLauncher.CloseKey]);
+        }
     }
 
     /// <summary>

@@ -28,6 +28,49 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     }
 
     /// <summary>
+    /// Negotiates title management and keeps heartbeats independent of pending requests.
+    /// </summary>
+    /// <returns>A task representing handshake, pending snapshot request, and heartbeat assertions over a loopback connection.</returns>
+    [Fact]
+    public async Task TitleManagementNegotiatesSessionAndHeartbeatsWhileRequestIsPending()
+    {
+        const string sessionId = "title-session";
+        TrackerConnectionOptions options = new(0, _preparationTestTrackerVersion, false, TimeSpan.FromSeconds(2));
+        TrackerConnectionState state = new();
+        await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, new TrackerRunState(), CreateKnowledgeStore(), CreateAreaDiscoveryStore(), CreateCompletedRunArchive());
+        service.Start();
+        using TcpClient client = new();
+        await client.ConnectAsync(IPAddress.Loopback, service.BoundPort);
+        using TrackerMessageReader reader = new(client.GetStream(), leaveOpen: true);
+        await using TrackerMessageWriter writer = new(client.GetStream(), leaveOpen: true);
+        GameHandshakePayload game = new(_preparationTestGameVersion, _preparationTestIronmonVersion, false, false, TrackerTestPaths.GameRoot, null, null)
+        {
+            ManagementProtocolVersion = RunManagementProtocol.Version,
+            SessionId = sessionId
+        };
+
+        await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.GameConnected, 0, game));
+        TrackerMessage handshake = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(_backgroundRequestTimeout));
+        TrackerHandshakePayload tracker = TrackerJson.DeserializePayload<TrackerHandshakePayload>(handshake.Payload);
+        Assert.Equal(sessionId, tracker.SessionId);
+        Assert.Equal(game.GameRoot, tracker.GameRoot);
+        Assert.Equal(RunManagementProtocol.Version, tracker.ManagementProtocolVersion);
+        Assert.True(tracker.AutomaticReset);
+        TrackerMessage initial = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(_backgroundRequestTimeout));
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(initial.RequestId!, new GameCurrentStatePayload(false, null, null, 0)));
+        Task<GameManagementPayload> pending = service.Requests.GetGameManagementAsync();
+        TrackerMessage menuRequest = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(_backgroundRequestTimeout));
+        Assert.Equal(RunManagementProtocol.SnapshotCommand, menuRequest.Command);
+        TrackerMessage heartbeat = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(_backgroundRequestTimeout));
+        Assert.Equal(RunManagementProtocol.HeartbeatEvent, heartbeat.Event);
+        Assert.Equal(sessionId, heartbeat.Payload.GetProperty("session_id").GetString());
+        Assert.False(pending.IsCompleted);
+        GameManagementPayload menu = new() { ProtocolVersion = RunManagementProtocol.Version, State = RunManagementProtocol.MainMenuState, MenuId = sessionId, Slots = [new() { Slot = "File H", Manual = true, Revision = "empty" }] };
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(menuRequest.RequestId!, menu));
+        Assert.Equal("File H", (await pending).Slots.Single().Slot);
+    }
+
+    /// <summary>
     /// Removes every temporary persistence root owned by the current test.
     /// </summary>
     public void Dispose()

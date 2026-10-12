@@ -88,6 +88,7 @@ module Ironmon
       @connect_thread = nil
       @pending_socket = nil
       @connect_error = nil
+      @session_ready = false
       @state = :disconnected
       @next_attempt_at = 0.0
       @input_buffer = ""
@@ -114,6 +115,10 @@ module Ironmon
         resend_area_discoveries
         flush_output
         read_input
+        if connected? && Ironmon.tracker_uptime_seconds - (@last_heartbeat || 0) > TRACKER_HEARTBEAT_TIMEOUT
+          disconnect
+          return
+        end
         flush_output
       end
     rescue Exception => e
@@ -128,6 +133,18 @@ module Ironmon
     def send_event(event_name, payload, run_id = nil, sequence = nil)
       return if @state != :connected
       queue_message(event_message(event_name, payload, run_id, sequence))
+    end
+
+    def session_ready?
+      return connected? && @session_ready == true
+    end
+
+    def output_drained?
+      return @output_buffer.empty?
+    end
+
+    def automatic_reset?
+      return @automatic_reset != false
     end
 
     def connected?
@@ -215,6 +232,8 @@ module Ironmon
     end
 
     def connection_established
+      @session_ready = false
+      @last_heartbeat = Ironmon.tracker_uptime_seconds
       @state = :connected
       @input_buffer = ""
       @output_buffer = ""
@@ -228,6 +247,8 @@ module Ironmon
     def game_handshake_message
       run_id = Ironmon.ensure_tracker_run_id
       payload = {
+        "management_protocol_version" => GAME_MANAGEMENT_PROTOCOL,
+        "session_id" => Ironmon.game_session_id,
         "game_version" => Ironmon.tracker_game_version,
         "ironmon_version" => Ironmon::VERSION,
         "ironmon_active" => Ironmon.active?,
@@ -338,6 +359,7 @@ module Ironmon
       @connect_thread = nil
       @pending_socket = nil
       @connect_error = nil
+      @session_ready = false
       @state = :disconnected
       @input_buffer = ""
       @output_buffer = ""

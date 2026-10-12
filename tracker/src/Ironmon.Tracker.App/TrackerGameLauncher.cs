@@ -7,7 +7,7 @@ using Ironmon.Updater.Infrastructure;
 namespace Ironmon.Tracker.App;
 
 /// <summary>
-/// Starts the selected installation's game once per tracker launch when the player enables it.
+/// Starts the selected installation's game at tracker startup when that game is not already running.
 /// </summary>
 public sealed class TrackerGameLauncher
 {
@@ -20,7 +20,6 @@ public sealed class TrackerGameLauncher
     private const string MutexPrefix = "Local\\Ironmon.Tracker.GameLaunch.";
     private static readonly TimeSpan _launchLockTimeout = TimeSpan.FromSeconds(5);
     private readonly Lock _gate = new();
-    private readonly Func<bool> _enabled;
     private readonly Func<string> _findRoot;
     private readonly Func<string, bool> _isRunning;
     private readonly Action<string, CancellationToken> _launch;
@@ -28,25 +27,23 @@ public sealed class TrackerGameLauncher
     private Task<string?>? _startup;
 
     /// <summary>
-    /// Connects game startup to the saved preference and existing read-only installation check.
+    /// Connects game startup to the existing read-only installation check.
     /// </summary>
     /// <param name="compatibility">The startup installation check already shared with the updater.</param>
-    public TrackerGameLauncher(TrackerInstallationCompatibility compatibility) : this(() => TrackerStartupSettings.AutoStartGame, FindGameRoot, IsGameRunning, LaunchGame, () => compatibility.Inspection)
+    public TrackerGameLauncher(TrackerInstallationCompatibility compatibility) : this(FindGameRoot, IsGameRunning, LaunchGame, () => compatibility.Inspection)
     {
         ArgumentNullException.ThrowIfNull(compatibility);
     }
 
     /// <summary>
-    /// Connects the startup policy to independently supplied preference, installation, and process boundaries.
+    /// Initializes game startup with independently supplied installation and process operations.
     /// </summary>
-    /// <param name="enabled">Reads whether automatic game startup is enabled.</param>
     /// <param name="findRoot">Locates the installation belonging to this tracker.</param>
     /// <param name="isRunning">Checks for an existing game in that installation.</param>
     /// <param name="launch">Starts the game after a final process check.</param>
     /// <param name="inspect">Reuses the startup compatibility inspection.</param>
-    internal TrackerGameLauncher(Func<bool> enabled, Func<string> findRoot, Func<string, bool> isRunning, Action<string, CancellationToken> launch, Func<Task<GameCompatibilityResult>> inspect)
+    internal TrackerGameLauncher(Func<string> findRoot, Func<string, bool> isRunning, Action<string, CancellationToken> launch, Func<Task<GameCompatibilityResult>> inspect)
     {
-        _enabled = enabled;
         _findRoot = findRoot;
         _isRunning = isRunning;
         _launch = launch;
@@ -57,7 +54,7 @@ public sealed class TrackerGameLauncher
     /// Performs at most one startup attempt without blocking the tracker window or retrying on reconnect.
     /// </summary>
     /// <param name="cancellationToken">Cancels startup when the tracker closes.</param>
-    /// <returns>A localized error key, or null when startup succeeds or no game needs to be started.</returns>
+    /// <returns>A task containing a localized error key, or null when the game is already running, launch succeeds, or startup is canceled.</returns>
     public Task<string?> StartAsync(CancellationToken cancellationToken = default)
     {
         lock (_gate)
@@ -65,18 +62,15 @@ public sealed class TrackerGameLauncher
     }
 
     /// <summary>
-    /// Applies the saved startup policy and rechecks for a game opened during installation verification.
+    /// Starts the installed game and rechecks for a game opened during installation verification.
     /// </summary>
     /// <param name="cancellationToken">Cancels the pending startup attempt.</param>
-    /// <returns>The error key when automatic startup cannot complete.</returns>
+    /// <returns>A task containing a localized error key, or null when launch succeeds, the game is already running, or startup is canceled.</returns>
     private async Task<string?> LaunchAsync(CancellationToken cancellationToken)
     {
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (!_enabled())
-                return null;
-
             string root = _findRoot();
             if (_isRunning(root))
                 return null;
@@ -182,7 +176,7 @@ public sealed class TrackerGameLauncher
     }
 
     /// <summary>
-    /// Opens the installed game normally with its own directory as the working directory.
+    /// Creates the installed game launch configuration with its own directory as the working directory.
     /// </summary>
     /// <param name="root">The verified game installation.</param>
     /// <returns>The fixed game launch configuration without shell commands or arguments.</returns>
