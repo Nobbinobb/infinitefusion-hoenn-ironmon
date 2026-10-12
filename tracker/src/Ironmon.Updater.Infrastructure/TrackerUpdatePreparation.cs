@@ -49,7 +49,7 @@ public sealed class TrackerUpdatePreparation(ReleaseVerifier verifier, ReleaseDo
         var authorization = new IronmonUpdateAuthorization(1, selection, target, current, combined ? request.GameCommit : null);
         var authority = Authority();
         var inventories = authority.Resolve(authorization);
-        var local = await InstallationFileSnapshot.ReadAsync(request.InstallationRoot, cancellationToken).ConfigureAwait(false);
+        var local = await InstallationFileSnapshot.ReadAsync(request.InstallationRoot, cancellationToken, InstallationStage.ReviewingInstallation).ConfigureAwait(false);
         IEnumerable<ManagedFile> baseline = IronmonOnlyUpdate.BaselineFiles(inventories.Baseline, local);
         IEnumerable<ManagedFile> desired = IronmonOnlyUpdate.TargetFiles(inventories.Target, IronmonOnlyUpdate.ReceiptBytes(authorization, inventories.Target));
         if (combined)
@@ -59,7 +59,7 @@ public sealed class TrackerUpdatePreparation(ReleaseVerifier verifier, ReleaseDo
         }
         else
         {
-            await SignedIronmonAuthority.VerifyGameAsync(request.InstallationRoot, inventories.Game, cancellationToken).ConfigureAwait(false);
+            SignedIronmonAuthority.VerifyGameSnapshot(inventories.Game, local);
         }
 
         var plan = new FileUpdatePlanner(new FileManagementPolicy()).Create(baseline, local, desired);
@@ -94,9 +94,9 @@ public sealed class TrackerUpdatePreparation(ReleaseVerifier verifier, ReleaseDo
             return _protectedUpdates.PrepareAsync(review.Authorization with { Request = request }, cancellationToken);
 
         if (review.Authorization.PreviousGameCommit is { } previous)
-            return new CombinedUpdate(_verifier, _downloads, _runtime, _gamePreparation, _gameVerification).PrepareAsync(request, previous, review.Authorization.Target, review.Authorization.Current, cancellationToken);
+            return new CombinedUpdate(_verifier, _downloads, _runtime, _gamePreparation, _gameVerification).PrepareInstallationAsync(request, previous, review.Authorization.Target, review.Authorization.Current, InstallationPurpose.Update, cancellationToken, review.Plan.Export().Local);
 
-        return new IronmonOnlyUpdate(_verifier, _downloads, _runtime).PrepareAsync(request, review.Authorization.Target, review.Authorization.Current, cancellationToken);
+        return new IronmonOnlyUpdate(_verifier, _downloads, _runtime).PrepareInstallationAsync(request, review.Authorization.Target, review.Authorization.Current, InstallationPurpose.Update, cancellationToken, review.Plan.Export().Local);
     }
 
     /// <summary>

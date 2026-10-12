@@ -21,8 +21,9 @@ public static class InstallationFileSnapshot
     /// </remarks>
     /// <param name="installationRoot">The fully qualified validated game root.</param>
     /// <param name="cancellationToken">The token used to cancel inspection.</param>
+    /// <param name="stage">The purpose displayed while hashing the enumerated files.</param>
     /// <returns>A sorted complete snapshot for the pure file planner and subsequent revalidation.</returns>
-    public static async Task<IReadOnlyList<LocalFileEntry>> ReadAsync(string installationRoot, CancellationToken cancellationToken = default)
+    public static async Task<IReadOnlyList<LocalFileEntry>> ReadAsync(string installationRoot, CancellationToken cancellationToken = default, InstallationStage stage = InstallationStage.VerifyingFiles)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var root = PlainPaths.Full(installationRoot);
@@ -30,7 +31,7 @@ public static class InstallationFileSnapshot
         var result = new List<LocalFileEntry>();
         var files = new List<(int Index, string Path)>();
         pending.Push(root);
-        InstallationProgressScope.Report(new(InstallationStage.VerifyingFiles));
+        InstallationProgressScope.Report(new(InstallationStage.EnumeratingFiles));
         while (pending.TryPop(out var directory))
         {
             foreach (var path in Directory.EnumerateFileSystemEntries(directory))
@@ -63,19 +64,19 @@ public static class InstallationFileSnapshot
                     result.Add(new LocalFileEntry(relative, null));
                 }
 
-                InstallationProgressScope.Report(new(InstallationStage.VerifyingFiles, result.Count));
+                InstallationProgressScope.Report(new(InstallationStage.EnumeratingFiles, result.Count));
             }
         }
 
         var entries = result.ToArray();
         var verified = 0;
         var progressGate = new Lock();
-        InstallationProgressScope.Report(new(InstallationStage.VerifyingFiles, 0, files.Count));
+        InstallationProgressScope.Report(new(stage, 0, files.Count));
         await Parallel.ForEachAsync(files, new ParallelOptions { MaxDegreeOfParallelism = TransactionStorage.FileConcurrency, CancellationToken = cancellationToken }, async (file, token) =>
         {
             entries[file.Index] = entries[file.Index] with { Content = await TransactionStorage.ContentAsync(file.Path, token).ConfigureAwait(false) };
             lock (progressGate)
-                InstallationProgressScope.Report(new(InstallationStage.VerifyingFiles, ++verified, files.Count));
+                InstallationProgressScope.Report(new(stage, ++verified, files.Count));
         }).ConfigureAwait(false);
         return Array.AsReadOnly(entries.OrderBy(entry => entry.Path, StringComparer.Ordinal).ToArray());
     }

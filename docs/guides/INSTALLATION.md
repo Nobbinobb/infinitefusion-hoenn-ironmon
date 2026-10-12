@@ -159,6 +159,14 @@ and Ironmon updater at the same time. An independent launcher update can make
 the game incompatible with the installed Ironmon release; the startup guard then
 prevents Ironmon saves from loading until a matching release is installed.
 
+Progress distinguishes finding files, reviewing the installation, preparing and
+verifying backups, checking for intervening changes, and verifying the completed
+installation. Each counter measures its current stage. Finding files and hashing
+their contents are separate stages. Preparation reuses the reviewed snapshot in
+the same process, then checks the complete installation again before making
+recovery ready, before applying changes, and before committing. An administrator
+helper takes its own initial snapshot across the privilege boundary.
+
 If checking or downloading fails while offline, continue using the current
 installation and retry later. Cancellation during preparation leaves the current
 installation intact. Once replacement has started, the updater must finish or

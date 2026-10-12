@@ -3174,6 +3174,54 @@ public static class UpdaterText
         => Get(nameof(ProgressVerifyingFiles));
 
     /// <summary>
+    /// Gets the localized installation path enumeration text.
+    /// </summary>
+    public static string ProgressEnumeratingFiles
+        => Get(nameof(ProgressEnumeratingFiles));
+
+    /// <summary>
+    /// Gets the localized existing installation review text.
+    /// </summary>
+    public static string ProgressReviewingInstallation
+        => Get(nameof(ProgressReviewingInstallation));
+
+    /// <summary>
+    /// Gets the localized post-preparation revalidation text.
+    /// </summary>
+    public static string ProgressCheckingPreparedInstallation
+        => Get(nameof(ProgressCheckingPreparedInstallation));
+
+    /// <summary>
+    /// Gets the localized pre-installation revalidation text.
+    /// </summary>
+    public static string ProgressCheckingInstallation
+        => Get(nameof(ProgressCheckingInstallation));
+
+    /// <summary>
+    /// Gets the localized backup and replacement verification text.
+    /// </summary>
+    public static string ProgressVerifyingRecovery
+        => Get(nameof(ProgressVerifyingRecovery));
+
+    /// <summary>
+    /// Gets the localized final installation verification text.
+    /// </summary>
+    public static string ProgressVerifyingInstallation
+        => Get(nameof(ProgressVerifyingInstallation));
+
+    /// <summary>
+    /// Gets the localized game recovery metadata verification text.
+    /// </summary>
+    public static string ProgressVerifyingMetadata
+        => Get(nameof(ProgressVerifyingMetadata));
+
+    /// <summary>
+    /// Gets the localized independently signed component verification text.
+    /// </summary>
+    public static string ProgressVerifyingComponents
+        => Get(nameof(ProgressVerifyingComponents));
+
+    /// <summary>
     /// Gets the localized installation progress text.
     /// </summary>
     public static string ProgressInstallingFiles

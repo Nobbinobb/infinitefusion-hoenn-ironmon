@@ -43,10 +43,12 @@ public sealed class CombinedUpdate(ReleaseVerifier verifier, ReleaseDownloadStor
     /// <param name="currentRelease">The signed prior release when available.</param>
     /// <param name="purpose">The explicit independently checked installation purpose.</param>
     /// <param name="cancellationToken">The preparation token.</param>
+    /// <param name="reviewedFiles">An optional same-process review snapshot, revalidated after staging and again before application.</param>
     /// <returns>The durable prepared transaction.</returns>
-    public async Task<PreparedIronmonUpdate> PrepareInstallationAsync(IronmonUpdateRequest request, string? previousGameCommit, ReleaseEvidence targetRelease, ReleaseEvidence? currentRelease, InstallationPurpose purpose, CancellationToken cancellationToken = default)
+    public async Task<PreparedIronmonUpdate> PrepareInstallationAsync(IronmonUpdateRequest request, string? previousGameCommit, ReleaseEvidence targetRelease, ReleaseEvidence? currentRelease, InstallationPurpose purpose, CancellationToken cancellationToken = default, IReadOnlyList<LocalFileEntry>? reviewedFiles = null)
     {
         var root = PlainPaths.Full(request.InstallationRoot);
+        LocalFileEntry[]? reviewed = reviewedFiles is null ? null : [.. reviewedFiles];
         if (_downloads.Root.Equals(root, StringComparison.OrdinalIgnoreCase) || _downloads.Root.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) || root.StartsWith(_downloads.Root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
             throw new IOException(UpdaterText.CombinedUpdateCombinedUpdateDownloadsMustRemainOutsideTheInstalledGame);
 
@@ -114,7 +116,7 @@ public sealed class CombinedUpdate(ReleaseVerifier verifier, ReleaseDownloadStor
 
             InstallationProgressScope.Report(new(InstallationStage.PreparingRecovery));
             var helper = await RecoveryHelperPackage.StageAsync(root, manifest, _downloads, request.Flavor, cancellationToken).ConfigureAwait(false);
-            var local = await InstallationFileSnapshot.ReadAsync(root, cancellationToken).ConfigureAwait(false);
+            var local = reviewed is null ? await InstallationFileSnapshot.ReadAsync(root, cancellationToken, InstallationStage.ReviewingInstallation).ConfigureAwait(false) : reviewed;
             var receipt = IronmonOnlyUpdate.ReceiptBytes(authorization, inventories.Target);
             var baseline = IronmonOnlyUpdate.BaselineFiles(inventories.Baseline, local).Concat(previousGame is null ? [] : SignedIronmonAuthority.GameFiles(previousGame));
             var desired = IronmonOnlyUpdate.TargetFiles(inventories.Target, receipt).Concat(SignedIronmonAuthority.GameFiles(inventories.Game));

@@ -1558,7 +1558,7 @@
     <value>Processing the game download</value>
   </data>
   <data name="ProgressVerifyingGame" xml:space="preserve">
-    <value>Verifying the game revision…</value>
+    <value>Checking game compatibility</value>
   </data>
   <data name="ProgressPreparingGame" xml:space="preserve">
     <value>Preparing the downloaded game…</value>
@@ -1567,10 +1567,34 @@
     <value>Extracting and verifying files</value>
   </data>
   <data name="ProgressPreparingRecovery" xml:space="preserve">
-    <value>Preparing installation and recovery files</value>
+    <value>Preparing replacement files and backups</value>
   </data>
   <data name="ProgressVerifyingFiles" xml:space="preserve">
     <value>Verifying installation files</value>
+  </data>
+  <data name="ProgressEnumeratingFiles" xml:space="preserve">
+    <value>Finding installation files</value>
+  </data>
+  <data name="ProgressReviewingInstallation" xml:space="preserve">
+    <value>Checking existing installation</value>
+  </data>
+  <data name="ProgressCheckingPreparedInstallation" xml:space="preserve">
+    <value>Checking for changes during preparation</value>
+  </data>
+  <data name="ProgressCheckingInstallation" xml:space="preserve">
+    <value>Checking files before installation</value>
+  </data>
+  <data name="ProgressVerifyingRecovery" xml:space="preserve">
+    <value>Verifying backups and replacement files</value>
+  </data>
+  <data name="ProgressVerifyingInstallation" xml:space="preserve">
+    <value>Verifying completed installation</value>
+  </data>
+  <data name="ProgressVerifyingMetadata" xml:space="preserve">
+    <value>Verifying game recovery data</value>
+  </data>
+  <data name="ProgressVerifyingComponents" xml:space="preserve">
+    <value>Checking installed components</value>
   </data>
   <data name="ProgressInstallingFiles" xml:space="preserve">
     <value>Installing files</value>

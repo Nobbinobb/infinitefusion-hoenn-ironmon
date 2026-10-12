@@ -42,10 +42,12 @@ public sealed class IronmonOnlyUpdate(ReleaseVerifier verifier, ReleaseDownloadS
     /// <param name="currentRelease">The signed prior release when available.</param>
     /// <param name="purpose">The explicit independently checked installation purpose.</param>
     /// <param name="cancellationToken">The preparation token.</param>
+    /// <param name="reviewedFiles">An optional same-process review snapshot, revalidated after staging and again before application.</param>
     /// <returns>The durable prepared transaction.</returns>
-    public async Task<PreparedIronmonUpdate> PrepareInstallationAsync(IronmonUpdateRequest request, ReleaseEvidence targetRelease, ReleaseEvidence? currentRelease, InstallationPurpose purpose, CancellationToken cancellationToken = default)
+    public async Task<PreparedIronmonUpdate> PrepareInstallationAsync(IronmonUpdateRequest request, ReleaseEvidence targetRelease, ReleaseEvidence? currentRelease, InstallationPurpose purpose, CancellationToken cancellationToken = default, IReadOnlyList<LocalFileEntry>? reviewedFiles = null)
     {
         var root = PlainPaths.Full(request.InstallationRoot);
+        LocalFileEntry[]? reviewed = reviewedFiles is null ? null : [.. reviewedFiles];
         if (_downloads.Root.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) || root.StartsWith(_downloads.Root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) || root.Equals(_downloads.Root, StringComparison.OrdinalIgnoreCase))
             throw new IOException(UpdaterText.IronmonOnlyUpdateUpdateDownloadsMustRemainOutsideTheInstalledGameAnd);
 
@@ -64,7 +66,15 @@ public sealed class IronmonOnlyUpdate(ReleaseVerifier verifier, ReleaseDownloadS
 
         var authority = new SignedIronmonAuthority(_verifier, _runtime);
         var (Baseline, Target, Game) = authority.Resolve(authorization);
-        await SignedIronmonAuthority.VerifyGameAsync(root, Game, cancellationToken).ConfigureAwait(false);
+        if (reviewed is null)
+        {
+            await SignedIronmonAuthority.VerifyGameAsync(root, Game, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            SignedIronmonAuthority.VerifyGameSnapshot(Game, reviewed);
+        }
+
         var archiveAsset = target.Assets.Single(asset => asset.Role == ReleaseProtocol.TrackerRolePrefix + request.Flavor);
         var archive = await _downloads.GetAsync(archiveAsset, cancellationToken).ConfigureAwait(false);
         var extracted = PlainPaths.Child(_downloads.Root, ExtractionPrefix + Guid.NewGuid().ToString(TransactionStorage.GuidFormat));
@@ -73,7 +83,7 @@ public sealed class IronmonOnlyUpdate(ReleaseVerifier verifier, ReleaseDownloadS
             await ReleaseArchive.ExtractAsync(archive, ReleaseProtocol.Content(archiveAsset.Bytes, archiveAsset.Sha256), extracted, Target.Files, cancellationToken).ConfigureAwait(false);
             await _runtime.EnsureAsync(extracted, request.Flavor, cancellationToken).ConfigureAwait(false);
             var helper = await RecoveryHelperPackage.StageAsync(root, target, _downloads, request.Flavor, cancellationToken).ConfigureAwait(false);
-            var local = await InstallationFileSnapshot.ReadAsync(root, cancellationToken).ConfigureAwait(false);
+            var local = reviewed is null ? await InstallationFileSnapshot.ReadAsync(root, cancellationToken, InstallationStage.ReviewingInstallation).ConfigureAwait(false) : reviewed;
             var receipt = ReceiptBytes(authorization, Target);
             var baseline = BaselineFiles(Baseline, local);
             var targetFiles = TargetFiles(Target, receipt);

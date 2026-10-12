@@ -70,7 +70,7 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
 
         var content = new IronmonOnlyUpdate(_verifier, _downloads, _runtime);
         var target = await content.CompleteEvidenceAsync(release, manifest, cancellationToken).ConfigureAwait(false);
-        var local = Directory.Exists(root) ? await InstallationFileSnapshot.ReadAsync(root, cancellationToken).ConfigureAwait(false) : [];
+        var local = Directory.Exists(root) ? await InstallationFileSnapshot.ReadAsync(root, cancellationToken, InstallationStage.ReviewingInstallation).ConfigureAwait(false) : [];
         var empty = local.Count == 0 && !Path.Exists(PlainPaths.Child(root, GitDirectory));
         var tracker = PlainPaths.Child(root, UpdaterHandoff.TrackerRelativePath);
         var installed = File.Exists(tracker);
@@ -134,7 +134,7 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
         }
         else
         {
-            await SignedIronmonAuthority.VerifyGameAsync(root, Game, cancellationToken).ConfigureAwait(false);
+            SignedIronmonAuthority.VerifyGameSnapshot(Game, local);
         }
 
         var plan = new FileUpdatePlanner(new FileManagementPolicy()).Create(baseline, local, desired);
@@ -165,9 +165,9 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
         Directory.CreateDirectory(PlainPaths.Full(request.InstallationRoot));
         VerifyWritable(request.InstallationRoot);
         if (review.IncludesGame)
-            return new CombinedUpdate(_verifier, _downloads, _runtime, _gamePreparation, _gameVerification).PrepareInstallationAsync(request, selected.PreviousGameCommit, selected.Target, selected.Current, selected.Purpose, cancellationToken);
+            return new CombinedUpdate(_verifier, _downloads, _runtime, _gamePreparation, _gameVerification).PrepareInstallationAsync(request, selected.PreviousGameCommit, selected.Target, selected.Current, selected.Purpose, cancellationToken, review.Plan.Export().Local);
 
-        return new IronmonOnlyUpdate(_verifier, _downloads, _runtime).PrepareInstallationAsync(request, selected.Target, selected.Current, selected.Purpose, cancellationToken);
+        return new IronmonOnlyUpdate(_verifier, _downloads, _runtime).PrepareInstallationAsync(request, selected.Target, selected.Current, selected.Purpose, cancellationToken, review.Plan.Export().Local);
     }
 
     /// <summary>

@@ -64,11 +64,16 @@ public sealed class SignedIronmonAuthority(ReleaseVerifier verifier, ITrackerRun
         var authorization = Read(description);
         var inventories = Resolve(authorization);
         var target = IronmonOnlyUpdate.TargetFiles(inventories.Target, IronmonOnlyUpdate.ReceiptBytes(authorization, inventories.Target));
-        foreach (var file in target.Where(file => file.Policy != ManagedFilePolicy.Retain))
+        var files = target.Where(file => file.Policy != ManagedFilePolicy.Retain).ToArray();
+        InstallationProgressScope.Report(new(InstallationStage.VerifyingComponents, 0, files.Length));
+        for (var index = 0; index < files.Length; index++)
         {
+            var file = files[index];
             var content = await TransactionStorage.ContentAsync(PlainPaths.Child(description.InstallationRoot, file.Path), cancellationToken).ConfigureAwait(false);
             if (content != file.Content)
                 throw new InvalidDataException(UpdaterText.SignedIronmonAuthorityTheInstalledTrackerScriptsOrDataDoNotMatch);
+
+            InstallationProgressScope.Report(new(InstallationStage.VerifyingComponents, index + 1, files.Length));
         }
 
         await _runtime.EnsureAsync(description.InstallationRoot, authorization.Request.Flavor, cancellationToken).ConfigureAwait(false);
@@ -217,6 +222,19 @@ public sealed class SignedIronmonAuthority(ReleaseVerifier verifier, ITrackerRun
         => names.Select(name => inventories[name]).Single(item => item.Flavor == flavor);
 
     /// <summary>
+    /// Checks signed game hashes already captured by the current review without reopening the same files.
+    /// </summary>
+    /// <param name="game">The independently authenticated compatible game inventory.</param>
+    /// <param name="local">The complete content snapshot captured for this review.</param>
+    internal static void VerifyGameSnapshot(ReleaseFileInventory game, IReadOnlyList<LocalFileEntry> local)
+    {
+        var entries = local.ToDictionary(entry => entry.Path, StringComparer.OrdinalIgnoreCase);
+        foreach (var file in GameFiles(game))
+            if (!entries.TryGetValue(file.Path, out var entry) || entry.Content is null || (entry.Content != file.Content && entry.Content != file.AlternateContent))
+                throw new InvalidDataException(UpdaterText.SignedIronmonAuthorityTheInstalledGameDoesNotMatchASupportedSigned);
+    }
+
+    /// <summary>
     /// Verifies the already installed supported game directly from signed file hashes without invoking Git.
     /// </summary>
     /// <param name="root">The installed game directory.</param>
@@ -225,12 +243,17 @@ public sealed class SignedIronmonAuthority(ReleaseVerifier verifier, ITrackerRun
     /// <returns>A task that rejects modified or incomplete required game files.</returns>
     internal static async Task VerifyGameAsync(string root, ReleaseFileInventory game, CancellationToken cancellationToken)
     {
-        foreach (var file in game.Files.Where(file => ReleaseVerifier.IsManagedGamePath(file.Path)))
+        var files = game.Files.Where(file => ReleaseVerifier.IsManagedGamePath(file.Path)).ToArray();
+        InstallationProgressScope.Report(new(InstallationStage.VerifyingGame, 0, files.Length));
+        for (var index = 0; index < files.Length; index++)
         {
+            var file = files[index];
             var content = await TransactionStorage.ContentAsync(PlainPaths.Child(root, file.Path), cancellationToken).ConfigureAwait(false);
             var windowsText = file.WindowsText is null ? null : ReleaseProtocol.Content(file.WindowsText.Bytes, file.WindowsText.Sha256);
             if (content != ReleaseProtocol.Content(file.Bytes, file.Sha256) && (windowsText is null || content != windowsText))
                 throw new InvalidDataException(UpdaterText.SignedIronmonAuthorityTheInstalledGameDoesNotMatchASupportedSigned);
+
+            InstallationProgressScope.Report(new(InstallationStage.VerifyingGame, index + 1, files.Length));
         }
     }
 }
