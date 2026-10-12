@@ -59,9 +59,6 @@ Random Component commits the unfusion and then reveals one seed-derived
 component. Player Choice shows only the two component identities and allows one
 to be selected without opening either summary.
 
-Invalid or missing values fall back to their documented defaults rather than
-preventing a save from loading.
-
 Automatic reset is a live tracker preference, enabled by default under
 **Settings > Game session**. It can be changed during play and is excluded from
 profiles and save-bound rules. Changing it does not change seed identity. A loss

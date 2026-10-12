@@ -1,7 +1,8 @@
 # Ironmon Tracker protocol v1
 
-This document records the implemented protocol through the 0.8.9 tracker UI,
-native fusion closure, and run-aware evolution additions. Later parts extend
+This document records the implemented protocol through the 0.8.10 tracker UI,
+required tracker sessions, run management, native fusion closure, and run-aware
+evolution additions. Later parts extend
 the payload catalog without changing the common envelope or transport.
 
 ## Transport
@@ -22,7 +23,8 @@ without unwinding its battle or event stack.
 ## Connection sequence
 
 1. The game sends `game_connected` as the first message.
-2. The tracker validates schema version 1 and sends `tracker_connected`.
+2. The tracker validates schema version 1 and sends `tracker_connected`, echoing
+   the advertised management protocol, process session, and installation root.
 3. The tracker sends a `current_state` request with a unique `request_id`.
 4. The game returns a successful response with the same `request_id`.
 5. Both sides retain the connection until either process closes it.
@@ -43,7 +45,9 @@ handshake and state-recovery sequence without restarting the game.
   "sent_at": "2026-08-06T20:05:45.253Z",
   "payload": {
     "game_version": "6.8.2",
-    "ironmon_version": "0.8.9",
+    "ironmon_version": "0.8.10",
+    "management_protocol_version": 1,
+    "session_id": "4820:1791835545.253:123456789",
     "ironmon_active": false,
     "control_overrides_supported": true,
     "debug_available": true,
@@ -70,7 +74,11 @@ below. An absent or false value means the game does not support that override.
   "sequence": 0,
   "sent_at": "2026-08-06T20:05:45.300Z",
   "payload": {
-    "tracker_version": "0.1.0.0",
+    "tracker_version": "0.8.10",
+    "management_protocol_version": 1,
+    "session_id": "4820:1791835545.253:123456789",
+    "game_root": "C:/Games/InfiniteFusion2",
+    "automatic_reset": true,
     "debug_requested": false,
     "auto_select_starter": false,
     "maximum_starter_base_stat_total": 525,
@@ -97,11 +105,12 @@ ceiling. It is null when disabled and applies only with autoselect.
 `favorite_species_ids` contains the tracker-owned normal-species favorites used
 by the Favorite Clause.
 
-The tracker sends `update_settings` when that setting changes while connected:
+The tracker sends `update_settings` when any of these preferences changes while connected:
 
 ```json
 {
   "auto_select_starter": true,
+  "automatic_reset": false,
   "maximum_starter_base_stat_total": 525,
   "favorite_species_ids": ["BULBASAUR:0", "SQUIRTLE:0"]
 }
@@ -176,6 +185,10 @@ and normalized. Its payload contains exactly `token_id`, `seed`, `game_version`,
 `compatibility_fingerprint`. The configuration contains exactly
 `schema_version`, `wild_policy`, `trainer_policy`, `unfusion_setting`, and
 `automatic_reset`.
+
+The historical `automatic_reset` recipe field is retained for seed identity and
+compatibility. From 0.8.10, loss-reset behavior follows the live tracker
+preference independently of the imported recipe.
 
 The game independently validates the complete payload, active run identity,
 version and data-mode boundary, configuration values, seed range, and lowercase
@@ -275,7 +288,7 @@ action path. Non-cancellable nested screens such as Summary reject the request
 until closed. The native battle checks, turn consumption, item consumption, and
 effect handlers remain authoritative.
 
-An active 0.8.9 run also includes optional aggregate type-coverage context:
+An active 0.8.10 run also includes optional aggregate type-coverage context:
 
 ```json
 {
@@ -295,9 +308,9 @@ compatibility metadata. The legacy-named `fusion_pool_schema_version` field is
 the pinned generation profile's `custom_fusion_eligibility` algorithm version;
 the packed component keeps its independently versioned storage schema. The
 context contains no run seed, generated species mapping, trainer slot, future
-roster, or species identity. Older game versions omit the whole optional object
-and remain protocol-compatible; the tracker disables only type coverage for
-that connection.
+roster, or species identity. This object is optional; when absent, the tracker
+disables type coverage. The required run-management session handshake is
+validated separately.
 
 ## Starter selection
 
@@ -690,8 +703,10 @@ It deliberately excludes hidden or conditional ability effects.
 
 Starting or resetting an Ironmon run assigns a new persisted `run_id`, resets
 its event sequence, and emits `run_started` when connected. Its payload uses
-the same current-state shape, including optional type-coverage context. If the tracker is absent at that moment,
-the next handshake and `current_state` response recover the active run.
+the same current-state shape, including optional type-coverage context. If an
+event is missed during a connection interruption, the next handshake and
+`current_state` response recover the active run. Ironmon stays paused until a
+compatible tracker session reconnects.
 
 When a run ends, the game persists its result in the save metadata and emits
 `run_completed` with a compact deterministic recipe:
@@ -703,7 +718,7 @@ When a run ends, the game persists its result in the save metadata and emits
   "result": "lost",
   "generation_profile_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "game_version": "6.8.2",
-  "ironmon_version": "0.8.9",
+  "ironmon_version": "0.8.10",
   "configuration": {
     "schema_version": 1,
     "wild_policy": "mixed",
@@ -1055,6 +1070,10 @@ duplicate identifier, or list over 128 entries produces an empty grant. The
 event does not carry token metadata.
 
 ### 0.7.3 compatibility
+
+These pairs describe historical diagnostic payload compatibility. Ironmon
+0.8.10 also requires the negotiated run-management session; an older tracker
+without that support cannot authorize Ironmon loading or play.
 
 - A 0.7.4 tracker connected to a 0.7.3 game receives no supported named
   capabilities. Signed-token access is therefore unavailable, while the old

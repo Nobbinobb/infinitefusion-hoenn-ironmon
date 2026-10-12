@@ -22,6 +22,9 @@ The Controls tab reports when the connected game lacks override support.
 loads the synchronized ordinary scripts, validates area progress, deterministic
 seeded-run import, and diagnostic capability authorization without leaving
 development hooks in the game installation.
+It includes `tools/Test-GameManagementRuntime.ps1`, which isolates save fixtures
+below ignored project data and validates title/menu start and continue, occupied
+save rollback, required tracker sessions, and pause/reconnect behavior.
 It also runs `tools/Test-ControlsRuntime.ps1`, which validates transient tracker
 input ownership, independent field/menu/battle bindings, nested input contexts,
 native fallback, disconnect cleanup, and the crash timeout.

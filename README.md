@@ -6,8 +6,26 @@ challenge rules, rapid resets, and a companion tracker designed around
 hidden-information boundaries.
 
 > [!IMPORTANT]
-> Ironmon **0.8.9** targets **Pokémon Infinite Fusion 2 version 6.8.2**.
+> Ironmon **0.8.10** targets **Pokémon Infinite Fusion 2 version 6.8.2**.
 > The included tracker currently targets Windows x64.
+
+## Tracker required from 0.8.10
+
+Starting with **Ironmon 0.8.10**, the tracker must be running and connected
+while you play an Ironmon run. Open **Ironmon Tracker** to start the game
+automatically, then use the **Play header action** to create or continue a run.
+
+Some preparation and lookup work is expensive in the game's Ruby runtime, so
+we moved substantial work into the tracker to improve performance. Requiring
+the tracker lets Ironmon rely on that work consistently, without maintaining
+a slower tracker-free path or limiting future improvements. Run setup and
+configuration now also live in the tracker.
+
+If you prefer to keep the tracker out of the way, enable **Settings > Game
+session > Start tracker minimized**. Its background services remain active.
+If the connection is lost, Ironmon pauses until the tracker reconnects,
+preserving the current attempt. Ordinary non-Ironmon play remains available
+without the tracker.
 
 ## Features
 
@@ -27,7 +45,7 @@ hidden-information boundaries.
 - A standalone installer with optional sprite-sheet downloads, plus signed
   updates from inside the tracker.
 - Configurable keyboard and controller profiles for game controls and tracker
-  shortcuts, with optional automatic game startup.
+  shortcuts, with automatic game startup and optional minimized tracker startup.
 - Privacy-aware tracker communication: concealed gameplay information is
   filtered by the game before it reaches the tracker.
 
@@ -67,13 +85,13 @@ It includes its own .NET runtime.
 4. Review the installation, save and close any running game, then choose
    **Install**. Setup downloads, verifies, and installs the required files and
    shows progress. Windows may request permission for a protected folder.
-5. Open the tracker when Setup finishes. Start the game and select Ironmon when
-   beginning a supported Hoenn run.
+5. Open the tracker when Setup finishes. It starts the game automatically.
+   Use its **Play header action** to create or continue an Ironmon run from the
+   game's title screen or main menu.
 
 You can delete Setup afterward. Future updates are available inside the tracker.
-To open the game alongside the tracker, enable **Settings > Startup > Start game
-with tracker**. This optional setting also works with manual ZIP installations
-and when opening the tracker directly without a shortcut.
+The tracker also starts the game when opened directly or after a manual ZIP
+installation, and reuses a game already running from the same installation.
 Sprite sheets can also be downloaded later from **Settings > Custom sprite
 library**. Setup offers to install WebView2 if the tracker needs it.
 
@@ -84,8 +102,9 @@ library**. Setup offers to install WebView2 if the tracker needs it.
 2. Download one Ironmon ZIP package and extract the complete archive into the
    directory containing `InfiniteFusion2.exe`. Allow its `Data` directory to merge
    with the existing `Data` directory; keep the scripts and tracker together.
-3. Start `Ironmon Tracker/Ironmon Tracker.exe`, then start the game and select
-   Ironmon when beginning a supported Hoenn run.
+3. Start `Ironmon Tracker/Ironmon Tracker.exe`. It opens the game automatically;
+   use its **Play header action** to create or continue an Ironmon run from the
+   game's title screen or main menu.
 
 The archive installs:
 
@@ -112,8 +131,8 @@ recovery, sprite-library preparation, seeded runs, and troubleshooting.
 
 | Ironmon version | Infinite Fusion 2 version | Status |
 | --- | --- | --- |
-| 0.8.9 | 6.8.2 | Current |
-| 0.8.0–0.8.8 | 6.8.2 | Legacy |
+| 0.8.10 | 6.8.2 | Current |
+| 0.8.0–0.8.9 | 6.8.2 | Legacy |
 | 0.2.1–0.7.9 | 6.8.0 | Legacy |
 
 Use an Ironmon release only with its listed Infinite Fusion version.
@@ -134,6 +153,7 @@ may be exposed.
 
 Tracker features include:
 
+- New-run setup with save selection, reusable rule profiles, and saved-run loading.
 - Live player and opponent information, including temporary Imposter and
   Transform battle state.
 - Area encounters, trainers, items, and discovery progress.
