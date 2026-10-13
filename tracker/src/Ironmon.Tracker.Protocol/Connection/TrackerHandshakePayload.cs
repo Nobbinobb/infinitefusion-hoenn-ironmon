@@ -54,6 +54,11 @@ public sealed class TrackerHandshakePayload
     public bool SimpleMovePowerSupported { get; init; }
 
     /// <summary>
+    /// Gets or initializes the accepted numeric defense-profile facts version, or zero to retain native profiles.
+    /// </summary>
+    public int DefenseDamageProfileVersion { get; init; }
+
+    /// <summary>
     /// Gets or initializes the exact catalogue fingerprint echoed when stateless display completion is negotiated.
     /// </summary>
     /// <remarks>

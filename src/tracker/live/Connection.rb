@@ -98,6 +98,7 @@ module Ironmon
       @debug_requested = false
       @diagnostic_capabilities = []
       @simple_move_power_supported = false
+      @defense_damage_profile_version = 0
       Ironmon.disable_tracker_auto_revive if
         Ironmon.respond_to?(:disable_tracker_auto_revive)
       @auto_select_starter = false
@@ -154,6 +155,11 @@ module Ironmon
 
     def simple_move_power_supported?
       return connected? && @simple_move_power_supported == true
+    end
+
+    def defense_damage_profiles_supported?
+      return connected? && @session_ready &&
+        @defense_damage_profile_version == DEFENSE_DAMAGE_PROFILE_VERSION
     end
 
     def send_area_discovery(area_id, category, entry_keys)
@@ -259,6 +265,7 @@ module Ironmon
         "ironmon_active" => Ironmon.active?,
         "control_overrides_supported" => true,
         "simple_move_power_catalogue_fingerprint" => Ironmon.tracker_move_power_catalog_fingerprint,
+        "defense_damage_profile_version" => DEFENSE_DAMAGE_PROFILE_VERSION,
         "pokemon_name_catalog_supported" => RUBY_VERSION == "3.1.0" &&
           RUBY_PLATFORM == "x64-mingw32" &&
           File.file?("x64-msvcrt-ruby310.dll"),
@@ -375,6 +382,7 @@ module Ironmon
       @debug_requested = false
       @diagnostic_capabilities = []
       @simple_move_power_supported = false
+      @defense_damage_profile_version = 0
       @next_attempt_at = Ironmon.tracker_uptime_seconds +
         TRACKER_RECONNECT_SECONDS
       log_error(error) if error

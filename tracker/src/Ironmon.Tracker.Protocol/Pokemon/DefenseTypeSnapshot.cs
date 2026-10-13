@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Ironmon.Tracker.Protocol.Pokemon;
 
 /// <summary>
@@ -54,6 +56,12 @@ public sealed class DefenseTypeSnapshot
     /// Gets the maximum combined special damage factor.
     /// </summary>
     public decimal? SpecialMax { get; init; }
+
+    /// <summary>
+    /// Gets whether the game supplied all four combined numeric ranges for this type.
+    /// </summary>
+    [JsonIgnore]
+    public bool HasExplicitDamageProfiles => PhysicalMin.HasValue && PhysicalMax.HasValue && SpecialMin.HasValue && SpecialMax.HasValue;
 
     /// <summary>
     /// Gets the minimum physical factor before all-type effects; null for older senders.

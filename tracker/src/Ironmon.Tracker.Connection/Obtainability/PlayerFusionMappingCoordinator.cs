@@ -769,6 +769,8 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <summary>
     /// Packs final custom-fusion membership into fixed numeric bit words.
     /// </summary>
+    /// <param name="plansBySpecies">The final nondominated acquisition proofs keyed by numeric species identifier.</param>
+    /// <returns>The fixed-size membership words with one bit for each proven custom fusion.</returns>
     private uint[] BuildObtainableFusionWords(IReadOnlyDictionary<int, List<PlayerFusionProofPlan>> plansBySpecies)
     {
         int maximumSpeciesId = checked(_catalog.NormalSpeciesCount * _catalog.NormalSpeciesCount + _catalog.NormalSpeciesCount);
@@ -787,6 +789,8 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <summary>
     /// Packs executable source-target pairs into one compact sorted binary index.
     /// </summary>
+    /// <param name="assignments">The generated fusion-evolution branches backed by executable acquisition proofs.</param>
+    /// <returns>The distinct sorted source-target edges encoded as unsigned delta varints.</returns>
     private byte[] PackExecutableEvolutionEdges(IReadOnlyList<FusionEvolutionSourceAssignment> assignments)
     {
         long[] edges = [.. assignments.SelectMany(assignment =>
@@ -832,6 +836,9 @@ internal sealed class PlayerFusionMappingCoordinator
             throw new InvalidDataException("The player-fusion mapping job no longer matches the game-owned pair count.");
 
         HashSet<int> excludedOffsets = [.. work.ExcludedPairOffsets];
+        if (work.NativeMaterialPairPreparation && excludedOffsets.Count > 0)
+            throw new InvalidDataException("A native material-pair preparation job must not supply legacy exclusions.");
+
         if (excludedOffsets.Any(offset => offset < 0 || offset >= mappings.Count))
             throw new InvalidDataException("The player-fusion mapping job contains an invalid excluded pair offset.");
 
@@ -865,9 +872,9 @@ internal sealed class PlayerFusionMappingCoordinator
             if (excludedOffsets.Contains(index))
                 continue;
 
-            AddDirectFusionProof(plansBySpecies, itemFreeDirectProofIds, mapping.FirstResultId, mapping.FirstMaterialId, mapping.SecondMaterialId, work.ResourceSupply, ref nextPlanOrder);
+            AddDirectFusionProof(plansBySpecies, itemFreeDirectProofIds, mapping.FirstResultId, mapping.FirstMaterialId, mapping.SecondMaterialId, work.ResourceSupply, work.NativeMaterialPairPreparation, ref nextPlanOrder);
             if (mapping.FirstMaterialId != mapping.SecondMaterialId)
-                AddDirectFusionProof(plansBySpecies, itemFreeDirectProofIds, mapping.SecondResultId, mapping.SecondMaterialId, mapping.FirstMaterialId, work.ResourceSupply, ref nextPlanOrder);
+                AddDirectFusionProof(plansBySpecies, itemFreeDirectProofIds, mapping.SecondResultId, mapping.SecondMaterialId, mapping.FirstMaterialId, work.ResourceSupply, work.NativeMaterialPairPreparation, ref nextPlanOrder);
         }
 
         return new PlayerFusionDirectProofResult(plansBySpecies, [.. directEncounterFusionIds.Order()], nextPlanOrder);
@@ -997,8 +1004,9 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <param name="bodyId">The body material identifier.</param>
     /// <param name="headId">The head material identifier.</param>
     /// <param name="resourceSupply">The run-wide evolution-item supply.</param>
+    /// <param name="allowIncompatibleMaterials">Whether native preparation should skip infeasible pairs instead of rejecting contradictory legacy input.</param>
     /// <param name="nextPlanOrder">The next stable plan order.</param>
-    private static void AddDirectFusionProof(Dictionary<int, List<PlayerFusionProofPlan>> plansBySpecies, HashSet<int> itemFreeDirectProofIds, int resultId, int bodyId, int headId, IReadOnlyDictionary<string, int> resourceSupply, ref long nextPlanOrder)
+    private static void AddDirectFusionProof(Dictionary<int, List<PlayerFusionProofPlan>> plansBySpecies, HashSet<int> itemFreeDirectProofIds, int resultId, int bodyId, int headId, IReadOnlyDictionary<string, int> resourceSupply, bool allowIncompatibleMaterials, ref long nextPlanOrder)
     {
         if (!plansBySpecies.TryGetValue(bodyId, out List<PlayerFusionProofPlan>? bodyPlans) || !plansBySpecies.TryGetValue(headId, out List<PlayerFusionProofPlan>? headPlans))
             throw new InvalidDataException("A player-fusion material has no base proof.");
@@ -1063,7 +1071,7 @@ internal sealed class PlayerFusionMappingCoordinator
             }
         }
 
-        if (!feasible)
+        if (!feasible && !allowIncompatibleMaterials)
             throw new InvalidDataException("A non-excluded player-fusion pair has no compatible proof state.");
 
     }
@@ -1232,6 +1240,9 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <summary>
     /// Determines whether one proof makes another proof unnecessary.
     /// </summary>
+    /// <param name="first">The proof whose resource demands may dominate the other proof.</param>
+    /// <param name="second">The proof being checked for redundant resource demands.</param>
+    /// <returns>True when both proofs make the same choices and the first consumes no greater item or unique-source quantities.</returns>
     private static bool Dominates(PlayerFusionProofPlan first, PlayerFusionProofPlan second)
     {
         return DictionariesEqual(first.Constraints, second.Constraints)
@@ -1242,12 +1253,18 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <summary>
     /// Determines whether two constraint maps contain identical ordinal entries.
     /// </summary>
+    /// <param name="first">The first mutually exclusive choice map.</param>
+    /// <param name="second">The second mutually exclusive choice map.</param>
+    /// <returns>True when both maps contain the same keys and ordinal values.</returns>
     private static bool DictionariesEqual(IReadOnlyDictionary<string, string> first, IReadOnlyDictionary<string, string> second)
         => first.Count == second.Count && first.All(entry => second.TryGetValue(entry.Key, out string? value) && value == entry.Value);
 
     /// <summary>
     /// Merges two counted resource maps.
     /// </summary>
+    /// <param name="first">The first resource quantities.</param>
+    /// <param name="second">The resource quantities to add to the first map.</param>
+    /// <returns>A new ordinal dictionary containing the combined quantities without modifying either input.</returns>
     private static Dictionary<string, int> MergeCounts(IReadOnlyDictionary<string, int> first, IReadOnlyDictionary<string, int> second)
     {
         Dictionary<string, int> result = first.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
@@ -1260,6 +1277,9 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <summary>
     /// Determines whether every consumed item remains within the run-wide supply.
     /// </summary>
+    /// <param name="items">The item quantities consumed by the acquisition proof.</param>
+    /// <param name="resourceSupply">The run-wide available quantities, with missing items treated as unavailable.</param>
+    /// <returns>True when every consumed quantity is within the available supply.</returns>
     private static bool WithinSupply(IReadOnlyDictionary<string, int> items, IReadOnlyDictionary<string, int> resourceSupply)
         => items.All(entry => entry.Value <= resourceSupply.GetValueOrDefault(entry.Key));
 
@@ -1267,6 +1287,8 @@ internal sealed class PlayerFusionMappingCoordinator
     /// Resolves the parallel workers for the pinned runtime pool while keeping
     /// release-stable normal and evolution metadata embedded in the tracker.
     /// </summary>
+    /// <param name="work">The game-owned job carrying compatibility fingerprints and pinned-pool membership.</param>
+    /// <returns>The compatible workers for the pinned pool, or null when the required metadata or pool is unavailable.</returns>
     private PlayerFusionWorkerContext? ResolveWorkerContext(PlayerFusionClosureWorkPayload work)
     {
         if (work.GeneratorVersion != _catalog.PlayerFusionGeneratorVersion
@@ -1431,6 +1453,9 @@ internal sealed class PlayerFusionWorkerContext
 /// <summary>
 /// Identifies one deterministic fusion-evolution assignment set.
 /// </summary>
+/// <remarks>
+/// Initializes the assignment identity from the seed, generator versions, and generation-data fingerprints.
+/// </remarks>
 /// <param name="Seed">The run seed.</param>
 /// <param name="GeneratorVersion">The fusion-evolution generator version.</param>
 /// <param name="RulesVersion">The fusion-evolution rules version.</param>
@@ -1474,6 +1499,9 @@ internal sealed record EvolutionAssignmentKey(long Seed, int GeneratorVersion, i
 /// <summary>
 /// Identifies one deterministic player-fusion material assignment set.
 /// </summary>
+/// <remarks>
+/// Initializes the material identity from the seed, player-fusion version, and base-stat and target-pool fingerprints.
+/// </remarks>
 /// <param name="Seed">The Ironmon run seed.</param>
 /// <param name="GeneratorVersion">The player-fusion generator version.</param>
 /// <param name="BaseStatFingerprint">The base-stat source fingerprint.</param>
@@ -1505,6 +1533,9 @@ internal sealed record PlayerFusionMaterialKey(long Seed, int GeneratorVersion, 
 /// <summary>
 /// Stores exact ordered normal-material assignments grouped by custom-fusion target.
 /// </summary>
+/// <remarks>
+/// Initializes the retained material index with the complete mappings and their target-grouped ordered assignments.
+/// </remarks>
 /// <param name="Mappings">The complete mappings in stable triangular material order.</param>
 /// <param name="PackedAssignmentsByTarget">The packed ordered assignments keyed by numeric target identifier.</param>
 internal sealed record PlayerFusionMaterialIndex(IReadOnlyList<PlayerFusionMappedPair> Mappings, IReadOnlyDictionary<int, IReadOnlyList<uint>> PackedAssignmentsByTarget);
@@ -1512,6 +1543,9 @@ internal sealed record PlayerFusionMaterialIndex(IReadOnlyList<PlayerFusionMappe
 /// <summary>
 /// Stores one bounded exact material-assignment page.
 /// </summary>
+/// <remarks>
+/// Initializes the requested assignment page together with the target's total assignment count.
+/// </remarks>
 /// <param name="Assignments">The assignments on the requested page.</param>
 /// <param name="Total">The complete assignment count for the target.</param>
 internal sealed record PlayerFusionMaterialPage(IReadOnlyList<FusionMaterialAssignmentPayload> Assignments, int Total);
@@ -1519,6 +1553,9 @@ internal sealed record PlayerFusionMaterialPage(IReadOnlyList<FusionMaterialAssi
 /// <summary>
 /// Stores one seed's exact assignments and their lightweight reverse target index.
 /// </summary>
+/// <remarks>
+/// Initializes the evolution index with the exact source assignments and their target-grouped predecessor branches.
+/// </remarks>
 /// <param name="Assignments">Every branchful exact custom-fusion source assignment.</param>
 /// <param name="PredecessorAssignments">The exact predecessor branches grouped by assigned target.</param>
 internal sealed record FusionEvolutionAssignmentIndex(IReadOnlyList<FusionEvolutionSourceAssignment> Assignments, IReadOnlyDictionary<int, IReadOnlyList<FusionEvolutionIndexedBranch>> PredecessorAssignments);
@@ -1526,6 +1563,9 @@ internal sealed record FusionEvolutionAssignmentIndex(IReadOnlyList<FusionEvolut
 /// <summary>
 /// Stores one reverse-index entry without duplicating its source or assigned branch.
 /// </summary>
+/// <remarks>
+/// Initializes the predecessor entry with its source, branch, numeric identity, and stable ordering positions.
+/// </remarks>
 /// <param name="Source">The exact source assignment.</param>
 /// <param name="Branch">The branch assigned to the indexed target.</param>
 /// <param name="SourceId">The numeric custom-fusion source identifier.</param>
@@ -1536,6 +1576,9 @@ internal sealed record FusionEvolutionIndexedBranch(FusionEvolutionSourceAssignm
 /// <summary>
 /// Stores the mutable proof states needed by tracker-owned closure.
 /// </summary>
+/// <remarks>
+/// Initializes the direct-proof result with the species plans, derived wild catches, and next stable insertion order.
+/// </remarks>
 /// <param name="PlansBySpecies">The nondominated proof states keyed by numeric species identifier.</param>
 /// <param name="DirectEncounterFusionIds">The mapped fusion results available through derived wild encounters.</param>
 /// <param name="NextPlanOrder">The next stable proof order after direct fusion closure.</param>
@@ -1544,6 +1587,9 @@ internal sealed record PlayerFusionDirectProofResult(Dictionary<int, List<Player
 /// <summary>
 /// Stores the compact feasibility state of one tracker-owned acquisition proof.
 /// </summary>
+/// <remarks>
+/// Initializes the proof with its resource demands, exclusive choices, path length, and stable insertion order.
+/// </remarks>
 /// <param name="Items">The consumed evolution-item quantities.</param>
 /// <param name="Constraints">The mutually exclusive run choices.</param>
 /// <param name="SourceUses">The consumed unique acquisition sources.</param>
@@ -1554,6 +1600,9 @@ internal sealed record PlayerFusionProofPlan(IReadOnlyDictionary<string, int> It
 /// <summary>
 /// Stores the compact immutable tracker-computed result for one run.
 /// </summary>
+/// <remarks>
+/// Initializes the worker result with derived catches and the final membership, executable-edge, and count summaries when available.
+/// </remarks>
 /// <param name="ObtainableFusionWords">The final numeric custom-fusion membership bitset.</param>
 /// <param name="DirectEncounterFusionIds">The mapped fusion results available through derived wild encounters.</param>
 /// <param name="PackedExecutableEvolutionEdges">The sorted executable source-target edge index.</param>

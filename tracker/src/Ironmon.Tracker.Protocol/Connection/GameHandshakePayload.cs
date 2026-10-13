@@ -88,6 +88,11 @@ public sealed class GameHandshakePayload
     public bool PokemonNameCatalogSupported { get; init; }
 
     /// <summary>
+    /// Gets or initializes the numeric defense-profile facts version offered by the game, or zero when unavailable.
+    /// </summary>
+    public int DefenseDamageProfileVersion { get; init; }
+
+    /// <summary>
     /// Gets the current run identifier when one exists.
     /// </summary>
     public string? RunId { get; }

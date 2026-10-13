@@ -232,6 +232,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             ManagementProtocolVersion = game.ManagementProtocolVersion == RunManagementProtocol.Version ? RunManagementProtocol.Version : 0,
             SessionId = game.SessionId,
             SimpleMovePowerSupported = TrackerSimpleMovePowerPresentation.SupportsCatalogue(game.SimpleMovePowerCatalogueFingerprint),
+            DefenseDamageProfileVersion = TrackerDefenseDamageProfilePresentation.SupportedVersion(game.DefenseDamageProfileVersion),
             SimpleMovePowerCatalogueFingerprint = TrackerSimpleMovePowerPresentation.SupportsCatalogue(game.SimpleMovePowerCatalogueFingerprint) ? game.SimpleMovePowerCatalogueFingerprint : null,
             GameRoot = game.GameRoot
         };

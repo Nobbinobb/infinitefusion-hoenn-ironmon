@@ -45,6 +45,9 @@ module Ironmon
         @session_ready = payload["management_protocol_version"] == GAME_MANAGEMENT_PROTOCOL &&
           payload["session_id"] == Ironmon.game_session_id &&
           payload["game_root"] == File.expand_path(".")
+        @defense_damage_profile_version = @session_ready &&
+          payload["defense_damage_profile_version"] == DEFENSE_DAMAGE_PROFILE_VERSION ?
+          DEFENSE_DAMAGE_PROFILE_VERSION : 0
         @last_heartbeat = Ironmon.tracker_uptime_seconds
         @debug_requested = payload["debug_requested"] == true
         @diagnostic_capabilities = normalize_diagnostic_capabilities(

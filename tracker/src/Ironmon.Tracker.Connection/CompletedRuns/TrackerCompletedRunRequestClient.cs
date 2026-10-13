@@ -120,7 +120,7 @@ internal sealed class TrackerCompletedRunRequestClient
         if (_cache.TryGet(TrackerCommands.PokemonObtainability, cacheKey, out PokemonObtainabilityResponsePayload cached))
             return cached;
 
-        PokemonObtainabilityRequestPayload request = new() { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, Recipe = recipe };
+        PokemonObtainabilityRequestPayload request = new() { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, UseNativeMaterialPairPreparation = true, Recipe = recipe };
         PokemonObtainabilityResponsePayload response = await _session.SendAsync<PokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.PokemonObtainability, request, recipe.RunId, cancellationToken);
         progress?.Invoke(response);
         while (response.FusionClosureWork is not null)
@@ -128,13 +128,13 @@ internal sealed class TrackerCompletedRunRequestClient
             PlayerFusionClosureResultPayload? result = await _fusionMappings.CreateResultAsync(response.FusionClosureWork, cancellationToken, recipe.RunId).ConfigureAwait(false);
             if (result is not null)
             {
-                request = new PokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, FusionClosureResult = result, Recipe = recipe };
+                request = new PokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, UseNativeMaterialPairPreparation = true, FusionClosureResult = result, Recipe = recipe };
                 response = await _session.SendAsync<PokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.PokemonObtainability, request, recipe.RunId, cancellationToken);
                 progress?.Invoke(response);
             }
             else
             {
-                request = new PokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, FusionClosureWorkerUnavailable = true, Recipe = recipe };
+                request = new PokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, UseNativeMaterialPairPreparation = true, FusionClosureWorkerUnavailable = true, Recipe = recipe };
                 response = await _session.SendAsync<PokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.PokemonObtainability, request, recipe.RunId, cancellationToken);
                 progress?.Invoke(response);
             }

@@ -17,6 +17,7 @@ module Ironmon
     BACKGROUND_LEASE_SECONDS = 1.0
     FOREGROUND_LEASE_SECONDS = 2.0
     PLAYER_FUSION_LEASE_SECONDS = 60.0
+    NATIVE_MATERIAL_PAIR_PREPARATION_VERSION = 1
     EXCLUDED_MAP_NAME = /\A(?:EVENT_TEMPLATES|QUEST_TEMPLATES|testing)\z|\Aquest_/i
     SCRIPTED_ACQUISITION_METHODS = [
       "pbAddPokemon", "pbAddPokemonSilent", "pbAddToParty",
@@ -65,6 +66,8 @@ module Ironmon
       @phase = :prepare_generators
       @pair_count = 0
       @material_pairs_prepared = false
+      @requested_native_material_pair_preparation = false
+      @native_material_pair_preparation = false
       @material_ids = []
       @excluded_material_pair_offsets = []
       @tracker_obtainable_fusion_words = nil
@@ -97,6 +100,16 @@ module Ironmon
 
     def generation_profile_id
       return @recipe["generation_profile_id"].to_s
+    end
+
+    def configure_material_pair_preparation(native)
+      @requested_native_material_pair_preparation = native == true
+      return if @phase != :player_fusions || !@material_pairs_prepared ||
+        @native_material_pair_preparation == @requested_native_material_pair_preparation
+      @material_pairs_prepared = false
+      @fusion_closure_job_id = nil
+      @work_fiber = nil
+      @phase = :transformation_evolutions
     end
 
     def advance_for_milliseconds(milliseconds)
@@ -203,7 +216,8 @@ module Ironmon
 
     def apply_fusion_closure_result(result)
       return if !result
-      if !result.is_a?(Hash) || result["job_id"].to_s != fusion_closure_job_id
+      if !@material_pairs_prepared || !result.is_a?(Hash) ||
+         result["job_id"].to_s != fusion_closure_job_id
         raise TrackerLookupError.new(
           "invalid_query", "The tracker fusion-closure job is stale."
         )
@@ -507,6 +521,7 @@ module Ironmon
           GameData::Species.get(identity).id_number
         end,
         "total_pairs" => @pair_count,
+        "native_material_pair_preparation" => @native_material_pair_preparation,
         "excluded_pair_offsets" => direct_encounter_only ? [] :
           @excluded_material_pair_offsets,
         "direct_pair_offsets" => @direct_fusion_pair_offsets,
@@ -552,6 +567,9 @@ module Ironmon
         @recipe["run_id"], @recipe["seed"],
         @recipe["player_fusion_generator_version"], fingerprint
       ].join(":")
+      if @native_material_pair_preparation
+        @fusion_closure_job_id += ":native-material-pairs:#{NATIVE_MATERIAL_PAIR_PREPARATION_VERSION}"
+      end
       return @fusion_closure_job_id
     end
 
@@ -1555,6 +1573,8 @@ module Ironmon
 
     def prepare_material_pairs
       @material_ids = @plans.keys.select do |identity|
+        next false if @requested_native_material_pair_preparation == true &&
+          Ironmon.fusion_species_identity(identity)
         species = GameData::Species.try_get(identity)
         species && !species.is_a?(GameData::FusedSpecies) &&
           !@plans[identity].empty?
@@ -1562,6 +1582,13 @@ module Ironmon
       @pair_count = (@material_ids.length * (@material_ids.length + 1)) / 2
       @excluded_material_pair_offsets = []
       @direct_fusion_pair_offsets = []
+      @native_material_pair_preparation = @requested_native_material_pair_preparation == true
+      if @native_material_pair_preparation
+        prepare_direct_material_pair_offsets
+        @material_pairs_prepared = true
+        @phase = @pair_count > 0 ? :player_fusions : :complete
+        return
+      end
       pair_offset = 0
       @material_ids.each_with_index do |first, first_index|
         (first_index...@material_ids.length).each do |second_index|
@@ -1579,6 +1606,24 @@ module Ironmon
       end
       @material_pairs_prepared = true
       @phase = @pair_count > 0 ? :player_fusions : :complete
+    end
+
+    def prepare_direct_material_pair_offsets
+      indices = {}
+      @material_ids.each_with_index do |identity, index|
+        indices[GameData::Species.get(identity).id_number] = index
+      end
+      material_count = @material_ids.length
+      @direct_fusion_material_pairs.each do |code, direct|
+        cooperative_checkpoint
+        next if !direct
+        first_index = indices[code >> 10]
+        second_index = indices[code & 0x3FF]
+        next if first_index.nil? || second_index.nil? || first_index > second_index
+        @direct_fusion_pair_offsets << first_index * material_count -
+          (first_index * (first_index - 1) / 2) + second_index - first_index
+      end
+      @direct_fusion_pair_offsets.sort!
     end
 
     def player_fusion_plan_combination(body_plan, head_plan)
@@ -1845,7 +1890,8 @@ module Ironmon
     end
     payload ||= {}
     request = {}
-    ["foreground", "fusion_closure_result", "fusion_closure_worker_unavailable"].each do |key|
+    ["foreground", "fusion_closure_result", "fusion_closure_worker_unavailable",
+     "use_native_material_pair_preparation"].each do |key|
       request[key] = payload[key] if payload.key?(key)
     end
     snapshot = tracker_obtainability_for_recipe(request, tracker_debug_active_recipe)
@@ -1892,6 +1938,9 @@ module Ironmon
       )
     end
     service = tracker_obtainability_service(recipe)
+    service.configure_material_pair_preparation(
+      payload["use_native_material_pair_preparation"] == true
+    )
     service.report_tracker_closure_unavailable if
       payload["fusion_closure_worker_unavailable"] == true
     service.apply_fusion_closure_result(payload["fusion_closure_result"])

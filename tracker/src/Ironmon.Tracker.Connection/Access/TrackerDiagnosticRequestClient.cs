@@ -165,15 +165,15 @@ internal sealed class TrackerDiagnosticRequestClient
     internal async Task<PokemonObtainabilityResponsePayload> AdvanceObtainabilityAsync(string? speciesId, IReadOnlyList<string>? speciesIds, IReadOnlyList<string>? evolutionEdgeKeys, bool foreground, Action<PokemonObtainabilityResponsePayload>? progress, string? runId, CancellationToken cancellationToken)
     {
         _authorization.EnsureAll(DiagnosticCapabilities.EvolutionResults, DiagnosticCapabilities.FusionMaterialPairs, DiagnosticCapabilities.PokemonAllActive, DiagnosticCapabilities.WorldItems, DiagnosticCapabilities.WorldWildEncounters);
-        DebugPokemonObtainabilityRequestPayload request = new() { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground };
+        DebugPokemonObtainabilityRequestPayload request = new() { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, UseNativeMaterialPairPreparation = true };
         PokemonObtainabilityResponsePayload response = await _session.SendAsync<DebugPokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.DebugPokemonObtainability, request, runId, cancellationToken);
         progress?.Invoke(response);
         while (response.FusionClosureWork is not null)
         {
             PlayerFusionClosureResultPayload? result = await _fusionMappings.CreateResultAsync(response.FusionClosureWork, cancellationToken, runId).ConfigureAwait(false);
             request = result is null
-                ? new DebugPokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, FusionClosureWorkerUnavailable = true }
-                : new DebugPokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, FusionClosureResult = result };
+                ? new DebugPokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, UseNativeMaterialPairPreparation = true, FusionClosureWorkerUnavailable = true }
+                : new DebugPokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, UseNativeMaterialPairPreparation = true, FusionClosureResult = result };
 
             response = await _session.SendAsync<DebugPokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.DebugPokemonObtainability, request, runId, cancellationToken);
             progress?.Invoke(response);

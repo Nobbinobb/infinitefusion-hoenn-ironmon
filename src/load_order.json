@@ -88,6 +88,7 @@
   { "source": "tracker/defense/Item_And_Field_Rules.rb", "output": "018_Tracker_Defense_3_Items_And_Field.rb" },
   { "source": "tracker/defense/State_Rules.rb", "output": "018_Tracker_Defense_4_State.rb" },
   { "source": "tracker/defense/Damage_Profiles.rb", "output": "018_Tracker_Defense_5_Damage_Profiles.rb" },
+  { "source": "tracker/defense/Damage_Profile_Facts.rb", "output": "018_Tracker_Defense_6_Damage_Profile_Facts.rb" },
   { "source": "tracker/defense/Compact_Effects.rb", "output": "018_Tracker_Defense_7_Compact_Effects.rb" },
   { "source": "tracker/defense/Recovery.rb", "output": "018_Tracker_Defense_8_Recovery.rb" },
   { "source": "tracker/live/Lifecycle.rb", "output": "018_Tracker_Lifecycle.rb" },

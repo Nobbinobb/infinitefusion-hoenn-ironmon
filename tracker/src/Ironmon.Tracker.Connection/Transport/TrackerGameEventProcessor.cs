@@ -6,8 +6,8 @@ namespace Ironmon.Tracker.Connection.Transport;
 /// Applies inbound game events and recovered state to tracker-owned stores.
 /// </summary>
 /// <remarks>
-/// Marked stateless move displays are completed before affected snapshots reach live state or remembered knowledge.
-/// Existing explicit presentations remain authoritative; unsupported or mismatched deferrals resolve to an unknown display.
+/// Marked stateless move displays and numeric defense profiles are completed before snapshots reach live state or remembered knowledge.
+/// Explicit native presentations remain authoritative. Unsupported deferrals resolve to unknown move displays or unavailable numeric defense advice.
 /// </remarks>
 internal sealed class TrackerGameEventProcessor
 {
@@ -66,6 +66,7 @@ internal sealed class TrackerGameEventProcessor
         ArgumentNullException.ThrowIfNull(game);
         ArgumentNullException.ThrowIfNull(state);
         CompleteMovePresentations(state, game.SimpleMovePowerCatalogueFingerprint);
+        CompleteDefensePresentations(state, game.DefenseDamageProfileVersion);
         if (!state.IronmonActive || !string.Equals(_state.Snapshot.CurrentState?.RunId, state.RunId, StringComparison.Ordinal))
             _requestClient.ObtainabilityProgress.Reset();
 
@@ -112,6 +113,7 @@ internal sealed class TrackerGameEventProcessor
         {
             GameCurrentStatePayload state = TrackerJson.DeserializePayload<GameCurrentStatePayload>(message.Payload);
             CompleteMovePresentations(state, game.SimpleMovePowerCatalogueFingerprint);
+            CompleteDefensePresentations(state, game.DefenseDamageProfileVersion);
             if (state.RunId == _state.Snapshot.CurrentState?.RunId)
                 _state.Publish(TrackerConnectionStatus.Connected, game, state);
 
@@ -132,7 +134,7 @@ internal sealed class TrackerGameEventProcessor
             return;
         }
 
-        ApplyLiveEvent(message, game.SimpleMovePowerCatalogueFingerprint);
+        ApplyLiveEvent(message, game.SimpleMovePowerCatalogueFingerprint, game.DefenseDamageProfileVersion);
     }
 
     /// <summary>
@@ -188,7 +190,8 @@ internal sealed class TrackerGameEventProcessor
     /// </remarks>
     /// <param name="message">The validated game event.</param>
     /// <param name="catalogueFingerprint">The connected game's catalogue identity.</param>
-    private void ApplyLiveEvent(TrackerMessage message, string? catalogueFingerprint)
+    /// <param name="defenseVersion">The connected game's offered numeric defense-profile facts version.</param>
+    private void ApplyLiveEvent(TrackerMessage message, string? catalogueFingerprint, int defenseVersion)
     {
         _knowledge.SelectRun(message.RunId);
         Action apply = message.Event switch
@@ -197,11 +200,11 @@ internal sealed class TrackerGameEventProcessor
             TrackerEvents.BattleEnded => ApplyBattleEnded,
             TrackerEvents.StarterSelectionChanged => () => _runState.UpdateStarterSelection(TrackerJson.DeserializePayload<StarterSelectionSnapshot>(message.Payload)),
             TrackerEvents.SeededRunImportStatus => () => _requestClient.PublishSeededRunImportStatus(TrackerJson.DeserializePayload<SeededRunImportStatusPayload>(message.Payload)),
-            TrackerEvents.PlayerSentOut or TrackerEvents.PlayerStateChanged => () => ApplyPlayerUpdate(message, catalogueFingerprint),
+            TrackerEvents.PlayerSentOut or TrackerEvents.PlayerStateChanged => () => ApplyPlayerUpdate(message, catalogueFingerprint, defenseVersion),
             TrackerEvents.PlayerMoveMenuOpened => () => _runState.OpenPlayerMoveMenu(TrackerJson.DeserializePayload<PlayerMoveMenuOpenedPayload>(message.Payload)),
             TrackerEvents.PlayerTargetChanged => () => _runState.UpdatePlayerTarget(TrackerJson.DeserializePayload<PlayerTargetChangedPayload>(message.Payload)),
-            TrackerEvents.EnemySentOut => () => ApplyEnemyUpdate(message, true, catalogueFingerprint),
-            TrackerEvents.EnemyStateChanged => () => ApplyEnemyUpdate(message, false, catalogueFingerprint),
+            TrackerEvents.EnemySentOut => () => ApplyEnemyUpdate(message, true, catalogueFingerprint, defenseVersion),
+            TrackerEvents.EnemyStateChanged => () => ApplyEnemyUpdate(message, false, catalogueFingerprint, defenseVersion),
             TrackerEvents.EnemyMoveUsed => () => ApplyEnemyMoveUsed(message, catalogueFingerprint),
             TrackerEvents.EnemyAbilityRevealed => () => _knowledge.ObserveEnemyAbility(TrackerJson.DeserializePayload<EnemyAbilityRevealedPayload>(message.Payload)),
             _ => () => { }
@@ -231,28 +234,32 @@ internal sealed class TrackerGameEventProcessor
     }
 
     /// <summary>
-    /// Completes player move displays before updating live player state and remembered legal discoveries.
+    /// Completes player move displays and numeric defense profiles before live publication and remembered discoveries.
     /// </summary>
     /// <param name="message">The player update event.</param>
     /// <param name="catalogueFingerprint">The connected game's catalogue identity.</param>
-    private void ApplyPlayerUpdate(TrackerMessage message, string? catalogueFingerprint)
+    /// <param name="defenseVersion">The connected game's offered numeric defense-profile facts version.</param>
+    private void ApplyPlayerUpdate(TrackerMessage message, string? catalogueFingerprint, int defenseVersion)
     {
         PlayerPokemonSnapshot player = TrackerJson.DeserializePayload<PlayerPokemonSnapshot>(message.Payload);
         TrackerSimpleMovePowerPresentation.CompletePlayer(player, catalogueFingerprint);
+        TrackerDefenseDamageProfilePresentation.Complete(player.DefensiveOverview, defenseVersion);
         _runState.UpdatePlayer(player);
         _knowledge.ObservePlayer(player);
     }
 
     /// <summary>
-    /// Completes the enemy's last observed move display before updating live state and remembered discoveries.
+    /// Completes the enemy's observed move and numeric defense profiles before live publication and remembered discoveries.
     /// </summary>
     /// <param name="message">The enemy state event.</param>
     /// <param name="sentOut">Whether the event announces a newly sent-out opponent.</param>
     /// <param name="catalogueFingerprint">The connected game's catalogue identity.</param>
-    private void ApplyEnemyUpdate(TrackerMessage message, bool sentOut, string? catalogueFingerprint)
+    /// <param name="defenseVersion">The connected game's offered numeric defense-profile facts version.</param>
+    private void ApplyEnemyUpdate(TrackerMessage message, bool sentOut, string? catalogueFingerprint, int defenseVersion)
     {
         EnemyPokemonSnapshot enemy = TrackerJson.DeserializePayload<EnemyPokemonSnapshot>(message.Payload);
         TrackerSimpleMovePowerPresentation.CompleteObservation(enemy.LastMove, catalogueFingerprint);
+        TrackerDefenseDamageProfilePresentation.Complete(enemy.DefensiveOverview, defenseVersion);
         _runState.UpdateEnemy(enemy, sentOut);
         _knowledge.ObserveEnemy(enemy);
         ObserveEnemyMove(message.BattleId, enemy);
@@ -280,6 +287,18 @@ internal sealed class TrackerGameEventProcessor
         TrackerSimpleMovePowerPresentation.CompletePlayer(state.Player, catalogueFingerprint);
         foreach (EnemyPokemonSnapshot enemy in state.Enemies)
             TrackerSimpleMovePowerPresentation.CompleteObservation(enemy.LastMove, catalogueFingerprint);
+    }
+
+    /// <summary>
+    /// Completes player and enemy numeric defense profiles before recovered state is published or remembered.
+    /// </summary>
+    /// <param name="state">The decoded inbound current state.</param>
+    /// <param name="defenseVersion">The connected game's offered numeric defense-profile facts version.</param>
+    private static void CompleteDefensePresentations(GameCurrentStatePayload state, int defenseVersion)
+    {
+        TrackerDefenseDamageProfilePresentation.Complete(state.Player?.DefensiveOverview, defenseVersion);
+        foreach (EnemyPokemonSnapshot enemy in state.Enemies)
+            TrackerDefenseDamageProfilePresentation.Complete(enemy.DefensiveOverview, defenseVersion);
     }
 
     /// <summary>
