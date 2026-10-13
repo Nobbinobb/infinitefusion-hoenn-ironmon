@@ -299,7 +299,7 @@ module Ironmon
       end
     end
     source = found ? "level_up" : "unknown"
-    return {
+    result = {
       "id" => move_data.id.to_s,
       "name" => move_data.name,
       "learned_level" => learned_level,
@@ -316,6 +316,11 @@ module Ironmon
       "pp_after_use" => pp_after_use,
       "power_presentation" => presentation
     }
+    if presentation.equal?(DEFERRED_MOVE_POWER_PRESENTATION)
+      result.delete("power_presentation")
+      result["power_presentation_deferred"] = true
+    end
+    return result
   end
 
   def self.tracker_species_id(pokemon)
@@ -342,7 +347,7 @@ module Ironmon
     presentation = tracker_move_power_presentation(
       presentation_move, @tracker_player_pokemon, battler, false
     )
-    return {
+    result = {
       "id" => move_data.id.to_s,
       "name" => move_data.name,
       "type" => presentation && presentation["type"] ?
@@ -355,6 +360,11 @@ module Ironmon
       "accuracy" => move_data.accuracy || 0,
       "power_presentation" => presentation
     }
+    if presentation.equal?(DEFERRED_MOVE_POWER_PRESENTATION)
+      result.delete("power_presentation")
+      result["power_presentation_deferred"] = true
+    end
+    return result
   end
 
   def self.tracker_move_category(move)

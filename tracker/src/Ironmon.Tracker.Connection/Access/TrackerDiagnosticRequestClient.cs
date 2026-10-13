@@ -1,5 +1,6 @@
 using Ironmon.Tracker.Connection.Transport;
 using Ironmon.Tracker.Connection.Obtainability;
+using Ironmon.Tracker.Connection.Lookup;
 
 namespace Ironmon.Tracker.Connection.Access;
 
@@ -12,6 +13,7 @@ internal sealed class TrackerDiagnosticRequestClient
     private readonly TrackerDiagnosticAuthorizer _authorization;
     private readonly PlayerFusionMappingCoordinator _fusionMappings;
     private readonly TrackerRequestSession _session;
+    private readonly TrackerPokemonNameSearch? _nameSearch;
 
     /// <summary>
     /// Initializes active diagnostic requests for one tracker connection.
@@ -19,7 +21,8 @@ internal sealed class TrackerDiagnosticRequestClient
     /// <param name="session">The correlated request session.</param>
     /// <param name="authorization">The diagnostic authorization policy.</param>
     /// <param name="fusionMappings">The shared tracker-side material-mapping coordinator.</param>
-    internal TrackerDiagnosticRequestClient(TrackerRequestSession session, TrackerDiagnosticAuthorizer authorization, PlayerFusionMappingCoordinator fusionMappings)
+    /// <param name="nameSearch">The optional compatible tracker-side name matcher.</param>
+    internal TrackerDiagnosticRequestClient(TrackerRequestSession session, TrackerDiagnosticAuthorizer authorization, PlayerFusionMappingCoordinator fusionMappings, TrackerPokemonNameSearch? nameSearch = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(authorization);
@@ -27,6 +30,7 @@ internal sealed class TrackerDiagnosticRequestClient
         _session = session;
         _authorization = authorization;
         _fusionMappings = fusionMappings;
+        _nameSearch = nameSearch;
     }
 
     /// <summary>
@@ -103,13 +107,16 @@ internal sealed class TrackerDiagnosticRequestClient
     /// <summary>
     /// Searches generated Pokémon in the active run through the authorized debug channel.
     /// </summary>
+    /// <remarks>
+    /// Uses the compatible tracker name catalog when available and keeps game-owned validation and annotation.
+    /// </remarks>
     /// <param name="query">The name fragment entered by the user.</param>
     /// <param name="offset">The zero-based result offset.</param>
     /// <param name="limit">The maximum number of matches to return.</param>
     /// <param name="normalOnly">Whether to restrict matches to normal species.</param>
     /// <param name="runId">The active run identifier when available.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
-    /// <returns>The matching active-run Pokémon identifiers.</returns>
+    /// <returns>The requested page of matching active-run Pokémon with game-owned display and obtainability data.</returns>
     internal Task<PokemonSearchResponsePayload> SearchPokemonAsync(string query, int offset, int limit, bool normalOnly, string? runId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(query);
@@ -118,7 +125,9 @@ internal sealed class TrackerDiagnosticRequestClient
         ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, TrackerProtocol.MaximumSearchPageSize);
         _authorization.EnsureAll(DiagnosticCapabilities.PokemonAllActive);
         DebugPokemonSearchRequestPayload request = new() { Query = query.Trim(), Offset = offset, Limit = limit, NormalOnly = normalOnly };
-        return _session.SendAsync<DebugPokemonSearchRequestPayload, PokemonSearchResponsePayload>(TrackerCommands.DebugPokemonSearch, request, runId, cancellationToken);
+        return _nameSearch is null
+            ? _session.SendAsync<DebugPokemonSearchRequestPayload, PokemonSearchResponsePayload>(TrackerCommands.DebugPokemonSearch, request, runId, cancellationToken)
+            : _nameSearch.SearchAsync(TrackerCommands.DebugPokemonSearch, null, query.Trim(), offset, limit, normalOnly, runId, cancellationToken);
     }
 
     /// <summary>

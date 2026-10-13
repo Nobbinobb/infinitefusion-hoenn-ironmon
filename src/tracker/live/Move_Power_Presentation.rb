@@ -8,6 +8,12 @@ module Ironmon
   )
   MOVE_POWER_UNKNOWN = "???"
   MOVE_POWER_ONE_HIT_KO = "KO"
+  SIMPLE_MOVE_POWER_MODES = [
+    "condition", "fixed_damage", "fixed_multi_hit", "hidden_fixed_damage",
+    "unknown_damage", "one_hit_ko", "present"
+  ].freeze
+  SIMPLE_MOVE_POWER_FIELDS = ["id", "mode", "fixed_value"].freeze
+  DEFERRED_MOVE_POWER_PRESENTATION = { "deferred" => true }.freeze
 
   class TrackerMovePokemonAdapter
     attr_reader :pokemon
@@ -41,17 +47,36 @@ module Ironmon
 
   def self.tracker_move_power_catalog
     return @tracker_move_power_catalog if @tracker_move_power_catalog
-    document = File.open(MOVE_POWER_PRESENTATION_CATALOG_PATH, "rb") do |file|
-      tracker_move_power_stringify_keys(JSON.parse(file.read))
-    end
+    bytes = File.binread(MOVE_POWER_PRESENTATION_CATALOG_PATH)
+    document = tracker_move_power_stringify_keys(JSON.parse(bytes))
     raise "unsupported move-power presentation catalog" if
       document["version"].to_i != 1
     @tracker_move_power_catalog = {}
     document["moves"].each do |move|
       @tracker_move_power_catalog[move["id"]] = move.freeze
     end
+    @tracker_move_power_catalog_fingerprint = Digest::SHA256.hexdigest(bytes)
     return @tracker_move_power_catalog.freeze
   end
+
+  def self.tracker_move_power_catalog_fingerprint
+    tracker_move_power_catalog
+    return @tracker_move_power_catalog_fingerprint
+  rescue Exception
+    return nil
+  end
+
+  def self.tracker_simple_move_power_definition?(definition, move)
+    mode = definition["mode"]
+    return false if !SIMPLE_MOVE_POWER_MODES.include?(mode)
+    return false if !definition.keys.all? { |key| SIMPLE_MOVE_POWER_FIELDS.include?(key) }
+    return false if mode == "fixed_damage" && !definition["fixed_value"].is_a?(Integer)
+    return false if ["condition", "fixed_multi_hit"].include?(mode) &&
+      !move.base_damage.is_a?(Integer)
+    return true
+  end
+
+  private_class_method :tracker_simple_move_power_definition?
 
   def self.tracker_move_power_stringify_keys(value)
     return value.map { |entry| tracker_move_power_stringify_keys(entry) } if
@@ -74,6 +99,9 @@ module Ironmon
                                            enemy = false)
     definition = tracker_move_power_catalog[move.id.to_s]
     return nil if !definition
+    return DEFERRED_MOVE_POWER_PRESENTATION if
+      tracker_connection.simple_move_power_supported? &&
+      tracker_simple_move_power_definition?(definition, move)
     native_move = tracker_native_move_for_presentation(move, battler)
     user = battler || TrackerMovePokemonAdapter.new(pokemon)
     target = tracker_move_power_target(battler)

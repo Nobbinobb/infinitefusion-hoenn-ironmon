@@ -17,10 +17,10 @@ public sealed class TrackerHandshakePayload
     /// <param name="debugRequested">Whether the tracker was launched in debug mode.</param>
     /// <param name="autoSelectStarter">Whether starter selection is controlled automatically.</param>
     /// <param name="maximumStarterBaseStatTotal">The inclusive generated-BST ceiling for automatic starter selection.</param>
-    /// <param name="favoriteSpeciesIds">The normal species covered by the Favorite Clause.</param>
-    /// <param name="diagnosticCapabilities">The effective named capabilities granted for this game connection.</param>
-    /// <exception cref="ArgumentException">Thrown when the tracker version is empty.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when the maximum starter BST is outside the supported range.</exception>
+    /// <param name="favoriteSpeciesIds">The normal species covered by the Favorite Clause, or <see langword="null"/> for an empty list.</param>
+    /// <param name="diagnosticCapabilities">The effective named capabilities granted for this connection, or <see langword="null"/> for an empty list.</param>
+    /// <exception cref="ArgumentException">Thrown when the tracker version or a capability identifier is empty, or a capability identifier is duplicated.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the maximum starter BST, capability count, or capability identifier length exceeds its supported bounds.</exception>
     public TrackerHandshakePayload(string trackerVersion, bool debugRequested, bool autoSelectStarter = false, int? maximumStarterBaseStatTotal = null, IReadOnlyList<string>? favoriteSpeciesIds = null, IReadOnlyList<string>? diagnosticCapabilities = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(trackerVersion);
@@ -47,6 +47,19 @@ public sealed class TrackerHandshakePayload
     /// Gets or initializes the current game process session identifier.
     /// </summary>
     public string? SessionId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether this connection has negotiated an exact catalogue match for stateless move-display completion.
+    /// </summary>
+    public bool SimpleMovePowerSupported { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the exact catalogue fingerprint echoed when stateless display completion is negotiated.
+    /// </summary>
+    /// <remarks>
+    /// The connection advertises no fingerprint when stateless display support is disabled.
+    /// </remarks>
+    public string? SimpleMovePowerCatalogueFingerprint { get; init; }
 
     /// <summary>
     /// Gets or initializes the installation echoed from the game handshake.
@@ -87,7 +100,7 @@ public sealed class TrackerHandshakePayload
     /// Validates and copies one bounded capability list.
     /// </summary>
     /// <param name="capabilities">The optional granted identifiers.</param>
-    /// <returns>The validated identifiers.</returns>
+    /// <returns>A copy of the validated identifiers, or an empty list when <paramref name="capabilities"/> is <see langword="null"/>.</returns>
     /// <exception cref="ArgumentException">Thrown when one identifier is malformed or duplicated.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the list or one identifier exceeds its protocol bound.</exception>
     private static IReadOnlyList<string> ValidateDiagnosticCapabilities(IReadOnlyList<string>? capabilities)

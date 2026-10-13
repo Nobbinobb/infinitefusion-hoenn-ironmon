@@ -1,5 +1,6 @@
 using Ironmon.Tracker.Connection.Transport;
 using Ironmon.Tracker.Connection.Obtainability;
+using Ironmon.Tracker.Connection.Lookup;
 
 namespace Ironmon.Tracker.Connection.CompletedRuns;
 
@@ -12,6 +13,7 @@ internal sealed class TrackerCompletedRunRequestClient
     private readonly TrackerResponseCache _cache;
     private readonly PlayerFusionMappingCoordinator _fusionMappings;
     private readonly TrackerRequestSession _session;
+    private readonly TrackerPokemonNameSearch? _nameSearch;
 
     /// <summary>
     /// Initializes completed-run request orchestration for one tracker connection.
@@ -19,7 +21,8 @@ internal sealed class TrackerCompletedRunRequestClient
     /// <param name="session">The correlated request session.</param>
     /// <param name="cache">The connection-scoped response cache.</param>
     /// <param name="fusionMappings">The shared tracker-side material-mapping coordinator.</param>
-    internal TrackerCompletedRunRequestClient(TrackerRequestSession session, TrackerResponseCache cache, PlayerFusionMappingCoordinator fusionMappings)
+    /// <param name="nameSearch">The optional compatible tracker-side name matcher.</param>
+    internal TrackerCompletedRunRequestClient(TrackerRequestSession session, TrackerResponseCache cache, PlayerFusionMappingCoordinator fusionMappings, TrackerPokemonNameSearch? nameSearch = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(cache);
@@ -27,18 +30,22 @@ internal sealed class TrackerCompletedRunRequestClient
         _session = session;
         _cache = cache;
         _fusionMappings = fusionMappings;
+        _nameSearch = nameSearch;
     }
 
     /// <summary>
-    /// Searches the connected game for Pokémon names compatible with one completed-run recipe.
+    /// Searches Pokémon names compatible with one completed-run recipe.
     /// </summary>
+    /// <remarks>
+    /// Reuses cached pages or the compatible tracker name catalog while the game validates and annotates new results.
+    /// </remarks>
     /// <param name="recipe">The completed-run reconstruction recipe.</param>
     /// <param name="query">The name fragment entered by the user.</param>
     /// <param name="offset">The zero-based result offset.</param>
     /// <param name="limit">The maximum number of matches to return.</param>
     /// <param name="normalOnly">Whether to restrict matches to normal species.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
-    /// <returns>The matching stable Pokémon identifiers.</returns>
+    /// <returns>The requested page of matching Pokémon with game-owned display and obtainability data.</returns>
     internal async Task<PokemonSearchResponsePayload> SearchPokemonAsync(CompletedRunRecipePayload recipe, string query, int offset, int limit, bool normalOnly, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(recipe);
@@ -52,9 +59,13 @@ internal sealed class TrackerCompletedRunRequestClient
             return cached;
 
         PokemonSearchRequestPayload payload = new() { Query = normalizedQuery, Offset = offset, Limit = limit, NormalOnly = normalOnly, Recipe = recipe };
-        PokemonSearchResponsePayload response = await _session.SendAsync<PokemonSearchRequestPayload, PokemonSearchResponsePayload>(TrackerCommands.PokemonSearch, payload, recipe.RunId, cancellationToken);
+        PokemonSearchResponsePayload response = _nameSearch is null
+            ? await _session.SendAsync<PokemonSearchRequestPayload, PokemonSearchResponsePayload>(TrackerCommands.PokemonSearch, payload, recipe.RunId, cancellationToken)
+            : await _nameSearch.SearchAsync(TrackerCommands.PokemonSearch, recipe, normalizedQuery, offset, limit, normalOnly, recipe.RunId, cancellationToken);
+
         if (response.Matches.All(match => match.ObtainabilityStatus != PokemonObtainabilityStatus.Calculating))
             _cache.Set(TrackerCommands.PokemonSearch, cacheKey, response);
+
         return response;
     }
 
@@ -83,6 +94,7 @@ internal sealed class TrackerCompletedRunRequestClient
         PokemonLookupSnapshot response = await _session.SendAsync<PokemonLookupRequestPayload, PokemonLookupSnapshot>(TrackerCommands.PokemonLookup, payload, recipe.RunId, cancellationToken);
         if (response.Identity.Obtainability.Status != PokemonObtainabilityStatus.Calculating)
             _cache.Set(TrackerCommands.PokemonLookup, cacheKey, response);
+
         return response;
     }
 

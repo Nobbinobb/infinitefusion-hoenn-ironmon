@@ -171,11 +171,13 @@ module Ironmon
     @tracker_search_indexes = nil
     @tracker_search_result_cache = nil
     @tracker_search_fusion_name_parts = nil
+    @tracker_name_catalogs = nil
     @tracker_lookup_cache = nil
     @tracker_wild_occurrence_work = nil
     @tracker_wild_occurrence_sources = nil
     @tracker_fusion_mappers = nil
     @tracker_area_fusion_work = nil
+    @tracker_area_native_page_tokens = nil
     @tracker_sprite_paths = nil
     @tracker_evolution_generators = nil
     @tracker_fusion_evolution_generators = nil

@@ -98,6 +98,7 @@
   { "source": "tracker/post_run/Recipes.rb", "output": "019_Tracker_Post_Run.rb" },
   { "source": "tracker/post_run/Requests.rb", "output": "019_Tracker_Post_Run_1_Requests.rb" },
   { "source": "tracker/post_run/Pokemon_Lookup.rb", "output": "019_Tracker_Post_Run_2_Pokemon_Lookup.rb" },
+  { "source": "tracker/post_run/Name_Catalog.rb", "output": "019_Tracker_Post_Run_2a_Name_Catalog.rb" },
   { "source": "tracker/post_run/Evolution_Lookup.rb", "output": "019_Tracker_Post_Run_3_Evolution_Lookup.rb" },
   { "source": "tracker/post_run/Occurrence_Lookup.rb", "output": "019_Tracker_Post_Run_4_Occurrence_Lookup.rb" },
   { "source": "tracker/post_run/Obtainability.rb", "output": "019_Tracker_Post_Run_5_Obtainability.rb" },

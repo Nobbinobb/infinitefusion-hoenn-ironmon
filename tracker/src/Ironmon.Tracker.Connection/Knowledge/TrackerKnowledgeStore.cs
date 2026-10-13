@@ -6,6 +6,10 @@ namespace Ironmon.Tracker.Connection.Knowledge;
 /// <summary>
 /// Owns remembered move discoveries and manual enemy annotations for the active run.
 /// </summary>
+/// <remarks>
+/// Incoming move presentations are retained as supplied. Callers complete any negotiated display deferrals
+/// before submitting observations so persisted knowledge contains explicit presentations rather than unresolved markers.
+/// </remarks>
 public sealed class TrackerKnowledgeStore
 {
     private readonly TrackerKnowledgeOptions _options;
@@ -169,7 +173,7 @@ public sealed class TrackerKnowledgeStore
     /// <summary>
     /// Records a move made observable by enemy use.
     /// </summary>
-    /// <param name="battleId">The active battle identifier.</param>
+    /// <param name="battleId">The active battle identifier, or <see langword="null"/> to skip encounter-specific recording.</param>
     /// <param name="observation">The enemy move-use observation.</param>
     public void ObserveEnemyMove(string? battleId, EnemyMoveUsedPayload observation)
     {
@@ -205,7 +209,7 @@ public sealed class TrackerKnowledgeStore
     /// </summary>
     /// <param name="speciesId">The stable species and form identifier.</param>
     /// <param name="level">The enemy's visible level.</param>
-    /// <param name="battleId">The active battle identifier.</param>
+    /// <param name="battleId">The active battle identifier, or <see langword="null"/> to omit encounter-specific PP.</param>
     /// <param name="enemyId">The battle-stable enemy identifier.</param>
     /// <param name="position">The opposing battler position.</param>
     /// <param name="partyIndex">The position in the opposing trainer's party.</param>
@@ -259,9 +263,12 @@ public sealed class TrackerKnowledgeStore
     }
 
     /// <summary>
-    /// Gets an immutable deep copy of tracker-owned knowledge for diagnostics.
+    /// Gets a diagnostic snapshot with copies of the tracker-owned knowledge collections.
     /// </summary>
-    /// <returns>The current diagnostic knowledge snapshot.</returns>
+    /// <remarks>
+    /// Dictionary and list containers are copied; contained move and ability snapshot objects are shared.
+    /// </remarks>
+    /// <returns>The active run's copied knowledge collections and current persistence error.</returns>
     public TrackerKnowledgeSnapshot GetDiagnosticSnapshot()
     {
         lock (_sync)
@@ -279,7 +286,7 @@ public sealed class TrackerKnowledgeStore
     /// </summary>
     /// <param name="speciesId">The stable species and form identifier.</param>
     /// <param name="stat">The annotated stat.</param>
-    /// <returns>The current annotation.</returns>
+    /// <returns>The current annotation, or <see cref="EnemyStatAnnotation.Empty"/> when none has been recorded.</returns>
     public EnemyStatAnnotation GetAnnotation(string speciesId, EnemyStat stat)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
@@ -358,7 +365,7 @@ public sealed class TrackerKnowledgeStore
     /// <summary>
     /// Records the remaining PP observed for one specific opposing Pokemon.
     /// </summary>
-    /// <param name="battleId">The active battle identifier.</param>
+    /// <param name="battleId">The active battle identifier, or <see langword="null"/> when no battle is active.</param>
     /// <param name="observation">The enemy move-use observation.</param>
     /// <returns>True when encounter-specific PP state changed.</returns>
     private bool ObserveEncounterMove(string? battleId, EnemyMoveUsedPayload observation)
@@ -485,8 +492,8 @@ public sealed class TrackerKnowledgeStore
     /// <summary>
     /// Loads persisted knowledge without making persistence failure fatal.
     /// </summary>
-    /// <param name="runId">The selected run identifier.</param>
-    /// <returns>The loaded or empty knowledge.</returns>
+    /// <param name="runId">The selected run identifier, or <see langword="null"/> outside a run.</param>
+    /// <returns>The loaded knowledge with legacy species-level PP removed, or empty knowledge when no saved data can be loaded.</returns>
     private PersistedRunKnowledge Load(string? runId)
     {
         LastError = null;
@@ -626,28 +633,37 @@ public sealed class TrackerKnowledgeStore
         => left.Id == right.Id && left.LearnedLevel == right.LearnedLevel && left.LearnOrder == right.LearnOrder;
 
     /// <summary>
-    /// Copies one move observation with the requested remaining PP value.
+    /// Copies a move observation with new remaining PP while retaining its explicit display and local completion provenance.
     /// </summary>
     /// <param name="move">The source observation.</param>
-    /// <param name="ppAfterUse">The remaining PP value.</param>
-    /// <returns>The copied observation.</returns>
-    private static ObservedMoveSnapshot CopyWithPp(ObservedMoveSnapshot move, int? ppAfterUse) => new()
+    /// <param name="ppAfterUse">The remaining PP value, or <see langword="null"/> to remove encounter-specific PP.</param>
+    /// <returns>A new observation with the requested PP and the source's presentation, deferral state, and transient completion provenance.</returns>
+    private static ObservedMoveSnapshot CopyWithPp(ObservedMoveSnapshot move, int? ppAfterUse)
     {
-        Id = move.Id,
-        Name = move.Name,
-        LearnedLevel = move.LearnedLevel,
-        LearnOrder = move.LearnOrder,
-        Source = move.Source,
-        Origin = move.Origin,
-        Type = move.Type,
-        Category = move.Category,
-        Description = move.Description,
-        Power = move.Power,
-        PowerPresentation = move.PowerPresentation,
-        Accuracy = move.Accuracy,
-        TotalPp = move.TotalPp,
-        PpAfterUse = ppAfterUse
-    };
+        ObservedMoveSnapshot copy = new()
+        {
+            Id = move.Id,
+            Name = move.Name,
+            LearnedLevel = move.LearnedLevel,
+            LearnOrder = move.LearnOrder,
+            Source = move.Source,
+            Origin = move.Origin,
+            Type = move.Type,
+            Category = move.Category,
+            Description = move.Description,
+            Power = move.Power,
+            PowerPresentation = move.PowerPresentation,
+            PowerPresentationDeferred = move.PowerPresentationDeferred,
+            Accuracy = move.Accuracy,
+            TotalPp = move.TotalPp,
+            PpAfterUse = ppAfterUse
+        };
+
+        if (move.CompletedDeferredPowerPresentation)
+            copy.CompletePowerPresentation(move.PowerPresentation!);
+
+        return copy;
+    }
 
     /// <summary>
     /// Cycles an annotation in the requested direction.

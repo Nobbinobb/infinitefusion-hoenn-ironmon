@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using Ironmon.Tracker.Connection.Presentation;
 
 namespace Ironmon.Tracker.Connection.Transport;
 
@@ -204,6 +205,9 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// <summary>
     /// Completes the handshake and processes one persistent game connection.
     /// </summary>
+    /// <remarks>
+    /// Negotiates diagnostic access and enables simple move-power completion only for matching catalog fingerprints.
+    /// </remarks>
     /// <param name="client">The accepted loopback game client.</param>
     /// <param name="cancellationToken">The token that stops the connection.</param>
     /// <returns>A task representing the client connection.</returns>
@@ -227,6 +231,8 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             AutomaticReset = _options.AutomaticReset,
             ManagementProtocolVersion = game.ManagementProtocolVersion == RunManagementProtocol.Version ? RunManagementProtocol.Version : 0,
             SessionId = game.SessionId,
+            SimpleMovePowerSupported = TrackerSimpleMovePowerPresentation.SupportsCatalogue(game.SimpleMovePowerCatalogueFingerprint),
+            SimpleMovePowerCatalogueFingerprint = TrackerSimpleMovePowerPresentation.SupportsCatalogue(game.SimpleMovePowerCatalogueFingerprint) ? game.SimpleMovePowerCatalogueFingerprint : null,
             GameRoot = game.GameRoot
         };
         TrackerMessage trackerHandshake = TrackerMessageFactory.CreateEvent(TrackerEvents.TrackerConnected, TrackerProtocol.InitialEventSequence, tracker, game.RunId, game.BattleId);

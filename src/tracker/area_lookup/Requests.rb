@@ -64,6 +64,9 @@ module Ironmon
   def self.tracker_area_lookup_detail(payload, envelope_run_id, debug)
     payload ||= {}
     recipe, archived = tracker_area_lookup_context(payload, envelope_run_id)
+    if payload["fusion_page_token"]
+      return tracker_area_native_page_presentation(payload, recipe, archived, debug)
+    end
     area_id = payload["area_id"].to_s
     area = tracker_area_catalog.find do |candidate|
       candidate["area_id"] == area_id
@@ -181,6 +184,12 @@ module Ironmon
               tracker_area_encounter_fusion_materials(revealed).uniq.map do |pair|
                 { "body_id" => pair[0], "head_id" => pair[1] }
               end
+            if payload["use_native_fusion_page_assembly"] == true
+              tracker_area_native_page_descriptor(
+                result, payload, recipe, archived, full_details,
+                descriptors, discovery_keys
+              )
+            end
           end
         end
       else

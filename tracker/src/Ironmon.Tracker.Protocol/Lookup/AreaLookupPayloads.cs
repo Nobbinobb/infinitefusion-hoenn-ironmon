@@ -163,6 +163,21 @@ public sealed class AreaSummaryPayload
 public sealed class AreaLookupDetailRequestPayload
 {
     /// <summary>
+    /// Gets or initializes whether the tracker can assemble fusion rows from game-owned descriptors using an already prepared name context.
+    /// </summary>
+    public bool UseNativeFusionPageAssembly { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the retained game-page token to confirm before resolving its disclosed fusion sprites, or null for an initial request.
+    /// </summary>
+    public string? FusionPageToken { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the token identifying the fusion-name context already held by the tracker, or null when assembly is not requested.
+    /// </summary>
+    public string? FusionNameContextToken { get; init; }
+
+    /// <summary>
     /// Gets or initializes whether the tracker can resolve requested fusion pairs using its shared native worker.
     /// </summary>
     public bool UseNativeFusionMapping { get; init; }
@@ -220,6 +235,26 @@ public sealed class AreaLookupDetailRequestPayload
 /// </summary>
 public sealed class AreaLookupDetailResponsePayload
 {
+    /// <summary>
+    /// Gets or initializes the retained game-page token for descriptor assembly and engine sprite confirmation, or null when descriptor assembly is not used.
+    /// </summary>
+    public string? FusionPageToken { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the exact fusion-name context token required by the descriptor page and its sprite confirmation.
+    /// </summary>
+    public string? FusionNameContextToken { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the ordered game-authorized facts used to assemble derived fusion rows.
+    /// </summary>
+    public IReadOnlyList<AreaEncounterFusionDescriptorPayload> FusionDescriptors { get; init; } = [];
+
+    /// <summary>
+    /// Gets or initializes engine-confirmed sprite paths for each distinct disclosed fusion assignment on the retained page.
+    /// </summary>
+    public IReadOnlyList<AreaFusionPresentationPayload> FusionPresentations { get; init; } = [];
+
     /// <summary>
     /// Gets or initializes the actual active encounter mode used for this response, or null for historical recipes.
     /// </summary>
@@ -306,6 +341,127 @@ public sealed class AreaLookupDetailResponsePayload
     /// Gets or initializes item entries when the item category was requested.
     /// </summary>
     public IReadOnlyList<AreaItemEntryPayload> Items { get; init; } = [];
+}
+
+/// <summary>
+/// Supplies one derived encounter's ordered source facts and disclosure state, with material identities only when authorized.
+/// </summary>
+public sealed class AreaEncounterFusionDescriptorPayload
+{
+    /// <summary>
+    /// Initializes an empty descriptor for protocol serialization.
+    /// </summary>
+    public AreaEncounterFusionDescriptorPayload()
+    {
+    }
+
+    /// <summary>
+    /// Gets or initializes the map containing both authored sources.
+    /// </summary>
+    public int MapId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the fusion origin mechanic.
+    /// </summary>
+    public required string Origin { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the primary encounter environment.
+    /// </summary>
+    public required string Environment { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the first authored table's version.
+    /// </summary>
+    public int FirstVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the first encounter method.
+    /// </summary>
+    public required string FirstEncounterType { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the first one-based authored slot.
+    /// </summary>
+    public int FirstSlot { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the second authored table's version.
+    /// </summary>
+    public int SecondVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the second encounter method.
+    /// </summary>
+    public required string SecondEncounterType { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the second one-based authored slot.
+    /// </summary>
+    public int SecondSlot { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether the generated identity may be displayed.
+    /// </summary>
+    public bool DetailsRevealed { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether this exact possibility was encountered.
+    /// </summary>
+    public bool Encountered { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the engine's scaled minimum resulting level derived from the source slots.
+    /// </summary>
+    public int MinimumLevel { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the engine's scaled maximum resulting level derived from the source slots.
+    /// </summary>
+    public int MaximumLevel { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the engine's fusion roll percentage for these source slots.
+    /// </summary>
+    public double FusionChancePercent { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the ordered material pair when the result is disclosed, or null for a hidden result.
+    /// </summary>
+    public FusionMaterialAssignmentPayload? Materials { get; init; }
+}
+
+/// <summary>
+/// Returns the engine-selected sprite path for one authorized ordered material pair and its confirmed fusion result.
+/// </summary>
+public sealed class AreaFusionPresentationPayload
+{
+    /// <summary>
+    /// Initializes an empty presentation for protocol serialization.
+    /// </summary>
+    public AreaFusionPresentationPayload()
+    {
+    }
+
+    /// <summary>
+    /// Gets or initializes the authorized normal body material.
+    /// </summary>
+    public int BodyId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the authorized normal head material.
+    /// </summary>
+    public int HeadId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the deterministic fusion result confirmed by the engine.
+    /// </summary>
+    public int SpeciesNumber { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the selected game-relative sprite path, or null when the engine has no available sprite.
+    /// </summary>
+    public string? SpritePath { get; init; }
 }
 
 /// <summary>

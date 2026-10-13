@@ -1,10 +1,14 @@
+using System.Text.Json.Serialization;
+
 namespace Ironmon.Tracker.Protocol.Pokemon;
 
 /// <summary>
-/// Describes one legally observable level-up move and its display metadata.
+/// Describes a legally observed player learnset move or enemy-used move and its display metadata.
 /// </summary>
 public sealed class ObservedMoveSnapshot
 {
+    private MovePowerPresentationSnapshot? _resolvedPowerPresentation;
+    private bool _powerPresentationResolved;
     /// <summary>
     /// Initializes an empty observed move snapshot for protocol serialization.
     /// </summary>
@@ -63,9 +67,47 @@ public sealed class ObservedMoveSnapshot
     public int Power { get; init; }
 
     /// <summary>
-    /// Gets or initializes the privacy-safe display for conditional or nonstandard power.
+    /// Gets or initializes the explicit power presentation, including a presentation completed locally by the tracker.
     /// </summary>
-    public MovePowerPresentationSnapshot? PowerPresentation { get; init; }
+    /// <remarks>
+    /// An existing explicit presentation takes precedence when a deferred display is completed.
+    /// The resolved value is serialized with the observation so persistent knowledge does not depend on later catalogue changes.
+    /// </remarks>
+    public MovePowerPresentationSnapshot? PowerPresentation { get => _resolvedPowerPresentation ?? field; init; }
+
+    /// <summary>
+    /// Gets or initializes the game's marker requesting completion of a stateless power display.
+    /// </summary>
+    /// <remarks>
+    /// Local completion makes this property return false. False values are omitted from serialized observations.
+    /// </remarks>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool PowerPresentationDeferred { get => !_powerPresentationResolved && field; init; }
+
+    /// <summary>
+    /// Gets whether this instance's power presentation has been completed locally.
+    /// </summary>
+    /// <remarks>
+    /// This transient provenance lets knowledge comparisons refresh completed displays. It is preserved by in-memory
+    /// observation copies and excluded from both persistent knowledge and wire data.
+    /// </remarks>
+    [JsonIgnore]
+    public bool CompletedDeferredPowerPresentation => _powerPresentationResolved;
+
+    /// <summary>
+    /// Records a completed power presentation and suppresses the deferral marker before publication or persistence.
+    /// </summary>
+    /// <remarks>
+    /// Any existing explicit presentation takes precedence over the supplied value, including on repeated completion.
+    /// </remarks>
+    /// <param name="presentation">The resolved display, including a safe unknown fallback.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="presentation"/> is <see langword="null"/>.</exception>
+    public void CompletePowerPresentation(MovePowerPresentationSnapshot presentation)
+    {
+        ArgumentNullException.ThrowIfNull(presentation);
+        _resolvedPowerPresentation = PowerPresentation ?? presentation;
+        _powerPresentationResolved = true;
+    }
 
     /// <summary>
     /// Gets or initializes the move's accuracy.

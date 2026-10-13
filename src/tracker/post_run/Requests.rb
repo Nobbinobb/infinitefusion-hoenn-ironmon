@@ -21,12 +21,18 @@ module Ironmon
     end
     normalized_query = query.downcase
     normal_only = payload["normal_only"] == true
+    if payload["name_catalog_only"] == true
+      return { "matches" => [], "total" => 0,
+               "name_catalog" => tracker_pokemon_name_catalog(normal_only: normal_only) }
+    end
     tracker_debug_search_trace("matching_started") if
       respond_to?(:tracker_debug_search_trace)
-    matches = tracker_search_matches(recipe, normalized_query, normal_only)
+    assignment = tracker_pokemon_search_assignment(payload, normalized_query, normal_only)
+    matches = assignment ? assignment["matches"] :
+      tracker_search_matches(recipe, normalized_query, normal_only)
     tracker_debug_search_trace("matching_ready") if
       respond_to?(:tracker_debug_search_trace)
-    page = matches.slice(offset, limit) || []
+    page = assignment ? matches : matches.slice(offset, limit) || []
     if !visibility || visibility[:obtainability]
       page = page.each_with_index.map do |match, index|
         tracker_debug_search_trace("annotation_#{index}_started") if
@@ -43,7 +49,7 @@ module Ironmon
       respond_to?(:tracker_debug_search_trace)
     return {
       "matches" => page,
-      "total" => matches.length
+      "total" => assignment ? assignment["total"] : matches.length
     }
   end
 

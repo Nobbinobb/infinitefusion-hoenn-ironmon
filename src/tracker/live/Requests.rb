@@ -37,6 +37,11 @@ module Ironmon
       validate_envelope(message)
       if message["type"] == "event" && message["event"] == "tracker_connected"
         payload = message["payload"] || {}
+        catalogue_fingerprint = Ironmon.tracker_move_power_catalog_fingerprint
+        @simple_move_power_supported =
+          payload["simple_move_power_supported"] == true &&
+          !catalogue_fingerprint.nil? &&
+          payload["simple_move_power_catalogue_fingerprint"] == catalogue_fingerprint
         @session_ready = payload["management_protocol_version"] == GAME_MANAGEMENT_PROTOCOL &&
           payload["session_id"] == Ironmon.game_session_id &&
           payload["game_root"] == File.expand_path(".")

@@ -3,6 +3,9 @@
 #===============================================================================
 
 module Ironmon
+  TRACKER_AREA_NATIVE_PAGE_LIMIT = 8
+  TRACKER_AREA_NATIVE_PAGE_LIFETIME = 30.0
+
   class TrackerAreaFusionWork
     WORK_SECONDS = 0.004
 
@@ -155,6 +158,127 @@ module Ironmon
     work = TrackerAreaFusionWork.new(recipe)
     tracker_store_bounded(@tracker_area_fusion_work, key, work, 2)
     return work
+  end
+
+  def self.tracker_area_native_page_descriptor(result, payload, recipe,
+                                               archived, full_details,
+                                               descriptors, discoveries)
+    catalog = tracker_pokemon_name_catalog(fusion_only: true)
+    return if payload["fusion_name_context_token"] != catalog["context_token"]
+    rows = descriptors.map do |descriptor|
+      first = descriptor["first"]["metadata"]
+      second = descriptor["second"]["metadata"]
+      metadata = tracker_area_encounter_fusion_metadata(descriptor, discoveries)
+      revealed = tracker_area_encounter_fusion_revealed?(
+        descriptor, discoveries, full_details
+      )
+      row = {
+        "map_id" => first["map_id"], "origin" => descriptor["origin"],
+        "environment" => metadata["environment"],
+        "first_version" => first["version"],
+        "first_encounter_type" => first["encounter_type"],
+        "first_slot" => first["slot"],
+        "second_version" => second["version"],
+        "second_encounter_type" => second["encounter_type"],
+        "second_slot" => second["slot"],
+        "minimum_level" => metadata["minimum_level"],
+        "maximum_level" => metadata["maximum_level"],
+        "fusion_chance_percent" => metadata["fusion_chance_percent"],
+        "encountered" => metadata["encountered"],
+        "details_revealed" => revealed
+      }
+      if revealed
+        pair = tracker_area_encounter_fusion_materials([descriptor])[0]
+        row["materials"] = { "body_id" => pair[0], "head_id" => pair[1] }
+      end
+      row
+    end
+    @tracker_area_native_page_sequence = (@tracker_area_native_page_sequence || 0) + 1
+    token = "#{Process.pid}:area:#{@tracker_area_native_page_sequence}"
+    pairs = result["required_fusion_materials"].map do |entry|
+      [entry["body_id"], entry["head_id"]]
+    end
+    @tracker_area_native_page_tokens ||= {}
+    tracker_store_bounded(@tracker_area_native_page_tokens, token, {
+      :recipe => Marshal.load(Marshal.dump(recipe)),
+      :session => @game_session_id && @game_session_id.dup,
+      :system => $PokemonSystem,
+      :pivot_state => tracker_loaded_recipe?(recipe) ? pivot_state : nil,
+      :level_scaling => [LEVEL_MULTIPLIER, MAX_SCALED_LEVEL],
+      :archived => archived, :full_details => full_details,
+      :request => [payload["area_id"].to_s.dup, payload["category"].to_s.dup,
+                   payload["encounter_environment"].to_s.dup,
+                   payload["offset"].to_i, payload["limit"].to_i,
+                   discoveries.keys.map(&:dup).sort],
+      :area_name => result["name"].dup, :pairs => pairs,
+      :name_context => catalog["context_token"],
+      :work => tracker_area_fusion_work(recipe),
+      :work_cache => @tracker_area_fusion_work,
+      :expires_at => tracker_uptime_seconds + TRACKER_AREA_NATIVE_PAGE_LIFETIME
+    }, TRACKER_AREA_NATIVE_PAGE_LIMIT)
+    result["fusion_page_token"] = token
+    result["fusion_name_context_token"] = catalog["context_token"]
+    result["fusion_descriptors"] = rows
+  end
+
+  def self.tracker_area_native_page_presentation(payload, recipe, archived, debug)
+    token = payload["fusion_page_token"]
+    page = @tracker_area_native_page_tokens && @tracker_area_native_page_tokens[token]
+    keys = payload["discovery_keys"].is_a?(Array) ? payload["discovery_keys"] : []
+    requested = [payload["area_id"].to_s, payload["category"].to_s,
+                 payload["encounter_environment"].to_s,
+                 payload["offset"].to_i, payload["limit"].to_i,
+                 keys.map(&:to_s).uniq.sort]
+    full_details = debug || archived
+    loaded_pivot = tracker_loaded_recipe?(recipe) ? pivot_state : nil
+    if !token.is_a?(String) || !page || page[:recipe] != recipe ||
+       page[:session] != @game_session_id ||
+       !page[:system].equal?($PokemonSystem) || !page[:pivot_state].equal?(loaded_pivot) ||
+       page[:level_scaling] != [LEVEL_MULTIPLIER, MAX_SCALED_LEVEL] ||
+       page[:archived] != archived || page[:full_details] != full_details ||
+       page[:request] != requested || !page[:work_cache].equal?(@tracker_area_fusion_work) ||
+       tracker_uptime_seconds > page[:expires_at]
+      raise TrackerLookupError.new(
+        "area_page_changed", "The encounter page changed. Request its current descriptors."
+      )
+    end
+    catalog = tracker_pokemon_name_catalog(fusion_only: true)
+    if catalog["context_token"] != page[:name_context]
+      raise TrackerLookupError.new(
+        "area_page_changed", "The encounter name context changed. Request its current descriptors."
+      )
+    end
+    assignments = payload["fusion_results"]
+    if !assignments.is_a?(Array) || assignments.length > 50 || assignments.any? do |entry|
+      !entry.is_a?(Hash) || !page[:pairs].include?([entry["body_id"], entry["head_id"]])
+    end
+      raise TrackerLookupError.new(
+        "invalid_area_fusion_result", "The tracker presentation contains an unauthorized assignment."
+      )
+    end
+    results = page[:work].native_results_for(page[:pairs], assignments)
+    if !results
+      raise TrackerLookupError.new(
+        "invalid_area_fusion_result", "The tracker presentation assignments are incomplete."
+      )
+    end
+    presentations = page[:pairs].each_with_index.map do |pair, index|
+      identity = /\AB(\d+)H(\d+):0\z/.match(results[index]["species_id"])
+      {
+        "body_id" => pair[0], "head_id" => pair[1],
+        "species_number" => identity[1].to_i * NB_POKEMON + identity[2].to_i,
+        "sprite_path" => results[index]["sprite_path"]
+      }
+    end
+    @tracker_area_native_page_tokens.delete(token)
+    return {
+      "area_id" => page[:request][0], "name" => page[:area_name],
+      "category" => page[:request][1], "pending" => false,
+      "overworld_encounters" => recipe["overworld_encounters"],
+      "fusion_page_token" => token,
+      "fusion_name_context_token" => page[:name_context],
+      "fusion_presentations" => presentations
+    }
   end
 
   def self.update_tracker_area_fusions

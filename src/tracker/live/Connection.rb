@@ -97,6 +97,7 @@ module Ironmon
       @last_error_at = 0.0
       @debug_requested = false
       @diagnostic_capabilities = []
+      @simple_move_power_supported = false
       Ironmon.disable_tracker_auto_revive if
         Ironmon.respond_to?(:disable_tracker_auto_revive)
       @auto_select_starter = false
@@ -149,6 +150,10 @@ module Ironmon
 
     def connected?
       return @state == :connected
+    end
+
+    def simple_move_power_supported?
+      return connected? && @simple_move_power_supported == true
     end
 
     def send_area_discovery(area_id, category, entry_keys)
@@ -253,6 +258,10 @@ module Ironmon
         "ironmon_version" => Ironmon::VERSION,
         "ironmon_active" => Ironmon.active?,
         "control_overrides_supported" => true,
+        "simple_move_power_catalogue_fingerprint" => Ironmon.tracker_move_power_catalog_fingerprint,
+        "pokemon_name_catalog_supported" => RUBY_VERSION == "3.1.0" &&
+          RUBY_PLATFORM == "x64-mingw32" &&
+          File.file?("x64-msvcrt-ruby310.dll"),
         "debug_available" => ($DEBUG == true),
         "supported_diagnostic_capabilities" => TRACKER_DIAGNOSTIC_CAPABILITIES,
         "game_root" => File.expand_path("."),
@@ -365,6 +374,7 @@ module Ironmon
       @output_buffer = ""
       @debug_requested = false
       @diagnostic_capabilities = []
+      @simple_move_power_supported = false
       @next_attempt_at = Ironmon.tracker_uptime_seconds +
         TRACKER_RECONNECT_SECONDS
       log_error(error) if error

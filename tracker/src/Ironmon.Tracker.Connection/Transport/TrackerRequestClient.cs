@@ -1,4 +1,5 @@
 using Ironmon.Tracker.Connection.Obtainability;
+using Ironmon.Tracker.Connection.Lookup;
 
 namespace Ironmon.Tracker.Connection.Transport;
 
@@ -13,6 +14,8 @@ public sealed class TrackerRequestClient
     private readonly TrackerResponseCache _cache = new();
     private readonly TrackerCompletedRunRequestClient _completedRunRequests;
     private readonly TrackerDiagnosticRequestClient _diagnosticRequests;
+    private readonly TrackerPokemonNameSearch _nameSearch;
+    private readonly PokemonNameCatalogProvider _nameCatalogs = new();
     private readonly TrackerRunPreparationClient _runPreparation;
     private readonly SemaphoreSlim _obtainabilityRequestGate = new(1, 1);
     private readonly TrackerConnectionOptions _options;
@@ -44,9 +47,10 @@ public sealed class TrackerRequestClient
         _options = options;
         _state = state;
         _authorization = new TrackerDiagnosticAuthorizer(options, state, diagnosticAccess);
-        _areaRequests = new TrackerAreaRequestClient(session, areaDiscoveries, _authorization, _cache, _fusionMappings);
-        _completedRunRequests = new TrackerCompletedRunRequestClient(session, _cache, _fusionMappings);
-        _diagnosticRequests = new TrackerDiagnosticRequestClient(session, _authorization, _fusionMappings);
+        _nameSearch = new TrackerPokemonNameSearch(session, state, _nameCatalogs);
+        _areaRequests = new TrackerAreaRequestClient(session, areaDiscoveries, _authorization, _cache, _fusionMappings, _nameCatalogs);
+        _completedRunRequests = new TrackerCompletedRunRequestClient(session, _cache, _fusionMappings, _nameSearch);
+        _diagnosticRequests = new TrackerDiagnosticRequestClient(session, _authorization, _fusionMappings, _nameSearch);
         _runPreparation = new TrackerRunPreparationClient(session, _fusionMappings);
     }
 
@@ -317,7 +321,7 @@ public sealed class TrackerRequestClient
         => _areaRequests.GetDetailsAsync(areaId, category, recipe, GetConnectedRunId(), forceRefresh, encounterEnvironment, offset, limit, cancellationToken, _state.Snapshot.CurrentState?.OverworldEncounters);
 
     /// <summary>
-    /// Searches the connected game for Pokémon names compatible with one completed-run recipe.
+    /// Searches Pokémon names compatible with one completed-run recipe.
     /// </summary>
     /// <param name="recipe">The completed-run reconstruction recipe.</param>
     /// <param name="query">The name fragment entered by the user.</param>
@@ -325,7 +329,7 @@ public sealed class TrackerRequestClient
     /// <param name="limit">The maximum number of matches to return.</param>
     /// <param name="normalOnly">Whether to restrict matches to normal species.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
-    /// <returns>The matching stable Pokémon identifiers.</returns>
+    /// <returns>The requested page of matching Pokémon with game-owned display and obtainability data.</returns>
     public Task<PokemonSearchResponsePayload> SearchPokemonAsync(CompletedRunRecipePayload recipe, string query, int offset = 0, int limit = TrackerProtocol.DefaultSearchPageSize, bool normalOnly = false, CancellationToken cancellationToken = default)
         => _completedRunRequests.SearchPokemonAsync(recipe, query, offset, limit, normalOnly, cancellationToken);
 
@@ -545,7 +549,7 @@ public sealed class TrackerRequestClient
     /// <param name="limit">The maximum number of matches to return.</param>
     /// <param name="normalOnly">Whether to restrict matches to normal species.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
-    /// <returns>The matching active-run Pokémon identifiers.</returns>
+    /// <returns>The requested page of matching active-run Pokémon with game-owned display and obtainability data.</returns>
     public Task<PokemonSearchResponsePayload> SearchDebugPokemonAsync(string query, int offset = 0, int limit = TrackerProtocol.DefaultSearchPageSize, bool normalOnly = false, CancellationToken cancellationToken = default)
         => _diagnosticRequests.SearchPokemonAsync(query, offset, limit, normalOnly, GetConnectedRunId(), cancellationToken);
 
@@ -679,12 +683,13 @@ public sealed class TrackerRequestClient
         => _diagnosticRequests.PreviewFusionAsync(firstSpeciesId, secondSpeciesId, GetConnectedRunId(), cancellationToken);
 
     /// <summary>
-    /// Clears connection-scoped caches and disconnects the underlying request session.
+    /// Clears cached responses and name catalogs and disconnects the underlying request session.
     /// </summary>
     internal void Disconnect()
     {
         _session.Disconnect();
         _cache.Clear();
+        _nameSearch.Disconnect();
     }
 
     /// <summary>

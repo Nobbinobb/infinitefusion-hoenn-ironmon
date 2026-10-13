@@ -1,8 +1,14 @@
+using Ironmon.Tracker.Connection.Presentation;
+
 namespace Ironmon.Tracker.Connection.Transport;
 
 /// <summary>
 /// Applies inbound game events and recovered state to tracker-owned stores.
 /// </summary>
+/// <remarks>
+/// Marked stateless move displays are completed before affected snapshots reach live state or remembered knowledge.
+/// Existing explicit presentations remain authoritative; unsupported or mismatched deferrals resolve to an unknown display.
+/// </remarks>
 internal sealed class TrackerGameEventProcessor
 {
     private readonly AreaDiscoveryStore _areaDiscoveries;
@@ -23,6 +29,7 @@ internal sealed class TrackerGameEventProcessor
     /// <param name="completedRuns">The tracker-owned completed-run recipe archive.</param>
     /// <param name="requestSession">The active protocol request session.</param>
     /// <param name="requestClient">The public request client receiving game-owned transitions.</param>
+    /// <exception cref="ArgumentNullException">Thrown when any dependency is <see langword="null"/>.</exception>
     internal TrackerGameEventProcessor(TrackerConnectionState state, TrackerRunState runState, TrackerKnowledgeStore knowledge, AreaDiscoveryStore areaDiscoveries, CompletedRunArchive completedRuns, TrackerRequestSession requestSession, TrackerRequestClient requestClient)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -49,14 +56,16 @@ internal sealed class TrackerGameEventProcessor
         => _knowledge.SelectRun(runId);
 
     /// <summary>
-    /// Applies a complete current-state snapshot recovered after connection or run start.
+    /// Completes deferred displays and applies a current-state snapshot recovered after connection or run start.
     /// </summary>
     /// <param name="game">The connected game handshake.</param>
     /// <param name="state">The authoritative current state.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="game"/> or <paramref name="state"/> is <see langword="null"/>.</exception>
     internal void RecoverCurrentState(GameHandshakePayload game, GameCurrentStatePayload state)
     {
         ArgumentNullException.ThrowIfNull(game);
         ArgumentNullException.ThrowIfNull(state);
+        CompleteMovePresentations(state, game.SimpleMovePowerCatalogueFingerprint);
         if (!state.IronmonActive || !string.Equals(_state.Snapshot.CurrentState?.RunId, state.RunId, StringComparison.Ordinal))
             _requestClient.ObtainabilityProgress.Reset();
 
@@ -83,7 +92,8 @@ internal sealed class TrackerGameEventProcessor
     /// <param name="message">The inbound event message.</param>
     /// <param name="game">The connected game handshake.</param>
     /// <param name="cancellationToken">The token that cancels an acknowledgment write.</param>
-    /// <returns>A task representing event processing.</returns>
+    /// <returns>A task that completes after the event is applied and any required acknowledgment is written.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="message"/> or <paramref name="game"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when the message is not an event.</exception>
     internal async Task ProcessAsync(TrackerMessage message, GameHandshakePayload game, CancellationToken cancellationToken)
     {
@@ -101,6 +111,7 @@ internal sealed class TrackerGameEventProcessor
         if (message.Event is TrackerEvents.EncounterModeChanged or TrackerEvents.BadgesChanged)
         {
             GameCurrentStatePayload state = TrackerJson.DeserializePayload<GameCurrentStatePayload>(message.Payload);
+            CompleteMovePresentations(state, game.SimpleMovePowerCatalogueFingerprint);
             if (state.RunId == _state.Snapshot.CurrentState?.RunId)
                 _state.Publish(TrackerConnectionStatus.Connected, game, state);
 
@@ -121,7 +132,7 @@ internal sealed class TrackerGameEventProcessor
             return;
         }
 
-        ApplyLiveEvent(message);
+        ApplyLiveEvent(message, game.SimpleMovePowerCatalogueFingerprint);
     }
 
     /// <summary>
@@ -142,11 +153,12 @@ internal sealed class TrackerGameEventProcessor
     }
 
     /// <summary>
-    /// Persists one idempotent area discovery before acknowledging it to the game.
+    /// Records one idempotent area discovery and acknowledges it only when persistence succeeds.
     /// </summary>
     /// <param name="message">The received discovery event.</param>
     /// <param name="cancellationToken">The token that stops the acknowledgment write.</param>
-    /// <returns>A task representing the acknowledgment write.</returns>
+    /// <returns>A task that completes after a persisted package is acknowledged, or immediately when the package cannot be persisted.</returns>
+    /// <exception cref="TrackerProtocolException">Thrown when the event has no run identifier or contains an invalid discovery package.</exception>
     private async Task PersistAndAcknowledgeAreaDiscoveryAsync(TrackerMessage message, CancellationToken cancellationToken)
     {
         string runId = message.RunId ?? throw new TrackerProtocolException("An area discovery requires a run identifier.");
@@ -169,10 +181,14 @@ internal sealed class TrackerGameEventProcessor
     }
 
     /// <summary>
-    /// Applies one supported live game event to the tracker run-state store.
+    /// Selects the event's run and applies a supported live event to the relevant tracker-owned store.
     /// </summary>
+    /// <remarks>
+    /// Unsupported event names produce no additional state transition.
+    /// </remarks>
     /// <param name="message">The validated game event.</param>
-    private void ApplyLiveEvent(TrackerMessage message)
+    /// <param name="catalogueFingerprint">The connected game's catalogue identity.</param>
+    private void ApplyLiveEvent(TrackerMessage message, string? catalogueFingerprint)
     {
         _knowledge.SelectRun(message.RunId);
         Action apply = message.Event switch
@@ -181,12 +197,12 @@ internal sealed class TrackerGameEventProcessor
             TrackerEvents.BattleEnded => ApplyBattleEnded,
             TrackerEvents.StarterSelectionChanged => () => _runState.UpdateStarterSelection(TrackerJson.DeserializePayload<StarterSelectionSnapshot>(message.Payload)),
             TrackerEvents.SeededRunImportStatus => () => _requestClient.PublishSeededRunImportStatus(TrackerJson.DeserializePayload<SeededRunImportStatusPayload>(message.Payload)),
-            TrackerEvents.PlayerSentOut or TrackerEvents.PlayerStateChanged => () => ApplyPlayerUpdate(message),
+            TrackerEvents.PlayerSentOut or TrackerEvents.PlayerStateChanged => () => ApplyPlayerUpdate(message, catalogueFingerprint),
             TrackerEvents.PlayerMoveMenuOpened => () => _runState.OpenPlayerMoveMenu(TrackerJson.DeserializePayload<PlayerMoveMenuOpenedPayload>(message.Payload)),
             TrackerEvents.PlayerTargetChanged => () => _runState.UpdatePlayerTarget(TrackerJson.DeserializePayload<PlayerTargetChangedPayload>(message.Payload)),
-            TrackerEvents.EnemySentOut => () => ApplyEnemyUpdate(message, true),
-            TrackerEvents.EnemyStateChanged => () => ApplyEnemyUpdate(message, false),
-            TrackerEvents.EnemyMoveUsed => () => _knowledge.ObserveEnemyMove(message.BattleId, TrackerJson.DeserializePayload<EnemyMoveUsedPayload>(message.Payload)),
+            TrackerEvents.EnemySentOut => () => ApplyEnemyUpdate(message, true, catalogueFingerprint),
+            TrackerEvents.EnemyStateChanged => () => ApplyEnemyUpdate(message, false, catalogueFingerprint),
+            TrackerEvents.EnemyMoveUsed => () => ApplyEnemyMoveUsed(message, catalogueFingerprint),
             TrackerEvents.EnemyAbilityRevealed => () => _knowledge.ObserveEnemyAbility(TrackerJson.DeserializePayload<EnemyAbilityRevealedPayload>(message.Payload)),
             _ => () => { }
         };
@@ -215,27 +231,55 @@ internal sealed class TrackerGameEventProcessor
     }
 
     /// <summary>
-    /// Applies a complete player update and its legal move discoveries.
+    /// Completes player move displays before updating live player state and remembered legal discoveries.
     /// </summary>
     /// <param name="message">The player update event.</param>
-    private void ApplyPlayerUpdate(TrackerMessage message)
+    /// <param name="catalogueFingerprint">The connected game's catalogue identity.</param>
+    private void ApplyPlayerUpdate(TrackerMessage message, string? catalogueFingerprint)
     {
         PlayerPokemonSnapshot player = TrackerJson.DeserializePayload<PlayerPokemonSnapshot>(message.Payload);
+        TrackerSimpleMovePowerPresentation.CompletePlayer(player, catalogueFingerprint);
         _runState.UpdatePlayer(player);
         _knowledge.ObservePlayer(player);
     }
 
     /// <summary>
-    /// Applies an enemy update and remembers its most recently observed move.
+    /// Completes the enemy's last observed move display before updating live state and remembered discoveries.
     /// </summary>
     /// <param name="message">The enemy state event.</param>
     /// <param name="sentOut">Whether the event announces a newly sent-out opponent.</param>
-    private void ApplyEnemyUpdate(TrackerMessage message, bool sentOut)
+    /// <param name="catalogueFingerprint">The connected game's catalogue identity.</param>
+    private void ApplyEnemyUpdate(TrackerMessage message, bool sentOut, string? catalogueFingerprint)
     {
         EnemyPokemonSnapshot enemy = TrackerJson.DeserializePayload<EnemyPokemonSnapshot>(message.Payload);
+        TrackerSimpleMovePowerPresentation.CompleteObservation(enemy.LastMove, catalogueFingerprint);
         _runState.UpdateEnemy(enemy, sentOut);
         _knowledge.ObserveEnemy(enemy);
         ObserveEnemyMove(message.BattleId, enemy);
+    }
+
+    /// <summary>
+    /// Completes an enemy move-use presentation before recording species discoveries and encounter-specific PP.
+    /// </summary>
+    /// <param name="message">The observed move-use event.</param>
+    /// <param name="catalogueFingerprint">The connected game's catalogue identity.</param>
+    private void ApplyEnemyMoveUsed(TrackerMessage message, string? catalogueFingerprint)
+    {
+        EnemyMoveUsedPayload observation = TrackerJson.DeserializePayload<EnemyMoveUsedPayload>(message.Payload);
+        TrackerSimpleMovePowerPresentation.CompleteObservation(observation.Move, catalogueFingerprint);
+        _knowledge.ObserveEnemyMove(message.BattleId, observation);
+    }
+
+    /// <summary>
+    /// Completes current, stored, and learned player move displays and each enemy's last observed move in place.
+    /// </summary>
+    /// <param name="state">The decoded inbound current state.</param>
+    /// <param name="catalogueFingerprint">The connected game's catalogue identity.</param>
+    private static void CompleteMovePresentations(GameCurrentStatePayload state, string? catalogueFingerprint)
+    {
+        TrackerSimpleMovePowerPresentation.CompletePlayer(state.Player, catalogueFingerprint);
+        foreach (EnemyPokemonSnapshot enemy in state.Enemies)
+            TrackerSimpleMovePowerPresentation.CompleteObservation(enemy.LastMove, catalogueFingerprint);
     }
 
     /// <summary>
@@ -267,7 +311,7 @@ internal sealed class TrackerGameEventProcessor
     /// <summary>
     /// Remembers a move included in an enemy snapshot when one is present.
     /// </summary>
-    /// <param name="battleId">The active battle identifier.</param>
+    /// <param name="battleId">The active battle identifier, or <see langword="null"/> outside a battle.</param>
     /// <param name="enemy">The complete legal enemy snapshot.</param>
     private void ObserveEnemyMove(string? battleId, EnemyPokemonSnapshot enemy)
     {

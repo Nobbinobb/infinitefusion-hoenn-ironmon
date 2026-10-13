@@ -31,4 +31,14 @@ public sealed class DebugPokemonSearchRequestPayload
     /// Gets or initializes whether the search is restricted to normal species.
     /// </summary>
     public bool NormalOnly { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether to return the compact name catalog instead of a match page.
+    /// </summary>
+    public bool NameCatalogOnly { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the optional tracker-matched identifiers for game validation and annotation.
+    /// </summary>
+    public PokemonNameSearchAssignmentPayload? NameSearchAssignment { get; init; }
 }
