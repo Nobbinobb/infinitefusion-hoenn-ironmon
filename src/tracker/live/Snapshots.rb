@@ -267,28 +267,36 @@ module Ironmon
   end
 
   def self.tracker_player_level_up_moves(pokemon)
+    summary = tracker_learnset_display_summary(pokemon)
     return pokemon.moves.map do |move|
-      tracker_observed_move(pokemon, move.id, "player_initial", nil)
-    end.select { |move| move["source"] == "level_up" }
+      move_id = GameData::Move.get(move.id).id
+      provenance = summary[:provenance][move_id]
+      next if !provenance
+      tracker_observed_move(
+        pokemon, move_id, "player_initial", nil, nil, false, provenance
+      )
+    end.compact
   end
 
   def self.tracker_observed_move(pokemon, move_id, origin, pp_after_use,
-                                 battler = nil, enemy = false)
+                                 battler = nil, enemy = false, provenance = nil)
     move_data = GameData::Move.get(move_id)
     pokemon_move = Pokemon::Move.new(move_data.id)
     pokemon_move.pp = pp_after_use if pp_after_use
     presentation = tracker_move_power_presentation(
       pokemon_move, pokemon, battler, enemy
     )
-    learned_level = 0
-    learn_order = 0
-    found = false
-    pokemon.getMoveList.each_with_index do |entry, index|
-      listed_move = GameData::Move.try_get(entry[1])
-      next if !listed_move || listed_move.id != move_data.id || entry[0] > pokemon.level
-      learned_level = entry[0]
-      learn_order = index
-      found = true
+    learned_level = provenance ? provenance[0] : 0
+    learn_order = provenance ? provenance[1] : 0
+    found = !provenance.nil?
+    if !provenance
+      pokemon.getMoveList.each_with_index do |entry, index|
+        listed_move = GameData::Move.try_get(entry[1])
+        next if !listed_move || listed_move.id != move_data.id || entry[0] > pokemon.level
+        learned_level = entry[0]
+        learn_order = index
+        found = true
+      end
     end
     source = found ? "level_up" : "unknown"
     return {
@@ -408,44 +416,195 @@ module Ironmon
   end
 
   def self.tracker_learnset_progress(pokemon)
-    learnset = pokemon.getMoveList
-    move_ids = learnset.map { |entry| GameData::Move.get(entry[1]).id }.uniq
-    learned_ids = (pokemon.learned_moves || []).map { |move| GameData::Move.get(move).id }.uniq
-    next_entry = learnset.select { |entry| entry[0] > pokemon.level }.min_by { |entry| entry[0] }
-    return {
-      "learned_moves" => (move_ids & learned_ids).length,
-      "maximum_moves" => move_ids.length,
-      "next_move_level" => next_entry ? next_entry[0] : nil
-    }
+    summary = tracker_learnset_display_summary(pokemon)
+    GameData::Move.get(summary[:invalid_moves][0]) if !summary[:invalid_moves].empty?
+    learned = pokemon.learned_moves || []
+    if !summary[:progress] || summary[:learned] != learned ||
+       !tracker_live_move_records_current?(summary[:learned_records])
+      records = learned.map do |move|
+        data = GameData::Move.get(move)
+        [tracker_copy_live_summary(move), data, data.id]
+      end
+      learned_ids = records.map { |record| record[2] }.uniq
+      summary[:learned] = tracker_copy_live_summary(learned)
+      summary[:learned_records] = records
+      summary[:progress] = {
+        "learned_moves" => learned_ids.count { |id| summary[:move_ids][id] },
+        "maximum_moves" => summary[:move_ids].length,
+        "next_move_level" => summary[:next_level]
+      }
+    end
+    return summary[:progress].dup
   end
 
-  def self.tracker_evolutions(pokemon)
-    methods = if evolution_randomization_active? &&
-                 generated_evolution_runtime_species?(pokemon.species_data)
-                branches = if fusion_evolution_runtime_species?(
-                                pokemon.species_data
-                              )
-                             generated_fusion_evolution_branches_for(
-                               pokemon.species_data
-                             )
-                           else
-                             generated_normal_evolution_branches_for(
-                               pokemon.species_data
-                             )
-                           end
-                branches.flat_map { |branch| branch[:effective_methods] }
-              else
-                pokemon.species_data.get_evolutions(true).map do |evolution|
-                  {
-                    :method => evolution[1],
-                    :parameter => evolution[2]
-                  }
+  def self.tracker_live_move_records_current?(records)
+    return records.all? do |id, previous, canonical_id|
+      current = if id.is_a?(GameData::Move)
+                  id
+                else
+                  key = id.is_a?(String) ? id.to_sym : id
+                  GameData::Move::DATA[key] || GameData::Move.try_get(id)
                 end
-              end
+      current.equal?(previous) && (!current || current.id == canonical_id)
+    end
+  end
+
+  def self.tracker_live_summary_context(pokemon)
+    return [
+      tracker_live_summary_species(pokemon), pokemon.form,
+      $PokemonGlobal,
+      $PokemonGlobal && $PokemonGlobal.ironmon_seed,
+      $PokemonGlobal && $PokemonGlobal.ironmon_mode,
+      @current_generation_profile,
+      @active_generation_profile_id, @run_generation_profile_id,
+      @move_access_randomization_ready, @move_access_generator,
+      @allowed_level_up_move_pool,
+      @move_access_source_entries,
+      @evolution_randomization_ready, @evolution_generator,
+      @fusion_evolution_generator, @evolution_catalog,
+      @base_stat_source_fingerprint, @base_stat_generator,
+      @custom_fusion_pool_service,
+      @profile_custom_fusion_pool_services,
+      @fusion_evolution_target_catalog,
+      $PokemonSystem && $PokemonSystem.language
+    ]
+  end
+
+  def self.tracker_live_summary_species(pokemon)
+    identity = pokemon.species
+    registered = GameData::Species::DATA[identity]
+    cached = @tracker_live_summary_species
+    if cached && cached[:identity] == identity &&
+       cached[:registered].equal?(registered) &&
+       (!cached[:body_id] ||
+        (cached[:body].equal?(GameData::Species::DATA[cached[:body_id]]) &&
+         cached[:head].equal?(GameData::Species::DATA[cached[:head_id]])))
+      return cached[:species]
+    end
+    species = pokemon.species_data
+    cached = { :identity => identity, :registered => registered, :species => species }
+    if species.is_a?(GameData::FusedSpecies)
+      cached[:body_id] = species.body_pokemon.id
+      cached[:head_id] = species.head_pokemon.id
+      cached[:body] = GameData::Species::DATA[cached[:body_id]]
+      cached[:head] = GameData::Species::DATA[cached[:head_id]]
+    end
+    @tracker_live_summary_species = cached
+    return species
+  end
+
+  def self.tracker_learnset_display_summary(pokemon)
+    context = tracker_live_summary_context(pokemon)
+    cached = @tracker_learnset_display_summary
+    species = tracker_live_summary_species(pokemon)
+    generated = move_access_randomization_active? &&
+      (normal_move_access_species?(species) || fusion_move_access_species?(species))
+    source = pokemon.getMoveList if !generated
+    if !cached || cached[:context] != context ||
+       (source && cached[:source] != source) ||
+       !tracker_live_move_records_current?(cached[:records])
+      source ||= pokemon.getMoveList
+      entries = []
+      move_ids = {}
+      records = []
+      invalid_moves = []
+      source.each_with_index do |entry, index|
+        move = GameData::Move.try_get(entry[1])
+        invalid_moves << entry[1] if !move
+        records << [tracker_copy_live_summary(entry[1]), move, move && move.id]
+        entries << [entry[0], move && move.id, index]
+        move_ids[move.id] = true if move
+      end
+      # Keep one species only, and capture generator identities after lazy setup.
+      cached = {
+        :context => tracker_live_summary_context(pokemon),
+        :source => tracker_copy_live_summary(source),
+        :entries => entries, :move_ids => move_ids, :records => records,
+        :invalid_moves => tracker_copy_live_summary(invalid_moves)
+      }
+      @tracker_learnset_display_summary = cached
+    end
+    if cached[:level] != pokemon.level
+      provenance = {}
+      next_level = nil
+      cached[:entries].each do |level, move_id, index|
+        if level <= pokemon.level
+          provenance[move_id] = [level, index] if move_id
+        elsif !next_level || level < next_level
+          next_level = level
+        end
+      end
+      cached[:level] = pokemon.level
+      cached[:provenance] = provenance
+      cached[:next_level] = next_level
+      cached[:progress] = nil
+    end
+    return cached
+  end
+
+  def self.tracker_copy_live_summary(value)
+    return value.map { |entry| tracker_copy_live_summary(entry) } if
+      value.is_a?(Array)
+    if value.is_a?(Hash)
+      return value.each_with_object({}) do |(key, entry), copy|
+        copy[key] = tracker_copy_live_summary(entry)
+      end
+    end
+    return value.dup if value.is_a?(String)
+    return value
+  end
+
+  private_class_method :tracker_live_move_records_current?,
+                       :tracker_live_summary_context,
+                       :tracker_live_summary_species,
+                       :tracker_learnset_display_summary,
+                       :tracker_copy_live_summary
+
+  def self.tracker_evolutions(pokemon)
+    context = tracker_live_summary_context(pokemon)
+    cached = @tracker_evolution_display_summary
+    species = tracker_live_summary_species(pokemon)
+    generated = evolution_randomization_active? &&
+      generated_evolution_runtime_species?(species)
+    source = pokemon.species_data.get_evolutions(true) if
+      !generated
+    if !cached || cached[:context] != context ||
+       (source && cached[:source] != source)
+      methods = if generated
+                  branches = if fusion_evolution_runtime_species?(
+                                  species
+                                )
+                               generated_fusion_evolution_branches_for(
+                                 species
+                               )
+                             else
+                               generated_normal_evolution_branches_for(
+                                 species
+                               )
+                             end
+                  branches.flat_map { |branch| branch[:effective_methods] }
+                else
+                  (source || pokemon.species_data.get_evolutions(true)).map do |evolution|
+                    {
+                      :method => evolution[1],
+                      :parameter => evolution[2]
+                    }
+                  end
+                end
+      cached = {
+        :context => tracker_live_summary_context(pokemon),
+        :source => tracker_copy_live_summary(source),
+        :methods => tracker_copy_live_summary(methods)
+      }
+      @tracker_evolution_display_summary = cached
+    end
+    # Labels and method definitions can change without replacing the generators.
+    methods = cached[:methods]
     evolutions = methods.map do |method|
       tracker_evolution_snapshot(method[:method], method[:parameter])
     end
-    return evolutions.sort_by { |evolution| evolution["requirement"] }
+    evolutions.sort_by! { |evolution| evolution["requirement"] }
+    return evolutions
   end
 
   def self.tracker_evolution_snapshot(method, parameter)
@@ -459,8 +618,8 @@ module Ironmon
       item = GameData::Item.get(parameter)
       result["kind"] = "item"
       result["item_id"] = item.id.to_s
-      result["item_name"] = item.name
-      result["requirement"] = item.name
+      result["item_name"] = item.name.dup
+      result["requirement"] = item.name.dup
     elsif evolution.parameter == Integer && evolution.minimum_level == 0
       condition = method_name.sub(/^Level\s*/, "")
       result["kind"] = "level"
@@ -471,19 +630,15 @@ module Ironmon
   end
 
   def self.tracker_healing_snapshot(maximum_hp)
+    cache = tracker_inventory_display_cache(maximum_hp)
     item_count = 0
     potential_hp = 0
-    if $PokemonBag
-      $PokemonBag.pockets.each do |pocket|
-        next if !pocket
-        pocket.each do |entry|
-          item = entry[0]
-          quantity = entry[1]
-          healing = tracker_item_healing(item, maximum_hp)
-          next if healing <= 0
-          item_count += quantity
-          potential_hp += healing * quantity
-        end
+    if cache
+      cache[:rows].each do |row|
+        next if row[7] <= 0
+        quantity = row[1][1]
+        item_count += quantity
+        potential_hp += row[7] * quantity
       end
     end
     percentage = maximum_hp > 0 ? (potential_hp * 100.0 / maximum_hp).round(1) : 0.0
@@ -491,29 +646,146 @@ module Ironmon
       "item_count" => item_count,
       "potential_hp" => potential_hp,
       "percentage" => percentage,
-      "items" => tracker_battle_items(maximum_hp)
+      "items" => tracker_inventory_display_items(cache)
     }
   end
 
   def self.tracker_battle_items(maximum_hp)
-    return [] if !$PokemonBag
+    return tracker_inventory_display_items(
+      tracker_inventory_display_cache(maximum_hp)
+    )
+  end
+
+  def self.tracker_inventory_display_items(cache)
+    return [] if !cache
     items = []
-    $PokemonBag.pockets.each do |pocket|
+    cache[:items].each do |row|
+      quantity = row[1][1]
+      next if quantity.to_i <= 0
+      template = row[8]
+      items.push({
+        "id" => template["id"].dup,
+        "name" => tracker_inventory_display_copy(template["name"]),
+        "description" => tracker_inventory_display_copy(template["description"]),
+        "quantity" => tracker_inventory_display_copy(quantity),
+        "category" => template["category"].dup,
+        "requires_move" => template["requires_move"]
+      })
+    end
+    return items
+  end
+
+  def self.tracker_inventory_display_copy(value)
+    return value.is_a?(String) ? value.dup : value
+  end
+
+  def self.tracker_inventory_display_cache(maximum_hp)
+    if !$PokemonBag
+      @tracker_inventory_display_cache = nil
+      return nil
+    end
+    pockets = $PokemonBag.pockets
+    cache = @tracker_inventory_display_cache
+    if tracker_inventory_display_cache_valid?(cache, pockets)
+      tracker_inventory_display_refresh_healing(cache, maximum_hp) if
+        cache[:maximum_hp] != maximum_hp ||
+        cache[:maximum_hp].class != maximum_hp.class
+      return cache
+    end
+    rows = []
+    items = []
+    pockets.each do |pocket|
       next if !pocket
       pocket.each do |entry|
         item = GameData::Item.try_get(entry[0])
-        next if !item || item.battle_use <= 0 || entry[1].to_i <= 0
-        items.push({
+        battle_item = item && item.battle_use > 0
+        # Keep quantities live: they do not change names, categories or sorting.
+        # Exact source/metadata comparison also catches direct external edits.
+        row = [tracker_inventory_display_copy(entry[0]), entry, item,
+               item && tracker_inventory_display_copy(item.id),
+               item && item.battle_use,
+               battle_item && tracker_inventory_display_copy(item.name),
+               battle_item && tracker_inventory_display_copy(item.description),
+               tracker_item_healing(entry[0], maximum_hp)]
+        rows.push(row)
+        next if !battle_item
+        row[8] = {
           "id" => item.id.to_s,
-          "name" => item.name,
-          "description" => item.description,
-          "quantity" => entry[1],
+          "name" => row[5], "description" => row[6],
           "category" => tracker_battle_item_category(item, maximum_hp),
-          "requires_move" => [2, 7].include?(item.battle_use)
-        })
+          "requires_move" => item.battle_use == 2 || item.battle_use == 7
+        }
+        items.push(row)
       end
     end
-    return items.sort_by { |item| [item["category"], item["name"], item["id"]] }
+    @tracker_inventory_display_cache = {
+      :bag => $PokemonBag, :source => pockets, :pockets => pockets.dup,
+      :maximum_hp => maximum_hp, :rows => rows,
+      :items => items.sort_by { |row| [row[8]["category"], row[5], row[8]["id"]] },
+      :active_profile => tracker_inventory_display_copy(@active_generation_profile_id),
+      :run_profile => tracker_inventory_display_copy(@run_generation_profile_id),
+      :installed_profile => @current_generation_profile,
+      :language => $PokemonSystem && $PokemonSystem.language,
+      :rage_candy_bar => Settings::RAGE_CANDY_BAR_CURES_STATUS_PROBLEMS,
+      :fixed_healing => TRACKER_FIXED_HEALING.dup,
+      :pp_items => TRACKER_PP_RESTORE_ITEMS.dup,
+      :status_items => TRACKER_STATUS_ITEMS.dup,
+      :combat_prefixes => TRACKER_COMBAT_STAT_ITEM_PREFIXES.map(&:dup)
+    }
+    return @tracker_inventory_display_cache
+  end
+
+  def self.tracker_inventory_display_refresh_healing(cache, maximum_hp)
+    changed_category = false
+    cache[:rows].each do |row|
+      row[7] = tracker_item_healing(row[0], maximum_hp)
+      next if !row[8]
+      healing = tracker_item_healing(row[3], maximum_hp)
+      category = row[8]["category"]
+      if healing > 0
+        next if category == "healing"
+        row[8]["category"] = "healing"
+      elsif category == "healing"
+        row[8]["category"] = tracker_battle_item_category(row[2], maximum_hp)
+      else
+        next
+      end
+      changed_category = true
+    end
+    if changed_category
+      cache[:items].sort_by! { |row| [row[8]["category"], row[5], row[8]["id"]] }
+    end
+    cache[:maximum_hp] = maximum_hp
+  end
+
+  def self.tracker_inventory_display_cache_valid?(cache, pockets)
+    return false if !cache || !cache[:bag].equal?($PokemonBag) ||
+      !cache[:source].equal?(pockets) ||
+      cache[:active_profile] != @active_generation_profile_id ||
+      cache[:run_profile] != @run_generation_profile_id ||
+      !cache[:installed_profile].equal?(@current_generation_profile) ||
+      cache[:language] != ($PokemonSystem && $PokemonSystem.language) ||
+      cache[:rage_candy_bar] != Settings::RAGE_CANDY_BAR_CURES_STATUS_PROBLEMS ||
+      cache[:fixed_healing] != TRACKER_FIXED_HEALING ||
+      cache[:pp_items] != TRACKER_PP_RESTORE_ITEMS ||
+      cache[:status_items] != TRACKER_STATUS_ITEMS ||
+      cache[:combat_prefixes] != TRACKER_COMBAT_STAT_ITEM_PREFIXES ||
+      cache[:pockets].length != pockets.length
+    index = 0
+    pockets.each_with_index do |pocket, pocket_index|
+      return false if !cache[:pockets][pocket_index].equal?(pocket)
+      next if !pocket
+      pocket.each do |entry|
+        row = cache[:rows][index]
+        return false if !row || row[0] != entry[0] || !row[1].equal?(entry)
+        item = GameData::Item.try_get(entry[0])
+        return false if !row[2].equal?(item)
+        return false if item && (row[3] != item.id || row[4] != item.battle_use)
+        return false if row[8] && (row[5] != item.name || row[6] != item.description)
+        index += 1
+      end
+    end
+    return index == cache[:rows].length
   end
 
   def self.tracker_battle_item_category(item, maximum_hp)
@@ -528,4 +800,9 @@ module Ironmon
     end
     return "other"
   end
+
+  private_class_method :tracker_inventory_display_items,
+    :tracker_inventory_display_copy, :tracker_inventory_display_cache,
+    :tracker_inventory_display_refresh_healing,
+    :tracker_inventory_display_cache_valid?
 end
