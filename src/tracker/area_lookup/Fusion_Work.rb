@@ -262,6 +262,11 @@ module Ironmon
         "invalid_area_fusion_result", "The tracker presentation assignments are incomplete."
       )
     end
+    if archived
+      tracker_recreate_recorded_area_sprites(
+        payload["missing_recorded_sprites"], [], results.map { |entry| entry["species_id"] }
+      )
+    end
     presentations = page[:pairs].each_with_index.map do |pair, index|
       identity = /\AB(\d+)H(\d+):0\z/.match(results[index]["species_id"])
       {

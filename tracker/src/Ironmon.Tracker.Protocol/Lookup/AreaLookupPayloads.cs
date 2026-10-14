@@ -215,6 +215,11 @@ public sealed class AreaLookupDetailRequestPayload
     public IReadOnlyList<string> DiscoveryKeys { get; init; } = [];
 
     /// <summary>
+    /// Gets or initializes missing sprites to recreate for recorded entries disclosed on this archived page.
+    /// </summary>
+    public IReadOnlyList<AreaRecordedSpritePayload> MissingRecordedSprites { get; init; } = [];
+
+    /// <summary>
     /// Gets or initializes the encounter environment requested for paging, or null to request the environment index.
     /// </summary>
     public string? EncounterEnvironment { get; init; }
@@ -228,6 +233,34 @@ public sealed class AreaLookupDetailRequestPayload
     /// Gets or initializes the maximum number of encounter entries to return.
     /// </summary>
     public int Limit { get; init; } = TrackerProtocol.AreaLookupPageSize;
+}
+
+/// <summary>
+/// Identifies the exact recorded sprite cache file to recreate for an archived species.
+/// </summary>
+public sealed class AreaRecordedSpritePayload
+{
+    /// <summary>
+    /// Initializes an empty recorded sprite hint for protocol serialization.
+    /// </summary>
+    public AreaRecordedSpritePayload()
+    {
+    }
+
+    /// <summary>
+    /// Gets or initializes the recorded trainer or encounter entry disclosed on the requested archived page.
+    /// </summary>
+    public required string EntryId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the recorded species and form identifier.
+    /// </summary>
+    public required string SpeciesId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the game-relative cache path containing the recorded sprite variant.
+    /// </summary>
+    public required string SpritePath { get; init; }
 }
 
 /// <summary>

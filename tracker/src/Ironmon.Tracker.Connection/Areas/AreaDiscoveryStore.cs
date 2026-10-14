@@ -14,6 +14,8 @@ public sealed class AreaDiscoveryStore
     private const string _standardCrossOrigin = "standard_cross";
     private const string _overworldSameOrigin = "overworld_same";
     private const string _overworldCrossOrigin = "overworld_cross";
+    private const string _trackerSpritePrefix = "Graphics/CustomBattlers/local_sprites/IronmonTracker/";
+    private const string _spriteExtension = ".png";
     private readonly Dictionary<string, PersistedAreaDiscoveries> _runs = [];
     private readonly TrackerKnowledgeOptions _options;
     private readonly Lock _sync = new();
@@ -161,6 +163,52 @@ public sealed class AreaDiscoveryStore
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
         lock (_sync)
             return GetOrLoad(runId).Revision;
+    }
+
+    /// <summary>
+    /// Finds missing recorded cache images without changing the archive's identities or selected variants.
+    /// </summary>
+    /// <param name="runId">The owning archived run identifier.</param>
+    /// <param name="category">The selected category whose disclosed records can contain sprites.</param>
+    /// <param name="gameRoot">The connected game installation, or null when unavailable.</param>
+    /// <param name="mapIds">The requested area's map identifiers, or null when its summary is not cached.</param>
+    /// <param name="entryIds">The disclosed page's recorded entry identifiers, or null to include the complete area.</param>
+    /// <returns>A bounded list of missing game-relative cache files and their recorded species.</returns>
+    public IReadOnlyList<AreaRecordedSpritePayload> GetMissingSpriteHints(string runId, AreaContentCategory category, string? gameRoot, IReadOnlyList<int>? mapIds = null, IReadOnlySet<string>? entryIds = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(runId);
+        if (string.IsNullOrWhiteSpace(gameRoot))
+            return [];
+
+        AreaRecordedSpritePayload[] recorded;
+        lock (_sync)
+        {
+            PersistedAreaDiscoveries run = GetOrLoad(runId);
+            IEnumerable<AreaRecordedSpritePayload> candidates = category switch
+            {
+                AreaContentCategory.Trainer => run.Trainers.Values.Where(entry => entry.DetailsRevealed && (mapIds is null || mapIds.Contains(entry.MapId))).SelectMany(entry => entry.Party.Where(member => member.SpeciesId is not null && member.SpritePath is not null).Select(member => new AreaRecordedSpritePayload { EntryId = entry.EntryId, SpeciesId = member.SpeciesId!, SpritePath = member.SpritePath! })),
+                AreaContentCategory.Encounter => run.Encounters.Values.Where(entry => entry.DetailsRevealed && entry.SpeciesId is not null && entry.SpritePath is not null && (mapIds is null || mapIds.Contains(entry.MapId))).Select(entry => new AreaRecordedSpritePayload { EntryId = entry.EntryId, SpeciesId = entry.SpeciesId!, SpritePath = entry.SpritePath! }),
+                _ => []
+            };
+            recorded = [.. candidates.Where(entry => entryIds is null || entryIds.Contains(entry.EntryId)).DistinctBy(entry => (entry.EntryId, entry.SpeciesId, entry.SpritePath)).OrderBy(entry => entry.SpritePath, StringComparer.Ordinal)];
+        }
+
+        return [.. recorded.Where(entry => IsMissingRecordedSprite(gameRoot, entry.SpritePath)).Take(TrackerProtocol.MaximumRecordedAreaSpriteHints)];
+    }
+
+    /// <summary>
+    /// Checks only files directly within the known tracker sprite cache directory.
+    /// </summary>
+    /// <param name="gameRoot">The connected game installation.</param>
+    /// <param name="spritePath">The persisted game-relative sprite path.</param>
+    /// <returns>Whether the recorded cache file is absent and can be requested safely.</returns>
+    private static bool IsMissingRecordedSprite(string gameRoot, string spritePath)
+    {
+        if (!spritePath.StartsWith(_trackerSpritePrefix, StringComparison.Ordinal) || !spritePath.EndsWith(_spriteExtension, StringComparison.Ordinal))
+            return false;
+
+        string filename = spritePath[_trackerSpritePrefix.Length..];
+        return filename.Length <= 96 && filename == Path.GetFileName(filename) && !File.Exists(Path.Combine(gameRoot, spritePath));
     }
 
     /// <summary>
@@ -543,6 +591,7 @@ public sealed class AreaDiscoveryStore
     /// </summary>
     /// <param name="runId">The run identifier.</param>
     /// <param name="run">The run document.</param>
+    /// <returns>Whether the updated discovery document was persisted successfully.</returns>
     private bool Save(string runId, PersistedAreaDiscoveries run)
     {
         try

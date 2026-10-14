@@ -320,7 +320,7 @@ public sealed class TrackerRequestClient
     /// <param name="limit">The maximum number of encounter entries to return.</param>
     /// <returns>The requested area category.</returns>
     public Task<AreaLookupDetailResponsePayload> GetAreaDetailsAsync(string areaId, AreaContentCategory category, CompletedRunRecipePayload? recipe = null, bool forceRefresh = false, CancellationToken cancellationToken = default, string? encounterEnvironment = null, int offset = 0, int limit = TrackerProtocol.AreaLookupPageSize)
-        => _areaRequests.GetDetailsAsync(areaId, category, recipe, GetConnectedRunId(), forceRefresh, encounterEnvironment, offset, limit, cancellationToken, _state.Snapshot.CurrentState?.OverworldEncounters);
+        => _areaRequests.GetDetailsAsync(areaId, category, recipe, GetConnectedRunId(), forceRefresh, encounterEnvironment, offset, limit, cancellationToken, _state.Snapshot.CurrentState?.OverworldEncounters, _state.Snapshot.Game?.GameRoot);
 
     /// <summary>
     /// Searches Pokémon names compatible with one completed-run recipe.
