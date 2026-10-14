@@ -897,15 +897,25 @@ module Ironmon
     expected = tracker_active_fusion_assignment_recipe
     recipe = assignment["recipe"]
     return false if !expected || !recipe.is_a?(Hash) || expected != recipe
-    return true if player_fusion_pairing_ready?
     state = pivot_state
     seed = $PokemonGlobal.ironmon_seed
+    import_stats = assignment["base_stats_version"] == 1 &&
+      recipe["base_stat_generator_version"] == BaseStatGenerator::SCHEMA_VERSION
+    if player_fusion_pairing_ready?
+      base_stat_generator.import_prepared_stats(
+        assignment["base_stats"], seed, recipe["base_stat_source_fingerprint"]
+      ) if import_stats
+      return true
+    end
     mapper = PlayerFusionMapper.new(
       seed, custom_fusion_pool_numbers, state.fusion_mappings,
       state.discovered_fusion_mappings, base_stat_generator,
       PlayerFusionMapper::SCHEMA_VERSION, proc { Fiber.yield }
     )
     return false if !mapper.import_prepared_pairing(assignment["packed_pairs"])
+    base_stat_generator.import_prepared_stats(
+      assignment["base_stats"], seed, recipe["base_stat_source_fingerprint"]
+    ) if import_stats
     clear_player_fusion_preparation
     @player_fusion_preparation_mapper = mapper
     @player_fusion_preparation_seed = seed

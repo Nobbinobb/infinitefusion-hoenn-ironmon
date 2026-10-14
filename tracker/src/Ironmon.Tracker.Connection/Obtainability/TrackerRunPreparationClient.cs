@@ -35,7 +35,15 @@ internal sealed class TrackerRunPreparationClient(TrackerRequestSession session,
             if (pairing is not null)
             {
                 request = new RunLookupPreparationRequestPayload { Foreground = foreground, UseNativeMaterialPairPreparation = true, PlayerFusionPairing = pairing };
-                if (JsonSerializer.SerializeToUtf8Bytes(request, TrackerJson.Options).Length <= TrackerProtocol.MaximumMessageCharacters - RequestEnvelopeAllowance)
+                int requestBytes = JsonSerializer.SerializeToUtf8Bytes(request, TrackerJson.Options).Length;
+                if (pairing.BaseStats is not null && requestBytes > TrackerProtocol.MaximumMessageCharacters - RequestEnvelopeAllowance)
+                {
+                    pairing = new GameplayFusionPairingPayload { SessionId = pairing.SessionId, Recipe = pairing.Recipe, PackedPairs = pairing.PackedPairs };
+                    request = new RunLookupPreparationRequestPayload { Foreground = foreground, UseNativeMaterialPairPreparation = true, PlayerFusionPairing = pairing };
+                    requestBytes = JsonSerializer.SerializeToUtf8Bytes(request, TrackerJson.Options).Length;
+                }
+
+                if (requestBytes <= TrackerProtocol.MaximumMessageCharacters - RequestEnvelopeAllowance)
                 {
                     response = await session.SendAsync<RunLookupPreparationRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.PrepareRunLookup, request, runId, cancellationToken).ConfigureAwait(false);
                     progress(response);
@@ -77,9 +85,11 @@ internal sealed class TrackerRunPreparationClient(TrackerRequestSession session,
 
         FusionAssignmentRecipePayload recipe = current.FusionAssignments!;
         string? packedPairs;
+        IReadOnlyDictionary<string, string>? baseStats;
         try
         {
             packedPairs = await fusionMappings.ExportGameplayPairingAsync(recipe, cancellationToken).ConfigureAwait(false);
+            baseStats = game.GameplayBaseStatVersion == GameplayFusionPairingPayload.BaseStatVersion ? fusionMappings.ExportGameplayBaseStats(recipe) : null;
         }
         catch (Exception exception) when (exception is InvalidOperationException or NotSupportedException or ArgumentException)
         {
@@ -92,12 +102,13 @@ internal sealed class TrackerRunPreparationClient(TrackerRequestSession session,
         TrackerConnectionSnapshot latest = state.Snapshot;
         GameCurrentStatePayload? latestCurrent = latest.CurrentState;
         if (latest.Game?.SessionId != game.SessionId || latest.Game?.GameRoot != game.GameRoot || latest.Game?.GameplayFusionPairingVersion != GameplayFusionPairingPayload.CurrentVersion
+            || latest.Game?.GameplayBaseStatVersion != game.GameplayBaseStatVersion
             || latestCurrent is null || !latestCurrent.IronmonActive || latestCurrent.RunId != runId || !latestCurrent.ActiveRunPreparationReady
             || JsonSerializer.Serialize(latestCurrent.FusionAssignments, TrackerJson.Options) != JsonSerializer.Serialize(recipe, TrackerJson.Options))
         {
             throw new IOException("The active game or fusion recipe changed during gameplay pairing preparation.");
         }
 
-        return new GameplayFusionPairingPayload { SessionId = game.SessionId, Recipe = recipe, PackedPairs = packedPairs };
+        return new GameplayFusionPairingPayload { SessionId = game.SessionId, Recipe = recipe, PackedPairs = packedPairs, BaseStatsVersion = baseStats is null ? 0 : GameplayFusionPairingPayload.BaseStatVersion, BaseStats = baseStats };
     }
 }

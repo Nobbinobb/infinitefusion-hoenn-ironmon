@@ -37,6 +37,37 @@ module Ironmon
       return @stat_cache[key]
     end
 
+    def import_prepared_stats(rows, seed, source_fingerprint)
+      return false if @seed != seed || @source_fingerprint != source_fingerprint
+      return false if !rows.is_a?(Hash) || rows.length != NB_POKEMON
+      prepared = {}
+      seen = {}
+      rows.each do |identity, packed|
+        return false if !identity.is_a?(String) || !packed.is_a?(String) ||
+          packed.bytesize != 8
+        species = GameData::Species::DATA[identity.to_sym]
+        return false if !Ironmon.normal_base_stat_species?(species) ||
+          species.id.to_s != identity || seen[species.id_number] ||
+          !species.equal?(GameData::Species::DATA[species.id_number])
+        seen[species.id_number] = true
+        values = packed.unpack1("m0").bytes
+        return false if values.length != STAT_ORDER.length ||
+          values.any? { |value| value < MINIMUM_STAT || value > MAXIMUM_STAT }
+        original = Ironmon.original_base_stats_for(species)
+        original_values = STAT_ORDER.map { |stat| original[stat].to_i }
+        return false if values.inject(0, :+) != original_values.inject(0, :+)
+        key = [species.id.to_s.freeze, *original_values].freeze
+        result = {}
+        STAT_ORDER.each_with_index { |stat, index| result[stat] = values[index] }
+        return false if @stat_cache[key] && @stat_cache[key] != result
+        prepared[key] = @stat_cache[key] || result.freeze
+      end
+      @stat_cache.merge!(prepared)
+      return true
+    rescue ArgumentError
+      return false
+    end
+
     def fusion_stats_for(species_data)
       identity = Ironmon.base_stat_species_identity(species_data)
       cached = @fusion_cache[identity]

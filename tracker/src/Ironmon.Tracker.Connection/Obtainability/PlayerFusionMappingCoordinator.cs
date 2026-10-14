@@ -84,6 +84,24 @@ internal sealed class PlayerFusionMappingCoordinator
     }
 
     /// <summary>
+    /// Reuses the compatible normal-species stats already prepared by the shared fusion worker.
+    /// </summary>
+    /// <param name="recipe">The recovered authoritative active-run recipe.</param>
+    /// <returns>Identity-keyed generated stat rows, or null when the recipe or retained state is unavailable.</returns>
+    internal IReadOnlyDictionary<string, string>? ExportGameplayBaseStats(FusionAssignmentRecipePayload recipe)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        PlayerFusionWorkerContext? context = ResolveWorkerContext(recipe);
+        if (context is null || !Compatible(recipe, context.Catalog) || recipe.NormalSpeciesCount != context.Catalog.NormalSpeciesCount
+            || recipe.BaseStatGeneratorVersion != GameplayBaseStatGeneratorVersion || string.IsNullOrWhiteSpace(recipe.GenerationProfileId))
+        {
+            return null;
+        }
+
+        return context.MappingWorker.ExportPreparedBaseStats(recipe.Seed, recipe.PlayerFusionGeneratorVersion);
+    }
+
+    /// <summary>
     /// Calculates or reuses one compatible job and creates its compact final result.
     /// </summary>
     /// <param name="work">The game-owned job description.</param>

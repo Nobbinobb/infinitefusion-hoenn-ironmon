@@ -103,6 +103,11 @@ public sealed class GameHandshakePayload
     public int GameplayFusionPairingVersion { get; init; }
 
     /// <summary>
+    /// Gets or initializes the optional normal-species base-stat batch version, or zero for Ruby generation.
+    /// </summary>
+    public int GameplayBaseStatVersion { get; init; }
+
+    /// <summary>
     /// Gets the current run identifier when one exists.
     /// </summary>
     public string? RunId { get; }

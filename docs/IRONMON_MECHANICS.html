@@ -653,6 +653,7 @@ footer { padding:2rem 9% 4rem; color:var(--muted); font-size:.88rem; }
 <li>The original six-stat source data and rules fingerprint.</li>
 </ul>
 <p>Generated mappings are not stored in save data. A memory-only cache may retain vectors for the current session. Save metadata stores the generator schema and source-data fingerprint required to reproduce and validate the result.</p>
+<p>When the tracker prepares a compatible fusion pairing, it can include the normal-species stat vectors it has already calculated in the same transfer. The game validates the batch against the current session, recipe, original species totals, and any existing cached vectors before reusing it. Forms, size exceptions, and unavailable or rejected batches use the existing generator. This changes preparation cost without changing seeded results or save data.</p>
 <p>Generation never depends on a Pokemon's personal ID, encounter order, lookup order, preview order, ownership, or whether it is wild or trainer-controlled.</p>
 <h3 id="base-stats-preserved-total-and-distribution">Preserved total and distribution</h3>
 <p>Every eligible normal species or mechanical form preserves its original base-stat total exactly. The total is redistributed across the six main stats in this stable order:</p>
@@ -953,6 +954,7 @@ footer { padding:2rem 9% 4rem; color:var(--muted); font-size:.88rem; }
 <p>Different sources may converge on the same generated destination or family. Family exclusion and branch uniqueness are local to the source currently being generated. A later generated step may enter a family visited earlier in an individual's path. This locality preserves one species-owned result regardless of how the species was reached.</p>
 <h3 id="evolutions-deterministic-generation-and-storage">Deterministic generation and storage</h3>
 <p>Normal branch sets are generated and validated when a new run or F7 reset begins. All branches for one source are generated together so within-source target and family uniqueness cannot depend on query order.</p>
+<p>Generation and validation reuse each source branch's immutable type requirements within its generator, including Eevee's stone-specific types. Changing the run or generation profile recreates the generator when its seed or catalogue fingerprints change. This cache does not alter target selection, branch order, evolution triggers, or saved metadata.</p>
 <p>The normal graph is derived from:</p>
 <ul>
 <li>evolution-generator schema and rules versions;</li>

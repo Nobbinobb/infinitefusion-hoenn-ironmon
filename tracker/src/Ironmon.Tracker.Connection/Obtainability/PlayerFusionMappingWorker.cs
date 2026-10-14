@@ -185,6 +185,28 @@ internal sealed class PlayerFusionMappingWorker
     }
 
     /// <summary>
+    /// Exports normal-species stats already calculated for fusion preparation without rebuilding an evicted seed.
+    /// </summary>
+    /// <param name="seed">The active run seed.</param>
+    /// <param name="generatorVersion">The player-fusion generator version identifying the retained state.</param>
+    /// <returns>Identity-keyed base64 six-byte stat rows, or null when the prepared state is unavailable.</returns>
+    internal IReadOnlyDictionary<string, string>? ExportPreparedBaseStats(long seed, int generatorVersion)
+    {
+        if (!_states.TryGetValue(new(seed, generatorVersion), out Lazy<WorkerState>? prepared) || !prepared.IsValueCreated)
+            return null;
+
+        WorkerState state = prepared.Value;
+        Dictionary<string, string> rows = new(StringComparer.Ordinal);
+        foreach (PlayerFusionNormalSpecies species in _catalog.NormalSpecies)
+        {
+            byte[] values = [.. state.Stats[species.Id].Select(value => checked((byte)value))];
+            rows.Add(species.Identity, Convert.ToBase64String(values));
+        }
+
+        return rows;
+    }
+
+    /// <summary>
     /// Bounds retained seed-specific mapping state while preserving the requested entry.
     /// </summary>
     /// <param name="currentKey">The state currently being requested.</param>
