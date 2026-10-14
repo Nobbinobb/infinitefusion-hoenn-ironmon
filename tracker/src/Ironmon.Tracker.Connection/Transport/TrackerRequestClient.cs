@@ -53,7 +53,7 @@ public sealed class TrackerRequestClient
         _areaRequests = new TrackerAreaRequestClient(session, areaDiscoveries, _authorization, _cache, _fusionMappings, _nameCatalogs);
         _completedRunRequests = new TrackerCompletedRunRequestClient(session, _cache, _fusionMappings, _nameSearch, _trainerLocations);
         _diagnosticRequests = new TrackerDiagnosticRequestClient(session, _authorization, _fusionMappings, _nameSearch, _trainerLocations);
-        _runPreparation = new TrackerRunPreparationClient(session, _fusionMappings);
+        _runPreparation = new TrackerRunPreparationClient(session, _fusionMappings, state);
     }
 
     /// <summary>

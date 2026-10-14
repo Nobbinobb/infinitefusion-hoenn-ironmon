@@ -84,6 +84,10 @@ module Ironmon
     ]
     return nil if metadata.any? { |value| value.nil? }
     return {
+      "generation_profile_id" => pinned_generation_profile_id,
+      "normal_species_count" => NB_POKEMON,
+      "base_stat_generator_version" =>
+        $PokemonGlobal.ironmon_base_stat_generator_version,
       "seed" => metadata[0],
       "player_fusion_generator_version" => metadata[1],
       "generator_version" => metadata[2],

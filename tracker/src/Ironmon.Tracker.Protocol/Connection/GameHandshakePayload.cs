@@ -98,6 +98,11 @@ public sealed class GameHandshakePayload
     public int TrainerLocationIndexVersion { get; init; }
 
     /// <summary>
+    /// Gets or initializes the optional gameplay reverse-pair assignment version, or zero for Ruby preparation.
+    /// </summary>
+    public int GameplayFusionPairingVersion { get; init; }
+
+    /// <summary>
     /// Gets the current run identifier when one exists.
     /// </summary>
     public string? RunId { get; }

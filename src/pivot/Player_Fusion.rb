@@ -38,6 +38,7 @@ module Ironmon
       @fusion_pool_membership = nil
       @fusion_pairs = nil
       @paired_result_ids = nil
+      @imported_pairing = false
       @target_bsts = []
       @target_type_masks = []
       @result_hash_prefix = nil
@@ -141,8 +142,57 @@ module Ironmon
     def prepare
       @preparation_stage = :fusion_pool
       ensure_fusion_pool
+      if @imported_pairing
+        @preparation_stage = :target_data
+        @fusion_pool_ids.each_with_index do |species_id, index|
+          @preparation_progress = index
+          @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+          prepare_target_data(species_id)
+        end
+      end
       @preparation_stage = :prepared
       return true
+    end
+
+    def pairing_prepared?
+      return !!(@fusion_pairs && @paired_result_ids)
+    end
+
+    def import_prepared_pairing(packed_pairs)
+      return false if !packed_pairs.is_a?(String) || !@fusion_pool ||
+        @fusion_pool.empty? || @fusion_pool.length.odd?
+      byte_count = @fusion_pool.length * 4
+      return false if packed_pairs.bytesize != ((byte_count + 2) / 3) * 4
+      packed = packed_pairs.unpack1("m0")
+      return false if packed.bytesize != byte_count
+      membership = []
+      @fusion_pool.each do |species_id|
+        return false if !species_id.is_a?(Integer) || membership[species_id]
+        body_id = (species_id - 1) / NB_POKEMON
+        head_id = species_id - body_id * NB_POKEMON
+        return false if body_id < 1 || body_id > NB_POKEMON ||
+          head_id < 1 || head_id > NB_POKEMON
+        membership[species_id] = true
+      end
+      partners = {}; pairs = []
+      packed.unpack("V*").each_slice(2) do |first, second|
+        return false if first <= NB_POKEMON || first >= Settings::ZAPMOLCUNO_NB ||
+          second <= NB_POKEMON || second >= Settings::ZAPMOLCUNO_NB
+        return false if !membership[first] || !membership[second] ||
+          partners[first] || partners[second] || shares_component?(first, second)
+        partners[first] = second
+        partners[second] = first
+        pairs << [first, second].freeze
+      end
+      @fusion_pool_membership = membership
+      @fusion_pool_ids = @fusion_pool.dup.freeze
+      @fusion_pairs = pairs.freeze
+      @paired_result_ids = partners.freeze
+      @imported_pairing = true
+      @preparation_stage = :native_pairing
+      return true
+    rescue ArgumentError
+      return false
     end
 
     def finish_cooperative_preparation
@@ -827,6 +877,41 @@ module Ironmon
     @player_fusion_preparation_state_id = state.object_id
     @player_fusion_preparation_fiber = Fiber.new { mapper.prepare }
     write_player_fusion_preparation_trace(mapper, "scheduled")
+    return true
+  end
+
+  def self.player_fusion_pairing_ready?
+    state = pivot_state
+    seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0
+    return true if @player_fusion_mapper &&
+      @player_fusion_mapper_seed == seed &&
+      @player_fusion_mapper_state_id == state.object_id &&
+      @player_fusion_mapper.pairing_prepared?
+    return !!(player_fusion_preparation_matches?(seed, state.object_id) &&
+      @player_fusion_preparation_mapper.pairing_prepared?)
+  end
+
+  def self.import_tracker_player_fusion_pairing(assignment)
+    return false if !assignment.is_a?(Hash) || assignment["version"] != 1 ||
+      assignment["session_id"] != game_session_id
+    expected = tracker_active_fusion_assignment_recipe
+    recipe = assignment["recipe"]
+    return false if !expected || !recipe.is_a?(Hash) || expected != recipe
+    return true if player_fusion_pairing_ready?
+    state = pivot_state
+    seed = $PokemonGlobal.ironmon_seed
+    mapper = PlayerFusionMapper.new(
+      seed, custom_fusion_pool_numbers, state.fusion_mappings,
+      state.discovered_fusion_mappings, base_stat_generator,
+      PlayerFusionMapper::SCHEMA_VERSION, proc { Fiber.yield }
+    )
+    return false if !mapper.import_prepared_pairing(assignment["packed_pairs"])
+    clear_player_fusion_preparation
+    @player_fusion_preparation_mapper = mapper
+    @player_fusion_preparation_seed = seed
+    @player_fusion_preparation_state_id = state.object_id
+    @player_fusion_preparation_fiber = Fiber.new { mapper.prepare }
+    write_player_fusion_preparation_trace(mapper, "native_pairing_scheduled")
     return true
   end
 

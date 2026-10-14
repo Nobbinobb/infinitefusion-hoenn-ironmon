@@ -1889,6 +1889,8 @@ module Ironmon
       )
     end
     payload ||= {}
+    import_tracker_player_fusion_pairing(payload["player_fusion_pairing"]) if
+      payload["player_fusion_pairing"]
     request = {}
     ["foreground", "fusion_closure_result", "fusion_closure_worker_unavailable",
      "use_native_material_pair_preparation"].each do |key|
@@ -1896,6 +1898,7 @@ module Ironmon
     end
     snapshot = tracker_obtainability_for_recipe(request, tracker_debug_active_recipe)
     response = {}
+    response["player_fusion_pairing_ready"] = player_fusion_pairing_ready?
     ["phase", "complete", "background_complete", "processed_pairs",
      "total_pairs", "obtainable_count", "fusion_closure_work"].each do |key|
       response[key] = snapshot[key] if snapshot.key?(key)

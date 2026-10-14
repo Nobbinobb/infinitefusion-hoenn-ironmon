@@ -6,6 +6,11 @@ namespace Ironmon.Tracker.Protocol.Lookup;
 public sealed class RunLookupPreparationRequestPayload
 {
     /// <summary>
+    /// Gets or initializes the complete native reverse-pair table for optional game-owned installation.
+    /// </summary>
+    public GameplayFusionPairingPayload? PlayerFusionPairing { get; init; }
+
+    /// <summary>
     /// Gets or initializes whether the tracker can filter material-pair feasibility without exposing diagnostic lookup results.
     /// </summary>
     public bool UseNativeMaterialPairPreparation { get; init; }

@@ -8,6 +8,7 @@ namespace Ironmon.Tracker.Connection.Obtainability;
 /// </summary>
 internal sealed class PlayerFusionMappingCoordinator
 {
+    private const int GameplayBaseStatGeneratorVersion = 1;
     private const char FusionBodyPrefix = 'B';
     private const char FusionHeadSeparator = 'H';
     private const string FusionBodyLexicalSuffix = "H";
@@ -61,6 +62,25 @@ internal sealed class PlayerFusionMappingCoordinator
         _ = GetEvolutionAssignmentIndex(key);
         _ = GetMaterialIndex(materialKey);
         return true;
+    }
+
+    /// <summary>
+    /// Reuses the compatible native reverse pairing for installation by the active game without waiting for material-map enumeration.
+    /// </summary>
+    /// <param name="recipe">The recovered authoritative active-run recipe.</param>
+    /// <param name="cancellationToken">The token cancelling this caller's wait while preserving shared native state.</param>
+    /// <returns>The packed complete pairing, or null when the game recipe is incompatible.</returns>
+    internal async Task<string?> ExportGameplayPairingAsync(FusionAssignmentRecipePayload recipe, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        PlayerFusionWorkerContext? context = ResolveWorkerContext(recipe);
+        if (context is null || !Compatible(recipe, context.Catalog) || recipe.NormalSpeciesCount != context.Catalog.NormalSpeciesCount
+            || recipe.BaseStatGeneratorVersion != GameplayBaseStatGeneratorVersion || string.IsNullOrWhiteSpace(recipe.GenerationProfileId))
+        {
+            return null;
+        }
+
+        return await Task.Run(() => context.MappingWorker.ExportReversePairing(recipe.Seed, recipe.PlayerFusionGeneratorVersion)).WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
