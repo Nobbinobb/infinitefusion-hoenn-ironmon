@@ -26,6 +26,7 @@ module Ironmon
       @target_by_identity = {}
       @branches_by_source = Hash.new { |hash, key| hash[key] = [] }
       @hard_candidates_by_source = {}
+      @required_types_by_branch = {}
       catalog.taxonomy_catalog.each do |entry|
         @taxonomy_by_identity[entry[:identity]] = entry
       end
@@ -242,7 +243,7 @@ module Ironmon
       reference = @target_by_identity[branch[:original_destination]]
       hard_candidates = hard_candidates_for(
         source, source_entry, source_taxonomy,
-        @catalog.required_target_types(source, branch)
+        required_target_types_for(source, branch)
       )
       if hard_candidates.empty?
         raise EvolutionRandomizationError,
@@ -329,6 +330,15 @@ module Ironmon
       return @hard_candidates_by_source[key]
     end
 
+    def required_target_types_for(source, branch)
+      methods = branch[:effective_methods]
+      return @catalog.required_target_types(source, branch) if !methods.frozen?
+      key = [source, branch[:identity], methods]
+      @required_types_by_branch[key] ||=
+        @catalog.required_target_types(source, branch)
+      return @required_types_by_branch[key]
+    end
+
     def allowed_buckets(source_role)
       return [:terminal] if source_role == :intermediate
       return [:intermediate, :terminal] if source_role == :first_stage
@@ -389,7 +399,7 @@ module Ironmon
         raise EvolutionRandomizationError,
               "#{branch[:identity]} retained its native family"
       end
-      required_types = @catalog.required_target_types(source, branch)
+      required_types = required_target_types_for(source, branch)
       if (target[:types] & required_types).empty?
         raise EvolutionRandomizationError,
               "#{branch[:identity]} does not share a source type"
@@ -418,10 +428,11 @@ module Ironmon
     def validate_closest_fallback(source, branch)
       source_entry = @target_by_identity[source]
       source_taxonomy = @taxonomy_by_identity[source]
+      required_types = required_target_types_for(source, branch)
       candidates = @catalog.normal_target_catalog.select do |target|
         hard_candidate?(
           source_entry, source_taxonomy, target,
-          @catalog.required_target_types(source, branch)
+          required_types
         )
       end
       distance = candidates.map do |target|
