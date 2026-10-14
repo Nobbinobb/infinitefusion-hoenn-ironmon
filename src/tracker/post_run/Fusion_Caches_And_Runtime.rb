@@ -175,6 +175,7 @@ module Ironmon
     @tracker_lookup_cache = nil
     @tracker_wild_occurrence_work = nil
     @tracker_wild_occurrence_sources = nil
+    @tracker_normal_wild_occurrence_indexes = nil
     @tracker_fusion_mappers = nil
     @tracker_area_fusion_work = nil
     @tracker_area_native_page_tokens = nil

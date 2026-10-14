@@ -72,6 +72,10 @@ public sealed class WildOccurrenceSearchResponsePayload
 public sealed class TrainerOccurrenceSearchRequestPayload
 {
     /// <summary>
+    /// Gets or initializes an optional connection-scoped authored trainer location index.
+    /// </summary>
+    public TrainerLocationIndexAssignmentPayload? TrainerLocationIndex { get; init; }
+    /// <summary>
     /// Initializes an empty trainer-occurrence request for protocol serialization.
     /// </summary>
     public TrainerOccurrenceSearchRequestPayload()
@@ -104,6 +108,10 @@ public sealed class TrainerOccurrenceSearchRequestPayload
 /// </summary>
 public sealed class TrainerOccurrenceSearchResponsePayload
 {
+    /// <summary>
+    /// Gets or initializes the location-index identity accepted by the game, or null when the original lookup was used.
+    /// </summary>
+    public string? TrainerLocationIndexContextToken { get; init; }
     /// <summary>
     /// Gets or initializes whether the overview deferred this list to its occurrence request.
     /// </summary>

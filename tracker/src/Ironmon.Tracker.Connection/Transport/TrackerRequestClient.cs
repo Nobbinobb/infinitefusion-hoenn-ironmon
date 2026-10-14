@@ -15,6 +15,7 @@ public sealed class TrackerRequestClient
     private readonly TrackerCompletedRunRequestClient _completedRunRequests;
     private readonly TrackerDiagnosticRequestClient _diagnosticRequests;
     private readonly TrackerPokemonNameSearch _nameSearch;
+    private readonly TrackerTrainerLocationIndex _trainerLocations;
     private readonly PokemonNameCatalogProvider _nameCatalogs = new();
     private readonly TrackerRunPreparationClient _runPreparation;
     private readonly SemaphoreSlim _obtainabilityRequestGate = new(1, 1);
@@ -48,9 +49,10 @@ public sealed class TrackerRequestClient
         _state = state;
         _authorization = new TrackerDiagnosticAuthorizer(options, state, diagnosticAccess);
         _nameSearch = new TrackerPokemonNameSearch(session, state, _nameCatalogs);
+        _trainerLocations = new TrackerTrainerLocationIndex(state);
         _areaRequests = new TrackerAreaRequestClient(session, areaDiscoveries, _authorization, _cache, _fusionMappings, _nameCatalogs);
-        _completedRunRequests = new TrackerCompletedRunRequestClient(session, _cache, _fusionMappings, _nameSearch);
-        _diagnosticRequests = new TrackerDiagnosticRequestClient(session, _authorization, _fusionMappings, _nameSearch);
+        _completedRunRequests = new TrackerCompletedRunRequestClient(session, _cache, _fusionMappings, _nameSearch, _trainerLocations);
+        _diagnosticRequests = new TrackerDiagnosticRequestClient(session, _authorization, _fusionMappings, _nameSearch, _trainerLocations);
         _runPreparation = new TrackerRunPreparationClient(session, _fusionMappings);
     }
 
@@ -690,6 +692,7 @@ public sealed class TrackerRequestClient
         _session.Disconnect();
         _cache.Clear();
         _nameSearch.Disconnect();
+        _trainerLocations.Disconnect();
     }
 
     /// <summary>

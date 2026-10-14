@@ -93,6 +93,11 @@ public sealed class GameHandshakePayload
     public int DefenseDamageProfileVersion { get; init; }
 
     /// <summary>
+    /// Gets or initializes the trainer-location assignment version supported by the game, or zero for native Ruby lookup.
+    /// </summary>
+    public int TrainerLocationIndexVersion { get; init; }
+
+    /// <summary>
     /// Gets the current run identifier when one exists.
     /// </summary>
     public string? RunId { get; }

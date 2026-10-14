@@ -13,6 +13,7 @@ internal sealed class TrackerCompletedRunRequestClient
     private readonly TrackerResponseCache _cache;
     private readonly PlayerFusionMappingCoordinator _fusionMappings;
     private readonly TrackerRequestSession _session;
+    private readonly TrackerTrainerLocationIndex? _trainerLocations;
     private readonly TrackerPokemonNameSearch? _nameSearch;
 
     /// <summary>
@@ -21,8 +22,9 @@ internal sealed class TrackerCompletedRunRequestClient
     /// <param name="session">The correlated request session.</param>
     /// <param name="cache">The connection-scoped response cache.</param>
     /// <param name="fusionMappings">The shared tracker-side material-mapping coordinator.</param>
+    /// <param name="trainerLocations">The optional connection-scoped authored trainer location index.</param>
     /// <param name="nameSearch">The optional compatible tracker-side name matcher.</param>
-    internal TrackerCompletedRunRequestClient(TrackerRequestSession session, TrackerResponseCache cache, PlayerFusionMappingCoordinator fusionMappings, TrackerPokemonNameSearch? nameSearch = null)
+    internal TrackerCompletedRunRequestClient(TrackerRequestSession session, TrackerResponseCache cache, PlayerFusionMappingCoordinator fusionMappings, TrackerPokemonNameSearch? nameSearch = null, TrackerTrainerLocationIndex? trainerLocations = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(cache);
@@ -31,6 +33,7 @@ internal sealed class TrackerCompletedRunRequestClient
         _cache = cache;
         _fusionMappings = fusionMappings;
         _nameSearch = nameSearch;
+        _trainerLocations = trainerLocations;
     }
 
     /// <summary>
@@ -293,8 +296,15 @@ internal sealed class TrackerCompletedRunRequestClient
         if (_cache.TryGet(TrackerCommands.TrainerOccurrenceSearch, cacheKey, out TrainerOccurrenceSearchResponsePayload cached))
             return cached;
 
-        TrainerOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset, Recipe = recipe };
+        TrainerLocationIndexAssignmentPayload? locations = _trainerLocations is null ? null : await _trainerLocations.GetAssignmentAsync(cancellationToken).ConfigureAwait(false);
+        TrainerOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Offset = offset, Recipe = recipe, TrainerLocationIndex = locations };
+        if (locations is not null && !TrackerTrainerLocationIndex.FitsRequest(request))
+            request = new TrainerOccurrenceSearchRequestPayload { SpeciesId = speciesId, Offset = offset, Recipe = recipe };
+
         TrainerOccurrenceSearchResponsePayload response = await _session.SendAsync<TrainerOccurrenceSearchRequestPayload, TrainerOccurrenceSearchResponsePayload>(TrackerCommands.TrainerOccurrenceSearch, request, recipe.RunId, cancellationToken);
+        if (locations is not null)
+            _trainerLocations?.Acknowledge(response.TrainerLocationIndexContextToken);
+
         _cache.Set(TrackerCommands.TrainerOccurrenceSearch, cacheKey, response);
         return response;
     }

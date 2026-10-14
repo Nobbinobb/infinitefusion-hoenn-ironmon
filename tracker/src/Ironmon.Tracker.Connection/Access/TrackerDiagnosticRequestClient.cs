@@ -13,6 +13,7 @@ internal sealed class TrackerDiagnosticRequestClient
     private readonly TrackerDiagnosticAuthorizer _authorization;
     private readonly PlayerFusionMappingCoordinator _fusionMappings;
     private readonly TrackerRequestSession _session;
+    private readonly TrackerTrainerLocationIndex? _trainerLocations;
     private readonly TrackerPokemonNameSearch? _nameSearch;
 
     /// <summary>
@@ -21,8 +22,9 @@ internal sealed class TrackerDiagnosticRequestClient
     /// <param name="session">The correlated request session.</param>
     /// <param name="authorization">The diagnostic authorization policy.</param>
     /// <param name="fusionMappings">The shared tracker-side material-mapping coordinator.</param>
+    /// <param name="trainerLocations">The optional connection-scoped authored trainer location index.</param>
     /// <param name="nameSearch">The optional compatible tracker-side name matcher.</param>
-    internal TrackerDiagnosticRequestClient(TrackerRequestSession session, TrackerDiagnosticAuthorizer authorization, PlayerFusionMappingCoordinator fusionMappings, TrackerPokemonNameSearch? nameSearch = null)
+    internal TrackerDiagnosticRequestClient(TrackerRequestSession session, TrackerDiagnosticAuthorizer authorization, PlayerFusionMappingCoordinator fusionMappings, TrackerPokemonNameSearch? nameSearch = null, TrackerTrainerLocationIndex? trainerLocations = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(authorization);
@@ -31,6 +33,7 @@ internal sealed class TrackerDiagnosticRequestClient
         _authorization = authorization;
         _fusionMappings = fusionMappings;
         _nameSearch = nameSearch;
+        _trainerLocations = trainerLocations;
     }
 
     /// <summary>
@@ -311,14 +314,22 @@ internal sealed class TrackerDiagnosticRequestClient
     /// <param name="runId">The active run identifier when available.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The requested trainer-occurrence page.</returns>
-    internal Task<TrainerOccurrenceSearchResponsePayload> SearchTrainerOccurrencesAsync(string speciesId, int offset, DebugPokemonTarget? target, int? enemyPosition, string? runId, CancellationToken cancellationToken)
+    internal async Task<TrainerOccurrenceSearchResponsePayload> SearchTrainerOccurrencesAsync(string speciesId, int offset, DebugPokemonTarget? target, int? enemyPosition, string? runId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
         _authorization.EnsurePokemonSource(target);
         _authorization.EnsureAll(DiagnosticCapabilities.WorldTrainerParties);
-        DebugTrainerOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset };
-        return _session.SendAsync<DebugTrainerOccurrenceSearchRequestPayload, TrainerOccurrenceSearchResponsePayload>(TrackerCommands.DebugTrainerOccurrenceSearch, request, runId, cancellationToken);
+        TrainerLocationIndexAssignmentPayload? locations = _trainerLocations is null ? null : await _trainerLocations.GetAssignmentAsync(cancellationToken).ConfigureAwait(false);
+        DebugTrainerOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset, TrainerLocationIndex = locations };
+        if (locations is not null && !TrackerTrainerLocationIndex.FitsRequest(request))
+            request = new DebugTrainerOccurrenceSearchRequestPayload { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset };
+
+        TrainerOccurrenceSearchResponsePayload response = await _session.SendAsync<DebugTrainerOccurrenceSearchRequestPayload, TrainerOccurrenceSearchResponsePayload>(TrackerCommands.DebugTrainerOccurrenceSearch, request, runId, cancellationToken);
+        if (locations is not null)
+            _trainerLocations?.Acknowledge(response.TrainerLocationIndexContextToken);
+
+        return response;
     }
 
     /// <summary>

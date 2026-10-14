@@ -114,6 +114,8 @@ module Ironmon
       )
     end
     cache_key = tracker_occurrence_cache_key(recipe, species, kind)
+    location_context = kind == :trainer ?
+      tracker_import_trainer_location_index(payload["trainer_location_index"]) : nil
     occurrences = tracker_lookup_cache[cache_key]
     if !occurrences
       occurrences = if kind == :wild
@@ -128,10 +130,13 @@ module Ironmon
         occurrences.nil?
       tracker_store_bounded(tracker_lookup_cache, cache_key, occurrences, 256)
     end
-    return {
+    response = {
       "matches" => occurrences.slice(offset, limit) || [],
       "total" => occurrences.length
     }
+    response["trainer_location_index_context_token"] = location_context if
+      kind == :trainer && location_context
+    return response
   end
 
   def self.tracker_fusion_material_search_for_recipe(

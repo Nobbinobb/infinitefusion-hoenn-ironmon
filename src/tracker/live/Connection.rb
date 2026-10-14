@@ -266,6 +266,7 @@ module Ironmon
         "control_overrides_supported" => true,
         "simple_move_power_catalogue_fingerprint" => Ironmon.tracker_move_power_catalog_fingerprint,
         "defense_damage_profile_version" => DEFENSE_DAMAGE_PROFILE_VERSION,
+        "trainer_location_index_version" => 1,
         "pokemon_name_catalog_supported" => RUBY_VERSION == "3.1.0" &&
           RUBY_PLATFORM == "x64-mingw32" &&
           File.file?("x64-msvcrt-ruby310.dll"),
