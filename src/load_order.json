@@ -3,6 +3,7 @@
   { "source": "foundation/Core.rb", "output": "001_Core.rb" },
   { "source": "compatibility/Custom_Fusion_Component.rb", "output": "001_Custom_Fusion_Component.rb" },
   { "source": "foundation/Deterministic_Hashing.rb", "output": "001_Deterministic_Hashing.rb" },
+  { "source": "compatibility/Encrypted_Data_Loading.rb", "output": "001_Encrypted_Data_Loading.rb" },
   { "source": "compatibility/Generation_Profile.rb", "output": "001_Generation_Profile.rb" },
   { "source": "compatibility/Generation_Profile_Data_Runtime.rb", "output": "001_Generation_Profile_Data_Runtime.rb" },
   { "source": "compatibility/Generation_Profile_Runtime.rb", "output": "001_Generation_Profile_Runtime.rb" },
