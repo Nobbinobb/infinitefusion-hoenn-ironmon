@@ -224,8 +224,9 @@ internal static class TransactionStorage
     /// </summary>
     /// <param name="root">The existing metadata directory.</param>
     /// <param name="cancellationToken">The inspection token.</param>
+    /// <param name="stage">The kind of recovery data being verified.</param>
     /// <returns>The sorted file and directory entries.</returns>
-    internal static async Task<LocalFileEntry[]> TreeAsync(string root, CancellationToken cancellationToken)
+    internal static async Task<LocalFileEntry[]> TreeAsync(string root, CancellationToken cancellationToken, InstallationStage stage = InstallationStage.VerifyingMetadata)
     {
         PlainPaths.Full(root);
         var entries = new List<LocalFileEntry>();
@@ -258,12 +259,12 @@ internal static class TransactionStorage
         var result = entries.ToArray();
         var verified = 0;
         var progressGate = new Lock();
-        InstallationProgressScope.Report(new(InstallationStage.VerifyingFiles, 0, files.Count));
+        InstallationProgressScope.Report(new(stage, 0, files.Count));
         await Parallel.ForEachAsync(files, new ParallelOptions { MaxDegreeOfParallelism = FileConcurrency, CancellationToken = cancellationToken }, async (file, token) =>
         {
             result[file.Index] = result[file.Index] with { Content = await ContentAsync(file.Path, token).ConfigureAwait(false) };
             lock (progressGate)
-                InstallationProgressScope.Report(new(InstallationStage.VerifyingFiles, ++verified, files.Count));
+                InstallationProgressScope.Report(new(stage, ++verified, files.Count));
         }).ConfigureAwait(false);
         return [.. result.OrderBy(entry => entry.Path, StringComparer.Ordinal)];
     }

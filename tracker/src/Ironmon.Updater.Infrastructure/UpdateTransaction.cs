@@ -76,6 +76,9 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
     /// <summary>
     /// Stages durable recovery data with bounded file work before publishing any mutation intent.
     /// </summary>
+    /// <remarks>
+    /// Copying validates each backup against its reviewed bytes. The complete installation is then freshly revalidated before publishing recovery, so no duplicate full scan is needed before staging.
+    /// </remarks>
     /// <param name="description">The independently authorized descriptor.</param>
     /// <param name="payloadRoot">The verified extraction directory.</param>
     /// <param name="preparedGitRoot">The prepared Git metadata.</param>
@@ -88,7 +91,6 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
         description = Deserialize<TransactionDescription>(bytes);
         using var lease = InstallationLease.Acquire(description.InstallationRoot);
         var plan = await ValidateAsync(description, bytes, lease.Root, cancellationToken).ConfigureAwait(false);
-        await RequireBeforeAsync(description, plan, false, cancellationToken).ConfigureAwait(false);
         var operations = plan.GetOperations();
         var transferred = consumePayload && IsFreshInstallation(description, operations) && StringComparer.OrdinalIgnoreCase.Equals(Path.GetPathRoot(payloadRoot), Path.GetPathRoot(lease.Root));
         CheckSpace(lease.Root, transferred ? checked(ReserveBytes + 2 * (description.GitAfter?.Sum(entry => entry.Content?.Length ?? 0) ?? 0)) : RequiredBytes(description, operations));
@@ -201,7 +203,6 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
                     Notify(journal, TransactionBoundary.Completion);
                 }
 
-                InstallationProgressScope.Report(new(InstallationStage.VerifyingFiles));
                 await VerifyAfterAsync(description, plan, cancellationToken).ConfigureAwait(false);
                 journal = Save(directory, journal, TransactionPhase.Committed, journal.Cursor);
                 ClearActive(lease.Root);
@@ -390,7 +391,8 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
     {
         if (requireIdle)
             await _ensureIdle(cancellationToken).ConfigureAwait(false);
-        var snapshot = await InstallationFileSnapshot.ReadAsync(description.InstallationRoot, cancellationToken).ConfigureAwait(false);
+        var stage = requireIdle ? InstallationStage.CheckingInstallation : InstallationStage.CheckingPreparedInstallation;
+        var snapshot = await InstallationFileSnapshot.ReadAsync(description.InstallationRoot, cancellationToken, stage).ConfigureAwait(false);
         if (!snapshot.SequenceEqual(description.Plan.Local.OrderBy(entry => entry.Path, StringComparer.Ordinal)))
             throw new IOException(UpdaterText.UpdateTransactionInstallationFilesChangedSinceReviewApplicationOrRecoveryCannot);
 
@@ -409,7 +411,7 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
     private async Task VerifyAfterAsync(TransactionDescription description, FileUpdatePlan plan, CancellationToken cancellationToken)
     {
         await _ensureIdle(cancellationToken).ConfigureAwait(false);
-        if (plan.Assess(await InstallationFileSnapshot.ReadAsync(description.InstallationRoot, cancellationToken).ConfigureAwait(false)) != FilePlanApplicability.AlreadyApplied)
+        if (plan.Assess(await InstallationFileSnapshot.ReadAsync(description.InstallationRoot, cancellationToken, InstallationStage.VerifyingInstallation).ConfigureAwait(false)) != FilePlanApplicability.AlreadyApplied)
             throw new IOException(UpdaterText.UpdateTransactionTheFinalInstallationDoesNotMatchTheCompleteReviewed);
 
         if (description.GitAfter is not null)
@@ -432,11 +434,11 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
         var verified = 0;
         var progressGate = new Lock();
         var fresh = IsFreshInstallation(description, operations);
-        InstallationProgressScope.Report(new(InstallationStage.VerifyingFiles, 0, operations.Count));
+        InstallationProgressScope.Report(new(InstallationStage.VerifyingRecovery, 0, operations.Count));
         if (includePayload && fresh && operations.Count > 0)
         {
             var expected = operations.Select(operation => new LocalFileEntry(operation.Path, operation.ExpectedAfter)).OrderBy(entry => entry.Path, StringComparer.Ordinal).ToArray();
-            if (!(await TreeAsync(PlainPaths.Child(directory, PayloadDirectory), cancellationToken).ConfigureAwait(false)).SequenceEqual(expected))
+            if (!(await TreeAsync(PlainPaths.Child(directory, PayloadDirectory), cancellationToken, InstallationStage.VerifyingRecovery).ConfigureAwait(false)).SequenceEqual(expected))
                 throw new InvalidDataException(UpdaterText.UpdateTransactionAReplacementPayloadFailedVerification);
         }
 
@@ -449,7 +451,7 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
                 throw new InvalidDataException(UpdaterText.UpdateTransactionAReplacementPayloadFailedVerification);
 
             lock (progressGate)
-                InstallationProgressScope.Report(new(InstallationStage.VerifyingFiles, ++verified, operations.Count));
+                InstallationProgressScope.Report(new(InstallationStage.VerifyingRecovery, ++verified, operations.Count));
         }).ConfigureAwait(false);
 
         if (description.GitBefore is not null && !(await TreeAsync(PlainPaths.Child(directory, GitBackupDirectory), cancellationToken).ConfigureAwait(false)).SequenceEqual(description.GitBefore))
