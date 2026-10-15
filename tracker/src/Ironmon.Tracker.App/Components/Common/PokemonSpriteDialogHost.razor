@@ -1,6 +1,23 @@
 @if (Dialog.Current is { } request)
 {
-    <ObsidianDialog Title="@request.Label" Eyebrow="@Text["Redesign.Sprite"]" Closed="CloseDialog">
-        <div class="obsidian-sprite-preview"><img class="pokemon-sprite-image" style="@GetSizeStyle(request.Size)" src="@request.Source" alt="@request.Label" /></div>
+    <ObsidianDialog Title="@request.Label" Eyebrow="@Text["Redesign.Sprite"]" Closed="CloseDialog" Class="obsidian-shared-sprite-viewer">
+        @if (request.Images.Count > 1)
+        {
+            <div class="obsidian-sprite-tabs" role="group" aria-label="@Text["PokemonSprite.ChooseSprite"]">
+                @foreach (PokemonSpriteDialogImage image in request.Images)
+                {
+                    <button type="button" aria-pressed="@((image.Part == GetSelectedImage(request).Part).ToString().ToLowerInvariant())" aria-controls="shared-sprite-image" aria-label="@Text["PokemonSprite.Enlarge", image.Label]" @onclick="() => SelectImage(image.Part)">
+                        <img src="@image.Source" alt="" />
+                        <small>@GetPartLabel(image.Part)</small>
+                        <strong>@image.Label</strong>
+                    </button>
+                }
+            </div>
+        }
+        <div class="obsidian-sprite-preview" id="shared-sprite-image"><img class="pokemon-sprite-image" style="@GetSizeStyle(request.Size)" src="@GetSelectedImage(request).Source" alt="@GetSelectedImage(request).Label" /></div>
+        @if (request.Images.Count > 1)
+        {
+            <p class="obsidian-sprite-caption" aria-live="polite">@GetPartLabel(GetSelectedImage(request).Part) · <strong>@GetSelectedImage(request).Label</strong></p>
+        }
     </ObsidianDialog>
 }

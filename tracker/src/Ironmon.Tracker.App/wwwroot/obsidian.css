@@ -900,6 +900,126 @@ body:has(.tracker-shell:is(.obsidian,.obsidian-access-shell)) {
     object-fit:contain;
 }
 
+.obsidian .card-kicker.obsidian-sprite-kicker {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:7px;
+    height:1.35em;
+}
+
+.obsidian-sprite-kicker>span:first-child {
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.obsidian-sprite-level {
+    display:inline-flex;
+    align-items:center;
+    flex:none;
+    color:#9eacbf;
+    font-size:10px;
+    line-height:1;
+    letter-spacing:0;
+    text-transform:none;
+    white-space:nowrap;
+}
+
+.obsidian .obsidian-fusion-components {
+    display:flex;
+    align-items:center;
+    gap:5px;
+    width:100%;
+    max-width:100%;
+    height:1.4em;
+    min-height:0;
+    padding:0;
+    border:0;
+    border-radius:3px;
+    background:transparent;
+    text-align:left;
+    white-space:nowrap;
+}
+
+.obsidian-fusion-components>span {
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.obsidian-fusion-components>.obsidian-line-icon {
+    flex:none;
+    width:10px;
+    height:10px;
+    color:#8393aa;
+}
+
+.obsidian .obsidian-fusion-components:hover {
+    color:#e6dfff;
+    background:#b0a3ff0c;
+}
+
+.obsidian-sprite-tabs {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:6px;
+    margin-bottom:15px;
+}
+
+.obsidian-sprite-tabs>button {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    min-width:0;
+    padding:9px 4px;
+    border:1px solid #313e51;
+    border-radius:7px;
+    background:#131b27;
+    color:#a7b6cc;
+    font-size:12px;
+    line-height:1.3;
+}
+
+.obsidian-sprite-tabs>button[aria-pressed="true"] {
+    border-color:#a393d5;
+    background:#28273e;
+    color:#eee7ff;
+}
+
+.obsidian-sprite-tabs img {
+    width:40px;
+    height:40px;
+    object-fit:contain;
+    image-rendering:pixelated;
+}
+
+.obsidian-sprite-tabs small {
+    color:#9eacbf;
+    font-size:10px;
+}
+
+.obsidian-sprite-tabs strong {
+    max-width:100%;
+    font-size:12px;
+    font-weight:500;
+    overflow-wrap:anywhere;
+}
+
+.obsidian-sprite-caption {
+    margin:12px 0 0;
+    color:#c7d2e4;
+    text-align:center;
+    font-size:13px;
+}
+
+.obsidian-sprite-caption strong {
+    color:#efe8ff;
+    font-weight:500;
+}
+
 .obsidian-evolutions {
     padding-left:18px;
     line-height:1.8;

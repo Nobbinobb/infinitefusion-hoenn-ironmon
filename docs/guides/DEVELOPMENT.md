@@ -100,6 +100,16 @@ fixtures retain their canonical locations. `EmbeddedResourceInput` and
 `tracker/Directory.Build.targets` copies them into local intermediate resources
 or test output. They are not linked files in Solution Explorer.
 
+The shared sprite viewer reads visual fusion components from presentation
+sidecars beside the tracker's materialized sprites. The game writes these from
+the displayed `PIFSprite` head/body IDs, independently of Ironmon's gameplay
+fusion materials. Parsed metadata caches are bounded; sidecars reference only
+local base sprites, and preparing them never starts a sprite download. They remain usable for
+recorded sprites while disconnected. Missing legacy metadata keeps the original
+species/level line and single-image viewer until the game exports that sprite
+again. Component selection changes the image in the shared viewer without
+opening a second dialog.
+
 ## Diagnostic access
 
 Normal support and testing should use a signed diagnostic-access token so each

@@ -2,12 +2,15 @@
 # Sprite loading and lookup performance safeguards
 #===============================================================================
 
+require "digest/sha2"
+
 module Ironmon
   SPRITE_CREDIT_CACHE_SCHEMA_VERSION = 1
   TRACKER_SPRITE_PATH_CACHE_LIMIT = 2048
   TRACKER_TRANSPARENT_CACHE_INSPECTION_LIMIT = 512
   TRACKER_SPRITE_CACHE_FOLDER =
     "Graphics/CustomBattlers/local_sprites/IronmonTracker"
+  TRACKER_SPRITE_COMPONENT_SCHEMA = 1
 
   def self.sprite_credit_catalog(work_checkpoint = nil)
     path = Settings::CREDITS_FILE_PATH
@@ -176,20 +179,86 @@ module Ironmon
       local_path = loader.check_for_local_sprite(pif_sprite)
       resolved_local_path = pbResolveBitmap(local_path) if local_path
     end
-    return resolved_local_path.tr("\\", "/") if resolved_local_path
+    if resolved_local_path
+      path = resolved_local_path.tr("\\", "/")
+      tracker_store_sprite_components(pif_sprite, path)
+      return path
+    end
     cache_path = tracker_materialized_sprite_path(pif_sprite)
-    return cache_path if tracker_cached_sprite_usable?(cache_path)
+    if tracker_cached_sprite_usable?(cache_path)
+      tracker_store_sprite_components(pif_sprite, cache_path)
+      return cache_path
+    end
     File.delete(cache_path) if File.file?(cache_path)
     sprite = load_tracker_sprite_bitmap(loader, pif_sprite)
     return nil if !sprite
     ensure_tracker_sprite_cache_folder
     sprite.bitmap.save_to_png(cache_path)
+    tracker_store_sprite_components(pif_sprite, cache_path)
     return cache_path
   rescue Exception => e
     echoln "Ironmon tracker sprite materialization failed: #{e.message}"
     return nil
   ensure
     sprite.dispose if sprite && !sprite.disposed?
+  end
+
+  def self.tracker_store_sprite_components(pif_sprite, sprite_path)
+    return if ![:CUSTOM, :AUTOGEN].include?(pif_sprite.type)
+    head = pif_sprite.head_id.to_i
+    body = pif_sprite.body_id.to_i
+    return if head <= 0 || body <= 0
+    root = File.expand_path(".").tr("\\", "/") + "/"
+    resolved = File.expand_path(sprite_path).tr("\\", "/")
+    return if !resolved.start_with?(root)
+    relative = resolved[root.length..-1]
+    normalized = relative.tr("A-Z", "a-z")
+    digest = Digest::SHA256.hexdigest(normalized)
+    metadata_path = "#{TRACKER_SPRITE_CACHE_FOLDER}/components-#{digest}.json"
+    context = [head, body, $PokemonSystem && $PokemonSystem.language]
+    @tracker_sprite_component_contexts ||= {}
+    cached = @tracker_sprite_component_contexts[normalized]
+    if cached && cached[:context] == context && File.file?(metadata_path) &&
+       File.file?(cached[:head_path]) && File.file?(cached[:body_path])
+      return
+    end
+    head_path = tracker_component_base_sprite_path(head)
+    body_path = tracker_component_base_sprite_path(body)
+    return if !head_path || !body_path
+    document = {
+      "schema_version" => TRACKER_SPRITE_COMPONENT_SCHEMA,
+      "sprite_path" => relative,
+      "head" => { "name" => GameData::Species.get(head).name,
+                  "sprite_path" => head_path },
+      "body" => { "name" => GameData::Species.get(body).name,
+                  "sprite_path" => body_path }
+    }
+    ensure_tracker_sprite_cache_folder
+    temporary_path = "#{metadata_path}.#{Process.pid}.tmp"
+    File.binwrite(temporary_path, tracker_json_generate(document))
+    File.rename(temporary_path, metadata_path)
+    @tracker_sprite_component_contexts.delete(
+      @tracker_sprite_component_contexts.keys.first
+    ) if @tracker_sprite_component_contexts.length >= TRACKER_SPRITE_PATH_CACHE_LIMIT
+    @tracker_sprite_component_contexts[normalized] = {
+      :context => context, :head_path => head_path, :body_path => body_path
+    }
+  rescue Exception => e
+    echoln "Ironmon tracker sprite component metadata failed: #{e.message}"
+  ensure
+    File.delete(temporary_path) if temporary_path && File.file?(temporary_path)
+  end
+
+  def self.tracker_component_base_sprite_path(number)
+    sprite = PIFSprite.new(:BASE, number, nil, "")
+    cached = tracker_materialized_sprite_path(sprite)
+    return cached if tracker_cached_sprite_usable?(cached)
+    loader = BattleSpriteLoader.new
+    local = loader.check_for_local_sprite(sprite)
+    extractor = loader.get_sprite_extractor_instance(:BASE)
+    return nil if !(local && pbResolveBitmap(local)) &&
+      !pbResolveBitmap(extractor.getSpritesheetPath(sprite))
+    return tracker_resolved_sprite_path(sprite)
   end
 end
 
@@ -270,7 +339,10 @@ module Ironmon
       pif_sprite = tracker_live_pif_sprite(pokemon, preferred_sprite)
       key = tracker_sprite_cache_key(pif_sprite)
       cache = tracker_live_sprite_paths
-      return cache[key] if key && cache.key?(key)
+      if key && cache.key?(key)
+        tracker_store_sprite_components(pif_sprite, cache[key])
+        return cache[key]
+      end
       normalized = tracker_resolved_sprite_path(pif_sprite)
       resolved_key = tracker_sprite_cache_key(pif_sprite)
       store_tracker_live_sprite_path(resolved_key, normalized) if

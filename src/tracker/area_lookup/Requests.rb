@@ -257,6 +257,7 @@ module Ironmon
     return if !tracker_sprite_bitmap_visible?(sprite)
     ensure_tracker_sprite_cache_folder
     sprite.bitmap.save_to_png(path)
+    tracker_store_sprite_components(pif_sprite, path)
   rescue Exception => exception
     echoln "Ironmon archived sprite materialization failed: #{exception.message}"
   ensure

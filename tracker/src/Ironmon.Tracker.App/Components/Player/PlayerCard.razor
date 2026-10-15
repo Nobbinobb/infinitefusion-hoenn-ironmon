@@ -1,9 +1,18 @@
 <section class="obsidian obsidian-player" role="tabpanel" aria-label="@Text["Player.Card.PlayerPokemon"]">
-    <ObsidianIdentityPanel GameRoot="@GameRoot" SpritePath="@Player?.SpritePath" SpriteLabel="@(Player?.SpeciesName ?? GetName())" Name="@GetName()" Kicker="@GetCardKicker()" DetailsLabel="@Text["Player.Card.PokemonDetails"]">
+    <ObsidianIdentityPanel GameRoot="@GameRoot" SpritePath="@Player?.SpritePath" SpriteLabel="@(Player?.SpeciesName ?? GetName())" Name="@GetName()" Kicker="@GetCardKicker()" Level="@Player?.Level" Gender="@Player?.Gender" DetailsLabel="@Text["Player.Card.PokemonDetails"]">
         <Metadata>
             @if (Player is not null)
             {
                 <p class="obsidian-species">@if (HasDistinctNickname()) { @Player.SpeciesName } <GenderIcon Gender="@Player.Gender" /> · @Text["Player.Card.LevelValue", Player.Level]</p>
+            }
+            else
+            {
+                <p class="obsidian-species">@Text["Player.Card.PlayerWaitingDescription"]</p>
+            }
+        </Metadata>
+        <Types>
+            @if (Player is not null)
+            {
                 <div class="obsidian-types">
                     @foreach (string type in Player.Types)
                     {
@@ -11,11 +20,7 @@
                     }
                 </div>
             }
-            else
-            {
-                <p class="obsidian-species">@Text["Player.Card.PlayerWaitingDescription"]</p>
-            }
-        </Metadata>
+        </Types>
         <Details>
             <button type="button" disabled="@(Player?.AbilityDetails is null)" @onclick="() => SelectAbility(Player!.AbilityDetails!)"><span>@Text["Player.Card.Ability"]</span><strong>@(Player?.Ability ?? "—")</strong></button>
             <button type="button" disabled="@(Player?.HeldItem is null)" @onclick="OpenHeldItem"><span>@Text["Player.Card.Item"]</span><strong>@(Player?.HeldItem ?? (Player is null ? "—" : Text["Player.Card.None"]))</strong></button>
