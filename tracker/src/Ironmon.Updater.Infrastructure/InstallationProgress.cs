@@ -58,7 +58,39 @@ public enum InstallationStage
     /// <summary>
     /// Waits for running applications while retaining prepared installation files.
     /// </summary>
-    WaitingForApplications = 12
+    WaitingForApplications = 12,
+    /// <summary>
+    /// Finds installation paths before their contents are hashed.
+    /// </summary>
+    EnumeratingFiles = 13,
+    /// <summary>
+    /// Captures existing files for installation review and conflict planning.
+    /// </summary>
+    ReviewingInstallation = 14,
+    /// <summary>
+    /// Checks reviewed files after staging recovery data and before publishing preparation.
+    /// </summary>
+    CheckingPreparedInstallation = 15,
+    /// <summary>
+    /// Revalidates the idle installation immediately before applying changes.
+    /// </summary>
+    CheckingInstallation = 16,
+    /// <summary>
+    /// Verifies recovery backups and forward replacement payloads.
+    /// </summary>
+    VerifyingRecovery = 17,
+    /// <summary>
+    /// Checks the complete installed result before committing the update.
+    /// </summary>
+    VerifyingInstallation = 18,
+    /// <summary>
+    /// Verifies ordinary Git metadata used for game recovery.
+    /// </summary>
+    VerifyingMetadata = 19,
+    /// <summary>
+    /// Checks installed components against independent signed release evidence.
+    /// </summary>
+    VerifyingComponents = 20
 }
 
 /// <summary>
@@ -95,6 +127,14 @@ public sealed record InstallationProgress(InstallationStage Stage, long Complete
                 InstallationStage.RestoringFiles => UpdaterText.ProgressRestoringFiles,
                 InstallationStage.DownloadingSprites => UpdaterText.ProgressDownloadingSprites,
                 InstallationStage.WaitingForApplications => UpdaterText.ProgressWaitingForApplications,
+                InstallationStage.EnumeratingFiles => UpdaterText.ProgressEnumeratingFiles,
+                InstallationStage.ReviewingInstallation => UpdaterText.ProgressReviewingInstallation,
+                InstallationStage.CheckingPreparedInstallation => UpdaterText.ProgressCheckingPreparedInstallation,
+                InstallationStage.CheckingInstallation => UpdaterText.ProgressCheckingInstallation,
+                InstallationStage.VerifyingRecovery => UpdaterText.ProgressVerifyingRecovery,
+                InstallationStage.VerifyingInstallation => UpdaterText.ProgressVerifyingInstallation,
+                InstallationStage.VerifyingMetadata => UpdaterText.ProgressVerifyingMetadata,
+                InstallationStage.VerifyingComponents => UpdaterText.ProgressVerifyingComponents,
                 _ => UpdaterText.ProgressDownloadingPackage
             };
             if (Total > 0 && Stage != InstallationStage.DownloadingPackage)
