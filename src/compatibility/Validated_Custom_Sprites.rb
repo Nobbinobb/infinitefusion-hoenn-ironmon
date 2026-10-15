@@ -46,7 +46,8 @@ module Ironmon
       @profile_variants ||= {}
       return @profile_variants[profile_id] if @profile_variants[profile_id]
       path = Ironmon.generation_profile_component_path("custom_sprites", profile_id)
-      document = Ironmon.generation_profile_stringify_keys(JSON.parse(File.binread(path)))
+      parser = defined?(HTTPLite::JSON) ? HTTPLite::JSON : JSON
+      document = Ironmon.generation_profile_stringify_keys(parser.parse(File.binread(path)))
       if document["schema_version"] != SCHEMA_VERSION ||
          !GenerationProfile::SHA256_PATTERN.match?(document["catalogue_id"].to_s)
         raise GenerationProfileUnavailable, "the pinned sprite catalogue is invalid"

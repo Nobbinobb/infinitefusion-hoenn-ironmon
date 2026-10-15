@@ -6,6 +6,11 @@ namespace Ironmon.Tracker.Protocol.Lookup;
 public sealed class PokemonObtainabilityRequestPayload
 {
     /// <summary>
+    /// Gets or initializes whether the tracker can filter material-pair feasibility from the game-owned proof inputs.
+    /// </summary>
+    public bool UseNativeMaterialPairPreparation { get; init; }
+
+    /// <summary>
     /// Initializes an empty obtainability request for protocol serialization.
     /// </summary>
     public PokemonObtainabilityRequestPayload()
@@ -53,6 +58,11 @@ public sealed class PokemonObtainabilityRequestPayload
 /// </summary>
 public sealed class DebugPokemonObtainabilityRequestPayload
 {
+    /// <summary>
+    /// Gets or initializes whether the tracker can filter material-pair feasibility from the game-owned proof inputs.
+    /// </summary>
+    public bool UseNativeMaterialPairPreparation { get; init; }
+
     /// <summary>
     /// Initializes an empty active-run obtainability request for protocol serialization.
     /// </summary>
@@ -130,6 +140,14 @@ public sealed class PokemonObtainabilitySnapshot
 public sealed class PokemonObtainabilityResponsePayload
 {
     /// <summary>
+    /// Gets or initializes whether the active gameplay mapper has its complete reverse pairing, or null for older peers and archive queries.
+    /// </summary>
+    /// <remarks>
+    /// Accepted pairing data can still have cooperatively warming target statistics; gameplay completes those before using the mapper.
+    /// </remarks>
+    public bool? PlayerFusionPairingReady { get; init; }
+
+    /// <summary>
     /// Initializes an empty obtainability response for protocol serialization.
     /// </summary>
     public PokemonObtainabilityResponsePayload()
@@ -202,6 +220,11 @@ public sealed class PokemonObtainabilityResponsePayload
 /// </summary>
 public sealed class PlayerFusionClosureWorkPayload
 {
+    /// <summary>
+    /// Gets or initializes whether the tracker must determine material-pair feasibility instead of receiving precomputed exclusions.
+    /// </summary>
+    public bool NativeMaterialPairPreparation { get; init; }
+
     /// <summary>
     /// Gets or initializes the stable calculation identifier.
     /// </summary>

@@ -72,7 +72,7 @@ public partial class PokemonSprite
     public bool Interactive { get; set; } = true;
 
     /// <summary>
-    /// Refreshes the local sprite when its game installation or path changes.
+    /// Refreshes changed sprites and retries missing images after the game recreates their cache files.
     /// </summary>
     protected override void OnParametersSet()
     {
@@ -80,7 +80,7 @@ public partial class PokemonSprite
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(EnlargedSize, 0);
 
         string? key = GameRoot is null || SpritePath is null ? null : $"{GameRoot}|{SpritePath}";
-        if (key == _spriteKey)
+        if (key == _spriteKey && (key is null || _spriteSource is not null))
             return;
 
         _spriteKey = key;

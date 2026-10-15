@@ -6,6 +6,21 @@ namespace Ironmon.Tracker.Protocol.Lookup;
 public sealed class FusionAssignmentRecipePayload
 {
     /// <summary>
+    /// Gets or initializes the pinned generation profile for optional gameplay assignment sharing.
+    /// </summary>
+    public string? GenerationProfileId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the normal-species count for optional gameplay assignment sharing.
+    /// </summary>
+    public int? NormalSpeciesCount { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the randomized base-stat generator schema for optional gameplay assignment sharing.
+    /// </summary>
+    public int? BaseStatGeneratorVersion { get; init; }
+
+    /// <summary>
     /// Initializes an empty assignment recipe for protocol serialization.
     /// </summary>
     public FusionAssignmentRecipePayload()

@@ -3,6 +3,8 @@
 #===============================================================================
 
 module Ironmon
+  TRACKER_AREA_RECORDED_SPRITE_HINT_LIMIT = 256
+
   def self.tracker_area_lookup_summary(payload, envelope_run_id)
     recipe, archived = tracker_area_lookup_context(payload, envelope_run_id)
     category = (payload || {})["category"].to_s
@@ -64,6 +66,9 @@ module Ironmon
   def self.tracker_area_lookup_detail(payload, envelope_run_id, debug)
     payload ||= {}
     recipe, archived = tracker_area_lookup_context(payload, envelope_run_id)
+    if payload["fusion_page_token"]
+      return tracker_area_native_page_presentation(payload, recipe, archived, debug)
+    end
     area_id = payload["area_id"].to_s
     area = tracker_area_catalog.find do |candidate|
       candidate["area_id"] == area_id
@@ -181,6 +186,12 @@ module Ironmon
               tracker_area_encounter_fusion_materials(revealed).uniq.map do |pair|
                 { "body_id" => pair[0], "head_id" => pair[1] }
               end
+            if payload["use_native_fusion_page_assembly"] == true
+              tracker_area_native_page_descriptor(
+                result, payload, recipe, archived, full_details,
+                descriptors, discovery_keys
+              )
+            end
           end
         end
       else
@@ -196,7 +207,60 @@ module Ironmon
         "invalid_area_category", "The selected area category is invalid."
       )
     end
+    if archived
+      entries = result["trainers"] + result["encounters"] + result["encounter_fusions"]
+      entry_ids = entries.select { |entry| entry["details_revealed"] }.
+        map { |entry| entry["entry_id"] }
+      tracker_recreate_recorded_area_sprites(payload["missing_recorded_sprites"], entry_ids)
+    end
     return result
+  end
+
+  def self.tracker_recreate_recorded_area_sprites(hints, entry_ids, species_ids = [])
+    return if !hints.is_a?(Array) || hints.length > TRACKER_AREA_RECORDED_SPRITE_HINT_LIMIT
+    hints.each do |hint|
+      next if !hint.is_a?(Hash)
+      species_id = hint["species_id"]
+      path = hint["sprite_path"]
+      entry_id = hint["entry_id"]
+      next if !entry_id.is_a?(String) || entry_id.length > 160 ||
+        (!entry_ids.include?(entry_id) && !species_ids.include?(species_id)) ||
+        !species_id.is_a?(String) || species_id.length > 64 ||
+        !path.is_a?(String) || path.length > 160
+      tracker_recreate_recorded_sprite(species_id, path)
+    end
+  end
+
+  def self.tracker_recreate_recorded_sprite(species_id, path)
+    prefix = Regexp.escape(TRACKER_SPRITE_CACHE_FOLDER)
+    match = /\A#{prefix}\/(custom|base|autogen)-([1-9][0-9]*)-(0|[1-9][0-9]*)-([a-zA-Z]+)\.png\z/.match(path)
+    return if !match || File.file?(path)
+    type = match[1].upcase.to_sym
+    head = match[2].to_i
+    body = match[3].to_i
+    letter = match[4] == "main" ? "" : match[4]
+    return if head > NB_POKEMON || body > NB_POKEMON
+    if type == :BASE
+      return if body != 0 || !species_id.end_with?(":0")
+      species = GameData::Species.try_get(species_id.delete_suffix(":0").to_sym)
+      return if !species || species.id_number != head || species.form != 0
+      body = nil
+    else
+      return if body == 0 || species_id != "B#{body}H#{head}:0"
+      letters = ValidatedCustomSprites.allowed_letters(head, body)
+      return if letters && (type != :CUSTOM || !letters.include?(letter))
+      return if type == :AUTOGEN && !letter.empty?
+    end
+    pif_sprite = PIFSprite.new(type, head, body, letter)
+    return if tracker_materialized_sprite_path(pif_sprite) != path
+    sprite = BattleSpriteLoader.new.get_sprite_extractor_instance(type).load_sprite(pif_sprite)
+    return if !tracker_sprite_bitmap_visible?(sprite)
+    ensure_tracker_sprite_cache_folder
+    sprite.bitmap.save_to_png(path)
+  rescue Exception => exception
+    echoln "Ironmon archived sprite materialization failed: #{exception.message}"
+  ensure
+    sprite.dispose if sprite && !sprite.disposed?
   end
 
   def self.tracker_area_lookup_context(payload, envelope_run_id)

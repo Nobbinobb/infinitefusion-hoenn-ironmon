@@ -15,8 +15,9 @@ public sealed class GameHandshakePayload
     /// <param name="gameRoot">The absolute game installation directory.</param>
     /// <param name="runId">The current run identifier.</param>
     /// <param name="battleId">The current battle identifier.</param>
-    /// <param name="supportedDiagnosticCapabilities">The named diagnostic capabilities implemented by the game.</param>
-    /// <exception cref="ArgumentException">Thrown when a required value is empty.</exception>
+    /// <param name="supportedDiagnosticCapabilities">The named diagnostic capabilities implemented by the game, or <see langword="null"/> for an empty list.</param>
+    /// <exception cref="ArgumentException">Thrown when a required value is empty or a diagnostic capability is empty or duplicated.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the capability list or an identifier exceeds its protocol bound.</exception>
     public GameHandshakePayload(string gameVersion, string ironmonVersion, bool ironmonActive, bool debugAvailable, string gameRoot, string? runId, string? battleId, IReadOnlyList<string>? supportedDiagnosticCapabilities = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(gameVersion);
@@ -74,6 +75,39 @@ public sealed class GameHandshakePayload
     public bool ControlOverridesSupported { get; init; }
 
     /// <summary>
+    /// Gets or initializes the game's lowercase SHA-256 catalogue fingerprint offered for stateless move-display negotiation.
+    /// </summary>
+    /// <remarks>
+    /// An absent fingerprint leaves the feature disabled. The tracker must confirm an exact compatible match before the game defers displays.
+    /// </remarks>
+    public string? SimpleMovePowerCatalogueFingerprint { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether the game supports compact species catalogues for tracker-side name search.
+    /// </summary>
+    public bool PokemonNameCatalogSupported { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the numeric defense-profile facts version offered by the game, or zero when unavailable.
+    /// </summary>
+    public int DefenseDamageProfileVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the trainer-location assignment version supported by the game, or zero for native Ruby lookup.
+    /// </summary>
+    public int TrainerLocationIndexVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the optional gameplay reverse-pair assignment version, or zero for Ruby preparation.
+    /// </summary>
+    public int GameplayFusionPairingVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the optional normal-species base-stat batch version, or zero for Ruby generation.
+    /// </summary>
+    public int GameplayBaseStatVersion { get; init; }
+
+    /// <summary>
     /// Gets the current run identifier when one exists.
     /// </summary>
     public string? RunId { get; }
@@ -92,7 +126,7 @@ public sealed class GameHandshakePayload
     /// Validates and copies one bounded capability list.
     /// </summary>
     /// <param name="capabilities">The optional incoming identifiers.</param>
-    /// <returns>The validated identifiers.</returns>
+    /// <returns>A copy of the validated identifiers, or an empty list when <paramref name="capabilities"/> is <see langword="null"/>.</returns>
     /// <exception cref="ArgumentException">Thrown when one identifier is malformed or duplicated.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the list or one identifier exceeds its protocol bound.</exception>
     private static IReadOnlyList<string> ValidateDiagnosticCapabilities(IReadOnlyList<string>? capabilities)

@@ -49,6 +49,10 @@ public sealed class DebugWildOccurrenceSearchRequestPayload
 public sealed class DebugTrainerOccurrenceSearchRequestPayload
 {
     /// <summary>
+    /// Gets or initializes an optional connection-scoped authored trainer location index.
+    /// </summary>
+    public TrainerLocationIndexAssignmentPayload? TrainerLocationIndex { get; init; }
+    /// <summary>
     /// Initializes an empty active-run trainer-occurrence request for protocol serialization.
     /// </summary>
     public DebugTrainerOccurrenceSearchRequestPayload()

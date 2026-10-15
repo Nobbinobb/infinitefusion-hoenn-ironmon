@@ -77,7 +77,11 @@ module Ironmon
     )
     occurrences = []
     sources = []
-    tracker_wild_occurrence_sources(recipe, checkpoint).each do |entry, mapped|
+    mapped_sources = tracker_wild_occurrence_sources(recipe, checkpoint)
+    if target.id_number <= NB_POKEMON
+      mapped_sources = tracker_normal_wild_occurrence_index(mapped_sources)[target.id_number] || []
+    end
+    mapped_sources.each do |entry, mapped|
       checkpoint.call if checkpoint
       if mapped > 0 && mapped <= NB_POKEMON
         sources << { "metadata" => entry, "species" => GameData::Species.get(mapped).id }
@@ -109,6 +113,23 @@ module Ironmon
       [entry["route_name"], entry["encounter_type"], entry["slot"],
        entry["entry_id"].to_s]
     end
+  end
+
+  def self.tracker_normal_wild_occurrence_index(sources)
+    @tracker_normal_wild_occurrence_indexes ||= {}
+    cached = @tracker_normal_wild_occurrence_indexes[sources.object_id]
+    return cached[1] if cached && cached[0].equal?(sources)
+    index = {}
+    sources.each do |entry, mapped|
+      next if mapped <= 0 || mapped > NB_POKEMON
+      index[mapped] ||= []
+      index[mapped] << [entry, mapped]
+    end
+    tracker_store_bounded(
+      @tracker_normal_wild_occurrence_indexes,
+      sources.object_id, [sources, index], 2
+    )
+    return index
   end
 
   def self.tracker_wild_occurrence_sources(recipe, checkpoint)
@@ -318,6 +339,60 @@ module Ironmon
     components = trainer.id.is_a?(Array) ? trainer.id : [trainer.id]
     key = "#{components[0]}\0#{components[1]}"
     return tracker_trainer_location_index[key] || []
+  end
+
+  def self.tracker_import_trainer_location_index(assignment)
+    return nil if assignment.nil?
+    if !assignment.is_a?(Hash) || assignment["version"] != 1 ||
+       !assignment["context_token"].is_a?(String) ||
+       assignment["context_token"].empty? ||
+       assignment["context_token"].length > 128 ||
+       !assignment["game_root"].is_a?(String) ||
+       File.expand_path(assignment["game_root"]) != File.expand_path(".")
+      raise TrackerLookupError.new(
+        "invalid_trainer_location_index", "The tracker trainer-location context is invalid."
+      )
+    end
+    token = assignment["context_token"]
+    return token if @tracker_trainer_location_index
+    locations = assignment["locations"]
+    return nil if locations.nil?
+    if !locations.is_a?(Hash) || locations.length > 10_000
+      raise TrackerLookupError.new(
+        "invalid_trainer_location_index", "The tracker trainer-location entries are malformed."
+      )
+    end
+    decoded_locations = {}
+    locations.each do |encoded, maps|
+      key = encoded.is_a?(String) && encoded.length <= 5464 ?
+        encoded.unpack("m0")[0] : nil
+      if !key || !key.ascii_only? || key.length > 4096 ||
+         key.count("\0") != 1 || decoded_locations.key?(key) ||
+         !maps.is_a?(Array) || maps.length > 999 ||
+         maps.any? { |id| !id.is_a?(Integer) || id < 1 || id > 999 } ||
+         maps.uniq.length != maps.length
+        raise TrackerLookupError.new(
+          "invalid_trainer_location_index", "The tracker trainer-location entries are malformed."
+        )
+      end
+      decoded_locations[key] = maps
+    end
+    index = {}
+    route_names = {}
+    decoded_locations.each do |key, maps|
+      maps.each do |map_id|
+        route_name = route_names[map_id] ||= pbGetMapNameFromId(map_id)
+        next if route_name.to_s.match?(/\Aquest_/i)
+        index[key] ||= []
+        index[key] << { "map_id" => map_id, "route_name" => route_name }
+      end
+    end
+    @tracker_trainer_location_index = index
+    return token
+  rescue ArgumentError
+    raise TrackerLookupError.new(
+      "invalid_trainer_location_index", "The tracker trainer-location entries are malformed."
+    )
   end
 
   def self.tracker_trainer_location_index

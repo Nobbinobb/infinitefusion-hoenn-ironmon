@@ -7,6 +7,10 @@
     {
         @if (Defense.LimitedInformation) { <p class="defense-help">@Text["Defense.KnownOnly"]</p> }
         <div class="obsidian-section-heading"><h3>@Text["Redesign.TypeMatchups"]</h3>@if (Defense.AllTypeEffects.Count > 0) { <small>@Text["Redesign.BeforeAllTypes"]</small> }</div>
+        @if (Defense.DamageProfilesUnavailable)
+        {
+            <p class="detail-description">@Text["Defense.Unavailable"]</p>
+        }
         @foreach (string group in _groups)
         {
             var entries = Matching(group).ToArray();

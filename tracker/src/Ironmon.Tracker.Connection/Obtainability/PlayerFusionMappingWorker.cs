@@ -1,10 +1,11 @@
+using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Text;
 
 namespace Ironmon.Tracker.Connection.Obtainability;
 
 /// <summary>
-/// Reproduces schema-5 player-fusion mappings in parallel outside the game runtime.
+/// Reproduces deterministic player-fusion mappings and reverse pairings outside the game runtime.
 /// </summary>
 internal sealed class PlayerFusionMappingWorker
 {
@@ -99,6 +100,9 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Reports the global reverse-pair quality for regression tests and diagnostics.
     /// </summary>
+    /// <param name="seed">The Ironmon run seed.</param>
+    /// <param name="generatorVersion">The player-fusion generator schema version.</param>
+    /// <returns>The pairing count, strength differences, shared-type coverage, and legal range width.</returns>
     internal PlayerFusionPairingAudit AuditPairing(long seed, int generatorVersion)
     {
         WorkerState state = GetState(seed, generatorVersion);
@@ -157,6 +161,52 @@ internal sealed class PlayerFusionMappingWorker
     }
 
     /// <summary>
+    /// Exports the complete seeded reverse pairing without enumerating material assignments.
+    /// </summary>
+    /// <param name="seed">The active run seed.</param>
+    /// <param name="generatorVersion">The supported player-fusion generator version.</param>
+    /// <returns>Base64-encoded little-endian species pairs in exact generator order and orientation.</returns>
+    /// <exception cref="NotSupportedException">Thrown when the generator version differs from the validated catalog.</exception>
+    internal string ExportReversePairing(long seed, int generatorVersion)
+    {
+        if (generatorVersion != _catalog.PlayerFusionGeneratorVersion)
+            throw new NotSupportedException($"Player-fusion generator {generatorVersion} is unsupported by the worker catalog.");
+
+        WorkerState state = GetState(seed, generatorVersion);
+        byte[] packed = new byte[checked(state.Pairs.Count * sizeof(uint) * 2)];
+        for (int index = 0; index < state.Pairs.Count; index++)
+        {
+            TargetPair pair = state.Pairs[index];
+            BinaryPrimitives.WriteUInt32LittleEndian(packed.AsSpan(index * 8, 4), (uint)pair.First.Id);
+            BinaryPrimitives.WriteUInt32LittleEndian(packed.AsSpan(index * 8 + 4, 4), (uint)pair.Second.Id);
+        }
+
+        return Convert.ToBase64String(packed);
+    }
+
+    /// <summary>
+    /// Exports normal-species stats already calculated for fusion preparation without rebuilding an evicted seed.
+    /// </summary>
+    /// <param name="seed">The active run seed.</param>
+    /// <param name="generatorVersion">The player-fusion generator version identifying the retained state.</param>
+    /// <returns>Identity-keyed base64 six-byte stat rows, or null when the prepared state is unavailable.</returns>
+    internal IReadOnlyDictionary<string, string>? ExportPreparedBaseStats(long seed, int generatorVersion)
+    {
+        if (!_states.TryGetValue(new(seed, generatorVersion), out Lazy<WorkerState>? prepared) || !prepared.IsValueCreated)
+            return null;
+
+        WorkerState state = prepared.Value;
+        Dictionary<string, string> rows = new(StringComparer.Ordinal);
+        foreach (PlayerFusionNormalSpecies species in _catalog.NormalSpecies)
+        {
+            byte[] values = [.. state.Stats[species.Id].Select(value => checked((byte)value))];
+            rows.Add(species.Identity, Convert.ToBase64String(values));
+        }
+
+        return rows;
+    }
+
+    /// <summary>
     /// Bounds retained seed-specific mapping state while preserving the requested entry.
     /// </summary>
     /// <param name="currentKey">The state currently being requested.</param>
@@ -172,12 +222,19 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Computes the stable flat output offset for one triangular material row.
     /// </summary>
+    /// <param name="materialCount">The number of distinct normal materials in the ordered input set.</param>
+    /// <param name="firstIndex">The zero-based position of the row's first material.</param>
+    /// <returns>The first output position for the row of unordered pairs beginning with that material.</returns>
     private static int PairOffset(int materialCount, int firstIndex)
         => checked(firstIndex * materialCount - firstIndex * (firstIndex - 1) / 2);
 
     /// <summary>
     /// Builds the seed-specific randomized stats, global reverse pairs, and BST index.
     /// </summary>
+    /// <param name="seed">The Ironmon run seed.</param>
+    /// <param name="generatorVersion">The player-fusion generator schema version used for deterministic pairing.</param>
+    /// <param name="cancellationToken">The token checked during species preparation and pairing.</param>
+    /// <returns>The complete mapping state for the worker's validated catalog and requested seed.</returns>
     private WorkerState BuildState(long seed, int generatorVersion, CancellationToken cancellationToken)
     {
         int[][] stats = new int[_catalog.NormalSpeciesCount + 1][];
@@ -207,6 +264,9 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Creates one custom target's numeric identity, generated BST, types, and components.
     /// </summary>
+    /// <param name="target">The catalog target with packed Body and Head components and a type mask.</param>
+    /// <param name="stats">The generated normal-species stat arrays indexed by numeric species identifier.</param>
+    /// <returns>The target's numeric identity, components, generated BST, and catalog type mask.</returns>
     private TargetData CreateTargetData(PlayerFusionTargetSpecies target, IReadOnlyList<int[]> stats)
     {
         int body = target.PackedComponents >> MaterialIdBits;
@@ -218,6 +278,9 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Reproduces the Ruby base-stat distributor for one normal species.
     /// </summary>
+    /// <param name="seed">The Ironmon run seed.</param>
+    /// <param name="species">The normal species identity and original stats used to preserve its BST.</param>
+    /// <returns>The generated HP, Attack, Defense, Special Attack, Special Defense, and Speed values.</returns>
     private static int[] DistributeStats(long seed, PlayerFusionNormalSpecies species)
     {
         const int minimumStat = 5;
@@ -270,6 +333,12 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Builds one global strength-aware, type-aware reverse pairing.
     /// </summary>
+    /// <param name="seed">The Ironmon run seed.</param>
+    /// <param name="generatorVersion">The player-fusion schema used to rank targets deterministically.</param>
+    /// <param name="targets">Every eligible custom fusion with its generated metrics and components.</param>
+    /// <param name="maximumPairDifference">The largest permitted BST difference between reverse partners.</param>
+    /// <param name="cancellationToken">The token checked while constructing and validating partner eligibility.</param>
+    /// <returns>The complete reverse pairs in the generator's exact order and orientation.</returns>
     private static TargetPair[] BuildTargetPairs(long seed, int generatorVersion, IReadOnlyList<TargetData> targets, int maximumPairDifference, CancellationToken cancellationToken)
     {
         int bestMaximumBstDifference = int.MaxValue;
@@ -315,8 +384,13 @@ internal sealed class PlayerFusionMappingWorker
     }
 
     /// <summary>
-    /// Finds the nearest remaining disjoint partner, preferring at least one shared type.
+    /// Finds the first remaining disjoint partner within the strength limit and optional shared-type requirement.
     /// </summary>
+    /// <param name="ordered">The current target order, including any earlier partner swaps.</param>
+    /// <param name="position">The zero-based position of the target requiring a partner.</param>
+    /// <param name="requireSharedType">Whether the partner must share at least one type with the target.</param>
+    /// <param name="maximumPairDifference">The largest permitted BST difference between the two targets.</param>
+    /// <returns>The eligible partner's position, or minus one when no candidate is found.</returns>
     private static int FindStrengthPartner(IReadOnlyList<TargetData> ordered, int position, bool requireSharedType, int maximumPairDifference)
     {
         TargetData first = ordered[position];
@@ -340,6 +414,11 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Rejects an isolated fusion before retrying repairs that cannot produce a legal partner.
     /// </summary>
+    /// <param name="target">The custom fusion whose global partner eligibility must be checked.</param>
+    /// <param name="targets">The complete eligible custom-fusion set.</param>
+    /// <param name="maximumPairDifference">The largest permitted BST difference between reverse partners.</param>
+    /// <param name="cancellationToken">The token checked while examining possible partners.</param>
+    /// <exception cref="InvalidOperationException">Thrown when no component-disjoint target is within the strength limit.</exception>
     private static void EnsureStrengthPartnerExists(TargetData target, IReadOnlyList<TargetData> targets, int maximumPairDifference, CancellationToken cancellationToken)
     {
         int? nearestDifference = null;
@@ -362,6 +441,11 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Re-pairs two blocked targets with the best compatible earlier pair.
     /// </summary>
+    /// <param name="pairs">The existing ordered pairs, replaced and extended only when a repair succeeds.</param>
+    /// <param name="currentFirst">The first blocked target requiring a reverse partner.</param>
+    /// <param name="currentSecond">The second blocked target requiring a reverse partner.</param>
+    /// <param name="maximumPairDifference">The largest permitted BST difference between reverse partners.</param>
+    /// <returns>True when a direct repair or alternating-chain repair incorporates both blocked targets.</returns>
     private static bool RepairStrengthPair(List<TargetPair> pairs, TargetData currentFirst, TargetData currentSecond, int maximumPairDifference)
     {
         ((int Distance, int TypePenalty, int PairIndex) Score, int PairIndex, TargetPair First, TargetPair Second)? best = null;
@@ -402,6 +486,11 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Repairs a blocked pair through a deterministic alternating chain without relaxing strength or component eligibility.
     /// </summary>
+    /// <param name="pairs">The existing ordered pairs, updated only after a complete repair chain is found.</param>
+    /// <param name="currentFirst">The first blocked target that starts the repair search.</param>
+    /// <param name="currentSecond">The second blocked target that must close the repair chain.</param>
+    /// <param name="maximumPairDifference">The largest permitted BST difference between reverse partners.</param>
+    /// <returns>True when an alternating chain incorporates both targets; otherwise false without modifying the pairs.</returns>
     private static bool RepairStrengthChain(List<TargetPair> pairs, TargetData currentFirst, TargetData currentSecond, int maximumPairDifference)
     {
         Queue<(TargetData Current, TargetPair[] Replacements, int[] Removed)> queue = new();
@@ -446,18 +535,27 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Determines whether a repair edge preserves the global strength and disjoint-component constraints.
     /// </summary>
+    /// <param name="first">The first candidate reverse partner.</param>
+    /// <param name="second">The second candidate reverse partner.</param>
+    /// <param name="maximumPairDifference">The largest permitted BST difference between the candidates.</param>
+    /// <returns>True when the candidates share no component and satisfy the strength limit.</returns>
     private static bool StrengthPairCompatible(TargetData first, TargetData second, int maximumPairDifference)
         => Math.Abs(first.Bst - second.Bst) <= maximumPairDifference && !SharesComponent(first, second);
 
     /// <summary>
     /// Determines whether two custom targets share either normal component.
     /// </summary>
+    /// <param name="first">The first custom target with its Body and Head components.</param>
+    /// <param name="second">The second custom target with its Body and Head components.</param>
+    /// <returns>True when either component of the first target equals either component of the second.</returns>
     private static bool SharesComponent(TargetData first, TargetData second)
         => first.BodyId == second.BodyId || first.BodyId == second.HeadId || first.HeadId == second.BodyId || first.HeadId == second.HeadId;
 
     /// <summary>
     /// Indexes both orientations of every global reverse pair by the first BST.
     /// </summary>
+    /// <param name="pairs">The complete reverse pairing in deterministic generator order.</param>
+    /// <returns>The orientations grouped by their first target's BST, preserving pair order within each group.</returns>
     private static IReadOnlyDictionary<int, IReadOnlyList<OrientedTarget>> BuildBstIndex(IReadOnlyList<TargetPair> pairs)
     {
         Dictionary<int, List<OrientedTarget>> mutable = [];
@@ -473,6 +571,9 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Adds one oriented reverse-pair position to the mutable BST index.
     /// </summary>
+    /// <param name="index">The mutable index of orientations grouped by first-target BST.</param>
+    /// <param name="bst">The generated BST of the orientation's first target.</param>
+    /// <param name="target">The pair position and orientation to append to the indexed group.</param>
     private static void AddBstIndexEntry(Dictionary<int, List<OrientedTarget>> index, int bst, OrientedTarget target)
     {
         if (!index.TryGetValue(bst, out List<OrientedTarget>? entries))
@@ -487,6 +588,10 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Selects both deterministic result orientations for one unordered material pair.
     /// </summary>
+    /// <param name="state">The complete seed-specific mapping state.</param>
+    /// <param name="firstId">The lower numeric normal-material identifier, used as Body for the first result.</param>
+    /// <param name="secondId">The higher or equal normal-material identifier, used as Body for the second result.</param>
+    /// <returns>The selected first result and its global reverse partner in material orientation order.</returns>
     private static (int First, int Second) SelectResults(WorkerState state, int firstId, int secondId)
     {
         ulong sourceTypes = state.Types[firstId] | state.Types[secondId];
@@ -500,8 +605,11 @@ internal sealed class PlayerFusionMappingWorker
     }
 
     /// <summary>
-    /// Calculates the inclusive schema-5 BST range from the stronger and weaker materials.
+    /// Calculates the inclusive player-fusion BST range from the stronger and weaker materials.
     /// </summary>
+    /// <param name="firstBst">The generated BST of the first normal material.</param>
+    /// <param name="secondBst">The generated BST of the second normal material.</param>
+    /// <returns>The inclusive minimum and maximum permitted result BSTs.</returns>
     internal static (int Minimum, int Maximum) FusionBstRange(int firstBst, int secondBst)
     {
         int higher = Math.Max(firstBst, secondBst);
@@ -521,6 +629,8 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Calculates the widest legal result interval produced by any two normal-material BSTs.
     /// </summary>
+    /// <param name="stats">The generated normal-species stat arrays indexed by numeric identifier, with position zero unused.</param>
+    /// <returns>The largest difference between the upper and lower bounds of any material pair's legal BST range.</returns>
     private static int MaximumFusionRangeWidth(IReadOnlyList<int[]> stats)
     {
         int[] values = [.. stats.Skip(1).Where(value => value is not null).Select(value => value.Sum()).Distinct()];
@@ -539,6 +649,14 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Finds the compatible global reverse pair closest to the rolled target.
     /// </summary>
+    /// <param name="state">The complete seed-specific mapping state and ordered BST index.</param>
+    /// <param name="firstId">The lower numeric normal-material identifier used for deterministic ranking.</param>
+    /// <param name="secondId">The higher or equal normal-material identifier used for deterministic ranking.</param>
+    /// <param name="sourceTypes">The combined type mask of both normal materials in catalog bit order.</param>
+    /// <param name="targetBst">The deterministically rolled target BST.</param>
+    /// <param name="minimum">The inclusive minimum allowed BST for both result orientations.</param>
+    /// <param name="maximum">The inclusive maximum allowed BST for both result orientations.</param>
+    /// <returns>The best eligible ordered result pair, or null when neither orientation of any pair satisfies the constraints.</returns>
     private static (int First, int Second)? ClosestResults(WorkerState state, int firstId, int secondId, ulong sourceTypes, int targetBst, int minimum, int maximum)
     {
         (int Score, ulong Rank, int First, int Second)? best = null;
@@ -558,6 +676,16 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Compares every oriented global pair at one first-result BST.
     /// </summary>
+    /// <param name="state">The complete seed-specific mapping state and ordered BST index.</param>
+    /// <param name="firstId">The lower numeric normal-material identifier used for deterministic ranking.</param>
+    /// <param name="secondId">The higher or equal normal-material identifier used for deterministic ranking.</param>
+    /// <param name="sourceTypes">The combined type mask of both normal materials in catalog bit order.</param>
+    /// <param name="targetBst">The deterministically rolled target BST used to score both result orientations.</param>
+    /// <param name="firstBst">The indexed BST whose first-result orientations are being examined.</param>
+    /// <param name="minimum">The inclusive minimum allowed BST for both result orientations.</param>
+    /// <param name="maximum">The inclusive maximum allowed BST for both result orientations.</param>
+    /// <param name="best">The best earlier score, deterministic rank, and ordered result identifiers, or null before a match exists.</param>
+    /// <returns>The best candidate after examining this BST, preserving the earlier candidate when score and rank tie.</returns>
     private static (int Score, ulong Rank, int First, int Second)? ClosestResultsAtBst(WorkerState state, int firstId, int secondId, ulong sourceTypes, int targetBst, int firstBst, int minimum, int maximum, (int Score, ulong Rank, int First, int Second)? best)
     {
         if (firstBst < minimum || firstBst > maximum)
@@ -591,18 +719,26 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Calculates an oriented fusion BST from six generated component stats.
     /// </summary>
+    /// <param name="body">The Body's generated HP, Attack, Defense, Special Attack, Special Defense, and Speed values.</param>
+    /// <param name="head">The Head's generated stats in the same order as the Body values.</param>
+    /// <returns>The fusion BST after separately truncating each dominant and secondary stat contribution.</returns>
     private static int FusedBst(IReadOnlyList<int> body, IReadOnlyList<int> head)
         => 2 * head[0] / 3 + body[0] / 3 + 2 * body[1] / 3 + head[1] / 3 + 2 * body[2] / 3 + head[2] / 3 + 2 * head[3] / 3 + body[3] / 3 + 2 * head[4] / 3 + body[4] / 3 + 2 * body[5] / 3 + head[5] / 3;
 
     /// <summary>
     /// Computes a delimiter-joined deterministic FNV-1a value.
     /// </summary>
+    /// <param name="parts">The ordered hash components joined with a vertical-bar delimiter.</param>
+    /// <returns>The unsigned 64-bit FNV-1a hash of the joined components encoded as UTF-8.</returns>
     private static ulong DeterministicValue(params object[] parts)
         => Fnv1a(string.Join('|', parts));
 
     /// <summary>
     /// Computes a UTF-8 FNV-1a value from one initial state.
     /// </summary>
+    /// <param name="input">The text whose UTF-8 bytes are appended to the hash state.</param>
+    /// <param name="initialValue">The initial hash state, or the standard FNV-1a offset basis for a new hash.</param>
+    /// <returns>The unsigned 64-bit FNV-1a state after consuming every input byte.</returns>
     private static ulong Fnv1a(string input, ulong initialValue = FnvOffsetBasis)
     {
         ulong value = initialValue;
@@ -618,6 +754,9 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Stores one seed-specific immutable mapping model.
     /// </summary>
+    /// <remarks>
+    /// Initializes the retained mapping model with generated material metrics, the complete ordered reverse pairing, and its lookup indexes.
+    /// </remarks>
     /// <param name="Seed">The Ironmon run seed.</param>
     /// <param name="GeneratorVersion">The player-fusion schema version.</param>
     /// <param name="Stats">The generated normal-species stat arrays.</param>
@@ -633,6 +772,9 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Stores one custom result's seed-specific metrics and components.
     /// </summary>
+    /// <remarks>
+    /// Initializes a custom result with its numeric identity, ordered material components, generated BST, and catalog type mask.
+    /// </remarks>
     /// <param name="Id">The numeric fusion species identifier.</param>
     /// <param name="BodyId">The body component identifier.</param>
     /// <param name="HeadId">The head component identifier.</param>
@@ -643,6 +785,9 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Stores one global, reversible pair of custom fusion results.
     /// </summary>
+    /// <remarks>
+    /// Initializes a reverse pair in the exact order and orientation retained by the deterministic generator.
+    /// </remarks>
     /// <param name="First">The first custom result.</param>
     /// <param name="Second">The result's unique global reverse partner.</param>
     private sealed record TargetPair(TargetData First, TargetData Second);
@@ -650,6 +795,9 @@ internal sealed class PlayerFusionMappingWorker
     /// <summary>
     /// Locates one orientation of a global reverse pair.
     /// </summary>
+    /// <remarks>
+    /// Initializes an indexed orientation from a stable pair position and whether its second result comes first.
+    /// </remarks>
     /// <param name="PairPosition">The pair's stable position.</param>
     /// <param name="Reversed">Whether the pair's second result comes first.</param>
     private sealed record OrientedTarget(int PairPosition, bool Reversed);
@@ -659,6 +807,9 @@ internal sealed class PlayerFusionMappingWorker
 /// <summary>
 /// Stores both custom results selected for one unordered normal-material pair.
 /// </summary>
+/// <remarks>
+/// Initializes the deterministic mapping with numerically ordered materials and both result orientations, including the partner of a same-species result.
+/// </remarks>
 /// <param name="FirstMaterialId">The lower-position material identifier.</param>
 /// <param name="SecondMaterialId">The upper-position material identifier.</param>
 /// <param name="FirstResultId">The result when the first material is Body.</param>
@@ -668,6 +819,9 @@ internal sealed record PlayerFusionMappedPair(int FirstMaterialId, int SecondMat
 /// <summary>
 /// Identifies one reusable seed-specific player-fusion mapping state.
 /// </summary>
+/// <remarks>
+/// Initializes a state identity from the seed and player-fusion schema within one worker's validated catalog.
+/// </remarks>
 /// <param name="Seed">The Ironmon run seed.</param>
 /// <param name="GeneratorVersion">The player-fusion generator schema version.</param>
 internal sealed record PlayerFusionStateKey(long Seed, int GeneratorVersion);
@@ -675,6 +829,9 @@ internal sealed record PlayerFusionStateKey(long Seed, int GeneratorVersion);
 /// <summary>
 /// Summarizes the strength and type quality of one global reverse pairing.
 /// </summary>
+/// <remarks>
+/// Initializes the audit with the complete pair count, maximum partner BST difference, missing shared-type count, and widest legal range.
+/// </remarks>
 /// <param name="PairCount">The number of global reverse pairs.</param>
 /// <param name="MaximumBstDifference">The largest BST gap within one global reverse pair.</param>
 /// <param name="PairsWithoutSharedType">The number of pairs whose results share no type.</param>

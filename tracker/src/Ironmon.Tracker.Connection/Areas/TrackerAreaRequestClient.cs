@@ -1,10 +1,11 @@
 using Ironmon.Tracker.Connection.Transport;
 using Ironmon.Tracker.Connection.Obtainability;
+using Ironmon.Tracker.Connection.Lookup;
 
 namespace Ironmon.Tracker.Connection.Areas;
 
 /// <summary>
-/// Coordinates cached area requests with tracker-owned discovery persistence and archived restoration.
+/// Coordinates cached area requests, tracker-owned discovery persistence, and native fusion page assembly for active and archived runs.
 /// </summary>
 internal sealed class TrackerAreaRequestClient
 {
@@ -16,6 +17,8 @@ internal sealed class TrackerAreaRequestClient
     private readonly PlayerFusionMappingCoordinator _fusionMappings;
     private const string _activeSource = "active";
     private const string _archivedSource = "archive";
+    private const string _pageChangedError = "area_page_changed";
+    private readonly PokemonNameCatalogProvider _nameCatalogs;
 
     /// <summary>
     /// Initializes area request orchestration for one tracker connection.
@@ -25,7 +28,8 @@ internal sealed class TrackerAreaRequestClient
     /// <param name="authorization">The diagnostic authorization policy.</param>
     /// <param name="cache">The connection-scoped response cache.</param>
     /// <param name="fusionMappings">The connection's shared native fusion worker.</param>
-    internal TrackerAreaRequestClient(TrackerRequestSession session, AreaDiscoveryStore discoveries, TrackerDiagnosticAuthorizer authorization, TrackerResponseCache cache, PlayerFusionMappingCoordinator fusionMappings)
+    /// <param name="nameCatalogs">The shared provider of prepared name catalogs, or null to create an empty connection-local provider.</param>
+    internal TrackerAreaRequestClient(TrackerRequestSession session, AreaDiscoveryStore discoveries, TrackerDiagnosticAuthorizer authorization, TrackerResponseCache cache, PlayerFusionMappingCoordinator fusionMappings, PokemonNameCatalogProvider? nameCatalogs = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(discoveries);
@@ -37,6 +41,7 @@ internal sealed class TrackerAreaRequestClient
         _authorization = authorization;
         _cache = cache;
         _fusionMappings = fusionMappings;
+        _nameCatalogs = nameCatalogs ?? new PokemonNameCatalogProvider();
     }
 
     /// <summary>
@@ -68,7 +73,7 @@ internal sealed class TrackerAreaRequestClient
     }
 
     /// <summary>
-    /// Requests one lazily loaded public area category for the active or one archived run.
+    /// Requests one area category, completes available native fusion preparation, and persists discoveries under the current disclosure permission.
     /// </summary>
     /// <param name="areaId">The stable logical area identifier.</param>
     /// <param name="category">The requested category.</param>
@@ -80,8 +85,10 @@ internal sealed class TrackerAreaRequestClient
     /// <param name="limit">The maximum number of encounter entries to return.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <param name="overworldEncounters">The active encounter mode used to separate cached pages.</param>
-    /// <returns>The requested area category.</returns>
-    internal async Task<AreaLookupDetailResponsePayload> GetDetailsAsync(string areaId, AreaContentCategory category, CompletedRunRecipePayload? recipe, string? connectedRunId, bool forceRefresh, string? encounterEnvironment, int offset, int limit, CancellationToken cancellationToken, bool? overworldEncounters)
+    /// <param name="gameRoot">The connected game installation used to identify missing recorded sprite files.</param>
+    /// <param name="authorizationRefreshes">The number of disclosure-permission retries already attempted; repeated changes reject the response.</param>
+    /// <returns>The completed area page with the tracker-owned progress revision.</returns>
+    internal async Task<AreaLookupDetailResponsePayload> GetDetailsAsync(string areaId, AreaContentCategory category, CompletedRunRecipePayload? recipe, string? connectedRunId, bool forceRefresh, string? encounterEnvironment, int offset, int limit, CancellationToken cancellationToken, bool? overworldEncounters, string? gameRoot = null, int authorizationRefreshes = 0)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(areaId);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
@@ -92,25 +99,70 @@ internal sealed class TrackerAreaRequestClient
         string source = recipe is null ? _activeSource : _archivedSource;
         bool diagnosticAccess = recipe is null && _authorization.HasAreaDetails(category);
         bool? mode = recipe is null ? overworldEncounters : null;
+        IReadOnlyList<int>? mapIds = _cache.TryGet(TrackerCommands.AreaLookupSummary, $"{source}|{runId}|{revision}|{category}|{mode}", out AreaLookupSummaryResponsePayload summary) ? summary.Areas.FirstOrDefault(area => area.AreaId == areaId)?.MapIds : null;
+        IReadOnlyList<AreaRecordedSpritePayload> missingSprites = recipe is null ? [] : _discoveries.GetMissingSpriteHints(runId, category, gameRoot, mapIds);
+        if (recipe is not null && mapIds is null && missingSprites.Count == TrackerProtocol.MaximumRecordedAreaSpriteHints)
+        {
+            summary = await GetSummariesAsync(category, recipe, connectedRunId, false, cancellationToken, overworldEncounters);
+            mapIds = summary.Areas.FirstOrDefault(area => area.AreaId == areaId)?.MapIds ?? [];
+            missingSprites = _discoveries.GetMissingSpriteHints(runId, category, gameRoot, mapIds);
+        }
+
         string cacheKey = $"{source}|{runId}|{revision}|{diagnosticAccess}|{mode}|{category}|{areaId}|{encounterEnvironment}|{offset}|{limit}";
-        if (!forceRefresh && _cache.TryGet(TrackerCommands.AreaLookupDetail, cacheKey, out AreaLookupDetailResponsePayload cached))
-            return cached;
+        if (!forceRefresh && _cache.TryGet(TrackerCommands.AreaLookupDetail, cacheKey, out AreaLookupDetailResponsePayload cached) && diagnosticAccess == (recipe is null && _authorization.HasAreaDetails(category)))
+        {
+            IReadOnlyList<AreaRecordedSpritePayload> cachedMissing = missingSprites.Count == TrackerProtocol.MaximumRecordedAreaSpriteHints ? _discoveries.GetMissingSpriteHints(runId, category, gameRoot, entryIds: GetDisclosedEntryIds(cached)) : missingSprites;
+            if (!ContainsMissingRecordedSprites(cached, cachedMissing))
+                return cached;
+        }
 
         bool native = category == AreaContentCategory.Encounter && _fusionMappings.CanMapAreaFusions(runId, recipe);
-        AreaLookupDetailRequestPayload request = new() { AreaId = areaId, Category = category, Recipe = recipe, DiscoveryKeys = _discoveries.GetKeys(runId, areaId, category), EncounterEnvironment = encounterEnvironment, Offset = offset, Limit = limit, UseNativeFusionMapping = native };
+        PokemonNameCatalog? names = GetReadyFusionNames(recipe);
+        bool assembly = native && names is not null;
+        AreaLookupDetailRequestPayload request = new() { AreaId = areaId, Category = category, Recipe = recipe, DiscoveryKeys = _discoveries.GetKeys(runId, areaId, category), MissingRecordedSprites = missingSprites, EncounterEnvironment = encounterEnvironment, Offset = offset, Limit = limit, UseNativeFusionMapping = native, UseNativeFusionPageAssembly = assembly, FusionNameContextToken = assembly ? names?.FusionNameContextToken : null };
         AreaLookupDetailResponsePayload gameResponse = await _session.SendAsync<AreaLookupDetailRequestPayload, AreaLookupDetailResponsePayload>(TrackerCommands.AreaLookupDetail, request, runId, cancellationToken);
+        int refreshedPages = 0;
         while (gameResponse.Pending)
         {
             if (native && gameResponse.RequiredFusionMaterials.Count > 0)
             {
                 IReadOnlyList<AreaFusionResultPayload>? results = await _fusionMappings.MapAreaFusionsAsync(runId, recipe, gameResponse.RequiredFusionMaterials, cancellationToken);
                 native = results is not null;
+                if (results is not null && gameResponse.FusionPageToken is not null)
+                {
+                    try
+                    {
+                        gameResponse = await CompleteNativePageAsync(request, gameResponse, results, runId, names ?? throw new TrackerProtocolException("The fusion page has no ready name context."), cancellationToken);
+                        break;
+                    }
+                    catch (TrackerProtocolException exception) when (exception.ErrorCode == _pageChangedError && refreshedPages == 0)
+                    {
+                        refreshedPages++;
+                        names = GetReadyFusionNames(recipe);
+                        assembly = native && names is not null;
+                        request = new AreaLookupDetailRequestPayload
+                        {
+                            AreaId = areaId, Category = category, Recipe = recipe,
+                            DiscoveryKeys = _discoveries.GetKeys(runId, areaId, category),
+                            MissingRecordedSprites = missingSprites,
+                            EncounterEnvironment = encounterEnvironment, Offset = offset,
+                            Limit = limit, UseNativeFusionMapping = native,
+                            UseNativeFusionPageAssembly = assembly,
+                            FusionNameContextToken = assembly ? names?.FusionNameContextToken : null
+                        };
+
+                        gameResponse = await _session.SendAsync<AreaLookupDetailRequestPayload, AreaLookupDetailResponsePayload>(TrackerCommands.AreaLookupDetail, request, runId, cancellationToken);
+                        continue;
+                    }
+                }
+
                 request = new AreaLookupDetailRequestPayload
                 {
                     AreaId = request.AreaId,
                     Category = request.Category,
                     Recipe = request.Recipe,
                     DiscoveryKeys = request.DiscoveryKeys,
+                    MissingRecordedSprites = request.MissingRecordedSprites,
                     EncounterEnvironment = request.EncounterEnvironment,
                     Offset = request.Offset,
                     Limit = request.Limit,
@@ -126,12 +178,23 @@ internal sealed class TrackerAreaRequestClient
             gameResponse = await _session.SendAsync<AreaLookupDetailRequestPayload, AreaLookupDetailResponsePayload>(TrackerCommands.AreaLookupDetail, request, runId, cancellationToken);
         }
 
+        if (diagnosticAccess != (recipe is null && _authorization.HasAreaDetails(category)))
+        {
+            if (authorizationRefreshes >= 1)
+                throw new TrackerProtocolException("The area disclosure permission changed repeatedly. Request its current details.");
+
+            return await GetDetailsAsync(areaId, category, recipe, connectedRunId, true, encounterEnvironment, offset, limit, cancellationToken, overworldEncounters, gameRoot, authorizationRefreshes + 1);
+        }
+
         if (recipe is null)
         {
             _discoveries.RecordDetails(runId, gameResponse);
         }
         else
         {
+            if (missingSprites.Count == TrackerProtocol.MaximumRecordedAreaSpriteHints)
+                await RecreateMissingPageSpritesAsync(request, gameResponse, runId, gameRoot, cancellationToken);
+
             bool itemReconstructionAvailable = recipe.ItemGenerator is not null
                 || recipe.ItemMappings.Count > 0
                 || recipe.TmMappings.Count > 0;
@@ -140,8 +203,109 @@ internal sealed class TrackerAreaRequestClient
 
         AreaLookupDetailResponsePayload response = WithTrackerRevision(runId, gameResponse);
         bool? responseMode = recipe is null ? response.OverworldEncounters ?? mode : null;
+        if (diagnosticAccess != (recipe is null && _authorization.HasAreaDetails(category)))
+        {
+            if (authorizationRefreshes >= 1)
+                throw new TrackerProtocolException("The area disclosure permission changed repeatedly. Request its current details.");
+
+            return await GetDetailsAsync(areaId, category, recipe, connectedRunId, true, encounterEnvironment, offset, limit, cancellationToken, overworldEncounters, gameRoot, authorizationRefreshes + 1);
+        }
+
         _cache.Set(TrackerCommands.AreaLookupDetail, $"{source}|{runId}|{response.Revision}|{diagnosticAccess}|{responseMode}|{category}|{areaId}|{encounterEnvironment}|{offset}|{limit}", response);
         return response;
+    }
+
+    /// <summary>
+    /// Requests the engine's current authorization and sprite confirmation for a retained page, then assembles its fusion rows.
+    /// </summary>
+    /// <param name="request">The initial page request whose run recipe, discoveries, and paging scope must be confirmed.</param>
+    /// <param name="page">The retained ordered source descriptors and their name-context token.</param>
+    /// <param name="assignments">The native fusion results for the page's disclosed material pairs.</param>
+    /// <param name="runId">The owning active or archived run identifier.</param>
+    /// <param name="names">The immutable ready name context captured before the initial request.</param>
+    /// <param name="cancellationToken">The token that cancels the confirmation.</param>
+    /// <returns>The tracker-assembled final encounter page.</returns>
+    private async Task<AreaLookupDetailResponsePayload> CompleteNativePageAsync(AreaLookupDetailRequestPayload request, AreaLookupDetailResponsePayload page, IReadOnlyList<AreaFusionResultPayload> assignments, string runId, PokemonNameCatalog names, CancellationToken cancellationToken)
+    {
+        if (names.FusionNameContextToken != page.FusionNameContextToken)
+            throw new TrackerProtocolException("The fusion page does not match its ready name context.");
+
+        AreaLookupDetailRequestPayload presentationRequest = new()
+        {
+            AreaId = request.AreaId, Category = request.Category,
+            Recipe = request.Recipe, DiscoveryKeys = request.DiscoveryKeys,
+            MissingRecordedSprites = request.MissingRecordedSprites,
+            EncounterEnvironment = request.EncounterEnvironment,
+            Offset = request.Offset, Limit = request.Limit,
+            UseNativeFusionMapping = true, UseNativeFusionPageAssembly = true,
+            FusionPageToken = page.FusionPageToken,
+            FusionNameContextToken = page.FusionNameContextToken,
+            FusionResults = assignments
+        };
+        AreaLookupDetailResponsePayload confirmation = await _session.SendAsync<AreaLookupDetailRequestPayload, AreaLookupDetailResponsePayload>(TrackerCommands.AreaLookupDetail, presentationRequest, runId, cancellationToken);
+        return AreaFusionPageAssembler.Assemble(page, confirmation, assignments, names, names.NormalSpeciesCount);
+    }
+
+    /// <summary>
+    /// Repairs disclosed page images omitted by the bounded initial hint list in an unusually large archive area.
+    /// </summary>
+    /// <param name="request">The validated archived area request and its initial image hints.</param>
+    /// <param name="page">The returned page whose disclosed entry identifiers bound the remaining repairs.</param>
+    /// <param name="runId">The owning archived run identifier.</param>
+    /// <param name="gameRoot">The connected game installation used to identify missing files.</param>
+    /// <param name="cancellationToken">The token that cancels the repair request.</param>
+    /// <returns>A task representing any necessary bounded repair request.</returns>
+    private async Task RecreateMissingPageSpritesAsync(AreaLookupDetailRequestPayload request, AreaLookupDetailResponsePayload page, string runId, string? gameRoot, CancellationToken cancellationToken)
+    {
+        HashSet<string> entryIds = GetDisclosedEntryIds(page);
+        IReadOnlyList<AreaRecordedSpritePayload> missing = _discoveries.GetMissingSpriteHints(runId, request.Category, gameRoot, entryIds: entryIds);
+        HashSet<(string, string)> requested = [.. request.MissingRecordedSprites.Select(entry => (entry.EntryId, entry.SpritePath))];
+        if (!missing.Any(entry => !requested.Contains((entry.EntryId, entry.SpritePath))))
+            return;
+
+        AreaLookupDetailRequestPayload repair = new()
+        {
+            AreaId = request.AreaId, Category = request.Category, Recipe = request.Recipe,
+            DiscoveryKeys = request.DiscoveryKeys, MissingRecordedSprites = missing,
+            EncounterEnvironment = request.EncounterEnvironment, Offset = request.Offset,
+            Limit = request.Limit, UseNativeFusionMapping = request.UseNativeFusionMapping,
+            FusionResults = request.FusionResults
+        };
+        await _session.SendAsync<AreaLookupDetailRequestPayload, AreaLookupDetailResponsePayload>(TrackerCommands.AreaLookupDetail, repair, runId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Checks whether a cached page still references one of the archive's missing sprite files.
+    /// </summary>
+    /// <param name="page">The restored archived page currently held in the response cache.</param>
+    /// <param name="missingSprites">The recorded sprite paths absent from the connected installation.</param>
+    /// <returns>Whether the page must be requested again so the game can recreate a recorded image.</returns>
+    private static bool ContainsMissingRecordedSprites(AreaLookupDetailResponsePayload page, IReadOnlyList<AreaRecordedSpritePayload> missingSprites)
+    {
+        HashSet<string> paths = [.. missingSprites.Select(entry => entry.SpritePath)];
+        return page.Trainers.SelectMany(entry => entry.Party).Any(member => member.SpritePath is not null && paths.Contains(member.SpritePath))
+            || page.Encounters.Any(entry => entry.SpritePath is not null && paths.Contains(entry.SpritePath))
+            || page.EncounterFusions.Any(entry => entry.SpritePath is not null && paths.Contains(entry.SpritePath));
+    }
+
+    /// <summary>
+    /// Selects disclosed authored entries whose recorded images can be repaired on the returned page.
+    /// </summary>
+    /// <param name="page">The validated active or archived area page.</param>
+    /// <returns>The disclosed trainer and encounter entry identifiers.</returns>
+    private static HashSet<string> GetDisclosedEntryIds(AreaLookupDetailResponsePayload page)
+    {
+        return [.. page.Trainers.Where(entry => entry.DetailsRevealed).Select(entry => entry.EntryId), .. page.Encounters.Where(entry => entry.DetailsRevealed).Select(entry => entry.EntryId)];
+    }
+
+    /// <summary>
+    /// Retrieves an already prepared fusion-name catalog for the archived profile or the latest active context.
+    /// </summary>
+    /// <param name="recipe">The archived recipe, or null for the active run.</param>
+    /// <returns>The immutable catalog with a fusion-name context token, or null when none is ready.</returns>
+    private PokemonNameCatalog? GetReadyFusionNames(CompletedRunRecipePayload? recipe)
+    {
+        return _nameCatalogs.TryGet(recipe?.GenerationProfileId, out PokemonNameCatalog catalog) && !string.IsNullOrEmpty(catalog.FusionNameContextToken) ? catalog : null;
     }
 
     /// <summary>

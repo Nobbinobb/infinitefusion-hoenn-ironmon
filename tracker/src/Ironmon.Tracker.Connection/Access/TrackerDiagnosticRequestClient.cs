@@ -1,5 +1,6 @@
 using Ironmon.Tracker.Connection.Transport;
 using Ironmon.Tracker.Connection.Obtainability;
+using Ironmon.Tracker.Connection.Lookup;
 
 namespace Ironmon.Tracker.Connection.Access;
 
@@ -12,6 +13,8 @@ internal sealed class TrackerDiagnosticRequestClient
     private readonly TrackerDiagnosticAuthorizer _authorization;
     private readonly PlayerFusionMappingCoordinator _fusionMappings;
     private readonly TrackerRequestSession _session;
+    private readonly TrackerTrainerLocationIndex? _trainerLocations;
+    private readonly TrackerPokemonNameSearch? _nameSearch;
 
     /// <summary>
     /// Initializes active diagnostic requests for one tracker connection.
@@ -19,7 +22,9 @@ internal sealed class TrackerDiagnosticRequestClient
     /// <param name="session">The correlated request session.</param>
     /// <param name="authorization">The diagnostic authorization policy.</param>
     /// <param name="fusionMappings">The shared tracker-side material-mapping coordinator.</param>
-    internal TrackerDiagnosticRequestClient(TrackerRequestSession session, TrackerDiagnosticAuthorizer authorization, PlayerFusionMappingCoordinator fusionMappings)
+    /// <param name="trainerLocations">The optional connection-scoped authored trainer location index.</param>
+    /// <param name="nameSearch">The optional compatible tracker-side name matcher.</param>
+    internal TrackerDiagnosticRequestClient(TrackerRequestSession session, TrackerDiagnosticAuthorizer authorization, PlayerFusionMappingCoordinator fusionMappings, TrackerPokemonNameSearch? nameSearch = null, TrackerTrainerLocationIndex? trainerLocations = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(authorization);
@@ -27,6 +32,8 @@ internal sealed class TrackerDiagnosticRequestClient
         _session = session;
         _authorization = authorization;
         _fusionMappings = fusionMappings;
+        _nameSearch = nameSearch;
+        _trainerLocations = trainerLocations;
     }
 
     /// <summary>
@@ -103,13 +110,16 @@ internal sealed class TrackerDiagnosticRequestClient
     /// <summary>
     /// Searches generated Pokémon in the active run through the authorized debug channel.
     /// </summary>
+    /// <remarks>
+    /// Uses the compatible tracker name catalog when available and keeps game-owned validation and annotation.
+    /// </remarks>
     /// <param name="query">The name fragment entered by the user.</param>
     /// <param name="offset">The zero-based result offset.</param>
     /// <param name="limit">The maximum number of matches to return.</param>
     /// <param name="normalOnly">Whether to restrict matches to normal species.</param>
     /// <param name="runId">The active run identifier when available.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
-    /// <returns>The matching active-run Pokémon identifiers.</returns>
+    /// <returns>The requested page of matching active-run Pokémon with game-owned display and obtainability data.</returns>
     internal Task<PokemonSearchResponsePayload> SearchPokemonAsync(string query, int offset, int limit, bool normalOnly, string? runId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(query);
@@ -118,7 +128,9 @@ internal sealed class TrackerDiagnosticRequestClient
         ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, TrackerProtocol.MaximumSearchPageSize);
         _authorization.EnsureAll(DiagnosticCapabilities.PokemonAllActive);
         DebugPokemonSearchRequestPayload request = new() { Query = query.Trim(), Offset = offset, Limit = limit, NormalOnly = normalOnly };
-        return _session.SendAsync<DebugPokemonSearchRequestPayload, PokemonSearchResponsePayload>(TrackerCommands.DebugPokemonSearch, request, runId, cancellationToken);
+        return _nameSearch is null
+            ? _session.SendAsync<DebugPokemonSearchRequestPayload, PokemonSearchResponsePayload>(TrackerCommands.DebugPokemonSearch, request, runId, cancellationToken)
+            : _nameSearch.SearchAsync(TrackerCommands.DebugPokemonSearch, null, query.Trim(), offset, limit, normalOnly, runId, cancellationToken);
     }
 
     /// <summary>
@@ -156,15 +168,15 @@ internal sealed class TrackerDiagnosticRequestClient
     internal async Task<PokemonObtainabilityResponsePayload> AdvanceObtainabilityAsync(string? speciesId, IReadOnlyList<string>? speciesIds, IReadOnlyList<string>? evolutionEdgeKeys, bool foreground, Action<PokemonObtainabilityResponsePayload>? progress, string? runId, CancellationToken cancellationToken)
     {
         _authorization.EnsureAll(DiagnosticCapabilities.EvolutionResults, DiagnosticCapabilities.FusionMaterialPairs, DiagnosticCapabilities.PokemonAllActive, DiagnosticCapabilities.WorldItems, DiagnosticCapabilities.WorldWildEncounters);
-        DebugPokemonObtainabilityRequestPayload request = new() { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground };
+        DebugPokemonObtainabilityRequestPayload request = new() { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, UseNativeMaterialPairPreparation = true };
         PokemonObtainabilityResponsePayload response = await _session.SendAsync<DebugPokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.DebugPokemonObtainability, request, runId, cancellationToken);
         progress?.Invoke(response);
         while (response.FusionClosureWork is not null)
         {
             PlayerFusionClosureResultPayload? result = await _fusionMappings.CreateResultAsync(response.FusionClosureWork, cancellationToken, runId).ConfigureAwait(false);
             request = result is null
-                ? new DebugPokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, FusionClosureWorkerUnavailable = true }
-                : new DebugPokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, FusionClosureResult = result };
+                ? new DebugPokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, UseNativeMaterialPairPreparation = true, FusionClosureWorkerUnavailable = true }
+                : new DebugPokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, UseNativeMaterialPairPreparation = true, FusionClosureResult = result };
 
             response = await _session.SendAsync<DebugPokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.DebugPokemonObtainability, request, runId, cancellationToken);
             progress?.Invoke(response);
@@ -302,14 +314,22 @@ internal sealed class TrackerDiagnosticRequestClient
     /// <param name="runId">The active run identifier when available.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The requested trainer-occurrence page.</returns>
-    internal Task<TrainerOccurrenceSearchResponsePayload> SearchTrainerOccurrencesAsync(string speciesId, int offset, DebugPokemonTarget? target, int? enemyPosition, string? runId, CancellationToken cancellationToken)
+    internal async Task<TrainerOccurrenceSearchResponsePayload> SearchTrainerOccurrencesAsync(string speciesId, int offset, DebugPokemonTarget? target, int? enemyPosition, string? runId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
         _authorization.EnsurePokemonSource(target);
         _authorization.EnsureAll(DiagnosticCapabilities.WorldTrainerParties);
-        DebugTrainerOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset };
-        return _session.SendAsync<DebugTrainerOccurrenceSearchRequestPayload, TrainerOccurrenceSearchResponsePayload>(TrackerCommands.DebugTrainerOccurrenceSearch, request, runId, cancellationToken);
+        TrainerLocationIndexAssignmentPayload? locations = _trainerLocations is null ? null : await _trainerLocations.GetAssignmentAsync(cancellationToken).ConfigureAwait(false);
+        DebugTrainerOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset, TrainerLocationIndex = locations };
+        if (locations is not null && !TrackerTrainerLocationIndex.FitsRequest(request))
+            request = new DebugTrainerOccurrenceSearchRequestPayload { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset };
+
+        TrainerOccurrenceSearchResponsePayload response = await _session.SendAsync<DebugTrainerOccurrenceSearchRequestPayload, TrainerOccurrenceSearchResponsePayload>(TrackerCommands.DebugTrainerOccurrenceSearch, request, runId, cancellationToken);
+        if (locations is not null)
+            _trainerLocations?.Acknowledge(response.TrainerLocationIndexContextToken);
+
+        return response;
     }
 
     /// <summary>

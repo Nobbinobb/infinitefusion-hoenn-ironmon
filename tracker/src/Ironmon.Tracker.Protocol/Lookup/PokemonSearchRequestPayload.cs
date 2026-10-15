@@ -1,7 +1,7 @@
 namespace Ironmon.Tracker.Protocol.Lookup;
 
 /// <summary>
-/// Requests name-based Pokemon matches for one completed run.
+/// Requests name-based Pokemon matches or compact name-search inputs for one completed run.
 /// </summary>
 public sealed class PokemonSearchRequestPayload
 {
@@ -36,4 +36,14 @@ public sealed class PokemonSearchRequestPayload
     /// Gets or initializes the completed-run reconstruction recipe.
     /// </summary>
     public required CompletedRunRecipePayload Recipe { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether the game should return a compact name catalog instead of a match page.
+    /// </summary>
+    public bool NameCatalogOnly { get; init; }
+
+    /// <summary>
+    /// Gets or initializes optional tracker-matched identifiers for game validation and discovery-status annotation.
+    /// </summary>
+    public PokemonNameSearchAssignmentPayload? NameSearchAssignment { get; init; }
 }

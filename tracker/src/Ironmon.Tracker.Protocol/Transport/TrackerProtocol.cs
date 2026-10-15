@@ -71,6 +71,11 @@ public static class TrackerProtocol
     public const int AreaLookupPageSize = 10;
 
     /// <summary>
+    /// Gets the maximum number of missing recorded sprite hints carried by one archived area request.
+    /// </summary>
+    public const int MaximumRecordedAreaSpriteHints = 256;
+
+    /// <summary>
     /// Gets the fixed lookup level retained for compatibility with earlier game scripts.
     /// </summary>
     public const int CompatibilityLookupLevel = 100;

@@ -21,12 +21,18 @@ module Ironmon
     end
     normalized_query = query.downcase
     normal_only = payload["normal_only"] == true
+    if payload["name_catalog_only"] == true
+      return { "matches" => [], "total" => 0,
+               "name_catalog" => tracker_pokemon_name_catalog(normal_only: normal_only) }
+    end
     tracker_debug_search_trace("matching_started") if
       respond_to?(:tracker_debug_search_trace)
-    matches = tracker_search_matches(recipe, normalized_query, normal_only)
+    assignment = tracker_pokemon_search_assignment(payload, normalized_query, normal_only)
+    matches = assignment ? assignment["matches"] :
+      tracker_search_matches(recipe, normalized_query, normal_only)
     tracker_debug_search_trace("matching_ready") if
       respond_to?(:tracker_debug_search_trace)
-    page = matches.slice(offset, limit) || []
+    page = assignment ? matches : matches.slice(offset, limit) || []
     if !visibility || visibility[:obtainability]
       page = page.each_with_index.map do |match, index|
         tracker_debug_search_trace("annotation_#{index}_started") if
@@ -43,7 +49,7 @@ module Ironmon
       respond_to?(:tracker_debug_search_trace)
     return {
       "matches" => page,
-      "total" => matches.length
+      "total" => assignment ? assignment["total"] : matches.length
     }
   end
 
@@ -108,6 +114,8 @@ module Ironmon
       )
     end
     cache_key = tracker_occurrence_cache_key(recipe, species, kind)
+    location_context = kind == :trainer ?
+      tracker_import_trainer_location_index(payload["trainer_location_index"]) : nil
     occurrences = tracker_lookup_cache[cache_key]
     if !occurrences
       occurrences = if kind == :wild
@@ -122,10 +130,13 @@ module Ironmon
         occurrences.nil?
       tracker_store_bounded(tracker_lookup_cache, cache_key, occurrences, 256)
     end
-    return {
+    response = {
       "matches" => occurrences.slice(offset, limit) || [],
       "total" => occurrences.length
     }
+    response["trainer_location_index_context_token"] = location_context if
+      kind == :trainer && location_context
+    return response
   end
 
   def self.tracker_fusion_material_search_for_recipe(
