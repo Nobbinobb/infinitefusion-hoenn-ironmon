@@ -334,15 +334,28 @@ module IronmonTrackerStructureRuntimeTests
 
   def self.validate_sprite_components
     Ironmon.ensure_tracker_sprite_cache_folder
-    fixture = "#{Ironmon::TRACKER_SPRITE_CACHE_FOLDER}/components-test-#{Process.pid}.png"
-    metadata = "#{Ironmon::TRACKER_SPRITE_CACHE_FOLDER}/components-" +
+    original_cache_folder = Ironmon::TRACKER_SPRITE_CACHE_FOLDER
+    fixture_folder = "Data/ironmon-component-test-#{Process.pid}"
+    assert(!Dir.exist?(fixture_folder), "component fixtures own a fresh cache directory")
+    fixture = "#{fixture_folder}/fusion.png"
+    metadata = "#{fixture_folder}/components-" +
       Digest::SHA256.hexdigest(fixture.tr("A-Z", "a-z")) + ".json"
     previous_contexts = Ironmon.instance_variable_get(:@tracker_sprite_component_contexts)
+    component_paths = []
     begin
+      Ironmon.send(:remove_const, :TRACKER_SPRITE_CACHE_FOLDER)
+      Ironmon.const_set(:TRACKER_SPRITE_CACHE_FOLDER, fixture_folder)
+      Ironmon.instance_variable_set(:@tracker_sprite_component_contexts, {})
+      Ironmon.ensure_tracker_sprite_cache_folder
       bitmap = Bitmap.new(2, 2)
       bitmap.set_pixel(1, 1, Color.new(30, 60, 90, 255))
       bitmap.save_to_png(fixture)
-      bitmap.dispose
+      [94, 6].each do |number|
+        component_paths << Ironmon.tracker_materialized_sprite_path(
+          PIFSprite.new(:BASE, number, nil, "")
+        )
+        bitmap.save_to_png(component_paths.last)
+      end
       sprite = PIFSprite.new(:CUSTOM, 94, 6, "")
       sprite.local_path = fixture
       assert(
@@ -378,9 +391,15 @@ module IronmonTrackerStructureRuntimeTests
         "component exports leave no temporary sidecar files"
       )
     ensure
+      Ironmon.send(:remove_const, :TRACKER_SPRITE_CACHE_FOLDER)
+      Ironmon.const_set(:TRACKER_SPRITE_CACHE_FOLDER, original_cache_folder)
+      Ironmon.instance_variable_set(:@tracker_sprite_component_contexts, previous_contexts)
+      bitmap.dispose if bitmap && !bitmap.disposed?
       File.delete(fixture) if File.file?(fixture)
       File.delete(metadata) if File.file?(metadata)
-      Ironmon.instance_variable_set(:@tracker_sprite_component_contexts, previous_contexts)
+      component_paths.each { |path| File.delete(path) if File.file?(path) }
+      Dir.rmdir(fixture_folder) if
+        Dir.exist?(fixture_folder) && Dir.children(fixture_folder).empty?
     end
   end
 
