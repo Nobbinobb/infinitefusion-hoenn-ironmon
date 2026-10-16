@@ -132,8 +132,10 @@ jobs:
             game/Ironmon/data/*.summary
             game/Ironmon/data/*.progress
             game/Ironmon/data/*.txt
+            game/Ironmon/data/area-encounter-lookup-probe.json
             game/errorlog.txt
             ${{ runner.temp }}/ironmon-runtime.*.log
+            ${{ runner.temp }}/release-gate.log
           retention-days: 3
           overwrite: true
           if-no-files-found: ignore
