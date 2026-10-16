@@ -229,7 +229,7 @@ public sealed class SignedIronmonAuthority(ReleaseVerifier verifier, ITrackerRun
     internal static void VerifyGameSnapshot(ReleaseFileInventory game, IReadOnlyList<LocalFileEntry> local)
     {
         var entries = local.ToDictionary(entry => entry.Path, StringComparer.OrdinalIgnoreCase);
-        foreach (var file in GameFiles(game))
+        foreach (var file in GameFiles(game).Where(file => ReleaseVerifier.IsRequiredGamePath(file.Path)))
             if (!entries.TryGetValue(file.Path, out var entry) || entry.Content is null || (entry.Content != file.Content && entry.Content != file.AlternateContent))
                 throw new InvalidDataException(UpdaterText.SignedIronmonAuthorityTheInstalledGameDoesNotMatchASupportedSigned);
     }
@@ -243,7 +243,7 @@ public sealed class SignedIronmonAuthority(ReleaseVerifier verifier, ITrackerRun
     /// <returns>A task that rejects modified or incomplete required game files.</returns>
     internal static async Task VerifyGameAsync(string root, ReleaseFileInventory game, CancellationToken cancellationToken)
     {
-        var files = game.Files.Where(file => ReleaseVerifier.IsManagedGamePath(file.Path)).ToArray();
+        var files = game.Files.Where(file => ReleaseVerifier.IsRequiredGamePath(file.Path)).ToArray();
         InstallationProgressScope.Report(new(InstallationStage.VerifyingGame, 0, files.Length));
         for (var index = 0; index < files.Length; index++)
         {
