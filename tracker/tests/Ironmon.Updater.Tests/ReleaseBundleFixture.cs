@@ -40,12 +40,15 @@ internal sealed class ReleaseBundleFixture : IDisposable, IArtifactSource
     private readonly ECDsa _key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
     private readonly Dictionary<string, string> _assets = new(StringComparer.Ordinal);
     private readonly List<string> _downloads = [];
+    private readonly string _additionalGamePath;
 
     /// <summary>
-    /// Writes only the ephemeral public key into the fixture workspace.
+    /// Writes the ephemeral public key and selects an additional upstream game file for signed baseline tests.
     /// </summary>
-    internal ReleaseBundleFixture()
+    /// <param name="additionalGamePath">The extra upstream path retained in complete signed game evidence.</param>
+    internal ReleaseBundleFixture(string additionalGamePath = ProtectedGamePath)
     {
+        _additionalGamePath = additionalGamePath;
         File.WriteAllBytes(Trust, ReleaseJson.Serialize(new Dictionary<string, string> { [KeyId] = Convert.ToBase64String(_key.ExportSubjectPublicKeyInfo()) }));
     }
 
@@ -119,7 +122,7 @@ internal sealed class ReleaseBundleFixture : IDisposable, IArtifactSource
         var baseline = _workspace.PathFor(version + '-' + BaselineName);
         var companion = _workspace.PathFor(version + '-' + CompanionName);
         var fingerprint = new GameFileContent(1, Convert.ToHexString(SHA256.HashData(new byte[] { 1 })));
-        var game = new GameBaseline(commit, [new GameBaselineFile(GamePath, Mode, commit, fingerprint, null), new GameBaselineFile(ProtectedGamePath, Mode, commit, fingerprint, null)]);
+        var game = new GameBaseline(commit, [new GameBaselineFile(GamePath, Mode, commit, fingerprint, null), new GameBaselineFile(_additionalGamePath, Mode, commit, fingerprint, null)]);
         using (var output = File.Create(baseline))
         using (var gzip = new GZipStream(output, CompressionLevel.SmallestSize))
             JsonSerializer.Serialize(gzip, game);

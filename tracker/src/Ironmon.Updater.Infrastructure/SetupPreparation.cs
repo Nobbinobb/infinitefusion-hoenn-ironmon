@@ -272,7 +272,7 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
     private static bool Matches(ReleaseFileInventory game, IReadOnlyList<LocalFileEntry> local)
     {
         var files = local.ToDictionary(file => file.Path, StringComparer.Ordinal);
-        return game.Files.Where(file => !ReleaseVerifier.IsLegacyDocument(file.Path)).All(file => files.TryGetValue(file.Path, out var entry) && (entry.Content == ReleaseProtocol.Content(file.Bytes, file.Sha256) || file.WindowsText is { } windows && entry.Content == ReleaseProtocol.Content(windows.Bytes, windows.Sha256)));
+        return game.Files.Where(file => ReleaseVerifier.IsRequiredGamePath(file.Path)).All(file => files.TryGetValue(file.Path, out var entry) && (entry.Content == ReleaseProtocol.Content(file.Bytes, file.Sha256) || file.WindowsText is { } windows && entry.Content == ReleaseProtocol.Content(windows.Bytes, windows.Sha256)));
     }
 }
 

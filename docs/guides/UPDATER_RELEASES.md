@@ -74,6 +74,15 @@ payload before archiving; the external signed inventory also hashes this inner
 document. Historical generation profiles retain their immutable ownership policy.
 Setup and the helper embed notices from their exact resolved runtime packs.
 
+Complete signed game evidence retains the original upstream entries for
+`Data/Scripts/DownloadedSettings.rb` and `Data/pokedex/dex.json`. The game refreshes
+these two files through its own download service, so recognizing an installed
+game does not require their original bytes or their presence. Compatible tracker
+updates leave them unchanged. Fresh game installations still receive their signed
+defaults, and combined game updates retain the normal three-way conflict and
+backup rules. Other inventoried game scripts and data remain subject to signed
+content verification, including neighboring files with similar names.
+
 Helper version `<H>` uses the engine major/minor plus the engine patch and signed
 release sequence. Every release gets an immutable helper path even when only
 embedded game data or trust changes. Setup and tracker binary versions are checked
