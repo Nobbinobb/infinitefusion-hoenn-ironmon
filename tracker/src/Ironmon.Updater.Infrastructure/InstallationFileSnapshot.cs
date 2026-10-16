@@ -3,7 +3,7 @@ using Ironmon.Updater.Core;
 namespace Ironmon.Updater.Infrastructure;
 
 /// <summary>
-/// Reads complete content snapshots for file planning without following redirected paths or writing files.
+/// Reads full or inventory-scoped content snapshots without following redirected program paths or writing files.
 /// </summary>
 public static class InstallationFileSnapshot
 {
@@ -68,6 +68,77 @@ public static class InstallationFileSnapshot
             }
         }
 
+        return await HashAsync(result, files, stage, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Inspects authenticated program paths without enumerating or opening unrelated player data.
+    /// </summary>
+    /// <remarks>
+    /// Ancestors are recorded to detect file collisions. Initial review expands directories occupying managed file paths. Transaction verification expands only explicit replacement boundaries, so new player files inside a newly created program directory remain untouched.
+    /// </remarks>
+    /// <param name="installationRoot">The validated installation root.</param>
+    /// <param name="paths">The managed files and directory replacement boundaries.</param>
+    /// <param name="cancellationToken">The inspection token.</param>
+    /// <param name="stage">The reported verification stage.</param>
+    /// <param name="directoryBoundaries">The directories requiring recursive collision checks, or null to expand every selected directory during initial review.</param>
+    /// <returns>The relevant files, their ancestors and structural obstructions.</returns>
+    public static Task<IReadOnlyList<LocalFileEntry>> ReadManagedAsync(string installationRoot, IEnumerable<string> paths, CancellationToken cancellationToken = default, InstallationStage stage = InstallationStage.VerifyingFiles, IEnumerable<string>? directoryBoundaries = null)
+    {
+        var root = PlainPaths.Full(installationRoot);
+        var selected = paths.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        var boundaries = directoryBoundaries?.ToArray();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var expanded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var result = new List<LocalFileEntry>();
+        var files = new List<(int Index, string Path)>();
+        var pending = new Stack<string>(selected);
+        InstallationProgressScope.Report(new(InstallationStage.EnumeratingFiles));
+        while (pending.TryPop(out var relative))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var parts = relative.Split('/');
+            for (var index = 1; index <= parts.Length; index++)
+            {
+                var name = string.Join('/', parts.Take(index));
+                var path = PlainPaths.Child(root, name);
+                if (!Path.Exists(path))
+                    break;
+
+                var directory = Directory.Exists(path);
+                if (seen.Add(name))
+                {
+                    if (result.Count >= MaximumEntries)
+                        throw new InvalidDataException(UpdaterText.InstallationFileSnapshotTheInstallationHasTooManyEntriesForAutomaticFile);
+
+                    if (!directory)
+                        files.Add((result.Count, path));
+
+                    result.Add(new LocalFileEntry(name, null));
+                }
+
+                if (!directory)
+                    break;
+
+                if (index == parts.Length && expanded.Add(name) && (boundaries is null || boundaries.Any(boundary => name.Equals(boundary, StringComparison.OrdinalIgnoreCase) || name.StartsWith(boundary + '/', StringComparison.OrdinalIgnoreCase))))
+                    foreach (var child in Directory.EnumerateFileSystemEntries(path))
+                        pending.Push(Path.GetRelativePath(root, child).Replace('\\', '/'));
+            }
+        }
+
+        return HashAsync(result, files, stage, cancellationToken);
+    }
+
+    /// <summary>
+    /// Hashes the selected regular files with bounded concurrency and ordered progress reporting.
+    /// </summary>
+    /// <param name="result">The enumerated file and directory entries.</param>
+    /// <param name="files">The regular files and their result positions.</param>
+    /// <param name="stage">The displayed verification purpose.</param>
+    /// <param name="cancellationToken">The hashing token.</param>
+    /// <returns>The sorted content snapshot.</returns>
+    private static async Task<IReadOnlyList<LocalFileEntry>> HashAsync(List<LocalFileEntry> result, List<(int Index, string Path)> files, InstallationStage stage, CancellationToken cancellationToken)
+    {
         var entries = result.ToArray();
         var verified = 0;
         var progressGate = new Lock();

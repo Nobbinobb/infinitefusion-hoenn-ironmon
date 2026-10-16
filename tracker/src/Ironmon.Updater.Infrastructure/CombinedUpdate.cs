@@ -106,7 +106,8 @@ public sealed class CombinedUpdate(ReleaseVerifier verifier, ReleaseDownloadStor
             foreach (var file in inventories.Target.Files.Where(file => ReleaseVerifier.IsLegacyDocument(file.Path)))
                 File.Delete(PlainPaths.Child(extracted, file.Path));
 
-            foreach (var file in SignedIronmonAuthority.GameFiles(inventories.Game))
+            var gameTarget = SignedIronmonAuthority.GameTargetFiles(root, inventories.Game, previousGame).ToArray();
+            foreach (var file in gameTarget)
             {
                 var path = PlainPaths.Child(extracted, file.Path);
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -116,10 +117,11 @@ public sealed class CombinedUpdate(ReleaseVerifier verifier, ReleaseDownloadStor
 
             InstallationProgressScope.Report(new(InstallationStage.PreparingRecovery));
             var helper = await RecoveryHelperPackage.StageAsync(root, manifest, _downloads, request.Flavor, cancellationToken).ConfigureAwait(false);
-            var local = reviewed is null ? await InstallationFileSnapshot.ReadAsync(root, cancellationToken, InstallationStage.ReviewingInstallation).ConfigureAwait(false) : reviewed;
+            var paths = SignedIronmonAuthority.InspectionPaths(inventories.Baseline, inventories.Target, inventories.Game).Concat(previousGame is null ? [] : SignedIronmonAuthority.GameFiles(previousGame).Select(file => file.Path)).Concat(gameTarget.Select(file => file.Path));
+            var local = reviewed is null ? await InstallationFileSnapshot.ReadManagedAsync(root, paths, cancellationToken, InstallationStage.ReviewingInstallation).ConfigureAwait(false) : reviewed;
             var receipt = IronmonOnlyUpdate.ReceiptBytes(authorization, inventories.Target);
             var baseline = IronmonOnlyUpdate.BaselineFiles(inventories.Baseline, local).Concat(previousGame is null ? [] : SignedIronmonAuthority.GameFiles(previousGame));
-            var desired = IronmonOnlyUpdate.TargetFiles(inventories.Target, receipt).Concat(SignedIronmonAuthority.GameFiles(inventories.Game));
+            var desired = IronmonOnlyUpdate.TargetFiles(inventories.Target, receipt).Concat(gameTarget);
             var plan = new FileUpdatePlanner(new FileManagementPolicy()).Create(baseline, local, desired);
             IronmonOnlyUpdate.ValidateConsent(request, local);
             if (request.ApprovedPaths.Length > 0)

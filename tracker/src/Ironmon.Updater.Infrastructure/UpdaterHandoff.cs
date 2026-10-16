@@ -166,7 +166,7 @@ public static partial class UpdaterHandoff
         if (request.TransactionId == Guid.Empty || request.Navigation is null || request.Navigation.Length > MaximumNavigationCharacters || request.Tracker.Id <= 0 || request.Tracker.StartedUtcTicks <= 0 || !request.Tracker.ExecutablePath.Equals(PlainPaths.Child(root, TrackerRelativePath), StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException(UpdaterText.UpdaterHandoffTheTrackerHandoffContextIsInvalidOrTooLarge);
 
-        if (request.Game is not null && (request.Game.Id <= 0 || request.Game.StartedUtcTicks <= 0 || !request.Game.ExecutablePath.Equals(PlainPaths.Child(root, GameInstallationLocator.GameExecutable), StringComparison.OrdinalIgnoreCase)))
+        if (request.Game is not null && (request.Game.Id <= 0 || request.Game.StartedUtcTicks <= 0 || !GameInstallationLocator.SupportedExecutables.Any(name => request.Game.ExecutablePath.Equals(PlainPaths.Child(root, name), StringComparison.OrdinalIgnoreCase))))
             throw new InvalidDataException(UpdaterText.UpdaterHandoffTheGameShutdownTargetIsOutsideThisInstallation);
     }
 

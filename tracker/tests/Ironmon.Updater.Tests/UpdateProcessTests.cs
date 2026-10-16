@@ -18,7 +18,61 @@ public sealed class UpdateProcessTests
     private const string WaitMode = "wait";
     private const string BoundaryReady = "BOUNDARY";
     private const string DifferentExecutable = "different.exe";
+    private const string StandardGame = "InfiniteFusion2.exe";
+    private const string PerformanceGame = "InfiniteFusion2-performance.exe";
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// Detects both real executable variants in the selected installation without blocking another installation.
+    /// </summary>
+    /// <param name="name">The supported game executable name.</param>
+    [Theory]
+    [InlineData(StandardGame)]
+    [InlineData(PerformanceGame)]
+    public async Task BothGameExecutablesBlockOnlyTheirOwnInstallation(string name)
+    {
+        using var workspace = new TestWorkspace();
+        using var unrelated = new TestWorkspace();
+        var host = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, HostPath + Configuration + HostBinary));
+        foreach (var file in Directory.EnumerateFiles(Path.GetDirectoryName(host)!))
+            File.Copy(file, PlainPaths.Child(workspace.Root, Path.GetFileName(file)));
+
+        var executable = PlainPaths.Child(workspace.Root, name);
+        File.Copy(host, executable);
+        var start = new ProcessStartInfo(executable) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true };
+        start.ArgumentList.Add(WaitMode);
+        using var child = Process.Start(start) ?? throw new IOException("The game variant fixture could not start.");
+        try
+        {
+            Assert.Equal(BoundaryReady, await child.StandardOutput.ReadLineAsync().WaitAsync(_timeout));
+            Assert.Equal(child.Id, UpdateProcessIdentity.FindGame(workspace.Root)?.Id);
+            Assert.Null(UpdateProcessIdentity.FindGame(unrelated.Root));
+            await Assert.ThrowsAsync<IOException>(() => UpdateProcessIdentity.EnsureInstallationIdleAsync(workspace.Root, UpdaterHandoff.TrackerRelativePath, CancellationToken.None));
+            await UpdateProcessIdentity.EnsureInstallationIdleAsync(unrelated.Root, UpdaterHandoff.TrackerRelativePath, CancellationToken.None);
+            Assert.False(child.HasExited);
+            var otherName = name == StandardGame ? PerformanceGame : StandardGame;
+            var otherExecutable = PlainPaths.Child(workspace.Root, otherName);
+            File.Copy(host, otherExecutable);
+            var otherStart = new ProcessStartInfo(otherExecutable) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true };
+            otherStart.ArgumentList.Add(WaitMode);
+            using var other = Process.Start(otherStart) ?? throw new IOException("The second game fixture could not start.");
+            try
+            {
+                Assert.Equal(BoundaryReady, await other.StandardOutput.ReadLineAsync().WaitAsync(_timeout));
+                Assert.Throws<InvalidOperationException>(() => UpdateProcessIdentity.FindGame(workspace.Root));
+                Assert.False(child.HasExited);
+                Assert.False(other.HasExited);
+            }
+            finally
+            {
+                await StopOwnedAsync(other);
+            }
+        }
+        finally
+        {
+            await StopOwnedAsync(child);
+        }
+    }
 
     /// <summary>
     /// Reports a normal waiting stage and continues after a process blocker clears without bypassing the next probe.

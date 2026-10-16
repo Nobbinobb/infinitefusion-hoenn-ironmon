@@ -17,6 +17,22 @@ public sealed class VerificationScanTests
     private const string Staging = "unused-staging";
     private const string Home = "unused-home";
     private const string AddedFile = "extra.bin";
+    private const string ImportedProfile = "Data/Ironmon/generation_profiles/imported.json";
+    private const string SpriteCredits = "Data/sprites/Sprite_Credits.csv";
+
+    /// <summary>
+    /// Rejects unsupported combined-update witness paths during review before downloading any package or metadata container.
+    /// </summary>
+    [Fact]
+    public async Task CombinedReviewChecksDestinationBudgetBeforeDownloads()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        var root = Path.Combine(fixture.Release.Root, new string('x', 200));
+        var request = fixture.Release.Request() with { InstallationRoot = root, GameCommit = new string('2', 40) };
+        await Assert.ThrowsAsync<IOException>(() => fixture.Preparation.ReviewAsync(request, fixture.Release.Evidence));
+        Assert.Empty(fixture.Release.Requests);
+        Assert.False(Directory.Exists(root));
+    }
 
     /// <summary>
     /// Completes the real same-process Setup workflow with one review and three fresh transaction inspections.
@@ -43,23 +59,25 @@ public sealed class VerificationScanTests
     }
 
     /// <summary>
-    /// Rejects protected, retained and newly added files changed after review while staging only recovery data.
+    /// Allows unrelated saves and newly added player files to change during downloads and preserves the new bytes.
     /// </summary>
     /// <param name="path">The preserved or newly created installation file.</param>
     [Theory]
     [InlineData(SignedReleaseFixture.Save)]
-    [InlineData(SignedReleaseFixture.Profile)]
     [InlineData(AddedFile)]
-    public async Task ReviewReuseRejectsChangesDuringDownloads(string path)
+    [InlineData(ImportedProfile)]
+    [InlineData(SpriteCredits)]
+    public async Task ReviewReuseAllowsUnrelatedChangesDuringDownloads(string path)
     {
         using var fixture = new TrackerUpdateTestFixture();
         var preparation = Preparation(fixture);
         var review = await preparation.ReviewAsync(fixture.Release.Root, fixture.Release.Evidence, noActiveRun: true);
         var original = File.ReadAllBytes(Path.Combine(fixture.Release.Root, SignedReleaseFixture.Script));
         fixture.DuringArchive = () => fixture.Release.Write(path, [10]);
-        await Assert.ThrowsAsync<IOException>(() => preparation.PrepareAsync(review, []));
-        Assert.Null(UpdateTransaction.ReadActiveId(fixture.Release.Root));
-        Assert.Equal(original, File.ReadAllBytes(Path.Combine(fixture.Release.Root, SignedReleaseFixture.Script)));
+        var prepared = await preparation.PrepareAsync(review, []);
+        var engine = new UpdateTransaction(new SignedIronmonAuthority(fixture.Release.Verifier, SignedReleaseFixture.Runtime()), _ => Task.CompletedTask);
+        Assert.Equal(TransactionPhase.Committed, (await engine.ApplyAsync(prepared.InstallationRoot, prepared.TransactionId)).Phase);
+        Assert.NotEqual(original, File.ReadAllBytes(Path.Combine(fixture.Release.Root, SignedReleaseFixture.Script)));
         Assert.Equal(new byte[] { 10 }, File.ReadAllBytes(Path.Combine(fixture.Release.Root, path)));
     }
 
@@ -75,15 +93,15 @@ public sealed class VerificationScanTests
         {
             if (!changed && value.Stage == InstallationStage.PreparingRecovery && value.Total > 0 && value.Completed == value.Total)
             {
-                TransactionFixture.Write(fixture.Root, TransactionFixture.SaveFile, 9);
+                TransactionFixture.Write(fixture.Root, TransactionFixture.ChangedFile, 9);
                 changed = true;
             }
         });
         await Assert.ThrowsAsync<IOException>(() => fixture.PrepareAsync());
         Assert.True(changed);
         Assert.Null(UpdateTransaction.ReadActiveId(fixture.Root));
-        Assert.Equal(new byte[] { 1 }, File.ReadAllBytes(Path.Combine(fixture.Root, TransactionFixture.ChangedFile)));
-        Assert.Equal(new byte[] { 9 }, File.ReadAllBytes(Path.Combine(fixture.Root, TransactionFixture.SaveFile)));
+        Assert.Equal(new byte[] { 9 }, File.ReadAllBytes(Path.Combine(fixture.Root, TransactionFixture.ChangedFile)));
+        Assert.Equal(new byte[] { 3 }, File.ReadAllBytes(Path.Combine(fixture.Root, TransactionFixture.SaveFile)));
     }
 
     /// <summary>

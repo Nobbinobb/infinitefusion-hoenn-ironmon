@@ -12,9 +12,15 @@ public sealed class GameInventoryProtectionTests
     private const string DownloadedSettingsPath = "Data/Scripts/DownloadedSettings.rb";
     private const string DownloadedPokedexPath = "Data/pokedex/dex.json";
     private const string SimilarSettingsPath = "Data/Scripts/DownloadedSettings-other.rb";
-    private const string SimilarPokedexPath = "Data/pokedex/dex-other.json";
+    private const string SimilarPokedexPath = "Data/pokedex/dex-other.dat";
     private const string OtherScriptPath = "Data/Scripts/Main.rb";
-    private const string PokedexBackupPath = "Data/pokedex/dex.json.backup";
+    private const string PokedexBackupPath = "Data/pokedex/dex.dll";
+    private const string CustomSprites = "Data/sprites/CUSTOM_SPRITES";
+    private const string BaseSprites = "Data/sprites/BASE_SPRITES";
+    private const string SpriteCredits = "Data/sprites/Sprite_Credits.csv";
+    private const string SpriteCache = "Data/sprites/updated_spritesheets_cache";
+    private const string SpriteRateLimit = "Data/sprites/sprites_rate_limit.log";
+    private const string SpriteImage = "Graphics/CustomBattlers/1.2.png";
 
     /// <summary>
     /// Retains complete upstream evidence while allowing protected state and runtime downloads to differ or be missing.
@@ -30,6 +36,18 @@ public sealed class GameInventoryProtectionTests
     [InlineData(DownloadedSettingsPath, true, true)]
     [InlineData(DownloadedPokedexPath, false, true)]
     [InlineData(DownloadedPokedexPath, true, true)]
+    [InlineData(CustomSprites, false, true)]
+    [InlineData(CustomSprites, true, true)]
+    [InlineData(BaseSprites, false, true)]
+    [InlineData(BaseSprites, true, true)]
+    [InlineData(SpriteCredits, false, true)]
+    [InlineData(SpriteCredits, true, true)]
+    [InlineData(SpriteCache, false, true)]
+    [InlineData(SpriteCache, true, true)]
+    [InlineData(SpriteRateLimit, false, true)]
+    [InlineData(SpriteRateLimit, true, true)]
+    [InlineData(SpriteImage, false, true)]
+    [InlineData(SpriteImage, true, true)]
     public async Task RuntimeAndProtectedGameFilesDoNotRequireOriginalBytes(string path, bool present, bool managed)
     {
         using var fixture = new ReleaseBundleFixture(path);
@@ -41,7 +59,8 @@ public sealed class GameInventoryProtectionTests
         var inventory = fixture.Verifier.VerifyInventory(manifest, new InventoryEvidence(asset.Name, inventoryBytes));
         Assert.Contains(inventory.Files, file => file.Path == path);
         Assert.Equal(managed, ReleaseVerifier.ManagedFiles(inventory).Any(file => file.Path == path));
-        Assert.Equal(managed, SignedIronmonAuthority.GameFiles(inventory).Any(file => file.Path == path));
+        Assert.Equal(managed, SignedIronmonAuthority.GameFiles(inventory, includeAssets: true).Any(file => file.Path == path));
+        Assert.DoesNotContain(SignedIronmonAuthority.GameFiles(inventory), file => file.Path == path);
         Assert.False(ReleaseVerifier.IsRequiredGamePath(path));
         ReleaseBundle.ValidateInputs(request.GameInventory, request.GameManifest, request.GameVersion, null, fixture.Trust);
         ReleaseBundleFixture.Write(fixture.Root, ReleaseBundleFixture.GamePath, [1]);
@@ -54,12 +73,12 @@ public sealed class GameInventoryProtectionTests
         var gameFiles = SignedIronmonAuthority.GameFiles(inventory);
         var plan = new FileUpdatePlanner(new FileManagementPolicy()).Create(gameFiles, local, gameFiles);
         Assert.True(plan.CanApply);
-        if (present || managed)
+        if (present)
         {
             var retained = Assert.Single(plan.Entries, entry => entry.Path == path);
             Assert.Equal(FilePlanAction.Keep, retained.Action);
-            Assert.Equal(managed, retained.Baseline is not null);
-            Assert.Equal(managed, retained.Target is not null);
+            Assert.Null(retained.Baseline);
+            Assert.Null(retained.Target);
         }
         else
         {
@@ -119,6 +138,12 @@ public sealed class GameInventoryProtectionTests
     [Theory]
     [InlineData(DownloadedSettingsPath)]
     [InlineData(DownloadedPokedexPath)]
+    [InlineData(CustomSprites)]
+    [InlineData(BaseSprites)]
+    [InlineData(SpriteCredits)]
+    [InlineData(SpriteCache)]
+    [InlineData(SpriteRateLimit)]
+    [InlineData(SpriteImage)]
     public async Task FreshGamePlansRetainSignedRuntimeDownloadDefaults(string path)
     {
         using var fixture = new ReleaseBundleFixture(path);
@@ -129,7 +154,7 @@ public sealed class GameInventoryProtectionTests
         var bytes = await File.ReadAllBytesAsync(Path.Combine(fixture.DirectoryFor(ReleaseBundleFixture.VersionA), asset.Name));
         var inventory = fixture.Verifier.VerifyInventory(manifest, new InventoryEvidence(asset.Name, bytes));
         var planner = new FileUpdatePlanner(new FileManagementPolicy());
-        var plan = planner.Create([], [], SignedIronmonAuthority.GameFiles(inventory));
+        var plan = planner.Create([], [], SignedIronmonAuthority.GameFiles(inventory, includeAssets: true));
         var initial = Assert.Single(plan.Entries, entry => entry.Path == path);
         Assert.True(plan.CanApply);
         Assert.Equal(FilePlanAction.Write, initial.Action);

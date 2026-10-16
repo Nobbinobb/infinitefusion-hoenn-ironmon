@@ -14,6 +14,9 @@ internal sealed class TransactionFixture : IDisposable, ITransactionAuthority
     internal const string ChangedFile = "Data/changed.bin";
     internal const string NewFile = "Data/new/added.bin";
     internal const string SaveFile = "File A.rxdata";
+    internal const string TransitionFile = "Data/transition.bin";
+    internal const string TransitionChild = TransitionFile + "/new.bin";
+    internal const string TransitionPlayerFile = TransitionFile + "/player.json";
     private const string RootName = "installation";
     private const string PayloadName = "payload";
     private const string GitName = "prepared-git";
@@ -95,6 +98,22 @@ internal sealed class TransactionFixture : IDisposable, ITransactionAuthority
         _authorized = TransactionStorage.Serialize(Description);
         var engine = Engine();
         await engine.PrepareAsync(Description, Payload, git ? PreparedGit : null);
+        return engine;
+    }
+
+    /// <summary>
+    /// Prepares an independently authorized file-to-directory transition for concurrent player-data verification.
+    /// </summary>
+    /// <returns>The real engine with verified payload and backup storage.</returns>
+    internal async Task<UpdateTransaction> PrepareTransitionAsync()
+    {
+        Write(Root, TransitionFile, 1);
+        Write(Payload, TransitionChild, 2);
+        var plan = Planner().Create([File(TransitionFile, 1)], await InstallationFileSnapshot.ReadAsync(Root), [File(TransitionChild, 2)]);
+        Description = await UpdateTransaction.DescribeAsync(Root, plan);
+        _authorized = TransactionStorage.Serialize(Description);
+        var engine = Engine();
+        await engine.PrepareAsync(Description, Payload);
         return engine;
     }
 

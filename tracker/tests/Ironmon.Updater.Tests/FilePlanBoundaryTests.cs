@@ -119,7 +119,7 @@ public sealed class FilePlanBoundaryTests
     }
 
     /// <summary>
-    /// Requires a fresh review when any existing or previously missing path changes after planning.
+    /// Allows unrelated changes while requiring a fresh review for changed managed files and occupied targets.
     /// </summary>
     [Fact]
     public void RevalidationIncludesPreservedFilesAndMissingTargets()
@@ -127,7 +127,7 @@ public sealed class FilePlanBoundaryTests
         var snapshot = Snapshot((GamePath, 1), (ExtraPath, 3));
         var plan = Planner().Create([File(GamePath, 1)], snapshot, [File(GamePath, 2), File(OtherPath, 2)]);
         Assert.Equal(FilePlanApplicability.Ready, plan.Assess(snapshot));
-        Assert.Equal(FilePlanApplicability.Changed, plan.Assess(Snapshot((GamePath, 1), (ExtraPath, 2))));
+        Assert.Equal(FilePlanApplicability.Ready, plan.Assess(Snapshot((GamePath, 1), (ExtraPath, 2))));
         Assert.Equal(FilePlanApplicability.Changed, plan.Assess(Snapshot((GamePath, 1), (ExtraPath, 3), (OtherPath, 3))));
         Assert.Equal(FilePlanApplicability.Changed, plan.Assess(Snapshot((GamePath, 2), (ExtraPath, 3))));
         Assert.Equal(FilePlanApplicability.AlreadyApplied, plan.Assess(Snapshot((GamePath, 2), (ExtraPath, 3), (OtherPath, 2))));

@@ -249,10 +249,10 @@ function Invoke-IronmonGameRuntime {
     )
 
     $resolvedGameRoot = [IO.Path]::GetFullPath($GameRoot)
-    $candidateExecutables = @(
+    $candidateExecutables = @(@(
         (Join-Path $resolvedGameRoot "InfiniteFusion2.exe"),
         (Join-Path $resolvedGameRoot "InfiniteFusion2-performance.exe")
-    ) | Where-Object { Test-Path -LiteralPath $_ }
+    ) | Where-Object { Test-Path -LiteralPath $_ })
     if ($candidateExecutables.Count -eq 0) {
         throw "An Infinite Fusion executable was not found in '$resolvedGameRoot'."
     }

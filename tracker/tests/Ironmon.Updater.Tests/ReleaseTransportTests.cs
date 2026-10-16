@@ -20,6 +20,34 @@ public sealed class ReleaseTransportTests
     private const string AuthorizedCdn = "https://release-assets.githubusercontent.com/fixture/payload";
     private const string ArchiveName = "fixture.zip";
     private const string Missing = "missing";
+    private const string CacheFile = "discovery.json";
+    private const string TruncatedJson = "{";
+
+    /// <summary>
+    /// Replaces an unusable optional cache through fresh authenticated discovery on an ordinary manual retry.
+    /// </summary>
+    [Fact]
+    public async Task CorruptCacheRefetchesSignedReleaseAndPersistsUsableGeneration()
+    {
+        using var fixture = new SignedReleaseFixture();
+        using var workspace = new TestWorkspace();
+        var cache = workspace.PathFor(CacheName);
+        Directory.CreateDirectory(cache);
+        await File.WriteAllTextAsync(Path.Combine(cache, CacheFile), TruncatedJson);
+        var handler = new Handler(request => request.RequestUri!.AbsoluteUri == ReleaseProtocol.LatestReleaseUrl ? Body(Api(fixture)) : Body(request.RequestUri.AbsoluteUri.EndsWith(ReleaseProtocol.ManifestName, StringComparison.Ordinal) ? fixture.Evidence.Manifest : fixture.Evidence.Signatures));
+        using var http = new ReleaseHttpClient(handler, TimeProvider.System);
+        using (var discovery = new ReleaseDiscovery(http, fixture.Verifier, cache))
+        {
+            var result = await discovery.CheckAsync(manual: true);
+            Assert.Null(result.Error);
+            Assert.NotNull(result.Release);
+            Assert.Equal(3, handler.Calls);
+        }
+
+        using var restarted = new ReleaseDiscovery(http, fixture.Verifier, cache);
+        Assert.NotNull((await restarted.CheckAsync()).Release);
+        Assert.Equal(3, handler.Calls);
+    }
 
     /// <summary>
     /// Reuses the signed observation across startup calls and processes, and uses ETags for manual checks.

@@ -74,14 +74,42 @@ payload before archiving; the external signed inventory also hashes this inner
 document. Historical generation profiles retain their immutable ownership policy.
 Setup and the helper embed notices from their exact resolved runtime packs.
 
-Complete signed game evidence retains the original upstream entries for
-`Data/Scripts/DownloadedSettings.rb` and `Data/pokedex/dex.json`. The game refreshes
-these two files through its own download service, so recognizing an installed
-game does not require their original bytes or their presence. Compatible tracker
-updates leave them unchanged. Fresh game installations still receive their signed
-defaults, and combined game updates retain the normal three-way conflict and
-backup rules. Other inventoried game scripts and data remain subject to signed
-content verification, including neighboring files with similar names.
+Complete signed game evidence retains the original upstream asset entries.
+Installed-game recognition checks executable code and runtime configuration
+(`.rb`, `.rxdata`, `.dat`, `.dll`, `.exe`, `.ini`, `.so`), excluding the game's
+downloaded `Data/Scripts/DownloadedSettings.rb`. Sprite images, credits, catalogs,
+download caches, rate logs and downloaded Pokedex JSON are player/runtime data;
+their contents, absence and names do not establish game compatibility.
+
+Review and transaction revalidation inspect authenticated program paths and their
+ancestors. They do not traverse unrelated saves, imported profiles, sprites or
+generated files, even if those files are locked or exceed the old whole-folder
+entry limit. Those files can change, move, appear or disappear during downloads,
+shutdown, application and rollback. Managed writes and directory replacements
+still require the reviewed bytes and complete collision checks. Published
+generation profiles retain their immutable policy; additional imported profiles
+remain player-owned.
+
+Fresh game installations receive every signed default. Combined game upgrades
+preserve previously available assets, including player edits and removals, and
+seed newly introduced signed assets only into vacant paths. Required game code
+continues to use reviewed conflicts and verified backups. A tracker-only update
+never adopts game asset ownership.
+
+Completed installations can be renamed or copied. The next authorized operation
+captures a fresh directory binding after acquiring the lease and confirming no
+transaction is pending. An active transaction cannot be retargeted by relocation.
+Malformed unrelated history is skipped while finding the independently verified
+current release. Missing current signed authority still requires repair. Damaged
+optional discovery caches trigger fresh signed discovery; authenticated cache
+watermarks and forward-version checks continue to prevent downgrades. Both game
+executable variants participate in normal shutdown and exact-path idle checks.
+When ZIP game inventories have identical required program bytes, recognition
+retains a signed prior-package ownership baseline and prefers a compatible
+revision within that selection, without using player assets to break the tie.
+Older installed clients still execute their old review code; players
+whose old client refuses review need the fixed Setup from the next published
+release to bootstrap these changes.
 
 Helper version `<H>` uses the engine major/minor plus the engine patch and signed
 release sequence. Every release gets an immutable helper path even when only

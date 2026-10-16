@@ -83,7 +83,7 @@ public sealed class IronmonOnlyUpdate(ReleaseVerifier verifier, ReleaseDownloadS
             await ReleaseArchive.ExtractAsync(archive, ReleaseProtocol.Content(archiveAsset.Bytes, archiveAsset.Sha256), extracted, Target.Files, cancellationToken).ConfigureAwait(false);
             await _runtime.EnsureAsync(extracted, request.Flavor, cancellationToken).ConfigureAwait(false);
             var helper = await RecoveryHelperPackage.StageAsync(root, target, _downloads, request.Flavor, cancellationToken).ConfigureAwait(false);
-            var local = reviewed is null ? await InstallationFileSnapshot.ReadAsync(root, cancellationToken, InstallationStage.ReviewingInstallation).ConfigureAwait(false) : reviewed;
+            var local = reviewed is null ? await InstallationFileSnapshot.ReadManagedAsync(root, SignedIronmonAuthority.InspectionPaths(Baseline, Target, Game), cancellationToken, InstallationStage.ReviewingInstallation).ConfigureAwait(false) : reviewed;
             var receipt = ReceiptBytes(authorization, Target);
             var baseline = BaselineFiles(Baseline, local);
             var targetFiles = TargetFiles(Target, receipt);

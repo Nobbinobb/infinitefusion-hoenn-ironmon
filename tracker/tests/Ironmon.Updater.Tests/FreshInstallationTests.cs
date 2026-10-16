@@ -137,9 +137,9 @@ public sealed class FreshInstallationTests(ITestOutputHelper output)
                 throw new IOException("Fixture interruption after unrelated content was added.");
             }
         });
-        Assert.Equal(TransactionPhase.RecoveryRequired, (await engine.ApplyAsync(fixture.Root, fixture.Description.TransactionId)).Phase);
+        Assert.Equal(TransactionPhase.RolledBack, (await engine.ApplyAsync(fixture.Root, fixture.Description.TransactionId)).Phase);
         Assert.Equal(new byte[] { 7 }, await File.ReadAllBytesAsync(Path.Combine(fixture.Root, ExtraFile)));
-        Assert.NotNull(UpdateTransaction.ReadActiveId(fixture.Root));
+        Assert.Null(UpdateTransaction.ReadActiveId(fixture.Root));
     }
 
     /// <summary>

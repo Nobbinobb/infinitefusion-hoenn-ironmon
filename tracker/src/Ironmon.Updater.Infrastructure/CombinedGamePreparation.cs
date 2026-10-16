@@ -80,8 +80,9 @@ public sealed class CombinedGamePreparation(MinGitCache cache, RepositoryPolicy 
             ReleaseProtocol.ValidateCommit(before.GameCommit);
         ReleaseProtocol.ValidateCommit(target.GameCommit);
 
-        var snapshot = await InstallationFileSnapshot.ReadAsync(root, cancellationToken).ConfigureAwait(false);
-        if (before is null && (snapshot.Count != 0 || Path.Exists(PlainPaths.Child(root, GitDirectory))))
+        var paths = SignedIronmonAuthority.GameFiles(target).Concat(before is null ? [] : SignedIronmonAuthority.GameFiles(before)).Select(file => file.Path).ToArray();
+        var snapshot = await InstallationFileSnapshot.ReadManagedAsync(root, paths, cancellationToken).ConfigureAwait(false);
+        if (before is null && Directory.EnumerateFileSystemEntries(root).Any(path => !Path.GetFileName(path).Equals(InstallationLease.StateDirectory, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidDataException(UpdaterText.CombinedGamePreparationANewGameInstallationRequiresAnEmptyDestination);
 
         InstallationProgressScope.Report(new(InstallationStage.PreparingDownload));
@@ -161,7 +162,7 @@ public sealed class CombinedGamePreparation(MinGitCache cache, RepositoryPolicy 
             await RequireAsync(git, workspace, [Config, BranchPrefix + _policy.Branch + MergeSuffix, RepositoryPolicy.HeadsPrefix + _policy.Branch], cancellationToken).ConfigureAwait(false);
             await RequireAsync(git, workspace, [Reset, Mixed, target.GameCommit], cancellationToken).ConfigureAwait(false);
             _policy.ValidateConfiguration(PlainPaths.Child(workspace, GitDirectory + '/' + Config));
-            if (!snapshot.SequenceEqual(await InstallationFileSnapshot.ReadAsync(root, cancellationToken).ConfigureAwait(false)) || !await SameGitAsync(root, originalGit, cancellationToken).ConfigureAwait(false))
+            if (!snapshot.SequenceEqual(await InstallationFileSnapshot.ReadManagedAsync(root, paths, cancellationToken).ConfigureAwait(false)) || !await SameGitAsync(root, originalGit, cancellationToken).ConfigureAwait(false))
                 throw new IOException(UpdaterText.CombinedGamePreparationTheInstallationChangedWhileTheCombinedUpdateWasBeing);
 
             return new PreparedCombinedGame(_staging, workspace, payload, PlainPaths.Child(workspace, GitDirectory), originalGit);

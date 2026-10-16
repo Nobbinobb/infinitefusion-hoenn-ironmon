@@ -16,7 +16,6 @@ public sealed class TrackerGameLauncher
     internal const string FailedKey = "Startup.GameLaunch.Failed";
     internal const string InstallationNotReadyKey = "Startup.GameLaunch.InstallationNotReady";
     private const string GameExecutable = "InfiniteFusion2.exe";
-    private const string PerformanceExecutable = "InfiniteFusion2-performance.exe";
     private const string MutexPrefix = "Local\\Ironmon.Tracker.GameLaunch.";
     private static readonly TimeSpan _launchLockTimeout = TimeSpan.FromSeconds(5);
     private readonly Lock _gate = new();
@@ -109,7 +108,7 @@ public sealed class TrackerGameLauncher
     /// <returns>True when its game is already running.</returns>
     internal static bool IsGameRunning(string root)
     {
-        foreach (string executable in new[] { GameExecutable, PerformanceExecutable })
+        foreach (string executable in GameInstallationLocator.SupportedExecutables)
         {
             string expected = Path.GetFullPath(Path.Combine(root, executable));
             Process[] processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(executable));

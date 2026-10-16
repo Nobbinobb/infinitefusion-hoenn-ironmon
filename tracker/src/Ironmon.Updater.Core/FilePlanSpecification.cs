@@ -7,7 +7,7 @@ namespace Ironmon.Updater.Core;
 /// Constructs a serializable specification. Callers must authenticate it before using it as write authority.
 /// </remarks>
 /// <param name="Baseline">The prior managed inventory.</param>
-/// <param name="Local">The complete original installation snapshot.</param>
+/// <param name="Local">The original managed-file inspection, including ancestors and complete directory replacement boundaries.</param>
 /// <param name="Target">The desired managed inventory.</param>
 /// <param name="ApprovedPaths">The exact file conflicts approved for backed-up replacement.</param>
 /// <param name="ProtectedPaths">Additional immutable policy exclusions.</param>

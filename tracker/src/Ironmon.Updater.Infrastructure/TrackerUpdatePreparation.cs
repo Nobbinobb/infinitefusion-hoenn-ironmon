@@ -43,19 +43,26 @@ public sealed class TrackerUpdatePreparation(ReleaseVerifier verifier, ReleaseDo
         if (combined && request.HasActiveRun)
             throw new InvalidOperationException(UpdaterText.TrackerUpdatePreparationFinishTheActiveRunBeforeUpdatingTheGameConnect);
 
+        if (combined)
+            CombinedGitVerification.EnsureSupportedRoot(request.InstallationRoot);
+
         var content = new IronmonOnlyUpdate(_verifier, _downloads, _runtime);
         var target = await content.CompleteEvidenceAsync(release, manifest, cancellationToken).ConfigureAwait(false);
         var current = currentRelease is null ? null : await content.CompleteEvidenceAsync(currentRelease, _verifier.Verify(currentRelease.Manifest, currentRelease.Signatures), cancellationToken).ConfigureAwait(false);
         var authorization = new IronmonUpdateAuthorization(1, selection, target, current, combined ? request.GameCommit : null);
         var authority = Authority();
         var inventories = authority.Resolve(authorization);
-        var local = await InstallationFileSnapshot.ReadAsync(request.InstallationRoot, cancellationToken, InstallationStage.ReviewingInstallation).ConfigureAwait(false);
+        var previousGame = combined ? authority.ResolvePreviousGame(authorization) : null;
+        ManagedFile[] gameTarget = combined ? [.. SignedIronmonAuthority.GameTargetFiles(request.InstallationRoot, inventories.Game, previousGame)] : [];
+        var previousFiles = previousGame is null ? [] : SignedIronmonAuthority.GameFiles(previousGame);
+        var paths = SignedIronmonAuthority.InspectionPaths(inventories.Baseline, inventories.Target, inventories.Game).Concat(previousFiles.Select(file => file.Path)).Concat(gameTarget.Select(file => file.Path));
+        var local = await InstallationFileSnapshot.ReadManagedAsync(request.InstallationRoot, paths, cancellationToken, InstallationStage.ReviewingInstallation).ConfigureAwait(false);
         IEnumerable<ManagedFile> baseline = IronmonOnlyUpdate.BaselineFiles(inventories.Baseline, local);
         IEnumerable<ManagedFile> desired = IronmonOnlyUpdate.TargetFiles(inventories.Target, IronmonOnlyUpdate.ReceiptBytes(authorization, inventories.Target));
         if (combined)
         {
-            baseline = baseline.Concat(SignedIronmonAuthority.GameFiles(authority.ResolvePreviousGame(authorization)));
-            desired = desired.Concat(SignedIronmonAuthority.GameFiles(inventories.Game));
+            baseline = baseline.Concat(previousFiles);
+            desired = desired.Concat(gameTarget);
         }
         else
         {
@@ -115,27 +122,7 @@ public sealed class TrackerUpdatePreparation(ReleaseVerifier verifier, ReleaseDo
         if (receipt.SchemaVersion != 1 || receipt.Version != version)
             throw new InvalidDataException(UpdaterText.TrackerUpdatePreparationTheInstalledReleaseRecordDoesNotMatchThisTracker);
 
-        var directory = PlainPaths.Child(root, IronmonOnlyUpdate.EvidenceDirectory);
-        if (!Directory.Exists(directory))
-            throw new InvalidDataException(UpdaterText.TrackerUpdatePreparationTheInstalledReleaseSVerificationRecordsAreMissingUse);
-
-        foreach (var path in Directory.EnumerateFiles(directory).Take(1024))
-        {
-            if (!Guid.TryParseExact(Path.GetFileNameWithoutExtension(path), TransactionStorage.GuidFormat, out var id))
-                continue;
-
-            var evidence = ReleaseJson.Parse<IronmonUpdateAuthorization>(TransactionStorage.ReadBytes(IronmonOnlyUpdate.AuthorizationPath(root, id)), 64 * ReleaseJson.ManifestLimit).Target;
-            if (TransactionStorage.Hash(evidence.Manifest) != receipt.ManifestSha256)
-                continue;
-
-            var manifest = _verifier.Verify(evidence.Manifest, evidence.Signatures);
-            if (manifest.IronmonVersion != version)
-                throw new InvalidDataException(UpdaterText.TrackerUpdatePreparationTheInstalledReleaseSVerificationRecordNamesAnotherVersion);
-
-            return evidence;
-        }
-
-        throw new InvalidDataException(UpdaterText.TrackerUpdatePreparationTheInstalledReleaseSVerificationRecordCouldNotBe);
+        return InstalledReleaseEvidence.Read(root, receipt, _verifier).Target;
     }
 
     /// <summary>

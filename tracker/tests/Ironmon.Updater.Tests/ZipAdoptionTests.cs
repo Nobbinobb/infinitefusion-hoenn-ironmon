@@ -64,7 +64,7 @@ public sealed class ZipAdoptionTests(PinnedGitFixture tool) : IClassFixture<Pinn
     private const string WrongTitle = "[Game]\nTitle=other-game\n";
     private const string DuplicateTitle = "[Game]\nTitle=infinitefusion-hoenn\nTitle=infinitefusion-hoenn\n";
     private const string ParentFile = "more";
-    private const string ChildFile = "flatten/personal.txt";
+    private const string ChildFile = ZipGameFixture.FlattenedFile + "/personal.txt";
     private const string UpdateState = ".ironmon-update/active.json";
     private const string MissingCommit = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     private const string ManagedDirectory = "Data";
