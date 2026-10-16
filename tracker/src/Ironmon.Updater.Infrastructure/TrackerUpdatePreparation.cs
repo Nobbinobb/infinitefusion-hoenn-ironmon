@@ -43,6 +43,9 @@ public sealed class TrackerUpdatePreparation(ReleaseVerifier verifier, ReleaseDo
         if (combined && request.HasActiveRun)
             throw new InvalidOperationException(UpdaterText.TrackerUpdatePreparationFinishTheActiveRunBeforeUpdatingTheGameConnect);
 
+        if (combined)
+            CombinedGitVerification.EnsureSupportedRoot(request.InstallationRoot);
+
         var content = new IronmonOnlyUpdate(_verifier, _downloads, _runtime);
         var target = await content.CompleteEvidenceAsync(release, manifest, cancellationToken).ConfigureAwait(false);
         var current = currentRelease is null ? null : await content.CompleteEvidenceAsync(currentRelease, _verifier.Verify(currentRelease.Manifest, currentRelease.Signatures), cancellationToken).ConfigureAwait(false);

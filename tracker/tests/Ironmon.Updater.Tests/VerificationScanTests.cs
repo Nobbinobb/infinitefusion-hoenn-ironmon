@@ -21,6 +21,20 @@ public sealed class VerificationScanTests
     private const string SpriteCredits = "Data/sprites/Sprite_Credits.csv";
 
     /// <summary>
+    /// Rejects unsupported combined-update witness paths during review before downloading any package or metadata container.
+    /// </summary>
+    [Fact]
+    public async Task CombinedReviewChecksDestinationBudgetBeforeDownloads()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        var root = Path.Combine(fixture.Release.Root, new string('x', 200));
+        var request = fixture.Release.Request() with { InstallationRoot = root, GameCommit = new string('2', 40) };
+        await Assert.ThrowsAsync<IOException>(() => fixture.Preparation.ReviewAsync(request, fixture.Release.Evidence));
+        Assert.Empty(fixture.Release.Requests);
+        Assert.False(Directory.Exists(root));
+    }
+
+    /// <summary>
     /// Completes the real same-process Setup workflow with one review and three fresh transaction inspections.
     /// </summary>
     [Fact]
