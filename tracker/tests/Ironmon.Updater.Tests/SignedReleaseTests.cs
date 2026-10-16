@@ -20,7 +20,7 @@ public sealed class SignedReleaseTests
     private const string GitDirectory = ".git";
     private const string SignedApplyMode = "signed-apply";
     private const string ReleaseProbeMode = "--release-probe";
-    private const string GameText = "Data/game.txt";
+    private const string GameText = "Data/game.rb";
     private const string UnixText = "fixture\n";
     private const string WindowsText = "fixture\r\n";
     private const string EditedText = "edited\r\n";

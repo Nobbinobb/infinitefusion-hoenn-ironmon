@@ -75,6 +75,73 @@ public sealed class CombinedUpdateTests(PinnedGitFixture tool) : IClassFixture<P
     private const string OneCommit = "1";
 
     /// <summary>
+    /// Recognizes a ZIP installation when signed game revisions differ only in player-customizable assets.
+    /// </summary>
+    [Fact]
+    public async Task EquivalentProgramInventoriesSelectPreferredRevisionWithoutAssetHashes()
+    {
+        using var game = new ZipGameFixture(tool);
+        using var release = new SignedReleaseFixture();
+        await game.InitializeAsync();
+        await game.RunAsync(game.Upstream, Reset, Hard, game.Baseline.Commit);
+        ZipGameFixture.Write(game.Upstream, ZipGameFixture.NewAsset, ZipGameFixture.TextB);
+        var target = await game.CommitAsync(ZipGameFixture.TextB);
+        var before = await InventoryAsync(game, game.Baseline.Commit);
+        release.UseGameHistory(before, await InventoryAsync(game, target));
+        foreach (var file in before.Files)
+            release.Write(file.Path, await File.ReadAllBytesAsync(PlainPaths.Child(game.Installation, file.Path)));
+
+        var preparation = new SetupPreparation(release.Verifier, new ReleaseDownloadStore(release.Cache, release), SignedReleaseFixture.Runtime(), new CombinedGamePreparation(tool.Cache, game.Policy, game.Staging), Verification(game, release), _ => SignedReleaseFixture.VersionA);
+        var review = await preparation.ReviewAsync(release.Root, release.Evidence, noActiveRun: true);
+        Assert.Equal(target, review.Authorization.Request.GameCommit);
+        Assert.Null(review.Authorization.PreviousGameCommit);
+        Assert.True(review.Plan.CanApply);
+    }
+
+    /// <summary>
+    /// Preserves edited or removed assets and existing overrides while installing new defaults through a signed game upgrade.
+    /// </summary>
+    /// <param name="gitCheckout">Whether the installation already has ordinary launcher metadata.</param>
+    /// <param name="removed">Whether the player removed the previous sprite instead of editing it.</param>
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task GameUpgradePreservesPlayerAssetsAndSeedsNewDefaults(bool gitCheckout, bool removed)
+    {
+        using var game = new ZipGameFixture(tool);
+        using var release = new SignedReleaseFixture();
+        await game.InitializeAsync(includeAssets: true);
+        await ConfigureAsync(game, release, gitCheckout);
+        if (removed)
+        {
+            File.Delete(PlainPaths.Child(release.Root, ZipGameFixture.CustomAsset));
+        }
+        else
+        {
+            release.Write(ZipGameFixture.CustomAsset, Encoding.UTF8.GetBytes(PlayerEdit));
+        }
+
+        release.Write(ZipGameFixture.OverriddenAsset, Encoding.UTF8.GetBytes(PlayerEdit));
+        using var locked = new FileStream(PlainPaths.Child(release.Root, ZipGameFixture.OverriddenAsset), FileMode.Open, FileAccess.Read, FileShare.None);
+        var preparation = new TrackerUpdatePreparation(release.Verifier, new ReleaseDownloadStore(release.Cache, release), SignedReleaseFixture.Runtime(), new CombinedGamePreparation(tool.Cache, game.Policy, game.Staging), Verification(game, release));
+        var review = await preparation.ReviewAsync(release.Request() with { GameCommit = game.Baseline.Commit }, release.Evidence);
+        Assert.DoesNotContain(review.Plan.Entries, entry => entry.Path is ZipGameFixture.CustomAsset or ZipGameFixture.OverriddenAsset);
+        Assert.Contains(review.Plan.Entries, entry => entry.Path == ZipGameFixture.NewAsset && entry.Action == FilePlanAction.Write);
+        var prepared = await preparation.PrepareAsync(review, [], false);
+        var engine = new UpdateTransaction(new SignedIronmonAuthority(release.Verifier, SignedReleaseFixture.Runtime(), Verification(game, release)), _ => Task.CompletedTask);
+        Assert.Equal(TransactionPhase.Committed, (await engine.ApplyAsync(release.Root, prepared.TransactionId)).Phase);
+        Assert.Equal(ZipGameFixture.TextB, await File.ReadAllTextAsync(PlainPaths.Child(release.Root, ZipGameFixture.NewAsset)));
+        Assert.Equal(!removed, File.Exists(PlainPaths.Child(release.Root, ZipGameFixture.CustomAsset)));
+        if (!removed)
+            Assert.Equal(PlayerEdit, await File.ReadAllTextAsync(PlainPaths.Child(release.Root, ZipGameFixture.CustomAsset)));
+
+        using var text = new StreamReader(locked);
+        Assert.Equal(PlayerEdit, await text.ReadToEndAsync());
+    }
+
+    /// <summary>
     /// Prepares the game while the tracker download is held, then reports the remaining download or drains cancellation.
     /// </summary>
     /// <param name="cancel">Whether to cancel while the independent package is still downloading.</param>

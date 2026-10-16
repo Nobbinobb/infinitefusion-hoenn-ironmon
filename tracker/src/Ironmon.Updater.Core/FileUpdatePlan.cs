@@ -1,7 +1,7 @@
 namespace Ironmon.Updater.Core;
 
 /// <summary>
-/// Holds immutable review decisions, backup requirements and complete revalidation expectations.
+/// Holds immutable review decisions, backup requirements and managed-file revalidation expectations.
 /// </summary>
 public sealed class FileUpdatePlan
 {
@@ -29,6 +29,19 @@ public sealed class FileUpdatePlan
     /// Gets whether all conflicts are resolved; application still requires fresh snapshot and backup checks.
     /// </summary>
     public bool CanApply => Entries.All(entry => entry.Action != FilePlanAction.Conflict);
+
+    /// <summary>
+    /// Gets the managed files and structural boundaries that require fresh inspection.
+    /// </summary>
+    public IReadOnlyList<string> InspectionPaths => [.. _baseline.Select(file => file.Path).Concat(_target.Select(file => file.Path)).Concat(_operations.Where(operation => operation.Kind == FileOperationKind.RemoveDirectory).Select(operation => operation.Path)).Distinct(StringComparer.OrdinalIgnoreCase)];
+
+    /// <summary>
+    /// Checks reviewed managed bytes and structural collisions while allowing unrelated player files to change.
+    /// </summary>
+    /// <param name="current">The freshly inspected installation entries.</param>
+    /// <returns>Whether every relevant original entry still matches.</returns>
+    public bool MatchesBefore(IEnumerable<LocalFileEntry> current)
+        => Matches(_before, current);
 
     /// <summary>
     /// Freezes planner inputs and calculates the complete expected result for repeat-application checks.
@@ -88,12 +101,12 @@ public sealed class FileUpdatePlan
     }
 
     /// <summary>
-    /// Compares a fresh complete snapshot with both the reviewed state and the complete expected result.
+    /// Compares managed files and affected directory boundaries with the reviewed and expected states.
     /// </summary>
     /// <remarks>
-    /// AlreadyApplied requires every expected file and preserved entry to match. Partial application returns Changed and belongs to transaction recovery; matching one target file is never sufficient to replay a plan.
+    /// Unrelated saves, profiles, sprites and generated files may be added, removed, moved or edited. Managed files and all children of directories being replaced remain subject to exact checks.
     /// </remarks>
-    /// <param name="current">A newly inspected complete installation snapshot.</param>
+    /// <param name="current">A newly inspected snapshot containing every managed path and affected structural boundary.</param>
     /// <returns>Whether to apply once, skip an already completed plan, replan/recover, or resolve conflicts.</returns>
     public FilePlanApplicability Assess(IEnumerable<LocalFileEntry> current)
     {
@@ -101,10 +114,25 @@ public sealed class FileUpdatePlan
             return FilePlanApplicability.Blocked;
 
         var snapshot = FileUpdatePlanner.ReadLocal(current).Values.OrderBy(entry => entry.Path, StringComparer.Ordinal).ToArray();
-        if (_before.SequenceEqual(snapshot))
+        if (MatchesBefore(snapshot))
             return _operations.Count == 0 ? FilePlanApplicability.AlreadyApplied : FilePlanApplicability.Ready;
 
-        return _after.SequenceEqual(snapshot) ? FilePlanApplicability.AlreadyApplied : FilePlanApplicability.Changed;
+        return Matches(_after, snapshot) ? FilePlanApplicability.AlreadyApplied : FilePlanApplicability.Changed;
+    }
+
+    /// <summary>
+    /// Compares only owned paths, their ancestors and complete directory replacement boundaries.
+    /// </summary>
+    /// <param name="expected">The captured before or after entries.</param>
+    /// <param name="current">The freshly inspected entries.</param>
+    /// <returns>Whether the relevant states are identical.</returns>
+    private bool Matches(IEnumerable<LocalFileEntry> expected, IEnumerable<LocalFileEntry> current)
+    {
+        var paths = InspectionPaths.SelectMany(path => UpdateFilePath.Parents(path).Prepend(path)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var boundaries = _operations.Where(operation => operation.Kind == FileOperationKind.RemoveDirectory).Select(operation => operation.Path).ToArray();
+        var created = _operations.Where(operation => operation.Kind == FileOperationKind.CreateDirectory).Select(operation => operation.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        Func<LocalFileEntry, bool> relevant = entry => !(entry.Content is null && created.Contains(entry.Path)) && (paths.Contains(entry.Path) || boundaries.Any(path => entry.Path.StartsWith(path + '/', StringComparison.OrdinalIgnoreCase)));
+        return expected.Where(relevant).OrderBy(entry => entry.Path, StringComparer.Ordinal).SequenceEqual(current.Where(relevant).OrderBy(entry => entry.Path, StringComparer.Ordinal));
     }
 
     /// <summary>

@@ -7,6 +7,7 @@ namespace Ironmon.Updater.Infrastructure;
 public static class GameInstallationLocator
 {
     internal const string GameExecutable = "InfiniteFusion2.exe";
+    private const string PerformanceExecutable = "InfiniteFusion2-performance.exe";
     internal const string GameIni = "Game.ini";
     private const string TrackerExecutable = "Ironmon Tracker.exe";
     private const string GameSection = "[Game]";
@@ -14,6 +15,11 @@ public static class GameInstallationLocator
     private const string ExpectedTitle = "infinitefusion-hoenn";
     private const int MaximumParents = 12;
     private const int MaximumIniBytes = 65536;
+
+    /// <summary>
+    /// Gets both supported game executables for installation-specific process checks.
+    /// </summary>
+    public static IReadOnlyList<string> SupportedExecutables { get; } = Array.AsReadOnly(new[] { GameExecutable, PerformanceExecutable });
 
     /// <summary>
     /// Finds the nearest ancestor with a valid executable header and unambiguous game INI title.

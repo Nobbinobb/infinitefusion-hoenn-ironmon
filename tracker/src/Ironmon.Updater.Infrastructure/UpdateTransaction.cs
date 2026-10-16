@@ -28,6 +28,9 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
     /// <summary>
     /// Captures a bounded descriptor without modifying program files; independent authorization is still required.
     /// </summary>
+    /// <remarks>
+    /// With no pending transaction, a moved or copied completed installation receives a fresh directory binding. No program write is authorized by this metadata; preparation independently authenticates the new descriptor and release inventories.
+    /// </remarks>
     /// <param name="installationRoot">The existing destination.</param>
     /// <param name="plan">The reviewed complete plan.</param>
     /// <param name="preparedGitRoot">A separately prepared ordinary Git metadata tree, when Git participates.</param>
@@ -38,11 +41,15 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
         using var lease = InstallationLease.Acquire(installationRoot);
         var identity = InstallationIdentity.Read(lease.Root);
         var identityPath = PlainPaths.Child(StateRoot(lease.Root), InstallationFile);
-        var installation = File.Exists(identityPath) ? Deserialize<InstallationRecord>(ReadBytes(identityPath)) : new InstallationRecord(SchemaVersion, Guid.NewGuid(), lease.Root, identity);
-        if (installation.SchemaVersion != SchemaVersion || installation.Root != lease.Root || installation.RootIdentity != identity || installation.Id == Guid.Empty)
+        var previous = File.Exists(identityPath) ? Deserialize<InstallationRecord>(ReadBytes(identityPath)) : null;
+        var installation = previous ?? new InstallationRecord(SchemaVersion, Guid.NewGuid(), lease.Root, identity);
+        if (installation.SchemaVersion != SchemaVersion || installation.Id == Guid.Empty)
             throw new InvalidDataException(UpdaterText.UpdateTransactionTheSavedInstallationIdentityDoesNotMatchThisDirectory);
 
-        if (!File.Exists(identityPath))
+        if (installation.Root != lease.Root || installation.RootIdentity != identity)
+            installation = new InstallationRecord(SchemaVersion, Guid.NewGuid(), lease.Root, identity);
+
+        if (previous != installation)
             WriteDurable(identityPath, Serialize(installation));
 
         plan.GetOperations();
@@ -256,6 +263,13 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
             return new TransactionResult(TransactionPhase.RolledBack);
         }
 
+        if (journal.Phase == TransactionPhase.Prepared)
+        {
+            WriteJournal(directory, journal with { Generation = journal.Generation + 1, Phase = TransactionPhase.RolledBack });
+            ClearActive(lease.Root);
+            return new TransactionResult(TransactionPhase.RolledBack);
+        }
+
         cancellationToken.ThrowIfCancellationRequested();
         return await RollbackAsync(description, plan, directory, journal, journal.Error).ConfigureAwait(false);
     }
@@ -381,7 +395,7 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
     }
 
     /// <summary>
-    /// Revalidates complete original bytes and Git metadata while the installation is idle.
+    /// Revalidates managed original bytes, structural boundaries and participating Git metadata while the installation is idle.
     /// </summary>
     /// <param name="description">The authorized transaction.</param>
     /// <param name="plan">The reconstructed plan.</param>
@@ -392,8 +406,8 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
         if (requireIdle)
             await _ensureIdle(cancellationToken).ConfigureAwait(false);
         var stage = requireIdle ? InstallationStage.CheckingInstallation : InstallationStage.CheckingPreparedInstallation;
-        var snapshot = await InstallationFileSnapshot.ReadAsync(description.InstallationRoot, cancellationToken, stage).ConfigureAwait(false);
-        if (!snapshot.SequenceEqual(description.Plan.Local.OrderBy(entry => entry.Path, StringComparer.Ordinal)))
+        var snapshot = await InstallationFileSnapshot.ReadManagedAsync(description.InstallationRoot, plan.InspectionPaths, cancellationToken, stage).ConfigureAwait(false);
+        if (!plan.MatchesBefore(snapshot))
             throw new IOException(UpdaterText.UpdateTransactionInstallationFilesChangedSinceReviewApplicationOrRecoveryCannot);
 
         if (description.GitAfter is not null)
@@ -403,7 +417,7 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
     }
 
     /// <summary>
-    /// Verifies complete resulting files and Git bytes before trusted component-level verification.
+    /// Verifies resulting managed files and Git bytes before trusted component-level verification.
     /// </summary>
     /// <param name="description">The authorized transaction.</param>
     /// <param name="plan">The reviewed plan.</param>
@@ -411,7 +425,7 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
     private async Task VerifyAfterAsync(TransactionDescription description, FileUpdatePlan plan, CancellationToken cancellationToken)
     {
         await _ensureIdle(cancellationToken).ConfigureAwait(false);
-        if (plan.Assess(await InstallationFileSnapshot.ReadAsync(description.InstallationRoot, cancellationToken, InstallationStage.VerifyingInstallation).ConfigureAwait(false)) != FilePlanApplicability.AlreadyApplied)
+        if (plan.Assess(await InstallationFileSnapshot.ReadManagedAsync(description.InstallationRoot, plan.InspectionPaths, cancellationToken, InstallationStage.VerifyingInstallation).ConfigureAwait(false)) != FilePlanApplicability.AlreadyApplied)
             throw new IOException(UpdaterText.UpdateTransactionTheFinalInstallationDoesNotMatchTheCompleteReviewed);
 
         if (description.GitAfter is not null)
@@ -474,7 +488,7 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
         using var ancestors = OperatingSystem.IsWindows() ? WindowsUpdateAccess.HoldAncestors(path) : null;
         if (operation.Kind == FileOperationKind.CreateDirectory)
         {
-            if (Path.Exists(path))
+            if (File.Exists(path))
                 throw new IOException(UpdaterText.UpdateTransactionAPlannedNewDirectoryIsUnexpectedlyOccupied);
 
             Directory.CreateDirectory(path);
@@ -574,7 +588,7 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
         using var ancestors = OperatingSystem.IsWindows() ? WindowsUpdateAccess.HoldAncestors(path) : null;
         if (operation.Kind == FileOperationKind.CreateDirectory)
         {
-            if (Directory.Exists(path))
+            if (Directory.Exists(path) && !Directory.EnumerateFileSystemEntries(path).Any())
                 Directory.Delete(path, recursive: false);
 
             if (File.Exists(path))

@@ -70,8 +70,9 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
 
         var content = new IronmonOnlyUpdate(_verifier, _downloads, _runtime);
         var target = await content.CompleteEvidenceAsync(release, manifest, cancellationToken).ConfigureAwait(false);
-        var local = Directory.Exists(root) ? await InstallationFileSnapshot.ReadAsync(root, cancellationToken, InstallationStage.ReviewingInstallation).ConfigureAwait(false) : [];
-        var empty = local.Count == 0 && !Path.Exists(PlainPaths.Child(root, GitDirectory));
+        var gamePaths = manifest.AdoptionBaselines.SelectMany(reference => _verifier.VerifyInventory(manifest, target.Inventories.Single(item => item.AssetName == reference.GameFilesAsset)).Files).Where(file => ReleaseVerifier.IsRequiredGamePath(file.Path)).Select(file => file.Path);
+        IReadOnlyList<LocalFileEntry> local = [];
+        var empty = !Directory.Exists(root) || !Directory.EnumerateFileSystemEntries(root).Any(path => !Path.GetFileName(path).Equals(InstallationLease.StateDirectory, StringComparison.OrdinalIgnoreCase));
         var tracker = PlainPaths.Child(root, UpdaterHandoff.TrackerRelativePath);
         var installed = File.Exists(tracker);
         var version = installed ? _readVersion(tracker) : SetupProtocol.UninstalledVersion;
@@ -85,6 +86,7 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
             previous = GameCompatibilityCheck.ReadHead(root);
             if (previous is null)
             {
+                local = await InstallationFileSnapshot.ReadManagedAsync(root, gamePaths, cancellationToken, InstallationStage.ReviewingInstallation).ConfigureAwait(false);
                 var matches = new List<string>();
                 foreach (var reference in manifest.AdoptionBaselines)
                 {
@@ -93,10 +95,10 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
                         matches.Add(reference.GameCommit);
                 }
 
-                if (matches.Count != 1)
+                if (matches.Count == 0)
                     throw new InvalidDataException(UpdaterText.SetupPreparationThisGameFolderDoesNotMatchOneSupportedGame);
 
-                previous = matches[0];
+                previous = matches.Contains(manifest.Game.PreferredCommit, StringComparer.Ordinal) ? manifest.Game.PreferredCommit : matches.FirstOrDefault(commit => manifest.Game.SupportedCommits.Contains(commit, StringComparer.Ordinal)) ?? matches[0];
             }
         }
 
@@ -123,14 +125,17 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
         var authorization = new IronmonUpdateAuthorization(1, request, target, current, includeGit && !empty ? previous : null, purpose);
         var authority = new SignedIronmonAuthority(_verifier, _runtime, _gameVerification);
         var (Baseline, Target, Game) = authority.Resolve(authorization);
+        var previousGame = includeGit && !empty ? authority.ResolvePreviousGame(authorization) : null;
+        var previousFiles = previousGame is null ? [] : SignedIronmonAuthority.GameFiles(previousGame);
+        ManagedFile[] gameTarget = includeGit ? [.. SignedIronmonAuthority.GameTargetFiles(root, Game, previousGame)] : [];
+        var paths = SignedIronmonAuthority.InspectionPaths(Baseline, Target, Game).Concat(previousFiles.Select(file => file.Path)).Concat(gameTarget.Select(file => file.Path));
+        local = Directory.Exists(root) ? await InstallationFileSnapshot.ReadManagedAsync(root, paths, cancellationToken, InstallationStage.ReviewingInstallation).ConfigureAwait(false) : [];
         IEnumerable<ManagedFile> baseline = IronmonOnlyUpdate.BaselineFiles(Baseline, local);
         IEnumerable<ManagedFile> desired = IronmonOnlyUpdate.TargetFiles(Target, IronmonOnlyUpdate.ReceiptBytes(authorization, Target));
         if (includeGit)
         {
-            if (!empty)
-                baseline = baseline.Concat(SignedIronmonAuthority.GameFiles(authority.ResolvePreviousGame(authorization)));
-
-            desired = desired.Concat(SignedIronmonAuthority.GameFiles(Game));
+            baseline = baseline.Concat(previousFiles);
+            desired = desired.Concat(gameTarget);
         }
         else
         {

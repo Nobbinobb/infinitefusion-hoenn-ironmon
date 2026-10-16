@@ -73,7 +73,7 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
             DiscoveryCache? cache = null;
             try
             {
-                cache = File.Exists(_cachePath) ? ReleaseJson.Parse<DiscoveryCache>(TransactionStorage.ReadBytes(_cachePath), 4 * ReleaseJson.ManifestLimit) : null;
+                cache = ReadCache();
                 var previous = cache?.Release is null ? null : _verifier.Verify(cache.Release.Manifest, cache.Release.Signatures);
                 if (cache is not null && (cache.SchemaVersion != 1 || cache.HighestSequence != (previous?.ReleaseSequence ?? 0)))
                     throw new InvalidDataException(UpdaterText.ReleaseDiscoveryTheReleaseCacheWatermarkDoesNotMatchItsAuthenticated);
@@ -187,6 +187,30 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
     {
         Directory.CreateDirectory(Path.GetDirectoryName(_cachePath)!);
         TransactionStorage.WriteDurable(_cachePath, ReleaseJson.Serialize(cache));
+    }
+
+    /// <summary>
+    /// Reauthenticates optional cached observations and lets a damaged cache recover through fresh signed discovery.
+    /// </summary>
+    /// <returns>The trusted cached generation, or null when it cannot be used.</returns>
+    private DiscoveryCache? ReadCache()
+    {
+        try
+        {
+            if (!File.Exists(_cachePath))
+                return null;
+
+            var cache = ReleaseJson.Parse<DiscoveryCache>(TransactionStorage.ReadBytes(_cachePath), 4 * ReleaseJson.ManifestLimit);
+            var manifest = cache.Release is null ? null : _verifier.Verify(cache.Release.Manifest, cache.Release.Signatures);
+            if (cache.SchemaVersion != 1 || cache.HighestSequence != (manifest?.ReleaseSequence ?? 0))
+                return manifest is null ? null : new DiscoveryCache(1, DateTimeOffset.MinValue, null, null, manifest.ReleaseSequence, cache.Release);
+
+            return cache;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidDataException or FormatException or System.Security.Cryptography.CryptographicException or ArgumentException or InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     /// <summary>

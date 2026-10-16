@@ -36,8 +36,11 @@ public sealed class SignedIronmonAuthority(ReleaseVerifier verifier, ITrackerRun
         var target = IronmonOnlyUpdate.TargetFiles(Target, IronmonOnlyUpdate.ReceiptBytes(authorization, Target));
         if (authorization.PreviousGameCommit is not null || authorization.Purpose == InstallationPurpose.InstallGame)
         {
-            baseline = [.. baseline.Concat(authorization.Purpose == InstallationPurpose.InstallGame ? [] : GameFiles(ResolvePreviousGame(authorization))).OrderBy(file => file.Path, StringComparer.Ordinal)];
-            target = [.. target.Concat(GameFiles(Game)).OrderBy(file => file.Path, StringComparer.Ordinal)];
+            var previousGame = authorization.Purpose == InstallationPurpose.InstallGame ? null : ResolvePreviousGame(authorization);
+            baseline = [.. baseline.Concat(previousGame is null ? [] : GameFiles(previousGame)).OrderBy(file => file.Path, StringComparer.Ordinal)];
+            var selected = description.Plan.Target.Where(file => file.Owner == ManagedFileOwner.Game).Select(file => file.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var gameTarget = previousGame is null ? GameFiles(Game, includeAssets: true) : GameUpdateFiles(Game, previousGame).Where(file => ReleaseVerifier.IsRequiredGamePath(file.Path) || selected.Contains(file.Path));
+            target = [.. target.Concat(gameTarget).OrderBy(file => file.Path, StringComparer.Ordinal)];
             await RequireGit().AuthorizeAsync(description, authorization.PreviousGameCommit ?? authorization.Request.GameCommit, authorization.Request.GameCommit, cancellationToken).ConfigureAwait(false);
         }
 
@@ -174,9 +177,42 @@ public sealed class SignedIronmonAuthority(ReleaseVerifier verifier, ITrackerRun
     /// Converts signed game ownership while retaining explicitly recognized Windows text representations.
     /// </summary>
     /// <param name="inventory">The signed game inventory.</param>
-    /// <returns>The exact managed game files excluding legacy documentation and protected player state.</returns>
-    internal static ManagedFile[] GameFiles(ReleaseFileInventory inventory)
-        => [.. inventory.Files.Where(file => ReleaseVerifier.IsManagedGamePath(file.Path)).Select(file => new ManagedFile(file.Path, ReleaseProtocol.Content(file.Bytes, file.Sha256), ManagedFileOwner.Game, ManagedFilePolicy.Replace, file.WindowsText is null ? null : ReleaseProtocol.Content(file.WindowsText.Bytes, file.WindowsText.Sha256)))];
+    /// <param name="includeAssets">Whether an empty new installation needs the complete initial asset set.</param>
+    /// <returns>Required game program files, or the complete initial file set excluding protected player state.</returns>
+    internal static ManagedFile[] GameFiles(ReleaseFileInventory inventory, bool includeAssets = false)
+        => [.. inventory.Files.Where(file => includeAssets ? ReleaseVerifier.IsManagedGamePath(file.Path) : ReleaseVerifier.IsRequiredGamePath(file.Path)).Select(file => new ManagedFile(file.Path, ReleaseProtocol.Content(file.Bytes, file.Sha256), ManagedFileOwner.Game, ManagedFilePolicy.Replace, file.WindowsText is null ? null : ReleaseProtocol.Content(file.WindowsText.Bytes, file.WindowsText.Sha256)))];
+
+    /// <summary>
+    /// Adds newly introduced signed assets during game upgrades while retaining all previously available player-customizable assets.
+    /// </summary>
+    /// <param name="target">The new signed game inventory.</param>
+    /// <param name="baseline">The previous signed game inventory.</param>
+    /// <returns>Required code plus eligible initial asset defaults; existing player paths may opt out of asset seeding.</returns>
+    internal static IEnumerable<ManagedFile> GameUpdateFiles(ReleaseFileInventory target, ReleaseFileInventory baseline)
+    {
+        var previous = baseline.Files.Select(file => file.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return GameFiles(target, includeAssets: true).Where(file => ReleaseVerifier.IsRequiredGamePath(file.Path) || !previous.Contains(file.Path));
+    }
+
+    /// <summary>
+    /// Seeds new game assets only into vacant paths without inspecting or replacing existing player assets.
+    /// </summary>
+    /// <param name="root">The selected installation root.</param>
+    /// <param name="target">The authenticated desired game inventory.</param>
+    /// <param name="baseline">The previous game inventory, or null for an empty installation.</param>
+    /// <returns>Required program files and initial asset defaults which can be installed without replacing player content.</returns>
+    internal static IEnumerable<ManagedFile> GameTargetFiles(string root, ReleaseFileInventory target, ReleaseFileInventory? baseline)
+        => baseline is null ? GameFiles(target, includeAssets: true) : GameUpdateFiles(target, baseline).Where(file => ReleaseVerifier.IsRequiredGamePath(file.Path) || !Path.Exists(Path.Combine(root, file.Path)));
+
+    /// <summary>
+    /// Selects program paths needed for review without opening unrelated installation content.
+    /// </summary>
+    /// <param name="baseline">The authenticated prior Ironmon inventory.</param>
+    /// <param name="target">The authenticated desired Ironmon inventory.</param>
+    /// <param name="game">The compatible game inventory.</param>
+    /// <returns>The managed program and receipt paths.</returns>
+    internal static IEnumerable<string> InspectionPaths(ReleaseFileInventory baseline, ReleaseFileInventory target, ReleaseFileInventory game)
+        => ReleaseVerifier.ManagedFiles(baseline).Concat(ReleaseVerifier.ManagedFiles(target)).Concat(GameFiles(game)).Select(file => file.Path).Append(IronmonOnlyUpdate.ReceiptPath);
 
     /// <summary>
     /// Requires independent Git verification instead of trusting snapshots in local JSON.
@@ -231,7 +267,7 @@ public sealed class SignedIronmonAuthority(ReleaseVerifier verifier, ITrackerRun
         var entries = local.ToDictionary(entry => entry.Path, StringComparer.OrdinalIgnoreCase);
         foreach (var file in GameFiles(game).Where(file => ReleaseVerifier.IsRequiredGamePath(file.Path)))
             if (!entries.TryGetValue(file.Path, out var entry) || entry.Content is null || (entry.Content != file.Content && entry.Content != file.AlternateContent))
-                throw new InvalidDataException(UpdaterText.SignedIronmonAuthorityTheInstalledGameDoesNotMatchASupportedSigned);
+                throw new InvalidDataException(UpdaterText.SignedIronmonAuthorityTheInstalledGameDoesNotMatchASupportedSigned + " " + file.Path);
     }
 
     /// <summary>
@@ -251,7 +287,7 @@ public sealed class SignedIronmonAuthority(ReleaseVerifier verifier, ITrackerRun
             var content = await TransactionStorage.ContentAsync(PlainPaths.Child(root, file.Path), cancellationToken).ConfigureAwait(false);
             var windowsText = file.WindowsText is null ? null : ReleaseProtocol.Content(file.WindowsText.Bytes, file.WindowsText.Sha256);
             if (content != ReleaseProtocol.Content(file.Bytes, file.Sha256) && (windowsText is null || content != windowsText))
-                throw new InvalidDataException(UpdaterText.SignedIronmonAuthorityTheInstalledGameDoesNotMatchASupportedSigned);
+                throw new InvalidDataException(UpdaterText.SignedIronmonAuthorityTheInstalledGameDoesNotMatchASupportedSigned + " " + file.Path);
 
             InstallationProgressScope.Report(new(InstallationStage.VerifyingGame, index + 1, files.Length));
         }

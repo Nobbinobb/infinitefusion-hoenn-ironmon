@@ -81,10 +81,10 @@ public sealed class FilePlanFilesystemTests
     }
 
     /// <summary>
-    /// Rejects a previously reviewed plan after a user edits a preserved file.
+    /// Keeps a previously reviewed plan applicable after a user edits an unrelated preserved file.
     /// </summary>
     [Fact]
-    public async Task FreshSnapshotDetectsLateUserChanges()
+    public async Task FreshSnapshotAllowsLateUserChanges()
     {
         using var workspace = new TestWorkspace();
         var root = workspace.PathFor(RootName);
@@ -92,7 +92,7 @@ public sealed class FilePlanFilesystemTests
         Write(root, ExtraPath, 3);
         var plan = Planner().Create([File(GamePath, 1)], await InstallationFileSnapshot.ReadAsync(root), [File(GamePath, 2)]);
         Write(root, ExtraPath, 2);
-        Assert.Equal(FilePlanApplicability.Changed, plan.Assess(await InstallationFileSnapshot.ReadAsync(root)));
+        Assert.Equal(FilePlanApplicability.Ready, plan.Assess(await InstallationFileSnapshot.ReadAsync(root)));
         Assert.Equal(new byte[] { 1 }, System.IO.File.ReadAllBytes(Path.Combine(root, GamePath)));
     }
 

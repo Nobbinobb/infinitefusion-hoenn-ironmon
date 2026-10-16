@@ -1108,7 +1108,7 @@
     <value>Repair cannot change the game or use a different release baseline.</value>
   </data>
   <data name="SignedIronmonAuthorityTheInstalledGameDoesNotMatchASupportedSigned" xml:space="preserve">
-    <value>The installed game does not match a supported signed inventory; a combined game update is required.</value>
+    <value>A required game program file does not match a supported signed version. Repair or restore the game code before retrying. File:</value>
   </data>
   <data name="SignedIronmonAuthorityTheInstalledTrackerScriptsOrDataDoNotMatch" xml:space="preserve">
     <value>The installed tracker, scripts or data do not match the signed release.</value>

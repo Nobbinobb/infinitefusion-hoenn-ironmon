@@ -59,23 +59,8 @@ public sealed class ProtectedUpdateClient(ReleaseVerifier verifier, ReleaseDownl
     public Task<PreparedIronmonUpdate> OpenInstalledAsync(string root, CancellationToken cancellationToken = default)
     {
         var receipt = ReleaseJson.Parse<IronmonInstalledReceipt>(TransactionStorage.ReadBytes(PlainPaths.Child(root, IronmonOnlyUpdate.ReceiptPath)), ReleaseJson.ManifestLimit);
-        var directory = PlainPaths.Child(root, IronmonOnlyUpdate.EvidenceDirectory);
-        foreach (var path in Directory.EnumerateFiles(directory).Take(1024))
-        {
-            if (!Guid.TryParseExact(Path.GetFileNameWithoutExtension(path), TransactionStorage.GuidFormat, out var id))
-                continue;
-
-            var authorization = ReleaseJson.Parse<IronmonUpdateAuthorization>(TransactionStorage.ReadBytes(IronmonOnlyUpdate.AuthorizationPath(root, id)), 64 * ReleaseJson.ManifestLimit);
-            if (TransactionStorage.Hash(authorization.Target.Manifest) != receipt.ManifestSha256)
-                continue;
-
-            if (PlainPaths.Full(authorization.Request.InstallationRoot) != PlainPaths.Full(root))
-                throw new InvalidDataException(UpdaterText.ProtectedUpdateClientTheInstalledReleaseRecordBelongsToAnotherFolder);
-
-            return StartAsync(authorization, Guid.Empty, true, cancellationToken);
-        }
-
-        throw new InvalidDataException(UpdaterText.ProtectedUpdateClientTheInstalledReleaseVerificationRecordsAreMissingRepairThis);
+        var authorization = InstalledReleaseEvidence.Read(root, receipt, _verifier);
+        return StartAsync(authorization, Guid.Empty, true, cancellationToken);
     }
 
     /// <summary>

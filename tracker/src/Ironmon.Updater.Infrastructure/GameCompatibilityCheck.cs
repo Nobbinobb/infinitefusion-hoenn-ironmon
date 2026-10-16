@@ -7,15 +7,12 @@ namespace Ironmon.Updater.Infrastructure;
 /// </summary>
 public static class GameCompatibilityCheck
 {
-    private const string Extensions = ".rb|.rxdata|.dat|.dll|.exe|.ini|.so";
-    private const string DownloadedSettings = "Data/Scripts/DownloadedSettings.rb";
     private const string GitDirectory = ".git";
     private const string HeadPath = ".git/HEAD";
     private const string PackedPath = ".git/packed-refs";
     private const string RefPrefix = "ref: ";
     private const string HeadsPrefix = "refs/heads/";
     private const int MaximumRefsBytes = 8 * 1024 * 1024;
-    private static readonly HashSet<string> _extensions = new(Extensions.Split('|'), StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Checks pending recovery, Git identity and executable game data, including approved Windows text representations.
@@ -37,7 +34,7 @@ public static class GameCompatibilityCheck
             if (head is not null && head != baseline.Commit)
                 return new(false, UpdaterText.GameCompatibilityCheckTheGameWasChangedOutsideIronmonAMatchingIronmon);
 
-            var files = baseline.Files.Where(file => _extensions.Contains(Path.GetExtension(file.Path)) && file.Path != DownloadedSettings).ToList();
+            var files = baseline.Files.Where(file => ReleaseVerifier.IsRequiredGamePath(file.Path)).ToList();
             if (files.Count == 0)
                 throw new InvalidDataException(UpdaterText.GameCompatibilityCheckTheGameCompatibilityBaselineIsEmpty);
 

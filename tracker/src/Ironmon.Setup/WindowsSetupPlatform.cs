@@ -27,9 +27,6 @@ internal sealed class WindowsSetupPlatform : ISetupPlatform
     private const string EncodedCommand = "-EncodedCommand";
     private const string Silent = "/silent";
     private const string Install = "/install";
-    private const string GameProcess = "InfiniteFusion2";
-    private const string TrackerProcess = "Ironmon Tracker";
-    private const string ExecutableExtension = ".exe";
     private const string ShellId = "WScript.Shell";
     private const string ShortcutName = "Ironmon Tracker.lnk";
     private const string ShortcutExtension = ".lnk";
@@ -135,9 +132,10 @@ internal sealed class WindowsSetupPlatform : ISetupPlatform
     /// <returns>The selected installation's idle check.</returns>
     public async Task CloseInstallationAsync(string root, CancellationToken cancellationToken)
     {
-        foreach (var name in new[] { GameProcess, TrackerProcess })
+        foreach (var relative in GameInstallationLocator.SupportedExecutables.Append(UpdaterHandoff.TrackerRelativePath))
         {
-            var expected = Path.GetFullPath(Path.Combine(root, name == GameProcess ? name + ExecutableExtension : UpdaterHandoff.TrackerRelativePath));
+            var expected = Path.GetFullPath(Path.Combine(root, relative));
+            var name = Path.GetFileNameWithoutExtension(relative);
             foreach (var process in Process.GetProcessesByName(name))
             {
                 using (process)

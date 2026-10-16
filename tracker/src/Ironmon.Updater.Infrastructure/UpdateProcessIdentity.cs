@@ -17,6 +17,40 @@ public sealed record UpdateProcessIdentity(int Id, long StartedUtcTicks, string 
     private const string Launchers = "PokemonInfiniteFusion-Launcher|PokemonInfiniteFusion-Installer";
 
     /// <summary>
+    /// Captures the selected installation's game across both supported executable variants.
+    /// </summary>
+    /// <param name="installationRoot">The installation whose game may be closed during handoff.</param>
+    /// <returns>The single matching process, or null when no game is running.</returns>
+    /// <exception cref="InvalidOperationException">More than one game window belongs to the selected installation.</exception>
+    public static UpdateProcessIdentity? FindGame(string installationRoot)
+    {
+        UpdateProcessIdentity? result = null;
+        foreach (var name in GameInstallationLocator.SupportedExecutables)
+        {
+            var expected = PlainPaths.Child(installationRoot, name);
+            foreach (var process in Process.GetProcessesByName(Path.GetFileNameWithoutExtension(name)))
+            {
+                using (process)
+                {
+                    if (process.HasExited)
+                        continue;
+
+                    var identity = Capture(process);
+                    if (!identity.ExecutablePath.Equals(expected, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    if (result is not null)
+                        throw new InvalidOperationException("More than one game window is open for this installation. Close the extra game window before updating.");
+
+                    result = identity;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// Captures executable path and creation time while confirming the process has not exited.
     /// </summary>
     /// <param name="process">The process owned or inspected by the caller.</param>
@@ -148,7 +182,7 @@ public sealed record UpdateProcessIdentity(int Id, long StartedUtcTicks, string 
     /// <returns>The localized blocker, or null when no relevant application is running.</returns>
     private static string? FindInstallationBlocker(string installationRoot, string trackerRelativePath, CancellationToken cancellationToken)
     {
-        var paths = new[] { PlainPaths.Child(installationRoot, GameInstallationLocator.GameExecutable), PlainPaths.Child(installationRoot, trackerRelativePath) };
+        var paths = GameInstallationLocator.SupportedExecutables.Append(trackerRelativePath).Select(path => PlainPaths.Child(installationRoot, path));
         foreach (var path in paths)
         {
             var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(path));

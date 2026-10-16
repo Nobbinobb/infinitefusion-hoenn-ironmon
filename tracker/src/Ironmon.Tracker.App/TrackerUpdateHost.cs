@@ -15,8 +15,6 @@ namespace Ironmon.Tracker.App;
 public sealed class TrackerUpdateHost(TrackerConnectionState connection, TrackerUpdateLifecycle lifecycle, TrackerUpdateNavigation navigation) : ITrackerUpdateHost
 {
     private const string CoreRuntime = "coreclr.dll";
-    private const string GameProcess = "InfiniteFusion2";
-    private const string GameExecutable = GameProcess + ".exe";
     private readonly TrackerConnectionState _connection = connection;
     private readonly TrackerUpdateLifecycle _lifecycle = lifecycle;
     private readonly TrackerUpdateNavigation _navigation = navigation;
@@ -52,38 +50,8 @@ public sealed class TrackerUpdateHost(TrackerConnectionState connection, Tracker
         var capture = _navigation.Capture ?? throw new InvalidOperationException("The tracker view is not ready to preserve its navigation. Try again after it finishes opening.");
         var context = await capture().ConfigureAwait(false);
         using var tracker = Process.GetCurrentProcess();
-        var request = new UpdaterHandoffRequest(prepared.InstallationRoot, prepared.TransactionId, UpdateProcessIdentity.Capture(tracker), FindGame(prepared.InstallationRoot), context, recover, prepared.Elevation is null ? null : prepared);
+        var request = new UpdaterHandoffRequest(prepared.InstallationRoot, prepared.TransactionId, UpdateProcessIdentity.Capture(tracker), UpdateProcessIdentity.FindGame(prepared.InstallationRoot), context, recover, prepared.Elevation is null ? null : prepared);
         await UpdaterHandoff.LaunchAsync(request, prepared.HelperContent, token => _lifecycle.QuiesceAsync(prepared.InstallationRoot, token), () => ResumeAsync(prepared.InstallationRoot), CloseAsync, prepared.HelperVersion, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Captures only the game belonging to this installation, never an unrelated process with the same name.
-    /// </summary>
-    /// <param name="root">The installation being updated.</param>
-    /// <returns>The single matching process, or null when the game is already closed.</returns>
-    private static UpdateProcessIdentity? FindGame(string root)
-    {
-        UpdateProcessIdentity? result = null;
-        var expected = Path.GetFullPath(Path.Combine(root, GameExecutable));
-        foreach (var process in Process.GetProcessesByName(GameProcess))
-        {
-            using (process)
-            {
-                if (process.HasExited)
-                    continue;
-
-                var identity = UpdateProcessIdentity.Capture(process);
-                if (!identity.ExecutablePath.Equals(expected, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                if (result is not null)
-                    throw new InvalidOperationException("More than one game window is open for this installation. Close the extra game window before updating.");
-
-                result = identity;
-            }
-        }
-
-        return result;
     }
 
     /// <summary>

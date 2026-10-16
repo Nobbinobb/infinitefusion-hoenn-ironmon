@@ -10,13 +10,16 @@ namespace Ironmon.Updater.Tests;
 /// </summary>
 internal sealed class ZipGameFixture : IDisposable
 {
-    internal const string TextFile = "Data/game.txt";
-    internal const string ObsoleteFile = "obsolete.txt";
-    internal const string NewFile = "new.txt";
-    internal const string NestedFile = "more/child.txt";
-    internal const string FlattenedFile = "flatten";
+    internal const string TextFile = "Data/game.rb";
+    internal const string ObsoleteFile = "obsolete.rb";
+    internal const string NewFile = "new.rb";
+    internal const string NestedFile = "more/child.rb";
+    internal const string FlattenedFile = "flatten.rb";
     internal const string UserFile = "personal-save.txt";
     internal const string ProtectedFile = "Graphics/CustomBattlers/spritesheets/.DS_Store";
+    internal const string CustomAsset = "Graphics/custom.png";
+    internal const string NewAsset = "Graphics/new.png";
+    internal const string OverriddenAsset = "Graphics/override.png";
     internal const string TrackerPath = "Ironmon Tracker/Ironmon Tracker.exe";
     internal const string IniText = "[Game]\nTitle=infinitefusion-hoenn\nLibrary=RGSS104E.dll\n";
     internal const string TextA = "original game\nsecond line\n";
@@ -107,14 +110,18 @@ internal sealed class ZipGameFixture : IDisposable
     /// Creates canonical ZIP bytes, an approved inventory and two subsequent upstream revisions.
     /// </summary>
     /// <param name="includeProtectedFile">Whether both revisions track a file in the player-owned sprite-sheet directory.</param>
+    /// <param name="includeAssets">Whether the history contains customizable existing assets and newly introduced defaults.</param>
     /// <returns>A task that completes when the installation is at A and the upstream is beyond B.</returns>
-    internal async Task InitializeAsync(bool includeProtectedFile = false)
+    internal async Task InitializeAsync(bool includeProtectedFile = false, bool includeAssets = false)
     {
         await RunAsync(_workspace.Root, Init, InitialBranch, EmptyTemplate, Upstream);
         Write(Upstream, GameInstallationLocator.GameIni, IniText);
         Write(Upstream, GameInstallationLocator.GameExecutable, ExecutableText);
         Write(Upstream, TextFile, TextA);
         Write(Upstream, ObsoleteFile, TextA);
+        if (includeAssets)
+            Write(Upstream, CustomAsset, TextA);
+
         if (includeProtectedFile)
             Write(Upstream, ProtectedFile, TextA);
 
@@ -138,6 +145,13 @@ internal sealed class ZipGameFixture : IDisposable
         Write(Installation, UserFile, ExtraText);
         Write(Installation, TrackerPath, ExecutableText);
         Write(Upstream, TextFile, TextB);
+        if (includeAssets)
+        {
+            Write(Upstream, CustomAsset, TextB);
+            Write(Upstream, NewAsset, TextB);
+            Write(Upstream, OverriddenAsset, TextB);
+        }
+
         if (includeProtectedFile)
             Write(Upstream, ProtectedFile, TextB);
 

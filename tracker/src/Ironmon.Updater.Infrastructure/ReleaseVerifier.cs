@@ -12,7 +12,8 @@ public sealed class ReleaseVerifier
     private const string CurveOid = "1.2.840.10045.3.1.7";
     private const string TagPrefix = "v";
     private const string DownloadedSettingsPath = "Data/Scripts/DownloadedSettings.rb";
-    private const string DownloadedPokedexPath = "Data/pokedex/dex.json";
+    private const string RequiredGameExtensions = ".rb|.rxdata|.dat|.dll|.exe|.ini|.so";
+    private static readonly HashSet<string> _requiredGameExtensions = new(RequiredGameExtensions.Split('|'), StringComparer.OrdinalIgnoreCase);
     private const string LegacyDocuments = "README.md|LICENSE|INSTALLATION.md|RELEASE_NOTES.md|THIRD_PARTY_NOTICES.md|OPEN-SANS-LICENSE.txt";
     private static readonly HashSet<string> _legacyDocuments = new(LegacyDocuments.Split('|'), StringComparer.OrdinalIgnoreCase);
     private static readonly FileManagementPolicy _filePolicy = new();
@@ -224,12 +225,12 @@ public sealed class ReleaseVerifier
         => !IsLegacyDocument(path) && !_filePolicy.IsProtected(path);
 
     /// <summary>
-    /// Requires signed installed bytes only for game files that the upstream runtime does not refresh itself.
+    /// Requires signed runtime code and configuration without treating sprite assets or downloaded data as installation identity.
     /// </summary>
     /// <param name="path">The validated game inventory path.</param>
     /// <returns>Whether the file must match signed content when recognizing an installed game.</returns>
     internal static bool IsRequiredGamePath(string path)
-        => IsManagedGamePath(path) && !path.Equals(DownloadedSettingsPath, StringComparison.OrdinalIgnoreCase) && !path.Equals(DownloadedPokedexPath, StringComparison.OrdinalIgnoreCase);
+        => IsManagedGamePath(path) && _requiredGameExtensions.Contains(Path.GetExtension(path)) && !path.Equals(DownloadedSettingsPath, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Identifies signed distribution documents whose existing root copies remain user-owned during updates.
