@@ -32,6 +32,9 @@ also suitable for saving as PDF.
 
 ## Release history
 
+- [Ironmon 0.8.11](releases/RELEASE_NOTES_0.8.11.md): faster tracker preparation
+  and game loading, visual fusion components, and clearer installer progress.
+
 - [Ironmon 0.8.10](releases/RELEASE_NOTES_0.8.10.md): required tracker sessions,
   tracker-owned run setup, automatic game startup, and wardrobe/update fixes.
 

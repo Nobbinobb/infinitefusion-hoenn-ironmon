@@ -21,7 +21,7 @@ module IronmonAreaEncounterLookupProbe
       "total" => response["total_count"],
       "fusions" => response["encounter_fusions"].length
     }
-    raise "lookup blocked the game for #{elapsed.round} ms" if elapsed > 1000
+    raise "#{label} lookup blocked the game for #{elapsed.round} ms" if elapsed > 1000
     return response
   rescue Exception => error
     report["requests"] << {
@@ -110,6 +110,7 @@ module IronmonAreaEncounterLookupProbe
       "encounter_environment" => "cross", "discovery_keys" => [],
       "offset" => 0, "limit" => 10
     }
+    install_profile
     if options["native_root"]
       run_native(options["native_root"])
       return
@@ -179,13 +180,13 @@ module IronmonAreaEncounterLookupProbe
     save_report
   end
 
-  def self.run_native(root)
-    mappings = Marshal.dump(Ironmon.pivot_state.fusion_mappings)
-    Ironmon::TrackerAreaFusionWork.prepend(AreaMappingTrace)
+  def self.install_profile
     profile = Module.new
     [:tracker_area_lookup_detail, :tracker_area_normal_encounter_sources,
      :tracker_lookup_fusion_sprite_path, :tracker_search_fusion_name,
-     :sprite_credit_catalog, :tracker_resolved_sprite_path].each do |method_name|
+     :sprite_credit_catalog, :tracker_resolved_sprite_path,
+     :tracker_store_sprite_components,
+     :tracker_component_base_sprite_path].each do |method_name|
       profile.define_method(method_name) do |*args|
         started = Ironmon.tracker_uptime_seconds
         value = super(*args)
@@ -198,6 +199,11 @@ module IronmonAreaEncounterLookupProbe
       end
     end
     Ironmon.singleton_class.prepend(profile)
+  end
+
+  def self.run_native(root)
+    mappings = Marshal.dump(Ironmon.pivot_state.fusion_mappings)
+    Ironmon::TrackerAreaFusionWork.prepend(AreaMappingTrace)
     permission_free = $ironmon_area_lookup_probe_options["preparation_mode"] != "diagnostic"
     manual = $ironmon_area_lookup_probe_options["preparation_mode"] == "manual"
     $DEBUG = !permission_free
