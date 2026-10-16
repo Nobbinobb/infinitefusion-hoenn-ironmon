@@ -14,7 +14,7 @@
             }
         </nav>
     }
-    <ObsidianIdentityPanel GameRoot="@GameRoot" SpritePath="@SelectedEnemy?.SpritePath" SpriteLabel="@GetName()" Name="@GetName()" Kicker="@Text[SelectedEnemy?.Fusion == true ? "Enemy.Card.OpposingFusionHeading" : "Enemy.Card.OpposingPokemonHeading"]" DetailsLabel="@Text["Enemy.Card.HiddenEnemyDetails"]">
+    <ObsidianIdentityPanel GameRoot="@GameRoot" SpritePath="@SelectedEnemy?.SpritePath" SpriteLabel="@GetName()" Name="@GetName()" Kicker="@Text[SelectedEnemy?.Fusion == true ? "Enemy.Card.OpposingFusionHeading" : "Enemy.Card.OpposingPokemonHeading"]" Level="@SelectedEnemy?.Level" DetailsLabel="@Text["Enemy.Card.HiddenEnemyDetails"]">
         <Metadata>
             @if (SelectedEnemy is null)
             {
@@ -23,6 +23,11 @@
             else
             {
                 <p class="obsidian-species">@Text["Enemy.Card.LevelValue", SelectedEnemy.Level]</p>
+            }
+        </Metadata>
+        <Types>
+            @if (SelectedEnemy is not null)
+            {
                 <div class="obsidian-types">
                     @foreach (string type in SelectedEnemy.Types)
                     {
@@ -30,7 +35,7 @@
                     }
                 </div>
             }
-        </Metadata>
+        </Types>
         <Details>
             <button type="button" disabled="@(GetAbilities().Count == 0)" @onclick="OpenAbilities"><span>@Text["Enemy.Card.Ability"]</span><strong>@GetFirstAbilityName() @if (GetAbilities().Count > 1) { <em>+@(GetAbilities().Count - 1)</em> }</strong></button>
             <div class="obsidian-hidden-detail"><span>@Text["Enemy.Card.Item"]</span><strong>@(SelectedEnemy is null ? "--" : Text["Enemy.Card.Hidden"])</strong></div>

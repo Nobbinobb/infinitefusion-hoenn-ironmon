@@ -103,11 +103,11 @@ public partial class PokemonSprite
         => Text[_enlargeLocalizationKey, Label];
 
     /// <summary>
-    /// Opens the enlarged-image dialog when a sprite is available.
+    /// Opens the shared viewer for the complete sprite and any available visual-component images.
     /// </summary>
     private void OpenDialog()
     {
         if (_spriteSource is not null)
-            Dialog.Open(_spriteSource, Label, EnlargedSize);
+            Dialog.Open(_spriteSource, Label, EnlargedSize, GameRoot, SpritePath);
     }
 }

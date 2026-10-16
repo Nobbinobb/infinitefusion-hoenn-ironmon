@@ -2,9 +2,24 @@
     <div class="obsidian-identity-top">
         <PokemonSprite GameRoot="@GameRoot" SpritePath="@SpritePath" Label="@SpriteLabel" Size="72" CssClass="obsidian-sprite" FitVisibleBounds="true" />
         <div class="obsidian-name">
-            <p class="card-kicker">@Kicker</p>
+            @if (_components is not null && Level is not null)
+            {
+                <p class="card-kicker obsidian-sprite-kicker"><span>@Kicker</span><span class="obsidian-sprite-level">@if (Gender is not null) { <GenderIcon Gender="@Gender" /><span aria-hidden="true"> · </span> }@Text["Player.Card.LevelValue", Level.Value]</span></p>
+            }
+            else
+            {
+                <p class="card-kicker">@Kicker</p>
+            }
             <h2>@Name</h2>
-            @Metadata
+            @if (_components is not null)
+            {
+                <button type="button" class="obsidian-species obsidian-fusion-components" aria-haspopup="dialog" aria-label="@Text["PokemonSprite.OpenComponents", _components.Head.Name, _components.Body.Name]" title="@Text["PokemonSprite.OpenComponents", _components.Head.Name, _components.Body.Name]" @onclick="OpenComponents"><span>@_components.Head.Name / @_components.Body.Name</span><ObsidianIcon Kind="ObsidianIconKind.ChevronDown" /></button>
+            }
+            else
+            {
+                @Metadata
+            }
+            @Types
         </div>
         <div class="obsidian-identity-actions" aria-label="@DetailsLabel">@Details</div>
     </div>

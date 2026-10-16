@@ -1364,6 +1364,9 @@
   <data name="Lookup.Areas.UnknownItem" xml:space="preserve"><value>Unknown item</value></data>
   <data name="PokemonSprite.Enlarge" xml:space="preserve"><value>Enlarge {0} image</value></data>
   <data name="PokemonSprite.Close" xml:space="preserve"><value>Close enlarged image</value></data>
+  <data name="PokemonSprite.Fusion" xml:space="preserve"><value>Fusion</value></data>
+  <data name="PokemonSprite.ChooseSprite" xml:space="preserve"><value>Choose the fusion, head, or body sprite to enlarge</value></data>
+  <data name="PokemonSprite.OpenComponents" xml:space="preserve"><value>Sprite head: {0}. Sprite body: {1}. Open sprite viewer.</value></data>
   <data name="Lookup.Runs.RunLookup" xml:space="preserve"><value>Run lookup</value></data>
   <data name="Lookup.Runs.LookupHeading" xml:space="preserve"><value>RUN DATA</value></data>
   <data name="Lookup.Runs.CurrentRun" xml:space="preserve"><value>Current run</value></data>

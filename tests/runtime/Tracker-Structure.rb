@@ -332,6 +332,77 @@ module IronmonTrackerStructureRuntimeTests
     graphics_singleton.send(:define_method, :update, original_graphics_update) if original_graphics_update
   end
 
+  def self.validate_sprite_components
+    Ironmon.ensure_tracker_sprite_cache_folder
+    original_cache_folder = Ironmon::TRACKER_SPRITE_CACHE_FOLDER
+    fixture_folder = "Data/ironmon-component-test-#{Process.pid}"
+    assert(!Dir.exist?(fixture_folder), "component fixtures own a fresh cache directory")
+    fixture = "#{fixture_folder}/fusion.png"
+    metadata = "#{fixture_folder}/components-" +
+      Digest::SHA256.hexdigest(fixture.tr("A-Z", "a-z")) + ".json"
+    previous_contexts = Ironmon.instance_variable_get(:@tracker_sprite_component_contexts)
+    component_paths = []
+    begin
+      Ironmon.send(:remove_const, :TRACKER_SPRITE_CACHE_FOLDER)
+      Ironmon.const_set(:TRACKER_SPRITE_CACHE_FOLDER, fixture_folder)
+      Ironmon.instance_variable_set(:@tracker_sprite_component_contexts, {})
+      Ironmon.ensure_tracker_sprite_cache_folder
+      bitmap = Bitmap.new(2, 2)
+      bitmap.set_pixel(1, 1, Color.new(30, 60, 90, 255))
+      bitmap.save_to_png(fixture)
+      [94, 6].each do |number|
+        component_paths << Ironmon.tracker_materialized_sprite_path(
+          PIFSprite.new(:BASE, number, nil, "")
+        )
+        bitmap.save_to_png(component_paths.last)
+      end
+      sprite = PIFSprite.new(:CUSTOM, 94, 6, "")
+      sprite.local_path = fixture
+      assert(
+        Ironmon.tracker_resolved_sprite_path(sprite) == fixture,
+        "component export retains the exact displayed local sprite"
+      )
+      assert(File.file?(metadata), "component export creates offline presentation metadata")
+      document = Ironmon.generation_profile_stringify_keys(JSON.parse(File.binread(metadata)))
+      assert(
+        document["schema_version"] == 1 && document["sprite_path"] == fixture &&
+          document["head"]["name"] == GameData::Species.get(94).name &&
+          document["body"]["name"] == GameData::Species.get(6).name,
+        "component names follow actual visual PIF IDs rather than recipe material IDs"
+      )
+      ["head", "body"].each do |part|
+        assert(
+          Ironmon.tracker_cached_sprite_usable?(document[part]["sprite_path"]),
+          "component export provides an enlargeable #{part} base sprite"
+        )
+      end
+      initial_time = File.mtime(metadata)
+      Ironmon.tracker_store_sprite_components(sprite, fixture)
+      assert(File.mtime(metadata) == initial_time, "unchanged exports reuse the presentation cache")
+      Ironmon.instance_variable_set(:@tracker_sprite_component_contexts, {})
+      File.binwrite(metadata, "stale")
+      Ironmon.tracker_store_sprite_components(sprite, fixture)
+      assert(
+        Ironmon.generation_profile_stringify_keys(JSON.parse(File.binread(metadata))) == document,
+        "a fresh export replaces stale metadata atomically on Windows"
+      )
+      assert(
+        !Dir.glob(metadata + ".*.tmp").any?,
+        "component exports leave no temporary sidecar files"
+      )
+    ensure
+      Ironmon.send(:remove_const, :TRACKER_SPRITE_CACHE_FOLDER)
+      Ironmon.const_set(:TRACKER_SPRITE_CACHE_FOLDER, original_cache_folder)
+      Ironmon.instance_variable_set(:@tracker_sprite_component_contexts, previous_contexts)
+      bitmap.dispose if bitmap && !bitmap.disposed?
+      File.delete(fixture) if File.file?(fixture)
+      File.delete(metadata) if File.file?(metadata)
+      component_paths.each { |path| File.delete(path) if File.file?(path) }
+      Dir.rmdir(fixture_folder) if
+        Dir.exist?(fixture_folder) && Dir.children(fixture_folder).empty?
+    end
+  end
+
   def self.run
     validate_starter_selection_rules
     assert_source(
@@ -428,6 +499,7 @@ module IronmonTrackerStructureRuntimeTests
       "023_Sprite_Performance_Fixes.rb",
       "tracker sprite materialization"
     )
+    validate_sprite_components
     blank_tracker_bitmap = AnimatedBitmap.from_bitmap(Bitmap.new(2, 2))
     begin
       assert(
