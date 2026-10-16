@@ -79,6 +79,9 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
         var currentFlavor = installed && !File.Exists(PlainPaths.Child(root, CoreRuntime)) ? ReleaseProtocol.RuntimeRequired : ReleaseProtocol.SelfContained;
         flavor = installed ? currentFlavor : flavor ?? ReleaseProtocol.SelfContained;
         var purpose = empty ? InstallationPurpose.InstallGame : !installed ? InstallationPurpose.AddIronmon : version == manifest.IronmonVersion ? InstallationPurpose.Repair : InstallationPurpose.Update;
+        var trackerPreparation = new TrackerUpdatePreparation(_verifier, _downloads, _runtime, _gamePreparation, _gameVerification);
+        var current = purpose == InstallationPurpose.Update ? trackerPreparation.ReadCurrentRelease(root, version) : null;
+        var currentManifest = current is null ? null : _verifier.Verify(current.Manifest, current.Signatures);
         string? previous = null;
         if (!empty)
         {
@@ -98,7 +101,9 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
                 if (matches.Count == 0)
                     throw new InvalidDataException(UpdaterText.SetupPreparationThisGameFolderDoesNotMatchOneSupportedGame);
 
-                previous = matches.Contains(manifest.Game.PreferredCommit, StringComparer.Ordinal) ? manifest.Game.PreferredCommit : matches.FirstOrDefault(commit => manifest.Game.SupportedCommits.Contains(commit, StringComparer.Ordinal)) ?? matches[0];
+                var owned = matches.Where(commit => currentManifest is null ? manifest.AdoptionBaselines.Single(reference => reference.GameCommit == commit).LegacyPackages.Any(package => package.Version == version && package.Flavor == currentFlavor) : currentManifest.Game.SupportedCommits.Contains(commit, StringComparer.Ordinal)).ToArray();
+                IReadOnlyList<string> candidates = purpose == InstallationPurpose.Update && owned.Length > 0 ? owned : matches;
+                previous = candidates.Contains(manifest.Game.PreferredCommit, StringComparer.Ordinal) ? manifest.Game.PreferredCommit : candidates.FirstOrDefault(commit => manifest.Game.SupportedCommits.Contains(commit, StringComparer.Ordinal)) ?? candidates[0];
             }
         }
 
@@ -117,8 +122,6 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
 
         IronmonOnlyUpdate.ValidateSelection(request, manifest, purpose);
 
-        var trackerPreparation = new TrackerUpdatePreparation(_verifier, _downloads, _runtime, _gamePreparation, _gameVerification);
-        var current = purpose == InstallationPurpose.Update ? trackerPreparation.ReadCurrentRelease(root, version) : null;
         if (current is not null)
             current = await content.CompleteEvidenceAsync(current, _verifier.Verify(current.Manifest, current.Signatures), cancellationToken).ConfigureAwait(false);
 

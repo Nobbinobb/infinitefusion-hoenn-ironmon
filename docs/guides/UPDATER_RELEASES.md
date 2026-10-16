@@ -105,8 +105,9 @@ optional discovery caches trigger fresh signed discovery; authenticated cache
 watermarks and forward-version checks continue to prevent downgrades. Both game
 executable variants participate in normal shutdown and exact-path idle checks.
 When ZIP game inventories have identical required program bytes, recognition
-selects the preferred compatible revision without using player assets to break
-the tie. Older installed clients still execute their old review code; players
+retains a signed prior-package ownership baseline and prefers a compatible
+revision within that selection, without using player assets to break the tie.
+Older installed clients still execute their old review code; players
 whose old client refuses review need the fixed Setup from the next published
 release to bootstrap these changes.
 

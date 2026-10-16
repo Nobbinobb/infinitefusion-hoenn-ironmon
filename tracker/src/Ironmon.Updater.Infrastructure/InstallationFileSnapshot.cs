@@ -75,18 +75,21 @@ public static class InstallationFileSnapshot
     /// Inspects authenticated program paths without enumerating or opening unrelated player data.
     /// </summary>
     /// <remarks>
-    /// Ancestors are recorded to detect file collisions. A directory occupying a managed file path is inspected completely so replacing it cannot remove unreviewed children.
+    /// Ancestors are recorded to detect file collisions. Initial review expands directories occupying managed file paths. Transaction verification expands only explicit replacement boundaries, so new player files inside a newly created program directory remain untouched.
     /// </remarks>
     /// <param name="installationRoot">The validated installation root.</param>
     /// <param name="paths">The managed files and directory replacement boundaries.</param>
     /// <param name="cancellationToken">The inspection token.</param>
     /// <param name="stage">The reported verification stage.</param>
+    /// <param name="directoryBoundaries">The directories requiring recursive collision checks, or null to expand every selected directory during initial review.</param>
     /// <returns>The relevant files, their ancestors and structural obstructions.</returns>
-    public static Task<IReadOnlyList<LocalFileEntry>> ReadManagedAsync(string installationRoot, IEnumerable<string> paths, CancellationToken cancellationToken = default, InstallationStage stage = InstallationStage.VerifyingFiles)
+    public static Task<IReadOnlyList<LocalFileEntry>> ReadManagedAsync(string installationRoot, IEnumerable<string> paths, CancellationToken cancellationToken = default, InstallationStage stage = InstallationStage.VerifyingFiles, IEnumerable<string>? directoryBoundaries = null)
     {
         var root = PlainPaths.Full(installationRoot);
         var selected = paths.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        var boundaries = directoryBoundaries?.ToArray();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var expanded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var result = new List<LocalFileEntry>();
         var files = new List<(int Index, string Path)>();
         var pending = new Stack<string>(selected);
@@ -117,7 +120,7 @@ public static class InstallationFileSnapshot
                 if (!directory)
                     break;
 
-                if (index == parts.Length)
+                if (index == parts.Length && expanded.Add(name) && (boundaries is null || boundaries.Any(boundary => name.Equals(boundary, StringComparison.OrdinalIgnoreCase) || name.StartsWith(boundary + '/', StringComparison.OrdinalIgnoreCase))))
                     foreach (var child in Directory.EnumerateFileSystemEntries(path))
                         pending.Push(Path.GetRelativePath(root, child).Replace('\\', '/'));
             }

@@ -75,10 +75,10 @@ public sealed class CombinedUpdateTests(PinnedGitFixture tool) : IClassFixture<P
     private const string OneCommit = "1";
 
     /// <summary>
-    /// Recognizes a ZIP installation when signed game revisions differ only in player-customizable assets.
+    /// Recognizes equivalent ZIP game code while retaining the authenticated prior package ownership baseline.
     /// </summary>
     [Fact]
-    public async Task EquivalentProgramInventoriesSelectPreferredRevisionWithoutAssetHashes()
+    public async Task EquivalentProgramInventoriesRetainSignedOwnershipWithoutAssetHashes()
     {
         using var game = new ZipGameFixture(tool);
         using var release = new SignedReleaseFixture();
@@ -94,7 +94,7 @@ public sealed class CombinedUpdateTests(PinnedGitFixture tool) : IClassFixture<P
         var preparation = new SetupPreparation(release.Verifier, new ReleaseDownloadStore(release.Cache, release), SignedReleaseFixture.Runtime(), new CombinedGamePreparation(tool.Cache, game.Policy, game.Staging), Verification(game, release), _ => SignedReleaseFixture.VersionA);
         var review = await preparation.ReviewAsync(release.Root, release.Evidence, noActiveRun: true);
         Assert.Equal(target, review.Authorization.Request.GameCommit);
-        Assert.Null(review.Authorization.PreviousGameCommit);
+        Assert.Equal(game.Baseline.Commit, review.Authorization.PreviousGameCommit);
         Assert.True(review.Plan.CanApply);
     }
 

@@ -23,6 +23,37 @@ public sealed class UpdaterStabilityTests
     private const string NewParentUserFile = "Data/new/player profile.json";
 
     /// <summary>
+    /// Keeps new unrelated files opaque when a managed file becomes a directory containing new program files.
+    /// </summary>
+    [Fact]
+    public async Task FileToDirectoryTransitionDoesNotScanNewPlayerContent()
+    {
+        using var fixture = new TransactionFixture();
+        await fixture.PrepareTransitionAsync();
+        FileStream? locked = null;
+        var operations = fixture.Description.Plan.Rebuild().GetOperations();
+        var engine = fixture.Engine(progress =>
+        {
+            if (locked is null && progress.Phase == TransactionPhase.Applying && progress.Boundary == TransactionBoundary.Mutation && progress.Operation == operations.Count - 1)
+            {
+                TransactionFixture.Write(fixture.Root, TransactionFixture.TransitionPlayerFile, 9);
+                locked = new FileStream(PlainPaths.Child(fixture.Root, TransactionFixture.TransitionPlayerFile), FileMode.Open, FileAccess.Read, FileShare.None);
+            }
+        });
+        try
+        {
+            Assert.Equal(TransactionPhase.Committed, (await engine.ApplyAsync(fixture.Root, fixture.Description.TransactionId)).Phase);
+            Assert.NotNull(locked);
+            Assert.Equal(9, locked.ReadByte());
+            Assert.Null(UpdateTransaction.ReadActiveId(fixture.Root));
+        }
+        finally
+        {
+            locked?.Dispose();
+        }
+    }
+
+    /// <summary>
     /// Commits or rolls back only program files while retaining saves, profiles and sprites changed after preparation.
     /// </summary>
     /// <param name="rollback">Whether final verification deliberately triggers rollback.</param>

@@ -33,7 +33,12 @@ public sealed class FileUpdatePlan
     /// <summary>
     /// Gets the managed files and structural boundaries that require fresh inspection.
     /// </summary>
-    public IReadOnlyList<string> InspectionPaths => [.. _baseline.Select(file => file.Path).Concat(_target.Select(file => file.Path)).Concat(_operations.Where(operation => operation.Kind == FileOperationKind.RemoveDirectory).Select(operation => operation.Path)).Distinct(StringComparer.OrdinalIgnoreCase)];
+    public IReadOnlyList<string> InspectionPaths => [.. _baseline.Select(file => file.Path).Concat(_target.Select(file => file.Path)).Concat(ReplacementDirectories).Distinct(StringComparer.OrdinalIgnoreCase)];
+
+    /// <summary>
+    /// Gets directories whose complete contents must remain reviewed before destructive replacement.
+    /// </summary>
+    public IReadOnlyList<string> ReplacementDirectories => [.. _operations.Where(operation => operation.Kind == FileOperationKind.RemoveDirectory).Select(operation => operation.Path)];
 
     /// <summary>
     /// Checks reviewed managed bytes and structural collisions while allowing unrelated player files to change.
@@ -129,7 +134,7 @@ public sealed class FileUpdatePlan
     private bool Matches(IEnumerable<LocalFileEntry> expected, IEnumerable<LocalFileEntry> current)
     {
         var paths = InspectionPaths.SelectMany(path => UpdateFilePath.Parents(path).Prepend(path)).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var boundaries = _operations.Where(operation => operation.Kind == FileOperationKind.RemoveDirectory).Select(operation => operation.Path).ToArray();
+        var boundaries = ReplacementDirectories;
         var created = _operations.Where(operation => operation.Kind == FileOperationKind.CreateDirectory).Select(operation => operation.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
         Func<LocalFileEntry, bool> relevant = entry => !(entry.Content is null && created.Contains(entry.Path)) && (paths.Contains(entry.Path) || boundaries.Any(path => entry.Path.StartsWith(path + '/', StringComparison.OrdinalIgnoreCase)));
         return expected.Where(relevant).OrderBy(entry => entry.Path, StringComparer.Ordinal).SequenceEqual(current.Where(relevant).OrderBy(entry => entry.Path, StringComparer.Ordinal));

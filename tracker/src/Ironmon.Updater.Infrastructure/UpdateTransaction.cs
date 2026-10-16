@@ -406,7 +406,7 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
         if (requireIdle)
             await _ensureIdle(cancellationToken).ConfigureAwait(false);
         var stage = requireIdle ? InstallationStage.CheckingInstallation : InstallationStage.CheckingPreparedInstallation;
-        var snapshot = await InstallationFileSnapshot.ReadManagedAsync(description.InstallationRoot, plan.InspectionPaths, cancellationToken, stage).ConfigureAwait(false);
+        var snapshot = await InstallationFileSnapshot.ReadManagedAsync(description.InstallationRoot, plan.InspectionPaths, cancellationToken, stage, plan.ReplacementDirectories).ConfigureAwait(false);
         if (!plan.MatchesBefore(snapshot))
             throw new IOException(UpdaterText.UpdateTransactionInstallationFilesChangedSinceReviewApplicationOrRecoveryCannot);
 
@@ -425,7 +425,7 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
     private async Task VerifyAfterAsync(TransactionDescription description, FileUpdatePlan plan, CancellationToken cancellationToken)
     {
         await _ensureIdle(cancellationToken).ConfigureAwait(false);
-        if (plan.Assess(await InstallationFileSnapshot.ReadManagedAsync(description.InstallationRoot, plan.InspectionPaths, cancellationToken, InstallationStage.VerifyingInstallation).ConfigureAwait(false)) != FilePlanApplicability.AlreadyApplied)
+        if (plan.Assess(await InstallationFileSnapshot.ReadManagedAsync(description.InstallationRoot, plan.InspectionPaths, cancellationToken, InstallationStage.VerifyingInstallation, plan.ReplacementDirectories).ConfigureAwait(false)) != FilePlanApplicability.AlreadyApplied)
             throw new IOException(UpdaterText.UpdateTransactionTheFinalInstallationDoesNotMatchTheCompleteReviewed);
 
         if (description.GitAfter is not null)
