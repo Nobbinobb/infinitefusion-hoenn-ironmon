@@ -22,8 +22,9 @@ The installer is named `Ironmon-Setup-win-x64.exe` without a release version.
 Setup defaults to the newest stable signed Ironmon release and automatically
 selects its matching game revision. Advanced selection offers older signed
 releases only while their required game revision and installation downloads can
-be verified as available. Its first page, installation documentation and generated
-GitHub release notes state this behavior. Older published versioned Setup downloads
+be verified as available. Its first page and installation documentation state this
+behavior. Release notes describe the installer changes without an automatic warning
+banner. Older published versioned Setup downloads
 retain their names and their latest-only selection.
 
 `New-UpdateMetadata.ps1` also measures a compressed game snapshot for the exact selected game commit using `Get-GameDownloadEstimate.ps1`. The measurement packs that commit, its trees and its blobs from the pipeline's existing checkout, excluding ancestor history and later branch tips. It neither downloads nor publishes a game archive. This is a fresh-install download estimate, not an exact Git transfer size: negotiation, compression and history fallback can change the transfer.

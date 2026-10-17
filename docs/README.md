@@ -32,6 +32,9 @@ also suitable for saving as PDF.
 
 ## Release history
 
+- [Ironmon 0.8.13](releases/RELEASE_NOTES_0.8.13.md): versionless Setup download
+  and verified selection of older Ironmon releases with their matching game.
+
 - [Ironmon 0.8.12](releases/RELEASE_NOTES_0.8.12.md): updater fixes for refreshed
   game downloads, player-file preservation, and relocated installations.
 
