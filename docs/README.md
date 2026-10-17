@@ -32,6 +32,9 @@ also suitable for saving as PDF.
 
 ## Release history
 
+- [Ironmon 0.8.12](releases/RELEASE_NOTES_0.8.12.md): updater fixes for refreshed
+  game downloads, player-file preservation, and relocated installations.
+
 - [Ironmon 0.8.11](releases/RELEASE_NOTES_0.8.11.md): faster tracker preparation
   and game loading, visual fusion components, and clearer installer progress.
 
