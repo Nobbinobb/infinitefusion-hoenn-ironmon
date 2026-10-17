@@ -20,6 +20,12 @@ html:has(.tracker-update-overlay) { overflow:hidden; }
 .tracker-update-conflict code { display:block; overflow-wrap:anywhere; color:#e1bd89; font-size:11px; margin-top:4px; }
 .tracker-update-panel progress { display:block; width:100%; height:7px; accent-color:#a899e5; margin:14px 0; }
 .tracker-update-actions { display:flex; align-items:center; justify-content:flex-end; gap:15px; padding-top:16px; border-top:1px solid #28323b; flex:none; margin-top:12px; }
+.tracker-update-actions:has(.tracker-update-progress) { flex-wrap:wrap; }
+.tracker-update-actions > button { flex:none; margin-left:auto; }
+.tracker-update-progress { flex:1 1 220px; min-width:0; }
+.tracker-update-progress p { margin:0; overflow-wrap:anywhere; }
+.tracker-update-progress .tracker-update-muted { margin-top:3px; }
+.tracker-update-progress progress { margin:8px 0 0; }
 .tracker-update-primary, .tracker-update-secondary { padding:9px 22px; border:1px solid #4b486a; border-radius:7px; font:inherit; font-weight:600; cursor:pointer; color:#f0edff; }
 .tracker-update-primary { background:#66528f; margin-left:auto; }
 .tracker-update-secondary { background:#171e29; border-color:#344053; }
