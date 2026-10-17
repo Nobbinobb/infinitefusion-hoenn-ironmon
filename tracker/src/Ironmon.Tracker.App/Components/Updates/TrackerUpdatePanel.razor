@@ -146,11 +146,11 @@
                                 <h2>@Text[Session.Review is null && !Session.NeedsRecovery ? UpdateText.CheckUnavailable : UpdateText.Error]</h2><p>@error</p>
                             </div>
                         }
-                        else if (Session.IsBusy || Session.Phase == TrackerUpdatePhase.Cancelled)
+                        else if (Session.Phase == TrackerUpdatePhase.Cancelled)
                         {
                             <p>@Text[UpdateText.PhasePrefix + Session.Phase]</p>
                         }
-                        else if (Session.CheckedAt is not null && Session.LatestVersion is null && !Session.NeedsRecovery)
+                        else if (!Session.IsBusy && Session.CheckedAt is not null && Session.LatestVersion is null && !Session.NeedsRecovery)
                         {
                             <div class="tracker-update-result tracker-update-result-current">
                                 <span class="tracker-update-result-icon" aria-hidden="true">✓</span>
@@ -178,30 +178,6 @@
                             <button type="button" class="tracker-update-link" @onclick="Session.CheckAsync">@Text[UpdateText.CheckAgainShort]</button>
                         </div>
                     }
-                    @if (Session.IsBusy)
-                    {
-                        @if (Session.Progress is { } measured)
-                        {
-                            <p class="tracker-update-muted">@measured.Text</p>
-                            @if (measured.Total > 0)
-                            {
-                                <progress max="@measured.Total" value="@measured.Completed" aria-label="@measured.Text"></progress>
-                            }
-                            else
-                            {
-                                <progress aria-label="@measured.Text"></progress>
-                            }
-                        }
-                        else if (Session.Download is { } download)
-                        {
-                            <progress max="@download.Total" value="@download.Received" aria-label="@Text[UpdateText.Downloading]"></progress>
-                            <p class="tracker-update-muted">@Text[UpdateText.DownloadBytes, Megabytes(download.Received), Megabytes(download.Total)]</p>
-                        }
-                        else
-                        {
-                            <progress aria-label="@Text[UpdateText.PhasePrefix + Session.Phase]"></progress>
-                        }
-                    }
                     @if (Session.RetryAt is { } retry && Session.Error is not null)
                     {
                         <p class="tracker-update-muted">@Text[UpdateText.RetryAt, retry.ToLocalTime().ToString(DateFormat, System.Globalization.CultureInfo.CurrentCulture)]</p>
@@ -212,6 +188,30 @@
                     <div class="tracker-update-actions">
                         @if (Session.IsBusy)
                         {
+                            <div class="tracker-update-progress">
+                                <p role="status" aria-live="polite">@Text[UpdateText.PhasePrefix + Session.Phase]</p>
+                                @if (Session.Progress is { } measured)
+                                {
+                                    <p class="tracker-update-muted">@measured.Text</p>
+                                    @if (measured.Total > 0)
+                                    {
+                                        <progress max="@measured.Total" value="@measured.Completed" aria-label="@measured.Text"></progress>
+                                    }
+                                    else
+                                    {
+                                        <progress aria-label="@measured.Text"></progress>
+                                    }
+                                }
+                                else if (Session.Download is { } download)
+                                {
+                                    <p class="tracker-update-muted">@Text[UpdateText.DownloadBytes, Megabytes(download.Received), Megabytes(download.Total)]</p>
+                                    <progress max="@download.Total" value="@download.Received" aria-label="@Text[UpdateText.Downloading]"></progress>
+                                }
+                                else
+                                {
+                                    <progress aria-label="@Text[UpdateText.PhasePrefix + Session.Phase]"></progress>
+                                }
+                            </div>
                             <button type="button" class="tracker-update-secondary" @onclick="Session.Cancel">@Text[UpdateText.Cancel]</button>
                         }
                         else

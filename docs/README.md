@@ -32,6 +32,9 @@ also suitable for saving as PDF.
 
 ## Release history
 
+- [Ironmon 0.8.15](releases/RELEASE_NOTES_0.8.15.md): update progress and operation
+  text stay visible in the footer beside Cancel while the details scroll.
+
 - [Ironmon 0.8.14](releases/RELEASE_NOTES_0.8.14.md): fresh startup update checks,
   direct updates to the latest version, advanced version selection, and automatic
   updater window closure after a successful restart.
