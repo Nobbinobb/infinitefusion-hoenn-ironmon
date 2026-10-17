@@ -16,7 +16,7 @@ and freezes the candidate. Publication exposes exactly these seven files:
 | --- | --- |
 | `Ironmon-v<V>-win-x64.zip` | Self-contained tracker, scripts and data |
 | `Ironmon-v<V>-win-x64-runtime-required.zip` | Runtime-required tracker, scripts and data |
-| `Ironmon-Setup-v<V>-win-x64.exe` | Disposable standalone installer |
+| `Ironmon-Setup-win-x64.exe` | Disposable installer, defaulting to the newest stable release |
 | `update-manifest.json` | Versions, compatibility, roles, sizes and SHA-256 hashes |
 | `update-manifest.sig.json` | Detached signature over the exact manifest bytes |
 | `update-data.json` | Current and historical inventories plus release notes |
@@ -25,6 +25,20 @@ and freezes the candidate. Publication exposes exactly these seven files:
 GitHub adds its two automatic source archives. Players choose the installer or one
 of the two Ironmon ZIPs; the updater reads the JSON files automatically. Historical
 inventory growth never adds more public download entries.
+
+Setup's filename is independent of the Ironmon version it installs. It defaults
+to the newest stable signed release; its own binary build version remains recorded
+internally. Advanced selection lists up to 100 recent stable releases and disables
+targets without supported signed metadata, available signed downloads, or a
+reachable, downloadable preferred game commit. The fixed upstream comparison
+requires the signed commit to remain an ancestor of the supported releases branch.
+Archive availability is checked with HEAD requests, without downloading the game.
+Only explicit historical selection uses this path; the automatic update discovery
+cache and its monotonic watermark are unchanged. Review and installation refresh
+the exact selected release and availability, and never substitute latest. Existing
+forward-update and game-history rules still apply. Published versioned Setup assets
+keep their existing names and latest-only behavior. Use a release's versioned ZIP
+and matching game for historical versions without verified installer metadata.
 
 Installer and tracker release discovery use anonymous HTTPS requests. Their
 configured release repository and assets must be publicly accessible. A private

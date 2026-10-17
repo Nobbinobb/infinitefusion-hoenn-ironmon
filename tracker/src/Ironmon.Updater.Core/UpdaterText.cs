@@ -6,7 +6,7 @@ namespace Ironmon.Updater.Core;
 /// <summary>
 /// Resolves installer and updater messages from the shared culture-aware resource catalog.
 /// </summary>
-public static class UpdaterText
+public static partial class UpdaterText
 {
     private const string ResourceName = "Ironmon.Updater.Core.Resources.Localization.UpdaterResources";
     private static readonly ResourceManager _resources = new(ResourceName, typeof(UpdaterText).Assembly);

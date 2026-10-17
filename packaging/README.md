@@ -21,6 +21,11 @@ Setup can install the game and Ironmon together, optionally download sprite shee
 and create a desktop shortcut. The tracker checks for updates at startup and
 provides a manual check in Settings. Updates verify release content and preserve
 recovery information before replacing installed files.
+Setup defaults to the newest stable Ironmon release and its matching game revision.
+Its download is named `Ironmon-Setup-win-x64.exe`. Advanced selection offers older
+signed releases when their game revision and required downloads remain available.
+Older versioned Setup downloads always select latest. Use this versioned archive
+with its matching game for a historical release without supported installer metadata.
 The player package contains no maintainer generator, release-data generator,
 audit, or private signing-key material.
 

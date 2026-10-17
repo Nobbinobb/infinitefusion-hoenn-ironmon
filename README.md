@@ -61,7 +61,7 @@ Choose the installer or one of the two Windows x64 ZIP packages:
 
 | Package | Recommended for |
 | --- | --- |
-| `Ironmon-Setup-vX.Y.Z-win-x64.exe` | Recommended. Installs the game and Ironmon together, or uses a supported existing game folder. |
+| `Ironmon-Setup-win-x64.exe` | Recommended. Defaults to the newest stable Ironmon release. Advanced options can select an available older release with its matching game revision. |
 | `Ironmon-vX.Y.Z-win-x64.zip` | Manual installation into an existing game folder. Includes the required .NET runtime. |
 | `Ironmon-vX.Y.Z-win-x64-runtime-required.zip` | Smaller manual download for players who already have the Windows x64 .NET 10 Runtime installed. |
 
@@ -76,7 +76,15 @@ by the updater; `SHA256SUMS.txt` provides one checksum list for the release.
 Setup can download the game for you and does not require Git to be installed.
 It includes its own .NET runtime.
 
-1. Download and open `Ironmon-Setup-vX.Y.Z-win-x64.exe` from the latest release.
+1. Download and open `Ironmon-Setup-win-x64.exe` from the latest release.
+   Setup defaults to the newest stable Ironmon release. Expand **Advanced:
+   Ironmon version** on the first page to select an older available release.
+   Setup verifies its signed metadata and exact matching game revision; missing
+   or unverifiable versions are disabled. Availability is checked again during
+   review and before installation. Existing installations cannot be downgraded.
+   Older Setup downloads with a version in their filename always select latest
+   and do not provide this selector. Releases without signed installer metadata
+   need a versioned ZIP archive and a matching game for manual installation.
 2. Choose any folder. Setup reuses a supported existing game or installs into a
    **Pokémon Infinite Fusion 2** subfolder. Back up existing saves before making changes.
 3. Optionally select the sprite-sheet download and a desktop tracker shortcut.

@@ -18,6 +18,14 @@ Uploads first go to a draft release. All seven remote asset sizes and SHA-256 di
 
 The seven uploaded files are the two Ironmon ZIPs, the installer, `update-manifest.json`, `update-manifest.sig.json`, `update-data.json`, and one `SHA256SUMS.txt`. GitHub additionally displays its automatic source ZIP and tar archive. Build evidence and individual checksum sidecars stay in Actions artifacts. The helper comes from the selected player package; all current and historical inventories share the metadata file, so later releases do not grow the public asset list.
 
+The installer is named `Ironmon-Setup-win-x64.exe` without a release version.
+Setup defaults to the newest stable signed Ironmon release and automatically
+selects its matching game revision. Advanced selection offers older signed
+releases only while their required game revision and installation downloads can
+be verified as available. Its first page, installation documentation and generated
+GitHub release notes state this behavior. Older published versioned Setup downloads
+retain their names and their latest-only selection.
+
 `New-UpdateMetadata.ps1` also measures a compressed game snapshot for the exact selected game commit using `Get-GameDownloadEstimate.ps1`. The measurement packs that commit, its trees and its blobs from the pipeline's existing checkout, excluding ancestor history and later branch tips. It neither downloads nor publishes a game archive. This is a fresh-install download estimate, not an exact Git transfer size: negotiation, compression and history fallback can change the transfer.
 
 The producer stores the positive byte count and pinned commit in optional `download-sizes.json` inside `update-data.json`. The existing signed container hash authenticates it; the manifest remains schema 2 and the public asset list stays unchanged. Older readers ignore the extra container entry. New readers validate its document type, schema and pinned commit, and display the estimate only for that exact selected game commit. Older releases without this entry remain installable and show an unavailable estimate. This informational value never authorizes content or changes download limits. Tracker sizes still come from signed archive sizes; Setup reads the current WebView2 standalone package's headers separately.

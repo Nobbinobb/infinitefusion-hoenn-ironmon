@@ -17,6 +17,7 @@ public sealed class ReleaseHttpClient : IArtifactSource, IDisposable
     private const string ResetHeader = "X-RateLimit-Reset";
     private const string RemainingHeader = "X-RateLimit-Remaining";
     private const string NoRemaining = "0";
+    private const string _zipMediaType = "application/zip";
     private readonly HttpClient _client;
     private readonly TimeProvider _clock;
 
@@ -81,13 +82,29 @@ public sealed class ReleaseHttpClient : IArtifactSource, IDisposable
     }
 
     /// <summary>
+    /// Checks a fixed download endpoint without reading its body or accepting an unexpected signed length.
+    /// </summary>
+    /// <param name="source">The canonical release asset or pinned game archive URL.</param>
+    /// <param name="expectedBytes">The signed release size, or null for the upstream game archive.</param>
+    /// <param name="cancellationToken">The caller cancellation token.</param>
+    /// <returns>The availability observation; transport failures remain explicit.</returns>
+    public async Task<bool> IsAvailableAsync(Uri source, long? expectedBytes, CancellationToken cancellationToken)
+    {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(TimeSpan.FromSeconds(10));
+        using var response = await SendAsync(source, null, deadline.Token, HttpMethod.Head).ConfigureAwait(false);
+        return response.StatusCode == HttpStatusCode.OK && (expectedBytes is null ? response.Content.Headers.ContentType?.MediaType == _zipMediaType : response.Content.Headers.ContentLength == expectedBytes);
+    }
+
+    /// <summary>
     /// Applies a fixed retry budget, validates each redirect and surfaces rate limits without busy retrying.
     /// </summary>
     /// <param name="source">The initial fixed-source URL.</param>
     /// <param name="etag">The optional API entity tag.</param>
     /// <param name="cancellationToken">The shared request deadline.</param>
+    /// <param name="method">The explicit read-only request method, defaulting to GET.</param>
     /// <returns>The owned successful response.</returns>
-    private async Task<HttpResponseMessage> SendAsync(Uri source, string? etag, CancellationToken cancellationToken)
+    private async Task<HttpResponseMessage> SendAsync(Uri source, string? etag, CancellationToken cancellationToken, HttpMethod? method = null)
     {
         ValidateUrl(source, initial: true);
         var initial = source;
@@ -99,7 +116,7 @@ public sealed class ReleaseHttpClient : IArtifactSource, IDisposable
                 for (var redirects = 0; redirects <= 5; redirects++)
                 {
                     ValidateUrl(source, initial: redirects == 0);
-                    using var request = new HttpRequestMessage(HttpMethod.Get, source);
+                    using var request = new HttpRequestMessage(method ?? HttpMethod.Get, source);
                     if (etag is not null && source.Host == ApiHost)
                         request.Headers.IfNoneMatch.Add(EntityTagHeaderValue.Parse(etag));
 
@@ -186,11 +203,50 @@ public sealed class ReleaseHttpClient : IArtifactSource, IDisposable
             throw new InvalidDataException(UpdaterText.ReleaseHttpClientTheReleaseURLIsNotACredentialFreePublic);
 
         var allowed = initial
-            ? uri.AbsoluteUri == ReleaseProtocol.LatestReleaseUrl || uri.Host == GitHubHost && uri.AbsoluteUri.StartsWith(ReleaseProtocol.ReleaseBaseUrl + ReleaseProtocol.DownloadSegment, StringComparison.Ordinal)
+            ? IsSetupEndpoint(uri) || uri.AbsoluteUri == ReleaseProtocol.LatestReleaseUrl || uri.Host == GitHubHost && uri.AbsoluteUri.StartsWith(ReleaseProtocol.ReleaseBaseUrl + ReleaseProtocol.DownloadSegment, StringComparison.Ordinal)
             : uri.Host is AssetsHost or ObjectsHost || uri.Host == GitHubHost && uri.AbsoluteUri.StartsWith(ReleaseProtocol.ReleaseBaseUrl + ReleaseProtocol.DownloadSegment, StringComparison.Ordinal);
 
         if (!allowed)
             throw new InvalidDataException(UpdaterText.ReleaseHttpClientTheReleaseRequestOrRedirectIsOutsideTheFixed);
+    }
+
+    /// <summary>
+    /// Allows only bounded installer discovery and exact game revisions from the existing fixed repositories.
+    /// </summary>
+    /// <param name="uri">The initial HTTPS URL already checked for credentials and alternate ports.</param>
+    /// <returns>Whether the URL is one canonical installer metadata or availability endpoint.</returns>
+    private static bool IsSetupEndpoint(Uri uri)
+    {
+        var url = uri.AbsoluteUri;
+        if (url == ReleaseProtocol.ReleaseListUrl)
+            return true;
+
+        try
+        {
+            if (url.StartsWith(ReleaseProtocol.ReleaseTagUrl, StringComparison.Ordinal))
+            {
+                ReleaseProtocol.ParseVersion(url[ReleaseProtocol.ReleaseTagUrl.Length..]);
+                return true;
+            }
+
+            if (url.StartsWith(ReleaseProtocol.GameArchiveUrl, StringComparison.Ordinal))
+            {
+                ReleaseProtocol.ValidateCommit(url[ReleaseProtocol.GameArchiveUrl.Length..]);
+                return true;
+            }
+
+            if (url.StartsWith(ReleaseProtocol.GameCompareUrl, StringComparison.Ordinal) && url.EndsWith(ReleaseProtocol.GameCompareSuffix, StringComparison.Ordinal))
+            {
+                ReleaseProtocol.ValidateCommit(url[ReleaseProtocol.GameCompareUrl.Length..^ReleaseProtocol.GameCompareSuffix.Length]);
+                return true;
+            }
+        }
+        catch (InvalidDataException)
+        {
+            return false;
+        }
+
+        return false;
     }
 
     /// <summary>

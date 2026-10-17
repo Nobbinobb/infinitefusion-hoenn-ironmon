@@ -7,7 +7,7 @@ function New-TestReleaseCandidate([string]$Directory, [string]$Version, [string]
   $specifications = [ordered]@{
     "Ironmon-v$Version-win-x64.zip"='tracker-self-contained'
     "Ironmon-v$Version-win-x64-runtime-required.zip"='tracker-runtime-required'
-    "Ironmon-Setup-v$Version-win-x64.exe"='setup'
+    'Ironmon-Setup-win-x64.exe'='setup'
     'update-notes.md'='release-notes'
     'self-contained-files.json'='ironmon-files'
     'runtime-required-files.json'='ironmon-files'

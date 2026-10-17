@@ -16,6 +16,11 @@ public static partial class ReleaseProtocol
     /// Identifies the stable release API endpoint.
     /// </summary>
     public const string LatestReleaseUrl = "https://api.github.com/repos/" + Repository + "/releases/latest";
+    internal const string ReleaseListUrl = "https://api.github.com/repos/" + Repository + "/releases?per_page=100";
+    internal const string ReleaseTagUrl = "https://api.github.com/repos/" + Repository + "/releases/tags/v";
+    internal const string GameCompareUrl = "https://api.github.com/repos/infinitefusion/infinitefusion-hoenn-public/compare/";
+    internal const string GameCompareSuffix = "...releases?per_page=1&page=2";
+    internal const string GameArchiveUrl = "https://codeload.github.com/infinitefusion/infinitefusion-hoenn-public/zip/";
     /// <summary>
     /// Identifies the self-contained package flavor.
     /// </summary>

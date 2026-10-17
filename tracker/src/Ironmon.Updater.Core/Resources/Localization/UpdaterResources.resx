@@ -922,7 +922,7 @@
     <value>Checking your installation</value>
   </data>
   <data name="SetupWindowChooseAParentOrExistingGameFolder" xml:space="preserve">
-    <value>Choose any folder. Setup uses an existing game there, or installs in a {0} folder inside it.</value>
+    <value>Setup defaults to the latest stable Ironmon and its matching game. Choose an existing game or a parent for a new {0} folder.</value>
   </data>
   <data name="SetupWindowChooseTheInfiniteFusionInstallationFolder" xml:space="preserve">
     <value>Choose the Infinite Fusion installation folder</value>
@@ -1712,4 +1712,49 @@
   <data name="SetupReviewSpritesMeasuredHint" xml:space="preserve"><value>Full sprite library checked {0}. Updated daily; existing sheets can reduce your download.</value></data>
   <data name="SetupReviewIncompleteHint" xml:space="preserve"><value>+ excludes components whose size is currently unavailable.</value></data>
   <data name="SetupReviewPartialSize" xml:space="preserve"><value>{0}+</value></data>
+  <data name="SetupVersionsLoading" xml:space="preserve">
+    <value>Checking release versions and matching game downloads…</value>
+  </data>
+  <data name="SetupVersionsUnavailable" xml:space="preserve">
+    <value>Availability could not be verified. Refresh the version list and try again.</value>
+  </data>
+  <data name="SetupVersionsMissingMetadata" xml:space="preserve">
+    <value>This release has no supported, verified installer metadata. Use its ZIP archive for a manual installation.</value>
+  </data>
+  <data name="SetupVersionsNewerSetupRequired" xml:space="preserve">
+    <value>This release requires a newer installer. Download Setup from the latest release.</value>
+  </data>
+  <data name="SetupVersionsGameUnavailable" xml:space="preserve">
+    <value>The matching Infinite Fusion revision is unavailable or could not be verified. Refresh to check again.</value>
+  </data>
+  <data name="SetupVersionsDownloadsUnavailable" xml:space="preserve">
+    <value>An installation download is unavailable or could not be verified. Refresh to check again.</value>
+  </data>
+  <data name="SetupVersionsReleaseChanged" xml:space="preserve">
+    <value>The selected release changed after review. Review the installation again before installing.</value>
+  </data>
+  <data name="SetupVersionsAdvanced" xml:space="preserve">
+    <value>Advanced: Ironmon version</value>
+  </data>
+  <data name="SetupVersionsLatest" xml:space="preserve">
+    <value>Latest stable release (recommended)</value>
+  </data>
+  <data name="SetupVersionsRefresh" xml:space="preserve">
+    <value>Refresh versions</value>
+  </data>
+  <data name="SetupVersionsHint" xml:space="preserve">
+    <value>Only verified releases with available game files can be selected. Older versions may require a new folder. Installed versions cannot be downgraded.</value>
+  </data>
+  <data name="SetupVersionsSelectAvailable" xml:space="preserve">
+    <value>Select an available version, or keep the latest stable release.</value>
+  </data>
+  <data name="SetupVersionsChooseVersion" xml:space="preserve">
+    <value>Choose an available version or keep the latest stable release.</value>
+  </data>
+  <data name="SetupVersionsChoice" xml:space="preserve">
+    <value>Ironmon {0} · Infinite Fusion {1}</value>
+  </data>
+  <data name="SetupVersionsUnavailableChoice" xml:space="preserve">
+    <value>Ironmon {0} · Unavailable</value>
+  </data>
 </root>

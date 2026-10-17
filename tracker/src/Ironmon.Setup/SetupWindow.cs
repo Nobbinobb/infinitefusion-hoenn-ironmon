@@ -45,12 +45,14 @@ internal sealed class SetupWindow : Window
     private readonly ProgressBar _progress = new() { Height = 5, Margin = new Thickness(0, 0, 0, 14) };
     private readonly TextBox _destination = new();
     private Button? _install;
+    private Button? _continue;
     private Button? _back;
     private Button? _cancel;
     private Button? _retry;
     private bool _sprites;
     private bool _shortcut;
     private bool _webViewConsent;
+    private bool _advancedVersions;
     private bool _noActiveRun;
     private string _flavor = ReleaseProtocol.SelfContained;
     private int _page;
@@ -127,6 +129,7 @@ internal sealed class SetupWindow : Window
         _body.Children.Clear();
         _actions.Children.Clear();
         _install = null;
+        _continue = null;
         _retry = null;
         _back = null;
         _bodyError = null;
@@ -162,7 +165,9 @@ internal sealed class SetupWindow : Window
             folder.Children.Add(browse);
             Card(Label(UpdaterText.SetupWindowFolderSection), folder, Description(UpdaterText.SetupWindowForAnExistingGameSelectTheFolderContainingInfiniteFusion2));
             Paragraph(UpdaterText.SetupWindowTheSuggestedLocationInstallsForYourWindowsAccountWindows);
-            _actions.Children.Add(AsyncAction(UpdaterText.SetupWindowContinue, ContinueAsync, true));
+            AddVersionSelection();
+            _continue = AsyncAction(UpdaterText.SetupWindowContinue, ContinueAsync, true);
+            _actions.Children.Add(_continue);
         }
         else if (_page == 1)
         {
@@ -195,7 +200,8 @@ internal sealed class SetupWindow : Window
 
             _back = Action(UpdaterText.SetupWindowBack, () => Navigate(0));
             _actions.Children.Add(_back);
-            _actions.Children.Add(AsyncAction(UpdaterText.SetupWindowReviewInstallation, ReviewAsync, true));
+            _continue = AsyncAction(UpdaterText.SetupWindowReviewInstallation, ReviewAsync, true);
+            _actions.Children.Add(_continue);
         }
         else if (_page == 2)
         {
@@ -351,6 +357,64 @@ internal sealed class SetupWindow : Window
     }
 
     /// <summary>
+    /// Adds an optional release selector while retaining the automatic latest default and explicit disabled reasons.
+    /// </summary>
+    private void AddVersionSelection()
+    {
+        var versions = new ComboBox { MaxDropDownHeight = 240, MinHeight = 30, HorizontalContentAlignment = HorizontalAlignment.Stretch, Background = Brush(SurfaceResource), Foreground = Brush(ForegroundResource) };
+        versions.Resources[SystemColors.WindowBrushKey] = Brush(SurfaceResource);
+        versions.Resources[SystemColors.WindowTextBrushKey] = Brush(ForegroundResource);
+        versions.Items.Add(new ComboBoxItem { Content = UpdaterText.SetupVersionsLatest, IsSelected = _session.SelectedReleaseVersion is null });
+        foreach (var choice in _session.ReleaseChoices)
+        {
+            var label = choice.CanInstall ? UpdaterText.SetupVersionsChoice(choice.Version, choice.GameVersion!) : UpdaterText.SetupVersionsUnavailableChoice(choice.Version);
+            var item = new ComboBoxItem { Content = label, Tag = choice.Version, IsEnabled = choice.CanInstall, IsSelected = _session.SelectedReleaseVersion == choice.Version, ToolTip = choice.UnavailableReason };
+            ToolTipService.SetShowOnDisabled(item, true);
+            versions.Items.Add(item);
+        }
+
+        if (_session.SelectedReleaseVersion is { } selected && !_session.ReleaseChoices.Any(choice => choice.Version == selected))
+            versions.Items.Add(new ComboBoxItem { Content = UpdaterText.SetupVersionsUnavailableChoice(selected), Tag = selected, IsEnabled = false, IsSelected = true, ToolTip = UpdaterText.SetupVersionsUnavailable });
+
+        AutomationProperties.SetName(versions, UpdaterText.SetupVersionsAdvanced);
+        versions.SelectionChanged += (_, _) =>
+        {
+            if (versions.SelectedItem is ComboBoxItem item && item.IsEnabled)
+                _session.SelectReleaseVersion(item.Tag as string);
+        };
+
+        var row = new Grid { Margin = new Thickness(0, 8, 0, 4) };
+        row.ColumnDefinitions.Add(new ColumnDefinition());
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.Children.Add(versions);
+        var refresh = AsyncAction(UpdaterText.SetupVersionsRefresh, RefreshVersionsAsync);
+        Grid.SetColumn(refresh, 1);
+        row.Children.Add(refresh);
+        var content = new StackPanel();
+        content.Children.Add(row);
+        content.Children.Add(Description(UpdaterText.SetupVersionsHint));
+        var advanced = new Expander { Header = UpdaterText.SetupVersionsAdvanced, Content = content, IsExpanded = _advancedVersions, Foreground = Brush(ForegroundResource), Margin = new Thickness(0, 8, 0, 0) };
+        advanced.Expanded += async (_, _) =>
+        {
+            _advancedVersions = true;
+            if (_session.ReleaseChoices.Count == 0)
+                await RefreshVersionsAsync();
+        };
+        advanced.Collapsed += (_, _) => _advancedVersions = false;
+        _body.Children.Add(advanced);
+    }
+
+    /// <summary>
+    /// Refreshes current release and game availability before rebuilding the expanded selector.
+    /// </summary>
+    /// <returns>The complete cancellable availability refresh.</returns>
+    private async Task RefreshVersionsAsync()
+    {
+        await _session.LoadReleaseChoicesAsync();
+        Render();
+    }
+
+    /// <summary>
     /// Cancels active work safely or closes Setup after the operation has stopped.
     /// </summary>
     private void Finish()
@@ -431,6 +495,7 @@ internal sealed class SetupWindow : Window
             button.IsEnabled = !_session.IsBusy;
 
         _back?.IsEnabled = !_session.IsBusy;
+        _continue?.IsEnabled = !_session.IsBusy && _session.CanReviewReleaseSelection;
         _retry?.IsEnabled = !_session.IsBusy && (!_session.NeedsRunConfirmation || _noActiveRun);
         _install?.IsEnabled = !_session.IsBusy && (_session.CoreInstalled || _session.RecoveryId is not null || _session.CanInstall && (!_session.NeedsWebView || _webViewConsent));
         _cancel?.Content = _session.IsBusy ? UpdaterText.SetupWindowCancel : _session.CoreInstalled ? UpdaterText.SetupWindowFinish : UpdaterText.SetupWindowCancel;

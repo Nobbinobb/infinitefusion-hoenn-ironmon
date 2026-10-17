@@ -70,9 +70,11 @@ public interface ISetupPlatform
 /// <param name="downloads">The measured shared release cache.</param>
 /// <param name="protectedUpdates">The optional Windows administrator boundary.</param>
 /// <param name="spriteEstimates">The optional public size reader; estimates never authorize installed content.</param>
-public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation preparation, Func<string, Action<TransactionProgress>, UpdateTransaction> transactions, CustomSpriteSheetInstaller sprites, ISetupPlatform platform, ReleaseDownloadStore downloads, ProtectedUpdateClient? protectedUpdates = null, Func<string, CancellationToken, Task<SpriteDownloadEstimate?>>? spriteEstimates = null) : IDisposable
+/// <param name="releaseCatalog">The explicit installer catalog, separate from automatic latest-release discovery.</param>
+public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation preparation, Func<string, Action<TransactionProgress>, UpdateTransaction> transactions, CustomSpriteSheetInstaller sprites, ISetupPlatform platform, ReleaseDownloadStore downloads, ProtectedUpdateClient? protectedUpdates = null, Func<string, CancellationToken, Task<SpriteDownloadEstimate?>>? spriteEstimates = null, SetupReleaseCatalog? releaseCatalog = null) : IDisposable
 {
     private readonly ReleaseDiscovery _discovery = discovery;
+    private readonly SetupReleaseCatalog _releaseCatalog = releaseCatalog ?? discovery.CreateSetupCatalog();
     private readonly SetupPreparation _preparation = preparation;
     private readonly Func<string, Action<TransactionProgress>, UpdateTransaction> _transactions = transactions;
     private readonly CustomSpriteSheetInstaller _sprites = sprites;
@@ -103,6 +105,52 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
     /// Gets the selected local folder and its observed existing package.
     /// </summary>
     public SetupDestination? Destination { get; private set; }
+
+    /// <summary>
+    /// Gets the explicit historical target, or null for automatic latest-release selection.
+    /// </summary>
+    public string? SelectedReleaseVersion { get; private set; }
+
+    /// <summary>
+    /// Gets the last current availability observations; these are checked again before review and installation.
+    /// </summary>
+    public IReadOnlyList<SetupReleaseChoice> ReleaseChoices { get; private set; } = [];
+
+    /// <summary>
+    /// Gets whether latest is selected or the explicit target remains enabled in the most recent availability list.
+    /// </summary>
+    public bool CanReviewReleaseSelection => SelectedReleaseVersion is null || ReleaseChoices.Any(choice => choice.Version == SelectedReleaseVersion && choice.CanInstall);
+
+    /// <summary>
+    /// Refreshes advanced installer choices without writing into the selected game folder.
+    /// </summary>
+    /// <returns>The complete cancellable catalog check.</returns>
+    public Task LoadReleaseChoicesAsync() => RunAsync(async token =>
+    {
+        Status = UpdaterText.SetupVersionsLoading;
+        ReleaseChoices = [.. ReleaseChoices.Select(choice => choice with { UnavailableReason = UpdaterText.SetupVersionsUnavailable })];
+        Changed?.Invoke();
+        ReleaseChoices = await _releaseCatalog.ListAsync(token).ConfigureAwait(false);
+        ResetReview();
+        Status = UpdaterText.SetupVersionsChooseVersion;
+    });
+
+    /// <summary>
+    /// Chooses an available explicit release or restores the automatic latest default, discarding stale review consent.
+    /// </summary>
+    /// <param name="version">The available stable version, or null for latest.</param>
+    public void SelectReleaseVersion(string? version)
+    {
+        if (IsBusy)
+            return;
+
+        if (version is not null && !ReleaseChoices.Any(choice => choice.Version == version && choice.CanInstall))
+            throw new InvalidOperationException(UpdaterText.SetupVersionsSelectAvailable);
+
+        ResetReview();
+        SelectedReleaseVersion = version;
+        Changed?.Invoke();
+    }
 
     /// <summary>
     /// Gets whether this release requires explicit run-completion confirmation before review can continue.
@@ -254,10 +302,19 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
             return;
         }
 
-        Status = UpdaterText.SetupSessionCheckingTheLatestReleaseAndYourInstallation;
+        Status = SelectedReleaseVersion is null ? UpdaterText.SetupSessionCheckingTheLatestReleaseAndYourInstallation : UpdaterText.SetupVersionsLoading;
         Changed?.Invoke();
-        var found = await _discovery.CheckAsync(true, token).ConfigureAwait(false);
-        var release = found.Release ?? throw new IOException(found.Error ?? UpdaterText.SetupSessionNoSupportedSignedReleaseIsAvailableYetTryAgain);
+        ReleaseEvidence release;
+        if (SelectedReleaseVersion is null)
+        {
+            var found = await _discovery.CheckAsync(true, token).ConfigureAwait(false);
+            release = found.Release ?? throw new IOException(found.Error ?? UpdaterText.SetupSessionNoSupportedSignedReleaseIsAvailableYetTryAgain);
+        }
+        else
+        {
+            release = await ReadSelectedReleaseAsync(token).ConfigureAwait(false);
+        }
+
         Review = await _preparation.ReviewAsync(InstallationRoot, release, flavor, noActiveRun, token).ConfigureAwait(false);
         var webViewSize = NeedsWebView ? _platform.GetWebViewDownloadBytesAsync(token) : Task.FromResult<long?>(0);
         var spriteSize = spriteEstimates is null ? Task.FromResult<SpriteDownloadEstimate?>(null) : spriteEstimates(Review.Authorization.Request.GameCommit, token);
@@ -314,6 +371,13 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
         _wantShortcut = createShortcut;
         return RunAsync(async token =>
         {
+            if (SelectedReleaseVersion is not null)
+            {
+                var current = await ReadSelectedReleaseAsync(token).ConfigureAwait(false);
+                if (!current.Manifest.AsSpan().SequenceEqual(review.Authorization.Target.Manifest))
+                    throw new InvalidDataException(UpdaterText.SetupVersionsReleaseChanged);
+            }
+
             if (NeedsWebView)
             {
                 if (!installWebView)
@@ -483,6 +547,26 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
         Status = progress.Phase == TransactionPhase.RollingBack ? UpdaterText.SetupSessionRestoringYourPreviousFiles : UpdaterText.SetupSessionInstallingAndVerifyingFiles;
         Report();
     });
+
+    /// <summary>
+    /// Refreshes an exact target and marks a disappeared or unverifiable version unavailable without selecting a substitute.
+    /// </summary>
+    /// <param name="cancellationToken">The current review or installation token.</param>
+    /// <returns>The freshly verified selected release.</returns>
+    private async Task<ReleaseEvidence> ReadSelectedReleaseAsync(CancellationToken cancellationToken)
+    {
+        var version = SelectedReleaseVersion ?? throw new InvalidOperationException(UpdaterText.SetupVersionsSelectAvailable);
+        try
+        {
+            return await _releaseCatalog.ReadAsync(version, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception error) when (!cancellationToken.IsCancellationRequested && error is IOException or InvalidDataException or InvalidOperationException or System.Net.Http.HttpRequestException or System.Text.Json.JsonException or System.Security.Cryptography.CryptographicException or OperationCanceledException)
+        {
+            var reason = error is InvalidDataException or InvalidOperationException ? error.Message : UpdaterText.SetupVersionsUnavailable;
+            ReleaseChoices = [.. ReleaseChoices.Select(choice => choice.Version == version ? choice with { UnavailableReason = reason } : choice)];
+            throw new IOException(reason, error);
+        }
+    }
 
     /// <summary>
     /// Serializes operations and keeps failures visible without losing committed core state.
