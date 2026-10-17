@@ -33,9 +33,11 @@ public interface ITrackerUpdateHost
 /// <param name="preparation">The signed metadata and transaction workflow.</param>
 /// <param name="downloads">The verified cache whose byte progress is displayed.</param>
 /// <param name="host">The tracker-owned lifecycle adapter.</param>
-public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVerifier verifier, TrackerUpdatePreparation preparation, ReleaseDownloadStore downloads, ITrackerUpdateHost host) : IDisposable
+/// <param name="releaseCatalog">The optional independently verified explicit-version catalog.</param>
+public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVerifier verifier, TrackerUpdatePreparation preparation, ReleaseDownloadStore downloads, ITrackerUpdateHost host, SetupReleaseCatalog? releaseCatalog = null) : IDisposable
 {
     private readonly ReleaseDiscovery _discovery = discovery;
+    private readonly SetupReleaseCatalog _releaseCatalog = releaseCatalog ?? discovery.CreateSetupCatalog();
     private readonly ReleaseVerifier _verifier = verifier;
     private readonly TrackerUpdatePreparation _preparation = preparation;
     private readonly ReleaseDownloadStore _downloads = downloads;
@@ -90,9 +92,24 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
     public TrackerUpdatePhase Phase { get; private set; }
 
     /// <summary>
-    /// Gets the latest authenticated newer version, if one was found.
+    /// Gets the selected authenticated forward version, if its target is currently available for review.
     /// </summary>
     public string? AvailableVersion { get; private set; }
+
+    /// <summary>
+    /// Gets the newest authenticated forward release, independently of the explicit version being reviewed.
+    /// </summary>
+    public string? LatestVersion { get; private set; }
+
+    /// <summary>
+    /// Gets the explicitly selected forward version, or null for the latest stable default.
+    /// </summary>
+    public string? SelectedReleaseVersion { get; private set; }
+
+    /// <summary>
+    /// Gets currently observed choices newer than the installation and no newer than the authenticated latest release.
+    /// </summary>
+    public IReadOnlyList<SetupReleaseChoice> ReleaseChoices { get; private set; } = [];
 
     /// <summary>
     /// Gets the running tracker version shown beside the target release.
@@ -224,6 +241,53 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
         => RunAsync(TrackerUpdatePhase.Checking, token => CheckCoreAsync(true, token));
 
     /// <summary>
+    /// Refreshes forward version availability and discards consent tied to the previous review.
+    /// </summary>
+    /// <returns>The bounded check, availability refresh and selected-target review.</returns>
+    public Task LoadReleaseChoicesAsync() => RunAsync(TrackerUpdatePhase.Checking, async token =>
+    {
+        ResetReview();
+        ReleaseChoices = [.. ReleaseChoices.Select(choice => choice with { UnavailableReason = UpdaterText.SetupVersionsUnavailable })];
+        await CheckCoreAsync(true, token, reviewSelection: false).ConfigureAwait(false);
+        ResetReview();
+        if (Error is not null || NeedsRecovery || LatestVersion is null || CurrentVersion is null)
+        {
+            ReleaseChoices = [];
+            return;
+        }
+
+        var latest = _release;
+        _release = null;
+        AvailableVersion = null;
+        Phase = TrackerUpdatePhase.Checking;
+        Changed?.Invoke();
+        var choices = await _releaseCatalog.ListAsync(token).ConfigureAwait(false);
+        ReleaseChoices = [.. choices.Where(choice => IsForwardChoice(choice.Version))];
+        if (SelectedReleaseVersion is { } selected && !ReleaseChoices.Any(choice => choice.Version == selected && choice.CanInstall))
+            throw new InvalidOperationException(UpdaterText.SetupVersionsSelectAvailable);
+
+        _release = SelectedReleaseVersion is null ? latest : await ReadSelectedReleaseAsync(token).ConfigureAwait(false);
+        AvailableVersion = SelectedReleaseVersion ?? LatestVersion;
+        if (IsOpen && AvailableVersion is not null)
+            await ReviewCoreAsync(token).ConfigureAwait(false);
+    });
+
+    /// <summary>
+    /// Chooses one currently available forward target or restores latest, then obtains a fresh independent review.
+    /// </summary>
+    /// <param name="version">The available forward version, or null for latest stable.</param>
+    /// <returns>The refreshed authenticated target and review, with failures contained in the panel.</returns>
+    public Task SelectReleaseVersionAsync(string? version) => RunAsync(TrackerUpdatePhase.Checking, async token =>
+    {
+        if (NeedsRecovery || version is not null && !ReleaseChoices.Any(choice => choice.Version == version && choice.CanInstall && IsForwardChoice(version)))
+            throw new InvalidOperationException(UpdaterText.SetupVersionsSelectAvailable);
+
+        ResetReview();
+        SelectedReleaseVersion = version;
+        await CheckCoreAsync(true, token).ConfigureAwait(false);
+    });
+
+    /// <summary>
     /// Records consent only for an exact displayed replaceable conflict.
     /// </summary>
     /// <param name="path">The selected installation-relative path.</param>
@@ -265,6 +329,19 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
         string[] approvals = [.. _approvals];
         return RunAsync(TrackerUpdatePhase.Preparing, async token =>
         {
+            if (SelectedReleaseVersion is { } selectedVersion)
+            {
+                var current = await ReadSelectedReleaseAsync(token).ConfigureAwait(false);
+                if (!current.Manifest.AsSpan().SequenceEqual(review.Authorization.Target.Manifest))
+                {
+                    ResetReview();
+                    _release = null;
+                    AvailableVersion = null;
+                    ReleaseChoices = [.. ReleaseChoices.Select(choice => choice.Version == selectedVersion ? choice with { UnavailableReason = UpdaterText.SetupVersionsReleaseChanged } : choice)];
+                    throw new InvalidDataException(UpdaterText.SetupVersionsReleaseChanged);
+                }
+            }
+
             var observation = ObserveSameInstallation(review);
             PreparedIronmonUpdate? prepared = null;
             try
@@ -332,16 +409,18 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
     /// </summary>
     /// <param name="manual">Whether the player explicitly requested a refresh.</param>
     /// <param name="cancellationToken">The session token.</param>
+    /// <param name="reviewSelection">Whether to resolve and review the retained target, rather than only refresh latest before catalog enumeration.</param>
     /// <returns>The check and optional open-panel review.</returns>
-    private async Task CheckCoreAsync(bool manual, CancellationToken cancellationToken)
+    private async Task CheckCoreAsync(bool manual, CancellationToken cancellationToken, bool reviewSelection = true)
     {
-        Review = null;
+        ResetReview();
         Recovery = null;
         AvailableVersion = null;
+        LatestVersion = null;
+        _release = null;
         CheckedAt = null;
         RetryAt = null;
         CurrentGameVersion = null;
-        _approvals.Clear();
         var observation = _host.Observe();
         CurrentVersion = observation.CurrentVersion;
         NeedsRecovery = UpdateTransaction.ReadActiveId(observation.InstallationRoot) is not null;
@@ -371,18 +450,75 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
             if (manifest.Game.PreferredCommit == observation.GameCommit)
                 CurrentGameVersion = manifest.Game.VersionLabel;
             if (ReleaseProtocol.ParseVersion(manifest.IronmonVersion) > ReleaseProtocol.ParseVersion(observation.CurrentVersion))
-                AvailableVersion = manifest.IronmonVersion;
+                LatestVersion = AvailableVersion = manifest.IronmonVersion;
         }
 
         if (_manualCheckPending)
         {
             _manualCheckPending = false;
-            await CheckCoreAsync(true, cancellationToken).ConfigureAwait(false);
+            await CheckCoreAsync(true, cancellationToken, reviewSelection).ConfigureAwait(false);
             return;
         }
 
-        if (IsOpen && AvailableVersion is not null)
+        ReleaseChoices = [.. ReleaseChoices.Where(choice => IsForwardChoice(choice.Version))];
+        if (reviewSelection && SelectedReleaseVersion is { } selected)
+        {
+            _release = null;
+            AvailableVersion = null;
+            if (Error is null)
+            {
+                if (!IsForwardChoice(selected))
+                    throw new InvalidOperationException(UpdaterText.SetupVersionsSelectAvailable);
+
+                _release = await ReadSelectedReleaseAsync(cancellationToken).ConfigureAwait(false);
+                AvailableVersion = selected;
+            }
+        }
+
+        if (reviewSelection && IsOpen && AvailableVersion is not null)
             await ReviewCoreAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Checks the installed-to-latest interval without granting permission to downgrade or use an unobserved future release.
+    /// </summary>
+    /// <param name="version">The canonical candidate version.</param>
+    /// <returns>Whether this version is strictly newer than the installation and at most the authenticated latest.</returns>
+    private bool IsForwardChoice(string version)
+        => CurrentVersion is not null && LatestVersion is not null && ReleaseProtocol.ParseVersion(version) > ReleaseProtocol.ParseVersion(CurrentVersion) && ReleaseProtocol.ParseVersion(version) <= ReleaseProtocol.ParseVersion(LatestVersion);
+
+    /// <summary>
+    /// Reauthenticates the exact explicit target and invalidates its review if current availability cannot be established.
+    /// </summary>
+    /// <param name="cancellationToken">The review or pre-preparation cancellation token.</param>
+    /// <returns>The exact selected signed release; no alternate version is substituted.</returns>
+    private async Task<ReleaseEvidence> ReadSelectedReleaseAsync(CancellationToken cancellationToken)
+    {
+        var version = SelectedReleaseVersion ?? throw new InvalidOperationException(UpdaterText.SetupVersionsSelectAvailable);
+        try
+        {
+            var release = await _releaseCatalog.ReadAsync(version, cancellationToken).ConfigureAwait(false);
+            ReleaseChoices = [.. ReleaseChoices.Select(choice => choice.Version == version ? choice with { UnavailableReason = null } : choice)];
+            return release;
+        }
+        catch (Exception error) when (!cancellationToken.IsCancellationRequested && error is IOException or InvalidDataException or InvalidOperationException or System.Net.Http.HttpRequestException or System.Text.Json.JsonException or System.Security.Cryptography.CryptographicException or OperationCanceledException or FormatException or KeyNotFoundException)
+        {
+            ResetReview();
+            var reason = error is InvalidDataException or InvalidOperationException ? error.Message : UpdaterText.SetupVersionsUnavailable;
+            ReleaseChoices = [.. ReleaseChoices.Select(choice => choice.Version == version ? choice with { UnavailableReason = reason } : choice)];
+            _release = null;
+            AvailableVersion = null;
+            throw new IOException(reason, error);
+        }
+    }
+
+    /// <summary>
+    /// Discards file-specific replacement consent whenever a different target or availability observation is reviewed.
+    /// </summary>
+    private void ResetReview()
+    {
+        Review = null;
+        _approvals.Clear();
     }
 
     /// <summary>

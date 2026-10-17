@@ -33,12 +33,25 @@ targets without supported signed metadata, available signed downloads, or a
 reachable, downloadable preferred game commit. The fixed upstream comparison
 requires the signed commit to remain an ancestor of the supported releases branch.
 Archive availability is checked with HEAD requests, without downloading the game.
-Only explicit historical selection uses this path; the automatic update discovery
-cache and its monotonic watermark are unchanged. Review and installation refresh
+Explicit historical selection remains separate from the automatic discovery
+watermark. Each tracker process makes a fresh conditional latest-release request
+at startup, including after an update relaunch; later automatic calls in that
+process reuse its observation. Server retry limits and authenticated rollback
+protection remain in force. Review and installation refresh
 the exact selected release and availability, and never substitute latest. Existing
 forward-update and game-history rules still apply. Published versioned Setup assets
 keep their existing names and latest-only behavior. Use a release's versioned ZIP
 and matching game for historical versions without verified installer metadata.
+
+Tracker updates default directly to the newest stable release, without requiring
+intermediate versions. Its advanced version panel offers available signed targets
+strictly newer than the installation and no newer than that latest observation.
+Changing or refreshing the selection discards file-replacement consent and obtains
+a new review. An explicit target is reauthenticated again before preparation;
+unavailable or changed metadata blocks staging and handoff without substituting
+another release. A committed update closes the independent window after successful
+tracker launch and administrator-session cleanup. Failed launches, rollback and
+recovery remain visible for the player to resolve.
 
 Installer and tracker release discovery use anonymous HTTPS requests. Their
 configured release repository and assets must be publicly accessible. A private

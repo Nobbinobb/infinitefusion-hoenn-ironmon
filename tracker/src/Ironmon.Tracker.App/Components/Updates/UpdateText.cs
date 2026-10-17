@@ -201,4 +201,44 @@ internal static class UpdateText
     /// </summary>
     internal const string ReviewRecovery = "Updates.ReviewRecovery";
 
+    /// <summary>
+    /// Identifies the optional version-selection section heading.
+    /// </summary>
+    internal const string AdvancedVersions = "Updates.AdvancedVersions";
+
+    /// <summary>
+    /// Identifies the explanation of verified forward update choices.
+    /// </summary>
+    internal const string VersionDescription = "Updates.VersionDescription";
+
+    /// <summary>
+    /// Identifies the accessible update-target group label.
+    /// </summary>
+    internal const string VersionLegend = "Updates.VersionLegend";
+
+    /// <summary>
+    /// Identifies the recommended latest stable update choice.
+    /// </summary>
+    internal const string LatestVersion = "Updates.LatestVersion";
+
+    /// <summary>
+    /// Identifies an explicit Ironmon release choice.
+    /// </summary>
+    internal const string ReleaseVersion = "Updates.ReleaseVersion";
+
+    /// <summary>
+    /// Identifies the matching signed Infinite Fusion version.
+    /// </summary>
+    internal const string ReleaseGameVersion = "Updates.ReleaseGameVersion";
+
+    /// <summary>
+    /// Identifies why a retained selection missing from the current catalog cannot be installed.
+    /// </summary>
+    internal const string SelectedVersionUnavailable = "Updates.SelectedVersionUnavailable";
+
+    /// <summary>
+    /// Identifies the manual release-availability refresh action.
+    /// </summary>
+    internal const string RefreshVersions = "Updates.RefreshVersions";
+
 }

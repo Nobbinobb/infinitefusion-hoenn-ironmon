@@ -1,6 +1,6 @@
-# Installing Ironmon 0.8.13
+# Installing Ironmon 0.8.14
 
-Ironmon `0.8.13` targets Pokemon Infinite Fusion 2 version 6.8.2.
+Ironmon `0.8.14` targets Pokemon Infinite Fusion 2 version 6.8.2.
 It is an independent add-on and does not require committing to or modifying the
 official game's Git repository.
 
@@ -26,8 +26,8 @@ Ironmon, also remove `Data/Scripts/000_Ironmon_Guard.rb`.
 
 | Ironmon version | Infinite Fusion 2 version | Status |
 | --- | --- | --- |
-| 0.8.13 | 6.8.2 | Current |
-| 0.8.0–0.8.12 | 6.8.2 | Legacy |
+| 0.8.14 | 6.8.2 | Current |
+| 0.8.0–0.8.13 | 6.8.2 | Legacy |
 | 0.2.1–0.7.9 | 6.8.0 | Legacy |
 
 The documented release history begins with Ironmon 0.2.1. Historical release
@@ -139,7 +139,8 @@ if your account cannot approve the request itself.
 
 ## Update from the tracker (updater-enabled releases)
 
-The tracker checks for a newer stable Ironmon release at startup. An available
+The tracker performs a fresh check for the newest stable Ironmon release at each
+startup, including when it restarts after an update. An available
 update opens a small dialog over the tracker. Choose **Later** to dismiss it for
 this launch, or **Update** to read the release notes and review any affected local
 files. The dialog appears again on the next launch until you install the update.
@@ -149,6 +150,13 @@ newer release shows your installed versions and the last check time; an unavaila
 check shows an explanation instead. Use the back link to return to your previous
 tracker view without updating.
 
+The default updates directly to the latest version; intermediate releases are not
+required. Expand **Advanced: Ironmon version** in the update view to choose an
+available version between your installed version and the latest. Unavailable
+choices explain why they cannot be selected. **Refresh versions** checks their
+availability again. Changing the target requires a new file review; a selected
+version that disappears or changes stops the update before installation.
+
 Save your game, approve any displayed replaceable file conflicts, and choose
 **Update**. Downloading, verification and preparation then proceed automatically.
 Protected folders can show a Windows administrator-permission prompt during
@@ -156,7 +164,9 @@ preparation. The reviewed release and file approvals are checked again afterward
 The update warns that it will close the game and tracker. After the tracker
 closes, a separate updater window shows installation and recovery progress. The
 tracker cannot display progress while it is closed. Successful updates relaunch
-the tracker, which automatically starts the game. If the official launcher
+the tracker, which automatically starts the game, and the updater window closes
+after a successful launch. Errors, rollback and recovery keep the window open for
+your attention. If the official launcher
 is open, the updater waits and continues automatically after you close it.
 
 Ironmon and its tracker always update together. If that release needs another
@@ -219,9 +229,9 @@ backup cleanup is not implemented. Recovery does not migrate or reset saves.
 2. Keep a backup of saves you care about.
 3. Choose and extract one release archive into the game's root directory—the
    directory containing `InfiniteFusion2.exe`:
-   - `Ironmon-v0.8.13-win-x64.zip` is self-contained and includes the .NET
+   - `Ironmon-v0.8.14-win-x64.zip` is self-contained and includes the .NET
      runtime.
-   - `Ironmon-v0.8.13-win-x64-runtime-required.zip` is smaller and
+   - `Ironmon-v0.8.14-win-x64-runtime-required.zip` is smaller and
      requires the Windows x64 .NET 10 Runtime to be installed.
 4. Allow the archive's `Data` directory to merge with the existing `Data`
    directory. The package installs Ruby files under

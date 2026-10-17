@@ -12,6 +12,7 @@ namespace Ironmon.Updater.Tests;
 public sealed class ReleaseTransportTests
 {
     private const string EntityTag = "\"fixture-release\"";
+    private const string _nextEntityTag = "\"fixture-next-release\"";
     private const string CacheName = "discovery";
     private const string TagPrefix = "v";
     private const string TagSegment = "tag/";
@@ -49,14 +50,14 @@ public sealed class ReleaseTransportTests
 
         using var restarted = new ReleaseDiscovery(http, fixture.Verifier, cache);
         Assert.NotNull((await restarted.CheckAsync()).Release);
-        Assert.Equal(3, handler.Calls);
+        Assert.Equal(6, handler.Calls);
     }
 
     /// <summary>
-    /// Reuses the signed observation across startup calls and processes, and uses ETags for manual checks.
+    /// Revalidates cached signatures through conditional checks on each startup without repeating requests within a process.
     /// </summary>
     [Fact]
-    public async Task SignedCacheAndConditionalChecksAvoidRepeatedStartupTraffic()
+    public async Task EachStartupRevalidatesSignedCacheWithoutRepeatedSameProcessTraffic()
     {
         using var fixture = new SignedReleaseFixture();
         using var workspace = new TestWorkspace();
@@ -90,8 +91,58 @@ public sealed class ReleaseTransportTests
         }
 
         using var restarted = new ReleaseDiscovery(http, fixture.Verifier, workspace.PathFor(CacheName));
-        Assert.NotNull((await restarted.CheckAsync()).Release);
-        Assert.Equal(4, handler.Calls);
+        var refreshed = await restarted.CheckAsync();
+        Assert.NotNull(refreshed.Release);
+        Assert.Null(refreshed.Error);
+        Assert.Same(refreshed, await restarted.CheckAsync());
+        Assert.Equal(5, handler.Calls);
+        Assert.Equal(3, apiCalls);
+    }
+
+    /// <summary>
+    /// Offers a newly published release on the next startup even when the prior signed observation was recorded moments earlier.
+    /// </summary>
+    [Fact]
+    public async Task NewStartupDiscoversNewerReleaseDespiteRecentSignedCache()
+    {
+        using var fixture = new SignedReleaseFixture();
+        using var workspace = new TestWorkspace();
+        var apiCalls = 0;
+        var handler = new Handler(request =>
+        {
+            if (request.RequestUri!.AbsoluteUri == ReleaseProtocol.LatestReleaseUrl)
+            {
+                apiCalls++;
+                if (apiCalls == 1)
+                {
+                    Assert.Empty(request.Headers.IfNoneMatch);
+                }
+                else
+                {
+                    Assert.Equal(EntityTag, Assert.Single(request.Headers.IfNoneMatch).ToString());
+                }
+
+                var response = Body(Api(fixture));
+                response.Headers.ETag = EntityTagHeaderValue.Parse(apiCalls == 1 ? EntityTag : _nextEntityTag);
+                return response;
+            }
+
+            return Body(request.RequestUri.AbsoluteUri.EndsWith(ReleaseProtocol.ManifestName, StringComparison.Ordinal) ? fixture.Evidence.Manifest : fixture.Evidence.Signatures);
+        });
+        using var http = new ReleaseHttpClient(handler, TimeProvider.System);
+        using (var first = new ReleaseDiscovery(http, fixture.Verifier, workspace.PathFor(CacheName)))
+        {
+            var observed = await first.GetLatestAsync(CancellationToken.None);
+            Assert.Equal(ReleaseProtocol.ParseVersion(SignedReleaseFixture.VersionB), observed?.Version);
+        }
+
+        fixture.AdvanceVersion();
+        using var restarted = new ReleaseDiscovery(http, fixture.Verifier, workspace.PathFor(CacheName));
+        var latest = await restarted.GetLatestAsync(CancellationToken.None);
+        Assert.Equal(ReleaseProtocol.ParseVersion(SignedReleaseFixture.VersionC), latest?.Version);
+        Assert.Equal(latest, await restarted.GetLatestAsync(CancellationToken.None));
+        Assert.Equal(2, apiCalls);
+        Assert.Equal(6, handler.Calls);
     }
 
     /// <summary>
@@ -134,20 +185,34 @@ public sealed class ReleaseTransportTests
     }
 
     /// <summary>
-    /// Persists rate-limit timing and honors it even when the user requests another manual check.
+    /// Persists rate-limit timing and honors it across startups and manual checks, including after a successful cached observation.
     /// </summary>
-    [Fact]
-    public async Task RateLimitPreventsRepeatedRequestsAcrossProcesses()
+    /// <param name="cachedRelease">Whether a signed successful observation precedes rate limiting.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RateLimitPreventsRepeatedRequestsAcrossProcesses(bool cachedRelease)
     {
         using var fixture = new SignedReleaseFixture();
         using var workspace = new TestWorkspace();
-        var handler = new Handler(_ =>
+        var rateLimited = !cachedRelease;
+        var handler = new Handler(request =>
         {
+            if (!rateLimited)
+                return request.RequestUri!.AbsoluteUri == ReleaseProtocol.LatestReleaseUrl ? Body(Api(fixture)) : Body(request.RequestUri.AbsoluteUri.EndsWith(ReleaseProtocol.ManifestName, StringComparison.Ordinal) ? fixture.Evidence.Manifest : fixture.Evidence.Signatures);
+
             var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
             response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromMinutes(10));
             return response;
         });
         using var http = new ReleaseHttpClient(handler, TimeProvider.System);
+        if (cachedRelease)
+        {
+            using var first = new ReleaseDiscovery(http, fixture.Verifier, workspace.PathFor(CacheName));
+            Assert.NotNull((await first.CheckAsync()).Release);
+            rateLimited = true;
+        }
+
         using (var discovery = new ReleaseDiscovery(http, fixture.Verifier, workspace.PathFor(CacheName)))
         {
             Assert.NotNull((await discovery.CheckAsync()).RetryAt);
@@ -155,8 +220,46 @@ public sealed class ReleaseTransportTests
         }
 
         using var restarted = new ReleaseDiscovery(http, fixture.Verifier, workspace.PathFor(CacheName));
+        Assert.NotNull((await restarted.CheckAsync()).RetryAt);
         Assert.NotNull((await restarted.CheckAsync(manual: true)).RetryAt);
-        Assert.Equal(1, handler.Calls);
+        Assert.Equal(cachedRelease ? 4 : 1, handler.Calls);
+    }
+
+    /// <summary>
+    /// Preserves the authenticated high-water mark across startups when the feed advertises an older validly signed release.
+    /// </summary>
+    [Fact]
+    public async Task NewStartupRejectsSignedRollbackAndPreservesHighestRelease()
+    {
+        using var fixture = new SignedReleaseFixture();
+        using var workspace = new TestWorkspace();
+        var olderApi = Api(fixture);
+        var olderEvidence = fixture.Evidence;
+        fixture.AdvanceVersion();
+        var rollback = false;
+        var handler = new Handler(request =>
+        {
+            var evidence = rollback ? olderEvidence : fixture.Evidence;
+            return request.RequestUri!.AbsoluteUri == ReleaseProtocol.LatestReleaseUrl ? Body(rollback ? olderApi : Api(fixture)) : Body(request.RequestUri.AbsoluteUri.EndsWith(ReleaseProtocol.ManifestName, StringComparison.Ordinal) ? evidence.Manifest : evidence.Signatures);
+        });
+        using var http = new ReleaseHttpClient(handler, TimeProvider.System);
+        var cache = workspace.PathFor(CacheName);
+        using (var first = new ReleaseDiscovery(http, fixture.Verifier, cache))
+            Assert.Equal(ReleaseProtocol.ParseVersion(SignedReleaseFixture.VersionC), (await first.GetLatestAsync(CancellationToken.None))?.Version);
+
+        var highestGeneration = await File.ReadAllBytesAsync(Path.Combine(cache, CacheFile));
+        rollback = true;
+        using (var restarted = new ReleaseDiscovery(http, fixture.Verifier, cache))
+        {
+            var rejected = await restarted.CheckAsync();
+            Assert.Null(rejected.Release);
+            Assert.Equal(UpdaterText.ReleaseDiscoveryTheReleaseFeedAttemptedToRollBackOrReplace, rejected.Error);
+        }
+
+        Assert.Equal(highestGeneration, await File.ReadAllBytesAsync(Path.Combine(cache, CacheFile)));
+        rollback = false;
+        using var recovered = new ReleaseDiscovery(http, fixture.Verifier, cache);
+        Assert.Equal(ReleaseProtocol.ParseVersion(SignedReleaseFixture.VersionC), (await recovered.GetLatestAsync(CancellationToken.None))?.Version);
     }
 
     /// <summary>

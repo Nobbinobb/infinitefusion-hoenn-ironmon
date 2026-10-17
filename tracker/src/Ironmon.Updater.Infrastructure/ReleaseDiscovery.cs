@@ -26,11 +26,11 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
     private ReleaseDiscoveryResult? _startupObservation;
 
     /// <summary>
-    /// Creates a per-installation discovery client without performing startup I/O or network requests.
+    /// Creates a discovery client without performing startup I/O or network requests.
     /// </summary>
     /// <param name="http">The bounded public release transport.</param>
     /// <param name="verifier">The independently configured updater trust.</param>
-    /// <param name="cacheDirectory">The installation-specific user cache outside the game.</param>
+    /// <param name="cacheDirectory">The caller-owned user cache outside the game.</param>
     /// <param name="clock">The cache and retry clock.</param>
     public ReleaseDiscovery(ReleaseHttpClient http, ReleaseVerifier verifier, string cacheDirectory, TimeProvider? clock = null)
     {
@@ -56,9 +56,9 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
     }
 
     /// <summary>
-    /// Checks once per startup or on explicit manual request while respecting server rate limits and six-hour successful caching.
+    /// Revalidates the authenticated cache once per process startup or on explicit manual request while respecting server rate limits.
     /// </summary>
-    /// <param name="manual">Whether to bypass the successful-check cache.</param>
+    /// <param name="manual">Whether to refresh this process's completed observation.</param>
     /// <param name="cancellationToken">The caller cancellation token.</param>
     /// <returns>A non-fatal availability observation; caller cancellation still propagates.</returns>
     public async Task<ReleaseDiscoveryResult> CheckAsync(bool manual = false, CancellationToken cancellationToken = default)
@@ -80,9 +80,6 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
 
                 if (cache?.RetryAt > now)
                     return Observe(new ReleaseDiscoveryResult(null, now, cache.RetryAt, UpdaterText.ReleaseDiscoveryReleaseCheckingIsTemporarilyRateLimited));
-
-                if (!manual && cache?.Release is not null && cache.CheckedAt <= now && now - cache.CheckedAt < TimeSpan.FromHours(6))
-                    return Observe(new ReleaseDiscoveryResult(cache.Release, cache.CheckedAt, null, null));
 
                 using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 deadline.CancelAfter(TimeSpan.FromSeconds(10));
@@ -169,7 +166,7 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
     }
 
     /// <summary>
-    /// Creates explicit installer selection without sharing the latest-release rollback watermark.
+    /// Creates explicit installation or update selection without sharing the latest-release rollback watermark.
     /// </summary>
     /// <returns>A catalog using the same fixed transport and independently configured trust.</returns>
     public SetupReleaseCatalog CreateSetupCatalog()

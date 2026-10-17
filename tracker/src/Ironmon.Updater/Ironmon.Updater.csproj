@@ -10,6 +10,7 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Ironmon.Setup.Tests" />
     <ProjectReference Include="../Ironmon.Updater.Infrastructure/Ironmon.Updater.Infrastructure.csproj" />
     <ProjectReference Include="../Ironmon.SpriteLibrary/Ironmon.SpriteLibrary.csproj" />
   </ItemGroup>

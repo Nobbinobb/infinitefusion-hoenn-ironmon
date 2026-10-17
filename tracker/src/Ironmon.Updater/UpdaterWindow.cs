@@ -63,6 +63,8 @@ internal sealed class UpdaterWindow : Window
     private async void HandleLoaded(object sender, RoutedEventArgs args)
     {
         _running = true;
+        TransactionResult? result = null;
+        var trackerRestarted = false;
         using var progressScope = new InstallationProgressScope(value => Dispatcher.InvokeAsync(() =>
         {
             if (!_running)
@@ -77,7 +79,6 @@ internal sealed class UpdaterWindow : Window
         }));
         try
         {
-            TransactionResult result;
             if (_arguments.Length == 2 && _arguments[0] == UpdaterHandoff.HandoffArgument)
             {
                 var request = _request ?? await UpdaterHandoff.AcceptAsync(_arguments[1], ValidateHandoffAsync, _cancellation.Token);
@@ -117,20 +118,18 @@ internal sealed class UpdaterWindow : Window
                     try
                     {
                         await TrackerRelaunch.StartAsync(request.InstallationRoot, request.TransactionId);
+                        trackerRestarted = true;
                     }
                     catch (Exception error)
                     {
                         result = result with { RelaunchError = error.Message };
                     }
                 }
-
-                _retryRecovery = result.Phase == TransactionPhase.RecoveryRequired;
             }
             else if (_arguments.Length == 3 && _arguments[0] == UpdaterHandoff.RecoverArgument && Guid.TryParse(_arguments[2], out var id))
             {
                 SetStatus(UpdaterText.UpdaterWindowCheckingTheInterruptedUpdateAndItsRecoveryBackup);
                 result = await RecoverDirectAsync(_arguments[1], id, _cancellation.Token);
-                _retryRecovery = result.Phase == TransactionPhase.RecoveryRequired;
             }
             else
             {
@@ -146,10 +145,12 @@ internal sealed class UpdaterWindow : Window
         }
         catch (OperationCanceledException)
         {
+            result = null;
             await CancelPreparedAsync();
         }
         catch (Exception error)
         {
+            result = null;
             _retryRecovery = _request is not null || _directProtected is not null;
             SetStatus(error.Message);
         }
@@ -164,11 +165,26 @@ internal sealed class UpdaterWindow : Window
                 _directProtected = null;
             }
 
-            _running = false;
-            _progress.IsIndeterminate = false;
-            _action.Content = _retryRecovery && !_cancellation.IsCancellationRequested ? UpdaterText.UpdaterWindowRetryRecovery : UpdaterText.UpdaterWindowClose;
-            _action.IsEnabled = true;
+            CompleteOperation(result, trackerRestarted);
         }
+    }
+
+    /// <summary>
+    /// Ends the native operation after worker cleanup and closes a clean committed update after its tracker has restarted.
+    /// </summary>
+    /// <param name="result">The durable installation outcome, or null after cancellation or an unexpected failure.</param>
+    /// <param name="trackerRestarted">Whether this helper successfully started the tracker for the completed handoff.</param>
+    internal void CompleteOperation(TransactionResult? result, bool trackerRestarted)
+    {
+        if (result is not null)
+            _retryRecovery = result.Phase == TransactionPhase.RecoveryRequired;
+
+        _running = false;
+        _progress.IsIndeterminate = false;
+        _action.Content = _retryRecovery && !_cancellation.IsCancellationRequested ? UpdaterText.UpdaterWindowRetryRecovery : UpdaterText.UpdaterWindowClose;
+        _action.IsEnabled = true;
+        if (trackerRestarted && result is { Phase: TransactionPhase.Committed, Error: null, RelaunchError: null })
+            Close();
     }
 
     /// <summary>
