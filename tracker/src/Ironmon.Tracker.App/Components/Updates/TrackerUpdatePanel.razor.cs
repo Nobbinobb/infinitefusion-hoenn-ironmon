@@ -22,6 +22,8 @@ public partial class TrackerUpdatePanel : IAsyncDisposable
     private int? _dialogHandle;
     private bool _disposed;
     private bool _dialogTransition;
+    private bool _versionsExpanded;
+    private bool _releaseChoicesLoaded;
 
     /// <summary>
     /// Gets the shared signed update workflow and observable review state.
@@ -45,6 +47,38 @@ public partial class TrackerUpdatePanel : IAsyncDisposable
     /// Gets whether the shared dialog shell contains the invitation or full update view.
     /// </summary>
     private bool DialogVisible => Session.IsOpen || Session.ShowStartupPrompt;
+
+    /// <summary>
+    /// Gets a retained explicit selection that disappeared from the refreshed release catalog.
+    /// </summary>
+    private string? MissingSelectedVersion => Session.SelectedReleaseVersion is { } version && !Session.ReleaseChoices.Any(choice => choice.Version == version) ? version : null;
+
+    /// <summary>
+    /// Expands the optional release choices and loads their signed availability only on first use.
+    /// </summary>
+    /// <returns>The completed first catalog request, when the section is opening.</returns>
+    private async Task ToggleReleaseChoicesAsync()
+    {
+        if (Session.IsBusy)
+            return;
+
+        _versionsExpanded = !_versionsExpanded;
+        if (_versionsExpanded && !_releaseChoicesLoaded)
+            await RefreshReleaseChoicesAsync();
+    }
+
+    /// <summary>
+    /// Refreshes the eligible update targets while retaining the user's explicit selection.
+    /// </summary>
+    /// <returns>The completed signed release catalog request.</returns>
+    private async Task RefreshReleaseChoicesAsync()
+    {
+        if (Session.IsBusy)
+            return;
+
+        _releaseChoicesLoaded = true;
+        await Session.LoadReleaseChoicesAsync();
+    }
 
     /// <summary>
     /// Subscribes to progress without delaying the first normal tracker render.

@@ -17,7 +17,9 @@ internal sealed partial class TrackerUpdateTestFixture : ITrackerUpdateHost, IAr
     private const string ZipExtension = ".zip";
     private readonly TestWorkspace _workspace = new();
     private readonly ReleaseHttpClient _http;
-    private readonly ReleaseDiscovery _discovery;
+    private ReleaseDiscovery _discovery;
+    private readonly ReleaseDownloadStore _downloads;
+    private SetupReleaseCatalogFixture? _catalogHistory;
 
     /// <summary>
     /// Gets the same signed discovery service for disposable Setup session fixtures.
@@ -37,7 +39,12 @@ internal sealed partial class TrackerUpdateTestFixture : ITrackerUpdateHost, IAr
     /// <summary>
     /// Gets the production session connected to the recorded host.
     /// </summary>
-    internal TrackerUpdateSession Session { get; }
+    internal TrackerUpdateSession Session { get; private set; }
+
+    /// <summary>
+    /// Gets the separately signed B/C history after history support has been enabled before startup.
+    /// </summary>
+    internal SetupReleaseCatalogFixture CatalogHistory => _catalogHistory ?? throw new InvalidOperationException("Enable signed history before accessing its availability controls.");
 
     /// <summary>
     /// Gets or sets the latest conservative run observation.
@@ -113,13 +120,44 @@ internal sealed partial class TrackerUpdateTestFixture : ITrackerUpdateHost, IAr
         Release = new SignedReleaseFixture(flavor);
         _http = new ReleaseHttpClient(new Handler(this), TimeProvider.System);
         _discovery = new ReleaseDiscovery(_http, Release.Verifier, _workspace.PathFor(DiscoveryDirectory));
-        var downloads = new ReleaseDownloadStore(Release.Cache, this);
+        _downloads = new ReleaseDownloadStore(Release.Cache, this);
         var cache = new MinGitCache(_workspace.PathFor(GitDirectory), this);
         var policy = new RepositoryPolicy(new Uri(ReleaseProtocol.GameRepository), ReleaseProtocol.GameBranch);
         var game = new CombinedGamePreparation(cache, policy, _workspace.PathFor(StagingDirectory));
         var verification = new CombinedGitVerification(cache, policy, _workspace.PathFor(HomeDirectory));
-        Preparation = new TrackerUpdatePreparation(Release.Verifier, downloads, SignedReleaseFixture.Runtime(), game, verification);
-        Session = new TrackerUpdateSession(_discovery, Release.Verifier, Preparation, downloads, this);
+        Preparation = new TrackerUpdatePreparation(Release.Verifier, _downloads, SignedReleaseFixture.Runtime(), game, verification);
+        Session = new TrackerUpdateSession(_discovery, Release.Verifier, Preparation, _downloads, this);
+    }
+
+    /// <summary>
+    /// Replaces the unstarted session with exact signed historical B/C discovery and payloads while keeping the A installation.
+    /// </summary>
+    /// <returns>The complete isolated signed history capture.</returns>
+    internal async Task EnableHistoryAsync()
+    {
+        if (_catalogHistory is not null)
+            return;
+
+        if (Session.IsBusy)
+            throw new InvalidOperationException("Enable signed history before starting update operations.");
+
+        Session.Dispose();
+        _catalogHistory = await SetupReleaseCatalogFixture.CreateAsync(Release);
+        Session = new TrackerUpdateSession(_catalogHistory.Discovery, Release.Verifier, Preparation, _downloads, this, _catalogHistory.Catalog);
+    }
+
+    /// <summary>
+    /// Simulates a new ordinary tracker process while retaining the exact authenticated on-disk discovery cache.
+    /// </summary>
+    internal void RestartSession()
+    {
+        if (Session.IsBusy || _catalogHistory is not null)
+            throw new InvalidOperationException("Restart the ordinary fixture only after its current operation finishes.");
+
+        Session.Dispose();
+        _discovery.Dispose();
+        _discovery = new ReleaseDiscovery(_http, Release.Verifier, _workspace.PathFor(DiscoveryDirectory));
+        Session = new TrackerUpdateSession(_discovery, Release.Verifier, Preparation, _downloads, this);
     }
 
     /// <summary>
@@ -165,7 +203,14 @@ internal sealed partial class TrackerUpdateTestFixture : ITrackerUpdateHost, IAr
                 await gate.Task.WaitAsync(cancellationToken);
         }
 
-        await Release.CopyToAsync(source, destination, maximumBytes, cancellationToken);
+        if (_catalogHistory is { } history)
+        {
+            await history.CopyToAsync(source, destination, maximumBytes, cancellationToken);
+        }
+        else
+        {
+            await Release.CopyToAsync(source, destination, maximumBytes, cancellationToken);
+        }
     }
 
     /// <summary>
@@ -176,6 +221,7 @@ internal sealed partial class TrackerUpdateTestFixture : ITrackerUpdateHost, IAr
         Session.Dispose();
         _discovery.Dispose();
         _http.Dispose();
+        _catalogHistory?.Dispose();
         Release.Dispose();
         _workspace.Dispose();
     }

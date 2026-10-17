@@ -50,6 +50,52 @@
                             </div>
                         </section>
                     }
+                    @if (Session.LatestVersion is not null && !Session.NeedsRecovery)
+                    {
+                        <section class="tracker-update-versions" aria-labelledby="tracker-update-versions-heading">
+                            <button id="tracker-update-versions-heading" type="button" class="tracker-update-version-toggle" aria-expanded="@_versionsExpanded.ToString().ToLowerInvariant()" aria-controls="tracker-update-version-options" disabled="@Session.IsBusy" @onclick="ToggleReleaseChoicesAsync">
+                                <span>@Text[UpdateText.AdvancedVersions]</span><span aria-hidden="true">@(_versionsExpanded ? "−" : "+")</span>
+                            </button>
+                            @if (_versionsExpanded)
+                            {
+                                <div id="tracker-update-version-options" class="tracker-update-version-options">
+                                    <p id="tracker-update-version-description" class="tracker-update-muted">@Text[UpdateText.VersionDescription]</p>
+                                    <fieldset disabled="@Session.IsBusy" aria-describedby="tracker-update-version-description">
+                                        <legend class="tracker-update-sr-only">@Text[UpdateText.VersionLegend]</legend>
+                                        <label class="tracker-update-version-option">
+                                            <input type="radio" name="tracker-update-version" checked="@(Session.SelectedReleaseVersion is null)" @onchange="() => Session.SelectReleaseVersionAsync(null)" />
+                                            <span><strong>@Text[UpdateText.LatestVersion, Session.LatestVersion]</strong></span>
+                                        </label>
+                                        @foreach (var choice in Session.ReleaseChoices.Where(choice => choice.Version != Session.LatestVersion || choice.Version == Session.SelectedReleaseVersion))
+                                        {
+                                            <label @key="choice.Version" class="tracker-update-version-option @(choice.CanInstall ? string.Empty : "tracker-update-version-unavailable")">
+                                                <input type="radio" name="tracker-update-version" checked="@(Session.SelectedReleaseVersion == choice.Version)" disabled="@(!choice.CanInstall)" @onchange="() => Session.SelectReleaseVersionAsync(choice.Version)" />
+                                                <span>
+                                                    <strong>@Text[UpdateText.ReleaseVersion, choice.Version]</strong>
+                                                    @if (choice.GameVersion is { } gameVersion)
+                                                    {
+                                                        <small>@Text[UpdateText.ReleaseGameVersion, gameVersion]</small>
+                                                    }
+                                                    @if (choice.UnavailableReason is { } reason)
+                                                    {
+                                                        <small class="tracker-update-version-reason">@reason</small>
+                                                    }
+                                                </span>
+                                            </label>
+                                        }
+                                        @if (MissingSelectedVersion is { } missingVersion)
+                                        {
+                                            <label class="tracker-update-version-option tracker-update-version-unavailable">
+                                                <input type="radio" name="tracker-update-version" checked disabled />
+                                                <span><strong>@Text[UpdateText.ReleaseVersion, missingVersion]</strong><small class="tracker-update-version-reason">@Text[UpdateText.SelectedVersionUnavailable]</small></span>
+                                            </label>
+                                        }
+                                    </fieldset>
+                                    <button type="button" class="tracker-update-link" disabled="@Session.IsBusy" @onclick="RefreshReleaseChoicesAsync">@Text[UpdateText.RefreshVersions]</button>
+                                </div>
+                            }
+                        </section>
+                    }
                     @if (Session.NeedsRecovery)
                     {
                         <p>@Text[UpdateText.RecoveryDescription]</p>
@@ -104,7 +150,7 @@
                         {
                             <p>@Text[UpdateText.PhasePrefix + Session.Phase]</p>
                         }
-                        else if (Session.CheckedAt is not null && Session.AvailableVersion is null && !Session.NeedsRecovery)
+                        else if (Session.CheckedAt is not null && Session.LatestVersion is null && !Session.NeedsRecovery)
                         {
                             <div class="tracker-update-result tracker-update-result-current">
                                 <span class="tracker-update-result-icon" aria-hidden="true">✓</span>
@@ -112,7 +158,7 @@
                             </div>
                         }
                     </div>
-                    @if (!Session.IsBusy && Session.AvailableVersion is null && !Session.NeedsRecovery)
+                    @if (!Session.IsBusy && Session.LatestVersion is null && !Session.NeedsRecovery)
                     {
                         <section class="tracker-update-installed" aria-labelledby="tracker-update-installed">
                             <h2 id="tracker-update-installed">@Text[UpdateText.Installed]</h2>

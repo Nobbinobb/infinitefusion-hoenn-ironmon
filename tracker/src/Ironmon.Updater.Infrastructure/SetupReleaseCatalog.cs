@@ -7,7 +7,7 @@ using Ironmon.Updater.Core;
 namespace Ironmon.Updater.Infrastructure;
 
 /// <summary>
-/// Reauthenticates explicit installer targets without changing automatic update discovery or its rollback protection.
+/// Reauthenticates explicit installation and update targets independently of automatic latest-release rollback protection.
 /// </summary>
 /// <remarks>
 /// Constructs a catalog restricted to the same public Ironmon and upstream game repositories.

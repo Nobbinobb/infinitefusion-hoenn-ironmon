@@ -32,6 +32,10 @@ also suitable for saving as PDF.
 
 ## Release history
 
+- [Ironmon 0.8.14](releases/RELEASE_NOTES_0.8.14.md): fresh startup update checks,
+  direct updates to the latest version, advanced version selection, and automatic
+  updater window closure after a successful restart.
+
 - [Ironmon 0.8.13](releases/RELEASE_NOTES_0.8.13.md): versionless Setup download
   and verified selection of older Ironmon releases with their matching game.
 

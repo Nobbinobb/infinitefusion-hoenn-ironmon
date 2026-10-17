@@ -28,6 +28,8 @@ public sealed class TrackerUpdatePanelTests
     private const string SessionProperty = "Session";
     private const string JavaScriptProperty = "JavaScript";
     private const string NavigationProperty = "Navigation";
+    private const string ToggleVersions = "ToggleReleaseChoicesAsync";
+    private const string RefreshVersions = "RefreshReleaseChoicesAsync";
 
     /// <summary>
     /// Prevents overlapping render notifications from attaching two focus traps and stranding the tracker as inert.
@@ -153,6 +155,121 @@ public sealed class TrackerUpdatePanelTests
     }
 
     /// <summary>
+    /// Defers historical catalog requests until expansion and shows the exact reviewed intermediate version after selection.
+    /// </summary>
+    [Fact]
+    public async Task AdvancedVersionsLoadOnlyWhenOpenedAndReviewTheSelectedRelease()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        await fixture.EnableHistoryAsync();
+        await fixture.Session.OpenFromSettingsAsync();
+        Assert.Equal(SignedReleaseFixture.VersionC, fixture.Session.LatestVersion);
+        Assert.Null(fixture.Session.SelectedReleaseVersion);
+        await RenderAsync(fixture, async (component, html) =>
+        {
+            Assert.Contains("Advanced: Ironmon version", html());
+            Assert.Contains("aria-expanded=\"false\"", html());
+            Assert.DoesNotContain("Latest stable:", html());
+            Assert.DoesNotContain(fixture.CatalogHistory!.Requests, request => request.AbsoluteUri == ReleaseProtocol.ReleaseListUrl);
+            await InvokeVersionsAsync(component, ToggleVersions);
+            Assert.Contains("aria-expanded=\"true\"", html());
+            Assert.Contains($"Latest stable: {SignedReleaseFixture.VersionC} (recommended)", html());
+            Assert.Contains($"Ironmon {SignedReleaseFixture.VersionB}", html());
+            Assert.Contains("Refresh versions", html());
+            Assert.Contains(fixture.CatalogHistory.Requests, request => request.AbsoluteUri == ReleaseProtocol.ReleaseListUrl);
+            await fixture.Session.SelectReleaseVersionAsync(SignedReleaseFixture.VersionB);
+            Assert.Equal(SignedReleaseFixture.VersionB, fixture.Session.Review!.Manifest.IronmonVersion);
+            Assert.Equal(SignedReleaseFixture.VersionB, fixture.Session.AvailableVersion);
+            Assert.Contains($"<strong>{SignedReleaseFixture.VersionB}</strong>", html());
+            var requestCount = fixture.CatalogHistory.Requests.Count;
+            await InvokeVersionsAsync(component, ToggleVersions);
+            await InvokeVersionsAsync(component, ToggleVersions);
+            Assert.Equal(requestCount, fixture.CatalogHistory.Requests.Count);
+        });
+    }
+
+    /// <summary>
+    /// Keeps unavailable releases visibly disabled with their current signed availability explanations.
+    /// </summary>
+    [Fact]
+    public async Task AdvancedVersionsExplainDisabledChoicesInline()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        await fixture.EnableHistoryAsync();
+        fixture.CatalogHistory!.GameAvailable = false;
+        await fixture.Session.OpenAsync();
+        await RenderAsync(fixture, async (component, html) =>
+        {
+            await InvokeVersionsAsync(component, ToggleVersions);
+            var choice = Assert.Single(fixture.Session.ReleaseChoices, choice => choice.Version == SignedReleaseFixture.VersionB);
+            Assert.False(choice.CanInstall);
+            Assert.Contains("tracker-update-version-unavailable", html());
+            Assert.Contains("tracker-update-version-reason", html());
+            Assert.Contains(System.Net.WebUtility.HtmlEncode(choice.UnavailableReason!), html());
+            Assert.Contains("type=\"radio\" name=\"tracker-update-version\" disabled", html());
+        });
+    }
+
+    /// <summary>
+    /// Disables the version group and refresh action while a real upstream availability check is running.
+    /// </summary>
+    [Fact]
+    public async Task AdvancedVersionControlsAreDisabledDuringCatalogChecks()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        await fixture.EnableHistoryAsync();
+        await fixture.Session.OpenAsync();
+        fixture.CatalogHistory.GameGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        await RenderAsync(fixture, async (component, html) =>
+        {
+            var expanding = InvokeVersionsAsync(component, ToggleVersions);
+            try
+            {
+                await fixture.CatalogHistory.GameStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                Assert.True(fixture.Session.IsBusy);
+                Assert.Contains("<fieldset disabled", html());
+                Assert.Contains("disabled>Refresh versions</button>", html());
+            }
+            finally
+            {
+                fixture.CatalogHistory.GameGate.TrySetResult();
+                await expanding.WaitAsync(TimeSpan.FromSeconds(10));
+            }
+
+            Assert.False(fixture.Session.IsBusy);
+            Assert.DoesNotContain("<fieldset disabled", html());
+        });
+    }
+
+    /// <summary>
+    /// Retains a disappeared explicit choice and still lets the user return to the latest recommended update.
+    /// </summary>
+    [Fact]
+    public async Task MissingSelectedVersionDoesNotClaimTheInstallationIsCurrent()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        await fixture.EnableHistoryAsync();
+        await fixture.Session.OpenAsync();
+        await RenderAsync(fixture, async (component, html) =>
+        {
+            await InvokeVersionsAsync(component, ToggleVersions);
+            await fixture.Session.SelectReleaseVersionAsync(SignedReleaseFixture.VersionB);
+            fixture.CatalogHistory!.HistoricalReleasePublished = false;
+            await InvokeVersionsAsync(component, RefreshVersions);
+            Assert.Null(fixture.Session.AvailableVersion);
+            Assert.Equal(SignedReleaseFixture.VersionC, fixture.Session.LatestVersion);
+            Assert.Equal(SignedReleaseFixture.VersionB, fixture.Session.SelectedReleaseVersion);
+            Assert.Contains("This selected release is no longer available", html());
+            Assert.DoesNotContain("tracker-update-result-current", html());
+            Assert.DoesNotContain("tracker-update-installed\"", html());
+            await fixture.Session.SelectReleaseVersionAsync(null);
+            Assert.Equal(SignedReleaseFixture.VersionC, fixture.Session.Review!.Manifest.IronmonVersion);
+            Assert.True(fixture.Session.CanUpdate);
+            Assert.DoesNotContain("This selected release is no longer available", html());
+        });
+    }
+
+    /// <summary>
     /// Treats Escape on the startup invitation as Later and releases the navigation guard.
     /// </summary>
     [Fact]
@@ -203,12 +320,14 @@ public sealed class TrackerUpdatePanelTests
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(culture);
             CultureInfo.CurrentCulture = CultureInfo.CurrentUICulture;
             using var fixture = new TrackerUpdateTestFixture();
+            await fixture.EnableHistoryAsync();
             await fixture.Session.OpenAsync();
-            await RenderAsync(fixture, (_, html) =>
+            await RenderAsync(fixture, async (component, html) =>
             {
+                await InvokeVersionsAsync(component, ToggleVersions);
                 Assert.DoesNotContain("Updates.", html());
                 Assert.Contains("Update available", html());
-                return Task.CompletedTask;
+                Assert.Contains("Latest stable:", html());
             });
         }
         finally
@@ -242,6 +361,15 @@ public sealed class TrackerUpdatePanelTests
             await check(activator.Component!, view.ToHtmlString);
         });
     }
+
+    /// <summary>
+    /// Invokes a real version-section callback on the renderer's dispatcher.
+    /// </summary>
+    /// <param name="component">The rendered production panel.</param>
+    /// <param name="method">The callback's private method name.</param>
+    /// <returns>The completed production callback.</returns>
+    private static Task InvokeVersionsAsync(TrackerUpdatePanel component, string method)
+        => (Task)typeof(TrackerUpdatePanel).GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(component, null)!;
 
     /// <summary>
     /// Captures the production component for keyboard interaction on the render dispatcher.

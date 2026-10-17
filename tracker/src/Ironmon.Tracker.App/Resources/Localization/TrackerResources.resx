@@ -2231,4 +2231,28 @@
   <data name="Startup.GameLaunch.Close" xml:space="preserve"><value>Close</value></data>
   <data name="Startup.GameLaunch.Failed" xml:space="preserve"><value>The tracker could not find or start Infinite Fusion. You can keep using the tracker and start the game manually from its installation folder.</value></data>
   <data name="Startup.GameLaunch.InstallationNotReady" xml:space="preserve"><value>The game installation requires an update or recovery before it can start automatically. Open Check for updates in Settings to review the installation.</value></data>
+  <data name="Updates.AdvancedVersions" xml:space="preserve">
+    <value>Advanced: Ironmon version</value>
+  </data>
+  <data name="Updates.VersionDescription" xml:space="preserve">
+    <value>Choose a newer Ironmon release. Each available option uses its matching Infinite Fusion version and is checked again before updating.</value>
+  </data>
+  <data name="Updates.VersionLegend" xml:space="preserve">
+    <value>Version to install</value>
+  </data>
+  <data name="Updates.LatestVersion" xml:space="preserve">
+    <value>Latest stable: {0} (recommended)</value>
+  </data>
+  <data name="Updates.ReleaseVersion" xml:space="preserve">
+    <value>Ironmon {0}</value>
+  </data>
+  <data name="Updates.ReleaseGameVersion" xml:space="preserve">
+    <value>Infinite Fusion {0}</value>
+  </data>
+  <data name="Updates.SelectedVersionUnavailable" xml:space="preserve">
+    <value>This selected release is no longer available. Choose another version or the latest stable release.</value>
+  </data>
+  <data name="Updates.RefreshVersions" xml:space="preserve">
+    <value>Refresh versions</value>
+  </data>
 </root>
