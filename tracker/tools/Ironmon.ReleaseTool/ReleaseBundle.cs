@@ -12,14 +12,13 @@ internal static class ReleaseBundle
     internal const string NotesName = "update-notes.md";
     internal const string TrustName = "update-trusted-keys.json";
     internal const string ZipExtension = ".zip";
+    internal const string SetupName = "Ironmon-Setup-win-x64.exe";
     private const string InventoryPrefix = "ironmon-files-v";
     private const string GamePrefix = "game-files-";
     private const string JsonExtension = ".json";
     private const string RuntimeSuffix = "-runtime-required";
     private const string TrackerPrefix = "Ironmon-v";
     private const string WindowsSuffix = "-win-x64";
-    private const string SetupPrefix = "Ironmon-Setup-v";
-    private const string SetupSuffix = "-win-x64.exe";
     private const string HelperPrefix = "Ironmon-Updater-v";
     private const string CoreRuntime = "Ironmon Tracker/coreclr.dll";
 
@@ -31,14 +30,6 @@ internal static class ReleaseBundle
     /// <returns>The immutable artifact basename.</returns>
     internal static string PackageName(string version, string flavor)
         => TrackerPrefix + version + WindowsSuffix + (flavor == ReleaseProtocol.RuntimeRequired ? RuntimeSuffix : string.Empty) + ZipExtension;
-
-    /// <summary>
-    /// Returns the exact disposable Setup artifact name.
-    /// </summary>
-    /// <param name="version">The stable release version.</param>
-    /// <returns>The Setup basename.</returns>
-    internal static string SetupName(string version)
-        => SetupPrefix + version + SetupSuffix;
 
     /// <summary>
     /// Gets the versioned helper archive built from the same reviewed engine source.
@@ -197,7 +188,7 @@ internal static class ReleaseBundle
 
         var helperEntry = HelperArchiveEntry(directory, HelperName(sequence));
         var helper = new ReleaseHelper(HelperVersion(sequence), helperEntry.Bytes, helperEntry.Sha256);
-        assets.Add(Asset(directory, request.Version, SetupName(request.Version), ReleaseProtocol.SetupRole));
+        assets.Add(Asset(directory, request.Version, SetupName, ReleaseProtocol.SetupRole));
         assets.Add(Asset(directory, request.Version, NotesName, ReleaseProtocol.NotesRole));
         ReleaseMetadataFile[] metadataFiles = [.. assets.Where(asset => asset.Role is ReleaseProtocol.InventoryRole or ReleaseProtocol.LegacyRole or ReleaseProtocol.GameInventoryRole or ReleaseProtocol.NotesRole).OrderBy(asset => asset.Name, StringComparer.Ordinal).Select(asset => new ReleaseMetadataFile(asset.Name, File.ReadAllBytes(PlainPaths.Child(directory, asset.Name))))];
         if (request.GameDownloadBytes is { } gameDownloadBytes)

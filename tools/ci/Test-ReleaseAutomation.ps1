@@ -88,7 +88,7 @@ try {
   Assert-Rejected { Assert-ReleaseCandidate $candidate $sha $fingerprint $version } 'A Setup role cannot replace the tracker payload role'
   $changedAsset.role = $originalRole
   $manifest | ConvertTo-Json -Depth 10 | Set-Content "$candidate/candidate.json"
-  $setup = Join-Path $candidate "Ironmon-Setup-v$version-win-x64.exe"
+  $setup = Join-Path $candidate 'Ironmon-Setup-win-x64.exe'
   $setupBytes = [IO.File]::ReadAllBytes($setup)
   Remove-Item -LiteralPath $setup
   Assert-Rejected { Assert-ReleaseCandidate $candidate $sha $fingerprint $version } 'Missing Setup prevents candidate reuse and publication'

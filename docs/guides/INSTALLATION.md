@@ -43,8 +43,24 @@ as unavailable rather than reconstructed with different data.
 
 ## Install with Setup (updater-enabled releases)
 
-These instructions apply when a release provides an `Ironmon-Setup-...exe`
-download. They do not add an installer or updater to older published packages.
+These instructions apply when a release provides an `Ironmon-Setup-win-x64.exe`
+download. Setup defaults to the newest stable Ironmon release and automatically
+selects its matching Infinite Fusion revision. Use Setup from the latest release
+so its installation code is current. Older releases use a versioned Setup filename
+and always select the latest release, without the advanced version selector.
+
+For a specific older release, expand **Advanced: Ironmon version** on the first
+page. Each available choice shows its required game version. Setup authenticates
+the release's signed metadata and checks that the exact game revision remains in
+the supported upstream history and that game and Ironmon downloads are available.
+Missing, unsigned, unsupported or temporarily unverifiable choices are disabled;
+their tooltips explain why. **Refresh versions** checks current availability.
+Review and installation check the chosen release again. If it disappears, Setup
+stops instead of installing a different release. Availability can change while
+Setup is open. Old versions may require a new folder; an existing installation
+cannot be downgraded. Releases without supported signed metadata require their
+versioned ZIP archive and matching game for manual installation. These instructions
+do not add an installer or updater to older published packages.
 
 1. Download and open the release's standalone Setup executable. Setup includes
    its own .NET runtime; you do not need to install or configure Git.

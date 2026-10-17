@@ -26,7 +26,7 @@ public sealed class CompactReleaseTests
         {
             ReleaseBundle.PackageName(ReleaseBundleFixture.VersionA, ReleaseProtocol.SelfContained),
             ReleaseBundle.PackageName(ReleaseBundleFixture.VersionA, ReleaseProtocol.RuntimeRequired),
-            ReleaseBundle.SetupName(ReleaseBundleFixture.VersionA),
+            ReleaseBundle.SetupName,
             ReleaseProtocol.ManifestName,
             ReleaseProtocol.SignatureName,
             ReleaseMetadata.Name

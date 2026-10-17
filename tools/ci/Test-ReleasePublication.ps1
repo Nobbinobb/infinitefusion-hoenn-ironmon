@@ -32,7 +32,8 @@ function gh {
   }
   if ($arguments[0] -eq 'api' -and $arguments[1] -like '*/git/matching-refs/*') { return '[]' }
   if ($arguments[0] -eq 'release' -and $arguments[1] -eq 'create') {
-    $global:IronmonPublicationTestState.fakeRelease = @{tag_name='v1.2.3';target_commitish=$global:IronmonPublicationTestState.commit;draft=$true;assets=@()}
+    $notes = $arguments[[Array]::IndexOf($arguments, '--notes-file') + 1]
+    $global:IronmonPublicationTestState.fakeRelease = @{tag_name='v1.2.3';target_commitish=$global:IronmonPublicationTestState.commit;draft=$true;assets=@();body=[IO.File]::ReadAllText($notes)}
     return
   }
   if ($arguments[0] -eq 'release' -and $arguments[1] -eq 'view') {
@@ -100,7 +101,8 @@ Copy-Item (Join-Path $env:GITHUB_WORKSPACE 'latest.json') -Destination (Join-Pat
   $global:IronmonPublicationTestState.rejectMetadata = $false
   & "$testRoot/tools/Publish-Release.ps1" -UpdateTool fixture-tool -SourceCommit $global:IronmonPublicationTestState.commit
   if ($global:IronmonPublicationTestState.published -ne 1 -or $global:IronmonPublicationTestState.uploads -ne $expectedAssets -or $global:IronmonPublicationTestState.dispatched -ne 0) { throw 'Initial publication did not verify and publish all role-bound assets.' }
-  $expectedNames = @('Ironmon-v1.2.3-win-x64.zip','Ironmon-v1.2.3-win-x64-runtime-required.zip','Ironmon-Setup-v1.2.3-win-x64.exe','update-manifest.json','update-manifest.sig.json','update-data.json','SHA256SUMS.txt')
+  if (-not $global:IronmonPublicationTestState.fakeRelease.body.StartsWith('> [!IMPORTANT]') -or -not $global:IronmonPublicationTestState.fakeRelease.body.Contains('Setup defaults to the newest stable Ironmon release.') -or -not $global:IronmonPublicationTestState.fakeRelease.body.Contains('Advanced version selection')) { throw 'Published release notes must explain Setup version selection before the versioned release notes.' }
+  $expectedNames = @('Ironmon-v1.2.3-win-x64.zip','Ironmon-v1.2.3-win-x64-runtime-required.zip','Ironmon-Setup-win-x64.exe','update-manifest.json','update-manifest.sig.json','update-data.json','SHA256SUMS.txt')
   if ((@($global:IronmonPublicationTestState.fakeRelease.assets.name | Sort-Object) -join "`n") -cne (($expectedNames | Sort-Object) -join "`n")) { throw 'The public release must contain only the three player downloads and four metadata/checksum documents.' }
   $checksumLines = @(Get-Content -LiteralPath "$testRoot/candidate/SHA256SUMS.txt")
   if ($checksumLines.Count -ne 6) { throw 'One checksum list must cover every other published file exactly once.' }

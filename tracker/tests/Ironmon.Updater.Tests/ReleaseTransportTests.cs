@@ -20,6 +20,9 @@ public sealed class ReleaseTransportTests
     private const string AuthorizedCdn = "https://release-assets.githubusercontent.com/fixture/payload";
     private const string ArchiveName = "fixture.zip";
     private const string Missing = "missing";
+    private const string _invalidTagPath = "0.8.11/other";
+    private const string _invalidTagQuery = "0.8.11?other=1";
+    private const string _unapprovedGameBranch = "...main?per_page=1&page=2";
     private const string CacheFile = "discovery.json";
     private const string TruncatedJson = "{";
 
@@ -244,6 +247,22 @@ public sealed class ReleaseTransportTests
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => discovery.CheckAsync(cancellationToken: cancellation.Token));
+    }
+
+    /// <summary>
+    /// Rejects noncanonical installer API parameters and alternate upstream histories before any request is sent.
+    /// </summary>
+    /// <param name="url">The unapproved URL resembling an installer endpoint.</param>
+    [Theory]
+    [InlineData(ReleaseProtocol.ReleaseTagUrl + _invalidTagPath)]
+    [InlineData(ReleaseProtocol.ReleaseTagUrl + _invalidTagQuery)]
+    [InlineData(ReleaseProtocol.GameCompareUrl + SignedReleaseFixture.Commit + _unapprovedGameBranch)]
+    public async Task InstallerEndpointsRemainRestrictedToCanonicalFixedSources(string url)
+    {
+        var handler = new Handler(_ => throw new InvalidOperationException(Missing));
+        using var http = new ReleaseHttpClient(handler, TimeProvider.System);
+        await Assert.ThrowsAsync<InvalidDataException>(() => http.ReadAsync(new Uri(url), 64));
+        Assert.Equal(0, handler.Calls);
     }
 
     /// <summary>

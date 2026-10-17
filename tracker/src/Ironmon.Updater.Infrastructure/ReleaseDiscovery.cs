@@ -143,7 +143,7 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
     /// </summary>
     /// <param name="bytes">The bounded API document.</param>
     /// <returns>The stable version attached to the fixed repository release.</returns>
-    private static string ValidateApi(byte[] bytes)
+    internal static string ValidateApi(byte[] bytes)
     {
         ReleaseJson.Validate(bytes, ReleaseJson.ManifestLimit);
         using var document = JsonDocument.Parse(bytes);
@@ -167,6 +167,13 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
 
         return version;
     }
+
+    /// <summary>
+    /// Creates explicit installer selection without sharing the latest-release rollback watermark.
+    /// </summary>
+    /// <returns>A catalog using the same fixed transport and independently configured trust.</returns>
+    public SetupReleaseCatalog CreateSetupCatalog()
+        => new(_http, _verifier);
 
     /// <summary>
     /// Records the one automatic observation while allowing explicit checks to refresh it.

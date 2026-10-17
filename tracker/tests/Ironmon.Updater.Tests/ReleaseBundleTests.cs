@@ -14,6 +14,7 @@ public sealed class ReleaseBundleTests
     private const string SavePath = "File A.rxdata";
     private const string UnknownPath = "Graphics/player-fixture.png";
     private const string CandidateName = "candidate.json";
+    private const string _legacySetupName = "Ironmon-Setup-v99.0.1-win-x64.exe";
 
     /// <summary>
     /// Rejects internally consistent ownership hashes when required components or trust disagree with the release.
@@ -88,11 +89,23 @@ public sealed class ReleaseBundleTests
     /// <summary>
     /// Carries byte-identical history across upstream changes while selecting the new workflow game commit.
     /// </summary>
-    [Fact]
-    public void HistoryAndGameSelectionFollowReleaseInputs()
+    /// <param name="legacySetup">Whether the preceding release uses the historical versioned Setup filename.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HistoryAndGameSelectionFollowReleaseInputs(bool legacySetup)
     {
         using var fixture = new ReleaseBundleFixture();
         fixture.Build(VersionA);
+        if (legacySetup)
+        {
+            var directory = fixture.DirectoryFor(VersionA);
+            var manifest = ReleaseBundle.Verify(directory, fixture.Trust, false);
+            File.Move(Path.Combine(directory, ReleaseBundle.SetupName), Path.Combine(directory, _legacySetupName));
+            var historical = manifest with { Assets = [.. manifest.Assets.Select(asset => asset.Role == ReleaseProtocol.SetupRole ? asset with { Name = _legacySetupName, Url = ReleaseProtocol.AssetUrl(VersionA, _legacySetupName) } : asset)] };
+            File.WriteAllBytes(Path.Combine(directory, ReleaseProtocol.ManifestName), ReleaseJson.Serialize(historical));
+        }
+
         fixture.Sign(VersionA);
         fixture.Build(VersionB, fixture.DirectoryFor(VersionA), CommitB);
         fixture.Sign(VersionB);
@@ -102,6 +115,8 @@ public sealed class ReleaseBundleTests
         Assert.Equal(new[] { CommitB }, second.Game.SupportedCommits);
         Assert.Equal(2, second.ReleaseSequence);
         Assert.Equal(2, second.AdoptionBaselines.Length);
+        Assert.Equal(legacySetup ? _legacySetupName : ReleaseBundle.SetupName, first.Assets.Single(asset => asset.Role == ReleaseProtocol.SetupRole).Name);
+        Assert.Equal(ReleaseBundle.SetupName, second.Assets.Single(asset => asset.Role == ReleaseProtocol.SetupRole).Name);
         foreach (var asset in first.Assets.Where(asset => asset.Role is ReleaseProtocol.InventoryRole or ReleaseProtocol.GameInventoryRole))
             Assert.Equal(File.ReadAllBytes(Path.Combine(fixture.DirectoryFor(VersionA), asset.Name)), File.ReadAllBytes(Path.Combine(fixture.DirectoryFor(VersionB), asset.Name)));
     }

@@ -44,7 +44,7 @@ try {
   $output = $entry.Open()
   try { $input.CopyTo($output) } finally { $input.Dispose(); $output.Dispose() }
 } finally { $archive.Dispose(); $stream.Dispose() }
-[IO.File]::Copy((Join-Path $stage 'setup/Ironmon Setup.exe'), (Join-Path $release "Ironmon-Setup-v$Version-win-x64.exe"), $false)
+[IO.File]::Copy((Join-Path $stage 'setup/Ironmon Setup.exe'), (Join-Path $release 'Ironmon-Setup-win-x64.exe'), $false)
 foreach ($distribution in 'dist','dist-runtime-required') {
   $tracker = Join-Path $projectRoot "$distribution/Ironmon Tracker/Ironmon Tracker.exe"
   $info = [Diagnostics.FileVersionInfo]::GetVersionInfo($tracker)

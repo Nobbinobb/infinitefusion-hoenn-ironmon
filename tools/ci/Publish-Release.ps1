@@ -48,7 +48,13 @@ if (-not (Test-ReleaseHistoryCurrent $directory $releases $version)) {
 }
 $notes = Join-Path $sourceRoot "docs/releases/RELEASE_NOTES_$version.md"
 $releaseNotes = Join-Path $env:RUNNER_TEMP 'release-notes.md'
+$setupNotice = @'
+> [!IMPORTANT]
+> **Setup defaults to the newest stable Ironmon release.** Advanced version selection offers older signed releases while their matching Infinite Fusion revision and installation downloads remain available. Setup automatically selects the matching game revision. Use Setup from the latest release for installation, or this release's ZIP archives and matching game for a manual installation.
+'@
 @(
+  $setupNotice
+  ''
   (Get-Content -LiteralPath $notes -Raw)
   "`n## Build provenance`n"
   "Approved source: $SourceCommit"

@@ -356,22 +356,121 @@ public sealed class SetupSessionTests
     }
 
     /// <summary>
+    /// Reviews the explicitly selected older release without substituting the newer automatic target.
+    /// </summary>
+    [Fact]
+    public async Task ExplicitVersionControlsReviewAndChangingItDiscardsConsent()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        PrepareGame(fixture);
+        using var versions = await SetupReleaseCatalogFixture.CreateAsync(fixture.Release);
+        using var sprites = new CustomSpriteSheetInstaller();
+        using var session = Create(fixture, sprites, new Platform(), versions);
+        Assert.Null(session.SelectedReleaseVersion);
+        await session.LoadReleaseChoicesAsync();
+        Assert.Null(session.Error);
+        session.SelectReleaseVersion(SignedReleaseFixture.VersionB);
+        await session.ReviewAsync(fixture.Release.Root, null, true);
+        Assert.Null(session.Error);
+        Assert.Equal(SignedReleaseFixture.VersionB, session.Review!.Manifest.IronmonVersion);
+        Assert.DoesNotContain(versions.Requests, uri => uri.AbsoluteUri == ReleaseProtocol.LatestReleaseUrl);
+        session.SelectReleaseVersion(null);
+        Assert.Null(session.Review);
+        Assert.False(session.CanInstall);
+        Assert.Null(session.SelectedReleaseVersion);
+        Assert.Throws<InvalidOperationException>(() => session.SelectReleaseVersion(SetupReleaseCatalogFixture.LegacyVersion));
+    }
+
+    /// <summary>
+    /// Marks a previously listed version disabled when its game disappears before review.
+    /// </summary>
+    [Fact]
+    public async Task GameLossBeforeReviewDisablesTheSelectedVersion()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        PrepareGame(fixture);
+        using var versions = await SetupReleaseCatalogFixture.CreateAsync(fixture.Release);
+        using var sprites = new CustomSpriteSheetInstaller();
+        using var session = Create(fixture, sprites, new Platform(), versions);
+        await session.LoadReleaseChoicesAsync();
+        session.SelectReleaseVersion(SignedReleaseFixture.VersionB);
+        versions.GameAvailable = false;
+        await session.ReviewAsync(fixture.Release.Root, null, true);
+        Assert.Null(session.Review);
+        Assert.Equal(UpdaterText.SetupVersionsGameUnavailable, session.Error);
+        Assert.False(session.ReleaseChoices.Single(choice => choice.Version == SignedReleaseFixture.VersionB).CanInstall);
+        Assert.False(session.CanReviewReleaseSelection);
+        Assert.Empty(versions.Downloads);
+    }
+
+    /// <summary>
+    /// Rechecks selected availability before prerequisites, payload staging or application shutdown can begin.
+    /// </summary>
+    [Fact]
+    public async Task GameLossAfterReviewStopsBeforeAnyInstallationSideEffect()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        PrepareGame(fixture);
+        using var versions = await SetupReleaseCatalogFixture.CreateAsync(fixture.Release);
+        using var sprites = new CustomSpriteSheetInstaller();
+        var platform = new Platform { WebViewAvailable = false };
+        using var session = Create(fixture, sprites, platform, versions);
+        await session.LoadReleaseChoicesAsync();
+        session.SelectReleaseVersion(SignedReleaseFixture.VersionB);
+        await session.ReviewAsync(fixture.Release.Root, null, true);
+        Assert.Null(session.Error);
+        var downloads = versions.Downloads.Count;
+        versions.GameAvailable = false;
+        await session.InstallAsync(false, false, true);
+        Assert.Equal(UpdaterText.SetupVersionsGameUnavailable, session.Error);
+        Assert.False(session.CoreInstalled);
+        Assert.Equal(0, platform.PrerequisiteInstalls);
+        Assert.Equal(0, platform.Closures);
+        Assert.Equal(downloads, versions.Downloads.Count);
+        Assert.Null(UpdateTransaction.ReadActiveId(fixture.Release.Root));
+    }
+
+    /// <summary>
+    /// Rejects newly signed but different release bytes after review before installing any prerequisite.
+    /// </summary>
+    [Fact]
+    public async Task ChangedReleaseAfterReviewRequiresFreshConsent()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        PrepareGame(fixture);
+        using var versions = await SetupReleaseCatalogFixture.CreateAsync(fixture.Release);
+        using var sprites = new CustomSpriteSheetInstaller();
+        var platform = new Platform { WebViewAvailable = false };
+        using var session = Create(fixture, sprites, platform, versions);
+        await session.LoadReleaseChoicesAsync();
+        session.SelectReleaseVersion(SignedReleaseFixture.VersionB);
+        await session.ReviewAsync(fixture.Release.Root, null, true);
+        Assert.Null(session.Error);
+        versions.ReplaceManifest(session.Review!.Manifest with { ReleaseSequence = session.Review.Manifest.ReleaseSequence + 1 });
+        await session.InstallAsync(false, false, true);
+        Assert.Equal(UpdaterText.SetupVersionsReleaseChanged, session.Error);
+        Assert.Equal(0, platform.PrerequisiteInstalls);
+        Assert.Equal(0, platform.Closures);
+    }
+
+    /// <summary>
     /// Composes the real session with fixture-only runtime and process boundaries.
     /// </summary>
     /// <param name="fixture">The signed release and discovery fixture.</param>
     /// <param name="sprites">The shared real sprite service.</param>
     /// <param name="platform">The recorded platform effects.</param>
+    /// <param name="versions">The optional genuine historical-release and availability fixture.</param>
     /// <returns>The production Setup session.</returns>
-    private static SetupSession Create(TrackerUpdateTestFixture fixture, CustomSpriteSheetInstaller sprites, Platform platform)
+    private static SetupSession Create(TrackerUpdateTestFixture fixture, CustomSpriteSheetInstaller sprites, Platform platform, SetupReleaseCatalogFixture? versions = null)
     {
         var release = fixture.Release;
-        var downloads = new ReleaseDownloadStore(release.Cache, fixture);
+        var downloads = new ReleaseDownloadStore(release.Cache, versions is null ? fixture : versions);
         var cache = new MinGitCache(Path.Combine(release.Cache, GitDirectory), fixture);
         var policy = new RepositoryPolicy(new Uri(ReleaseProtocol.GameRepository), ReleaseProtocol.GameBranch);
         var game = new CombinedGamePreparation(cache, policy, Path.Combine(release.Cache, Staging));
         var verification = new CombinedGitVerification(cache, policy, Path.Combine(release.Cache, Home));
         var preparation = new SetupPreparation(release.Verifier, downloads, SignedReleaseFixture.Runtime(), game, verification, _ => SignedReleaseFixture.VersionA);
-        return new SetupSession(fixture.Discovery, preparation, (_, progress) => new UpdateTransaction(new SignedIronmonAuthority(release.Verifier, SignedReleaseFixture.Runtime(), verification), _ => Task.CompletedTask, progress), sprites, platform, downloads);
+        return new SetupSession(versions?.Discovery ?? fixture.Discovery, preparation, (_, progress) => new UpdateTransaction(new SignedIronmonAuthority(release.Verifier, SignedReleaseFixture.Runtime(), verification), _ => Task.CompletedTask, progress), sprites, platform, downloads, releaseCatalog: versions?.Catalog);
     }
 
     /// <summary>

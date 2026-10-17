@@ -23,6 +23,9 @@ public sealed class SetupWindowTests
     private const string PreviewIronmonVersion = "0.8.8";
     private const string LocationImage = "location.png";
     private const string OptionsImage = "options.png";
+    private const string _availableVersionsImage = "versions-available.png";
+    private const string _unavailableVersionsImage = "versions-unavailable.png";
+    private const string _versionLabelPart = "SelectionLabel";
     private const string ExistingOptionsImage = "options-existing.png";
     private const string NewDestination = "new-installation";
     private const string UnavailableImage = "release-unavailable.png";
@@ -335,20 +338,76 @@ public sealed class SetupWindowTests
     }
 
     /// <summary>
+    /// Fits expanded historical selection at minimum size and makes missing game revisions visibly unselectable.
+    /// </summary>
+    /// <param name="missingGame">Whether the upstream game disappeared.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AdvancedVersionsShowAvailabilityAndPreserveLatestDefault(bool missingGame)
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        using var versions = await SetupReleaseCatalogFixture.CreateAsync(fixture.Release);
+        versions.GameAvailable = !missingGame;
+        using var sprites = new CustomSpriteSheetInstaller();
+        using var session = CreateSession(fixture, sprites, versions);
+        await session.LoadReleaseChoicesAsync();
+        Assert.Null(session.Error);
+        RunSta(() =>
+        {
+            var window = new SetupWindow(session);
+            var content = (DependencyObject)window.Content;
+            Descendants<Expander>(content).Single().IsExpanded = true;
+            var selector = Descendants<ComboBox>(content).Single();
+            var items = selector.Items.OfType<ComboBoxItem>().ToArray();
+            Assert.Null(((ComboBoxItem)selector.SelectedItem).Tag);
+            Assert.Null(session.SelectedReleaseVersion);
+            var legacy = items.Single(item => Equals(item.Tag, SetupReleaseCatalogFixture.LegacyVersion));
+            Assert.False(legacy.IsEnabled);
+            Assert.Equal(UpdaterText.SetupVersionsMissingMetadata, legacy.ToolTip);
+            Assert.True(ToolTipService.GetShowOnDisabled(legacy));
+            var historical = items.Single(item => Equals(item.Tag, SignedReleaseFixture.VersionB));
+            Assert.Equal(!missingGame, historical.IsEnabled);
+            if (!missingGame)
+            {
+                selector.SelectedItem = historical;
+                Assert.Equal(SignedReleaseFixture.VersionB, session.SelectedReleaseVersion);
+            }
+
+            Capture(window, missingGame ? _unavailableVersionsImage : _availableVersionsImage);
+            Assert.Equal(missingGame ? UpdaterText.SetupVersionsLatest : UpdaterText.SetupVersionsChoice(SignedReleaseFixture.VersionB, SignedReleaseFixture.VersionA), Assert.IsType<TextBlock>(selector.Template.FindName(_versionLabelPart, selector)).Text);
+            if (!missingGame)
+            {
+                versions.HistoricalReleasePublished = false;
+                Buttons(window).Single(button => Equals(button.Content, UpdaterText.SetupVersionsRefresh)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                PumpUntil(() => !session.IsBusy && !session.CanReviewReleaseSelection);
+                Assert.False(Buttons(window).Single(button => Equals(button.Content, UpdaterText.SetupWindowContinue)).IsEnabled);
+                Descendants<ComboBox>((DependencyObject)window.Content).Single().SelectedIndex = 0;
+                PumpUntil(() => Buttons(window).Single(button => Equals(button.Content, UpdaterText.SetupWindowContinue)).IsEnabled);
+                Assert.True(session.CanReviewReleaseSelection);
+                Assert.True(Buttons(window).Single(button => Equals(button.Content, UpdaterText.SetupWindowContinue)).IsEnabled);
+            }
+
+            window.Close();
+        });
+    }
+
+    /// <summary>
     /// Connects the real installer to signed disposable data and an inert Windows integration boundary.
     /// </summary>
     /// <param name="fixture">The isolated release and filesystem.</param>
     /// <param name="sprites">The shared sprite service, which these render tests do not invoke.</param>
+    /// <param name="versions">The optional signed historical-release and game-availability fixture.</param>
     /// <returns>The installer session used by native interaction tests.</returns>
-    private static SetupSession CreateSession(TrackerUpdateTestFixture fixture, CustomSpriteSheetInstaller sprites)
+    private static SetupSession CreateSession(TrackerUpdateTestFixture fixture, CustomSpriteSheetInstaller sprites, SetupReleaseCatalogFixture? versions = null)
     {
-        var downloads = new ReleaseDownloadStore(fixture.Release.Cache, fixture);
+        var downloads = new ReleaseDownloadStore(fixture.Release.Cache, versions is null ? fixture : versions);
         var cache = new MinGitCache(Path.Combine(fixture.Release.Cache, Git), fixture);
         var policy = new RepositoryPolicy(new Uri(ReleaseProtocol.GameRepository), ReleaseProtocol.GameBranch);
         var game = new CombinedGamePreparation(cache, policy, Path.Combine(fixture.Release.Cache, Staging));
         var verification = new CombinedGitVerification(cache, policy, Path.Combine(fixture.Release.Cache, Home));
         var preparation = new SetupPreparation(fixture.Release.Verifier, downloads, SignedReleaseFixture.Runtime(), game, verification, _ => SignedReleaseFixture.VersionA);
-        return new SetupSession(fixture.Discovery, preparation, (_, progress) => new UpdateTransaction(new SignedIronmonAuthority(fixture.Release.Verifier, SignedReleaseFixture.Runtime(), verification), _ => Task.CompletedTask, progress), sprites, new Platform(), downloads);
+        return new SetupSession(versions?.Discovery ?? fixture.Discovery, preparation, (_, progress) => new UpdateTransaction(new SignedIronmonAuthority(fixture.Release.Verifier, SignedReleaseFixture.Runtime(), verification), _ => Task.CompletedTask, progress), sprites, new Platform(), downloads, releaseCatalog: versions?.Catalog);
     }
 
     /// <summary>
@@ -453,7 +512,7 @@ public sealed class SetupWindowTests
             Assert.True(bounds.Bottom <= footerTop, $"Installer content overlaps its footer: {name}, {child.GetType().Name}, {bounds.Bottom} > {footerTop}.");
         }
 
-        foreach (var button in Buttons(window))
+        foreach (var button in Buttons(window).Where(button => button.IsDescendantOf(content)))
         {
             var bounds = button.TransformToAncestor(content).TransformBounds(new Rect(button.RenderSize));
             Assert.True(bounds.Bottom <= 561 && bounds.Right <= 664, "Installer actions must fit inside the window.");

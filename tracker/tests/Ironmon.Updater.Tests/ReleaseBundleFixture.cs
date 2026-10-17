@@ -98,7 +98,7 @@ internal sealed class ReleaseBundleFixture : IDisposable, IArtifactSource
         using (var entry = zip.CreateEntry(UpdaterHandoff.HelperFileName).Open())
             entry.Write(helper);
 
-        File.WriteAllBytes(Path.Combine(directory, ReleaseBundle.SetupName(version)), Encoding.UTF8.GetBytes(version));
+        File.WriteAllBytes(Path.Combine(directory, ReleaseBundle.SetupName), Encoding.UTF8.GetBytes(version));
         File.WriteAllText(Path.Combine(directory, ReleaseBundle.NotesName), "Synthetic release notes.");
         foreach (var flavor in new[] { ReleaseProtocol.SelfContained, ReleaseProtocol.RuntimeRequired })
         {
