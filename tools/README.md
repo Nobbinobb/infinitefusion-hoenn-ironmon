@@ -6,6 +6,8 @@ and protected signing are documented in
 
 ## Main commands
 
+- `Build-AchievementPack.ps1 -DefinitionPath <private-json>` creates the encrypted
+  achievement asset from private authoring data kept outside the repository.
 - `Build-Distribution.ps1` synchronizes canonical Ruby scripts and runtime data
   into the local game and the ignored player-distribution staging directory.
   Pass `-GameRoot <owned-game-copy>` to target an acceptance installation and
@@ -124,8 +126,8 @@ unrecognized item-evolution consumption, invalid resources, or malformed input
 stop the release. The same pass emits the fingerprinted
 `data/obtainability_source_catalog.json` consumed by the game and embedded in
 the tracker, so runs apply parsed semantic descriptors without rescanning map
-event programming. See `docs/audits/OBTAINABILITY_FOUNDATION_AUDIT.md` for the
-scope and the rules that future obtainability work must preserve.
+event programming. Current obtainability behavior is defined in the
+[mechanics manual](../docs/IRONMON_MECHANICS.html#evolutions-obtainability-prototype).
 
 ## Cosmetic wardrobe audit and tests
 
@@ -133,11 +135,37 @@ scope and the rules that future obtainability work must preserve.
 matching graphics, derives point prices, and compares the previous report.
 The release builder refreshes the audit automatically. Missing optional assets
 are reported without imposing a runtime game-version or seed-compatibility gate.
-See `docs/audits/COSMETIC_WARDROBE_AUDIT.md` for the scope and persistence rules.
+The [mechanics manual](../docs/IRONMON_MECHANICS.html#shared-cosmetic-wardrobe) defines
+wardrobe behavior and persistence.
 
 `Test-Cosmetics.ps1` runs focused bundled-runtime tests with isolated profiles
 and captures wardrobe screenshots under ignored `data/cosmetics-validation`.
 It is also included in `Test-GameRuntime.ps1`.
+
+## Defense presentation data
+
+Edit `resources/DEFENSE_PRESENTATION_RULES.json` for reviewed defense rules.
+From the repository root, refresh and validate them with:
+
+```powershell
+./tools/generation/Generate-Defense-Presentation.ps1
+./tools/Test-DefenseOverview.ps1
+```
+
+The generator resolves public names and move metadata from the bundled game;
+it does not infer new mechanics or re-audit battle handlers. Review changed
+handlers when updating definitions, preserve concealed enemy state, and never
+invoke mutating combat handlers to calculate presentation. Both generation and
+runtime decoding use native JSON parsing rather than Ruby evaluation.
+
+`data/defense_presentation.json` and
+`docs/audits/generated/DEFENSE_PRESENTATION_GENERATED.csv` are generated outputs;
+do not edit them by hand. A `modeled` entry means a definition exists, not that
+every effect is covered. Release builds regenerate and validate both outputs;
+ordinary distribution builds reuse a present catalog. Restart the game after a
+refresh. Provenance hashes and dates do not block gameplay; unreadable data
+disables only the optional overview. See the
+[protocol](../tracker/PROTOCOL.md#defensive-overview) for its privacy contract.
 
 ## Obtainability foundation benchmark
 

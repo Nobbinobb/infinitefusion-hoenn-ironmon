@@ -10,6 +10,9 @@ for maintainers; they do not determine runtime load order.
   policy and engine integration for those domains.
 - `tracker/` contains live transport, completed-run reconstruction, diagnostic
   inspection, area data, and observed metrics.
+- `collection/` reports gameplay events to the tracker.
+- `presentation/Achievements.rb` displays earned notices sent by the tracker.
+- `cosmetics/` contains wardrobe choices and cosmetic persistence.
 - `presentation/` contains overlays, markers, selection UI, and sprite fixes.
 - `diagnostics/` and `compatibility/` contain runtime checks and version-specific
   compatibility behavior.

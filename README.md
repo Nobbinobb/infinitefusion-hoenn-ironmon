@@ -188,12 +188,26 @@ sent merely because a tracker view could hide them visually.
 ## Repository structure
 
 ```text
-src/              Canonical Ironmon Ruby source
-tracker/          Tracker application, libraries, tools, and tests
-tests/runtime/    Bundled-game runtime validation
-tools/            Build, generation, analysis, and validation tools
-docs/             Mechanics, guides, audits, and release notes
-packaging/        Templates copied into player distributions
+.github/workflows/  CI validation and release automation
+src/                Canonical Ironmon Ruby source and load-order manifest
+tracker/
+  src/Tracker/      Tracker app, connection, collection, core, protocol, and seeds
+  src/Setup/        Installer and setup logic
+  src/Updater/      Updater and installation infrastructure
+  src/Shared/       Shared SQLite, sprites, access, and UI libraries
+  tests/            .NET unit, integration, and Windows UI tests
+  tools/            SQL generator and maintainer applications
+tests/
+  runtime/          Bundled-game runtime validation
+  fixtures/         Shared runtime test inputs
+tools/              Build and validation entry points
+  generation/       Runtime data exporters and generation helpers
+  ci/               Hosted CI, release, and cache tooling
+  sprites/          Sprite validation tools
+  analysis/         Randomization and obtainability analysis
+resources/          Reviewed generation inputs and updater trust keys
+data/               Collection catalog and ignored generated runtime data
+docs/               Mechanics manual, guides, release notes, and player README
 ```
 
 Generated runtime catalogs, compiled tracker output, distributions, simulation

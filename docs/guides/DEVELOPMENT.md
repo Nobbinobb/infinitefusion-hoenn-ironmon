@@ -1,189 +1,138 @@
 # Ironmon development and diagnostic access
 
-`tools/Build-Distribution.ps1` synchronizes the canonical Ruby scripts and area
-catalog into both the local game installation and the ignored `dist` staging
-directory. Run it before testing game-script changes in Infinite Fusion.
+Run the commands below from the nested `Ironmon` repository. See
+[AGENTS.md](../../AGENTS.md) for repository boundaries and C# conventions, and
+[the mechanics manual](../IRONMON_MECHANICS.html) for product behavior. Update the
+manual when mechanics change.
 
-Visual Studio rebuilds the tracker; it does not synchronize the Ruby game
-scripts. Automatic game startup finds the game installation above the tracker
-executable, including when the tracker is launched from a worktree's Debug
-output. Before testing changes to controller overrides, run the following from
-that worktree with the actual game installation selected:
+## Game scripts and runtime checks
+
+Visual Studio builds the tracker; it does not synchronize Ruby scripts into the
+game. Synchronize the intended installation before testing game-script changes:
 
 ```powershell
-./tools/Build-Distribution.ps1 -GameRoot 'C:\Program Files (x86)\InfiniteFusion2' -ReuseGeneratedAssets
+./tools/Build-Distribution.ps1 -GameRoot 'C:\Program Files (x86)\InfiniteFusion2'
 ```
 
-Restart a game that was already running when scripts were synchronized. Testing
-an owned runtime copy with `Test-ControlsRuntime.ps1` updates that copy only.
-The Controls tab reports when the connected game lacks override support.
+This also prepares `dist`. Add `-ReuseGeneratedAssets` only when the generated
+assets already match the current inputs. Restart a game that was running during
+synchronization. With a shared installation or worktree, use an owned game copy;
+[updater acceptance](UPDATER_ACCEPTANCE.md#repeatable-local-checks) shows the
+isolated game and distribution paths.
 
-`tools/Test-GameRuntime.ps1` performs the automated bundled-runtime checks. It
-loads the synchronized ordinary scripts, validates area progress, deterministic
-seeded-run import, and diagnostic capability authorization without leaving
-development hooks in the game installation.
-It includes `tools/Test-GameManagementRuntime.ps1`, which isolates save fixtures
-below ignored project data and validates title/menu start and continue, occupied
-save rollback, required tracker sessions, and pause/reconnect behavior.
-It also runs `tools/Test-ControlsRuntime.ps1`, which validates transient tracker
-input ownership, independent field/menu/battle bindings, nested input contexts,
-native fallback, disconnect cleanup, and the crash timeout.
+`tools/Test-GameRuntime.ps1 -GameRoot <game-copy>` runs gameplay regressions in the
+bundled runtime, including game management and controller checks. Individual
+runtime test scripts exercise narrower areas. Ruby changes require bundled-game
+validation; a system Ruby syntax check is supplementary. Automated checks must
+stop only the hidden game process they started.
 
-`tools/Build-TrackerRelease.ps1` also regenerates correctness audits. The
-obtainability foundation audit is one of those release gates and must be
-extended whenever obtainability later depends on a new acquisition source,
-resource consumer, or runtime interception point. Performance measurements are
-kept separate in `tools/analysis/Run-Obtainability-Foundation-Benchmark.ps1` so
-machine-dependent timings remain diagnostic rather than release failures.
-The release pipeline treats an existing versioned ZIP or checksum as immutable
-and fails before generation, testing, publication, or packaging begins. Set a
-new `ApplicationDisplayVersion`, numeric `ApplicationVersion`, and `Version` in
-the tracker project before intentionally creating the next release.
-
-## Git and pull-request workflow
-
-Create each change from an up-to-date `main` branch. Use `feature/<name>` for
-new behavior, `fix/<name>` for defects, `issue/<number>-<name>` when an issue is
-the primary work item, and `release/<version>` for release preparation. Keep
-version numbers unchanged on feature, fix, and issue branches.
-
-Push the working branch and open a pull request into `main`. The repository's
-GitHub Actions workflow first resolves the newest Hoenn `releases` revision and
-online metadata. It restores verified catalogs only when the exact generation
-inputs match, or generates them using `tools/Build-TrackerRelease.ps1
--GenerateOnly`. Ordinary PR tracker jobs consume those catalogs from the same
-run. A release PR uses the full release gate instead of also running the ordinary
-gameplay and tracker jobs; each test suite runs once.
-Generated artifacts remain outside source control. Tracker-only catalogs expire
-after one day; upstream snapshots and release candidates are retained for seven
-days. Each run records the game revision and refreshed online sprite metadata.
-Tests compare generated metadata with those resolved inputs. Publication reuses
-a tested candidate only when its source tree and upstream fingerprint still
-match; otherwise it rebuilds and fully retests the approved source.
-
-After the desired feature and fix pull requests have merged, create a release
-branch from the updated `main`. Add the new release notes and synchronize the
-Ruby version, both tracker project versions, package documentation,
-installation guide, protocol examples, and distribution release-note pointer.
-Open the release pull request before producing packages so the final scope and
-wording can be reviewed.
-
-The release PR runs `tools/Build-TrackerRelease.ps1` on a hosted runner and
-produces both packages, checksums, provenance, and audit evidence. Review the
-candidate and fusion-pool comparison, then merge after all required checks
-pass. Merging the version increase starts automatic publication. A changed
-upstream input triggers a complete rebuild and retest before publication; a
-failed gate publishes nothing. No manual tag or local package upload is needed.
-
-See [Release automation](../RELEASE_AUTOMATION.md) for the current workflow and
-recovery instructions. Local runtime or release validation must use an isolated
-game checkout when another worktree shares the installed game's parent directory.
+`tools/Test-FusionChoices.ps1` checks the fixed fusion inheritance examples,
+spread-label boundaries, concealed choices, and historical stat profiles in the
+bundled runtime. It also renders the native clue panel to
+`data/fusion-choice-validation/fusion-clue.png` for visual inspection.
 
 ## Tracker builds
 
-The tracker solution is `tracker/Ironmon.Tracker.slnx`. Normal Debug and Release
-builds write only to ignored `bin` and `obj` directories. Player publication is
-handled by `tools/Publish-Tracker.ps1`; the complete release pipeline uses
+Use Windows, the .NET 10 SDK, the Windows MAUI workload, and PowerShell 7 for the
+repository scripts. The CI workflows specify the SDK version used for releases.
+Generated catalogs must match the selected game revision. When regeneration is
+needed, `tools/Build-TrackerRelease.ps1 -GenerateOnly` prepares catalogs and the
+distribution using the game checkout above this repository, without packaging a
+release.
+
+```powershell
+dotnet build tracker/Ironmon.Tracker.slnx -c Release -p:UseSharedCompilation=false
+dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj -c Release -p:UseSharedCompilation=false -- xUnit.ParallelizeTestCollections=false
+dotnet test tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj -c Release -r win-x64 -p:UseSharedCompilation=false
+./tools/Test-Updater.ps1 -Configuration Release
+```
+
+`Test-Updater.ps1` includes Setup tests. It provisions the pinned MinGit test
+archive; use `-Offline` only after the archive and restored dependencies exist.
+Normal builds write to ignored `bin` and `obj` directories. Player publication
+uses `tools/Publish-Tracker.ps1`; the full release gate uses
 `tools/Build-TrackerRelease.ps1`.
 
-Source files belong physically to the project that compiles them. Shared code
-uses normal project references: `tracker/tests/Ironmon.TestSupport` owns the
-shared updater, installer, and tracker test fixtures, and
-`tracker/src/Ironmon.Tracker.UI` owns the outline icon component used by both
-desktop apps. Both projects are visible in the solution. Do not add linked
-source files or compile files from another project's directory.
+Source projects live under `tracker/src/Tracker`, `Setup`, `Updater`, and `Shared`.
+Source files belong to the project that compiles them; use project references
+instead of linked files. Shared UI lives in `tracker/src/Shared/Ironmon.Tracker.UI`, and
+shared test fixtures in `tracker/tests/Ironmon.TestSupport`.
 
-Each desktop app owns its icons, splash image, and fonts in its own `Resources`
-directory. Repository-wide catalogs, updater metadata, and cross-language test
-fixtures retain their canonical locations. `EmbeddedResourceInput` and
-`TestDataInput` in project files identify those build inputs;
-`tracker/Directory.Build.targets` copies them into local intermediate resources
-or test output. They are not linked files in Solution Explorer.
+Each desktop app keeps its own icons, splash image, and fonts. Canonical catalogs,
+updater metadata, and cross-language fixtures retain their repository locations.
+`EmbeddedResourceInput` and `TestDataInput` declarations let
+`tracker/Directory.Build.targets` copy them into intermediate resources or test
+output.
 
-The shared sprite viewer reads visual fusion components from presentation
-sidecars beside the tracker's materialized sprites. The game writes these from
-the displayed `PIFSprite` head/body IDs, independently of Ironmon's gameplay
-fusion materials. Parsed metadata caches are bounded; sidecars reference only
-local base sprites, and preparing them never starts a sprite download. They remain usable for
-recorded sprites while disconnected. Missing legacy metadata keeps the original
-species/level line and single-image viewer until the game exports that sprite
-again. Component selection changes the image in the shared viewer without
-opening a second dialog.
+## Fusion-generation compatibility
+
+New profiles use player-fusion version 2: retry the complete reverse roster with
+5-BST tolerance increases, capped at the full target-BST span. Shared components
+remain forbidden. Version 1 stays unchanged for pinned runs and archives; it can
+still reject strength-isolated targets such as seed `1271448503`, fusion `271035`.
+There is no automatic migration. Any future repair of existing data must require
+explicit opt-in and a backup while preserving old implementations and mappings.
+
+## Gameplay collection
+
+The tracker stores collected gameplay event data in a local SQLite database.
+Database queries are authored in C#, and a source generator produces their SQL
+at build time.
+
+Achievement definitions ship in `data/achievements.pack`. Dormant definitions and
+private unlock state are encrypted as a spoiler barrier. The client contains the
+key; this is not an anti-cheat boundary. Rebuild the pack with
+`tools/Build-AchievementPack.ps1 -DefinitionPath <private-json>`; keep plaintext
+definitions outside the public repository. Stable identities preserve unlocks
+when compatible definition packs change. Game notices remain pending until the
+runtime acknowledges their display.
+
+## Git and release workflow
+
+Start from up-to-date `main`. Use `feature/<name>`, `fix/<name>`, `issue/<number>-<name>`,
+or `release/<version>` as appropriate. Keep version numbers unchanged for feature,
+fix, and issue work. Stage, commit, and push only when authorized.
+
+Release preparation synchronizes the Ruby version, tracker version fields,
+release notes, and affected versioned documentation. Existing release artifacts
+are immutable. The workflows select and verify upstream inputs, run the release
+gate, and publish reviewed packages. See [Release automation](../RELEASE_AUTOMATION.md)
+for the workflow and [Updater release production](UPDATER_RELEASES.md) for package
+and signing requirements.
+
+## C# XML documentation
+
+Document every class, constructor, method, and property, including private members
+and tests. Use multiline summaries and remarks; document exact parameter names,
+generic parameters, and non-void returns:
+
+```csharp
+/// <summary>
+/// Finds the display name for one species.
+/// </summary>
+/// <param name="speciesId">The species identifier.</param>
+/// <returns>The localized name, or null when the species is unknown.</returns>
+private string? FindSpeciesName(int speciesId)
+```
+
+Describe units, nullable outcomes, and asynchronous completion where relevant.
+Primary constructors need constructor-specific class remarks and parameter tags.
+Private fields must not have XML comments. Compiler checks do not enforce all
+these requirements; review the actual declarations and project style.
 
 ## Diagnostic access
 
-Normal support and testing should use a signed diagnostic-access token so each
-information capability can be selected individually and optionally expire. The
-player release contains the public verification key, but never the maintainer
-generator or private signing key.
+Debug builds grant local developer access automatically. Release builds require
+signed capabilities; the `--debug` argument requests diagnostics but does not
+grant access by itself.
 
-The generator source lives under `tracker/tools`. Build its Release project and
-run `Ironmon.AG.exe` from the project's Release `bin` output. Keep the external
-PKCS#8 P-256 private key outside the repository, game installation, tracker
-distribution, logs, and source-control staging. Never copy generated
-`.ironmon-access` files into `dist` or `release`.
+Normal support uses signed diagnostic-access tokens with individually selected
+capabilities and optional expiry. The player application contains public
+verification material only. Build `tracker/tools/Ironmon.Tracker.AccessGenerator.App`
+in Release and run `Ironmon.AG.exe` from its output to create tokens.
 
-The generator uses the tracker's dark presentation and shared outline icons.
-Permission groups scroll within the editor without changing the window size;
-development controls remain individually selectable. Load a signing key, choose
-a preset or individual grants, then use **Review & generate** to inspect the
-direct and effective grants before signing. The result dialog supports copying,
-saving, and creating another token while retaining the form choices.
-**Choose file** opens the owned Windows picker directly; cancellation keeps the
-loaded key. Copying flushes token text to the Windows clipboard before reporting
-success, so the token remains available after the generator exits.
-
-### Diagnostic Tools
-
-The header key opens Diagnostic access. Matching Access and Tools labels switch
-between authorization and inspection, with the page title fixed at the center.
-Tools retains its capability-filtered page navigation.
-
-The Tools area uses the shared redesigned Pokémon research views for current
-Pokémon inspection and active-run lookup. Current inspection also retains the
-individual Pokémon's nickname, level, gender, held item, form, identity, and
-active ability-slot details. Pages and controls remain filtered by their
-individual diagnostic capabilities.
-
-Development applies level, ability, move, and evolution selections immediately.
-Use the remove button in an occupied move slot to clear it; the Pokémon must
-retain at least one move and cannot have duplicate moves. Failed actions restore
-the last confirmed player values. Giving an item still requires selecting an
-item, specifying a quantity, and pressing Give. Only available evolution
-directions are shown: one direction fills the section, and the section is
-omitted when neither direction is available.
-
-Run diagnostics groups generator fingerprints and item metadata into expandable
-sections. Protocol uses the same disclosure component for raw state and history;
-copying an entry does not toggle it. Report copy and export include only authorized
-groups, and clearing history leaves the current state and persisted knowledge
-available under their existing grants.
-
-### Archive navigation
-
-The archive run selector lives in the application header. Runs are grouped by
-their recorded save file; its separate Save-file history entry opens cumulative
-save-file totals and direct links to completed runs. History is outside the
-Summary, Areas, and Pokémon tabs, which always describe the selected run.
-Legacy runs without a recorded save file remain accessible.
-
-Selecting a run shows its content directly. The tracker reuses confirmed full
-preparation from the active run or archive instead of starting it again; an
-unprepared selected run prepares in the background. Save-file history stops
-archive preparation, and preparation updates do not navigate away from history.
-
-Pokémon details opened from an area's trainer list return directly to that
-trainer list through the arrow-and-label return link. Normal Pokémon lookup
-retains its Results link and search state. Both views scroll the information
-below the compact identity header and information tabs.
-
-Pokémon identity headers in archive lookup and diagnostics stay compact at every
-scroll position. They retain the species ID, both types, and the obtainability
-icon with an accessible status label. Live inspection also keeps the nickname,
-species name, level, and gender. Names wrap instead of being truncated, and the
-information navigation remains visible below the header.
-
-Pokémon search displays 14 matches per page. Generated Learnset, Egg, TM, and
-Tutor lists display 15 moves per page and reset to the first page when switching
-move categories. Run outcomes use green for won, red for lost, and amber for
-abandoned throughout archive summaries, navigation, and save-file history.
+Keep the external PKCS#8 P-256 private key outside the repository, game
+installation, distribution, and logs. Never place generated `.ironmon-access`
+files in `dist` or `release`. Use the generator's review step before saving a
+token. For access behavior and development controls, see
+[Controlled diagnostic access](../IRONMON_MECHANICS.html#tracker-debug-mode).

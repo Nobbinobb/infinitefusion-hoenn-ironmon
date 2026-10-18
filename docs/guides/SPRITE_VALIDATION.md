@@ -1,95 +1,73 @@
 # Validated custom sprites
 
-Fusion eligibility uses a reviewed image catalogue in addition to the current
-custom index and credits. A listed filename is not proof that the corresponding
-96-by-96 tile contains visible pixels. Only indexed, non-Japeal `main` or `temp`
-variants with visible pixels can admit a fusion into a new generation package.
+New generation packages admit a fusion only when the current custom index,
+credits and reviewed image catalogue agree on a usable variant. The variant must
+be indexed, credited as non-Japeal `main` or `temp`, and contain visible pixels
+in its 96 × 96 tile. A filename alone is insufficient.
 
-## Normal development and PRs
+## Approved input
 
-`resources/sprites/validated_custom_sprites.json.gz` is the approved input. Its
-internal SHA-256 identifies the canonical catalogue contents. Git pins the exact
-compressed file to each source revision. PRs verify this small file and run
-synthetic PNG tests. They do **not** download the sprite sheets.
+[`resources/sprites/validated_custom_sprites.json.gz`](../../resources/sprites/validated_custom_sprites.json.gz)
+is the reviewed catalogue. Its `catalogue_id` identifies the canonical contents;
+Git pins the exact file. Normal PR checks use this file and small synthetic PNG
+fixtures rather than downloading the image library. Current-source generation
+also intersects it with fresh upstream metadata: unreviewed new variants remain
+ineligible, and removed or newly disallowed variants leave newly generated pools.
 
-The existing current-source generation jobs still fetch fresh upstream settings,
-indexes and credits. Generation intersects those inputs with the validated
-variants. New variants absent from the reviewed catalogue remain ineligible.
-Removing a variant from the current index or disallowing it in the credits also
-removes it from a newly generated package.
+## Refresh and review
 
-## Refreshing the catalogue
+1. Run **Validate custom sprite catalogue** in GitHub Actions
+   ([workflow](../../.github/workflows/sprite-validation.yml)). It resolves fresh
+   metadata, scans permitted variants and publishes
+   `validated-custom-sprites-<run ID>` without committing or releasing anything.
+2. Download the resulting catalogue and retain the workflow URL and
+   `upstream-inputs` artifact as provenance. Inspect its `excluded` lists and
+   compare visible variants with the approved catalogue.
+3. Replace the approved file in a reviewed change, then run these commands from
+   the repository root:
 
-Run the separate **Validate custom sprite catalogue** workflow manually. It
-resolves fresh metadata, checks every sheet containing a permitted variant and
-publishes `validated-custom-sprites-<run ID>` as a workflow artifact. It makes no
-commits, release publications, or changes to existing runs.
+   ```powershell
+   python -m pip install -r tools/sprites/requirements.txt
+   python tools/sprites/validate_catalog.py --check resources/sprites/validated_custom_sprites.json.gz
+   python -m unittest discover -s tools/sprites -p 'test_*.py'
+   ```
 
-The first run downloads the required sheets. Subsequent runs keep only small
-per-sheet validation records, SHA-256 hashes and HTTP validators in the Actions
-cache. A `304` reuses the prior pixel inspection; changed sheets are downloaded
-and decoded again. All tile positions are inspected so newly indexed variants
-can be evaluated even when the sheet itself is unchanged. A cache eviction
-requires a complete scan again. If the server provides no usable validators, a
-sheet must be downloaded to establish its current contents.
+4. Regenerate the generation package using the
+   [development workflow](DEVELOPMENT.md#tracker-builds). Review the resulting
+   pool membership changes before release. The pool audit records the catalogue
+   identity and rejected variant count; the builder does not need sprite images.
 
-Only an exact HTTP 404 becomes an unavailable sheet. A 403, exhausted retry,
-invalid image, unexpected layout, or incomplete scan fails the workflow without
-publishing a replacement catalogue. Known 404s are checked again in each explicit
-validation run. Blank tiles and out-of-range tile positions are listed separately.
+The Actions cache holds per-sheet pixel results, hashes and HTTP validators.
+A `304` reuses the previous inspection; changed sheets are decoded again. Every
+tile is inspected, so a newly indexed variant can use cached pixel evidence.
+Cache eviction requires a full scan. Without usable server validators, the sheet
+is downloaded again.
 
-Download the resulting catalogue, inspect its `excluded` lists and the membership
-diff, and replace `resources/sprites/validated_custom_sprites.json.gz` in a normal
-reviewed change. Keep the workflow run and metadata artifact as provenance. Run:
+Only HTTP `404` counts as an unavailable sheet, and each explicit scan retries
+known 404s. Other HTTP failures, exhausted retries, invalid images, unexpected
+layouts or incomplete scans abort publication. Transparent and out-of-range tiles
+are reported separately. Output and cache are replaced only after a complete scan.
 
-```powershell
-python -m pip install -r tools/sprites/requirements.txt
-python tools/sprites/validate_catalog.py --check resources/sprites/validated_custom_sprites.json.gz
-python -m unittest discover -s tools/sprites -p 'test_*.py'
-```
+## Existing runs and image downloads
 
-Rebuild the generation package with the usual release-generation tooling. The
-pool audit records the selected catalogue ID and rejected variant count; the
-release membership audit retains every added and removed fusion. No full image
-library is required by the package builder.
+Eligibility-version-2 profiles pin `generation_custom_sprites.json`, including
+the catalogue identity and permitted variants. Its hash contributes to the
+profile identity. Existing runs retain their pinned profile when the approved
+catalogue changes; eligibility-version-1 profiles retain their original behavior.
+The game and tracker use the pinned variants for rendering. Correcting a stored
+sprite choice changes its appearance, not the Pokémon's randomized identity.
 
-## Profiles, saved runs and rendering
+Validation records a source snapshot. It neither installs player images nor
+makes upstream sheets immutable. Missing local images do not change the pool;
+players can use **Settings > Custom sprite library** as described in
+[installation](INSTALLATION.md#playing-and-sprite-downloads).
 
-New packages use custom-fusion eligibility version 2. The fifth profile component,
-`generation_custom_sprites.json`, records the validated catalogue ID and the
-permitted variants for every retained fusion. Its own SHA-256 is part of the
-generation profile ID. Packaging and profile retention copy it alongside the
-immutable pool, so later catalogue updates cannot alter an existing run.
+## Explicit local snapshots
 
-The game and tracker select variants from that pinned component for those fusions.
-Already stored sprite choices outside that component are corrected to a permitted
-custom variant. This is a cosmetic choice, not a reroll of the Pokémon. Older
-eligibility-version-1 profiles still load their original four components and keep
-their previous pool and sprite-selection behavior. This change does not repair or
-reroll a saved encounter from an older run.
-
-Validation establishes what was present in the inspected source snapshot. It does
-not install images on a player's computer or promise that mutable upstream sheets
-can never change later. Local missing downloads are handled by sprite installation;
-they never change the randomization pool. Keep sprite downloads or synchronization
-available as before.
-
-## Initial catalogue provenance
-
-The first catalogue was produced on 2026-09-06 by a read-only scan of the installed
-custom sheets after the reported full synchronization. It is explicitly a local
-snapshot, not a claim of a successful fresh server download. The catalogue embeds
-the hashes of the index, credits and every inspected sheet. Its identity is
-`11770a11330f9e1b6722dd9fb990cce8ba43e59cd316343b1c71d00805877635`.
-
-The scan covered 2,856 sheets containing permitted variants: 205,298 visible
-variants, 3,154 transparent variants and nine permitted variants on confirmed
-404 sheets. The custom tile `561.505` (Walnoone / `B505H561`) is in the transparent
-list. These are variant counts; a fusion remains eligible when another permitted
-variant is usable. The generated pool contains 174,168 fusions after the existing
-even-size rule.
-
-For an explicit local snapshot, the validator also accepts `--local-sheets` and
-`--known-404`. Every required sheet must exist or have an exact confirmed 404 URL;
-a merely absent local file aborts the scan. This mode reads the chosen directory
-and does not change the game's synchronization metadata or sprite files.
+The [validator](../../tools/sprites/validate_catalog.py) also accepts
+`--local-sheets` and `--known-404`, alongside the required `--index`, `--credits`,
+`--cache` and `--output` arguments. Every required sheet must exist, unless its
+exact URL is listed in the JSON array passed to `--known-404`. A missing local
+file alone is not evidence of an upstream 404 and aborts the scan. This mode does
+not modify the game's sprite files or synchronization metadata. Label its
+provenance as a local snapshot rather than a fresh server scan.

@@ -1,75 +1,34 @@
 # Ironmon documentation
 
-## Mechanics reference
+## Players
 
-- [Ironmon Mechanics Manual](IRONMON_MECHANICS.html): the complete public
-  reference for challenge lifecycle, encounter generation, pivots, randomized
-  Pokemon data, progression safeguards, evolutions, and tracker behavior.
+- [Mechanics manual](IRONMON_MECHANICS.html): the current rules and tracker behavior.
+  Open it directly in a browser; no server is required.
+- [Installation](guides/INSTALLATION.md): installation, updates, recovery, and removal.
+- [Configuration](guides/CONFIGURATION.md): run settings, controls, and reset behavior.
+- [Release notes](releases/): version-specific changes.
 
-The manual is a self-contained HTML document. Open it in any modern browser;
-it does not require a web server or an internet connection. Its print layout is
-also suitable for saving as PDF.
+## Development and releases
 
-## Guides
+- [Development](guides/DEVELOPMENT.md): source workflow, builds, runtime validation,
+  and diagnostic access.
+- [Sprite validation](guides/SPRITE_VALIDATION.md): refreshing and validating sprite inputs.
+- [Release automation](RELEASE_AUTOMATION.md): PR checks, release publication,
+  input refreshes, and workflow recovery.
+- [Updater release production](guides/UPDATER_RELEASES.md): packaging, metadata,
+  history, and signing.
+- [Updater acceptance and recovery](guides/UPDATER_ACCEPTANCE.md): local and
+  clean-Windows checks, plus independent recovery.
+- [Tools index](../tools/README.md): build, generation, and validation commands.
+- [Tracker workspace](../tracker/README.md): project layout and .NET commands.
 
-- [Installation](guides/INSTALLATION.md): install, update, and remove Ironmon.
-- [Updater release production](guides/UPDATER_RELEASES.md): package contracts,
-  generated history and protected signing.
-- [Updater acceptance and recovery](guides/UPDATER_ACCEPTANCE.md): repeatable
-  local and clean-Windows checks, evidence boundaries and independent recovery.
-- [Configuration](guides/CONFIGURATION.md): run settings and reset behavior.
-- [Development and diagnostic access](guides/DEVELOPMENT.md): tracker builds,
-  runtime validation, and capability-limited diagnostic access.
+`DISTRIBUTION_README.md` is the player README copied into release archives.
+Generated audit reports under ignored `audits/generated/` are build evidence,
+not maintained guides. Their generators are listed in the tools index.
 
-## Audits
+## Recent releases
 
-- `audits/generated/` contains the current release-generated area, type coverage,
-  item randomization, obtainability, and defense presentation audits.
-- [Defense audit workflow](audits/WEAKNESS_MODIFIERS_AUDIT.md#defense-catalog-generation)
-  describes the reviewed defense rules and release-generated informational data.
-- `audits/area-content/` contains the detailed area-content snapshot used while
-  the area catalog was designed.
-
-## Release history
-
-- [Ironmon 0.8.15](releases/RELEASE_NOTES_0.8.15.md): update progress and operation
-  text stay visible in the footer beside Cancel while the details scroll.
-
-- [Ironmon 0.8.14](releases/RELEASE_NOTES_0.8.14.md): fresh startup update checks,
-  direct updates to the latest version, advanced version selection, and automatic
-  updater window closure after a successful restart.
-
-- [Ironmon 0.8.13](releases/RELEASE_NOTES_0.8.13.md): versionless Setup download
-  and verified selection of older Ironmon releases with their matching game.
-
-- [Ironmon 0.8.12](releases/RELEASE_NOTES_0.8.12.md): updater fixes for refreshed
-  game downloads, player-file preservation, and relocated installations.
-
-- [Ironmon 0.8.11](releases/RELEASE_NOTES_0.8.11.md): faster tracker preparation
-  and game loading, visual fusion components, and clearer installer progress.
-
-- [Ironmon 0.8.10](releases/RELEASE_NOTES_0.8.10.md): required tracker sessions,
-  tracker-owned run setup, automatic game startup, and wardrobe/update fixes.
-
-- [Ironmon 0.8.9](releases/RELEASE_NOTES_0.8.9.md): keyboard and controller
-  profiles, optional automatic game startup, and installer improvements.
-
-- [Ironmon 0.8.8](releases/RELEASE_NOTES_0.8.8.md): standalone installation,
-  signed tracker updates, optional sprite downloads, and recovery support.
-
-- [Ironmon 0.8.7](releases/RELEASE_NOTES_0.8.7.md): shorter Devon progression,
-  trainer battle details, faster Pokemon lookups, and tracker navigation fixes.
-
-- [Ironmon 0.8.6](releases/RELEASE_NOTES_0.8.6.md): redesigned tracker, trainer
-  and boss parties, validated fusion sprites, gym badge progress, and automated
-  release validation.
-
-- [Ironmon 0.8.5](releases/RELEASE_NOTES_0.8.5.md): wardrobe defaults and
-  filtering, transformed tracker state, encounter-fusion parity, and mechanics
-  manual refinements.
-- [Release notes](releases/): version-specific changes from 0.2.1 onward.
-
-Historical validation records and the former collection of design notes were
-removed after their current behavior was consolidated into the mechanics
-manual. Release notes remain separate because they describe version history
-rather than current mechanics.
+- [0.8.15](releases/RELEASE_NOTES_0.8.15.md): progress stays visible while update details scroll.
+- [0.8.14](releases/RELEASE_NOTES_0.8.14.md): fresh startup checks, update version selection, and automatic updater closure.
+- [0.8.13](releases/RELEASE_NOTES_0.8.13.md): stable Setup filename and verified historical version selection.
+- [0.8.12](releases/RELEASE_NOTES_0.8.12.md): player-file preservation and installation recognition fixes.

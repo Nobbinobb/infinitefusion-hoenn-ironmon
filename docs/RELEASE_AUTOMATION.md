@@ -1,121 +1,93 @@
 # Release automation
 
-This workflow is active on `main`. [Local validation](audits/RELEASE_AUTOMATION_FRESHNESS.md) and the completed [hosted orchestration rehearsal](audits/RELEASE_AUTOMATION_ORCHESTRATION.md) record the implementation evidence. The private rehearsal verified required checks, candidate reuse, draft recovery, immutable publication, automatic full rebuilding after a simulated input change, and ordinary PR recovery. The repository became public on 2026-09-06 after an exposure audit and settings verification.
+The workflows in [`.github/workflows`](../.github/workflows/) validate pull
+requests, build release candidates, and publish approved versions. For package,
+metadata, and signing details, see the [updater release guide](guides/UPDATER_RELEASES.md).
 
-## Maintainer workflow
+## Pull requests
 
-Develop through PRs to `main`. Every opening, update, reopening and ready-for-review event runs checks, including draft PRs. Superseded runs are canceled. There are no path filters that could omit a gameplay or tracker change.
+`tracker-ci.yml` runs for PR openings, updates, reopenings, and ready-for-review
+events, including drafts. Ordinary PRs validate current generated catalogs,
+bundled-game behavior, core tracker tests, and Windows app tests. A version
+increase selects the full release gate and package build instead. `PR validation`
+and `Release readiness` report the outcome of the selected path.
 
-For a release, prepare a PR that increases `Ironmon::VERSION` in `src/foundation/Core.rb`, `ApplicationDisplayVersion` and `Version` in the tracker app project, and its numeric `ApplicationVersion`. Add `docs/releases/RELEASE_NOTES_<version>.md` headed `# Ironmon <version>`, and update example package names in `packaging/README.md` and `docs/guides/INSTALLATION.md`. The distribution builder automatically selects the notes matching the project version, and archive validation checks their content. Branch names and labels do not control publication; the reviewed version increase does. An agent can prepare these source changes locally without generating or committing binary data.
+For a release PR:
 
-The release PR automatically produces both Windows player packages, the installer, updater metadata, checksums, `candidate.json`, and `release-evidence.zip` in its Actions artifacts. Review its notes, full test results and fusion-pool membership comparison before merging. Release notes and versions are validated together. Ordinary PRs still receive the `Release readiness` check, which validates metadata without building packages.
+1. Increase `Ironmon::VERSION` in `src/foundation/Core.rb` and the tracker app's
+   `ApplicationDisplayVersion`, `Version`, and numeric `ApplicationVersion` in
+   `tracker/src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj`.
+2. Add `docs/releases/RELEASE_NOTES_<version>.md` headed `# Ironmon <version>`.
+   Update the player version references in the repository README,
+   `docs/DISTRIBUTION_README.md`, and `docs/guides/INSTALLATION.md`.
+3. Review the candidate artifacts, test results, release notes, and fusion-pool
+   membership comparison before merging. Ordinary feature and fix PRs keep
+   their version unchanged.
 
-Merging a version increase starts publication. The automatic publication workflow is filtered to changes in the tracker app project, which contains the authoritative release versions, so ordinary code and documentation merges do not start it. A project edit without a version increase can still start its read-only version check; the build and publication jobs remain skipped. Manual recovery dispatch remains available. If the reviewed candidate's source tree and upstream fingerprint match the approved merge and current inputs, its bytes are reused. Otherwise, the approved source is regenerated, fully retested and packaged. This includes expired candidates, changed game/sprite inputs, and merge methods that produce a different tree. A failed build publishes nothing.
+Build and publication permissions remain separate. PR code runs with read-only
+tokens; publication checks that its source is an approved commit on `main`.
+Repository rulesets and environment permissions must be checked in GitHub when
+changing release policy; source files do not prove their current configuration.
 
-Immediately before publication, the publisher resolves upstream inputs again. A change dispatches a new full gate automatically, up to three refresh attempts. The publisher never builds with its write token. This implements the user's chosen policy: approved source is automatically rebuilt against newer upstream inputs, with publication only after the checks pass. A continuing upstream update or unavailable server eventually fails visibly instead of publishing stale data. There is necessarily a short interval between this final network check and publication; independent upstream servers cannot participate in an atomic GitHub release transaction.
+## Fresh inputs and reuse
 
-Uploads first go to a draft release. All seven remote asset sizes and SHA-256 digests are verified before it becomes public. Rerunning publication accepts identical existing assets and never overwrites a published artifact or tag. A partial draft can be resumed if its assets match. A failed or conflicting draft remains inspectable.
+Each validation resolves the upstream Hoenn revision and current sprite/settings
+metadata. Downloads are validated by path, format, length, and SHA-256 before
+installation. Refresh failures do not fall back to bundled metadata.
 
-The seven uploaded files are the two Ironmon ZIPs, the installer, `update-manifest.json`, `update-manifest.sig.json`, `update-data.json`, and one `SHA256SUMS.txt`. GitHub additionally displays its automatic source ZIP and tar archive. Build evidence and individual checksum sidecars stay in Actions artifacts. The helper comes from the selected player package; all current and historical inventories share the metadata file, so later releases do not grow the public asset list.
+An exact-input cache reuses only explicitly listed generated catalogs and audit
+reports. Gameplay source, generators, resources, and upstream fingerprints form
+its identity. Restored files must match their manifest hashes. Tests and package
+assembly still run; executables, signing material, and test results are not
+restored from this cache.
 
-The installer is named `Ironmon-Setup-win-x64.exe` without a release version.
-Setup defaults to the newest stable signed Ironmon release and automatically
-selects its matching game revision. Advanced selection offers older signed
-releases only while their required game revision and installation downloads can
-be verified as available. Its first page and installation documentation state this
-behavior. Release notes describe the installer changes without an automatic warning
-banner. Older published versioned Setup downloads
-retain their names and their latest-only selection.
+Candidates carry source and upstream identities. Publication reuses their bytes
+only while those identities and release history still match. Otherwise it
+dispatches a fresh full build of the approved source. A final upstream change
+triggers another full gate, bounded to three refreshes; repeated changes or
+failed checks stop publication.
 
-`New-UpdateMetadata.ps1` also measures a compressed game snapshot for the exact selected game commit using `Get-GameDownloadEstimate.ps1`. The measurement packs that commit, its trees and its blobs from the pipeline's existing checkout, excluding ancestor history and later branch tips. It neither downloads nor publishes a game archive. This is a fresh-install download estimate, not an exact Git transfer size: negotiation, compression and history fallback can change the transfer.
+## Publication and recovery
 
-The producer stores the positive byte count and pinned commit in optional `download-sizes.json` inside `update-data.json`. The existing signed container hash authenticates it; the manifest remains schema 2 and the public asset list stays unchanged. Older readers ignore the extra container entry. New readers validate its document type, schema and pinned commit, and display the estimate only for that exact selected game commit. Older releases without this entry remain installable and show an unavailable estimate. This informational value never authorizes content or changes download limits. Tracker sizes still come from signed archive sizes; Setup reads the current WebView2 standalone package's headers separately.
+Merging a version increase starts `release.yml`. Its push filter watches the
+tracker app project; the version check skips publication when no increase is
+present. Manual dispatch accepts an approved 40-character `source_commit` and
+normally uses `refresh_attempt` of `0`.
 
-## Daily sprite download estimates
+The publisher verifies remote sizes and SHA-256 digests for all seven assets
+before publishing the draft: both player ZIPs, Setup, `update-manifest.json`,
+`update-manifest.sig.json`, `update-data.json`, and `SHA256SUMS.txt`.
 
-The measurement job passes its short-lived, read-only `github.token` through `IRONMON_SPRITE_GITHUB_TOKEN`. Only the tool's exact latest-release and upstream sprite-revision API GET requests receive that credential. Raw manifests, release assets, redirects and sprite hosts receive no token; automatic redirects are disabled. Player applications remain unauthenticated, and local measurement works without this optional environment variable. No personal token or additional repository secret is needed.
+The installer is named `Ironmon-Setup-win-x64.exe`; its binary retains the build
+version. It defaults to latest, with verified historical selection as described
+in the installation guide. Older versioned Setup downloads retain latest-only
+behavior.
 
-Rate-limited API lookups honor `Retry-After` and exhausted-quota reset times, with at most three attempts per lookup and a shared two-minute wait budget. A retry that would exceed that budget fails immediately with the server's retry time. The previous published feed remains available. These waits happen outside the short HTTP request deadlines and remain cancellable; they do not alter the daily schedule or signature verification.
+Identical retries and matching partial drafts can resume. Conflicting tags,
+assets, or published versions require investigation; published files are never
+overwritten. A newer published version also prevents an older version becoming
+latest.
 
-`sprite-size-estimates.yml` runs daily at 03:37 UTC and supports manual dispatch on `main`. `Ironmon.SpriteSizeTool` first authenticates the current published release, then obtains the manifests for each supported game commit. It also resolves one immutable snapshot of the current `pif-downloadables` sprite lists, so additions between game releases are included. It combines and deduplicates those lists with the same parser and official endpoints used by `CustomSpriteSheetInstaller`. Four concurrent workers make unconditional HEAD requests and count positive PNG `Content-Length` values. No sprite image bodies are read. HTTP 404/410 sheets are counted separately as unavailable; missing lengths, unexpected content, network errors or exhausted retries fail the scan rather than publishing a partial total.
+For failed PR checks, fix the source and rerun validation. For a transient
+post-merge failure, rerun the failed workflow or dispatch `Publish release` on
+`main` for the approved commit. An expired or changed candidate is rebuilt
+automatically. Keep native installer/update acceptance separate from automated
+checks; use the [acceptance guide](guides/UPDATER_ACCEPTANCE.md).
 
-Only a complete scan is uploaded as a small Actions artifact. A separate publication job has repository write permission and atomically advances the dedicated `sprite-size-estimates` data branch, containing only `estimates.json`. It neither changes `main` nor edits versioned release assets. An unexpected file on that branch or a concurrent non-fast-forward update stops publication. A failed scan or publication leaves the last complete feed available. The JSON records the measurement time, upstream sprite-manifest commit, and available bytes and sheet counts per supported game commit.
+## Scheduled maintenance
 
-Setup reads the fixed public raw-file URL with a five-second timeout and a 64 KiB cap. This feed is informational and is not signed release authority: it cannot change download URLs, installed content or consent. Missing, invalid, future-dated, unmatched or more-than-seven-day-old data simply leaves the sprite estimate unavailable. A valid full-library estimate contributes to **Estimated download** when sprites are selected; its timestamp and cache caveat appear on hover. The union may include sheets newer than a particular local manifest, so this remains an estimate. GitHub scheduling can be delayed, and the job only becomes active after the workflow is merged into the default branch. [GitHub schedule behavior](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
+- `upstream-watch.yml` checks every six hours and refreshes eligible open PR
+  validation when upstream inputs change or expire. Old runs outside GitHub's
+  rerun window need a branch update. Forks retain contributor approval.
+- `sprite-size-estimates.yml` measures sprite download sizes daily and writes
+  the informational `sprite-size-estimates` data branch. Failed scans retain
+  the previous complete estimate; they do not modify versioned release assets.
 
-Local validation can run `dotnet run --project tracker/tools/Ironmon.SpriteSizeTool -c Release -p:UpdaterMetadataOnly=true -- game <output.json> <40-character-game-commit>` to measure without publishing. The daily workflow uses the same metadata-only build: signature verification and release discovery do not need the generated installation baselines. PR CI also builds this configuration in a clean Linux checkout before any game data is generated. `Test-SpriteDownloadEstimates.ps1` exercises publication only against a fake GitHub API. The ordinary updater test build compiles the measurement tool and tests shared target selection, header-only reads, failed scans, feed bounds/freshness and selected totals.
+Schedules can be delayed. Each publication independently checks fresh inputs.
+Workflow files define artifact retention; download evidence before it expires.
+Use an isolated game checkout for local release validation: the default build
+commands synchronize scripts into the parent game installation.
 
-## Validation and fresh inputs
-
-`Tracker CI` downloads the newest commit on the upstream Hoenn `releases` branch, using an immutable commit only for that run. It obtains the current settings, custom sprite list and base sprite list from one resolved `pif-downloadables` commit, plus current online credits. Destination paths, content formats, file lengths and SHA-256 hashes are checked before installation. Refresh failure never falls back to bundled lists. Each generator starts a new game process and sprite cache.
-
-`Tracker CI` owns both PR paths. Ordinary PRs run the runtime and generation-profile suites, defense tests, encounter/fusion probe, core tracker tests and Windows app tests. Release PRs run the full `Build-TrackerRelease.ps1` gate and package builds instead of repeating those suites in a second workflow. `PR validation` and `Release readiness` both require the selected path to succeed.
-
-Generated catalogs and audits use an exact-input cache. Its identity includes the upstream game commit and downloaded metadata fingerprint, canonical Ruby source, generator and sprite tooling, resources, distribution/generation scripts and defense rules. The displayed Ironmon release version is excluded because these gameplay components have their own schema versions; packages and versioned ownership metadata are always rebuilt. Tracker-only and test-only edits reuse the same generated data. Generator, gameplay, sprite, settings or game changes invalidate it. No fallback prefix keys are used.
-
-Only an explicit list of generated data files is cached. A manifest checks every path, size and SHA-256 before any file is restored. Generated catalogs are saved before later tests or packaging, so a failure there does not discard expensive successful generation. Tests, executables, release history and signing material are not cached. A reused release candidate carries a separate generation artifact bound by its manifest hash; after verifying it against the approved candidate and current inputs, the main build seeds the cache for later PRs. A missing cache regenerates data; a corrupt or mismatched cache fails visibly.
-
-The cached data includes move-power presentation and battle move color sheets. Distribution assembly still copies current scripts, documentation and version metadata, but uses these verified assets without regenerating them. Runtime test helpers receive `-SkipBuild` after preparation; running a helper directly still prepares its distribution by default. The area extraction inside runtime validation remains because it also checks installed scripts and executes area-progress regressions.
-
-Only the explicitly bounded generation recipe in the release script enters the cache identity; changes to its test or publication orchestration do not invalidate catalogs. Generated game inventories and restored history are validated before the full release tests begin. Game inventories retain protected upstream files as evidence of the complete commit, without authorizing their replacement or requiring the player's copies to remain unchanged.
-
-The `Check upstream updates` workflow resolves inputs every six hours and reruns current open same-repository PR checks when the fingerprint changes or their snapshot expires. It does not build on unchanged inputs. The scheduler reads downloaded manifests as data and never executes PR source with write permissions. Scheduling is best effort; GitHub can delay scheduled jobs. New PR iterations and every publication independently resolve current inputs.
-
-GitHub only permits rerunning workflows for 30 days after the original run. If a dormant PR exceeds that window and needs refreshed validation, the watcher fails with the affected PR identified; a branch update starts a new run. Fork PRs retain GitHub's contributor approval flow and are not automatically rerun by the privileged scheduler. Maintainers can approve/rerun them, and merged release source always receives the fresh production gate. [Rerun limits](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs), [fork approval](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/approve-runs-from-forks).
-
-Input snapshots and release candidates are retained for seven days; tracker-only catalogs for one day; failure diagnostics for three days. A rerun replaces same-run artifacts so scheduled refresh does not fail on an existing artifact name. Actions evidence contains the game revision, metadata URLs/hashes, generation profile, audits, test reports, and complete added/removed fusion identities. The release notes link to the verified workflow and retain the approved source and upstream fingerprints. Upstream may legitimately remove entries: reductions are exposed for review, not silently discarded or forced to be monotonic.
-
-## Active repository settings
-
-The authenticated administrator applied and read back these settings on 2026-09-06. The existing active **Main PR and checks** ruleset (`22278807`) is unchanged: PR-only changes, strict up-to-date checks, required **Core tracker tests** / **Windows app tests**, and no force pushes or deletion. No bypass was added.
-
-1. **Release automation required checks** (`22383153`) is **active**. It requires **PR validation** and **Release readiness**, both bound to GitHub Actions integration `15368`, with strict up-to-date enforcement and no bypass. Together with the tracker checks, all four checks are required before merge. Do not enable merge queue without adding its `merge_group` triggers and validation policy.
-2. The **release** environment exists with a custom deployment policy permitting only the **main branch** (not a similarly named tag). It has no second reviewer gate. Write permissions remain scoped to publication (`contents: write`, `actions: write`) and upstream scheduling (`actions: write`). The default workflow token is read-only and cannot approve PR reviews; no personal access token or external signing secret is required.
-3. **Immutable release tags** (`22383151`) is **active** for `refs/tags/v*`: updates and deletions are prohibited, creation is allowed, and there are no bypass actors. The equivalent rehearsal rule was verified by creating a disposable tag and receiving GitHub rule violations for both update and deletion attempts.
-4. Adoption is complete. Scheduled/manual workflows are available on the default branch. Automatic PR merging remains disabled. Release PRs publish automatically only after acceptance. The separate additional-reviewer rule remains disabled for the solo-maintainer workflow.
-
-The release environment permits only the main branch, has no second reviewer gate, and disallows administrator bypass. Repository-wide full-length Action SHA pinning is enabled. Native release immutability is also enabled: attach every file to a draft before publishing. The private rehearsal verified successful draft publication and rejection of a later attachment rename.
-
-The workflow uses GitHub's documented `queue: max` for production release/publication concurrency, avoiding replacement of a waiting release. Up to 100 runs can wait; excess requests fail/cancel visibly. The locally available March 2026 actionlint does not yet recognize that property, so local lint ignores only that specific diagnostic and validates everything else. [Concurrency queues](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#concurrency).
-
-## Public repository protections
-
-Keep fork PRs on `pull_request` with read-only tokens and no secrets; never run their code from a privileged `pull_request_target` job. Require approval for outside contributors' workflow runs. Retain protected-main review and required tests, especially for workflow and release-tool changes. Actions here are pinned to verified commit SHAs; review updates to these pins. [GitHub security guidance](https://docs.github.com/en/actions/reference/security/secure-use).
-
-The Actions fork approval policy is **all external contributors** (`all_external_contributors`), verified after the public transition. Secret scanning, push protection, Dependabot alerts and security-fix PRs, and private vulnerability reporting are enabled. These settings preserve the existing testing policy.
-
-The public-transition audit inspected Git history, historic ZIPs, release downloads, and Actions records; automated scans found no exposed secrets in that material. Historic ZIPs remain in source history. Obsolete 0.8.4 binary downloads without the bundled notices present in 0.8.5 were withdrawn, and temporary Actions artifacts were cleared after local backups. The 0.8.4 source tag and current 0.8.5 downloads were preserved. The license covers original Ironmon work; upstream game downloads remain runner inputs and are not uploaded as game archives. [Visibility changes](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility).
-
-## Costs and iteration planning
-
-The measurements and estimates below describe the earlier separate CI and candidate workflows, before test consolidation and generated-data caching. They are historical comparisons, not timings or cost forecasts for the current workflow.
-
-As verified on 2026-09-06, standard Windows runners cost $0.010 per actual minute and standard Linux runners $0.006 above included usage. Standard hosted execution is free for public repositories. Larger runners and storage have separate billing. [Runner pricing](https://docs.github.com/en/billing/reference/actions-runner-pricing), [Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
-
-The new hosted rehearsal measured **22 rounded Windows minutes** for PR validation (12 generation/gameplay, 3 core tests, 7 Windows app tests), plus two Linux minutes. Including the ordinary release-metadata/readiness jobs adds two Linux minutes: **$0.244 per ordinary PR iteration**. The full release candidate used another 20 Windows minutes and one input-resolution Linux minute, making a release PR iteration **$0.450**. These are rounded job-duration measurements from the first passing runs, not an invoice or a guarantee of future duration. Account allowance/storage figures in the handoff are a prior authenticated snapshot, not a fresh billing check.
-
-Budget all initial runs, fixes, base updates, retries and upstream-triggered reruns. Draft updates also count. The earlier planning range of **20–24 Windows + 4 Linux minutes per ordinary PR iteration** ($0.224–$0.264) contains the new measurement; retain headroom for slower runners and changing test coverage.
-
-The following scenarios use the measured ordinary iteration cost and assume ten release PRs/month with **two candidate iterations each**, reuse at merge (two Windows + three Linux minutes, about $0.038 each), a one-minute six-hour watcher ($0.72 per 30 days), one Linux planning minute for every ordinary PR merge, and a full 3,000-minute allowance valued at the handoff's observed $18 Windows/Linux equivalent. Other account usage, storage, taxes and longer jobs are extra. The controlled fresh post-merge rebuild used 24 Windows + three Linux minutes ($0.258); each extra development rerun adds the ordinary iteration cost.
-
-| Development PRs | Iterations per PR | Estimated monthly execution value | Estimated execution overage |
-| ---: | ---: | ---: | ---: |
-| 10 | 3 | $17.48 | $0 |
-| 20 | 4 | $29.74 | $11.74 |
-| 30 | 5 | $46.88 | $28.88 |
-| 40 | 5 | $59.14 | $41.14 |
-
-The formula is `(development PRs × iterations + 20) × $0.244 + 20 × $0.206 + $1.10 + development PRs × $0.006`. Convert value to allowance-equivalent minutes by dividing by $0.006, using the handoff's observed accounting rather than the obsolete 2× Windows multiplier. The estimates intentionally include repeated development and release PR iterations. Remeasure rounded job times after adoption and compare with the authenticated billing dashboard.
-
-The testing policy should remain intact. If public release is already intended and this iteration volume is realistic, moving public after the history/permissions review is a reasonable way to remove standard-runner execution cost. Staying private is also feasible if the measured overage is acceptable.
-
-## Recovery
-
-- Failed PR checks: fix the source; the next update retests current inputs and reuses generated data when its exact dependencies still match.
-- Expired or changed candidate at merge: handled automatically by a full rebuild.
-- Failed post-merge gate or temporary network error: rerun the failed workflow, or dispatch `Publish release` on main with the approved 40-character source commit and refresh attempt `0`.
-- Upstream changes during the build: automatic full-gate retry, bounded to three refreshes; repeated changes leave a failure for inspection.
-- Existing conflicting tag, draft or asset: investigate the discrepancy. Never delete or overwrite a real release to force automation through.
-- A newer release is already published: publication rejects an older version instead of making it latest.
-
-Offline automation verification: `tools/ci/Test-ReleaseAutomation.ps1`, `tools/ci/Test-ReleasePublication.ps1`, and `tools/ci/Test-UpstreamWatch.ps1`. These use temporary fixtures and do not contact GitHub or mutate a repository. They cover input/candidate integrity, draft recovery, immutable publication, bounded refresh dispatch, and scheduler decisions including moved heads, forks, expired artifacts, date cultures and GitHub's rerun window. Local game validation must use an isolated game checkout: this worktree shares its parent directory with the user's installed game, so invoking the release builder directly here would install into that game.
+Offline workflow checks are `tools/ci/Test-ReleaseAutomation.ps1`,
+`Test-ReleasePublication.ps1`, `Test-UpstreamWatch.ps1`, and
+`Test-GenerationCache.ps1`. They use temporary fixtures and do not publish.
