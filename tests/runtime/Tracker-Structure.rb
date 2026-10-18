@@ -39,6 +39,198 @@ module IronmonTrackerStructureRuntimeTests
     }
   end
 
+  def self.validate_resumable_obtainability_sources(recipe)
+    service = Ironmon::TrackerObtainabilityService.new(recipe, true)
+    service.send(:prepare_generators)
+    def service.cooperative_checkpoint
+      Fiber.yield
+    end
+    table = ["GameData::Encounter", 1, 0, :Land,
+             Array.new(40) { [10, :BULBASAUR, 2, 3] }]
+    fusion_constructions = 0
+    trace = TracePoint.new(:call) do |event|
+      fusion_constructions += 1 if
+        event.defined_class == GameData::FusedSpecies &&
+        event.method_id == :initialize
+    end
+    trace.enable
+    worker = Fiber.new { service.send(:process_encounter_table, table) }
+    worker.resume
+    assert(
+      worker.alive? && service.instance_variable_get(:@plans).empty?,
+      "encounter preparation returns a frame before mapping the whole table"
+    )
+    worker.resume while worker.alive?
+    service.singleton_class.send(:remove_method, :cooperative_checkpoint)
+    service.send(:apply_caught_fusion_transformations)
+    proofs = service.send(:tracker_base_proof_snapshot)
+    trace.disable
+    assert(
+      fusion_constructions == 0 && !proofs.empty? &&
+        !service.instance_variable_get(:@direct_caught_fusions).empty?,
+      "encounter proofs and caught-fusion expansion use compact identities " +
+        "without constructing complete fusion species"
+    )
+    uninterrupted = Ironmon::TrackerObtainabilityService.new(recipe, true)
+    uninterrupted.send(:prepare_generators)
+    uninterrupted.send(:process_encounter_table, table)
+    uninterrupted.send(:apply_caught_fusion_transformations)
+    assert(
+      proofs == uninterrupted.send(:tracker_base_proof_snapshot),
+      "resuming an encounter table preserves every proof and unfusion constraint"
+    )
+  ensure
+    trace.disable if trace
+  end
+
+  def self.validate_resumable_tracker_results(recipe)
+    service = Ironmon::TrackerObtainabilityService.new(recipe, true)
+    service.instance_variable_set(:@phase, :player_fusions)
+    service.instance_variable_set(:@material_pairs_prepared, true)
+    service.instance_variable_set(:@fusion_closure_job_id, "resumable-result")
+    service.instance_variable_set(:@derived_caught_fusions_expanded, true)
+    service.instance_variable_set(:@derived_caught_fusion_numbers, [])
+    maximum = (NB_POKEMON * NB_POKEMON) + NB_POKEMON
+    result = {
+      "job_id" => "resumable-result", "direct_encounter_fusion_ids" => [],
+      "obtainable_fusion_words" => Array.new((maximum >> 5) + 1, 0),
+      "packed_executable_evolution_edges" => ["\x01" * 100_000].pack("m0"),
+      "obtainable_count" => 0
+    }
+    service.queue_fusion_closure_result(result)
+    assert(
+      !service.complete? && service.scheduled_advance_allowed? &&
+        service.snapshot["fusion_closure_work"].nil? &&
+        service.instance_variable_get(:@tracker_executable_evolution_edges).nil?,
+      "tracker replies queue decoding without publishing partial results or " +
+        "requesting the same native job again"
+    )
+    def service.cooperative_checkpoint
+      Fiber.yield
+    end
+    service.advance_for_milliseconds(6.0)
+    assert(!service.complete?, "a large native result yields before completing")
+    service.advance_for_milliseconds(6.0) until service.complete?
+    assert(
+      service.instance_variable_get(:@tracker_executable_evolution_edges) ==
+        (1..100_000).to_a && !service.scheduled_advance_allowed?,
+      "resumable base64 and delta decoding preserves every edge and stops " +
+        "scheduling work on completion"
+    )
+    service.singleton_class.send(:remove_method, :cooperative_checkpoint)
+    service.queue_fusion_closure_result(result.merge(
+      "packed_executable_evolution_edges" => "!"
+    ))
+    error = begin
+      service.advance_for_milliseconds(6.0)
+      nil
+    rescue Ironmon::TrackerLookupError => failure
+      failure
+    end
+    assert(
+      error && service.instance_variable_get(:@phase) == :failed &&
+        !service.scheduled_advance_allowed?,
+      "a malformed deferred result fails once instead of retrying every frame"
+    )
+
+    numbers = [[1, 2], [3, 4], [5, 6], [7, 8]].map do |body, head|
+      (body * NB_POKEMON) + head
+    end
+    mapper = Ironmon::PlayerFusionMapper.new(
+      recipe["seed"], numbers, {}, {},
+      Ironmon.base_stat_generator_for(recipe["seed"], recipe["base_stat_source_fingerprint"])
+    )
+    imported = nil
+    worker = Fiber.new do
+      imported = mapper.import_prepared_pairing(
+        [numbers.pack("V*")].pack("m0"), proc { Fiber.yield }
+      )
+    end
+    worker.resume
+    assert(
+      worker.alive? && !mapper.pairing_prepared?,
+      "native pairing validation yields before installing any assignment"
+    )
+    worker.resume while worker.alive?
+    assert(
+      imported && mapper.pairing_prepared? &&
+        mapper.instance_variable_get(:@paired_result_ids) == {
+          numbers[0] => numbers[1], numbers[1] => numbers[0],
+          numbers[2] => numbers[3], numbers[3] => numbers[2]
+        },
+      "resuming native pairing validation preserves the exact reverse table"
+    )
+    waiting = Ironmon::TrackerObtainabilityService.new(recipe, true)
+    waiting.instance_variable_set(:@phase, :complete)
+    assignment = { "version" => -1 }
+    waiting.queue_player_fusion_pairing(assignment)
+    waiting.queue_player_fusion_pairing({ "version" => -2 })
+    assert(
+      !waiting.complete? && waiting.scheduled_advance_allowed? &&
+        waiting.instance_variable_get(:@pending_player_fusion_pairing).equal?(assignment),
+      "pending gameplay pairing keeps completed services runnable and " +
+        "duplicate polling preserves the in-flight import"
+    )
+    waiting.advance_for_milliseconds(6.0)
+    assert(
+      waiting.complete? && !waiting.player_fusion_pairing_pending? &&
+        !waiting.scheduled_advance_allowed?,
+      "rejected pairing data releases the pending import without installing it"
+    )
+  end
+
+  def self.validate_resumable_predecessor_index
+    original = Ironmon.fusion_predecessor_index
+    document = original.instance_variable_get(:@document)
+    catalog = Ironmon.evolution_catalog
+    pool = Ironmon.custom_fusion_pool
+    info = Ironmon.custom_fusion_pool_info
+    validated = nil
+    worker = Fiber.new do
+      validated = Ironmon::FusionPredecessorIndex.new(
+        document, catalog, pool, info, proc { Fiber.yield }
+      )
+    end
+    worker.resume
+    assert(worker.alive? && !validated, "full-pool index validation yields before publishing")
+    worker.resume while worker.alive?
+    fallback = Ironmon::FusionPredecessorIndex.new(document, catalog, pool.dup, info)
+    assert(
+      validated.packed_pool_membership.b == original.packed_pool_membership.b &&
+        fallback.packed_pool_membership.b == original.packed_pool_membership.b &&
+        Ironmon.custom_fusion_pool_service.packed_pool_membership.b ==
+          original.packed_pool_membership.b,
+      "numeric pool reuse and uncached validation produce identical membership"
+    )
+    restored = Marshal.load(Marshal.dump(document))
+    restored["packed_pool_membership"] =
+      restored["packed_pool_membership"].dup.force_encoding(Encoding::UTF_8)
+    restored_index = Ironmon::FusionPredecessorIndex.new(restored, catalog, pool, info)
+    assert(
+      restored_index.packed_pool_membership.b == original.packed_pool_membership.b,
+      "restored binary membership remains valid when Marshal retains a UTF-8 label"
+    )
+    profile_id = Ironmon.current_generation_profile_id
+    Ironmon.with_generation_profile(profile_id) do
+      component = Ironmon::CustomFusionComponent.decode(File.binread(
+        Ironmon.generation_profile_component_path("custom_fusion_pool", profile_id)
+      ))
+      assert(
+        Ironmon.custom_fusion_pool_service.packed_pool_membership.b == component["bitset"].b,
+        "retained pinned-pool membership matches the validated profile component"
+      )
+    end
+    malformed = begin
+      Ironmon::FusionPredecessorIndex.new(
+        document.merge("packed_pool_membership" => ""), catalog, pool, info
+      )
+      nil
+    rescue Ironmon::FusionPredecessorIndexError => error
+      error
+    end
+    assert(malformed, "numeric pool reuse still rejects mismatched membership")
+  end
+
   def self.validate_grouped_derived_encounter_pairs(recipe)
     Ironmon.tracker_area_catalog.each do |area|
       metadata = Ironmon.tracker_area_encounter_metadata(area, recipe)
@@ -1012,6 +1204,9 @@ module IronmonTrackerStructureRuntimeTests
     deferred_obtainability = Ironmon::TrackerObtainabilityService.new(
       obtainability_recipe, true
     )
+    validate_resumable_obtainability_sources(obtainability_recipe)
+    validate_resumable_tracker_results(obtainability_recipe)
+    validate_resumable_predecessor_index
     assert(
       deferred_obtainability.instance_variable_get(:@configuration).nil? &&
         deferred_obtainability.snapshot["phase"] == "prepare_generators",

@@ -92,6 +92,31 @@ module IronmonRunTransitionRuntimeTests
         Ironmon.tracker_active_run_preparation_ready?,
         "background preparation becomes ready after the first rival victory"
       )
+      $PokemonGlobal.ironmon_seed = 44
+      profile_id = Ironmon.current_generation_profile_id
+      $PokemonGlobal.ironmon_run_ledger["current_attempt"]["generation_profile_id"] = profile_id
+      $PokemonGlobal.ironmon_generation_profile_id = profile_id
+      Ironmon.evolution_metadata_values.each do |key, value|
+        setter = "#{key}="
+        $PokemonGlobal.send(setter, value) if $PokemonGlobal.respond_to?(setter)
+      end
+      $PokemonGlobal.ironmon_base_stat_generator_version =
+        Ironmon::BaseStatGenerator::SCHEMA_VERSION
+      original_index = Ironmon.method(:fusion_predecessor_index)
+      begin
+        Ironmon.define_singleton_method(:fusion_predecessor_index) do |*_arguments|
+          raise "The rival notification must not build the predecessor index"
+        end
+        assignments = Ironmon.tracker_active_fusion_assignment_recipe
+        assert(
+          assignments && assignments["packed_custom_fusion_pool"] ==
+            [Ironmon.custom_fusion_pool_service.packed_pool_membership].pack("m0"),
+          "the first-rival recipe reuses exact starter-pool membership " +
+            "without constructing a full predecessor index"
+        )
+      ensure
+        Ironmon.define_singleton_method(:fusion_predecessor_index, original_index)
+      end
       $PokemonGlobal.ironmon_tracker_active_run_preparation_run_id = "old-run"
       assert(
         !Ironmon.tracker_active_run_preparation_ready?,

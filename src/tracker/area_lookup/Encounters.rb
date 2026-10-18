@@ -47,7 +47,7 @@ module Ironmon
     return GameData::Encounter
   end
 
-  def self.tracker_area_encounter_catalog(recipe)
+  def self.tracker_area_encounter_catalog(recipe, work_checkpoint = nil)
     mode = tracker_area_encounter_mode(recipe)
     @tracker_area_encounter_catalogs ||= {}
     return @tracker_area_encounter_catalogs[mode.name] if
@@ -64,6 +64,7 @@ module Ironmon
       data.types.each do |encounter_type, entries|
         total = entries.inject(0) { |sum, entry| sum + entry[0].to_i }
         entries.each_with_index do |entry, slot|
+          work_checkpoint.call if work_checkpoint
           probability = total > 0 ? entry[0].to_f * 100.0 / total : 0.0
           catalog[data.map] << {
             "entry_id" => "encounter:#{data.map}:#{data.version}:#{encounter_type}:#{slot + 1}",
@@ -86,8 +87,8 @@ module Ironmon
     return catalog
   end
 
-  def self.tracker_area_encounter_metadata(area, recipe)
-    catalog = tracker_area_encounter_catalog(recipe)
+  def self.tracker_area_encounter_metadata(area, recipe, work_checkpoint = nil)
+    catalog = tracker_area_encounter_catalog(recipe, work_checkpoint)
     return area["map_ids"].flat_map { |map_id| catalog[map_id] }.
       sort_by { |entry| tracker_area_encounter_sort_key(entry) }
   end
@@ -193,10 +194,11 @@ module Ironmon
     return WILD_FUSION_OVERWORLD_CHANCE
   end
 
-  def self.tracker_area_normal_encounter_sources(metadata, recipe)
+  def self.tracker_area_normal_encounter_sources(metadata, recipe, work_checkpoint = nil)
     return [] if metadata.empty?
     generator = tracker_area_species_generator(recipe, :wild)
     return metadata.map do |entry|
+      work_checkpoint.call if work_checkpoint
       number = generator.map_number(
         entry["source_species"],
         [:table, entry["mode_name"], entry["map_id"], entry["version"],
@@ -208,8 +210,8 @@ module Ironmon
     end.compact
   end
 
-  def self.tracker_area_derived_fusion_material_pair_codes(metadata, recipe)
-    sources = tracker_area_normal_encounter_sources(metadata, recipe)
+  def self.tracker_area_derived_fusion_material_pair_codes(metadata, recipe, work_checkpoint = nil)
+    sources = tracker_area_normal_encounter_sources(metadata, recipe, work_checkpoint)
     return [] if sources.empty?
     tables = Hash.new { |hash, key| hash[key] = {} }
     sources.each do |source|
@@ -222,6 +224,7 @@ module Ironmon
     tables.each do |table, numbers|
       next if !overworld_encounter_environment?(table[2])
       numbers.keys.sort.combination(2) do |first, second|
+        work_checkpoint.call if work_checkpoint
         pair_codes[(first << 10) | second] = true
       end
     end
@@ -238,6 +241,7 @@ module Ironmon
           next if !overworld_pair
           first[1].each do |first_number|
             second[1].each do |second_number|
+              work_checkpoint.call if work_checkpoint
               next if first_number == second_number
               lower, higher = [first_number, second_number].sort
               pair_codes[(lower << 10) | higher] = true

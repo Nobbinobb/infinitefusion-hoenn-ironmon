@@ -164,7 +164,7 @@ module Ironmon
       return !!(@fusion_pairs && @paired_result_ids)
     end
 
-    def import_prepared_pairing(packed_pairs)
+    def import_prepared_pairing(packed_pairs, work_checkpoint = nil)
       return false if !packed_pairs.is_a?(String) || !@fusion_pool ||
         @fusion_pool.empty? || @fusion_pool.length.odd?
       byte_count = @fusion_pool.length * 4
@@ -172,7 +172,8 @@ module Ironmon
       packed = packed_pairs.unpack1("m0")
       return false if packed.bytesize != byte_count
       membership = []
-      @fusion_pool.each do |species_id|
+      @fusion_pool.each_with_index do |species_id, index|
+        work_checkpoint.call if work_checkpoint && (index % 128).zero?
         return false if !species_id.is_a?(Integer) || membership[species_id]
         body_id = (species_id - 1) / NB_POKEMON
         head_id = species_id - body_id * NB_POKEMON
@@ -181,7 +182,8 @@ module Ironmon
         membership[species_id] = true
       end
       partners = {}; pairs = []
-      packed.unpack("V*").each_slice(2) do |first, second|
+      packed.unpack("V*").each_slice(2).with_index do |(first, second), index|
+        work_checkpoint.call if work_checkpoint && (index % 128).zero?
         return false if first <= NB_POKEMON || first >= Settings::ZAPMOLCUNO_NB ||
           second <= NB_POKEMON || second >= Settings::ZAPMOLCUNO_NB
         return false if !membership[first] || !membership[second] ||
@@ -950,7 +952,7 @@ module Ironmon
       @player_fusion_preparation_mapper.pairing_prepared?)
   end
 
-  def self.import_tracker_player_fusion_pairing(assignment)
+  def self.import_tracker_player_fusion_pairing(assignment, work_checkpoint = nil)
     return false if !assignment.is_a?(Hash) || assignment["version"] != 1 ||
       assignment["session_id"] != game_session_id
     expected = tracker_active_fusion_assignment_recipe
@@ -958,21 +960,25 @@ module Ironmon
     return false if !expected || !recipe.is_a?(Hash) || expected != recipe
     state = pivot_state
     seed = $PokemonGlobal.ironmon_seed
+    stat_generator = base_stat_generator
     import_stats = assignment["base_stats_version"] == 1 &&
       recipe["base_stat_generator_version"] == BaseStatGenerator::SCHEMA_VERSION
     if player_fusion_pairing_ready?
-      base_stat_generator.import_prepared_stats(
+      stat_generator.import_prepared_stats(
         assignment["base_stats"], seed, recipe["base_stat_source_fingerprint"]
       ) if import_stats
       return true
     end
     mapper = PlayerFusionMapper.new(
       seed, custom_fusion_pool_numbers, state.fusion_mappings,
-      state.discovered_fusion_mappings, base_stat_generator,
+      state.discovered_fusion_mappings, stat_generator,
       player_fusion_generator_version, proc { Fiber.yield }
     )
-    return false if !mapper.import_prepared_pairing(assignment["packed_pairs"])
-    base_stat_generator.import_prepared_stats(
+    return false if !mapper.import_prepared_pairing(assignment["packed_pairs"], work_checkpoint)
+    return false if expected != tracker_active_fusion_assignment_recipe ||
+      !state.equal?(pivot_state) || !$PokemonGlobal ||
+      seed != $PokemonGlobal.ironmon_seed
+    stat_generator.import_prepared_stats(
       assignment["base_stats"], seed, recipe["base_stat_source_fingerprint"]
     ) if import_stats
     clear_player_fusion_preparation

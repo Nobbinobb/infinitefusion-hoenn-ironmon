@@ -140,7 +140,7 @@ public sealed class PokemonObtainabilitySnapshot
 public sealed class PokemonObtainabilityResponsePayload
 {
     /// <summary>
-    /// Gets or initializes whether the active gameplay mapper has its complete reverse pairing, or null for older peers and archive queries.
+    /// Gets or initializes whether the active gameplay mapper has its complete reverse pairing, or null while an import is pending, for older peers, and for archive queries.
     /// </summary>
     /// <remarks>
     /// Accepted pairing data can still have cooperatively warming target statistics; gameplay completes those before using the mapper.

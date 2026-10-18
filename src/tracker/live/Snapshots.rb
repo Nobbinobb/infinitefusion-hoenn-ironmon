@@ -100,7 +100,7 @@ module Ironmon
       "target_pool_size" => metadata[9],
       "target_pool_fingerprint" => metadata[10],
       "packed_custom_fusion_pool" =>
-        [fusion_predecessor_index.packed_pool_membership].pack("m0")
+        [custom_fusion_pool_service.packed_pool_membership].pack("m0")
     }
   end
 
