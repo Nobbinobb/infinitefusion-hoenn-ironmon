@@ -175,3 +175,20 @@
 @media(max-width:390px) {
     .obsidian .research-search-match { padding:10px 9px; }
 }
+.pokemon-individual-values { min-width: 0; }
+.pokemon-individual-values .iv-description { color: var(--obsidian-muted, #a1a1aa); font-size: .8rem; line-height: 1.45; margin: .45rem 0; overflow-wrap: anywhere; }
+.iv-bars { display: grid; gap: 2px; margin-top: .6rem; }
+.iv-bar-row { display: grid; grid-template-columns: 36px minmax(0,1fr) 68px; align-items: center; gap: 9px; min-height: 32px; min-width: 0; }
+.iv-bar-track { position: relative; height: 9px; overflow: hidden; border-radius: 5px; background: #232e40; }
+.iv-bar-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: inherit; }
+.iv-bar-fill.raw { background: #a99be8; }
+.iv-bar-fill.effective { background: #477b84; }
+.iv-bar-value { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.iv-effective-value { color: #8bd8dc; }
+.iv-bar-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: .6rem; font-size: .75rem; }
+.iv-bar-legend span::before { content: ''; display: inline-block; width: 10px; height: 6px; margin-right: 5px; border-radius: 2px; }
+.iv-bar-legend .raw::before { background: #a99be8; }
+.iv-bar-legend .effective::before { background: #477b84; }
+.iv-individual-picker label { display: grid; gap: .4rem; min-width: 0; font-size: .8rem; }
+.iv-selected-details { margin: .45rem 0; font-size: .8rem; overflow-wrap: anywhere; }
+.iv-individual-picker select { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; padding: .5rem; color: inherit; background: var(--obsidian-panel, #18181e); border: 1px solid var(--obsidian-border, #34343c); border-radius: .35rem; }

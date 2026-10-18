@@ -56,6 +56,11 @@ public sealed class PokemonLookupSnapshot
 public sealed class PokemonLookupIdentitySnapshot
 {
     /// <summary>
+    /// Gets or initializes the numeric identity for matching older owned records without loading Stats.
+    /// </summary>
+    public int? NumericSpeciesId { get; init; }
+
+    /// <summary>
     /// Gets or initializes the stable species and form identifier.
     /// </summary>
     public required string SpeciesId { get; init; }
@@ -143,6 +148,11 @@ public sealed class PokemonLookupAbilitiesSnapshot
 /// </summary>
 public sealed class PokemonLookupStatsSnapshot
 {
+    /// <summary>
+    /// Gets or initializes the numeric species identity used by older collection records, or null when absent.
+    /// </summary>
+    public int? NumericSpeciesId { get; init; }
+
     /// <summary>
     /// Gets or initializes all six original base stats.
     /// </summary>

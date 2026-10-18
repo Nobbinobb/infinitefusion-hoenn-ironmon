@@ -18,5 +18,10 @@ public enum BaseStatDisplayMode
     /// <summary>
     /// Shows generated bars colored by their difference from the original values.
     /// </summary>
-    DeltaBars = 2
+    DeltaBars = 2,
+
+    /// <summary>
+    /// Shows available individual values as bars on the zero-through-31 scale.
+    /// </summary>
+    IndividualValues = 3
 }

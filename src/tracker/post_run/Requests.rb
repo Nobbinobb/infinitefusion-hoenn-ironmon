@@ -289,6 +289,7 @@ module Ironmon
       "section" => section,
       "identity" => {
         "species_id" => "#{species.id}:0",
+        "numeric_species_id" => species.id_number,
         "species_name" => tracker_species_display_name(species),
         "sprite_path" => tracker_lookup_sprite_path(species),
         "types" => species.types.map { |type| type.to_s },
@@ -341,6 +342,7 @@ module Ironmon
       original_stats = original_base_stats_for(species)
       generated_stats = tracker_lookup_generated_base_stats(species, recipe)
       result["stats"] = {
+        "numeric_species_id" => species.id_number,
         "original" => tracker_base_stat_snapshot(original_stats),
         "original_total" => tracker_base_stat_total(original_stats),
         "generated" => tracker_base_stat_snapshot(generated_stats),
@@ -604,6 +606,7 @@ module Ironmon
     items = recipe["item_generator"] || {}
     return {
       "run_id" => recipe["run_id"],
+      "collection_attempt_ids" => recipe["collection_attempt_ids"] || [],
       "seed" => recipe["seed"],
       "result" => recipe["result"],
       "generation_profile_id" => recipe["generation_profile_id"],

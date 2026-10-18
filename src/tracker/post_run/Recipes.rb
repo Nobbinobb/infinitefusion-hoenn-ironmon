@@ -64,7 +64,32 @@ module Ironmon
       ),
       "statistics" => tracker_attempt_statistics(current_run_attempt)
     })
+    recipe["collection_attempt_ids"] = tracker_owned_iv_attempt_ids(recipe, true)
     return recipe
+  end
+
+  def self.tracker_owned_iv_attempt_ids(recipe, current_attempt = false)
+    return [] if !recipe.is_a?(Hash) || recipe["result"].to_s.empty?
+    return [] if recipe["active_run"] || recipe["result"].to_s == "active"
+    identifiers = Array(recipe["collection_attempt_ids"]).select do |id|
+      /\A[0-9a-f]{32}\z/i.match?(id.to_s)
+    end
+    return identifiers.uniq if !identifiers.empty?
+    return [] if !current_attempt || !$PokemonGlobal
+    statistics = recipe["statistics"] || {}
+    number = statistics["attempt_number"]
+    return [] if !number.is_a?(Integer) || number <= 0
+    return [] if !defined?(GameplayCollection) || !GameplayCollection.enabled?
+    journal = GameplayCollection.journal
+    bindings = journal.runtime_context("attempt_bindings")
+    return [] if !bindings.is_a?(Hash)
+    association = $PokemonGlobal.instance_variable_get(:@ironmon_collection_attempt_association)
+    return [] if !association.is_a?(Hash) || association["epoch_id"] != journal.epoch_id
+    binding = bindings[association["token"]]
+    return [] if !binding.is_a?(Hash) || binding["source_run_id"] != recipe["run_id"]
+    return [] if binding["attempt_number"] != number
+    identifier = binding["attempt_id"].to_s
+    return /\A[0-9a-f]{32}\z/i.match?(identifier) ? [identifier] : []
   end
 
   def self.tracker_run_reproduction_recipe

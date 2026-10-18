@@ -1,0 +1,31 @@
+@implements IDisposable
+
+<BaseStatVisualization Original="@Stats.Original"
+                       Generated="@Stats.Generated"
+                       OriginalTotal="@Stats.OriginalTotal"
+                       GeneratedTotal="@Stats.GeneratedTotal"
+                       Randomized="@Stats.Randomized"
+                       Fusion="@Fusion"
+                       Ivs="@Selected?.Ivs"
+                       EffectiveIvs="@Selected?.EffectiveIvs">
+    <IndividualValuesContent>
+        @if (Selected is not null)
+        {
+            <PokemonIndividualValues Ivs="@Selected.Ivs" EffectiveIvs="@Selected.EffectiveIvs">
+                <div class="iv-individual-picker">
+                    <label>
+                        <span>@Text["Stats.IVs.OwnedPokemon"]</span>
+                        <select @bind="_selectedIndex" aria-label="@Text["Stats.IVs.OwnedPokemon"]">
+                            @for (int index = 0; index < _records.Count; index++)
+                            {
+                                <option value="@index">@RecordLabel(_records[index], index)</option>
+                            }
+                        </select>
+                    </label>
+                    <p class="iv-selected-details">@RecordLabel(Selected, _selectedIndex)</p>
+                    <p class="iv-description">@Text["Stats.IVs.RecordedDescription"]</p>
+                </div>
+            </PokemonIndividualValues>
+        }
+    </IndividualValuesContent>
+</BaseStatVisualization>

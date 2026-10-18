@@ -18,6 +18,16 @@ public sealed class DebugPokemonInspectorSnapshot
     public PokemonLookupSection Section { get; init; }
 
     /// <summary>
+    /// Gets or initializes authorized owned Pokemon IVs independently of the selected information section.
+    /// </summary>
+    public IndividualValuesSnapshot? Ivs { get; init; }
+
+    /// <summary>
+    /// Gets or initializes authorized effective owned IVs, including Hyper Training, or null when unavailable.
+    /// </summary>
+    public IndividualValuesSnapshot? EffectiveIvs { get; init; }
+
+    /// <summary>
     /// Gets or initializes live identity and current-state information.
     /// </summary>
     public required DebugPokemonIdentitySnapshot Identity { get; init; }
@@ -155,6 +165,16 @@ public sealed class DebugPokemonAbilitiesSnapshot
 /// </summary>
 public sealed class DebugPokemonStatsSnapshot
 {
+    /// <summary>
+    /// Gets or initializes the inspected Pokemon's raw IVs, or null for older peers.
+    /// </summary>
+    public IndividualValuesSnapshot? Ivs { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the IVs used by stat calculation, including Hyper Training, or null when unavailable.
+    /// </summary>
+    public IndividualValuesSnapshot? EffectiveIvs { get; init; }
+
     /// <summary>
     /// Gets or initializes all six final original base stats.
     /// </summary>

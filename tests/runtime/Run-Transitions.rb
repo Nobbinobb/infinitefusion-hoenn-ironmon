@@ -149,6 +149,121 @@ module IronmonRunTransitionRuntimeTests
       original_profile_id
   end
 
+  def self.with_lookup_preparation_runtime
+    with_active_run_runtime do
+      original_connection = Ironmon.method(:tracker_connection)
+      original_state = Ironmon.method(:tracker_current_state)
+      original_scene = $scene
+      variables = [:tracker_obtainability_services, :tracker_battle_id,
+                   :tracker_obtainability_ready_scene, :reset_in_progress,
+                   :tracker_seed_import_pending]
+      originals = {}
+      variables.each do |name|
+        originals[name] = Ironmon.instance_variable_get("@#{name}")
+        Ironmon.instance_variable_set("@#{name}", nil)
+      end
+      $PokemonGlobal.ironmon_run_ledger = ledger_fixture
+      $PokemonGlobal.ironmon_seed = 44
+      $PokemonGlobal.ironmon_run_id = "run-four"
+      $PokemonGlobal.ironmon_generation_profile_id =
+        Ironmon.current_generation_profile_id
+      $PokemonGlobal.ironmon_run_ledger["current_attempt"]["generation_profile_id"] =
+        $PokemonGlobal.ironmon_generation_profile_id
+      Ironmon.evolution_metadata_values.each do |key, value|
+        setter = "#{key}="
+        $PokemonGlobal.send(setter, value) if $PokemonGlobal.respond_to?(setter)
+      end
+      $PokemonGlobal.ironmon_base_stat_generator_version =
+        Ironmon::BaseStatGenerator::SCHEMA_VERSION
+      events = []
+      connection = Object.new
+      connection.define_singleton_method(:connected?) { true }
+      connection.define_singleton_method(:send_event) do |*arguments|
+        events << arguments
+      end
+      Ironmon.define_singleton_method(:tracker_connection) { connection }
+      Ironmon.define_singleton_method(:tracker_current_state) do
+        {
+          "active_run_preparation_ready" => tracker_active_run_preparation_ready?,
+          "fusion_assignments" => tracker_active_fusion_assignment_recipe
+        }
+      end
+      $scene = Scene_Map.allocate
+      yield events
+    ensure
+      Ironmon.define_singleton_method(:tracker_connection, original_connection)
+      Ironmon.define_singleton_method(:tracker_current_state, original_state)
+      originals.each do |name, value|
+        Ironmon.instance_variable_set("@#{name}", value)
+      end
+      $scene = original_scene
+    end
+  end
+
+  def self.test_manual_lookup_before_rival
+    with_lookup_preparation_runtime do |events|
+      Ironmon.tracker_run_lookup_preparation({}, "run-four")
+      assert(!Ironmon.tracker_active_run_preparation_ready? && events.empty?,
+        "background polling cannot opt in before the first rival victory")
+      begin
+        Ironmon.tracker_run_lookup_preparation({ "foreground" => true }, "old-run")
+        raise "A stale manual calculation request was accepted"
+      rescue Ironmon::TrackerLookupError
+      end
+      assert(!Ironmon.tracker_active_run_preparation_ready? && events.empty?,
+        "a stale manual request cannot arm the current run")
+      response = Ironmon.tracker_run_lookup_preparation(
+        { "foreground" => true }, "run-four"
+      )
+      assert(Ironmon.tracker_active_run_preparation_ready?,
+        "manual preparation opts in before the first rival victory")
+      assert(events.length == 1 &&
+        events[0][0] == "active_run_preparation_ready" &&
+        events[0][1]["fusion_assignments"],
+        "manual preparation supplies the native worker's deterministic recipe")
+      assert(!response["background_complete"],
+        "opting in does not falsely report unfinished work as complete")
+      Ironmon.tracker_run_lookup_preparation({ "foreground" => true }, "run-four")
+      assert(events.length == 1,
+        "repeated manual polls do not restart native recipe preparation")
+    end
+  end
+
+  def self.test_manual_lookup_during_opening_battle
+    with_lookup_preparation_runtime do
+      service = Ironmon.tracker_obtainability_service(
+        Ironmon.tracker_debug_active_recipe
+      )
+      budgets = []
+      service.define_singleton_method(:advance_for_milliseconds) do |milliseconds|
+        budgets << milliseconds
+      end
+      service.request_foreground
+      Ironmon.update_tracker_obtainability
+      assert(budgets.empty?, "manual preparation still waits through map startup")
+      Ironmon.instance_variable_set(:@tracker_battle_id, "opening-battle")
+      Ironmon.update_tracker_obtainability
+      assert(budgets == [Ironmon::TrackerObtainabilityService::BACKGROUND_MILLISECONDS],
+        "explicit calculation advances within a frame slice in the opening battle")
+      [:reset_in_progress, :tracker_seed_import_pending].each do |name|
+        Ironmon.instance_variable_set("@#{name}", true)
+        Ironmon.update_tracker_obtainability
+        Ironmon.instance_variable_set("@#{name}", nil)
+      end
+      assert(budgets.length == 1, "battle work still pauses for reset and import")
+      service.instance_variable_set(:@foreground_until, 0.0)
+      service.request_background
+      Ironmon.update_tracker_obtainability
+      assert(budgets.length == 1, "background calculation remains paused in battles")
+      Ironmon.instance_variable_set(:@tracker_battle_id, nil)
+      Ironmon.mark_tracker_obtainability_map_ready($scene)
+      service.request_foreground
+      Ironmon.update_tracker_obtainability
+      assert(budgets.last == Ironmon::TrackerObtainabilityService::FOREGROUND_MILLISECONDS,
+        "safe map frames retain the existing priority calculation budget")
+    end
+  end
+
   def self.with_reset_stubs(generation_result, save_result)
     ironmon_singleton = class << Ironmon; self; end
     game_singleton = class << Game; self; end
@@ -422,6 +537,8 @@ module IronmonRunTransitionRuntimeTests
     test_ledger_completion_staging
     test_active_attempt_does_not_recover_completed_recipe
     test_active_run_preparation_boundary
+    test_manual_lookup_before_rival
+    test_manual_lookup_during_opening_battle
     test_generation_failure_rollback
     test_save_failure_rollback
     test_successful_reset_commit_order

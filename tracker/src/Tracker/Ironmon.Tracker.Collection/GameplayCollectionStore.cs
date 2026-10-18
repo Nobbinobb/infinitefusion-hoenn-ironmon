@@ -56,6 +56,23 @@ public sealed class GameplayCollectionStore : IAsyncDisposable
         => EnqueueAsync(database => database.Measurements(), cancellationToken);
 
     /// <summary>
+    /// Reads the latest retained owned configuration for every recorded individual, species and form.
+    /// </summary>
+    /// <param name="attemptIds">Exact compact UUIDs associated with the selected run.</param>
+    /// <param name="cancellationToken">Cancels admission or waiting without interrupting collection writes.</param>
+    /// <returns>Recorded configurations from the requested attempts, excluding encounter-only observations.</returns>
+    public async Task<IReadOnlyList<JsonElement>> GetOwnedConfigurationsAsync(IReadOnlyList<string> attemptIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(attemptIds);
+        byte[][] attempts = [.. attemptIds.Distinct(StringComparer.OrdinalIgnoreCase).Select(CollectionEncoding.Identifier)];
+        if (attempts.Length == 0)
+            return [];
+
+        JsonElement snapshot = await EnqueueAsync(database => database.OwnedLookup(attempts), cancellationToken).ConfigureAwait(false);
+        return [.. snapshot.EnumerateArray()];
+    }
+
+    /// <summary>
     /// Reads only committed earned achievements, including while the game is disconnected.
     /// </summary>
     /// <param name="pendingOnly">Whether to return the durable unacknowledged game-notification subset.</param>

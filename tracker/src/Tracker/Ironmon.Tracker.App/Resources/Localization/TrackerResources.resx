@@ -1473,7 +1473,7 @@
   <data name="Access.Capabilities.pokemon.all_active.Name" xml:space="preserve"><value>All active-run Pokemon</value></data>
   <data name="Access.Capabilities.pokemon.overview.Name" xml:space="preserve"><value>Pokemon overview</value></data>
   <data name="Access.Capabilities.pokemon.abilities.Name" xml:space="preserve"><value>Generated abilities</value></data>
-  <data name="Access.Capabilities.pokemon.base_stats.Name" xml:space="preserve"><value>Generated base stats</value></data>
+  <data name="Access.Capabilities.pokemon.base_stats.Name" xml:space="preserve"><value>Base stats and owned Pokémon IVs</value></data>
   <data name="Access.Capabilities.pokemon.move_access.Name" xml:space="preserve"><value>Generated move access</value></data>
   <data name="Access.Capabilities.evolution.results.Name" xml:space="preserve"><value>Evolution results</value></data>
   <data name="Access.Capabilities.evolution.candidates.Name" xml:space="preserve"><value>Evolution candidates</value></data>
@@ -2321,4 +2321,16 @@
   <data name="Achievements.Yesterday" xml:space="preserve">
     <value>Yesterday</value>
   </data>
+  <data name="Stats.IVs.Heading" xml:space="preserve"><value>Individual values (IVs)</value></data>
+  <data name="Stats.IVs.Tab" xml:space="preserve"><value>IVs</value></data>
+  <data name="Stats.IVs.Range" xml:space="preserve"><value>Each IV ranges from 0 to 31.</value></data>
+  <data name="Stats.IVs.Raw" xml:space="preserve"><value>IV</value></data>
+  <data name="Stats.IVs.Effective" xml:space="preserve"><value>Effective</value></data>
+  <data name="Stats.IVs.EffectiveDescription" xml:space="preserve"><value>Effective IVs include Hyper Training.</value></data>
+  <data name="Stats.IVs.Unknown" xml:space="preserve"><value>—</value></data>
+  <data name="Stats.IVs.OwnedPokemon" xml:space="preserve"><value>Owned Pokémon</value></data>
+  <data name="Stats.IVs.RecordedDescription" xml:space="preserve"><value>Latest recorded values during this run. Earlier team members are included.</value></data>
+  <data name="Stats.IVs.RecordLabel" xml:space="preserve"><value>#{3} · {1} · Lv. {2} · {0}</value></data>
+  <data name="Stats.IVs.Runner" xml:space="preserve"><value>Runner</value></data>
+  <data name="Stats.IVs.Owned" xml:space="preserve"><value>Owned</value></data>
 </root>

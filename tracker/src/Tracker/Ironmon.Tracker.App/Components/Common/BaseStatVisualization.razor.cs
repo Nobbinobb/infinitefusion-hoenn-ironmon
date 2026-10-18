@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Components;
 namespace Ironmon.Tracker.App.Components.Common;
 
 /// <summary>
-/// Renders table and bar presentations for original and generated base stats.
+/// Renders base-stat table and bar presentations with an optional individual-values view.
 /// </summary>
 public partial class BaseStatVisualization
 {
@@ -46,11 +46,46 @@ public partial class BaseStatVisualization
     public bool Fusion { get; set; }
 
     /// <summary>
+    /// Gets or sets raw IVs for the optional individual-values presentation.
+    /// </summary>
+    [Parameter]
+    public IndividualValuesSnapshot? Ivs { get; set; }
+
+    /// <summary>
+    /// Gets or sets effective IVs, including Hyper Training when recorded.
+    /// </summary>
+    [Parameter]
+    public IndividualValuesSnapshot? EffectiveIvs { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional IV bars and an owned-individual selector for archived runs.
+    /// </summary>
+    [Parameter]
+    public RenderFragment? IndividualValuesContent { get; set; }
+
+    /// <summary>
+    /// Gets whether the selected Pokemon has any usable individual values.
+    /// </summary>
+    private bool HasIndividualValues => PokemonIndividualValues.HasKnownValues(Ivs) || PokemonIndividualValues.HasKnownValues(EffectiveIvs);
+
+    /// <summary>
+    /// Returns to the table when a newly selected Pokemon has no IV data.
+    /// </summary>
+    protected override void OnParametersSet()
+    {
+        if (_mode == BaseStatDisplayMode.IndividualValues && !HasIndividualValues)
+            _mode = BaseStatDisplayMode.Table;
+    }
+
+    /// <summary>
     /// Selects the visible base-stat presentation.
     /// </summary>
     /// <param name="mode">The requested presentation.</param>
     private void SelectMode(BaseStatDisplayMode mode)
-        => _mode = mode;
+    {
+        if (mode != BaseStatDisplayMode.IndividualValues || HasIndividualValues)
+            _mode = mode;
+    }
 
     /// <summary>
     /// Gets all final base stats in game display order.

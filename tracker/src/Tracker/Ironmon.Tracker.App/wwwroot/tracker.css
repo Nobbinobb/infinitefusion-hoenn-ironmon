@@ -1825,7 +1825,8 @@ button.move-placeholder:hover {
 
 .base-stat-view-switch {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     gap: 0.25rem;
     margin-bottom: 0.42rem;
     padding: 0.2rem;

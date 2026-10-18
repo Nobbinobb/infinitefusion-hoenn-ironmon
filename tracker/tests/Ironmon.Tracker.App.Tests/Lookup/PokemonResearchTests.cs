@@ -23,7 +23,7 @@ namespace Ironmon.Tracker.App.Tests.Lookup;
 /// <summary>
 /// Checks research disclosure, ability details, and the active-run-only swap confirmation boundary.
 /// </summary>
-public sealed class PokemonResearchTests
+public sealed partial class PokemonResearchTests
 {
     private const string _speciesId = "GENGAR";
     private const string _speciesName = "Gengar";
@@ -383,8 +383,10 @@ public sealed class PokemonResearchTests
     /// <param name="parameters">The component inputs.</param>
     /// <param name="authorized">Whether the detached connection grants development access.</param>
     /// <param name="check">The checks performed on the render dispatcher.</param>
+    /// <param name="collection">Optional actual collection storage for owned Pokemon records.</param>
+    /// <param name="created">Optional observer for nested production component instances.</param>
     /// <returns>A task representing rendering and checks.</returns>
-    private static async Task RenderAsync<T>(Dictionary<string, object?> parameters, bool authorized, Func<T, Func<string>, Task> check) where T : IComponent
+    private static async Task RenderAsync<T>(Dictionary<string, object?> parameters, bool authorized, Func<T, Func<string>, Task> check, Ironmon.Tracker.Collection.GameplayCollectionStore? collection = null, Action<IComponent>? created = null) where T : IComponent
     {
         string directory = Path.Combine(Path.GetTempPath(), _storageName, Guid.NewGuid().ToString());
         TrackerKnowledgeOptions storage = new(directory);
@@ -392,9 +394,12 @@ public sealed class PokemonResearchTests
         GameHandshakePayload game = new(_version, _version, true, authorized, directory, null, null);
         typeof(TrackerConnectionState).GetMethod(_publish, _instanceMembers)!.Invoke(state, [TrackerConnectionStatus.Connected, game, null, null]);
         await using TrackerConnectionService connection = new(new(0, _version, authorized, TimeSpan.FromSeconds(1)), new(), state, new(), new(storage), new(storage), new(storage));
-        ResearchActivator<T> activator = new();
+        ResearchActivator<T> activator = new() { Created = created };
         ServiceCollection services = new();
         services.AddLogging();
+        if (collection is not null)
+            services.AddSingleton(collection);
+
         services.AddSingleton(connection.Requests);
         services.AddSingleton(new DiagnosticAccessService(storage, new(new([])), false));
         services.AddSingleton(state);
@@ -446,6 +451,11 @@ public sealed class PokemonResearchTests
         internal T? Component { get; private set; }
 
         /// <summary>
+        /// Gets or initializes the observer used to inspect nested component interactions.
+        /// </summary>
+        internal Action<IComponent>? Created { get; init; }
+
+        /// <summary>
         /// Creates the requested component and captures the matching instance.
         /// </summary>
         /// <param name="componentType">The component type requested by the renderer.</param>
@@ -455,6 +465,8 @@ public sealed class PokemonResearchTests
             IComponent component = (IComponent)Activator.CreateInstance(componentType)!;
             if (component is T match)
                 Component = match;
+
+            Created?.Invoke(component);
 
             return component;
         }

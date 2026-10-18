@@ -27,6 +27,85 @@ module IronmonDiagnosticAccessRuntimeTests
     assert(rejected, message)
   end
 
+  def self.test_owned_ivs
+    original_global = $PokemonGlobal
+    original_player = Ironmon.instance_variable_get(:@tracker_player_pokemon)
+    original_enemies = Ironmon.instance_variable_get(:@tracker_enemy_battlers)
+    originals = {}
+    [:tracker_debug_active_recipe, :tracker_pokemon_lookup_for_recipe].each do |name|
+      originals[name] = Ironmon.method(name)
+    end
+    original_enabled = Ironmon::GameplayCollection.method(:enabled?)
+    original_journal = Ironmon::GameplayCollection.method(:journal)
+    connection = Ironmon.tracker_connection
+    original_iv_capability = connection.method(:diagnostic_capability?)
+    $PokemonGlobal = PokemonGlobalMetadata.new
+    $PokemonGlobal.ironmon_mode = true
+    pokemon = Pokemon.new(:PIKACHU, 20, nil, false)
+    pokemon.iv[:HP] = 0
+    pokemon.iv[:ATTACK] = 31
+    pokemon.ivMaxed[:HP] = true
+    Ironmon.instance_variable_set(:@tracker_player_pokemon, pokemon)
+    Ironmon.instance_variable_set(:@tracker_enemy_battlers, { 0 => Struct.new(:pokemon).new(pokemon) })
+    Ironmon.define_singleton_method(:tracker_debug_active_recipe) { {} }
+    Ironmon.define_singleton_method(:tracker_pokemon_lookup_for_recipe) { |*_arguments| {} }
+    stats = Ironmon.tracker_debug_inspect_pokemon({ "target" => "player", "section" => "stats" })["stats"]
+    assert(stats["ivs"]["hp"] == 0 && stats["ivs"]["attack"] == 31, "owned IVs preserve zero and 31")
+    assert(stats["effective_ivs"]["hp"] == 31, "effective IVs include Hyper Training")
+    overview = Ironmon.tracker_debug_inspect_pokemon({ "target" => "player", "section" => "overview" })
+    assert(overview["ivs"]["hp"] == 0 && overview["effective_ivs"]["hp"] == 31, "the IV tab is discoverable before opening Stats")
+    assert(!overview.key?("stats"), "IV discovery does not calculate or transmit unrelated base stats")
+    connection.define_singleton_method(:diagnostic_capability?) do |capability|
+      capability != "pokemon.base_stats" && original_iv_capability.call(capability)
+    end
+    restricted = Ironmon.tracker_debug_inspect_pokemon({ "target" => "player", "section" => "overview" })
+    assert(!restricted.key?("ivs") && !restricted.key?("effective_ivs"), "overview access alone does not reveal owned IVs")
+    connection.define_singleton_method(:diagnostic_capability?, original_iv_capability)
+    enemy = Ironmon.tracker_debug_inspect_pokemon({ "target" => "enemy", "enemy_position" => 0, "section" => "stats" })["stats"]
+    assert(!enemy.key?("ivs") && !enemy.key?("effective_ivs"), "encountered targets do not expose IVs")
+    enemy_overview = Ironmon.tracker_debug_inspect_pokemon({ "target" => "enemy", "enemy_position" => 0, "section" => "overview" })
+    assert(!enemy_overview.key?("ivs") && !enemy_overview.key?("effective_ivs"), "encountered overview pages do not expose IVs")
+
+    attempt_id = "a" * 32
+    bindings = {
+      "one" => { "source_run_id" => "selected", "attempt_number" => 1, "attempt_id" => attempt_id },
+      "duplicate" => { "source_run_id" => "selected", "attempt_number" => 1, "attempt_id" => attempt_id },
+      "other" => { "source_run_id" => "another", "attempt_number" => 1, "attempt_id" => "b" * 32 },
+      "replayed_seed" => { "source_run_id" => "selected", "attempt_number" => 2, "attempt_id" => "b" * 32 },
+      "invalid" => { "source_run_id" => "selected", "attempt_number" => 1, "attempt_id" => "invalid" }
+    }
+    journal = Object.new
+    journal.define_singleton_method(:runtime_context) { |_key| bindings }
+    journal.define_singleton_method(:epoch_id) { "test-epoch" }
+    Ironmon::GameplayCollection.define_singleton_method(:enabled?) { true }
+    Ironmon::GameplayCollection.define_singleton_method(:journal) { journal }
+    recipe = { "run_id" => "selected", "result" => "lost", "collection_attempt_ids" => [], "statistics" => { "attempt_number" => 1 } }
+    assert(Ironmon.tracker_owned_iv_attempt_ids(recipe).empty?, "old archives never infer an individual attempt from a replayable seed")
+    assert(recipe["collection_attempt_ids"].empty?, "recovering bindings does not mutate archived recipes")
+    assert(Ironmon.tracker_owned_iv_attempt_ids(Ironmon.tracker_flatten_completed_recipe(recipe)).empty?, "validated old archives do not guess collection associations")
+    bindings["ambiguous"] = { "source_run_id" => "selected", "attempt_number" => 1, "attempt_id" => "c" * 32 }
+    assert(Ironmon.tracker_owned_iv_attempt_ids(recipe).empty?, "ambiguous legacy run bindings never combine distinct attempts")
+    $PokemonGlobal.instance_variable_set(:@ironmon_collection_attempt_association, { "epoch_id" => "test-epoch", "token" => "one" })
+    assert(Ironmon.tracker_owned_iv_attempt_ids(recipe, true) == [attempt_id], "new archives capture their actual save association even when seed and attempt number collide")
+    $PokemonGlobal.instance_variable_set(:@ironmon_collection_attempt_association, nil)
+    assert(Ironmon.tracker_owned_iv_attempt_ids(recipe, true).empty?, "missing save associations do not fall back to another attempt")
+    active = recipe.merge("active_run" => true)
+    assert(Ironmon.tracker_owned_iv_attempt_ids(active).empty?, "species lookup during an active run omits archival ownership IDs")
+    Ironmon::GameplayCollection.define_singleton_method(:enabled?) { false }
+    persisted = recipe.merge("collection_attempt_ids" => [attempt_id])
+    assert(Ironmon.tracker_owned_iv_attempt_ids(persisted) == [attempt_id], "new archives retain associations independently of the current save")
+    flattened = Ironmon.tracker_flatten_completed_recipe(persisted)
+    assert(flattened["collection_attempt_ids"] == [attempt_id], "validated archive recipes preserve collection associations")
+  ensure
+    $PokemonGlobal = original_global
+    Ironmon.instance_variable_set(:@tracker_player_pokemon, original_player)
+    Ironmon.instance_variable_set(:@tracker_enemy_battlers, original_enemies)
+    originals.each { |name, method| Ironmon.define_singleton_method(name, method) } if originals
+    Ironmon::GameplayCollection.define_singleton_method(:enabled?, original_enabled) if original_enabled
+    Ironmon::GameplayCollection.define_singleton_method(:journal, original_journal) if original_journal
+    connection.define_singleton_method(:diagnostic_capability?, original_iv_capability) if connection && original_iv_capability
+  end
+
   def self.test_development_mutations
     original_trainer = $Trainer
     original_system = $PokemonSystem
@@ -278,6 +357,7 @@ module IronmonDiagnosticAccessRuntimeTests
       )
     end
 
+    test_owned_ivs
     test_development_mutations
     File.binwrite(OUTPUT_PATH, "diagnostic access runtime tests passed\n")
   rescue Exception => exception

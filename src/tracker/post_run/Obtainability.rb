@@ -1982,6 +1982,8 @@ module Ironmon
       )
     end
     payload ||= {}
+    announce_tracker_active_run_preparation_ready if
+      payload["foreground"] == true && !tracker_active_run_preparation_ready?
     recipe = tracker_debug_active_recipe
     service = tracker_obtainability_service(recipe)
     service.queue_player_fusion_pairing(payload["player_fusion_pairing"]) if
@@ -2080,15 +2082,17 @@ module Ironmon
   end
 
   def self.update_tracker_obtainability
-    return if !tracker_obtainability_runtime_ready?
+    return if !tracker_obtainability_session_ready?
     foreground = tracker_obtainability_services.values.select do |service|
       service.foreground_requested?
     end.max_by { |service| service.foreground_deadline }
-    if foreground
+    if foreground &&
+       (tracker_battle_id || tracker_obtainability_runtime_ready?)
+      milliseconds = tracker_battle_id ?
+        TrackerObtainabilityService::BACKGROUND_MILLISECONDS :
+        TrackerObtainabilityService::FOREGROUND_MILLISECONDS
       with_generation_profile(foreground.generation_profile_id) do
-        foreground.advance_for_milliseconds(
-          TrackerObtainabilityService::FOREGROUND_MILLISECONDS
-        )
+        foreground.advance_for_milliseconds(milliseconds)
       end
       return
     end
@@ -2130,11 +2134,16 @@ module Ironmon
     @tracker_obtainability_ready_scene = nil
   end
 
-  def self.tracker_obtainability_runtime_ready?
-    return false if !active? || !$PokemonGlobal || tracker_battle_id
+  def self.tracker_obtainability_session_ready?
+    return false if !active? || !$PokemonGlobal
     return false if !tracker_connection.connected?
     return false if instance_variable_get(:@reset_in_progress)
     return false if instance_variable_get(:@tracker_seed_import_pending)
+    return true
+  end
+
+  def self.tracker_obtainability_runtime_ready?
+    return false if !tracker_obtainability_session_ready? || tracker_battle_id
     return false if !defined?($scene) || !defined?(Scene_Map) ||
       !$scene.is_a?(Scene_Map)
     return @tracker_obtainability_ready_scene.equal?($scene)

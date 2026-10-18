@@ -28,6 +28,11 @@ public sealed class CompletedRunRecipePayload : RunReproductionRecipePayload
     public required string Result { get; init; }
 
     /// <summary>
+    /// Gets or initializes the exact collection attempts associated with this run, empty for older recipes.
+    /// </summary>
+    public IReadOnlyList<string> CollectionAttemptIds { get; init; } = [];
+
+    /// <summary>
     /// Gets or initializes the archived ordinary-item shuffle by source item identifier.
     /// </summary>
     public IReadOnlyDictionary<string, string> ItemMappings { get; init; } = new Dictionary<string, string>();

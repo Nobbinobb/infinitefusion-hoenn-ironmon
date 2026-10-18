@@ -94,6 +94,10 @@
                 {
                     <DebugBaseStats Stats="@InspectorStats" Fusion="@Inspector.Identity.Fusion" />
                 }
+                else if (Recipe?.CollectionAttemptIds.Count > 0)
+                {
+                    <OwnedPokemonIndividualValues Recipe="@Recipe" Stats="@StatsSection" NumericSpeciesId="@(Pokemon.Identity.NumericSpeciesId ?? StatsSection.NumericSpeciesId)" SpeciesId="@Pokemon.Identity.SpeciesId" SpeciesName="@Pokemon.Identity.SpeciesName" Fusion="@IsFusion()" />
+                }
                 else
                 {
                     <BaseStatVisualization Original="@StatsSection.Original"

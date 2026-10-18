@@ -1,11 +1,13 @@
 <article class="debug-base-stats" aria-label="@Text["Debug.BaseStats.BaseStatInspection"]">
     <section class="debug-data-section">
-        <p class="section-label">@Text["Debug.BaseStats.FinalBaseStatsHeading"]</p>
+        <p class="section-label">@Text["Debug.Inspector.Stats"]</p>
         <BaseStatVisualization Original="@Stats.Original"
                                Generated="@Stats.Generated"
                                OriginalTotal="@Stats.OriginalTotal"
                                GeneratedTotal="@Stats.GeneratedTotal"
                                Randomized="@Stats.Generator.Enabled"
-                               Fusion="@Fusion" />
+                               Fusion="@Fusion"
+                               Ivs="@Stats.Ivs"
+                               EffectiveIvs="@Stats.EffectiveIvs" />
     </section>
 </article>
