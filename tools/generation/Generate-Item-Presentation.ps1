@@ -1,6 +1,6 @@
 param(
     [string]$GameRoot = (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))),
-    [string]$OutputPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "tracker\src\Ironmon.Tracker.App\Resources\Catalogs\item-presentation.json")
+    [string]$OutputPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "tracker\src\Tracker\Ironmon.Tracker.App\Resources\Catalogs\item-presentation.json")
 )
 
 $ErrorActionPreference = "Stop"

@@ -17,7 +17,7 @@ $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $resolvedGameRoot = [IO.Path]::GetFullPath($GameRoot)
 $resolvedOutputPath = [IO.Path]::GetFullPath($OutputPath)
 $resolvedAuditPath = [IO.Path]::GetFullPath($AuditPath)
-$rulesPath = Join-Path $projectRoot 'docs\audits\DEFENSE_PRESENTATION_RULES.json'
+$rulesPath = Join-Path $projectRoot 'resources\DEFENSE_PRESENTATION_RULES.json'
 Assert-PathWithinDirectory -Path $resolvedOutputPath -Directory $projectRoot
 Assert-PathWithinDirectory -Path $resolvedAuditPath -Directory $projectRoot
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $resolvedOutputPath) | Out-Null

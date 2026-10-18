@@ -19,7 +19,7 @@ $gameRoot = Split-Path -Parent $projectRoot
 $distribution = Join-Path $projectRoot "dist"
 $runtimeRequiredDistribution = Join-Path $projectRoot "dist-runtime-required"
 $releaseDirectory = Join-Path $projectRoot "release"
-$trackerProject = Join-Path $projectRoot "tracker\src\Ironmon.Tracker.App\Ironmon.Tracker.App.csproj"
+$trackerProject = Join-Path $projectRoot "tracker\src\Tracker\Ironmon.Tracker.App\Ironmon.Tracker.App.csproj"
 [xml]$trackerProjectDocument = Get-Content -LiteralPath $trackerProject
 $releaseVersion = @($trackerProjectDocument.Project.PropertyGroup.ApplicationDisplayVersion) |
   Where-Object { ![string]::IsNullOrWhiteSpace($_) } |

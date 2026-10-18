@@ -36,7 +36,7 @@ public sealed class ControlSettingsTests
     private const string _renderAction = "StateHasChanged";
     private const string _controllerField = "_controllers";
     private const string _previewEnvironment = "IRONMON_CONTROLS_PREVIEW";
-    private const string _stylesheetPath = "../../tracker/src/Ironmon.Tracker.App/wwwroot";
+    private const string _stylesheetPath = "../../tracker/src/Tracker/Ironmon.Tracker.App/wwwroot";
     private const string _htmlExtension = ".html";
     private const string _eKey = "e";
     private const string _eCode = "KeyE";

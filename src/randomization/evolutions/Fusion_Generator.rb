@@ -641,9 +641,10 @@ module Ironmon
     end
 
     def fusion_bst_for_components(body, head)
-      return fused_bst(
-        component_stats_for(body), component_stats_for(head)
-      )
+      return @base_stat_generator.fuse(
+        component_stats_for(body), component_stats_for(head),
+        body.id_number * NB_POKEMON + head.id_number
+      ).values.inject(0, :+)
     end
 
     def elapsed_milliseconds(started_at)
@@ -1686,21 +1687,6 @@ module Ironmon
       @component_stats_by_identity[identity] =
         @base_stat_generator.stats_for(species)
       return @component_stats_by_identity[identity]
-    end
-
-    def fused_bst(body_stats, head_stats)
-      return ((2 * head_stats[:HP].to_i) / 3) +
-        (body_stats[:HP].to_i / 3) +
-        ((2 * body_stats[:ATTACK].to_i) / 3) +
-        (head_stats[:ATTACK].to_i / 3) +
-        ((2 * body_stats[:DEFENSE].to_i) / 3) +
-        (head_stats[:DEFENSE].to_i / 3) +
-        ((2 * head_stats[:SPECIAL_ATTACK].to_i) / 3) +
-        (body_stats[:SPECIAL_ATTACK].to_i / 3) +
-        ((2 * head_stats[:SPECIAL_DEFENSE].to_i) / 3) +
-        (body_stats[:SPECIAL_DEFENSE].to_i / 3) +
-        ((2 * body_stats[:SPEED].to_i) / 3) +
-        (head_stats[:SPEED].to_i / 3)
     end
 
     def build_generated_branch(species, branch, target, plan, plan_index, source_bst)

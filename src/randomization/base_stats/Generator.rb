@@ -17,11 +17,22 @@ module Ironmon
     HEAD_DOMINANT_STATS = [
       :HP, :SPECIAL_ATTACK, :SPECIAL_DEFENSE
     ].freeze
+    INHERITANCE_GROUPS = [[1, 2, 5], [0, 3, 4]].freeze
+    INHERITANCE_RATIOS = [[9, 10], [4, 5], [2, 3]].freeze
+    INHERITANCE_ORDERS = [
+      [0, 1, 2], [0, 2, 1], [1, 0, 2],
+      [1, 2, 0], [2, 0, 1], [2, 1, 0]
+    ].freeze
     attr_reader :source_fingerprint
 
-    def initialize(seed, source_fingerprint)
+    def initialize(seed, source_fingerprint, fusion_formula_version = nil)
       @seed = seed.to_i
       @source_fingerprint = source_fingerprint
+      @fusion_formula_version = fusion_formula_version ||
+        Ironmon.base_stat_formula_version
+      if ![1, 2].include?(@fusion_formula_version)
+        raise BaseStatRandomizationError, "the fusion stat formula version is unsupported"
+      end
       @stat_cache = {}
       @fusion_cache = {}
     end
@@ -74,17 +85,31 @@ module Ironmon
       return cached if cached
       body = stats_for(species_data.body_pokemon)
       head = stats_for(species_data.head_pokemon)
-      @fusion_cache[identity] = fuse(body, head).freeze
+      @fusion_cache[identity] = fuse(body, head, species_data.id_number).freeze
       return @fusion_cache[identity]
     end
 
-    def fuse(body_stats, head_stats)
+    def fuse(body_stats, head_stats, fusion_id = nil)
+      ratios = {}
+      if fusion_id && @fusion_formula_version >= 2
+        INHERITANCE_GROUPS.each do |group|
+          hash = Ironmon.fnv1a_64_joined([
+            1, @seed, "analysis_fusion_inheritance", fusion_id, group[0]
+          ])
+          order = INHERITANCE_ORDERS[Ironmon.fusion_choice_hash(hash) % 6]
+          order.each_with_index do |position, index|
+            ratios[STAT_ORDER[group[position]]] = INHERITANCE_RATIOS[index]
+          end
+        end
+      end
       result = {}
       STAT_ORDER.each do |stat|
         head_dominant = HEAD_DOMINANT_STATS.include?(stat)
         dominant = head_dominant ? head_stats[stat] : body_stats[stat]
         other = head_dominant ? body_stats[stat] : head_stats[stat]
-        result[stat] = ((2 * dominant.to_i) / 3) + (other.to_i / 3)
+        numerator, denominator = ratios[stat] || [2, 3]
+        result[stat] = numerator * dominant.to_i / denominator +
+          (denominator - numerator) * other.to_i / denominator
       end
       return result
     end
@@ -269,17 +294,27 @@ module Ironmon
     return entries.keys.sort.map { |identity| [identity, entries[identity]] }
   end
 
-  def self.base_stat_source_fingerprint
-    return @base_stat_source_fingerprint if @base_stat_source_fingerprint
-    entries = [BaseStatGenerator::RULES_VERSION,
+  def self.base_stat_source_fingerprint(formula_version = nil)
+    formula_version ||= base_stat_formula_version
+    @base_stat_source_fingerprints ||= {}
+    cached = @base_stat_source_fingerprints[formula_version]
+    return cached if cached
+    entries = [formula_version,
                BaseStatGenerator::MINIMUM_STAT,
                BaseStatGenerator::MAXIMUM_STAT]
     base_stat_source_entries.each do |identity, stats|
       entries << identity
       BaseStatGenerator::STAT_ORDER.each { |stat| entries << stats[stat] }
     end
-    @base_stat_source_fingerprint = fnv1a_64_fingerprint(entries)
-    return @base_stat_source_fingerprint
+    @base_stat_source_fingerprints[formula_version] = fnv1a_64_fingerprint(entries)
+    return @base_stat_source_fingerprints[formula_version]
+  end
+
+  def self.fusion_choice_hash(value)
+    mask = 0xffffffffffffffff
+    value = ((value ^ (value >> 30)) * 0xbf58476d1ce4e5b9) & mask
+    value = ((value ^ (value >> 27)) * 0x94d049bb133111eb) & mask
+    return value ^ (value >> 31)
   end
 
   def self.validate_base_stat_sources

@@ -78,15 +78,19 @@ module Ironmon
 
   def self.tracker_post_run_fusion_mapper(recipe)
     return player_fusion_mapper if tracker_loaded_recipe?(recipe)
-    run_id = recipe["run_id"]
-    tracker_fusion_mappers[run_id] ||= PlayerFusionMapper.new(
+    cache_key = [
+      recipe["run_id"], recipe["seed"], recipe["generation_profile_id"],
+      recipe["player_fusion_generator_version"],
+      recipe["base_stat_source_fingerprint"], recipe["fusion_pool_fingerprint"]
+    ]
+    tracker_fusion_mappers[cache_key] ||= PlayerFusionMapper.new(
       recipe["seed"], custom_fusion_pool, {}, {},
       base_stat_generator_for(
         recipe["seed"], recipe["base_stat_source_fingerprint"]
       ),
       recipe["player_fusion_generator_version"]
     )
-    return tracker_fusion_mappers[run_id]
+    return tracker_fusion_mappers[cache_key]
   end
 
   def self.tracker_obtainability_fusion_mapper(recipe, work_checkpoint = nil)

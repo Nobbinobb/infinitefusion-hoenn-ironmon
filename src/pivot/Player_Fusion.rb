@@ -8,16 +8,20 @@ module Ironmon
   PLAYER_FUSION_TRACE_FILENAME = "player_fusion_preparation_trace.log"
 
   class PlayerFusionMappingError < StandardError; end
+  class PlayerFusionStrengthPairingError < PlayerFusionMappingError; end
 
   class PlayerFusionMapper
-    SCHEMA_VERSION = 1
-    SUPPORTED_SCHEMA_VERSIONS = [SCHEMA_VERSION].freeze
+    SCHEMA_VERSION = 2
+    SUPPORTED_SCHEMA_VERSIONS = [1, SCHEMA_VERSION].freeze
     NAMESPACE = "player_fusion"
     MATERIAL_ID_BITS = 10
     MATERIAL_ID_MASK = (1 << MATERIAL_ID_BITS) - 1
+    PAIRING_BST_STEP = 5
 
     attr_reader :preparation_stage
     attr_reader :preparation_progress
+    attr_reader :pairing_bst_limit
+    attr_reader :pairing_relaxation_steps
 
     def initialize(seed, fusion_pool, mappings, discoveries,
                    base_stat_generator = nil,
@@ -51,6 +55,8 @@ module Ironmon
       @result_bst_maximum = nil
       @preparation_stage = :initialized
       @preparation_progress = 0
+      @pairing_bst_limit = nil
+      @pairing_relaxation_steps = 0
     end
 
     def species(body_species, head_species)
@@ -246,7 +252,7 @@ module Ironmon
           first_id = validate_result_id(
             stored.is_a?(Array) ? stored[0] : stored
           )
-          if @schema_version == SCHEMA_VERSION && stored.is_a?(Array) &&
+          if SUPPORTED_SCHEMA_VERSIONS.include?(@schema_version) && stored.is_a?(Array) &&
              stored.length >= 2
             second_id = validate_result_id(stored[1])
             if paired_result_id(first_id) == second_id
@@ -390,12 +396,9 @@ module Ironmon
     def normal_fusion_bst(body, head)
       body_stats = normal_stats(body)
       head_stats = normal_stats(head)
-      return BaseStatGenerator::STAT_ORDER.inject(0) do |sum, stat|
-        head_dominant = BaseStatGenerator::HEAD_DOMINANT_STATS.include?(stat)
-        dominant = head_dominant ? head_stats[stat] : body_stats[stat]
-        other = head_dominant ? body_stats[stat] : head_stats[stat]
-        sum + ((2 * dominant.to_i) / 3) + (other.to_i / 3)
-      end
+      return @base_stat_generator.fuse(
+        body_stats, head_stats, body.id_number * NB_POKEMON + head.id_number
+      ).values.inject(0, :+)
     end
 
     def normal_stats(species)
@@ -422,12 +425,9 @@ module Ironmon
       head = GameData::Species.get(head_id)
       body_stats = normal_stats(body)
       head_stats = normal_stats(head)
-      bst = BaseStatGenerator::STAT_ORDER.inject(0) do |sum, stat|
-        head_dominant = BaseStatGenerator::HEAD_DOMINANT_STATS.include?(stat)
-        dominant = head_dominant ? head_stats[stat] : body_stats[stat]
-        other = head_dominant ? body_stats[stat] : head_stats[stat]
-        sum + ((2 * dominant.to_i) / 3) + (other.to_i / 3)
-      end
+      bst = @base_stat_generator.fuse(
+        body_stats, head_stats, species_id
+      ).values.inject(0, :+)
       type1 = if head.type1 == :NORMAL && head.type2 == :FLYING
                 head.type2
               else
@@ -526,6 +526,55 @@ module Ironmon
 
     def build_fusion_pairs
       maximum_pair_difference = maximum_fusion_range_width
+      @pairing_bst_limit = maximum_pair_difference
+      return build_fusion_pairs_for_limit(maximum_pair_difference) if @schema_version == 1
+      ensure_disjoint_partners_exist
+      minimum_bst = nil
+      maximum_bst = nil
+      @fusion_pool_ids.each_with_index do |species_id, index|
+        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+        bst = target_bst(species_id)
+        minimum_bst = bst if !minimum_bst || bst < minimum_bst
+        maximum_bst = bst if !maximum_bst || bst > maximum_bst
+      end
+      full_span = maximum_bst - minimum_bst
+      loop do
+        begin
+          build_fusion_pairs_for_limit(@pairing_bst_limit)
+          return
+        rescue PlayerFusionStrengthPairingError
+          raise if @pairing_bst_limit >= full_span
+          @pairing_bst_limit = [@pairing_bst_limit + PAIRING_BST_STEP, full_span].min
+          @pairing_relaxation_steps += 1
+        end
+      end
+    end
+
+    def ensure_disjoint_partners_exist
+      components = Array.new(NB_POKEMON + 1, 0)
+      component_pairs = {}
+      @fusion_pool_ids.each_with_index do |species_id, index|
+        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+        body = (species_id - 1) / NB_POKEMON
+        head = species_id - body * NB_POKEMON
+        components[body] += 1
+        components[head] += 1 if head != body
+        key = [body, head].minmax
+        component_pairs[key] = component_pairs.fetch(key, 0) + 1
+      end
+      @fusion_pool_ids.each_with_index do |species_id, index|
+        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+        body = (species_id - 1) / NB_POKEMON
+        head = species_id - body * NB_POKEMON
+        overlapping = components[body]
+        overlapping += components[head] - component_pairs[[body, head].minmax] if head != body
+        next if overlapping < @fusion_pool_ids.length
+        raise PlayerFusionMappingError,
+              "custom fusion #{species_id} has no disjoint reverse partner"
+      end
+    end
+
+    def build_fusion_pairs_for_limit(maximum_pair_difference)
       16.times do |attempt|
         @preparation_stage = :strength_order
         @preparation_progress = attempt
@@ -572,7 +621,8 @@ module Ironmon
         install_fusion_pairs(pairs)
         return
       end
-      raise PlayerFusionMappingError,
+      failure_class = @schema_version == 1 ? PlayerFusionMappingError : PlayerFusionStrengthPairingError
+      raise failure_class,
             "the custom fusion pool could not form strength-matched pairs"
     end
 
@@ -626,7 +676,8 @@ module Ironmon
         difference <= maximum
       end
       return if found
-      raise PlayerFusionMappingError,
+      failure_class = @schema_version == 1 ? PlayerFusionMappingError : PlayerFusionStrengthPairingError
+      raise failure_class,
             "custom fusion #{species_id} (#{target_bst(species_id)} BST) " +
               "has no disjoint reverse partner within #{maximum} BST" +
               (nearest_difference ? "; the nearest requires #{nearest_difference} BST" : "")
@@ -813,22 +864,26 @@ module Ironmon
   def self.player_fusion_mapper
     state = pivot_state
     seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0
+    generator_version = player_fusion_generator_version
     if player_fusion_preparation_matches?(seed, state.object_id)
       finish_player_fusion_preparation
     elsif @player_fusion_preparation_fiber
       clear_player_fusion_preparation
     end
     if !@player_fusion_mapper || @player_fusion_mapper_seed != seed ||
-       @player_fusion_mapper_state_id != state.object_id
+       @player_fusion_mapper_state_id != state.object_id ||
+       @player_fusion_mapper_version != generator_version
       @player_fusion_mapper = PlayerFusionMapper.new(
         seed,
         custom_fusion_pool_numbers,
         state.fusion_mappings,
         state.discovered_fusion_mappings,
-        base_stat_generator
+        base_stat_generator,
+        generator_version
       )
       @player_fusion_mapper_seed = seed
       @player_fusion_mapper_state_id = state.object_id
+      @player_fusion_mapper_version = generator_version
     end
     return @player_fusion_mapper
   end
@@ -859,9 +914,11 @@ module Ironmon
   def self.prepare_player_fusion_pairing
     state = pivot_state
     seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0
+    generator_version = player_fusion_generator_version
     return true if @player_fusion_mapper &&
       @player_fusion_mapper_seed == seed &&
-      @player_fusion_mapper_state_id == state.object_id
+      @player_fusion_mapper_state_id == state.object_id &&
+      @player_fusion_mapper_version == generator_version
     return true if player_fusion_preparation_matches?(seed, state.object_id)
     mapper = PlayerFusionMapper.new(
       seed,
@@ -869,12 +926,13 @@ module Ironmon
       state.fusion_mappings,
       state.discovered_fusion_mappings,
       base_stat_generator,
-      PlayerFusionMapper::SCHEMA_VERSION,
+      generator_version,
       proc { Fiber.yield }
     )
     @player_fusion_preparation_mapper = mapper
     @player_fusion_preparation_seed = seed
     @player_fusion_preparation_state_id = state.object_id
+    @player_fusion_preparation_version = generator_version
     @player_fusion_preparation_fiber = Fiber.new { mapper.prepare }
     write_player_fusion_preparation_trace(mapper, "scheduled")
     return true
@@ -886,6 +944,7 @@ module Ironmon
     return true if @player_fusion_mapper &&
       @player_fusion_mapper_seed == seed &&
       @player_fusion_mapper_state_id == state.object_id &&
+      @player_fusion_mapper_version == player_fusion_generator_version &&
       @player_fusion_mapper.pairing_prepared?
     return !!(player_fusion_preparation_matches?(seed, state.object_id) &&
       @player_fusion_preparation_mapper.pairing_prepared?)
@@ -910,7 +969,7 @@ module Ironmon
     mapper = PlayerFusionMapper.new(
       seed, custom_fusion_pool_numbers, state.fusion_mappings,
       state.discovered_fusion_mappings, base_stat_generator,
-      PlayerFusionMapper::SCHEMA_VERSION, proc { Fiber.yield }
+      player_fusion_generator_version, proc { Fiber.yield }
     )
     return false if !mapper.import_prepared_pairing(assignment["packed_pairs"])
     base_stat_generator.import_prepared_stats(
@@ -920,6 +979,7 @@ module Ironmon
     @player_fusion_preparation_mapper = mapper
     @player_fusion_preparation_seed = seed
     @player_fusion_preparation_state_id = state.object_id
+    @player_fusion_preparation_version = player_fusion_generator_version
     @player_fusion_preparation_fiber = Fiber.new { mapper.prepare }
     write_player_fusion_preparation_trace(mapper, "native_pairing_scheduled")
     return true
@@ -971,7 +1031,8 @@ module Ironmon
   def self.player_fusion_preparation_matches?(seed, state_id)
     return @player_fusion_preparation_fiber &&
       @player_fusion_preparation_seed == seed &&
-      @player_fusion_preparation_state_id == state_id
+      @player_fusion_preparation_state_id == state_id &&
+      @player_fusion_preparation_version == player_fusion_generator_version
   end
 
   def self.install_prepared_player_fusion_mapper
@@ -979,6 +1040,7 @@ module Ironmon
       @player_fusion_preparation_mapper.finish_cooperative_preparation
     @player_fusion_mapper_seed = @player_fusion_preparation_seed
     @player_fusion_mapper_state_id = @player_fusion_preparation_state_id
+    @player_fusion_mapper_version = @player_fusion_preparation_version
     write_player_fusion_preparation_trace(
       @player_fusion_preparation_mapper, "installed"
     )
@@ -1008,6 +1070,7 @@ module Ironmon
     @player_fusion_preparation_mapper = nil
     @player_fusion_preparation_seed = nil
     @player_fusion_preparation_state_id = nil
+    @player_fusion_preparation_version = nil
     @player_fusion_preparation_fiber = nil
   end
 
@@ -1019,6 +1082,7 @@ module Ironmon
     @player_fusion_mapper = nil
     @player_fusion_mapper_seed = nil
     @player_fusion_mapper_state_id = nil
+    @player_fusion_mapper_version = nil
     clear_player_fusion_preparation
   end
 end

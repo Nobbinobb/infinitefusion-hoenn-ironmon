@@ -42,9 +42,9 @@ $battleMoveColorSource = Join-Path $projectRoot "data\graphics\Battle"
 $distribution = Join-Path $DistributionRoot "Data\Scripts\997_Ironmon"
 $distributionData = Join-Path $DistributionRoot "Data\Ironmon"
 $distributionBattleGraphics = Join-Path $distributionData "graphics\Battle"
-$distributionReadme = Join-Path $projectRoot "packaging\README.md"
+$distributionReadme = Join-Path $projectRoot "docs\DISTRIBUTION_README.md"
 $installationGuide = Join-Path $projectRoot "docs\guides\INSTALLATION.md"
-[xml]$trackerVersionDocument = Get-Content -LiteralPath (Join-Path $projectRoot 'tracker/src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj') -Raw
+[xml]$trackerVersionDocument = Get-Content -LiteralPath (Join-Path $projectRoot 'tracker/src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj') -Raw
 $releaseVersion = [string]$trackerVersionDocument.Project.PropertyGroup.ApplicationDisplayVersion
 if ($releaseVersion -notmatch '^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$') { throw 'Invalid tracker release version.' }
 $releaseNotes = Join-Path $projectRoot "docs\releases\RELEASE_NOTES_$releaseVersion.md"

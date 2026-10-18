@@ -25,7 +25,7 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <ProjectReference Include="../../src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj" />
+    <ProjectReference Include="../../src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj" />
     <ProjectReference Include="../Ironmon.TestSupport/Ironmon.TestSupport.csproj" />
     <Using Include="Xunit" />
     <Using Include="Ironmon.TestSupport" />

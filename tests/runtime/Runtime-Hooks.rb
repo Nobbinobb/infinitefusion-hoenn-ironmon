@@ -39,12 +39,13 @@ module IronmonRuntimeHookTests
         :difficulty_enforcement,
         :diagnostics,
         :tracker,
-        :cosmetics
+        :cosmetics,
+        :gameplay_collection
       ],
       "game-load callbacks retain their established unwind order"
     )
     assert(
-      Ironmon.game_save_hook_names == [:checkpoint, :run_lifecycle, :cosmetics],
+      Ironmon.game_save_hook_names == [:checkpoint, :run_lifecycle, :cosmetics, :gameplay_collection],
       "game-save callbacks retain their established wrapper order"
     )
     assert(
@@ -53,7 +54,9 @@ module IronmonRuntimeHookTests
         :challenge_statistics,
         :early_game_loss_reset,
         :tracker,
-        :starter_bst_reset
+        :starter_bst_reset,
+        :gameplay_collection_world,
+        :achievement_notifications
       ],
       "frame callbacks retain their established execution order"
     )

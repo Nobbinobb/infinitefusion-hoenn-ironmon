@@ -303,7 +303,7 @@ module Ironmon
       ),
       "species_generator_version" =>
         $PokemonGlobal.ironmon_species_generator_version,
-      "player_fusion_generator_version" => PlayerFusionMapper::SCHEMA_VERSION,
+      "player_fusion_generator_version" => player_fusion_generator_version,
       "base_stat_source_fingerprint" => base_stat_source_fingerprint
     }
   end

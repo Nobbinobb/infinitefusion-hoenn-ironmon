@@ -1,6 +1,9 @@
 module IronmonPlayerFusionWorkerCatalogExporter
   OUTPUT_PATH = $ironmon_player_fusion_worker_catalog_output_path.to_s
   VERIFICATION_SEED = 1_187_411_801
+  VERIFICATION_GENERATOR_VERSION = 1
+  BASE_STAT_FORMULA_VERSION =
+    Ironmon::GenerationProfile::CURRENT_ALGORITHM_VERSIONS.fetch("base_stats")
   EVOLUTION_VERIFICATION_SEEDS = [
     VERIFICATION_SEED, 1_792_136_788, 1_689, 2_895
   ].freeze
@@ -114,8 +117,10 @@ module IronmonPlayerFusionWorkerCatalogExporter
     mapper = Ironmon::PlayerFusionMapper.new(
       VERIFICATION_SEED, Ironmon.custom_fusion_pool, {}, {},
       Ironmon::BaseStatGenerator.new(
-        VERIFICATION_SEED, Ironmon.base_stat_source_fingerprint
-      )
+        VERIFICATION_SEED, Ironmon.base_stat_source_fingerprint(BASE_STAT_FORMULA_VERSION),
+        BASE_STAT_FORMULA_VERSION
+      ),
+      VERIFICATION_GENERATOR_VERSION
     )
     return verification_pairs.map do |first, second|
       results = mapper.species_pair(first, second).map do |identity|
@@ -149,7 +154,8 @@ module IronmonPlayerFusionWorkerCatalogExporter
       generator = Ironmon::FusionEvolutionGenerator.new(
         seed, catalog, pool, pool_info,
         Ironmon::BaseStatGenerator.new(
-          seed, Ironmon.base_stat_source_fingerprint
+          seed, Ironmon.base_stat_source_fingerprint(BASE_STAT_FORMULA_VERSION),
+          BASE_STAT_FORMULA_VERSION
         )
       )
       evolution_verification_sources.each do |identity|
@@ -176,7 +182,9 @@ module IronmonPlayerFusionWorkerCatalogExporter
       "schema_version" => 3,
       "normal_species_count" => NB_POKEMON,
       "base_stat_source_fingerprint" =>
-        Ironmon.base_stat_source_fingerprint,
+        Ironmon.base_stat_source_fingerprint(BASE_STAT_FORMULA_VERSION),
+      "base_stat_formula_version" => BASE_STAT_FORMULA_VERSION,
+      "legacy_base_stat_source_fingerprint" => Ironmon.base_stat_source_fingerprint(1),
       "player_fusion_generator_version" =>
         Ironmon::PlayerFusionMapper::SCHEMA_VERSION,
       "custom_fusion_pool_version" => info[:schema_version],
@@ -204,6 +212,7 @@ module IronmonPlayerFusionWorkerCatalogExporter
       "evolution_branches" => evolution_branches(codes),
       "custom_fusion_pool" => fusion_pool(codes),
       "verification_seed" => VERIFICATION_SEED,
+      "verification_generator_version" => VERIFICATION_GENERATOR_VERSION,
       "verification_mappings" => verification,
       "evolution_verification_mappings" => evolution_verification
     }

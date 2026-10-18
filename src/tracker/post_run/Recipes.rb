@@ -253,7 +253,7 @@ module Ironmon
 
   def self.tracker_player_fusion_generator_recipe
     return {
-      "version" => PlayerFusionMapper::SCHEMA_VERSION,
+      "version" => player_fusion_generator_version,
       "pool_size" => $PokemonGlobal.ironmon_custom_fusion_pool_size,
       "pool_fingerprint" => $PokemonGlobal.ironmon_custom_fusion_pool_fingerprint
     }

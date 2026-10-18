@@ -67,13 +67,20 @@ module Ironmon
 
   def self.base_stat_generator
     seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0
-    if !@base_stat_generator || @base_stat_generator_seed != seed
+    version = base_stat_formula_version
+    if !@base_stat_generator || @base_stat_generator_seed != seed ||
+       @base_stat_generator_formula_version != version
       @base_stat_generator_seed = seed
+      @base_stat_generator_formula_version = version
       @base_stat_generator = BaseStatGenerator.new(
-        seed, base_stat_source_fingerprint
+        seed, base_stat_source_fingerprint, version
       )
     end
     return @base_stat_generator
+  end
+
+  def self.base_stat_formula_version
+    return generation_profile_algorithm_version("base_stats")
   end
 
   def self.base_stat_generator_for(seed, fingerprint)
@@ -87,6 +94,7 @@ module Ironmon
   def self.reset_base_stat_generator_cache
     @base_stat_generator = nil
     @base_stat_generator_seed = nil
+    @base_stat_generator_formula_version = nil
   end
 
   def self.suspend_base_stat_randomization

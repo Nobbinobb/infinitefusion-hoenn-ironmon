@@ -34,7 +34,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ironmon.Tracker.AccessGenerator.Core\Ironmon.Tracker.AccessGenerator.Core.csproj" />
-    <ProjectReference Include="..\..\src\Ironmon.Tracker.Access\Ironmon.Tracker.Access.csproj" />
-    <ProjectReference Include="..\..\src\Ironmon.Tracker.UI\Ironmon.Tracker.UI.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Ironmon.Tracker.Access\Ironmon.Tracker.Access.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Ironmon.Tracker.UI\Ironmon.Tracker.UI.csproj" />
   </ItemGroup>
 </Project>

@@ -16,7 +16,7 @@ $output = if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
 } else {
   Join-Path $projectRoot $OutputDirectory
 }
-$project = Join-Path $projectRoot "tracker\src\Ironmon.Tracker.App\Ironmon.Tracker.App.csproj"
+$project = Join-Path $projectRoot "tracker\src\Tracker\Ironmon.Tracker.App\Ironmon.Tracker.App.csproj"
 $resolvedOutput = [System.IO.Path]::GetFullPath($output)
 $allowedDistributionRoots = "dist", "dist-runtime-required" | ForEach-Object {
   [System.IO.Path]::GetFullPath((Join-Path $projectRoot $_)).TrimEnd([System.IO.Path]::DirectorySeparatorChar)

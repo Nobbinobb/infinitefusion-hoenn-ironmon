@@ -284,6 +284,12 @@ module IronmonTrackerStructureRuntimeTests
     graphics_singleton = class << Graphics; self; end
     original_trigger = Input.method(:trigger?)
     original_input_update = Input.method(:update)
+    original_trigger = original_trigger.super_method while
+      original_trigger && original_trigger.owner != input_singleton
+    original_input_update = original_input_update.super_method while
+      original_input_update && original_input_update.owner != input_singleton
+    assert(original_trigger && original_input_update,
+           "scripted starter input preserves the native singleton implementations")
     original_graphics_update = Graphics.method(:update)
     frame = 0
     keys = [Input::RIGHT, Input::USE, Input::LEFT, Input::USE]
@@ -405,8 +411,14 @@ module IronmonTrackerStructureRuntimeTests
 
   def self.run
     validate_starter_selection_rules
+    transport_update = Ironmon::TrackerConnection.instance_method(:update)
     assert_source(
-      Ironmon::TrackerConnection.instance_method(:update),
+      transport_update,
+      "030_Collection_12_Transport.rb",
+      "durable collection transport integration"
+    )
+    assert_source(
+      transport_update.super_method,
       "018_Tracker_Connection.rb",
       "tracker transport"
     )

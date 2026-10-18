@@ -7,7 +7,7 @@ $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 Set-Location -LiteralPath $projectRoot
 $sourceCommit = git rev-parse HEAD
 $tree = git rev-parse 'HEAD^{tree}'
-[xml]$project = Get-Content tracker/src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj -Raw
+[xml]$project = Get-Content tracker/src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj -Raw
 $version = [string]$project.Project.PropertyGroup.ApplicationDisplayVersion
 $snapshot = Get-Content (Join-Path $SnapshotDirectory 'upstream-inputs.json') -Raw | ConvertFrom-Json
 $pulls = gh api "repos/$env:GITHUB_REPOSITORY/commits/$sourceCommit/pulls" | ConvertFrom-Json

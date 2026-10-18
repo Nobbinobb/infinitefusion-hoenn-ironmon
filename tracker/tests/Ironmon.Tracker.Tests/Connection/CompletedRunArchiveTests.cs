@@ -30,17 +30,21 @@ public sealed class CompletedRunArchiveTests : IDisposable
     /// <summary>
     /// Verifies that a stored nested recipe survives archive reconstruction without lookup results.
     /// </summary>
-    [Fact]
-    public void StorePersistsOnlyCompletedRunRecipe()
+    /// <param name="playerFusionVersion">The historical or current player-fusion algorithm to preserve.</param>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void StorePersistsOnlyCompletedRunRecipe(int playerFusionVersion)
     {
         string root = CreateRoot();
         CompletedRunArchive archive = new(new TrackerKnowledgeOptions(root));
-        archive.Store(CreateRecipe("run-archive"));
+        archive.Store(CreateRecipe("run-archive", playerFusionVersion: playerFusionVersion));
 
         CompletedRunRecipePayload stored = Assert.Single(new CompletedRunArchive(new TrackerKnowledgeOptions(root)).Recipes);
 
         Assert.Equal("run-archive", stored.RunId);
         Assert.Equal(98765, stored.Seed);
+        Assert.Equal(playerFusionVersion, stored.PlayerFusionGenerator.Version);
         Assert.Equal(1, stored.MoveAccessGenerator!.Version);
         Assert.Equal("fusion-tutor-source", stored.MoveAccessGenerator.FusionTutor.SourceFingerprint);
         Assert.Equal(1, stored.EvolutionGenerator!.Version);
@@ -273,8 +277,9 @@ public sealed class CompletedRunArchiveTests : IDisposable
     /// <param name="itemGroundTotalWeight">An optional ground-selection ticket total.</param>
     /// <param name="statistics">Optional authoritative attempt statistics.</param>
     /// <param name="generationProfileId">The immutable generation profile identity.</param>
+    /// <param name="playerFusionVersion">The pinned player-fusion algorithm version.</param>
     /// <returns>The recipe.</returns>
-    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, bool includeMoveGenerator = true, bool includeEvolutionGenerator = true, int statisticsSchemaVersion = 1, int itemRulesVersion = 1, int? itemGroundTotalWeight = null, RunStatisticsPayload? statistics = null, string generationProfileId = _testGenerationProfileId) => new()
+    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, bool includeMoveGenerator = true, bool includeEvolutionGenerator = true, int statisticsSchemaVersion = 1, int itemRulesVersion = 1, int? itemGroundTotalWeight = null, RunStatisticsPayload? statistics = null, string generationProfileId = _testGenerationProfileId, int playerFusionVersion = 1) => new()
     {
         SchemaVersion = schemaVersion,
         RunId = runId,
@@ -289,7 +294,7 @@ public sealed class CompletedRunArchiveTests : IDisposable
         BaseStatGenerator = new BaseStatGeneratorRecipePayload { Version = 1, SourceFingerprint = "base-stats" },
         EvolutionGenerator = includeEvolutionGenerator ? CreateEvolutionGenerator() : null,
         MoveAccessGenerator = includeMoveGenerator ? CreateMoveGenerator() : null,
-        PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 1, PoolSize = 100, PoolFingerprint = "fusions" },
+        PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = playerFusionVersion, PoolSize = 100, PoolFingerprint = "fusions" },
         ItemGenerator = new ItemGeneratorRecipePayload
         {
             Version = 1,

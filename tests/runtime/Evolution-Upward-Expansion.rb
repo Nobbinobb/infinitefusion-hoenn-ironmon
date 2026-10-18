@@ -184,13 +184,14 @@ module IronmonEvolutionUpwardExpansionRuntimeTests
         "tracker lookup rejects a fusion outside the custom pool"
       )
       assert_live_snapshot_uses_effective_methods
+      # These known collision-rescue examples belong to the historical stat formula.
       cases = [
         [1689, :B506H10],
         [2895, :B285H506]
       ]
       cases.each do |seed, identity|
         stats = Ironmon::BaseStatGenerator.new(
-          seed, Ironmon.base_stat_source_fingerprint
+          seed, Ironmon.base_stat_source_fingerprint(1), 1
         )
         generator = Ironmon::FusionEvolutionGenerator.new(
           seed, catalog, pool, pool_info, stats
@@ -263,7 +264,7 @@ module IronmonEvolutionUpwardExpansionRuntimeTests
         replay = Ironmon::FusionEvolutionGenerator.new(
           seed, catalog, pool, pool_info,
           Ironmon::BaseStatGenerator.new(
-            seed, Ironmon.base_stat_source_fingerprint
+            seed, Ironmon.base_stat_source_fingerprint(1), 1
           )
         ).branches_for(identity)
         assert(replay == branches,
@@ -326,7 +327,7 @@ module IronmonEvolutionUpwardExpansionRuntimeTests
         exact_generator = Ironmon::FusionEvolutionGenerator.new(
           seed, catalog, pool, pool_info,
           Ironmon::BaseStatGenerator.new(
-            seed, Ironmon.base_stat_source_fingerprint
+            seed, Ironmon.base_stat_source_fingerprint(1), 1
           )
         )
         exact_predecessors = []
@@ -375,7 +376,7 @@ module IronmonEvolutionUpwardExpansionRuntimeTests
         direct_generator = Ironmon::FusionEvolutionGenerator.new(
           seed, catalog, pool, pool_info,
           Ironmon::BaseStatGenerator.new(
-            seed, Ironmon.base_stat_source_fingerprint
+            seed, Ironmon.base_stat_source_fingerprint(1), 1
           )
         )
         direct_branch = direct_generator.branches_for(

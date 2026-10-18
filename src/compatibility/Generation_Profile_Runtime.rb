@@ -99,7 +99,17 @@ module Ironmon
     if ![1, 2].include?(eligibility["version"])
       raise GenerationProfileUnavailable, "the custom sprite eligibility version is unsupported"
     end
+    player_fusion = manifest["algorithms"].find do |entry|
+      entry["name"] == "player_fusion_reversal"
+    end
+    if ![1, 2].include?(player_fusion["version"])
+      raise GenerationProfileUnavailable, "the player fusion reversal version is unsupported"
+    end
     expected_names -= ["custom_sprites"] if eligibility["version"] < 2
+    base_stats = manifest["algorithms"].find { |entry| entry["name"] == "base_stats" }
+    if ![1, 2].include?(base_stats["version"])
+      raise GenerationProfileUnavailable, "the base stat formula version is unsupported"
+    end
     if names != expected_names
       raise GenerationProfileUnavailable,
         "the #{label} generation profile component set is incomplete"
@@ -277,6 +287,19 @@ module Ironmon
     return false if !selected
     return true if !profile_id
     return selected == profile_id.to_s
+  end
+
+  def self.player_fusion_generator_version
+    profile_id = @active_generation_profile_id || @run_generation_profile_id
+    if !profile_id && !@reset_in_progress && $PokemonGlobal &&
+       $PokemonGlobal.ironmon_mode == true
+      attempt = current_run_attempt if respond_to?(:current_run_attempt)
+      profile_id = attempt["generation_profile_id"] if attempt
+      profile_id = validate_generation_profile_id(profile_id) if profile_id
+    end
+    return generation_profile_algorithm_version(
+      "player_fusion_reversal", profile_id
+    )
   end
 
   def self.with_generation_profile(profile_id)

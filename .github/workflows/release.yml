@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'tracker/src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj'
+      - 'tracker/src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj'
   workflow_dispatch:
     inputs:
       source_commit:

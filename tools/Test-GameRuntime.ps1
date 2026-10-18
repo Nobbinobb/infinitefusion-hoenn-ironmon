@@ -290,6 +290,8 @@ $bootstrapSource = @(
     $difficultyScalingTestSource
     $newPlayerProtectionTestSource
     $pivotTransformationTestSource
+    "`$ironmon_fusion_fixture_path = '$((Join-Path $projectRoot 'tests/fixtures/fusion-stats-v2.json').Replace('\', '/').Replace("'", "\'"))'"
+    ([IO.File]::ReadAllText((Join-Path $projectRoot "tests/runtime/Fusion-Choices.rb"), [Text.Encoding]::UTF8))
     $healingNpcTestSource
     $wallyTutorialTestSource
     $repelOverlayTestSource
@@ -306,6 +308,8 @@ $bootstrapSource = @(
     $fusionPredecessorBenchmarkSource
     $moveAccessStructureTestSource
     $trackerStructureTestSource
+    [IO.File]::ReadAllText((Join-Path $projectRoot 'tests/runtime/Achievements.rb'), [Text.Encoding]::UTF8)
+    "IronmonAchievementRuntimeTests.run"
     $diagnosticTestSource
     "exit! 0"
     "rescue Exception => error"

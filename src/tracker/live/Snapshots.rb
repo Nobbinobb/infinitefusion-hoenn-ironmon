@@ -71,7 +71,7 @@ module Ironmon
     return nil if !active? || !$PokemonGlobal
     metadata = [
       $PokemonGlobal.ironmon_seed,
-      PlayerFusionMapper::SCHEMA_VERSION,
+      player_fusion_generator_version,
       $PokemonGlobal.ironmon_evolution_fusion_generator_version,
       $PokemonGlobal.ironmon_evolution_fusion_rules_version,
       $PokemonGlobal.ironmon_evolution_source_fingerprint,
@@ -476,7 +476,7 @@ module Ironmon
       @move_access_source_entries,
       @evolution_randomization_ready, @evolution_generator,
       @fusion_evolution_generator, @evolution_catalog,
-      @base_stat_source_fingerprint, @base_stat_generator,
+      @base_stat_source_fingerprints, @base_stat_generator,
       @custom_fusion_pool_service,
       @profile_custom_fusion_pool_services,
       @fusion_evolution_target_catalog,

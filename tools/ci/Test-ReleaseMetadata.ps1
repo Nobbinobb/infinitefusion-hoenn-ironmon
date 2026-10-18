@@ -3,7 +3,8 @@ param([string]$BaseCommit)
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$projectPath = 'tracker/src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj'
+$projectPath = 'tracker/src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj'
+$legacyProjectPath = 'tracker/src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj'
 [xml]$project = Get-Content -LiteralPath (Join-Path $projectRoot $projectPath) -Raw
 $properties = $project.Project.PropertyGroup
 $version = [string]$properties.ApplicationDisplayVersion
@@ -21,7 +22,14 @@ if (-not (Test-Path -LiteralPath $notes) -or (Get-Content -LiteralPath $notes -R
 $isRelease = $true
 if ($BaseCommit) {
   if ($BaseCommit -notmatch '^[0-9a-f]{40}$') { throw 'Invalid release base revision.' }
-  [xml]$previous = git -C $projectRoot show "${BaseCommit}:$projectPath"
+  $baseProjectPath = git -C $projectRoot ls-tree --name-only $BaseCommit -- $projectPath
+  if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect base version.' }
+  if (-not $baseProjectPath) {
+    $baseProjectPath = git -C $projectRoot ls-tree --name-only $BaseCommit -- $legacyProjectPath
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect legacy base version.' }
+  }
+  if ($baseProjectPath -cnotin @($projectPath, $legacyProjectPath)) { throw 'Cannot find tracker project at base revision.' }
+  [xml]$previous = git -C $projectRoot show "${BaseCommit}:$baseProjectPath"
   if ($LASTEXITCODE -ne 0) { throw 'Cannot read base version.' }
   $oldVersion = [string]$previous.Project.PropertyGroup.ApplicationDisplayVersion
   $isRelease = $oldVersion -ne $version

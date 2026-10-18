@@ -811,6 +811,61 @@ TM gifts select uniformly from their TM-only pool. Missing or incompatible
 item metadata is rejected; archived lookup never substitutes the currently
 loaded run's mapping or authored item behavior.
 
+## Immutable generation-profile format
+
+`generation_profile.json` contains `profile_id` and `manifest`. Manifest schema
+1 contains `schema_version`, `algorithms`, and `components`. Each algorithm is
+`{name, version}`; each component is `{name, schema_version, sha256, byte_length}`.
+Names are stable lowercase identifiers. Versions and byte lengths are positive
+integers; component digests are lowercase SHA-256 hashes of the exact bytes.
+Algorithm and component names must be unique. The required algorithm families
+are defined by `Ironmon::GenerationProfile::ALGORITHM_FAMILIES` and
+`GenerationAlgorithmNames.All`; supported implementation versions belong to
+their generators, independently of component formats and cache schemas.
+
+Before hashing, sort both descriptor arrays by name in ordinal order and sort
+object keys ordinally at every depth. Serialize the normalized manifest as
+compact UTF-8 JSON, without a BOM or trailing newline. `profile_id` is its
+lowercase SHA-256 digest; release versions are not part of this identity.
+The shared Ruby/C# generation-profile tests verify canonical-byte parity.
+
+Current packages retain `base_catalog` (normal game data), `custom_fusion_pool`
+(packed eligibility), `custom_sprites` (reviewed sprite catalog), `area_catalog`
+(authored area sources), and `obtainability_sources` (semantic acquisition and
+resource sources). Historical eligibility-version-1 packages omit
+`custom_sprites`; the runtime validates the component set against the pinned
+eligibility implementation. Derived indexes are rebuildable caches, not source
+components or profile identity.
+
+The `custom_fusion_pool` component uses this schema-1 binary layout:
+
+| Offset | Bytes | Encoding |
+| ---: | ---: | --- |
+| 0 | 8 | ASCII `IFCFPOOL` |
+| 8 | 2 | Unsigned little-endian schema version |
+| 10 | 2 | Unsigned little-endian normal-species count, `N` |
+| 12 | 4 | Unsigned little-endian eligible-fusion count |
+| 16 | 4 | Unsigned little-endian bitset byte length |
+| 20 | remaining | Eligibility bitset |
+
+For one-based body/head identifiers, bit index is
+`(body - 1) * N + head - 1`: body is the outer row axis, head is the inner axis,
+and bits within each byte are least-significant first. Bitset length is
+`ceil(N * N / 8)`, with unused padding bits zero. Readers reject unknown schemas,
+invalid dimensions, odd eligibility counts, extra or missing bytes, and counts
+that disagree with set bits. Enumeration follows increasing bit index, retaining
+the runtime pool's deterministic order.
+
+Starting an attempt validates and retains its immutable package under
+`Data/Ironmon/generation_profiles/<profile_id>/` before pinning the ID to the
+attempt and save metadata. Active loads and archived requests use that package;
+an archived request restores the active profile afterward. Reset selects the
+installed current package for the replacement attempt. Missing, damaged, or
+unsupported historical inputs return `generation_profile_unavailable`; they
+never fall back to current catalogs or acquire today's profile implicitly.
+Future deterministic behavior changes must preserve the implementations and
+packages needed by supported pinned profiles rather than rewriting old runs.
+
 ## Deterministic post-run lookup
 
 `pokemon_search` accepts a non-empty text query, zero-based `offset`, a `limit`
@@ -1141,3 +1196,16 @@ reports creation/loading failures using its normal message UI.
 Handshake and `update_settings` carry `automatic_reset` (default true). This live
 preference changes loss handling independently of saved rules and historical
 seed recipes. Existing shared-seed commands remain separate from title actions.
+
+## Earned achievement notices
+
+Both handshakes advertise `achievement_protocol_version: 1`. The tracker sends
+`achievement_unlocks` only to a runtime that advertises this version. Its
+`unlocks` array contains earned `id`, `number`, `name`, `condition`, and
+`unlocked_at` values. No dormant definitions or locked progress are transmitted.
+
+The game may send `achievement_poll` with an empty payload to recover pending
+notices after reconnecting. After a notice has actually been displayed, it sends
+`achievement_displayed` with an `ids` array of opaque UUIDs. Delivery and display
+acknowledgements are idempotent; an interrupted display remains pending.
+Notification failure does not reject already committed gameplay data.

@@ -3,10 +3,10 @@
 $ErrorActionPreference = 'Stop'
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ("ironmon-publication-contracts-" + [guid]::NewGuid().ToString('N'))
 $savedEnvironment = @{}
-foreach ($name in 'GITHUB_ACTIONS', 'GITHUB_REF', 'GITHUB_WORKSPACE', 'GITHUB_REPOSITORY', 'GITHUB_STEP_SUMMARY', 'RUNNER_TEMP') {
+foreach ($name in 'GITHUB_ACTIONS', 'GITHUB_REF', 'GITHUB_WORKSPACE', 'GITHUB_REPOSITORY', 'GITHUB_STEP_SUMMARY', 'GITHUB_OUTPUT', 'RUNNER_TEMP') {
   $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name)
 }
-New-Item -ItemType Directory -Path "$testRoot/tools", "$testRoot/candidate", "$testRoot/source/tracker/src/Ironmon.Tracker.App", "$testRoot/source/docs/releases", "$testRoot/temp" -Force | Out-Null
+New-Item -ItemType Directory -Path "$testRoot/tools", "$testRoot/candidate", "$testRoot/source/tracker/src/Tracker/Ironmon.Tracker.App", "$testRoot/source/docs/releases", "$testRoot/temp" -Force | Out-Null
 $global:IronmonPublicationTestState = @{}
 $global:IronmonPublicationTestState.fakeRelease = $null
 $global:IronmonPublicationTestState.dispatched = 0
@@ -20,6 +20,18 @@ $global:IronmonPublicationTestState.fingerprint = 'b' * 64
 $global:IronmonPublicationTestState.latestFingerprint = $global:IronmonPublicationTestState.fingerprint
 function git {
   $global:LASTEXITCODE = 0
+  $arguments = @($args)
+  if ($arguments.Count -gt 2 -and $arguments[2] -eq 'ls-tree') {
+    $path = $arguments[-1]
+    if ($global:IronmonPublicationTestState.metadataProjects.ContainsKey($path)) { return $path }
+    return
+  }
+  if ($arguments.Count -gt 2 -and $arguments[2] -eq 'show') {
+    $path = $arguments[3].Substring(41)
+    if (-not $global:IronmonPublicationTestState.metadataProjects.ContainsKey($path)) { throw 'Unexpected historical tracker project path.' }
+    $global:IronmonPublicationTestState.metadataReadPath = $path
+    return $global:IronmonPublicationTestState.metadataProjects[$path]
+  }
   return ('a' * 40)
 }
 function gh {
@@ -75,6 +87,34 @@ function dotnet {
   } elseif ($args[1] -cne 'verify') { throw 'Unexpected metadata operation.' }
 }
 try {
+  $metadataRoot = Join-Path $testRoot 'metadata'
+  $currentProjectPath = 'tracker/src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj'
+  $legacyProjectPath = 'tracker/src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj'
+  New-Item -ItemType Directory -Path "$metadataRoot/tools/ci", (Split-Path -Parent (Join-Path $metadataRoot $currentProjectPath)), "$metadataRoot/src/foundation", "$metadataRoot/docs/releases" -Force | Out-Null
+  Copy-Item (Join-Path $PSScriptRoot 'Test-ReleaseMetadata.ps1'), (Join-Path $PSScriptRoot 'UpstreamInputs.ps1') -Destination "$metadataRoot/tools/ci"
+  $currentProject = '<Project><PropertyGroup><ApplicationDisplayVersion>1.2.3</ApplicationDisplayVersion><ApplicationVersion>3</ApplicationVersion><Version>1.2.3</Version></PropertyGroup></Project>'
+  $olderProject = $currentProject.Replace('1.2.3', '1.2.2').Replace('<ApplicationVersion>3', '<ApplicationVersion>2')
+  $currentProject | Set-Content (Join-Path $metadataRoot $currentProjectPath)
+  'VERSION = "1.2.3"' | Set-Content "$metadataRoot/src/foundation/Core.rb"
+  '# Ironmon 1.2.3' | Set-Content "$metadataRoot/docs/releases/RELEASE_NOTES_1.2.3.md"
+  foreach ($case in @(
+    @{Projects=@{$legacyProjectPath=$currentProject};ExpectedPath=$legacyProjectPath;Release='false'},
+    @{Projects=@{$currentProjectPath=$olderProject};ExpectedPath=$currentProjectPath;Release='true'},
+    @{Projects=@{$currentProjectPath=$currentProject;$legacyProjectPath=$olderProject};ExpectedPath=$currentProjectPath;Release='false'}
+  )) {
+    $global:IronmonPublicationTestState.metadataProjects = $case.Projects
+    $global:IronmonPublicationTestState.metadataReadPath = $null
+    $env:GITHUB_OUTPUT = "$metadataRoot/output.txt"
+    if (Test-Path -LiteralPath $env:GITHUB_OUTPUT) { Remove-Item -LiteralPath $env:GITHUB_OUTPUT }
+    & "$metadataRoot/tools/ci/Test-ReleaseMetadata.ps1" -BaseCommit $global:IronmonPublicationTestState.commit
+    if ($global:IronmonPublicationTestState.metadataReadPath -cne $case.ExpectedPath -or "release=$($case.Release)" -cnotin @(Get-Content -LiteralPath $env:GITHUB_OUTPUT)) { throw 'Release metadata must resolve historical and grouped tracker project layouts without changing release classification.' }
+  }
+  $global:IronmonPublicationTestState.metadataProjects = @{}
+  $global:IronmonPublicationTestState.metadataReadPath = $null
+  $rejected = $false
+  try { & "$metadataRoot/tools/ci/Test-ReleaseMetadata.ps1" -BaseCommit $global:IronmonPublicationTestState.commit } catch { $rejected = $_.Exception.Message -ceq 'Cannot find tracker project at base revision.' }
+  if (-not $rejected -or $global:IronmonPublicationTestState.metadataReadPath) { throw 'Missing historical tracker projects must fail without reading a different path.' }
+  [Environment]::SetEnvironmentVariable('GITHUB_OUTPUT', $savedEnvironment['GITHUB_OUTPUT'])
   Copy-Item (Join-Path $PSScriptRoot 'Publish-Release.ps1'), (Join-Path $PSScriptRoot 'Candidate.ps1'), (Join-Path $PSScriptRoot 'UpdateArtifacts.ps1') -Destination "$testRoot/tools"
   # Replace only the network resolver in this isolated fixture with known input provenance.
   @'
@@ -82,7 +122,7 @@ param([string]$OutputDirectory)
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 Copy-Item (Join-Path $env:GITHUB_WORKSPACE 'latest.json') -Destination (Join-Path $OutputDirectory 'upstream-inputs.json') -Force
 '@ | Set-Content "$testRoot/tools/Get-UpstreamInputs.ps1"
-  '<Project><PropertyGroup><ApplicationDisplayVersion>1.2.3</ApplicationDisplayVersion></PropertyGroup></Project>' | Set-Content "$testRoot/source/tracker/src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj"
+  '<Project><PropertyGroup><ApplicationDisplayVersion>1.2.3</ApplicationDisplayVersion></PropertyGroup></Project>' | Set-Content "$testRoot/source/tracker/src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj"
   '# Ironmon 1.2.3' | Set-Content "$testRoot/source/docs/releases/RELEASE_NOTES_1.2.3.md"
   . (Join-Path $PSScriptRoot 'ReleaseTestFixture.ps1')
   $null = New-TestReleaseCandidate "$testRoot/candidate" '1.2.3' $global:IronmonPublicationTestState.commit $global:IronmonPublicationTestState.fingerprint 'owner/repo'
@@ -137,7 +177,7 @@ Copy-Item (Join-Path $env:GITHUB_WORKSPACE 'latest.json') -Destination (Join-Pat
   $rejected = $false
   try { & "$testRoot/tools/Publish-Release.ps1" -UpdateTool fixture-tool -SourceCommit $global:IronmonPublicationTestState.commit } catch { $rejected = $true }
   if (-not $rejected -or $global:IronmonPublicationTestState.published -ne 1) { throw 'A resolved release with a different tag must be rejected.' }
-  Write-Output 'Publication contracts passed: rejected metadata, publish, exact signature retry, unsigned upstream rebuild, retry limit, remote tampering, partial-draft recovery and release-ID identity.'
+  Write-Output 'Publication contracts passed: historical project layouts, rejected metadata, publish, exact signature retry, unsigned upstream rebuild, retry limit, remote tampering, partial-draft recovery and release-ID identity.'
 } finally {
   Remove-Item Function:git, Function:gh, Function:dotnet
   Remove-Variable IronmonPublicationTestState -Scope Global

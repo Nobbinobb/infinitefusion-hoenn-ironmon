@@ -300,7 +300,16 @@ function Invoke-IronmonGameRuntime {
             $startArguments.RedirectStandardOutput = Join-Path $env:RUNNER_TEMP 'ironmon-runtime.stdout.log'
             $startArguments.RedirectStandardError = Join-Path $env:RUNNER_TEMP 'ironmon-runtime.stderr.log'
         }
-        $gameProcess = Start-Process @startArguments
+        # Native verification and catalogue generators must never publish their
+        # synthetic gameplay into the player's release-onward collection.
+        $previousCollectionTestMode = $env:IRONMON_GAMEPLAY_COLLECTION_TEST_MODE
+        try {
+            $env:IRONMON_GAMEPLAY_COLLECTION_TEST_MODE = 'suspended'
+            $gameProcess = Start-Process @startArguments
+        }
+        finally {
+            $env:IRONMON_GAMEPLAY_COLLECTION_TEST_MODE = $previousCollectionTestMode
+        }
         $runtimeTimer = [Diagnostics.Stopwatch]::StartNew()
         $lastProgressText = $null
         while (-not $gameProcess.WaitForExit(250)) {

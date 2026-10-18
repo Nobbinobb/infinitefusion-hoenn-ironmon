@@ -11,4 +11,8 @@ dist-runtime-required/
 release/
 simulation-results/
 data/
+!/data/
+/data/*
+!/data/gameplay_collection_catalog.json
+!/data/achievements.pack
 docs/audits/generated/

@@ -1,0 +1,88 @@
+<section class="achievements-page" aria-labelledby="achievement-title" aria-busy="@(_loading ? "true" : "false")" @onkeydown:stopPropagation="true" @onkeyup:stopPropagation="true">
+    <header class="achievement-heading">
+        <button type="button" class="achievement-back" aria-label="@Text[AchievementText.Back]" title="@Text[AchievementText.Back]" @onclick="BackRequested">
+            <ObsidianIcon Kind="ObsidianIconKind.ArrowRight" />
+        </button>
+        <h1 id="achievement-title">@Text[AchievementText.Title]</h1>
+        <div class="achievement-count"><strong>@(_hasSnapshot ? _earned.Count.ToString(CultureInfo.CurrentCulture) : _unknownCount)</strong> / @_totalAchievements</div>
+    </header>
+    @if (_hasSnapshot)
+    {
+        <div class="achievement-progress" role="progressbar" aria-label="@Text[AchievementText.Progress]" aria-valuemin="0" aria-valuemax="@_totalAchievements" aria-valuenow="@_earned.Count" aria-valuetext="@Text[AchievementText.ProgressValue, _earned.Count, _totalAchievements]">
+            <div class="achievement-progress-fill" style="@ProgressStyle"></div>
+        </div>
+    }
+    @if (_hasSnapshot && _earned.Count > 0)
+    {
+        <div class="achievement-controls">
+            <div class="achievement-search">
+                <span class="achievement-search-icon"><ObsidianIcon Kind="ObsidianIconKind.Search" /></span>
+                <input type="search" aria-label="@Text[AchievementText.Search]" placeholder="@Text[AchievementText.Search]" autocomplete="off" @bind="_query" @bind:event="oninput" @bind:after="UpdateVisibleAchievements" @onkeydown="HandleSearchKeyDown" />
+                @if (!string.IsNullOrEmpty(_query))
+                {
+                    <button type="button" class="achievement-clear" aria-label="@Text[AchievementText.ClearSearch]" @onclick="ClearSearch"><ObsidianIcon Kind="ObsidianIconKind.Close" /></button>
+                }
+            </div>
+            <select class="achievement-sort" aria-label="@Text[AchievementText.Sort]" @bind="_sort" @bind:after="UpdateVisibleAchievements">
+                <option value="@_newestSort">@Text[AchievementText.Newest]</option>
+                <option value="@_oldestSort">@Text[AchievementText.Oldest]</option>
+                <option value="@_nameSort">@Text[AchievementText.Name]</option>
+            </select>
+        </div>
+    }
+    @if (_loading)
+    {
+        <div class="achievement-skeleton" role="status" aria-label="@Text[AchievementText.Loading]">
+            @for (int index = 0; index < 5; index++)
+            {
+                <div class="achievement-skeleton-row" aria-hidden="true"><span></span><div><i></i><i></i></div></div>
+            }
+        </div>
+    }
+    else if (!_hasSnapshot && _unavailable)
+    {
+        <div class="achievement-empty" role="status">
+            <span class="achievement-state-icon"><ObsidianIcon Kind="ObsidianIconKind.Star" /></span>
+            <h2>@Text[AchievementText.Unavailable]</h2>
+            <p>@Text[AchievementText.TryLater]</p>
+            <button type="button" class="achievement-state-action" @onclick="RetryAsync">@Text[AchievementText.Retry]</button>
+        </div>
+    }
+    else if (_earned.Count == 0)
+    {
+        <div class="achievement-empty" role="status">
+            <span class="achievement-state-icon"><ObsidianIcon Kind="ObsidianIconKind.Star" /></span>
+            <h2>@Text[AchievementText.EmptyTitle]</h2>
+            <p>@Text[AchievementText.EmptyDescription]</p>
+        </div>
+    }
+    else if (_visible.Count == 0)
+    {
+        <div class="achievement-empty" role="status">
+            <span class="achievement-state-icon"><ObsidianIcon Kind="ObsidianIconKind.Search" /></span>
+            <h2>@Text[AchievementText.NoMatches]</h2>
+            <p>@Text[AchievementText.SearchHint]</p>
+            <button type="button" class="achievement-state-action" @onclick="ClearSearch">@Text[AchievementText.ClearSearch]</button>
+        </div>
+    }
+    else
+    {
+        <div class="achievement-scroll" tabindex="0" aria-label="@Text[AchievementText.List]">
+            <ol class="achievement-list">
+                @foreach (var achievement in _visible)
+                {
+                    <li class="achievement-row" @key="achievement.Id">
+                        <span class="achievement-earned-icon" aria-hidden="true"><ObsidianIcon Kind="ObsidianIconKind.Star" /></span>
+                        <div class="achievement-details">
+                            <div class="achievement-row-heading">
+                                <h2>@achievement.Name</h2>
+                                <time datetime="@FormatTimestamp(achievement.UnlockedAt)" title="@achievement.UnlockedAt.ToLocalTime().ToString(_fullDateFormat, CultureInfo.CurrentCulture)">@FormatUnlockDate(achievement.UnlockedAt)</time>
+                            </div>
+                            <p>@achievement.Condition</p>
+                        </div>
+                    </li>
+                }
+            </ol>
+        </div>
+    }
+</section>
