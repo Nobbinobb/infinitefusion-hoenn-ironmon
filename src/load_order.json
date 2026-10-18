@@ -116,6 +116,7 @@
   { "source": "tracker/area_progress/Hooks.rb", "output": "022_Area_Progress_Hooks.rb" },
   { "source": "tracker/area_progress/Runtime_Integration.rb", "output": "022_Area_Progress_Runtime_Integration.rb" },
   { "source": "presentation/Battle_Move_Type_Colors.rb", "output": "023_Battle_Move_Type_Colors.rb" },
+  { "source": "presentation/Battle_Quick_Items.rb", "output": "023_Battle_Quick_Items.rb" },
   { "source": "presentation/Battle_Run_Hotkey.rb", "output": "023_Battle_Run_Hotkey.rb" },
   { "source": "presentation/Hidden_Item_Markers.rb", "output": "023_Hidden_Item_Markers.rb" },
   { "source": "presentation/Sprite_Performance_Fixes.rb", "output": "023_Sprite_Performance_Fixes.rb" },

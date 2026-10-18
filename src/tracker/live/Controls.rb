@@ -8,7 +8,12 @@ module Ironmon
     "interact" => Input::C, "menu" => Input::B, "battle_run" => Input::B,
     "speed" => Input::X, "auxiliary" => Input::Y, "ready" => Input::Z,
     "page_up" => Input::L, "page_down" => Input::R,
-    "screenshot" => Input::F8, "reset" => Input::F7
+    "screenshot" => Input::F8, "reset" => Input::F7,
+    "quick_item_left" => :ironmon_quick_item_left,
+    "quick_item_right" => :ironmon_quick_item_right,
+    "quick_item_up" => :ironmon_quick_item_up,
+    "quick_item_down" => :ironmon_quick_item_down,
+    "quick_item_use" => :ironmon_quick_item_use
   }.freeze
 
   def self.clear_tracker_controls
@@ -98,6 +103,13 @@ module Ironmon
 
   def self.tracker_control_released?(key)
     return (@tracker_control_released || []).include?(tracker_control_action(key))
+  end
+
+  def self.tracker_control_action_triggered?(action, repeat = false)
+    return false if !tracker_controls_active? ||
+      !@tracker_control_managed.include?(action)
+    frames = (@tracker_control_frames || {}).fetch(action, 0)
+    return frames == 1 || (repeat && frames >= 24 && frames % 6 == 0)
   end
 
   def self.tracker_control_direction(diagonal = false)

@@ -51,6 +51,31 @@ public static class ControlCatalog
     public const string BattleRun = "battle_run";
 
     /// <summary>
+    /// Identifies selecting the previous battle quick item.
+    /// </summary>
+    public const string QuickItemLeft = "quick_item_left";
+
+    /// <summary>
+    /// Identifies selecting the next battle quick item.
+    /// </summary>
+    public const string QuickItemRight = "quick_item_right";
+
+    /// <summary>
+    /// Identifies selecting the previous battle item category.
+    /// </summary>
+    public const string QuickItemUp = "quick_item_up";
+
+    /// <summary>
+    /// Identifies selecting the next battle item category.
+    /// </summary>
+    public const string QuickItemDown = "quick_item_down";
+
+    /// <summary>
+    /// Identifies using the selected battle quick item.
+    /// </summary>
+    public const string QuickItemUse = "quick_item_use";
+
+    /// <summary>
     /// Identifies the action game action.
     /// </summary>
     public const string Action = "action";
@@ -124,6 +149,11 @@ public static class ControlCatalog
         new(Confirm, "Confirm", [[0x43], [0x0D]], [[ControlInput.South]]),
         new(Cancel, "Cancel / back", [[0x58], [0x1B]], [[ControlInput.East]]),
         new(BattleRun, "Run from battle", [[0x58], [0x1B]], [[ControlInput.East]]),
+        new(QuickItemLeft, "Previous quick item", [[0x11, 0x10, 0x25]], [[ControlInput.LeftTrigger, ControlInput.RightTrigger, ControlInput.DpadLeft]]),
+        new(QuickItemRight, "Next quick item", [[0x11, 0x10, 0x27]], [[ControlInput.LeftTrigger, ControlInput.RightTrigger, ControlInput.DpadRight]]),
+        new(QuickItemUp, "Previous item category", [[0x11, 0x10, 0x26]], [[ControlInput.LeftTrigger, ControlInput.RightTrigger, ControlInput.DpadUp]]),
+        new(QuickItemDown, "Next item category", [[0x11, 0x10, 0x28]], [[ControlInput.LeftTrigger, ControlInput.RightTrigger, ControlInput.DpadDown]]),
+        new(QuickItemUse, "Use quick item", [[0x11, 0x10, 0x43]], [[ControlInput.LeftTrigger, ControlInput.RightTrigger, ControlInput.South]]),
         new(Action, "Run / action", [[0x5A], [0x10]], [[ControlInput.West]]),
         new(Speed, "Game speed", [[0x41]], [[ControlInput.North]]),
         new(Auxiliary, "Auxiliary (Y)", [[0x53]], [[ControlInput.LeftStick]]),
@@ -146,7 +176,7 @@ public static class ControlCatalog
         new("Movement", [Up, Down, Left, Right], "Move around the field and navigate menus."),
         new("Field", [Interact, Menu, Action, Ready], "Controls used while exploring the field."),
         new("Menus", [Confirm, Cancel, PageUp, PageDown], "Confirm and cancel also apply to dialogs and battle menus."),
-        new("Battle", [BattleRun], "Run from a wild battle at the main command menu. Menu controls apply to other battle selections."),
+        new("Battle", [BattleRun, QuickItemLeft, QuickItemRight, QuickItemUp, QuickItemDown, QuickItemUse], "Browse quick items and categories at the battle command or move menu, then use the selected item. Each category remembers its selection between battles. Run applies to wild battles at the main command menu."),
         new("Tracker", [Reset, Player, Enemy, Lookup, Archive], "Ironmon reset and tracker navigation."),
         new("System", [Speed, Auxiliary, Screenshot], "Game speed and other system controls.")
     ];

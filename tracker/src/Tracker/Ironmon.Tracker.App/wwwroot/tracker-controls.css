@@ -138,12 +138,6 @@
     font-weight: 500;
 }
 
-.tracker-controls-category-hint {
-    margin: 0 0 13px;
-    color: #9eacbf;
-    font-size: 12px;
-}
-
 .tracker-controls-table {
     width: 100%;
     table-layout: fixed;
@@ -156,7 +150,7 @@
 
 .tracker-controls-table th,
 .tracker-controls-table td {
-    padding: 7px 3px;
+    padding: 6px 3px;
     border-bottom: 1px solid #202b38;
     vertical-align: middle;
     font-weight: 400;
@@ -176,7 +170,7 @@
 }
 
 .tracker-controls-table tbody tr {
-    height: 53px;
+    height: 51px;
 }
 
 .tracker-control-binding {
