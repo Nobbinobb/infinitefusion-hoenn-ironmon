@@ -12,8 +12,6 @@ namespace Ironmon.Tracker.App.Tests.Settings;
 public sealed class AchievementsPageTests
 {
     private const string _prefix = "Ironmon-Achievement-UI-";
-    private const string _earnedName = "Achievement 031";
-    private const string _lockedName = "Achievement 001";
     private const string _empty = "Your collection starts here";
     private const string _webRoot = "wwwroot";
     private const string _hostPage = "index.html";
@@ -21,8 +19,11 @@ public sealed class AchievementsPageTests
     private const string _stylesheetLink = "<link rel=\"stylesheet\" href=\"obsidian-achievements.css\" />";
     private const string _listSelector = ".achievement-scroll";
     private const string _rowSelector = ".achievement-row";
+    private const string _rowMarkup = "<li class=\"achievement-row\"";
     private const string _scopedSelector = "::deep";
     private const string _progressMaximum = "aria-valuemax=\"{0}\"";
+    private const string _imagePrefix = "data:image/png;base64,";
+    private const string _previewAction = "Preview notification";
     private const string _batch = """
         {"schema_version":1,"profile_id":"11111111111111111111111111111111","epoch_id":"22222222222222222222222222222222","stream_id":"33333333333333333333333333333333","events":[{"sequence":"1","type":"battle.started","attempt_id":"55555555555555555555555555555555","battle_id":"rival","context":{},"payload":{"battle_kind":"trainer","encounter":{"trainer_class_ids":["RIVAL1"],"authored_entry_ids":[]}}},{"sequence":"2","type":"battle.ended","attempt_id":"55555555555555555555555555555555","battle_id":"rival","context":{},"payload":{"outcome":"win"}}]}
         """;
@@ -55,17 +56,24 @@ public sealed class AchievementsPageTests
                 var page = await renderer.RenderComponentAsync<AchievementsPage>();
                 return page.ToHtmlString();
             });
-            Assert.DoesNotContain(_lockedName, markup);
+            var earned = await store.GetAchievementsAsync();
+            Assert.Contains(_previewAction, markup);
+            Assert.Equal(earned.Count, markup.Split(_rowMarkup, StringSplitOptions.None).Length - 1);
             if (earn)
             {
-                Assert.Contains(_earnedName, markup);
+                Assert.NotEmpty(earned);
+                Assert.Contains(_imagePrefix, markup);
                 Assert.Contains(string.Format(System.Globalization.CultureInfo.InvariantCulture, _progressMaximum, GameplayCollectionStore.AchievementCount), markup);
-                foreach (var achievement in await store.GetAchievementsAsync())
+                foreach (var achievement in earned)
+                {
+                    Assert.Contains(System.Net.WebUtility.HtmlEncode(achievement.Name), markup);
                     Assert.Contains(System.Net.WebUtility.HtmlEncode(achievement.Condition), markup);
+                }
             }
             else
             {
                 Assert.Contains(_empty, markup);
+                Assert.DoesNotContain(_imagePrefix, markup);
             }
         }
         finally

@@ -8,6 +8,13 @@ namespace Ironmon.Tracker.App.Components.Pages;
 /// </summary>
 public partial class Home : IDisposable
 {
+    /// <summary>
+    /// Requests the shared sample notification without creating an earned achievement.
+    /// </summary>
+    /// <returns>A task completing when the connected game accepts the preview.</returns>
+    private Task PreviewAchievementNotificationAsync()
+        => TrackerConnection.Requests.PreviewAchievementNotificationAsync();
+
     private const string _gameConnectedCalculatingResourceKey = "App.Shell.GameConnectedCalculating";
     private const string _obtainabilityCompleteResourceKey = "App.Shell.ObtainabilityComplete";
     private const string _obtainabilityErrorResourceKey = "App.Shell.ObtainabilityError";

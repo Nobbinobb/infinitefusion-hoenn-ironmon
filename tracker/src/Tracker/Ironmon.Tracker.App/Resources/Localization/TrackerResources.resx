@@ -2333,4 +2333,7 @@
   <data name="Stats.IVs.RecordLabel" xml:space="preserve"><value>#{3} · {1} · Lv. {2} · {0}</value></data>
   <data name="Stats.IVs.Runner" xml:space="preserve"><value>Runner</value></data>
   <data name="Stats.IVs.Owned" xml:space="preserve"><value>Owned</value></data>
+  <data name="Achievements.Preview" xml:space="preserve"><value>Preview notification</value></data>
+  <data name="Achievements.PreviewHint" xml:space="preserve"><value>Requires a connected game and loaded save. Does not unlock an achievement.</value></data>
+  <data name="Achievements.PreviewSent" xml:space="preserve"><value>Preview queued in the game.</value></data>
 </root>

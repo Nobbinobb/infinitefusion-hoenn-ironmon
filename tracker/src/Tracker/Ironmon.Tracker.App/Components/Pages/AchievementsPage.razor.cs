@@ -25,6 +25,7 @@ public partial class AchievementsPage : IAsyncDisposable
     private const string _progressStyleFormat = "width:{0}%";
     private readonly CancellationTokenSource _lifetime = new();
     private readonly PeriodicTimer _timer = new(TimeSpan.FromSeconds(2));
+    private readonly Dictionary<Guid, string> _icons = [];
     private IReadOnlyList<UnlockedAchievement> _earned = [];
     private IReadOnlyList<UnlockedAchievement> _visible = [];
     private string _query = string.Empty;
@@ -34,6 +35,8 @@ public partial class AchievementsPage : IAsyncDisposable
     private bool _loading = true;
     private bool _refreshing;
     private bool _unavailable;
+    private bool _previewing;
+    private string? _previewStatus;
 
     /// <summary>
     /// Gets or initializes the shared durable collection and achievement service.
@@ -46,6 +49,41 @@ public partial class AchievementsPage : IAsyncDisposable
     /// </summary>
     [Parameter]
     public EventCallback BackRequested { get; set; }
+
+    /// <summary>
+    /// Gets or sets the shell action requesting a presentation-only game notification.
+    /// </summary>
+    [Parameter]
+    public EventCallback PreviewRequested { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the connected game supports notification previews.
+    /// </summary>
+    [Parameter]
+    public bool CanPreview { get; set; }
+
+    /// <summary>
+    /// Sends one preview and presents connection errors without changing achievement progress.
+    /// </summary>
+    /// <returns>A task completing after the game accepts or rejects the preview.</returns>
+    private async Task PreviewAsync()
+    {
+        _previewing = true;
+        _previewStatus = null;
+        try
+        {
+            await PreviewRequested.InvokeAsync();
+            _previewStatus = Text[AchievementText.PreviewSent];
+        }
+        catch (Exception error) when (error is not OutOfMemoryException)
+        {
+            _previewStatus = error.Message;
+        }
+        finally
+        {
+            _previewing = false;
+        }
+    }
 
     /// <summary>
     /// Gets the invariant CSS width representing the earned fraction of the current achievement pack.
@@ -82,6 +120,14 @@ public partial class AchievementsPage : IAsyncDisposable
         try
         {
             _earned = await Collection.GetAchievementsAsync(cancellationToken: _lifetime.Token);
+            Guid[] missingIcons = [.. _earned.Where(item => !_icons.ContainsKey(item.Id)).Select(item => item.Id)];
+            if (missingIcons.Length > 0)
+            {
+                var icons = await Collection.GetAchievementIconsAsync(missingIcons, _lifetime.Token);
+                foreach (var pair in icons)
+                    _icons[pair.Key] = pair.Value.ImageDataUri;
+            }
+
             _hasSnapshot = true;
             _unavailable = false;
             UpdateVisibleAchievements();

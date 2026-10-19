@@ -9,8 +9,8 @@ namespace Ironmon.Tracker.Collection.Achievements;
 /// Initializes the public record from a committed unlock and its revealed definition.
 /// </remarks>
 /// <param name="Id">The stable opaque achievement identity.</param>
-/// <param name="Number">The current review number used by the placeholder title.</param>
-/// <param name="Name">The placeholder or eventual player-facing title.</param>
+/// <param name="Number">The current catalogue review number.</param>
+/// <param name="Name">The approved player-facing title.</param>
 /// <param name="Condition">The condition revealed by earning the achievement.</param>
 /// <param name="UnlockedAt">The UTC time at which the tracker committed the unlock.</param>
 public sealed record UnlockedAchievement(Guid Id, int Number, string Name, string Condition, DateTimeOffset UnlockedAt);
@@ -45,8 +45,8 @@ internal sealed record SealedAchievement(Guid Id, AchievementGate[] Gates, byte[
 /// Initializes an internally active rule; dormant rules remain sealed.
 /// </remarks>
 /// <param name="Number">The current review number.</param>
-/// <param name="Name">The placeholder title.</param>
-/// <param name="Condition">The original approved condition.</param>
+/// <param name="Name">The approved player-facing title.</param>
+/// <param name="Condition">The approved player-facing condition.</param>
 /// <param name="Group">Opaque generic summary group identity.</param>
 /// <param name="Operation">The exact sum, maximum, membership or fraction operation.</param>
 /// <param name="Measure">The generic measure key within the group.</param>

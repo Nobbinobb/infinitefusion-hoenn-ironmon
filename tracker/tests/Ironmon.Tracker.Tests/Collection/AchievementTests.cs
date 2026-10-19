@@ -32,7 +32,6 @@ public sealed class AchievementTests
     private const string _second = "\"GROWL\"";
     private const string _third = "\"THUNDERBOLT\"";
     private const string _placeholder = "Achievement ";
-    private const string _numberFormat = "000";
     private const string _typeMembers = """["NORMAL","FIRE","WATER","GRASS","QMARKS"]""";
     private const string _electricType = "ELECTRIC";
     private const string _ownerRole = "owner_role";
@@ -56,11 +55,14 @@ public sealed class AchievementTests
         Assert.Equal(Enumerable.Range(1, all.Count), rules.Select(rule => rule.Number).Order());
         Assert.All(rules, rule =>
         {
-            Assert.Equal(_placeholder + rule.Number.ToString(_numberFormat), rule.Name);
+            Assert.False(string.IsNullOrWhiteSpace(rule.Name));
+            Assert.False(rule.Name.StartsWith(_placeholder, StringComparison.Ordinal));
             Assert.False(string.IsNullOrWhiteSpace(rule.Condition));
             Assert.False(string.IsNullOrWhiteSpace(rule.Group));
             Assert.False(AchievementEvaluator.Satisfied(rule, []));
         });
+
+        Assert.Equal(rules.Length, rules.Select(rule => rule.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count());
     }
 
     /// <summary>

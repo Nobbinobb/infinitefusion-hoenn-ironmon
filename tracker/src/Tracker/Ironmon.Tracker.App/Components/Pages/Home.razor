@@ -80,7 +80,7 @@
 
     @if (_achievementsOpen)
     {
-        <AchievementsPage BackRequested="ToggleAchievements" />
+        <AchievementsPage BackRequested="ToggleAchievements" CanPreview="@TrackerConnection.Requests.CanPreviewAchievementNotification" PreviewRequested="PreviewAchievementNotificationAsync" />
     }
     else if (_accessOpen)
     {

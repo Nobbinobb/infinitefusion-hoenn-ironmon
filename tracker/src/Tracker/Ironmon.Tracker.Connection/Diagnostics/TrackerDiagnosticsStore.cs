@@ -85,12 +85,19 @@ public sealed class TrackerDiagnosticsStore
     }
 
     /// <summary>
-    /// Records one outgoing validated protocol message.
+    /// Records one outgoing validated protocol message while omitting image-bearing achievement payloads.
     /// </summary>
     /// <param name="message">The sent protocol message.</param>
     public void RecordOutgoing(TrackerMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);
+        if (message.Event == GameplayCollectionProtocol.AchievementNotifications || message.Command == GameplayCollectionProtocol.AchievementPreview)
+        {
+            const string ArtworkSummary = "Achievement artwork transfer; payload omitted from diagnostics.";
+            Add(TrackerDiagnosticDirection.Outgoing, GetMessageName(message), ArtworkSummary);
+            return;
+        }
+
         Add(TrackerDiagnosticDirection.Outgoing, GetMessageName(message), TrackerMessageCodec.Serialize(message));
     }
 

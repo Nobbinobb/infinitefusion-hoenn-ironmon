@@ -138,6 +138,9 @@ module Ironmon
       end
       if message["command"] == "current_state"
         queue_message(success_response(request_id, Ironmon.tracker_current_state))
+      elsif message["command"] == "achievement_preview"
+        queued = Ironmon::Achievements.preview(message["payload"] || {})
+        queue_message(success_response(request_id, { "queued" => queued }))
       elsif message["command"] == "game_management"
         queue_message(success_response(request_id, Ironmon.game_management_snapshot))
       elsif ["start_ironmon", "continue_ironmon"].include?(message["command"])

@@ -142,8 +142,18 @@ internal sealed class GameplayCollectionReceiver(GameplayCollectionStore store, 
         try
         {
             var notices = await store.GetAchievementsAsync(true, cancellationToken).ConfigureAwait(false);
-            if (notices.Count > 0)
-                await requests.SendEventAsync(GameplayCollectionProtocol.AchievementNotifications, new { Unlocks = notices }, runId, cancellationToken).ConfigureAwait(false);
+            var batch = notices.Take(GameplayCollectionProtocol.MaximumAchievementNotices).ToArray();
+            if (batch.Length == 0)
+                return;
+
+            var icons = await store.GetAchievementIconsAsync(batch.Select(notice => notice.Id), cancellationToken).ConfigureAwait(false);
+            var payload = batch.Select(notice => new
+            {
+                notice.Id,
+                notice.Name,
+                Icon = new { icons[notice.Id].Width, icons[notice.Id].Height, icons[notice.Id].Pixels }
+            }).ToArray();
+            await requests.SendEventAsync(GameplayCollectionProtocol.AchievementNotifications, new { Unlocks = payload }, runId, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException && exception is not OutOfMemoryException)
         {

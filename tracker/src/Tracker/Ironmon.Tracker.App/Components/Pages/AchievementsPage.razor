@@ -6,6 +6,14 @@
         <h1 id="achievement-title">@Text[AchievementText.Title]</h1>
         <div class="achievement-count"><strong>@(_hasSnapshot ? _earned.Count.ToString(CultureInfo.CurrentCulture) : _unknownCount)</strong> / @_totalAchievements</div>
     </header>
+    <div class="achievement-preview-controls">
+        <button type="button" class="achievement-state-action" disabled="@(!CanPreview || !PreviewRequested.HasDelegate || _previewing)" @onclick="PreviewAsync">@Text[AchievementText.Preview]</button>
+        <span>@Text[AchievementText.PreviewHint]</span>
+    </div>
+    @if (_previewStatus is not null)
+    {
+        <p class="achievement-preview-status" role="status">@_previewStatus</p>
+    }
     @if (_hasSnapshot)
     {
         <div class="achievement-progress" role="progressbar" aria-label="@Text[AchievementText.Progress]" aria-valuemin="0" aria-valuemax="@_totalAchievements" aria-valuenow="@_earned.Count" aria-valuetext="@Text[AchievementText.ProgressValue, _earned.Count, _totalAchievements]">
@@ -72,13 +80,20 @@
                 @foreach (var achievement in _visible)
                 {
                     <li class="achievement-row" @key="achievement.Id">
-                        <span class="achievement-earned-icon" aria-hidden="true"><ObsidianIcon Kind="ObsidianIconKind.Star" /></span>
+                        @if (_icons.TryGetValue(achievement.Id, out string? image))
+                        {
+                            <img class="achievement-earned-icon" src="@image" alt="" width="50" height="50" />
+                        }
+                        else
+                        {
+                            <span class="achievement-earned-icon" aria-hidden="true"></span>
+                        }
                         <div class="achievement-details">
                             <div class="achievement-row-heading">
-                                <h2>@achievement.Name</h2>
+                                <h2 title="@achievement.Name">@achievement.Name</h2>
                                 <time datetime="@FormatTimestamp(achievement.UnlockedAt)" title="@achievement.UnlockedAt.ToLocalTime().ToString(_fullDateFormat, CultureInfo.CurrentCulture)">@FormatUnlockDate(achievement.UnlockedAt)</time>
                             </div>
-                            <p>@achievement.Condition</p>
+                            <p title="@achievement.Condition">@achievement.Condition</p>
                         </div>
                     </li>
                 }

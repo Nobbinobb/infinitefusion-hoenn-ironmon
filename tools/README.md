@@ -8,6 +8,11 @@ and protected signing are documented in
 
 - `Build-AchievementPack.ps1 -DefinitionPath <private-json>` creates the encrypted
   achievement asset from private authoring data kept outside the repository.
+- `Build-AchievementIcons.ps1 -DefaultIconPath <private-png>` embeds encrypted
+  shared artwork; optional private mappings assign one image to several stable
+  achievement identities.
+- `Test-AchievementNotifications.ps1` checks the in-memory icon toast and harmless
+  preview in the bundled game, including a native screenshot under ignored data.
 - `Build-Distribution.ps1` synchronizes canonical Ruby scripts and runtime data
   into the local game and the ignored player-distribution staging directory.
   Pass `-GameRoot <owned-game-copy>` to target an acceptance installation and

@@ -103,7 +103,7 @@ module Ironmon
 
     module ConnectionHooks
       def achievement_notifications_supported?
-        return @achievement_protocol_version == 1
+        return @achievement_protocol_version == 2
       end
       def collection_supported?
         return @collection_protocol_version == SCHEMA_VERSION
@@ -137,7 +137,7 @@ module Ironmon
 
       def game_handshake_message
         message = super
-        message["payload"]["achievement_protocol_version"] = 1
+        message["payload"]["achievement_protocol_version"] = 2
         return message
       end
 

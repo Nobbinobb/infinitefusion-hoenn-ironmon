@@ -8,7 +8,17 @@ public static class GameplayCollectionProtocol
     /// <summary>
     /// The optional earned-achievement notification channel version.
     /// </summary>
-    public const int AchievementVersion = 1;
+    public const int AchievementVersion = 2;
+
+    /// <summary>
+    /// Requests a presentation-only notification without changing the unlock ledger.
+    /// </summary>
+    public const string AchievementPreview = "achievement_preview";
+
+    /// <summary>
+    /// Limits image-bearing notification batches well below the one-MiB transport frame.
+    /// </summary>
+    public const int MaximumAchievementNotices = 8;
 
     /// <summary>
     /// Requests earned notices still awaiting display.
@@ -16,7 +26,7 @@ public static class GameplayCollectionProtocol
     public const string AchievementPoll = "achievement_poll";
 
     /// <summary>
-    /// Delivers only earned titles and conditions to the game.
+    /// Delivers only earned identities, titles and bounded icon pixels to the game.
     /// </summary>
     public const string AchievementNotifications = "achievement_unlocks";
 

@@ -16,6 +16,7 @@
     <EmbeddedResource Include="Resources/Schema.sql" LogicalName="Ironmon.Tracker.Collection.Schema.sql" />
     <EmbeddedResourceInput Include="../../../../data/gameplay_collection_catalog.json" LogicalName="Ironmon.Tracker.Collection.GameplayCatalogue.json" />
     <EmbeddedResourceInput Include="../../../../data/achievements.pack" LogicalName="Ironmon.Tracker.Collection.Achievements.pack" />
+    <EmbeddedResourceInput Include="../../../../data/achievement-icons.pack" LogicalName="Ironmon.Tracker.Collection.AchievementIcons.pack" />
   </ItemGroup>
   <ItemGroup>
     <AdditionalFiles Include="Resources/*.sql" />

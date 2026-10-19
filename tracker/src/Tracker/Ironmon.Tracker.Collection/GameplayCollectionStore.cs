@@ -7,7 +7,7 @@ namespace Ironmon.Tracker.Collection;
 /// <summary>
 /// Owns one serialized, durable gameplay collection writer independently of achievement processing.
 /// </summary>
-public sealed class GameplayCollectionStore : IAsyncDisposable
+public sealed partial class GameplayCollectionStore : IAsyncDisposable
 {
     private static readonly Lazy<int> _achievementCount = new(() => new AchievementPack().Nodes.Count());
     private readonly Channel<CollectionWork> _queue = Channel.CreateBounded<CollectionWork>(new BoundedChannelOptions(32) { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });

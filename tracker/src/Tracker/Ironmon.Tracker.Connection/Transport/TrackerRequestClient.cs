@@ -1,5 +1,7 @@
 using Ironmon.Tracker.Connection.Obtainability;
 using Ironmon.Tracker.Connection.Lookup;
+using Ironmon.Tracker.Collection;
+using System.Text.Json;
 
 namespace Ironmon.Tracker.Connection.Transport;
 
@@ -8,6 +10,7 @@ namespace Ironmon.Tracker.Connection.Transport;
 /// </summary>
 public sealed class TrackerRequestClient
 {
+    private const string _achievementPreviewQueued = "queued";
     private readonly Lock _archiveObtainabilitySync = new();
     private readonly TrackerAreaRequestClient _areaRequests;
     private readonly TrackerDiagnosticAuthorizer _authorization;
@@ -60,6 +63,28 @@ public sealed class TrackerRequestClient
     /// Gets whether both the tracker launch mode and connected game authorize debug access.
     /// </summary>
     public bool DebugAuthorized => _authorization.DebugAuthorized;
+
+    /// <summary>
+    /// Gets whether the connected game supports the compact icon notification preview.
+    /// </summary>
+    public bool CanPreviewAchievementNotification => _state.Snapshot.Status == TrackerConnectionStatus.Connected && _state.Snapshot.Game?.AchievementProtocolVersion == GameplayCollectionProtocol.AchievementVersion;
+
+    /// <summary>
+    /// Displays the shared test icon with a sample two-line title without creating an achievement unlock.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the correlated preview request.</param>
+    /// <returns>A task completing when the loaded game accepts the preview.</returns>
+    public async Task PreviewAchievementNotificationAsync(CancellationToken cancellationToken = default)
+    {
+        if (!CanPreviewAchievementNotification)
+            throw new InvalidOperationException("Connect a game with the updated achievement notification scripts first.");
+
+        var icon = GameplayCollectionStore.PreviewAchievementIcon;
+        var payload = new { Name = "A Victory to Remember", Icon = new { icon.Width, icon.Height, icon.Pixels } };
+        JsonElement response = await _session.SendAsync<object, JsonElement>(GameplayCollectionProtocol.AchievementPreview, payload, null, cancellationToken).ConfigureAwait(false);
+        if (!response.GetProperty(_achievementPreviewQueued).GetBoolean())
+            throw new InvalidOperationException("Load a save and let the current notification finish before previewing again.");
+    }
 
     /// <summary>
     /// Sends a temporary input snapshot without waiting for a correlated game request.

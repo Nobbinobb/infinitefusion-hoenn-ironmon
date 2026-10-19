@@ -87,6 +87,42 @@ definitions outside the public repository. Stable identities preserve unlocks
 when compatible definition packs change. Game notices remain pending until the
 runtime acknowledges their display.
 
+Achievement artwork ships separately in `data/achievement-icons.pack`, embedded
+in the tracker assembly. `tools/Build-AchievementIcons.ps1 -DefaultIconPath
+<private-png>` creates the shared test image. Optional `-MappingPath <private-json>`
+accepts an array of `{ "IconId": "<stable-guid>", "Path": "<private-png>",
+"Achievements": ["<stable-achievement-guid>"] }` entries. Paths are relative to
+the mapping file. One group image can serve all its achievement tiers. Keep the
+originals and mapping outside the public repository; only the authenticated
+encrypted pack is committed. Separate artwork updates preserve the existing
+definition-pack binding and permanent unlock identities.
+
+The service opens assigned icons only for earned identities. The explicitly
+previewable shared test icon currently serves all unassigned achievements.
+Game notification protocol 2 sends bounded batches of at most eight earned names
+and 64-by-64 RGBA buffers. Unlock conditions, PNG files and image paths are not sent
+to the game. The approved layout places the 48-by-48 icon inside a rounded
+280-by-64-pixel shared panel, separated from the title by a subtle vertical line.
+The left-aligned, bold twenty-pixel title wraps to two lines and is vertically
+centered; long names are ellipsized. Conditions are read in the tracker.
+The panel sits at the top left, slides in from the left over 0.18 seconds,
+holds for 2.6 seconds, then slides out to the left over 0.18 seconds. Its
+background is about 85% opaque; the icon and title retain their original opacity.
+The game uploads the pixels using `Bitmap.raw_data=` and releases
+each notification bitmap after its slide-out animation. The tracker displays
+earned PNG data URLs in memory.
+Image-bearing notification and preview payloads are omitted from protocol
+diagnostics so error reports do not retain decoded artwork.
+
+To try the toast, connect the updated tracker to the updated game, load a save,
+open the tracker's star / Achievements page, and select **Preview notification**.
+This queues the shared artwork with a sample two-line title without unlocking anything
+or acknowledging a real achievement. It works in normal builds without a debug
+token. `tools/Test-AchievementNotifications.ps1` verifies alpha, timing, retries,
+reset interruption, harmless previews and native rendering in the bundled game.
+Its screenshot and results are written below ignored
+`data/achievement-toast-validation/`.
+
 ## Git and release workflow
 
 Start from up-to-date `main`. Use `feature/<name>`, `fix/<name>`, `issue/<number>-<name>`,

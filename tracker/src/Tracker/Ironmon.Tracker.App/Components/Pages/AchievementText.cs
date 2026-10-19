@@ -6,6 +6,21 @@ namespace Ironmon.Tracker.App.Components.Pages;
 internal static class AchievementText
 {
     /// <summary>
+    /// Identifies the presentation-only notification preview action.
+    /// </summary>
+    internal const string Preview = "Achievements.Preview";
+
+    /// <summary>
+    /// Identifies the preview's save-loading and progress explanation.
+    /// </summary>
+    internal const string PreviewHint = "Achievements.PreviewHint";
+
+    /// <summary>
+    /// Identifies a preview accepted by the connected game.
+    /// </summary>
+    internal const string PreviewSent = "Achievements.PreviewSent";
+
+    /// <summary>
     /// Identifies the collection title.
     /// </summary>
     internal const string Title = "Achievements.Title";
