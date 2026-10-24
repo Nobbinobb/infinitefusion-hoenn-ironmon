@@ -23,7 +23,7 @@
     <div class="archive-history-runs">
         @foreach (CompletedRunRecipePayload recipe in SelectedRecipes)
         {
-            <button type="button" class="archive-history-run" @onclick="() => RunSelected.InvokeAsync(recipe.RunId)"><ArchiveRunEntry Recipe="recipe" /><ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></button>
+            <button @key="recipe.RunId" type="button" class="archive-history-run" @onclick="() => RunSelected.InvokeAsync(recipe.RunId)"><span class="archive-history-run-content"><ArchiveRunEntry Recipe="recipe" /><ArchivePokemonHistory Compact="true" Recipe="recipe" GameRoot="@GameRoot" /></span><ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></button>
         }
     </div>
     @if (SelectedRecipes.Count == 0)
@@ -35,7 +35,7 @@
         <h3>@Text["Archive.Navigation.UnknownFile"]</h3>
         @foreach (CompletedRunRecipePayload recipe in UnidentifiedRecipes)
         {
-            <button type="button" class="archive-history-run" @onclick="() => RunSelected.InvokeAsync(recipe.RunId)"><ArchiveRunEntry Recipe="recipe" /><ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></button>
+            <button @key="recipe.RunId" type="button" class="archive-history-run" @onclick="() => RunSelected.InvokeAsync(recipe.RunId)"><span class="archive-history-run-content"><ArchiveRunEntry Recipe="recipe" /><ArchivePokemonHistory Compact="true" Recipe="recipe" GameRoot="@GameRoot" /></span><ObsidianIcon Kind="ObsidianIconKind.ChevronRight" /></button>
         }
     }
 </section>

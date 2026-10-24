@@ -1,5 +1,4 @@
 using Ironmon.SpriteLibrary;
-using Ironmon.Tracker.Connection.Sprites;
 using Ironmon.Updater.Core;
 using Ironmon.Updater.Infrastructure;
 
@@ -10,6 +9,11 @@ namespace Ironmon.Setup.Core;
 /// </summary>
 public interface ISetupPlatform
 {
+    /// <summary>
+    /// Gets whether the matching Windows x64 .NET Desktop Runtime is available for the smaller tracker package.
+    /// </summary>
+    bool TrackerRuntimeAvailable { get; }
+
     /// <summary>
     /// Gets whether the tracker browser runtime is installed.
     /// </summary>
@@ -188,6 +192,11 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
     public bool NeedsWebView => !_platform.WebViewAvailable;
 
     /// <summary>
+    /// Gets whether the runtime-required package can be selected on this machine.
+    /// </summary>
+    public bool TrackerRuntimeAvailable => _platform.TrackerRuntimeAvailable;
+
+    /// <summary>
     /// Gets the full prerequisite download size observed during review, when available.
     /// </summary>
     public long? WebViewDownloadBytes { get; private set; }
@@ -301,6 +310,10 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
             Status = UpdaterText.SetupSessionAnInterruptedInstallationNeedsRecoveryItsBackupsHaveBeen;
             return;
         }
+
+        var selectedFlavor = SetupPreparation.InspectDestination(InstallationRoot).InstalledFlavor ?? flavor;
+        if (selectedFlavor == ReleaseProtocol.RuntimeRequired && !TrackerRuntimeAvailable)
+            throw new InvalidOperationException(UpdaterText.SetupTrackerRuntimeUnavailable);
 
         Status = SelectedReleaseVersion is null ? UpdaterText.SetupSessionCheckingTheLatestReleaseAndYourInstallation : UpdaterText.SetupVersionsLoading;
         Changed?.Invoke();

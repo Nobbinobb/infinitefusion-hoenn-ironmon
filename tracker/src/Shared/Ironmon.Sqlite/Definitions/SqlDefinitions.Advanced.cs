@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace Ironmon.Sqlite.Querying;
+namespace Ironmon.Sqlite.Definitions;
 
 /// <summary>
 /// Supplies expression intrinsics translated only during source generation.

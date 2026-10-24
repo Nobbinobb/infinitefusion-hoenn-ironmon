@@ -1,5 +1,4 @@
 using System.Net;
-using Ironmon.Tracker.Connection.Sprites;
 
 namespace Ironmon.SpriteLibrary;
 

@@ -74,6 +74,9 @@ public sealed class TrackerDiagnosticsStore
     public void RecordIncoming(TrackerMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);
+        if (message.Event is GameplayCollectionProtocol.AchievementOverlayStart or GameplayCollectionProtocol.AchievementOverlayFrame or GameplayCollectionProtocol.AchievementOverlayStop)
+            return;
+
         if (message.Event is GameplayCollectionProtocol.Batch or GameplayCollectionProtocol.CompressedBatch or GameplayCollectionProtocol.Chunk)
         {
             const string CollectionSummary = "Gameplay collection transfer; payload omitted from diagnostics.";
@@ -91,7 +94,10 @@ public sealed class TrackerDiagnosticsStore
     public void RecordOutgoing(TrackerMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);
-        if (message.Event == GameplayCollectionProtocol.AchievementNotifications || message.Command == GameplayCollectionProtocol.AchievementPreview)
+        if (message.Event == GameplayCollectionProtocol.AchievementOverlayReady)
+            return;
+
+        if (message.Event == GameplayCollectionProtocol.AchievementNotifications)
         {
             const string ArtworkSummary = "Achievement artwork transfer; payload omitted from diagnostics.";
             Add(TrackerDiagnosticDirection.Outgoing, GetMessageName(message), ArtworkSummary);

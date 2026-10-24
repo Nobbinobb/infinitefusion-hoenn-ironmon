@@ -12,6 +12,42 @@ module Ironmon
     "Graphics/CustomBattlers/local_sprites/IronmonTracker"
   TRACKER_SPRITE_COMPONENT_SCHEMA = 1
 
+  def self.tracker_pokemon_sprites(payload)
+    identifiers = payload.is_a?(Hash) ? payload["species_ids"] : nil
+    if !identifiers.is_a?(Array) || identifiers.empty? || identifiers.length > 8
+      raise TrackerLookupError.new("invalid_page", "Request between one and eight Pokemon sprites.")
+    end
+    sprites = {}
+    identifiers.uniq.each do |identifier|
+      sprites[identifier] = tracker_history_sprite_path(identifier)
+    end
+    return { "sprites" => sprites }
+  end
+
+  def self.tracker_history_sprite_path(identifier)
+    return nil if !identifier.is_a?(String) || !/\A[A-Z0-9_]+:\d{1,3}\z/.match?(identifier)
+    canonical, form = identifier.split(":", 2)
+    fusion = /\AB(\d{1,3})H(\d{1,3})\z/.match(canonical)
+    if fusion
+      body, head = fusion[1].to_i, fusion[2].to_i
+      return nil if !body.between?(1, NB_POKEMON) || !head.between?(1, NB_POKEMON)
+      variants = list_main_sprites_letters("#{head}.#{body}").sort
+      sprite = PIFSprite.new(variants.empty? ? :AUTOGEN : :CUSTOM, head, body, variants.first || "")
+    else
+      species = GameData::Species.try_get(canonical.to_sym)
+      return nil if !species || !species.id_number.between?(1, NB_POKEMON)
+      sprite = PIFSprite.new(:BASE, species.id_number, nil, "")
+    end
+    path = tracker_resolved_sprite_path(sprite)
+    return nil if !path || !File.file?(path)
+    ensure_tracker_sprite_cache_folder
+    metadata = "#{TRACKER_SPRITE_CACHE_FOLDER}/history-#{canonical}-#{form}.json"
+    File.binwrite(metadata, tracker_json_generate({ "sprite_path" => path }))
+    return path
+  rescue StandardError
+    return nil
+  end
+
   def self.sprite_credit_catalog(work_checkpoint = nil)
     path = Settings::CREDITS_FILE_PATH
     signature = [

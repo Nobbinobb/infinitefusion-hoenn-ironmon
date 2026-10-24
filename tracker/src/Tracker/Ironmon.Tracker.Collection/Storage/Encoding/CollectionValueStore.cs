@@ -4,8 +4,10 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Ironmon.Tracker.Collection.Queries.Definitions;
+using Ironmon.Tracker.Collection.Queries.Results;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage.Encoding;
 
 /// <summary>
 /// Stores exact typed values and encodes detail records using shared numeric string references.
@@ -188,11 +190,11 @@ internal sealed partial class CollectionValueStore(SqliteConnection connection, 
         else if (kind == ValueKind.String)
         {
             string text = value.GetString()!;
-            output.Write(_compactNativeStrings ? EncodeNativeString(text, component => Intern(JsonSerializer.SerializeToElement(component))) : Encoding.UTF8.GetBytes(text));
+            output.Write(_compactNativeStrings ? EncodeNativeString(text, component => Intern(JsonSerializer.SerializeToElement(component))) : System.Text.Encoding.UTF8.GetBytes(text));
         }
         else if (kind == ValueKind.NumberToken)
         {
-            output.Write(Encoding.UTF8.GetBytes(value.GetRawText()));
+            output.Write(System.Text.Encoding.UTF8.GetBytes(value.GetRawText()));
         }
     }
 
@@ -229,7 +231,7 @@ internal sealed partial class CollectionValueStore(SqliteConnection connection, 
         }
         else if (kind == ValueKind.NumberToken)
         {
-            byte[] token = Encoding.UTF8.GetBytes(value.GetRawText());
+            byte[] token = System.Text.Encoding.UTF8.GetBytes(value.GetRawText());
             WriteUnsigned(output, token.Length);
             output.Write(token);
         }

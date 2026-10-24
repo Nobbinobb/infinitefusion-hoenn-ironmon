@@ -155,6 +155,7 @@ public sealed class ArchivePreparationTests
         services.AddSingleton<IJSRuntime, Settings.SettingsJsRuntime>();
         services.AddSingleton<IStringLocalizer<TrackerResources>>(new ArchiveLocalizer());
         services.AddSingleton(archive);
+        services.AddSingleton(_ => new Ironmon.Tracker.Collection.GameplayCollectionStore(storage.RootDirectory));
         services.AddSingleton(state);
         services.AddSingleton(requests);
         services.AddSingleton(discoveries);

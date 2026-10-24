@@ -6,6 +6,12 @@ on:
       - main
     types: [opened, reopened, synchronize, ready_for_review]
   workflow_dispatch:
+    inputs:
+      profile:
+        description: Quick C# and Ruby checks, or full C# coverage with Ruby smoke checks
+        type: choice
+        options: [Quick, Full]
+        default: Quick
 
 permissions:
   contents: read
@@ -38,18 +44,12 @@ jobs:
         env:
           BASE_COMMIT: ${{ github.event.pull_request.base.sha }}
         run: |
-          if ($env:BASE_COMMIT) { ./tools/ci/Test-ReleaseMetadata.ps1 -BaseCommit $env:BASE_COMMIT } else { ./tools/ci/Test-ReleaseMetadata.ps1; 'release=false' >> $env:GITHUB_OUTPUT }
-      - name: Validate automation contracts
-        shell: pwsh
-        run: |
-          ./tools/ci/Test-ReleaseAutomation.ps1
-          ./tools/ci/Test-ReleasePublication.ps1
-          ./tools/ci/Test-UpstreamWatch.ps1
-          ./tools/ci/Test-GenerationCache.ps1
+          . ./tools/ci/UpstreamInputs.ps1
+          if ($env:BASE_COMMIT) { Assert-IronmonReleaseMetadata -BaseCommit $env:BASE_COMMIT } else { Assert-IronmonReleaseMetadata; 'release=false' >> $env:GITHUB_OUTPUT }
   validation:
     name: PR validation
     if: always()
-    needs: [metadata, inputs, current-catalogs, core-tests, app-tests, sprite-contracts, candidate]
+    needs: [metadata, inputs, current-catalogs, sprite-contracts, quick-core, quick-desktop, ruby-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -58,17 +58,17 @@ jobs:
           METADATA: ${{ needs.metadata.result }}
           INPUTS: ${{ needs.inputs.result }}
           SPRITES: ${{ needs.sprite-contracts.result }}
-          RELEASE_CHANGE: ${{ needs.metadata.outputs.release }}
-          CANDIDATE: ${{ needs.candidate.result }}
-          CATALOGS: ${{ needs.current-catalogs.result }}
-          CORE: ${{ needs.core-tests.result }}
-          APP: ${{ needs.app-tests.result }}
+          PROFILE: ${{ inputs.profile || 'Quick' }}
+          QUICK_CORE: ${{ needs.quick-core.result }}
+          QUICK_DESKTOP: ${{ needs.quick-desktop.result }}
+          RUBY: ${{ needs.ruby-smoke.result }}
+          FULL: ${{ needs.current-catalogs.result }}
         run: |
           test "$METADATA,$INPUTS,$SPRITES" = 'success,success,success'
-          if [ "$RELEASE_CHANGE" = true ]; then
-            test "$CANDIDATE" = success
+          if [ "$PROFILE" = Full ]; then
+            test "$FULL" = success
           else
-            test "$CATALOGS,$CORE,$APP" = 'success,success,success'
+            test "$QUICK_CORE,$QUICK_DESKTOP,$RUBY" = 'success,success,success'
           fi
 
   sprite-contracts:
@@ -91,14 +91,117 @@ jobs:
     needs: metadata
     uses: ./.github/workflows/upstream-inputs.yml
 
+  quick-core:
+    name: Core and updater smoke tests
+    if: inputs.profile != 'Full'
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: 10.0.400
+      - name: Core Quick tests
+        run: dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj -c Release --settings tracker/tests/Quick.runsettings --filter Category!=BundledRuby --maxcpucount:1 -p:UseSharedCompilation=false -p:NuGetAudit=false -p:IronmonQuickTests=true
+      - name: Updater Quick tests
+        run: dotnet test tracker/tests/Ironmon.Updater.Tests/Ironmon.Updater.Tests.csproj -c Release --settings tracker/tests/Quick.runsettings --maxcpucount:1 -p:UseSharedCompilation=false -p:NuGetAudit=false -p:IronmonQuickTests=true
+
+  quick-desktop:
+    name: Desktop smoke tests
+    if: inputs.profile != 'Full'
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: 10.0.400
+      - name: Install Windows MAUI workload
+        run: dotnet workload install maui-windows --skip-manifest-update
+      - name: App Quick tests
+        run: dotnet test tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj -c Release --settings tracker/tests/Quick.runsettings --maxcpucount:1 -p:UseSharedCompilation=false -p:NuGetAudit=false -p:IronmonQuickTests=true
+      - name: Overlay Quick tests
+        run: dotnet test tracker/tests/Ironmon.Tracker.AchievementOverlay.Tests/Ironmon.Tracker.AchievementOverlay.Tests.csproj -c Release --settings tracker/tests/Quick.runsettings --maxcpucount:1 -p:UseSharedCompilation=false -p:NuGetAudit=false -p:IronmonQuickTests=true
+
+  ruby-smoke:
+    name: Bundled Ruby smoke tests
+    needs: inputs
+    if: inputs.profile != 'Full'
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      IRONMON_TEST_GAME_ROOT: ${{ github.workspace }}/runtime
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          path: source
+          persist-credentials: false
+      - uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        id: runtime-cache
+        with:
+          path: |
+            runtime
+            runtime-dependencies
+          key: windows-ruby-smoke-v1-${{ needs.inputs.outputs.game_commit }}-mesa26.2.0
+      - name: Fetch only the pinned runtime and smoke-test assets
+        if: steps.runtime-cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: infinitefusion/infinitefusion-hoenn-public
+          ref: ${{ needs.inputs.outputs.game_commit }}
+          path: runtime
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /Game.ini
+            /InfiniteFusion2.exe
+            /*.dll
+            /Data/*.dat
+            /Data/*.json
+            /Data/*.rxdata
+            !/Data/Map[0-9]*.rxdata
+            /Data/Scripts/
+            /Data/sprites/
+            /Fonts/
+            /Graphics/Windowskins/
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: upstream-inputs
+          path: upstream-inputs
+      - name: Apply verified metadata and software rendering
+        shell: pwsh
+        run: ./source/tools/ci/Initialize-HostedGame.ps1 -SnapshotDirectory upstream-inputs -GameRoot $env:IRONMON_TEST_GAME_ROOT -MesaArchivePath (Join-Path $env:GITHUB_WORKSPACE 'runtime-dependencies/mesa3d.7z')
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        if: steps.runtime-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            runtime
+            runtime-dependencies
+          key: windows-ruby-smoke-v1-${{ needs.inputs.outputs.game_commit }}-mesa26.2.0
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: 10.0.400
+      - name: Run the native Ruby entry point through xUnit
+        working-directory: source
+        run: dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj -c Release --settings tracker/tests/Quick.runsettings --filter Category=BundledRuby --maxcpucount:1 -p:UseSharedCompilation=false -p:NuGetAudit=false -p:IronmonQuickTests=true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: ruby-smoke-evidence
+          path: source/data/ruby-smoke/
+          retention-days: 3
+          if-no-files-found: ignore
+
   current-catalogs:
     needs: [metadata, inputs, sprite-contracts]
-    if: needs.metadata.outputs.release != 'true'
-    name: Generate current-source catalogs
+    if: github.event_name == 'workflow_dispatch' && inputs.profile == 'Full'
+    name: Full C# validation and Ruby smoke (manual)
     runs-on: windows-latest
-    timeout-minutes: 45
-    outputs:
-      game_version: ${{ steps.game.outputs.game_version }}
+    timeout-minutes: 90
     steps:
       - name: Download newest Hoenn release
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -120,122 +223,44 @@ jobs:
         id: game
         shell: pwsh
         run: ./game/Ironmon/tools/ci/Initialize-HostedGame.ps1 -SnapshotDirectory upstream-inputs
-      - name: Verify hosted game runtime
-        shell: pwsh
-        run: ./game/Ironmon/tools/ci/Test-HostedGameRuntime.ps1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: 10.0.400
       - name: Reuse or generate catalogs for these exact inputs
         uses: ./game/Ironmon/.github/actions/generated-catalogs
         with:
           project-root: game/Ironmon
           snapshot-directory: upstream-inputs
-      - name: Validate gameplay and generated data
-        shell: pwsh
-        working-directory: game/Ironmon
-        run: |
-          ./tools/Test-GameAdoptionInventory.ps1
-          ./tools/Test-GenerationProfile.ps1 -TimeoutSeconds 300 -SkipBuild
-          ./tools/Test-GameRuntime.ps1 -TimeoutSeconds 600 -SkipBuild
-          ./tools/Test-UpdaterBootGuard.ps1 -TimeoutSeconds 90
-          ./tools/Test-DefenseOverview.ps1 -SkipBuild
-          ./tools/Test-AreaEncounterLookup.ps1 -SkipBuild
-      - name: Share catalogs with tracker tests
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: current-source-catalogs
-          path: |
-            game/Ironmon/data/generation_custom_fusion_pool.bin
-            game/Ironmon/data/generation_custom_sprites.json
-            game/Ironmon/data/generation_profile.json
-            game/Ironmon/data/obtainability_source_catalog.json
-            game/Ironmon/data/move_power_presentation.json
-            game/Ironmon/data/type_coverage.json
-            game/Ironmon/data/player_fusion_worker_catalog.json
-            game/Ironmon/data/updater/baselines/hoenn.json.gz
-            game/Ironmon/data/updater/baselines/hoenn.manifest.json
-          retention-days: 1
-          overwrite: true
-          if-no-files-found: error
-
-  core-tests:
-    needs: current-catalogs
-    env:
-      IRONMON_EXPECTED_GAME_VERSION: ${{ needs.current-catalogs.outputs.game_version }}
-    name: Core tracker tests
-    runs-on: windows-latest
-    timeout-minutes: 20
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-      - name: Install .NET SDK
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
-        with:
-          dotnet-version: 10.0.400
-
-      - name: Use catalogs generated for this workflow run
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: current-source-catalogs
-          path: data
-
-      - name: Restore
-        run: dotnet restore tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj
-
-      - name: Test
-        run: dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj --configuration Release --no-restore --nologo --disable-build-servers --maxcpucount:1 -p:UseSharedCompilation=false -- xUnit.ParallelizeTestCollections=false
-
-  app-tests:
-    needs: current-catalogs
-    name: Windows app tests
-    runs-on: windows-latest
-    timeout-minutes: 30
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-      - name: Install .NET SDK
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
-        with:
-          dotnet-version: 10.0.400
-
       - name: Install Windows MAUI workload
         run: dotnet workload install maui-windows --skip-manifest-update
+      - name: Provision the pinned Git dependency
+        shell: bash
+        working-directory: game/Ironmon
+        run: curl --create-dirs --fail --location --retry 3 --output tracker/tests/Ironmon.Updater.Tests/bin/test-assets/MinGit.zip https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.5/MinGit-2.55.0.5-64-bit.zip
+      - name: Core Full tests
+        working-directory: game/Ironmon
+        run: dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj -c Release --settings tracker/tests/Full.runsettings --maxcpucount:1 -p:UseSharedCompilation=false -p:NuGetAudit=false
+      - name: App Full tests
+        working-directory: game/Ironmon
+        run: dotnet test tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj -c Release --settings tracker/tests/Full.runsettings --maxcpucount:1 -p:UseSharedCompilation=false -p:NuGetAudit=false
+      - name: Updater Full tests
+        working-directory: game/Ironmon
+        run: dotnet test tracker/tests/Ironmon.Updater.Tests/Ironmon.Updater.Tests.csproj -c Release --settings tracker/tests/Full.runsettings --maxcpucount:1 -p:UseSharedCompilation=false -p:NuGetAudit=false
+      - name: Setup Full tests
+        working-directory: game/Ironmon
+        run: dotnet test tracker/tests/Ironmon.Setup.Tests/Ironmon.Setup.Tests.csproj -c Release --settings tracker/tests/Full.runsettings --maxcpucount:1 -p:UseSharedCompilation=false -p:NuGetAudit=false
+      - name: Overlay Full tests
+        working-directory: game/Ironmon
+        run: dotnet test tracker/tests/Ironmon.Tracker.AchievementOverlay.Tests/Ironmon.Tracker.AchievementOverlay.Tests.csproj -c Release --settings tracker/tests/Full.runsettings --maxcpucount:1 -p:UseSharedCompilation=false -p:NuGetAudit=false
 
-      - name: Use catalogs generated for this workflow run
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: current-source-catalogs
-          path: data
-
-      - name: Restore
-        run: dotnet restore tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj --runtime win-x64 -p:Configuration=Release -m:1
-
-      - name: Test
-        run: dotnet test tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj --configuration Release --runtime win-x64 --no-restore --nologo --disable-build-servers --maxcpucount:1 -p:UseSharedCompilation=false
-
-      - name: Test updater and native installer
-        shell: pwsh
-        run: ./tools/Test-Updater.ps1 -Configuration Release
-
-  candidate:
-    needs: [metadata, inputs, sprite-contracts]
-    if: needs.metadata.outputs.release == 'true'
-    uses: ./.github/workflows/release-build.yml
-    with:
-      source_ref: ${{ github.sha }}
-      game_commit: ${{ needs.inputs.outputs.game_commit }}
   ready:
     name: Release readiness
     if: always()
-    needs: [metadata, inputs, candidate]
+    needs: metadata
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Require a successful candidate for a version change
+      - name: Require consistent release metadata
         env:
           METADATA_RESULT: ${{ needs.metadata.result }}
-          RELEASE_CHANGE: ${{ needs.metadata.outputs.release }}
-          CANDIDATE_RESULT: ${{ needs.candidate.result }}
-        run: |
-          test "$METADATA_RESULT" = success
-          if [ "$RELEASE_CHANGE" = true ]; then test "$CANDIDATE_RESULT" = success; fi
+        run: test "$METADATA_RESULT" = success

@@ -1,7 +1,7 @@
-using Ironmon.Sqlite.Querying;
+using Ironmon.Sqlite.Definitions;
 using Microsoft.Data.Sqlite;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage.Maintenance;
 
 /// <summary>
 /// Exposes generated native SQLite maintenance operations with caller-owned transactions.
@@ -144,6 +144,16 @@ internal static partial class CollectionSqliteMaintenance
     /// <returns>The exact native metadata result, materialized before returning.</returns>
     [SqliteMaintenance(SqliteMaintenanceOperation.ReadTableRows)]
     internal static partial IReadOnlyList<object[]> ReadTableRows(SqliteConnection connection, SqliteTransaction? transaction, string table);
+
+    /// <summary>
+    /// Streams complete physical rows without retaining a table-sized snapshot in managed memory.
+    /// </summary>
+    /// <param name="connection">The caller-owned serialized database connection.</param>
+    /// <param name="transaction">The caller-owned transaction, or null outside one.</param>
+    /// <param name="table">The fixed metadata-owned table identifier.</param>
+    /// <returns>Rows whose enumerator owns and disposes the provider command and reader.</returns>
+    [SqliteMaintenance(SqliteMaintenanceOperation.StreamTableRows)]
+    internal static partial IEnumerable<object[]> StreamTableRows(SqliteConnection connection, SqliteTransaction? transaction, string table);
 
     /// <summary>
     /// Drops one safely quoted historical trigger during migration.

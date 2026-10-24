@@ -868,6 +868,17 @@ packages needed by supported pinned profiles rather than rewriting old runs.
 
 ## Deterministic post-run lookup
 
+`pokemon_sprites` accepts `species_ids`, a list of one through eight canonical
+species/form identifiers, and returns a `sprites` object mapping each requested
+identity to a game-relative image path or null. This public presentation request
+does not require a generation recipe, diagnostic access, or generated lookup
+preparation. It selects stable standard artwork without consuming gameplay RNG
+or changing current sprite substitutions. The game materializes missing sheet
+images and writes `history-<species>-<form>.json` under its tracker sprite cache;
+the tracker reuses those paths offline when older ownership records have no
+captured image. Available recorded sprite paths take precedence over this
+species-artwork fallback.
+
 `pokemon_search` accepts a non-empty text query, zero-based `offset`, a `limit`
 from 1 through 50, an optional `normal_only` restriction, and a completed-run
 recipe. The request envelope and recipe must carry the same run ID. A
@@ -1082,12 +1093,33 @@ completion recipe and the game resolves them from the currently loaded run.
 These commands are unavailable through the normal post-run API while a run
 remains active.
 
-`debug_development_state` has an empty payload and returns only option catalogs
-covered by the effective development grants. Its player identity, level,
+`debug_development_state` accepts `include_catalogs` and `include_evolutions`
+(both default to true) and returns only option catalogs covered by the effective
+development grants. Its player identity, level,
 ability identifier, and moves describe the single current usable party Pokemon.
 The ability and move collections are complete searchable game catalogs; the
 evolution and devolution collections list every valid direct branch for the
 current Pokemon.
+
+The tracker first requests state without evolutions, then prepares fusion
+directions through its shared native assignment index before sending the
+evolution request. For an authorized fusion development request, the initial
+request also sets `use_native_evolution_assignments` and the response includes
+internal `fusion_assignments` generation inputs. This explicit request works
+before normal background lookup starts without changing its readiness flag;
+other state requests retain their existing disclosure rules. The internal
+recipe is not displayed by Development or retained in its combined response.
+This preparation runs outside the correlated game request
+timeout and never builds the complete fusion predecessor index on the game
+thread. The second request carries `pokemon_id`, `species_id`,
+`use_native_evolution_assignments`, `evolution_assignments`, and
+`predecessor_assignments`. The game binds these arrays to both the current
+individual and species before formatting options. Empty arrays are complete
+results; missing arrays for a fusion fail immediately with
+`evolution_assignments_unavailable`, while a replaced or evolved source fails
+with `pokemon_changed`. Mutation commands still validate the selected direct
+edge independently. Older peers may omit these optional fields.
+
 `debug_development_action` carries an `action` plus only the input used by that
 action: `enabled`, `level`, `ability_id`, `move_ids`, `item_id` and
 `quantity`, or `species_id`. The action-to-capability mapping is:
@@ -1209,3 +1241,48 @@ notices after reconnecting. After a notice has actually been displayed, it sends
 `achievement_displayed` with an `ids` array of opaque UUIDs. Delivery and display
 acknowledgements are idempotent; an interrupted display remains pending.
 Notification failure does not reject already committed gameplay data.
+
+## Desktop achievement notifications
+
+`achievement_overlay_version: 1` is optional alongside achievement delivery
+version 3. Both peers must advertise it; older peers retain native game toasts.
+The game sends `achievement_overlay_start` with a unique `presentation_id`
+and an earned `achievement_id`. The tracker opens artwork only after checking
+that identity in the authenticated earned ledger. No images cross this channel:
+the renderer reads the installed encrypted packs in memory.
+
+The tracker responds with `achievement_overlay_ready` containing the matching
+presentation identity, `ready` and `visible`. Preparation does not advance time.
+`achievement_overlay_frame` carries `elapsed` seconds from the game clock;
+health/visibility acknowledgements are bounded to ten per second unless changed.
+The game accumulates time only while visible and sends
+`achievement_overlay_stop` at completion, interruption,
+or fallback. Stale identities never stop a newer presentation. Renderer errors or
+a missing acknowledgement for 0.75 seconds restart a full native notification.
+Only the existing `achievement_displayed` event acknowledges the earned unlock.
+Frame/health traffic never enters persistent collection data or diagnostics.
+The optional `attempt.completed.completion_milestone` and
+`completion_trainer_class_ids` describe a game-authoritative challenge endpoint.
+The additive lifetime summary `attempt_completion_milestone_joint` retains those
+fields with the result, independently of earned or locked achievement rules.
+An absent milestone does not qualify as evidence for a content-limited reward.
+Availability is explicitly retired in the encrypted definition and has no
+automatic release-version expiry. Retired earned nodes remain readable.
+
+### Configurable toggle speed
+
+`tracker_connected.toggle_speed` carries the committed profile. Both lanes default to `[1,2,3]`; 2 connects to 2 and 3 to 3. `update_settings.toggle_speed` replaces the profile atomically after validation and is echoed in the accepted settings. Omission or null in a settings update retains the live profile, allowing unrelated settings to change independently. A handshake without this field restores defaults.
+
+The profile contains `lanes.overworld` and `lanes.battle`, each an ordered array of `{id, nodes:[{id,value}]}` groups, plus `links:[{id,overworld,battle}]`. Link endpoints are stage IDs selecting first-visit entries. Every accelerated group has exactly one opposite group; its connection covers all members. Normal 1 is first, standalone, implicitly connected, and cannot be an explicit endpoint. Other positions are integers 2–10 in arbitrary order, including duplicates. IDs distinguish equal multipliers and retain per-group member memory. Each lane permits at most 128 positions; identifiers are 1–64 ASCII letters, digits, underscores or hyphens. Group IDs, stage IDs, and wire IDs are individually unique across the profile. Invalid profiles leave the active profile unchanged. Context transitions restore the destination group's last selected member, otherwise its entry endpoint. Hold-mode sliders are unaffected.
+
+### Feature switches
+
+Tracker handshakes and `update_settings` carry `features`, an object with Boolean
+`achievement_popups`, `repel_counter`, `speed_indicator`, `battle_quick_items`,
+`quick_run`, `favorite_clause`, and `enforce_bst_limit`. Missing fields default to
+true; an absent/null object in an update preserves the current switches. Responses
+return the normalized complete object. Favorites and maximum starter BST remain
+stored separately and are echoed unchanged while their feature is disabled.
+Suppressed earned notices use the existing achievement acknowledgement, retaining
+unlocks without creating a later notification backlog. These local preferences
+are not added to saved run rules or seed recipes.

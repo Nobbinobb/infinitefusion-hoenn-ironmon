@@ -111,6 +111,7 @@ public partial class DebugDevelopmentControls
     private async Task LoadEvolutionsAsync()
     {
         string? expectedPokemonId = _state?.Player?.PokemonId;
+        string? expectedSpeciesId = _state?.Player?.SpeciesId;
         if (expectedPokemonId is null)
             return;
 
@@ -119,8 +120,13 @@ public partial class DebugDevelopmentControls
         try
         {
             DebugDevelopmentStateSnapshot evolutionState = await Connection.GetDebugDevelopmentStateAsync(includeCatalogs: false, includeEvolutions: true);
-            if (string.Equals(_state?.Player?.PokemonId, expectedPokemonId, StringComparison.Ordinal) && string.Equals(evolutionState.Player?.PokemonId, expectedPokemonId, StringComparison.Ordinal))
+            if (string.Equals(_state?.Player?.PokemonId, expectedPokemonId, StringComparison.Ordinal)
+                && string.Equals(evolutionState.Player?.PokemonId, expectedPokemonId, StringComparison.Ordinal)
+                && string.Equals(_state?.Player?.SpeciesId, expectedSpeciesId, StringComparison.Ordinal)
+                && string.Equals(evolutionState.Player?.SpeciesId, expectedSpeciesId, StringComparison.Ordinal))
+            {
                 MergeEvolutionState(evolutionState);
+            }
         }
         catch (Exception exception) when (exception is InvalidOperationException or IOException or TimeoutException or TrackerProtocolException)
         {

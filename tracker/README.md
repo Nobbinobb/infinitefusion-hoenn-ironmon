@@ -43,16 +43,41 @@ existing data and do not generate it or install game scripts.
 
 ## Validate and publish
 
+Run Quick smoke tests against the relevant project using VSTest configuration:
+
 ```powershell
-dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj
-dotnet test tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj
+dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj -c Release --settings tracker/tests/Quick.runsettings -p:IronmonQuickTests=true --maxcpucount:1
 ```
 
-Use `tools/Test-Updater.ps1` for the updater and Setup suites, including their
-pinned private Git fixture. See the [tools index](../tools/README.md) for the
-bundled-game tests and focused validation commands.
+CI applies the same settings directly to the core, app, updater, and overlay test
+projects, with the bundled Ruby category in a separate required job. For affected coverage, select a project and optionally `--filter`. Before a
+PR, prepare matching generated catalogs and run the complete native C# suite:
 
-`tools/Publish-Tracker.ps1` publishes the tracker. The full
-`tools/Build-TrackerRelease.ps1` command generates data, runs validation, and
-builds both player packages. Packaging, signing, and recovery are documented in
-the [updater release guide](../docs/guides/UPDATER_RELEASES.md).
+```powershell
+dotnet test tracker/Ironmon.Tracker.slnx -c Release --settings tracker/tests/Full.runsettings --maxcpucount:1
+```
+
+Updater integration tests require the pinned official MinGit archive. Download
+it once from the repository root; the C# fixture validates it before extraction:
+
+```powershell
+curl.exe --create-dirs --fail --location --output tracker/tests/Ironmon.Updater.Tests/bin/test-assets/MinGit.zip https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.5/MinGit-2.55.0.5-64-bit.zip
+```
+
+Quick never uses the private Git fixture. Both profiles serialize xUnit
+collections and exclude live network cases. Full requires normal generated
+resources; Quick uses isolated test-only outputs that cannot be published.
+
+Core Quick and Full include an xUnit host for `tests/runtime/Quick.rb`. It runs
+four Ruby smoke groups in the real bundled game: source startup, deterministic
+hashing, battle Run, and feature settings. Set `IRONMON_TEST_GAME_ROOT` when the
+game is not the source checkout's parent directory. The host uses a disposable
+runtime and isolated saves; evidence remains under ignored `data/ruby-smoke`.
+Select `--filter Category=BundledRuby` to run just Ruby smoke, or
+`--filter Category!=BundledRuby` to run core C# checks alone. Larger Ruby suites
+remain separate. No PowerShell regression launchers are used.
+
+`tools/Publish-Tracker.ps1` publishes the tracker. The
+`tools/Build-TrackerRelease.ps1` command generates data, runs native C# tests,
+and builds both player packages. Packaging, signing, and recovery are documented
+in the [updater release guide](../docs/guides/UPDATER_RELEASES.md).

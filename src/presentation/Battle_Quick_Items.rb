@@ -178,6 +178,7 @@ module IronmonBattleQuickItemSceneHooks
   end
 
   def ironmon_quick_items_enabled?
+    return false if !Ironmon.feature_enabled?("battle_quick_items")
     return false if @ironmon_quick_item_battler.nil? || !Ironmon.active?
     return false if !@battle.internalBattle ||
       !@battle.pbOwnedByPlayer?(@ironmon_quick_item_battler)
@@ -249,6 +250,7 @@ module IronmonBattleQuickItemSceneHooks
   end
 
   def ironmon_use_quick_item
+    return if !ironmon_quick_items_enabled?
     item = @ironmon_quick_items.item
     return if !item || Ironmon.tracker_battle_item_pending?
     payload = ironmon_quick_item_payload(item)

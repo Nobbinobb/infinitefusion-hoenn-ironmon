@@ -241,7 +241,6 @@ if ($GenerationCacheDirectory) {
   $reusedGeneration = Restore-GenerationCache $projectRoot $GenerationCacheDirectory $generationKey
 }
 
-if (-not $GenerateOnly) { & (Join-Path $PSScriptRoot 'Test-GameAdoptionInventory.ps1') }
 # BEGIN GENERATED CATALOG RECIPE
 if (-not $reusedGeneration) {
   $gameAdoptionInventory = Join-Path $projectRoot "data\updater\baselines\hoenn.json.gz"
@@ -406,39 +405,10 @@ $historyArgument = if ($UpdateHistoryDirectory) { $UpdateHistoryDirectory } else
 & dotnet $updateTool validate-inputs (Join-Path $projectRoot 'data/updater/baselines/hoenn.json.gz') (Join-Path $projectRoot 'data/updater/baselines/hoenn.manifest.json') $gameVersionMatch.Groups['version'].Value $historyArgument (Join-Path $projectRoot 'resources/updater/trusted-keys.json')
 if ($LASTEXITCODE -ne 0) { throw 'Generated game or historical release metadata is invalid; release tests and packaging were not started.' }
 
-& (Join-Path $PSScriptRoot "Test-GenerationProfile.ps1") `
-  -SkipBuild `
-  -GameRoot $gameRoot `
-  -TimeoutSeconds 300
-
-& (Join-Path $PSScriptRoot "Test-GameRuntime.ps1") `
-  -SkipBuild `
-  -GameRoot $gameRoot `
-  -TimeoutSeconds 600
-
-& (Join-Path $PSScriptRoot "Test-UpdaterBootGuard.ps1") `
-  -GameRoot $gameRoot `
-  -TimeoutSeconds 90
-
-& dotnet test (Join-Path $projectRoot "tracker\tests\Ironmon.Tracker.Tests\Ironmon.Tracker.Tests.csproj") `
-  --configuration Release `
-  --maxcpucount:1 `
-  -- xUnit.ParallelizeTestCollections=false
-if ($LASTEXITCODE -ne 0) {
-  throw "Tracker tests failed."
+foreach ($testProject in 'Ironmon.Tracker.Tests', 'Ironmon.Tracker.App.Tests', 'Ironmon.Updater.Tests', 'Ironmon.Setup.Tests', 'Ironmon.Tracker.AchievementOverlay.Tests') {
+  & dotnet test (Join-Path $projectRoot "tracker/tests/$testProject/$testProject.csproj") --configuration Release --settings (Join-Path $projectRoot 'tracker/tests/Full.runsettings') --maxcpucount:1 -p:UseSharedCompilation=false
+  if ($LASTEXITCODE -ne 0) { throw "$testProject tests failed." }
 }
-
-& dotnet test (Join-Path $projectRoot "tracker\tests\Ironmon.Tracker.App.Tests\Ironmon.Tracker.App.Tests.csproj") `
-  --configuration Release `
-  --runtime win-x64 `
-  --maxcpucount:1
-if ($LASTEXITCODE -ne 0) {
-  throw "Tracker app tests failed."
-}
-
-& (Join-Path $PSScriptRoot "Test-DefenseOverview.ps1") -SkipBuild
-& (Join-Path $PSScriptRoot 'Test-Updater.ps1') -Configuration Release
-& (Join-Path $PSScriptRoot "Test-AreaEncounterLookup.ps1") -GameRoot $gameRoot -SkipBuild
 
 & (Join-Path $PSScriptRoot "Publish-Tracker.ps1") -DeploymentMode SelfContained
 

@@ -3,10 +3,9 @@ using System.Globalization;
 using System.IO.Compression;
 using System.Numerics;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage.Encoding;
 
 /// <summary>
 /// Provides canonical, lossless collector encodings independently of gameplay RNG.
@@ -65,7 +64,7 @@ internal static class CollectionEncoding
     /// <param name="value">The stable technical input string to hash without consuming gameplay randomness.</param>
     /// <returns>The first 16 bytes of the UTF-8 input's SHA-256 digest as a stable technical identifier.</returns>
     public static byte[] DerivedIdentifier(string value)
-        => SHA256.HashData(Encoding.UTF8.GetBytes(value))[..16];
+        => SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(value))[..16];
 
     /// <summary>
     /// Encodes an unsigned integer using canonical base-128 varints.

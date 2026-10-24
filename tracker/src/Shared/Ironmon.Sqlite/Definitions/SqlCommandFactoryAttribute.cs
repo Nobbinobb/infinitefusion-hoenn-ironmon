@@ -1,4 +1,4 @@
-namespace Ironmon.Sqlite.Querying;
+namespace Ironmon.Sqlite.Definitions;
 
 /// <summary>
 /// Adds a caller-owned reusable command factory to a generated non-query operation.

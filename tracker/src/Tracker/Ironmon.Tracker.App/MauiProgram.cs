@@ -1,4 +1,6 @@
+using Ironmon.Tracker.App.History;
 using Ironmon.Tracker.Collection;
+using Ironmon.SpriteLibrary;
 
 namespace Ironmon.Tracker.App;
 
@@ -36,8 +38,10 @@ public static class MauiProgram
         builder.Services.AddSingleton<TrackerKnowledgeStore>();
         builder.Services.AddSingleton<AreaDiscoveryStore>();
         builder.Services.AddSingleton<CompletedRunArchive>();
-        builder.Services.AddSingleton(static services => new GameplayCollectionStore(Path.Combine(services.GetRequiredService<TrackerKnowledgeOptions>().RootDirectory, Ironmon.Tracker.Protocol.Connection.GameplayCollectionProtocol.DirectoryName)));
+        builder.Services.AddSingleton<IHistoryArchivePicker, HistoryArchivePicker>();
+        builder.Services.AddSingleton(static services => new GameplayCollectionStore(Path.Combine(services.GetRequiredService<TrackerKnowledgeOptions>().RootDirectory, GameplayCollectionProtocol.DirectoryName), Path.Combine(services.GetRequiredService<TrackerKnowledgeOptions>().RootDirectory, TrackerStorageNames.RunsDirectory)));
         builder.Services.AddSingleton<TrackerConnectionService>();
+        builder.Services.AddSingleton<IAchievementNotificationOverlay, AchievementOverlay.AchievementOverlayPresenter>();
         builder.Services.AddSingleton<TrackerGlobalShortcutService>();
         builder.Services.AddSingleton<Controls.ControlProfiles>();
         builder.Services.AddSingleton<TrackerUpdateLifecycle>();
@@ -88,8 +92,10 @@ public static class MauiProgram
 #endif
         TrackerConnectionOptions options = new(TrackerProtocol.Port, version, debugRequested, TimeSpan.FromSeconds(TrackerProtocol.HandshakeTimeoutSeconds))
         {
+            Features = TrackerFeaturePreferences.Load(),
             AutomaticReset = TrackerStartupSettings.AutomaticReset,
-            AutoSelectStarter = Preferences.Default.Get(TrackerApplicationConstants.AutoSelectStarterPreferenceKey, false),
+            ToggleSpeed = TrackerToggleSpeedSettings.Load(),
+            AutoSelectStarter = Preferences.Default.Get(TrackerApplicationConstants.AutoSelectStarterPreferenceKey, true),
             MaximumStarterBaseStatTotal = ReadMaximumStarterBaseStatTotal(),
             FavoriteSpeciesIds = favorites.Favorites.Select(favorite => favorite.SpeciesId).ToArray()
         };

@@ -37,6 +37,7 @@ module Ironmon
       validate_envelope(message)
       if message["type"] == "event" && message["event"] == "tracker_connected"
         payload = message["payload"] || {}
+        Ironmon::ToggleSpeed.configure(payload["toggle_speed"] || Ironmon::ToggleSpeed.default_configuration)
         catalogue_fingerprint = Ironmon.tracker_move_power_catalog_fingerprint
         @simple_move_power_supported =
           payload["simple_move_power_supported"] == true &&
@@ -55,14 +56,16 @@ module Ironmon
         )
         Ironmon.disable_tracker_auto_revive if
           !diagnostic_capability?("development.auto_revive")
+        apply_feature_settings(payload["features"])
         @automatic_reset = payload["automatic_reset"] != false
-        @auto_select_starter = payload["auto_select_starter"] == true
+        @auto_select_starter = payload["auto_select_starter"] != false
         @maximum_starter_base_stat_total = Ironmon.valid_starter_bst_ceiling(
           payload["maximum_starter_base_stat_total"]
         )
         @favorite_species_ids = normalize_favorite_species_ids(
           payload["favorite_species_ids"]
         )
+        Ironmon.refresh_tracker_starter_rules
         Ironmon.reset_tracker_obtainability_worker_failures
       elsif message["type"] == "event" && message["event"] == "tracker_heartbeat"
         @last_heartbeat = Ironmon.tracker_uptime_seconds if
@@ -138,9 +141,6 @@ module Ironmon
       end
       if message["command"] == "current_state"
         queue_message(success_response(request_id, Ironmon.tracker_current_state))
-      elsif message["command"] == "achievement_preview"
-        queued = Ironmon::Achievements.preview(message["payload"] || {})
-        queue_message(success_response(request_id, { "queued" => queued }))
       elsif message["command"] == "game_management"
         queue_message(success_response(request_id, Ironmon.game_management_snapshot))
       elsif ["start_ironmon", "continue_ironmon"].include?(message["command"])
@@ -148,21 +148,26 @@ module Ironmon
         queue_message(success_response(request_id, result))
       elsif message["command"] == "update_settings"
         payload = message["payload"] || {}
+        Ironmon::ToggleSpeed.configure(payload["toggle_speed"]) if payload["toggle_speed"]
+        apply_feature_settings(payload["features"])
         @automatic_reset = payload["automatic_reset"] != false
-        @auto_select_starter = payload["auto_select_starter"] == true
+        @auto_select_starter = payload["auto_select_starter"] != false
         @maximum_starter_base_stat_total = Ironmon.valid_starter_bst_ceiling(
           payload["maximum_starter_base_stat_total"]
         )
         @favorite_species_ids = normalize_favorite_species_ids(
           payload["favorite_species_ids"]
         )
+        Ironmon.refresh_tracker_starter_rules
         queue_message(success_response(
           request_id, {
+            "features" => feature_settings,
             "automatic_reset" => @automatic_reset,
             "auto_select_starter" => @auto_select_starter,
             "maximum_starter_base_stat_total" =>
               @maximum_starter_base_stat_total,
-            "favorite_species_ids" => @favorite_species_ids
+            "favorite_species_ids" => @favorite_species_ids,
+            "toggle_speed" => Ironmon::ToggleSpeed.configuration
           },
           message["run_id"]
         ))
@@ -217,6 +222,9 @@ module Ironmon
           message["payload"], message["run_id"],
           diagnostic_capability?(area_diagnostic_capability(category))
         )
+        queue_message(success_response(request_id, payload, message["run_id"]))
+      elsif message["command"] == "pokemon_sprites"
+        payload = Ironmon.tracker_pokemon_sprites(message["payload"])
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "pokemon_search"
         payload = Ironmon.tracker_pokemon_search(message["payload"], message["run_id"])
@@ -285,7 +293,7 @@ module Ironmon
         include_evolutions =
           development_payload["include_evolutions"] != false
         payload = Ironmon.tracker_development_state(
-          include_catalogs, include_evolutions
+          include_catalogs, include_evolutions, development_payload
         )
         queue_message(success_response(request_id, payload, message["run_id"]))
       elsif message["command"] == "debug_development_action"

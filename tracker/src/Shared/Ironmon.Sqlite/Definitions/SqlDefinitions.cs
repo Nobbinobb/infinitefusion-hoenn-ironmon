@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace Ironmon.Sqlite.Querying;
+namespace Ironmon.Sqlite.Definitions;
 
 /// <summary>
 /// Generates SQLite execution methods from the attributed partial class's nested Definitions class.

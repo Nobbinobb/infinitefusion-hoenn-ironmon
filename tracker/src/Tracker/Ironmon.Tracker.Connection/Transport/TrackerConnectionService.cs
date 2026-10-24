@@ -232,10 +232,13 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         IReadOnlyList<string> diagnosticCapabilities = Requests.GetNegotiatedDiagnosticCapabilities(game);
         TrackerHandshakePayload tracker = new(_options.TrackerVersion, _options.DebugRequested, _options.AutoSelectStarter, _options.MaximumStarterBaseStatTotal, _options.FavoriteSpeciesIds, diagnosticCapabilities)
         {
+            Features = _options.Features,
             AutomaticReset = _options.AutomaticReset,
+            ToggleSpeed = _options.ToggleSpeed,
             CollectionProtocolVersion = _collection is null ? 0 : GameplayCollectionProtocol.Version,
             CollectionCompressionVersion = _collection is null ? 0 : GameplayCollectionProtocol.CompressionVersion,
             AchievementProtocolVersion = _collection is null ? 0 : GameplayCollectionProtocol.AchievementVersion,
+            AchievementOverlayVersion = _collection is not null && Requests.HasAchievementOverlay && game.AchievementOverlayVersion == GameplayCollectionProtocol.AchievementOverlayVersion ? GameplayCollectionProtocol.AchievementOverlayVersion : 0,
             ManagementProtocolVersion = game.ManagementProtocolVersion == RunManagementProtocol.Version ? RunManagementProtocol.Version : 0,
             SessionId = game.SessionId,
             SimpleMovePowerSupported = TrackerSimpleMovePowerPresentation.SupportsCatalogue(game.SimpleMovePowerCatalogueFingerprint),
@@ -451,6 +454,12 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             _diagnostics.RecordIncoming(message);
             if (message.Type == TrackerMessageType.Event)
             {
+                if (message.Event is GameplayCollectionProtocol.AchievementOverlayStart or GameplayCollectionProtocol.AchievementOverlayFrame or GameplayCollectionProtocol.AchievementOverlayStop)
+                {
+                    await Requests.HandleAchievementOverlayAsync(message, _collection, game, cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
                 if (message.Event is GameplayCollectionProtocol.Batch or GameplayCollectionProtocol.CompressedBatch or GameplayCollectionProtocol.Chunk or GameplayCollectionProtocol.AchievementPoll or GameplayCollectionProtocol.AchievementAcknowledged)
                 {
                     if (collection is not null)

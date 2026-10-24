@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.Text.Json;
+using Ironmon.Tracker.Collection.Queries.Definitions;
+using Ironmon.Tracker.Collection.Storage.Encoding;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage;
 
 /// <summary>
 /// Retains explicit interrupted coverage boundaries instead of fabricating a complete crash tail.

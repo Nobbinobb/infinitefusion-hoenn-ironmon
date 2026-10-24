@@ -106,6 +106,91 @@ module IronmonDiagnosticAccessRuntimeTests
     connection.define_singleton_method(:diagnostic_capability?, original_iv_capability) if connection && original_iv_capability
   end
 
+  def self.test_prepared_development_evolutions
+    original_trainer = $Trainer
+    original_global = $PokemonGlobal
+    originals = {}
+    [:tracker_debug_active_recipe, :tracker_active_fusion_assignment_recipe, :tracker_lookup_evolution_targets,
+     :tracker_lookup_evolution_predecessor_page].each do |name|
+      originals[name] = Ironmon.method(name)
+    end
+    $Trainer = Player.new("Development evolution test", GameData::TrainerType.keys.first)
+    $PokemonGlobal = PokemonGlobalMetadata.new
+    $PokemonGlobal.ironmon_mode = true
+    pokemon = Pokemon.new(:B117H339, 5, $Trainer, false)
+    $Trainer.party = [pokemon]
+    target_assignments = []
+    predecessor_assignments = []
+    calls = []
+    connection = Ironmon.tracker_connection
+    original_capability = connection.method(:diagnostic_capability?)
+    prepared_recipe = { "seed" => 1689 }
+    Ironmon.define_singleton_method(:tracker_debug_active_recipe) { {} }
+    Ironmon.define_singleton_method(:tracker_active_fusion_assignment_recipe) do |allow_unprepared|
+      raise "Development did not request early assignment inputs" if !allow_unprepared
+      calls << :recipe
+      prepared_recipe
+    end
+    Ironmon.define_singleton_method(:tracker_lookup_evolution_targets) do |species, _recipe, obtainability, assignments|
+      raise "Development evolution loading attempted a runtime scan" if
+        species.id != pokemon.species || obtainability || !assignments.equal?(target_assignments)
+      calls << :targets
+      { :normal => [], :head => [], :body => [] }
+    end
+    Ironmon.define_singleton_method(:tracker_lookup_evolution_predecessor_page) do |species, _recipe, offset, limit, obtainability, assignments|
+      raise "Development devolution loading attempted a runtime scan" if
+        species.id != pokemon.species || offset != 0 || limit != 50 ||
+        obtainability || !assignments.equal?(predecessor_assignments)
+      calls << :predecessors
+      { "matches" => [], "continuation" => "complete", "next_offset" => nil }
+    end
+    payload = {
+      "use_native_evolution_assignments" => true,
+      "pokemon_id" => pokemon.personalID.to_s,
+      "species_id" => Ironmon.tracker_species_id(pokemon),
+      "evolution_assignments" => target_assignments,
+      "predecessor_assignments" => predecessor_assignments
+    }
+    result = Ironmon.tracker_development_state(false, true, payload)
+    assert(result["evolutions"] == [] && result["devolutions"] == [],
+           "empty prepared directions are complete and never trigger a fusion scan")
+    assert(calls == [:targets, :predecessors],
+           "development forwards both prepared assignment lists")
+    calls.clear
+    preflight = Ironmon.tracker_development_state(false, false, payload)
+    assert(preflight["fusion_assignments"] == prepared_recipe && calls == [:recipe],
+           "an explicit authorized development preflight can prepare an early fusion")
+    calls.clear
+    ordinary = Ironmon.tracker_development_state(false, false)
+    assert(!ordinary.key?("fusion_assignments") && calls.empty?,
+           "ordinary development state never adds internal generation inputs")
+    connection.define_singleton_method(:diagnostic_capability?) do |capability|
+      capability != "development.evolution" && original_capability.call(capability)
+    end
+    restricted = Ironmon.tracker_development_state(false, false, payload)
+    assert(!restricted.key?("fusion_assignments") && calls.empty?,
+           "other mutation grants never expose evolution preparation inputs")
+    connection.define_singleton_method(:diagnostic_capability?, original_capability)
+    assert_rejected("prepared choices reject a replaced individual") do
+      Ironmon.tracker_development_state(false, true, payload.merge("pokemon_id" => "stale"))
+    end
+    assert_rejected("prepared choices reject an evolved or swapped species") do
+      Ironmon.tracker_development_state(false, true, payload.merge("species_id" => "PIKACHU:0"))
+    end
+    assert_rejected("unprepared outgoing assignments fail before scanning") do
+      Ironmon.tracker_development_state(false, true, payload.merge("evolution_assignments" => nil))
+    end
+    assert_rejected("unprepared incoming assignments fail before scanning") do
+      Ironmon.tracker_development_state(false, true, payload.merge("predecessor_assignments" => nil))
+    end
+    assert(calls.empty?, "rejected assignments never enter evolution lookup")
+  ensure
+    $Trainer = original_trainer
+    $PokemonGlobal = original_global
+    originals.each { |name, method| Ironmon.define_singleton_method(name, method) } if originals
+    connection.define_singleton_method(:diagnostic_capability?, original_capability) if connection && original_capability
+  end
+
   def self.test_development_mutations
     original_trainer = $Trainer
     original_system = $PokemonSystem
@@ -358,6 +443,7 @@ module IronmonDiagnosticAccessRuntimeTests
     end
 
     test_owned_ivs
+    test_prepared_development_evolutions
     test_development_mutations
     File.binwrite(OUTPUT_PATH, "diagnostic access runtime tests passed\n")
   rescue Exception => exception

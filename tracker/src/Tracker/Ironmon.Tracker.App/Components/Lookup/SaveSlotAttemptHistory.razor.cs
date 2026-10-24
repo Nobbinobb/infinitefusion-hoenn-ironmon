@@ -23,6 +23,12 @@ public partial class SaveSlotAttemptHistory
     public string? CurrentSaveSlot { get; set; }
 
     /// <summary>
+    /// Gets or sets the installation containing recorded and cached Pokemon artwork.
+    /// </summary>
+    [Parameter]
+    public string? GameRoot { get; set; }
+
+    /// <summary>
     /// Gets or sets the archived runs available for direct navigation.
     /// </summary>
     [Parameter]

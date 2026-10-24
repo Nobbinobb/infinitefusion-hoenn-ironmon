@@ -1,7 +1,7 @@
-using Ironmon.Sqlite.Querying;
+using Ironmon.Sqlite.Definitions;
 using Microsoft.Data.Sqlite;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage.Maintenance;
 
 /// <summary>
 /// Exposes dedicated fixed migration scripts through generated typed methods.

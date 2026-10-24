@@ -1,4 +1,4 @@
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Queries.Results;
 
 /// <summary>
 /// Carries the exact operational columns selected by the collection inspector.

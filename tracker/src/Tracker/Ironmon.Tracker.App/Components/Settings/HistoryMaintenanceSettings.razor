@@ -1,0 +1,33 @@
+<ObsidianSection Title="History maintenance" Icon="ObsidianIconKind.FileDown" Description="Move history that no shipped achievement uses into a compressed, encrypted file. The tracker manages archive protection automatically. Achievement progress stays in the tracker.">
+    <p class="obsidian-settings-note">Close the game before exporting or importing. Shared identities, Pokémon configuration chains and live tracking checkpoints remain available so later gameplay can be tracked correctly.</p>
+    <p class="obsidian-settings-note">Exported history is unavailable in the tracker until imported. Future achievements may need that history. Keep the archive if you want to restore it; deleting the archive permanently discards the exported history.</p>
+    <p class="obsidian-settings-note">Archives can be imported into their original tracker profile, including after achievement updates.</p>
+    @if (!CanMaintain)
+    {
+        <p class="obsidian-settings-caution" role="status">Close the connected game to use history maintenance.</p>
+    }
+    <div class="obsidian-settings-actions">
+        <button type="button" class="obsidian-settings-button" disabled="@(_busy || !CanMaintain)" @onclick="ReviewAsync">Review export</button>
+        <button type="button" class="obsidian-settings-button" disabled="@(_busy || !CanMaintain)" @onclick="PrepareImport">Import history</button>
+    </div>
+    @if (_review is not null || _importing)
+    {
+        <div class="history-maintenance-review">
+            @if (_review is not null)
+            {
+                <p>Estimated disk space freed: <strong>@Megabytes(_review.EstimatedFreedBytes ?? 0) MB</strong>.</p>
+                <p>This conservative estimate includes keeping the archive on the same drive. Estimated archive size: @Megabytes(_review.ArchiveBytes) MB. Actual savings will be measured after export.</p>
+                <p>No achievement-related rows are included. Shared rows remain whole in the active profile.</p>
+            }
+            @if (_importing)
+            {
+                <p>The tracker will verify the selected archive and restore its history into the original profile automatically.</p>
+            }
+            <div class="obsidian-settings-actions">
+                <button type="button" class="obsidian-settings-button obsidian-settings-primary" disabled="@(_busy || !CanMaintain)" @onclick="ExecuteAsync">@(_importing ? "Choose archive and import" : "Choose location, export and remove")</button>
+                <button type="button" class="obsidian-settings-link" disabled="@_busy" @onclick="CancelReview">Cancel</button>
+            </div>
+        </div>
+    }
+    <p class="obsidian-settings-status" role="status" aria-live="polite" aria-busy="@_busy.ToString().ToLowerInvariant()">@_status</p>
+</ObsidianSection>

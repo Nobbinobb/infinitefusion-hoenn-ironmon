@@ -5,8 +5,11 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Ironmon.Tracker.Collection.Queries.Definitions;
+using Ironmon.Tracker.Collection.Queries.Results;
+using Ironmon.Tracker.Collection.Storage.Encoding;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage;
 
 /// <summary>
 /// Persists exact generic aggregate primitives using compact relational keys.

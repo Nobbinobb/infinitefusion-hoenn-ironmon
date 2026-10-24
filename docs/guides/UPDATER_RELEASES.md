@@ -104,15 +104,11 @@ for commands and validation cases.
 
 ## Local verification and localization
 
-Run `tools/Test-Updater.ps1 -Configuration Release` for updater and Setup tests.
-Use `-Offline` after provisioning MinGit and restoring dependencies, or
-`-IncludeNetwork` to include the live downloader/HTTPS case. Synthetic
-`ReleaseBundleTests` exercise signed install/update bundles through the real
-engine without changing production version fields or release archives.
-
-`tools/ci/Test-ReleaseAutomation.ps1` and `Test-ReleasePublication.ps1` exercise
-orchestration with offline doubles. These tests do not establish native Windows,
-real UAC, or clean-machine acceptance; use the
+Use native `dotnet test` commands with `tracker/tests/Full.runsettings` for the
+updater and Setup projects. The pinned Git dependency and direct commands are
+listed in [the tracker README](../../tracker/README.md#validate-and-publish).
+Synthetic `ReleaseBundleTests` exercise signed bundles through the real engine.
+Native Windows, real UAC, and clean-machine behavior still require the
 [acceptance checklist](UPDATER_ACCEPTANCE.md).
 
 Setup, the helper, and shared engine messages use `UpdaterText` and

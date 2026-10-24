@@ -98,6 +98,7 @@ module Ironmon
         GameplayCollection.instance_variable_set(:@attempt_id, identifier)
         GameplayCollection.instance_variable_set(:@branch_id, branch)
         GameplayCollection.instance_variable_set(:@save_lineage_id, binding_key)
+        Ownership.start_history_branch(new_attempt) if defined?(Ownership)
         bindings[binding_key] = {
           "attempt_id" => identifier, "attempt_number" => attempt["attempt_number"],
           "tracked_seconds" => @attempt_seconds, "completed" => @completed, "source_run_id" => source
@@ -303,7 +304,9 @@ module Ironmon
           "terminal_battle_ref" => terminal && terminal["battle_id"], "terminal_cause" => terminal && terminal["cause"],
           "final_statistics_ref" => nil, "active_seconds" => binding_key == @current_binding_key ? @attempt_seconds : entry["tracked_seconds"],
           "last_world_context" => @transition_pending && binding_key == @transition_pending[:source_binding_key] ? @transition_pending[:world] : world_context,
-          "terminal_revision" => 1, "source_run_id" => source
+          "terminal_revision" => 1, "source_run_id" => source,
+          "completion_milestone" => Ironmon.current_run_attempt && Ironmon.current_run_attempt["run_id"] == source ? Ironmon.current_run_attempt["completion_milestone"] : nil,
+          "completion_trainer_class_ids" => Ironmon.current_run_attempt && Ironmon.current_run_attempt["run_id"] == source ? Ironmon.current_run_attempt["completion_trainer_class_ids"] : nil
         })
         entry["completed"] = true
         bindings[binding_key] = entry
@@ -639,10 +642,14 @@ Ironmon.register_game_save_hook(:gameplay_collection,
   proc do |slot, _auto, _safe|
     world = Ironmon::GameplayCollection::World
     world.close_clock("save")
+    history_checkpoint = Ironmon::GameplayCollection::Ownership.prepare_history_save
     Ironmon::GameplayCollection.flush
-    { :slot => slot, :operation_id => Ironmon::GameplayCollection.enabled? ? Ironmon::GameplayCollection.next_id("save_operation") : nil }
+    { :slot => slot, :history_checkpoint => history_checkpoint, :operation_id => Ironmon::GameplayCollection.enabled? ? Ironmon::GameplayCollection.next_id("save_operation") : nil }
   end,
   proc do |slot, _auto, _safe, result, previous|
+    if result == false && $PokemonGlobal
+      $PokemonGlobal.instance_variable_set(:@ironmon_collection_history_checkpoint, previous[:history_checkpoint])
+    end
     if previous[:operation_id]
       Ironmon::GameplayCollection.emit("save.operation_resolved", {
         "operation_id" => previous[:operation_id], "operation" => "save", "outcome" => result == false ? "failed" : "success",

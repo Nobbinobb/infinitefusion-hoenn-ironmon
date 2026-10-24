@@ -6,6 +6,11 @@ namespace Ironmon.Tracker.Protocol.Transport;
 public static class TrackerCommands
 {
     /// <summary>
+    /// Gets the bounded public species-artwork materialization command.
+    /// </summary>
+    public const string PokemonSprites = "pokemon_sprites";
+
+    /// <summary>
     /// Gets the current-state recovery command.
     /// </summary>
     public const string CurrentState = "current_state";

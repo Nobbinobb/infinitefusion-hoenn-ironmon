@@ -1,6 +1,8 @@
 using System.Text.Json;
+using Ironmon.Tracker.Collection.Queries.Definitions;
+using Ironmon.Tracker.Collection.Queries.Results;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage;
 
 /// <summary>
 /// Reads actual owned configurations independently of encountered Pokemon observations.

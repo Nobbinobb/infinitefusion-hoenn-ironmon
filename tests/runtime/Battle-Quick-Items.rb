@@ -152,6 +152,16 @@ module IronmonBattleQuickItemRuntimeTests
     assert(icon_bottom <= box.y + box.bitmap.height, "centered item fits within the box height")
     assert(box.bitmap.width < 48 && box.bitmap.height < 48, "boxed widget is smaller than the previous unframed icon")
     assert(box.z < icon.z && icon.z < count.z && count.z < scene.sprites["pokemon_0"].z, "count draws above the centered icon while the widget stays behind the player's Pokemon")
+    connection = Ironmon.tracker_connection
+    connection.apply_feature_settings({ "battle_quick_items" => false })
+    scene.pbInputUpdate
+    assert(!icon.visible && !box.visible && !count.visible, "disabled quick select removes every HUD sprite")
+    assert(!scene.ironmon_quick_items_enabled?, "disabled quick select cannot accept navigation or use")
+    scene.ironmon_use_quick_item
+    assert(!Ironmon.tracker_battle_item_pending?, "disabled direct quick use queues no action")
+    connection.apply_feature_settings({})
+    scene.pbInputUpdate
+    assert(icon.visible && box.visible && count.visible && icon.item == :GREATBALL, "re-enabling restores the saved item and HUD")
     selection = scene.instance_variable_get(:@ironmon_quick_items)
     selection.move_category(1)
     selection.move_item(1)

@@ -169,11 +169,25 @@ module Ironmon
         previous = @records[identifier]
         digest = signature(record)
         return if !force && previous && previous[:signature] == digest
+        record["display_metadata"]["sprite_path"] = archived_sprite_path(pokemon)
+        record["history_context"] = { "branch_id" => GameplayCollection.branch_id, "saved_parent" => @history_parent, "ancestry_known" => @history_ancestry_known != false }
         record["configuration_revision"] = @revisions.fetch(identifier, 0) + 1
         GameplayCollection.emit("pokemon.owned_configuration_committed", record)
         @revisions[identifier] = record["configuration_revision"]
         @records[identifier] = { :signature => digest, :record => record }
         return record
+      end
+
+      def self.archived_sprite_path(pokemon)
+        sprite = Combat.read(pokemon, :pif_sprite)
+        return nil if !sprite
+        local = BattleSpriteLoader.new.check_for_local_sprite(sprite)
+        return local.tr("\\", "/") if local && File.file?(local)
+        return Ironmon.tracker_materialized_sprite_path(sprite) if
+          Ironmon.respond_to?(:tracker_materialized_sprite_path)
+        return nil
+      rescue StandardError
+        return nil
       end
 
       def self.baseline(reason = "load")
@@ -188,7 +202,29 @@ module Ironmon
         end
       end
 
-      def self.poll(reason = "other", terminal = false)
+      def self.start_history_branch(new_attempt = false)
+        checkpoint = $PokemonGlobal && $PokemonGlobal.instance_variable_get(:@ironmon_collection_history_checkpoint)
+        @history_parent = if checkpoint.is_a?(Hash) && checkpoint["epoch_id"] == GameplayCollection.journal.epoch_id && checkpoint["attempt_id"] == GameplayCollection.attempt_id
+                            checkpoint.dup
+                          end
+        runner = Ironmon.respond_to?(:usable_party) ? Ironmon.usable_party[0] : nil
+        @history_ancestry_known = new_attempt || !@history_parent.nil? || runner.nil?
+      end
+
+      def self.prepare_history_save
+        return nil if !GameplayCollection.enabled? || !$PokemonGlobal
+        poll("save", false, true)
+        previous = $PokemonGlobal.instance_variable_get(:@ironmon_collection_history_checkpoint)
+        checkpoint = {
+          "epoch_id" => GameplayCollection.journal.epoch_id, "attempt_id" => GameplayCollection.attempt_id,
+          "branch_id" => GameplayCollection.branch_id, "stream_id" => GameplayCollection.journal.stream_id,
+          "sequence" => GameplayCollection.journal.sequence.to_s
+        }
+        $PokemonGlobal.instance_variable_set(:@ironmon_collection_history_checkpoint, checkpoint)
+        return previous
+      end
+
+      def self.poll(reason = "other", terminal = false, force = false)
         return if @transaction_depth.to_i > 0
         observe do
           update_favorites
@@ -197,7 +233,7 @@ module Ironmon
           $Trainer.party.each do |pokemon|
             identifier = GameplayCollection.pokemon_instance_id(pokemon)
             present[identifier] = true
-            commit(pokemon, terminal ? "terminal" : "configuration_change", [reason], nil, terminal)
+            commit(pokemon, terminal ? "terminal" : "configuration_change", [reason], nil, terminal || force)
           end
           @records.each do |identifier, previous|
             next if present[identifier] || previous[:retired]

@@ -1,6 +1,8 @@
 using System.Text.Json;
+using Ironmon.Tracker.Collection.Queries.Definitions;
+using Ironmon.Tracker.Collection.Storage.Encoding;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage;
 
 /// <summary>
 /// Retains source-defined item identities, immutable parent edges and current locations without an event archive.

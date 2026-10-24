@@ -5,6 +5,10 @@ namespace Ironmon.Tracker.Tests.Connection;
 /// </summary>
 public sealed class CompletedRunArchiveTests : IDisposable
 {
+    private const string _resultKey = "result";
+    private const string _statisticsKey = "statistics";
+    private const string _wonResult = "won";
+    private const string _wonRunId = "alpha-winner";
     private const string _testGenerationProfileId = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private readonly List<string> _roots = [];
 
@@ -95,6 +99,30 @@ public sealed class CompletedRunArchiveTests : IDisposable
         Assert.Equal("run-second", archive.RequestedRunId);
         Assert.Equal("run-second", archive.Recipes[0].RunId);
         Assert.Equal(2, requests);
+    }
+
+    /// <summary>
+    /// Prevents a reset or an older reloaded save from downgrading a recorded win for the same run identity.
+    /// </summary>
+    /// <param name="laterResult">The stale outcome arriving after the authoritative win.</param>
+    [Theory]
+    [InlineData("lost")]
+    [InlineData("abandoned")]
+    public void RecordedWinSurvivesLaterResetOrLoss(string laterResult)
+    {
+        string root = CreateRoot();
+        var payload = JsonSerializer.SerializeToNode(CreateRecipe(_wonRunId), TrackerJson.Options)!.AsObject();
+        payload[_resultKey] = _wonResult;
+        payload[_statisticsKey]![_resultKey] = _wonResult;
+        CompletedRunRecipePayload winner = payload.Deserialize<CompletedRunRecipePayload>(TrackerJson.Options)!;
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(root));
+        archive.Store(winner);
+        archive.Store(winner);
+        payload[_resultKey] = laterResult;
+        payload[_statisticsKey]![_resultKey] = laterResult;
+        archive.Store(payload.Deserialize<CompletedRunRecipePayload>(TrackerJson.Options)!);
+        Assert.Equal(_wonResult, Assert.Single(archive.Recipes).Result);
+        Assert.Equal(_wonResult, Assert.Single(new CompletedRunArchive(new TrackerKnowledgeOptions(root)).Recipes).Statistics!.Result);
     }
 
     /// <summary>

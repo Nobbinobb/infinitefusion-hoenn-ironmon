@@ -65,7 +65,7 @@ internal static class SqliteProviderEmitter
     private const string _identityPrefix = "_generatedQueryIdentity";
     private const string _identityField = "    private static readonly object ";
     private const string _identityInitializer = " = new();";
-    private const string _rentStart = "        using global::Ironmon.Sqlite.Runtime.SqliteCommandLease lease = global::Ironmon.Sqlite.Runtime.SqliteCommandCache.Rent(connection, ";
+    private const string _rentStart = "        using global::Ironmon.Sqlite.Execution.SqliteCommandLease lease = global::Ironmon.Sqlite.Execution.SqliteCommandCache.Rent(connection, ";
     private const string _rentFactory = ", static factoryConnection =>\n        {\n            var factoryCommand = factoryConnection.CreateCommand();\n            try\n            {";
     private const string _rentEnd = "                return factoryCommand;\n            }\n            catch\n            {\n                factoryCommand.Dispose();\n                throw;\n            }\n        });";
     private const string _inferredSlotEnd = ", global::System.DBNull.Value);";

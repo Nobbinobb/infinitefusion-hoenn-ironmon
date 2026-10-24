@@ -98,6 +98,7 @@ public sealed class ControlProfileTests(ITestOutputHelper output)
     /// Shows controller conflict warnings only after a successful transaction and preserves old controls on failure.
     /// </summary>
     /// <returns>A task that completes after the capture transport is disposed.</returns>
+    [Trait(TrackerTestCategories.Category, TrackerTestCategories.GameCatalog)]
     [Fact]
     public async Task ControllerCaptureWarnsBeforeReplacementAndAfterSuccessfulSave()
     {
@@ -471,6 +472,7 @@ public sealed class ControlProfileTests(ITestOutputHelper output)
     /// Captures a brief keyboard chord, suppresses navigation during capture, and replaces the old shortcut.
     /// </summary>
     /// <returns>A task that completes when shortcut capture has been verified.</returns>
+    [Trait(TrackerTestCategories.Category, TrackerTestCategories.GameCatalog)]
     [Fact]
     public async Task KeyboardCaptureReplacesTrackerWindowShortcuts()
     {
@@ -583,6 +585,7 @@ public sealed class ControlProfileTests(ITestOutputHelper output)
     /// Leaves a preview unsaved until confirmed and modifies only the requested second slot.
     /// </summary>
     /// <returns>A task that completes after the capture session and transport are disposed.</returns>
+    [Trait(TrackerTestCategories.Category, TrackerTestCategories.GameCatalog)]
     [Fact]
     public async Task CapturePreviewCanBeCancelledOrCommittedToTheSecondSlot()
     {

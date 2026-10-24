@@ -6,7 +6,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 
-namespace Ironmon.Tracker.Connection.Sprites;
+namespace Ironmon.SpriteLibrary;
 
 /// <summary>
 /// Synchronizes custom fusion and base-species sprite sheets without changing Infinite Fusion's download settings.

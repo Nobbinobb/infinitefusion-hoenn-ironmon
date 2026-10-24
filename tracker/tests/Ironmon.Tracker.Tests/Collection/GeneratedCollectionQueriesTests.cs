@@ -1,6 +1,8 @@
 using System.Reflection;
 using Ironmon.Tracker.Collection;
 using Microsoft.Data.Sqlite;
+using Ironmon.Tracker.Collection.Queries.Definitions;
+using Ironmon.Tracker.Collection.Queries.Results;
 
 namespace Ironmon.Tracker.Tests.Collection;
 

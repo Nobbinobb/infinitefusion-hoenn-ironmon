@@ -1,4 +1,4 @@
-using Ironmon.Sqlite.Querying;
+using Ironmon.Sqlite.Definitions;
 using Ironmon.Tracker.Tests.Collection;
 using Microsoft.Data.Sqlite;
 

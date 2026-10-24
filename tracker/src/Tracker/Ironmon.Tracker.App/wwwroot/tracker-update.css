@@ -3,7 +3,8 @@ html:has(.tracker-update-overlay) { overflow:hidden; }
 .tracker-update-link:hover { color:#d6ceff; }
 .tracker-update-link:focus-visible { outline:2px solid #b0a3ff; outline-offset:4px; }
 .tracker-update-link:disabled { opacity:.45; cursor:default; }
-.tracker-settings-heading-actions { display:flex; flex-direction:column; align-items:flex-end; gap:5px; padding-top:20px; }
+.tracker-settings-heading-actions { display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
+.tracker-settings-heading-actions .obsidian-settings-saved { min-height:14px; line-height:14px; white-space:nowrap; }
 .tracker-update-overlay { position:fixed; inset:0; z-index:100; background:#090e13; color:#e7eaf2; }
 .tracker-update-panel { box-sizing:border-box; height:100dvh; display:flex; flex-direction:column; max-width:600px; margin:auto; padding:22px; outline:none; font-size:13px; line-height:1.55; }
 .tracker-update-heading { flex:none; }

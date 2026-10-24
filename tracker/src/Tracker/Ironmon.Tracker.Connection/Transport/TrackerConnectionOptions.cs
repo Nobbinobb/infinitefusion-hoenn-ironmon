@@ -6,6 +6,16 @@ namespace Ironmon.Tracker.Connection.Transport;
 public sealed class TrackerConnectionOptions
 {
     /// <summary>
+    /// Gets or sets the independent feature switches.
+    /// </summary>
+    public TrackerFeatureSettings Features { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the saved toggle speed profile sent on every connection.
+    /// </summary>
+    public ToggleSpeedConfiguration ToggleSpeed { get; set; } = ToggleSpeedConfiguration.CreateDefault();
+
+    /// <summary>
     /// Gets or sets the live automatic-reset preference.
     /// </summary>
     public bool AutomaticReset { get; set; } = true;
@@ -50,7 +60,7 @@ public sealed class TrackerConnectionOptions
     /// <summary>
     /// Gets or sets whether starter selection is controlled automatically.
     /// </summary>
-    public bool AutoSelectStarter { get; set; }
+    public bool AutoSelectStarter { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the inclusive generated-BST ceiling for automatic starter selection.

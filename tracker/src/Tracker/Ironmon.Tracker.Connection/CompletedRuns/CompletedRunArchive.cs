@@ -8,6 +8,7 @@ namespace Ironmon.Tracker.Connection.CompletedRuns;
 /// </summary>
 public sealed class CompletedRunArchive
 {
+    private const string _wonResult = "won";
     private readonly TrackerKnowledgeOptions _options;
     private readonly Lock _sync = new();
     private readonly List<CompletedRunRecipePayload> _recipes;
@@ -53,6 +54,38 @@ public sealed class CompletedRunArchive
     public string? LastError { get; private set; }
 
     /// <summary>
+    /// Serializes history-file maintenance with run storage and refreshes available recipes afterward.
+    /// </summary>
+    /// <param name="operation">The collection worker operation using this archive's configured recipe directory.</param>
+    /// <returns>The completed maintenance measurements after the visible recipe list is refreshed.</returns>
+    public async Task<Ironmon.Tracker.Collection.History.HistoryMaintenanceResult> MaintainHistoryAsync(Func<Task<Ironmon.Tracker.Collection.History.HistoryMaintenanceResult>> operation)
+    {
+        ArgumentNullException.ThrowIfNull(operation);
+        try
+        {
+            return await Task.Run(() =>
+            {
+                lock (_sync)
+                {
+                    try
+                    {
+                        return operation().GetAwaiter().GetResult();
+                    }
+                    finally
+                    {
+                        _recipes.Clear();
+                        _recipes.AddRange(Load());
+                    }
+                }
+            }).ConfigureAwait(false);
+        }
+        finally
+        {
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>
     /// Gets the completed run most recently requested for foreground selection.
     /// </summary>
     public string? RequestedRunId
@@ -93,7 +126,7 @@ public sealed class CompletedRunArchive
     }
 
     /// <summary>
-    /// Adds or replaces one completed-run recipe and persists it atomically.
+    /// Adds or refreshes a completed-run recipe atomically while preserving recorded wins against later loss or reset reports.
     /// </summary>
     /// <param name="recipe">The compact deterministic recipe.</param>
     /// <param name="requestSelection">Whether a new recipe should request foreground Archive selection.</param>
@@ -104,6 +137,9 @@ public sealed class CompletedRunArchive
         bool selectionRequested;
         lock (_sync)
         {
+            if (recipe.Result != _wonResult && _recipes.Any(candidate => candidate.RunId == recipe.RunId && candidate.Result == _wonResult))
+                return;
+
             selectionRequested = requestSelection && _recipes.All(candidate => candidate.RunId != recipe.RunId);
             string path = GetRecipePath(recipe.RunId);
             try

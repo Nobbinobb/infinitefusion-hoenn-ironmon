@@ -1,8 +1,12 @@
-using Ironmon.Sqlite.Querying;
+using Ironmon.Sqlite.Definitions;
 using System.Globalization;
 using System.Text.Json;
+using Ironmon.Tracker.Collection.Queries.Definitions;
+using Ironmon.Tracker.Collection.Queries.Results;
+using Ironmon.Tracker.Collection.Storage.Encoding;
+using Ironmon.Tracker.Collection.Storage.Maintenance;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage;
 
 /// <summary>
 /// Retains complete immutable definitions in a shared compression stream with relational bindings.

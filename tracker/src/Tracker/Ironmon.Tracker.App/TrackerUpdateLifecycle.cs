@@ -1,5 +1,3 @@
-using Ironmon.Tracker.Connection.Sprites;
-
 namespace Ironmon.Tracker.App;
 
 /// <summary>

@@ -52,7 +52,7 @@ public partial class TrackerSettingsPage : IDisposable
     private bool _spriteDialogOpen;
     private bool _favoritesOpen;
     private bool _localSettingsSaved;
-    private bool _controlsOpen;
+    private SettingsTab _settingsTab;
     private const string _favoriteSeparator = ", ";
 
     /// <summary>
@@ -94,7 +94,7 @@ public partial class TrackerSettingsPage : IDisposable
     /// Gets or initializes whether starter selection is controlled automatically.
     /// </summary>
     [Parameter]
-    public bool AutoSelectStarter { get; set; }
+    public bool AutoSelectStarter { get; set; } = true;
 
     /// <summary>
     /// Gets or initializes the callback raised when automatic starter selection changes.
@@ -127,9 +127,16 @@ public partial class TrackerSettingsPage : IDisposable
     public string? Status { get; set; }
 
     /// <summary>
+    /// Marks tracker preferences saved after an explicit speed-profile save.
+    /// </summary>
+    private void HandleToggleSpeedSaved()
+        => _localSettingsSaved = true;
+
+    /// <summary>
     /// Loads the persisted favorites for display.
     /// </summary>
-    protected override void OnInitialized() => _favorites = FavoriteStore.Favorites;
+    protected override void OnInitialized()
+        => _favorites = FavoriteStore.Favorites;
 
     /// <summary>
     /// Gets the favorites shown on the active local page.
@@ -177,7 +184,30 @@ public partial class TrackerSettingsPage : IDisposable
 
         try
         {
-            await Requests.UpdateSettingsAsync(new() { AutomaticReset = enabled, AutoSelectStarter = ConnectionOptions.AutoSelectStarter, MaximumStarterBaseStatTotal = ConnectionOptions.MaximumStarterBaseStatTotal, FavoriteSpeciesIds = ConnectionOptions.FavoriteSpeciesIds });
+            await Requests.UpdateSettingsAsync(new() { Features = ConnectionOptions.Features, AutomaticReset = enabled, AutoSelectStarter = ConnectionOptions.AutoSelectStarter, MaximumStarterBaseStatTotal = ConnectionOptions.MaximumStarterBaseStatTotal, FavoriteSpeciesIds = ConnectionOptions.FavoriteSpeciesIds });
+        }
+        catch (Exception error) when (error is IOException or InvalidOperationException or TimeoutException or TrackerProtocolException)
+        {
+            _localSettingsSaved = false;
+        }
+    }
+
+    /// <summary>
+    /// Saves feature switches and applies them to the current game when connected.
+    /// </summary>
+    /// <param name="features">The complete current switches.</param>
+    /// <returns>The live synchronization task.</returns>
+    private async Task HandleFeaturesChanged(TrackerFeatureSettings features)
+    {
+        TrackerFeaturePreferences.Save(features);
+        ConnectionOptions.Features = features;
+        _localSettingsSaved = true;
+        if (ConnectionState.Snapshot.Status != TrackerConnectionStatus.Connected)
+            return;
+
+        try
+        {
+            await Requests.UpdateSettingsAsync(new() { Features = features, AutomaticReset = ConnectionOptions.AutomaticReset, AutoSelectStarter = ConnectionOptions.AutoSelectStarter, MaximumStarterBaseStatTotal = ConnectionOptions.MaximumStarterBaseStatTotal, FavoriteSpeciesIds = ConnectionOptions.FavoriteSpeciesIds });
         }
         catch (Exception error) when (error is IOException or InvalidOperationException or TimeoutException or TrackerProtocolException)
         {
@@ -229,7 +259,7 @@ public partial class TrackerSettingsPage : IDisposable
     private Task HandleMaximumBstChanged(ChangeEventArgs args)
     {
         string text = args.Value?.ToString()?.Trim() ?? string.Empty;
-        if (text.Length == 0)
+        if (text.Length == 0 || text == "0")
         {
             _maximumBstError = null;
             _localSettingsSaved = false;
@@ -516,4 +546,36 @@ public partial class TrackerSettingsPage : IDisposable
         _spriteInstallCancellation?.Cancel();
         _spriteInstallCancellation?.Dispose();
     }
+
+    /// <summary>
+    /// Identifies the independently navigable settings sections.
+    /// </summary>
+    private enum SettingsTab
+    {
+        /// <summary>
+        /// Shows general tracker preferences.
+        /// </summary>
+        General = 0,
+
+        /// <summary>
+        /// Shows keyboard and controller bindings.
+        /// </summary>
+        Controls = 1,
+
+        /// <summary>
+        /// Shows the draft toggle-speed editor.
+        /// </summary>
+        Speed = 2,
+
+        /// <summary>
+        /// Shows independently enabled game features.
+        /// </summary>
+        Features = 3,
+
+        /// <summary>
+        /// Shows encrypted history export and restoration.
+        /// </summary>
+        Maintenance = 4
+    }
+
 }

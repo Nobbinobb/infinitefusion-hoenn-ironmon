@@ -103,7 +103,10 @@ module Ironmon
 
     module ConnectionHooks
       def achievement_notifications_supported?
-        return @achievement_protocol_version == 2
+        return @achievement_protocol_version == 3
+      end
+      def achievement_overlay_supported?
+        return @achievement_overlay_version == 1
       end
       def collection_supported?
         return @collection_protocol_version == SCHEMA_VERSION
@@ -137,12 +140,18 @@ module Ironmon
 
       def game_handshake_message
         message = super
-        message["payload"]["achievement_protocol_version"] = 2
+        message["payload"]["achievement_protocol_version"] = 3
+        message["payload"]["achievement_overlay_version"] = 1
         return message
       end
 
       def handle_message(message)
         event = message["event"].to_s
+        if message["type"] == "event" && event == "achievement_overlay_ready"
+          validate_envelope(message)
+          Ironmon::Achievements.overlay_ready(message["payload"] || {})
+          return
+        end
         if message["type"] == "event" && event == "achievement_unlocks"
           validate_envelope(message)
           Ironmon::Achievements.receive(message["payload"] || {})
@@ -158,12 +167,14 @@ module Ironmon
           @collection_protocol_version = (message["payload"] || {})["collection_protocol_version"]
           @collection_compression_version = (message["payload"] || {})["collection_compression_version"]
           @achievement_protocol_version = (message["payload"] || {})["achievement_protocol_version"]
+          @achievement_overlay_version = (message["payload"] || {})["achievement_overlay_version"]
         end
         return result
       end
 
       def disconnect(error = nil)
         @achievement_protocol_version = nil
+        @achievement_overlay_version = nil
         @collection_protocol_version = nil
         @collection_compression_version = nil
         GameplayCollection.instance_variable_set(:@transfer, nil)

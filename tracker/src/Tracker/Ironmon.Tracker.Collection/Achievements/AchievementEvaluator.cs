@@ -1,3 +1,4 @@
+using Ironmon.Tracker.Collection.Storage.Encoding;
 using System.Globalization;
 using System.Numerics;
 using System.Text.Json;
@@ -67,6 +68,9 @@ internal static class AchievementEvaluator
     /// <returns>True only when known retained evidence proves the complete condition.</returns>
     public static bool Satisfied(AchievementRule rule, IReadOnlyList<AchievementEvidence> evidence)
     {
+        if (!rule.Available)
+            return false;
+
         if (rule.Comparison is not (_atLeast or _atMost))
             throw new InvalidDataException("An achievement comparison is unsupported.");
 

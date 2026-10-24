@@ -1,6 +1,6 @@
 using Microsoft.Data.Sqlite;
 
-namespace Ironmon.Sqlite.Runtime;
+namespace Ironmon.Sqlite.Execution;
 
 /// <summary>
 /// Exclusively owns one generated command until its reader has been disposed.

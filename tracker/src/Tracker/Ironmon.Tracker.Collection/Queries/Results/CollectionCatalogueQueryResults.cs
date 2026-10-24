@@ -1,4 +1,4 @@
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Queries.Results;
 
 /// <summary>
 /// Carries exactly the selected archive or catalogue columns.

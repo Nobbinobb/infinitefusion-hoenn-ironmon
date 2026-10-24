@@ -23,6 +23,10 @@ module Ironmon
       return @recipe["generation_profile_id"].to_s
     end
 
+    def archived?
+      return Ironmon.tracker_archived_lookup_recipe?(@recipe)
+    end
+
     def results_for(pairs)
       raise_failure if @error
       pairs.each do |pair|
@@ -287,14 +291,17 @@ module Ironmon
   end
 
   def self.update_tracker_area_fusions
-    return if !tracker_obtainability_background_safe?
+    archive_menu = tracker_archive_lookup_menu_ready?
+    return if !archive_menu && !tracker_obtainability_background_safe?
     if @tracker_area_fusion_work
       @tracker_area_fusion_work.each_value do |work|
+        next if archive_menu && !work.archived?
         with_generation_profile(work.generation_profile_id) { work.advance }
       end
     end
     if @tracker_wild_occurrence_work
       @tracker_wild_occurrence_work.each_value do |work|
+        next if archive_menu && !work.archived?
         with_generation_profile(work.generation_profile_id) { work.advance }
       end
     end

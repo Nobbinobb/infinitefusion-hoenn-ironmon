@@ -35,7 +35,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     public async Task TitleManagementNegotiatesSessionAndHeartbeatsWhileRequestIsPending()
     {
         const string sessionId = "title-session";
-        TrackerConnectionOptions options = new(0, _preparationTestTrackerVersion, false, TimeSpan.FromSeconds(2));
+        TrackerConnectionOptions options = new(0, _preparationTestTrackerVersion, false, TimeSpan.FromSeconds(2)) { Features = new() { BattleQuickItems = false, FavoriteClause = false, EnforceBstLimit = false }, MaximumStarterBaseStatTotal = 400 };
         TrackerConnectionState state = new();
         await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, new TrackerRunState(), CreateKnowledgeStore(), CreateAreaDiscoveryStore(), CreateCompletedRunArchive());
         service.Start();
@@ -56,6 +56,8 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         Assert.Equal(game.GameRoot, tracker.GameRoot);
         Assert.Equal(RunManagementProtocol.Version, tracker.ManagementProtocolVersion);
         Assert.True(tracker.AutomaticReset);
+        Assert.Equal(options.Features, tracker.Features);
+        Assert.Equal(400, tracker.MaximumStarterBaseStatTotal);
         TrackerMessage initial = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(_backgroundRequestTimeout));
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(initial.RequestId!, new GameCurrentStatePayload(false, null, null, 0)));
         Task<GameManagementPayload> pending = service.Requests.GetGameManagementAsync();

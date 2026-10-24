@@ -3,8 +3,11 @@ using System.Globalization;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Ironmon.Tracker.Collection.Queries.Definitions;
+using Ironmon.Tracker.Collection.Queries.Results;
+using Ironmon.Tracker.Collection.Storage.Encoding;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage;
 
 /// <summary>
 /// Commits hidden achievement state alongside collection receipts and directly retained evidence.
@@ -209,6 +212,15 @@ internal sealed partial class CollectionDatabase
     /// <param name="decodedDimensions">Typed generic atoms already decoded during this evaluation.</param>
     /// <returns>Known typed evidence without decoding historical archives.</returns>
     private IReadOnlyList<AchievementEvidence> ReadAchievementEvidence(string stableGroup, Dictionary<long, JsonElement> decodedDimensions)
+        => [.. ReadAchievementEvidenceRows(stableGroup, decodedDimensions).Values];
+
+    /// <summary>
+    /// Keeps stable observation identities when classifying whole rows for history maintenance.
+    /// </summary>
+    /// <param name="stableGroup">The exact registered group identity.</param>
+    /// <param name="decodedDimensions">Shared decoded dimension values.</param>
+    /// <returns>Joint evidence keyed by its actual retained series identity.</returns>
+    private Dictionary<long, AchievementEvidence> ReadAchievementEvidenceRows(string stableGroup, Dictionary<long, JsonElement> decodedDimensions)
     {
         (int group, JsonElement definition) = _directGroups.TryGetValue(stableGroup, out var registered) ? registered : throw new InvalidDataException("An achievement references an unregistered evidence group.");
         string[] dimensions = [.. definition.GetProperty(_dimensionsProperty).EnumerateArray().Select(value => value.GetProperty(_keyProperty).GetString()!)];
@@ -240,7 +252,7 @@ internal sealed partial class CollectionDatabase
         foreach (AchievementRatioRecord value in CollectionQueries.FindAchievementRatios(_db, _transaction, group))
             AchievementEvidenceRow(rows, value.Series).Ratios[measures[value.Measure]] = (value.Numerator.HasValue ? new BigInteger(value.Numerator.Value) : BigInteger.Parse(value.NumeratorWide!, CultureInfo.InvariantCulture), value.Denominator.HasValue ? new BigInteger(value.Denominator.Value) : BigInteger.Parse(value.DenominatorWide!, CultureInfo.InvariantCulture));
 
-        return [.. rows.Values];
+        return rows;
     }
 
     /// <summary>

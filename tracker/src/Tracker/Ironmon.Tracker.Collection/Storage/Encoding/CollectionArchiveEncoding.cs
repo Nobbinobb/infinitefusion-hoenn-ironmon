@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.Text;
 using System.Text.Json;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage.Encoding;
 
 /// <summary>
 /// Encodes closed scope metadata as exact typed positional rows instead of tagged JSON values.
@@ -161,7 +161,7 @@ internal static class CollectionArchiveEncoding
                 }
                 else if (tag == _textTag && cell.GetArrayLength() == 2)
                 {
-                    byte[] bytes = Encoding.UTF8.GetBytes(cell[1].GetString()!);
+                    byte[] bytes = System.Text.Encoding.UTF8.GetBytes(cell[1].GetString()!);
                     output.WriteByte(2);
                     WriteUnsigned(output, (ulong)bytes.Length);
                     output.Write(bytes);
@@ -227,7 +227,7 @@ internal static class CollectionArchiveEncoding
                     byte[] bytes = new byte[ReadCount(input)];
                     input.ReadExactly(bytes);
                     writer.WriteStringValue(kind == 2 ? _textTag : _blobTag);
-                    writer.WriteStringValue(kind == 2 ? Encoding.UTF8.GetString(bytes) : Convert.ToHexString(bytes));
+                    writer.WriteStringValue(kind == 2 ? System.Text.Encoding.UTF8.GetString(bytes) : Convert.ToHexString(bytes));
                 }
                 else if (kind == 4)
                 {

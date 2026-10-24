@@ -6,6 +6,16 @@ namespace Ironmon.Tracker.Protocol.Connection;
 public sealed class TrackerHandshakePayload
 {
     /// <summary>
+    /// Gets or initializes the independent feature switches.
+    /// </summary>
+    public TrackerFeatureSettings Features { get; init; } = new();
+
+    /// <summary>
+    /// Gets or initializes the complete tracker-owned toggle speed profile.
+    /// </summary>
+    public ToggleSpeedConfiguration ToggleSpeed { get; init; } = ToggleSpeedConfiguration.CreateDefault();
+
+    /// <summary>
     /// Gets or sets the live automatic-reset preference.
     /// </summary>
     public bool AutomaticReset { get; set; } = true;
@@ -21,7 +31,7 @@ public sealed class TrackerHandshakePayload
     /// <param name="diagnosticCapabilities">The effective named capabilities granted for this connection, or <see langword="null"/> for an empty list.</param>
     /// <exception cref="ArgumentException">Thrown when the tracker version or a capability identifier is empty, or a capability identifier is duplicated.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the maximum starter BST, capability count, or capability identifier length exceeds its supported bounds.</exception>
-    public TrackerHandshakePayload(string trackerVersion, bool debugRequested, bool autoSelectStarter = false, int? maximumStarterBaseStatTotal = null, IReadOnlyList<string>? favoriteSpeciesIds = null, IReadOnlyList<string>? diagnosticCapabilities = null)
+    public TrackerHandshakePayload(string trackerVersion, bool debugRequested, bool autoSelectStarter = true, int? maximumStarterBaseStatTotal = null, IReadOnlyList<string>? favoriteSpeciesIds = null, IReadOnlyList<string>? diagnosticCapabilities = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(trackerVersion);
         if (maximumStarterBaseStatTotal is not null)
@@ -57,6 +67,11 @@ public sealed class TrackerHandshakePayload
     /// Gets or initializes optional earned-achievement delivery support, or zero when unavailable.
     /// </summary>
     public int AchievementProtocolVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes optional desktop notification rendering support.
+    /// </summary>
+    public int AchievementOverlayVersion { get; init; }
 
     /// <summary>
     /// Gets or initializes the current game process session identifier.

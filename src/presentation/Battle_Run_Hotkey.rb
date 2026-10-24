@@ -4,6 +4,7 @@
 
 module Ironmon
   def self.battle_cancel_run_hotkey?(battle, mode)
+    return false if !feature_enabled?("quick_run")
     return false if !active? || !battle || battle.trainerBattle?
     return mode == 0
   end
@@ -26,7 +27,8 @@ module IronmonBattleRunHotkeySceneHooks
     return super if !Ironmon.battle_cancel_run_hotkey?(@battle, mode)
     return Ironmon.with_battle_cancel_run_hotkey do
       result = super(idxBattler, texts, 1)
-      result == -1 ? 3 : result
+      next result if result != -1
+      Ironmon.feature_enabled?("quick_run") ? 3 : super(idxBattler, texts, 0)
     end
   end
 end

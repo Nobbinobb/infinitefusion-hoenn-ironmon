@@ -3,6 +3,7 @@ using Microsoft.Data.Sqlite;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using Ironmon.Tracker.Collection.Storage.Encoding;
 
 namespace Ironmon.Tracker.Tests.Collection;
 

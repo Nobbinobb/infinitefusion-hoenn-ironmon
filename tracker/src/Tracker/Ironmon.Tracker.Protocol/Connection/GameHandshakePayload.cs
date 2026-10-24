@@ -45,6 +45,11 @@ public sealed class GameHandshakePayload
     public int AchievementProtocolVersion { get; init; }
 
     /// <summary>
+    /// Gets or initializes optional game-clocked desktop overlay support.
+    /// </summary>
+    public int AchievementOverlayVersion { get; init; }
+
+    /// <summary>
     /// Gets or initializes the current game process session identifier.
     /// </summary>
     public string? SessionId { get; init; }

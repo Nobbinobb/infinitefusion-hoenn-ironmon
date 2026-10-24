@@ -54,7 +54,8 @@ internal sealed record SealedAchievement(Guid Id, AchievementGate[] Gates, byte[
 /// <param name="Threshold">The exact canonical comparison threshold.</param>
 /// <param name="Comparison">The approved at-least or at-most comparison.</param>
 /// <param name="AllowedMembers">Optional identities admitted to a cardinality count; an absent or null list admits every retained member.</param>
-internal sealed record AchievementRule(int Number, string Name, string Condition, string Group, string Operation, string Measure, JsonElement Filter, JsonElement Threshold, string Comparison, JsonElement AllowedMembers = default);
+/// <param name="Available">Whether this definition can still earn new unlocks; retirement preserves previously earned records.</param>
+internal sealed record AchievementRule(int Number, string Name, string Condition, string Group, string Operation, string Measure, JsonElement Filter, JsonElement Threshold, string Comparison, JsonElement AllowedMembers = default, bool Available = true);
 
 /// <summary>
 /// Retains the encrypted unlock ledger and durable notification queue.

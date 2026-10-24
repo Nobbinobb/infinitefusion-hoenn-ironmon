@@ -65,14 +65,14 @@ internal sealed class TrackerDiagnosticRequestClient
     }
 
     /// <summary>
-    /// Requests selected portions of the currently authorized development state.
+    /// Requests development controls before preparing Pokémon-bound evolution directions outside the game request.
     /// </summary>
     /// <param name="runId">The active run identifier when available.</param>
     /// <param name="includeCatalogs">Whether the shared ability, move, and item catalogs are included.</param>
     /// <param name="includeEvolutions">Whether the current Pokémon's evolution and devolution options are included.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>The current development-control state.</returns>
-    internal Task<DebugDevelopmentStateSnapshot> GetDevelopmentStateAsync(string? runId, bool includeCatalogs, bool includeEvolutions, CancellationToken cancellationToken)
+    internal async Task<DebugDevelopmentStateSnapshot> GetDevelopmentStateAsync(string? runId, bool includeCatalogs, bool includeEvolutions, CancellationToken cancellationToken)
     {
         _authorization.EnsureAny(
             DiagnosticCapabilities.DevelopmentAutoRevive,
@@ -84,13 +84,44 @@ internal sealed class TrackerDiagnosticRequestClient
             DiagnosticCapabilities.DevelopmentLevel,
             DiagnosticCapabilities.DevelopmentSwapPokemon);
 
-        Dictionary<string, object?> request = new()
+        DebugDevelopmentStateRequestPayload request = new()
         {
-            ["include_catalogs"] = includeCatalogs,
-            ["include_evolutions"] = includeEvolutions
+            IncludeCatalogs = includeCatalogs,
+            IncludeEvolutions = false,
+            UseNativeEvolutionAssignments = includeEvolutions
         };
+        DebugDevelopmentStateSnapshot state = await _session.SendAsync<DebugDevelopmentStateRequestPayload, DebugDevelopmentStateSnapshot>(TrackerCommands.DebugDevelopmentState, request, runId, cancellationToken).ConfigureAwait(false);
+        if (!includeEvolutions || state.Player is null || !_authorization.HasCapability(DiagnosticCapabilities.DevelopmentEvolution))
+            return state;
 
-        return _session.SendAsync<Dictionary<string, object?>, DebugDevelopmentStateSnapshot>(TrackerCommands.DebugDevelopmentState, request, runId, cancellationToken);
+        if (state.FusionAssignments is not null && !string.IsNullOrWhiteSpace(runId))
+            _fusionMappings.PrepareActiveFusionAssignments(runId, state.FusionAssignments);
+
+        DebugDevelopmentPlayerSnapshot player = state.Player;
+        IReadOnlyList<EvolutionTargetAssignmentPayload>? targets = _fusionMappings.GetActiveEvolutionTargetAssignments(runId, player.SpeciesId);
+        IReadOnlyList<EvolutionPredecessorAssignmentPayload>? predecessors = await _fusionMappings.GetActiveEvolutionPredecessorAssignmentsAsync(runId, player.SpeciesId, cancellationToken).ConfigureAwait(false);
+        _authorization.EnsureAll(DiagnosticCapabilities.DevelopmentEvolution);
+        request = new()
+        {
+            IncludeCatalogs = false,
+            IncludeEvolutions = true,
+            PokemonId = player.PokemonId,
+            SpeciesId = player.SpeciesId,
+            UseNativeEvolutionAssignments = true,
+            EvolutionAssignments = targets,
+            PredecessorAssignments = predecessors
+        };
+        DebugDevelopmentStateSnapshot directions = await _session.SendAsync<DebugDevelopmentStateRequestPayload, DebugDevelopmentStateSnapshot>(TrackerCommands.DebugDevelopmentState, request, runId, cancellationToken).ConfigureAwait(false);
+        return new()
+        {
+            AutoReviveEnabled = directions.AutoReviveEnabled,
+            Player = directions.Player,
+            Abilities = state.Abilities,
+            Moves = state.Moves,
+            Items = state.Items,
+            Evolutions = directions.Evolutions,
+            Devolutions = directions.Devolutions
+        };
     }
 
     /// <summary>

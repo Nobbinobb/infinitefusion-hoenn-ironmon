@@ -1,12 +1,13 @@
+using Ironmon.Tracker.Collection.Queries.Definitions;
+using Ironmon.Tracker.Collection.Queries.Results;
 using Ironmon.Tracker.Collection.Reduction;
-using Microsoft.Data.Sqlite;
+using Ironmon.Tracker.Collection.Storage.Encoding;
 using System.Globalization;
 using System.Numerics;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage;
 
 /// <summary>
 /// Maintains directly queryable typed summary values with shared exact dimension atoms.

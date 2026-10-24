@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Components.Web;
 namespace Ironmon.Tracker.App.Components.Pages;
 
 /// <summary>
-/// Presents the earned achievement collection without retrieving locked definitions or progress.
+/// Presents earned achievements without revealing locked metadata or artwork.
 /// </summary>
 public partial class AchievementsPage : IAsyncDisposable
 {
@@ -26,6 +26,8 @@ public partial class AchievementsPage : IAsyncDisposable
     private readonly CancellationTokenSource _lifetime = new();
     private readonly PeriodicTimer _timer = new(TimeSpan.FromSeconds(2));
     private readonly Dictionary<Guid, string> _icons = [];
+    private readonly HashSet<Guid> _artworkIds = [];
+    private UnlockedAchievement? _artworkAchievement;
     private IReadOnlyList<UnlockedAchievement> _earned = [];
     private IReadOnlyList<UnlockedAchievement> _visible = [];
     private string _query = string.Empty;
@@ -35,8 +37,6 @@ public partial class AchievementsPage : IAsyncDisposable
     private bool _loading = true;
     private bool _refreshing;
     private bool _unavailable;
-    private bool _previewing;
-    private string? _previewStatus;
 
     /// <summary>
     /// Gets or initializes the shared durable collection and achievement service.
@@ -49,41 +49,6 @@ public partial class AchievementsPage : IAsyncDisposable
     /// </summary>
     [Parameter]
     public EventCallback BackRequested { get; set; }
-
-    /// <summary>
-    /// Gets or sets the shell action requesting a presentation-only game notification.
-    /// </summary>
-    [Parameter]
-    public EventCallback PreviewRequested { get; set; }
-
-    /// <summary>
-    /// Gets or sets whether the connected game supports notification previews.
-    /// </summary>
-    [Parameter]
-    public bool CanPreview { get; set; }
-
-    /// <summary>
-    /// Sends one preview and presents connection errors without changing achievement progress.
-    /// </summary>
-    /// <returns>A task completing after the game accepts or rejects the preview.</returns>
-    private async Task PreviewAsync()
-    {
-        _previewing = true;
-        _previewStatus = null;
-        try
-        {
-            await PreviewRequested.InvokeAsync();
-            _previewStatus = Text[AchievementText.PreviewSent];
-        }
-        catch (Exception error) when (error is not OutOfMemoryException)
-        {
-            _previewStatus = error.Message;
-        }
-        finally
-        {
-            _previewing = false;
-        }
-    }
 
     /// <summary>
     /// Gets the invariant CSS width representing the earned fraction of the current achievement pack.
@@ -120,12 +85,17 @@ public partial class AchievementsPage : IAsyncDisposable
         try
         {
             _earned = await Collection.GetAchievementsAsync(cancellationToken: _lifetime.Token);
+            UpdateVisibleAchievements();
             Guid[] missingIcons = [.. _earned.Where(item => !_icons.ContainsKey(item.Id)).Select(item => item.Id)];
             if (missingIcons.Length > 0)
             {
                 var icons = await Collection.GetAchievementIconsAsync(missingIcons, _lifetime.Token);
                 foreach (var pair in icons)
+                {
                     _icons[pair.Key] = pair.Value.ImageDataUri;
+                    if (pair.Value.HasArtwork)
+                        _artworkIds.Add(pair.Key);
+                }
             }
 
             _hasSnapshot = true;
@@ -171,6 +141,22 @@ public partial class AchievementsPage : IAsyncDisposable
         _query = string.Empty;
         UpdateVisibleAchievements();
     }
+
+    /// <summary>
+    /// Selects an earned icon with final detail artwork for the shared dialog frame.
+    /// </summary>
+    /// <param name="achievement">The revealed collection row selected by the user.</param>
+    private void OpenArtwork(UnlockedAchievement achievement)
+    {
+        if (_artworkIds.Contains(achievement.Id) && _earned.Any(item => item.Id == achievement.Id))
+            _artworkAchievement = achievement;
+    }
+
+    /// <summary>
+    /// Removes the viewer so its component releases the selected image and restores focus.
+    /// </summary>
+    private void CloseArtwork()
+        => _artworkAchievement = null;
 
     /// <summary>
     /// Clears a focused search when Escape is pressed without invoking tracker shortcuts.

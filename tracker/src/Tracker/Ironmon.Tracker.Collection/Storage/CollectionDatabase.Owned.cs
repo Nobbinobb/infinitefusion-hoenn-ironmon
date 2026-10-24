@@ -1,7 +1,10 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using Ironmon.Tracker.Collection.Queries.Definitions;
+using Ironmon.Tracker.Collection.Queries.Results;
+using Ironmon.Tracker.Collection.Storage.Encoding;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage;
 
 /// <summary>
 /// Retains actual owned individuals, meaningful configurations and exact shared vectors/movesets.
@@ -229,7 +232,7 @@ internal sealed partial class CollectionDatabase
     /// <returns>An independent configuration value excluding resource-only and polling-only differences.</returns>
     private static JsonElement MeaningfulConfiguration(JsonElement payload)
     {
-        string[] fields = [_speciesIdentityProperty, _levelProperty, _generatedProperty, _referenceProperty, _computedProperty, _trainingProperty, _abilityProperty, _ownedTypesProperty, _movesProperty, _heldProperty, _shinyTraitsProperty, _displayMetadataProperty, _roleProperty];
+        string[] fields = [_speciesIdentityProperty, _levelProperty, _generatedProperty, _referenceProperty, _computedProperty, _trainingProperty, _abilityProperty, _ownedTypesProperty, _movesProperty, _heldProperty, _shinyTraitsProperty, _displayMetadataProperty, _roleProperty, _historyContext];
         Dictionary<string, JsonElement> meaningful = [];
         foreach (string key in fields)
         {

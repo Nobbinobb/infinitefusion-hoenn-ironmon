@@ -1,6 +1,8 @@
-using Ironmon.Sqlite.Querying;
+using Ironmon.Sqlite.Definitions;
+using Ironmon.Tracker.Collection.Queries.Results;
+using Ironmon.Tracker.Collection.Queries.Tables;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Queries.Definitions;
 
 /// <summary>
 /// Defines generated owned storage operations.

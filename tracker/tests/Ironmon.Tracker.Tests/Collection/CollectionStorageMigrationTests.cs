@@ -1,6 +1,7 @@
 using Ironmon.Tracker.Collection;
 using Microsoft.Data.Sqlite;
 using System.Reflection;
+using Ironmon.Tracker.Collection.Storage.Encoding;
 
 namespace Ironmon.Tracker.Tests.Collection;
 

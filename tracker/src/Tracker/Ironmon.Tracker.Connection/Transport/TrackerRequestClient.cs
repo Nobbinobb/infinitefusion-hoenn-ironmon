@@ -1,16 +1,13 @@
-using Ironmon.Tracker.Connection.Obtainability;
 using Ironmon.Tracker.Connection.Lookup;
-using Ironmon.Tracker.Collection;
-using System.Text.Json;
+using Ironmon.Tracker.Connection.Obtainability;
 
 namespace Ironmon.Tracker.Connection.Transport;
 
 /// <summary>
 /// Provides validated and cached game requests over the active tracker session.
 /// </summary>
-public sealed class TrackerRequestClient
+public sealed partial class TrackerRequestClient
 {
-    private const string _achievementPreviewQueued = "queued";
     private readonly Lock _archiveObtainabilitySync = new();
     private readonly TrackerAreaRequestClient _areaRequests;
     private readonly TrackerDiagnosticAuthorizer _authorization;
@@ -63,28 +60,6 @@ public sealed class TrackerRequestClient
     /// Gets whether both the tracker launch mode and connected game authorize debug access.
     /// </summary>
     public bool DebugAuthorized => _authorization.DebugAuthorized;
-
-    /// <summary>
-    /// Gets whether the connected game supports the compact icon notification preview.
-    /// </summary>
-    public bool CanPreviewAchievementNotification => _state.Snapshot.Status == TrackerConnectionStatus.Connected && _state.Snapshot.Game?.AchievementProtocolVersion == GameplayCollectionProtocol.AchievementVersion;
-
-    /// <summary>
-    /// Displays the shared test icon with a sample two-line title without creating an achievement unlock.
-    /// </summary>
-    /// <param name="cancellationToken">Cancels the correlated preview request.</param>
-    /// <returns>A task completing when the loaded game accepts the preview.</returns>
-    public async Task PreviewAchievementNotificationAsync(CancellationToken cancellationToken = default)
-    {
-        if (!CanPreviewAchievementNotification)
-            throw new InvalidOperationException("Connect a game with the updated achievement notification scripts first.");
-
-        var icon = GameplayCollectionStore.PreviewAchievementIcon;
-        var payload = new { Name = "A Victory to Remember", Icon = new { icon.Width, icon.Height, icon.Pixels } };
-        JsonElement response = await _session.SendAsync<object, JsonElement>(GameplayCollectionProtocol.AchievementPreview, payload, null, cancellationToken).ConfigureAwait(false);
-        if (!response.GetProperty(_achievementPreviewQueued).GetBoolean())
-            throw new InvalidOperationException("Load a save and let the current notification finish before previewing again.");
-    }
 
     /// <summary>
     /// Sends a temporary input snapshot without waiting for a correlated game request.
@@ -218,13 +193,25 @@ public sealed class TrackerRequestClient
     /// <param name="settings">The complete current tracker settings.</param>
     /// <param name="cancellationToken">The token that cancels the request.</param>
     /// <returns>A task containing the settings accepted by the game.</returns>
-    public Task<TrackerSettingsPayload> UpdateSettingsAsync(TrackerSettingsPayload settings, CancellationToken cancellationToken = default)
+    public async Task<TrackerSettingsPayload> UpdateSettingsAsync(TrackerSettingsPayload settings, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
+        if (settings.ToggleSpeed is not null)
+            ToggleSpeedValidation.Validate(settings.ToggleSpeed);
+
+        _options.Features = settings.Features ?? _options.Features;
+        _options.MaximumStarterBaseStatTotal = settings.MaximumStarterBaseStatTotal;
         _options.AutomaticReset = settings.AutomaticReset;
         _options.AutoSelectStarter = settings.AutoSelectStarter;
         _options.FavoriteSpeciesIds = settings.FavoriteSpeciesIds;
-        return _session.SendAsync<TrackerSettingsPayload, TrackerSettingsPayload>(TrackerCommands.UpdateSettings, settings, GetConnectedRunId(), cancellationToken);
+        TrackerSettingsPayload accepted = await _session.SendAsync<TrackerSettingsPayload, TrackerSettingsPayload>(TrackerCommands.UpdateSettings, settings, GetConnectedRunId(), cancellationToken).ConfigureAwait(false);
+        if (settings.ToggleSpeed is not null)
+        {
+            ToggleSpeedValidation.Validate(accepted.ToggleSpeed ?? throw new TrackerProtocolException("The game did not accept the toggle speed profile."));
+            _options.ToggleSpeed = accepted.ToggleSpeed;
+        }
+
+        return accepted;
     }
 
     /// <summary>
@@ -359,6 +346,20 @@ public sealed class TrackerRequestClient
     /// <returns>The requested page of matching Pokémon with game-owned display and obtainability data.</returns>
     public Task<PokemonSearchResponsePayload> SearchPokemonAsync(CompletedRunRecipePayload recipe, string query, int offset = 0, int limit = TrackerProtocol.DefaultSearchPageSize, bool normalOnly = false, CancellationToken cancellationToken = default)
         => _completedRunRequests.SearchPokemonAsync(recipe, query, offset, limit, normalOnly, cancellationToken);
+
+    /// <summary>
+    /// Materializes a small batch of public species artwork without preparing generated lookup data.
+    /// </summary>
+    /// <param name="speciesIds">Up to eight recorded canonical species and form identifiers.</param>
+    /// <param name="cancellationToken">Cancels the pending request.</param>
+    /// <returns>The available local artwork paths keyed by species identity.</returns>
+    public Task<PokemonSpritesResponsePayload> GetPokemonSpritesAsync(IReadOnlyList<string> speciesIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(speciesIds);
+        ArgumentOutOfRangeException.ThrowIfLessThan(speciesIds.Count, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(speciesIds.Count, 8);
+        return _session.SendAsync<PokemonSpritesRequestPayload, PokemonSpritesResponsePayload>(TrackerCommands.PokemonSprites, new() { SpeciesIds = speciesIds }, GetConnectedRunId(), cancellationToken);
+    }
 
     /// <summary>
     /// Requests complete deterministic information for one Pokémon in a completed run.
@@ -714,6 +715,7 @@ public sealed class TrackerRequestClient
     /// </summary>
     internal void Disconnect()
     {
+        ResetAchievementOverlay();
         _session.Disconnect();
         _cache.Clear();
         _nameSearch.Disconnect();

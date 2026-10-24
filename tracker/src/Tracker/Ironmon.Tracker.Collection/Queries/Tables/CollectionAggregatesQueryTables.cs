@@ -1,6 +1,6 @@
-using Ironmon.Sqlite.Querying;
+using Ironmon.Sqlite.Definitions;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Queries.Tables;
 
 /// <summary>
 /// Maps stored aggregate_cells columns for compile-time queries without changing the schema.

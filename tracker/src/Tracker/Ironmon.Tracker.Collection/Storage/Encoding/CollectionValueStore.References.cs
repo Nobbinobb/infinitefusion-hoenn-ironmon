@@ -1,7 +1,9 @@
 using System.Security.Cryptography;
 using Microsoft.Data.Sqlite;
+using Ironmon.Tracker.Collection.Queries.Definitions;
+using Ironmon.Tracker.Collection.Queries.Results;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage.Encoding;
 
 /// <summary>
 /// Traces retained SQL and binary references before reclaiming unreachable dictionary rows.

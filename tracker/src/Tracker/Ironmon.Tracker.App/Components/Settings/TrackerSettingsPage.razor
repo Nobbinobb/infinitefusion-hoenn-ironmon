@@ -3,31 +3,30 @@
         <div><p class="card-kicker">@Text["Settings.Page.TrackerPreferences"]</p><h2>@Text["Settings.Page.Settings"]</h2></div>
         <div class="tracker-settings-heading-actions">
             <button type="button" class="tracker-update-link" @onclick="OpenUpdatesAsync">@Text[Ironmon.Tracker.App.Components.Updates.UpdateText.CheckAgain]<span aria-hidden="true"> ↗</span></button>
-            @if (!string.IsNullOrWhiteSpace(Status) || _localSettingsSaved)
-            {
-                <span class="obsidian-settings-saved">@Text["Redesign.Settings.Saved"]</span>
-            }
+            <span class="obsidian-settings-saved" role="status" aria-live="polite">@(!string.IsNullOrWhiteSpace(Status) || _localSettingsSaved ? Text["Redesign.Settings.Saved"].Value : string.Empty)</span>
         </div>
     </header>
     <nav class="tracker-settings-tabs" aria-label="Settings pages">
-        <button type="button" aria-pressed="@(!_controlsOpen ? "true" : "false")" @onclick="() => _controlsOpen = false">General</button>
-        <button type="button" aria-pressed="@(_controlsOpen ? "true" : "false")" @onclick="() => _controlsOpen = true">Controls</button>
+        <button type="button" aria-pressed="@(_settingsTab == SettingsTab.General ? "true" : "false")" @onclick="() => _settingsTab = SettingsTab.General">General</button>
+        <button type="button" aria-pressed="@(_settingsTab == SettingsTab.Controls ? "true" : "false")" @onclick="() => _settingsTab = SettingsTab.Controls">Controls</button>
+        <button type="button" aria-pressed="@(_settingsTab == SettingsTab.Features ? "true" : "false")" @onclick="() => _settingsTab = SettingsTab.Features">Features</button>
+        <button type="button" aria-pressed="@(_settingsTab == SettingsTab.Speed ? "true" : "false")" @onclick="() => _settingsTab = SettingsTab.Speed">@Text["Settings.ToggleSpeed.Tab"]</button>
+        <button type="button" aria-pressed="@(_settingsTab == SettingsTab.Maintenance ? "true" : "false")" @onclick="() => _settingsTab = SettingsTab.Maintenance">Maintenance</button>
     </nav>
-    @if (_controlsOpen)
+    @if (_settingsTab == SettingsTab.Maintenance)
     {
-        <TrackerControlsPage />
+        <HistoryMaintenanceSettings />
     }
-    else
+    else if (_settingsTab == SettingsTab.Controls)
     {
-        <ObsidianSection Title="Game session" Icon="ObsidianIconKind.Plug">
-            <ObsidianToggle Class="obsidian-setting-row" Label="Start tracker minimized" Description="Open the tracker minimized while its background services stay active. The game always starts with the tracker." LabelFirst="true" Value="TrackerStartupSettings.StartMinimized" ValueChanged="HandleStartMinimizedChanged" />
-            <ObsidianToggle Class="obsidian-setting-row" Label="Automatic reset after a loss" Description="Automatically return to starter selection with a fresh seed after losing. This applies immediately and does not change saved run rules or shared seeds." LabelFirst="true" Value="TrackerStartupSettings.AutomaticReset" ValueChanged="HandleAutomaticResetChanged" />
-        </ObsidianSection>
+        <TrackerControlsPage Features="ConnectionOptions.Features" />
+    }
+    else if (_settingsTab == SettingsTab.General)
+    {
         <ObsidianSection Title="@Text["Settings.Starter.Group"]" Icon="ObsidianIconKind.Shuffle">
-            <ObsidianToggle Class="obsidian-setting-row" Label="@Text["Settings.Starter.AutoSelectStarter"]" Description="@Text["Redesign.Settings.AutoSelectDescription"]" LabelFirst="true" Value="AutoSelectStarter" ValueChanged="HandleAutoSelectChanged" />
             <div class="obsidian-setting-row">
                 <ObsidianSettingLabel Label="@Text["Settings.Starter.MaximumBst"]" ControlId="@MaximumBstControlId" Description="@Text["Redesign.Settings.MaximumBstDescription"]" />
-                <input id="@MaximumBstControlId" type="number" min="@StarterSelectionConstants.MinimumBaseStatTotal" max="@StarterSelectionConstants.MaximumBaseStatTotal" value="@MaximumStarterBaseStatTotal" placeholder="@Text["Settings.Starter.MaximumBstPlaceholder"]" aria-invalid="@((!string.IsNullOrEmpty(_maximumBstError)).ToString().ToLowerInvariant())" @onchange="HandleMaximumBstChanged" />
+                <input id="@MaximumBstControlId" type="number" min="0" max="@StarterSelectionConstants.MaximumBaseStatTotal" value="@MaximumStarterBaseStatTotal" placeholder="@Text["Settings.Starter.MaximumBstPlaceholder"]" aria-invalid="@((!string.IsNullOrEmpty(_maximumBstError)).ToString().ToLowerInvariant())" @onchange="HandleMaximumBstChanged" />
             </div>
             @if (_maximumBstError is not null)
             {
@@ -67,6 +66,31 @@
         </ObsidianSection>
         <p class="obsidian-settings-status" role="status">@(_localSettingsSaved ? Text["Redesign.Settings.SavedLocally"] : Status ?? Text["Redesign.Settings.AutomaticChanges"])</p>
     }
+    else if (_settingsTab == SettingsTab.Features)
+    {
+        <ObsidianSection Title="Overworld UI" Icon="ObsidianIconKind.Images">
+            <ObsidianToggle Class="obsidian-setting-row" Label="Achievement pop-ups" Description="Show a notification when an achievement unlocks. Achievements still unlock and remain available in the tracker when this is off." LabelFirst="true" Value="ConnectionOptions.Features.AchievementPopups" ValueChanged="enabled => HandleFeaturesChanged(ConnectionOptions.Features with { AchievementPopups = enabled })" />
+            <ObsidianToggle Class="obsidian-setting-row" Label="Repel step counter" Description="Show remaining Repel steps in the overworld." LabelFirst="true" Value="ConnectionOptions.Features.RepelCounter" ValueChanged="enabled => HandleFeaturesChanged(ConnectionOptions.Features with { RepelCounter = enabled })" />
+            <ObsidianToggle Class="obsidian-setting-row" Label="Speed indicator" Description="Show the active speed in the overworld. Speed controls remain available when the indicator is hidden." LabelFirst="true" Value="ConnectionOptions.Features.SpeedIndicator" ValueChanged="enabled => HandleFeaturesChanged(ConnectionOptions.Features with { SpeedIndicator = enabled })" />
+        </ObsidianSection>
+        <ObsidianSection Title="Battle" Icon="ObsidianIconKind.Plug">
+            <ObsidianToggle Class="obsidian-setting-row" Label="Item quick select" Description="Enable the battle item icon and its navigation and use hotkeys. Your selections and bindings are retained when disabled." LabelFirst="true" Value="ConnectionOptions.Features.BattleQuickItems" ValueChanged="enabled => HandleFeaturesChanged(ConnectionOptions.Features with { BattleQuickItems = enabled })" />
+            <ObsidianToggle Class="obsidian-setting-row" Label="Quick run hotkey" Description="Enable the shortcut to run from a wild encounter. The normal Run command remains available." LabelFirst="true" Value="ConnectionOptions.Features.QuickRun" ValueChanged="enabled => HandleFeaturesChanged(ConnectionOptions.Features with { QuickRun = enabled })" />
+        </ObsidianSection>
+        <ObsidianSection Title="Starter rules" Icon="ObsidianIconKind.Shuffle">
+            <ObsidianToggle Class="obsidian-setting-row" Label="Favorite Clause" Description="Allow configured favorites as alternate starter choices. Turning this off keeps your saved favorites." LabelFirst="true" Value="ConnectionOptions.Features.FavoriteClause" ValueChanged="enabled => HandleFeaturesChanged(ConnectionOptions.Features with { FavoriteClause = enabled })" />
+            <ObsidianToggle Class="obsidian-setting-row" Label="Enforce BST limit" Description="Apply the maximum starter BST from General. Turning this off keeps the saved value. A value of 0 or an empty field always means no limit." LabelFirst="true" Value="ConnectionOptions.Features.EnforceBstLimit" ValueChanged="enabled => HandleFeaturesChanged(ConnectionOptions.Features with { EnforceBstLimit = enabled })" />
+            <ObsidianToggle Class="obsidian-setting-row" Label="@Text["Settings.Starter.AutoSelectStarter"]" Description="@Text["Redesign.Settings.AutoSelectDescription"]" LabelFirst="true" Value="AutoSelectStarter" ValueChanged="HandleAutoSelectChanged" />
+        </ObsidianSection>
+        <ObsidianSection Title="Game session" Icon="ObsidianIconKind.Plug">
+            <ObsidianToggle Class="obsidian-setting-row" Label="Start tracker minimized" Description="Open the tracker minimized while its background services stay active. The game always starts with the tracker." LabelFirst="true" Value="TrackerStartupSettings.StartMinimized" ValueChanged="HandleStartMinimizedChanged" />
+            <ObsidianToggle Class="obsidian-setting-row" Label="Automatic reset after a loss" Description="Automatically return to starter selection with a fresh seed after losing. This applies immediately and does not change saved run rules or shared seeds." LabelFirst="true" Value="TrackerStartupSettings.AutomaticReset" ValueChanged="HandleAutomaticResetChanged" />
+        </ObsidianSection>
+        <p class="obsidian-settings-status" role="status">@(_localSettingsSaved ? Text["Redesign.Settings.SavedLocally"] : Status ?? Text["Redesign.Settings.AutomaticChanges"])</p>
+    }
+    <div hidden="@(_settingsTab != SettingsTab.Speed)" class="toggle-speed-tab">
+        <ToggleSpeedSettings Saved="HandleToggleSpeedSaved" />
+    </div>
 </section>
 
 @if (_favoritesOpen)

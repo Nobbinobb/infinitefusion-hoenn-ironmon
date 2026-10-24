@@ -66,8 +66,8 @@ module Ironmon
     return !ready_run_id.empty? && ready_run_id == attempt["run_id"].to_s
   end
 
-  def self.tracker_active_fusion_assignment_recipe
-    return nil if !tracker_active_run_preparation_ready?
+  def self.tracker_active_fusion_assignment_recipe(allow_unprepared = false)
+    return nil if !allow_unprepared && !tracker_active_run_preparation_ready?
     return nil if !active? || !$PokemonGlobal
     metadata = [
       $PokemonGlobal.ironmon_seed,

@@ -1,6 +1,6 @@
-using Ironmon.Sqlite.Querying;
+using Ironmon.Sqlite.Definitions;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Queries.Tables;
 
 /// <summary>
 /// Maps existing aggregate_families columns used by generated archive and catalogue operations.

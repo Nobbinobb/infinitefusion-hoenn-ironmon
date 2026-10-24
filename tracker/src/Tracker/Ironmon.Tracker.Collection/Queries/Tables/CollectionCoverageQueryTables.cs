@@ -1,6 +1,6 @@
-using Ironmon.Sqlite.Querying;
+using Ironmon.Sqlite.Definitions;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Queries.Tables;
 
 /// <summary>
 /// Maps existing coverage_gaps columns used by generated registration and coverage queries.

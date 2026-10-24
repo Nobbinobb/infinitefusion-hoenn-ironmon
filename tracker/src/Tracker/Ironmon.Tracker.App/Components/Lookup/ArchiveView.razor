@@ -5,7 +5,7 @@
     @if (_showHistory)
     {
         <div class="obsidian-archive-content archive-history-content">
-            <SaveSlotAttemptHistory Slots="@CompletedRuns.GetLatestSaveSlotStatistics(CurrentStatistics)" CurrentSaveSlot="@CurrentStatistics?.SaveSlot" Recipes="_recipes" RunSelected="OpenHistoryRun" />
+            <SaveSlotAttemptHistory Slots="@CompletedRuns.GetLatestSaveSlotStatistics(CurrentStatistics)" CurrentSaveSlot="@CurrentStatistics?.SaveSlot" Recipes="_recipes" GameRoot="@GameRoot" RunSelected="OpenHistoryRun" />
         </div>
     }
     else if (GetSelectedRecipe() is CompletedRunRecipePayload selectedRecipe)
@@ -22,12 +22,13 @@
                 <SeedTokenExportPanel @key="selectedRecipe.RunId" Recipe="selectedRecipe" Title="@Text["Seeds.ArchiveExport.Title"]" Description="@Text["Seeds.ArchiveExport.Description"]" Compact="true" />
             </div>
             <RunStatistics @key="selectedRecipe.RunId" Statistics="selectedRecipe.Statistics" />
+            <ArchivePokemonHistory Recipe="selectedRecipe" GameRoot="@GameRoot" PokemonSelected="OpenHistoryPokemon" />
         </div>
         <div class="obsidian-archive-content archive-run-content" role="tabpanel" aria-label="@GetSectionName(ArchiveSection.Areas)" hidden="@(_selectedSection != ArchiveSection.Areas)">
             <AreaLookupExplorer @key="selectedRecipe.RunId" SourceKey="@($"archive:{selectedRecipe.RunId}")" RunId="@selectedRecipe.RunId" Recipe="selectedRecipe" GameRoot="@GameRoot" />
         </div>
         <div class="obsidian-archive-content archive-run-content" role="tabpanel" aria-label="@GetSectionName(ArchiveSection.Pokemon)" hidden="@(_selectedSection != ArchiveSection.Pokemon)">
-            <PokemonLookupExplorer @key="selectedRecipe.RunId" Recipe="selectedRecipe" GameRoot="@GameRoot" />
+            <PokemonLookupExplorer @key="(selectedRecipe.RunId, _historyLookupVersion)" Recipe="selectedRecipe" GameRoot="@GameRoot" RequestedSpeciesId="@_historySpeciesId" />
         </div>
     }
     else

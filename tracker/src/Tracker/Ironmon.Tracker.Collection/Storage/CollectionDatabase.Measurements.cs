@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage;
 
 /// <summary>
 /// Records operational measurements without storing another gameplay archive.

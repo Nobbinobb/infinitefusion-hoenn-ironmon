@@ -1,4 +1,54 @@
+using Ironmon.Tracker.Protocol.Lookup;
+
 namespace Ironmon.Tracker.Protocol.Debug;
+
+/// <summary>
+/// Requests development state with optional tracker-prepared evolution assignments.
+/// </summary>
+public sealed class DebugDevelopmentStateRequestPayload
+{
+    /// <summary>
+    /// Initializes a request for the complete authorized development state.
+    /// </summary>
+    public DebugDevelopmentStateRequestPayload()
+    {
+    }
+
+    /// <summary>
+    /// Gets or initializes whether shared ability, move, and item catalogs are included.
+    /// </summary>
+    public bool IncludeCatalogs { get; init; } = true;
+
+    /// <summary>
+    /// Gets or initializes whether the current Pokémon's evolution directions are included.
+    /// </summary>
+    public bool IncludeEvolutions { get; init; } = true;
+
+    /// <summary>
+    /// Gets or initializes the current individual identity to which prepared assignments belong.
+    /// </summary>
+    public string? PokemonId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the species and form to which prepared assignments belong.
+    /// </summary>
+    public string? SpeciesId { get; init; }
+
+    /// <summary>
+    /// Gets or initializes whether fusion directions use prepared assignments and request their internal inputs during preflight.
+    /// </summary>
+    public bool UseNativeEvolutionAssignments { get; init; }
+
+    /// <summary>
+    /// Gets or initializes complete outgoing fusion assignments, including an empty list when none exist.
+    /// </summary>
+    public IReadOnlyList<EvolutionTargetAssignmentPayload>? EvolutionAssignments { get; init; }
+
+    /// <summary>
+    /// Gets or initializes complete incoming fusion assignments, including an empty list when none exist.
+    /// </summary>
+    public IReadOnlyList<EvolutionPredecessorAssignmentPayload>? PredecessorAssignments { get; init; }
+}
 
 /// <summary>
 /// Identifies one tracker-driven development action.
@@ -201,6 +251,11 @@ public sealed class DebugDevelopmentStateSnapshot
     /// Gets or initializes the current player Pokémon when one is available.
     /// </summary>
     public DebugDevelopmentPlayerSnapshot? Player { get; init; }
+
+    /// <summary>
+    /// Gets or initializes internal generation inputs requested to prepare authorized fusion directions before background lookup starts.
+    /// </summary>
+    public FusionAssignmentRecipePayload? FusionAssignments { get; init; }
 
     /// <summary>
     /// Gets or initializes the complete ability catalog when requested and authorized.

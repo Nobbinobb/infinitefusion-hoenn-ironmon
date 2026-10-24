@@ -42,3 +42,14 @@ CREATE TABLE IF NOT EXISTS completed_attempt_reducer_states (
   source_sequence BLOB NOT NULL CHECK(length(source_sequence)=8),
   revision BLOB NOT NULL CHECK(length(revision)=8)
 ) STRICT, WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS history_exports (
+ archive_id BLOB PRIMARY KEY CHECK(length(archive_id)=16), created_utc_ms INTEGER NOT NULL
+) STRICT, WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS history_imports (
+ archive_id BLOB PRIMARY KEY REFERENCES history_exports(archive_id), imported_utc_ms INTEGER NOT NULL
+) STRICT, WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS history_value_roots (
+ archive_id BLOB NOT NULL REFERENCES history_exports(archive_id),
+ value_id INTEGER NOT NULL REFERENCES collection_values(value_id),
+ PRIMARY KEY(archive_id,value_id)
+) STRICT, WITHOUT ROWID;

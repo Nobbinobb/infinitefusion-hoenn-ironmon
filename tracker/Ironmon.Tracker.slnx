@@ -3,6 +3,7 @@
   <Folder Name="/src/Tracker/">
     <Project Path="src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj" />
     <Project Path="src/Tracker/Ironmon.Tracker.Connection/Ironmon.Tracker.Connection.csproj" />
+    <Project Path="src/Tracker/Ironmon.Tracker.AchievementOverlay/Ironmon.Tracker.AchievementOverlay.csproj" />
     <Project Path="src/Tracker/Ironmon.Tracker.Collection/Ironmon.Tracker.Collection.csproj" />
     <Project Path="src/Tracker/Ironmon.Tracker.Core/Ironmon.Tracker.Core.csproj" />
     <Project Path="src/Tracker/Ironmon.Tracker.Protocol/Ironmon.Tracker.Protocol.csproj" />
@@ -27,6 +28,7 @@
     <Project Path="tests/Ironmon.TestSupport/Ironmon.TestSupport.csproj" />
     <Project Path="tests/Ironmon.Setup.Tests/Ironmon.Setup.Tests.csproj" />
     <Project Path="tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj" />
+    <Project Path="tests/Ironmon.Tracker.AchievementOverlay.Tests/Ironmon.Tracker.AchievementOverlay.Tests.csproj" />
     <Project Path="tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj" />
     <Project Path="tests/Ironmon.Updater.Tests/Ironmon.Updater.Tests.csproj" />
     <Project Path="tests/Ironmon.Updater.CrashHost/Ironmon.Updater.CrashHost.csproj" />

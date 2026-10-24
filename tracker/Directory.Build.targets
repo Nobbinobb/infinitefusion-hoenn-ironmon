@@ -1,4 +1,7 @@
 <Project>
+  <Target Name="RejectQuickTestPublication" BeforeTargets="Publish" Condition="'$(IronmonQuickTests)' == 'true'">
+    <Error Text="Quick-test builds omit generated game catalogs and cannot be published. Build without IronmonQuickTests for player artifacts." />
+  </Target>
   <!-- Canonical repository data stays outside project trees; only generated local copies become resources. -->
   <Target Name="PrepareEmbeddedResourceInputs" BeforeTargets="AssignTargetPaths" Condition="'@(EmbeddedResourceInput)' != ''">
     <ItemGroup>

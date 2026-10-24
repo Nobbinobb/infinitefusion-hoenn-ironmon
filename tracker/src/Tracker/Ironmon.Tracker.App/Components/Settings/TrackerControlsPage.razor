@@ -56,13 +56,13 @@
             <tbody>
                 @foreach (ControlAction action in SelectedActions)
                 {
-                    <tr @key="action.Id">
+                    <tr @key="action.Id" class="@(!FeatureEnabled(action.Id) ? "tracker-control-disabled" : null)">
                         <th scope="row">@action.Label</th>
                         @for (int index = 0; index < 2; index++)
                         {
                             int slot = index;
                             <td>
-                                <button class="tracker-control-binding" type="button" disabled="@(_controllerIdentity is not null && !IsConnected(_controllerIdentity))" aria-label="@BindingAccessibleLabel(action, slot)" title="@BindingAccessibleLabel(action, slot)" @onclick="() => BeginCapture(action.Id, slot)">
+                                <button class="tracker-control-binding" type="button" disabled="@(!FeatureEnabled(action.Id) || (_controllerIdentity is not null && !IsConnected(_controllerIdentity)))" aria-label="@BindingAccessibleLabel(action, slot)" title="@BindingAccessibleLabel(action, slot)" @onclick="() => BeginCapture(action.Id, slot)">
                                     <ControlBindingChip Keyboard="@KeyboardChord(action, slot)" Controller="@ControllerChord(action, slot)" PlayStation="@IsPlayStation" />
                                 </button>
                             </td>

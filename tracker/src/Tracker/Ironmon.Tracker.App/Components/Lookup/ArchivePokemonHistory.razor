@@ -1,0 +1,50 @@
+@using Ironmon.Tracker.Collection
+@if (Compact)
+{
+    <span class="archive-last-pokemon" aria-busy="@(_loading ? "true" : "false")">
+        @if (_entries.FirstOrDefault() is RunPokemonHistoryEntry entry)
+        {
+            <PokemonSprite Interactive="false" GameRoot="@GameRoot" SpritePath="@entry.SpritePath" Label="@entry.Name" Size="32" FitVisibleBounds="true" />
+            <span class="archive-last-pokemon-identity"><strong>@entry.Name</strong><small title="@Text["Archive.PokemonHistory.PeakLevel"]">@Text["Archive.PokemonHistory.Level", entry.HighestLevel]</small></span>
+        }
+        else
+        {
+            <small class="archive-last-pokemon-note">@Text[_loading ? "Archive.PokemonHistory.CompactLoading" : _failed ? "Archive.PokemonHistory.CompactUnavailable" : "Archive.PokemonHistory.CompactEmpty"]</small>
+        }
+    </span>
+}
+else
+{
+<section id="archive-pokemon-history" class="obsidian-archive-surface archive-pokemon-history" aria-label="@Text["Archive.PokemonHistory.Title"]" aria-busy="@(_loading ? "true" : "false")">
+    <div class="obsidian-archive-section-heading"><h3>@Text["Archive.PokemonHistory.Title"]</h3><small>@Text["Archive.PokemonHistory.NewestFirst"]</small></div>
+    @if (_loading && _entries.Count == 0)
+    {
+        <p class="archive-pokemon-history-note" role="status">@Text["Archive.PokemonHistory.Loading"]</p>
+    }
+    else if (_failed)
+    {
+        <p class="archive-pokemon-history-note" role="alert">@Text["Archive.PokemonHistory.Unavailable"] <button type="button" @onclick="ReloadAsync">@Text["Archive.PokemonHistory.Retry"]</button></p>
+    }
+    else if (_entries.Count == 0)
+    {
+        <p class="archive-pokemon-history-note">@Text["Archive.PokemonHistory.Empty"]</p>
+    }
+    else
+    {
+        <ol class="archive-pokemon-history-list" reversed>
+            @foreach (RunPokemonHistoryEntry entry in _entries)
+            {
+                bool lastPokemon = entry.Order == _entries[0].Order;
+                <li @key="entry.Order">
+                    <button type="button" class="archive-pokemon-history-entry @(lastPokemon ? "archive-pokemon-history-last" : null)" aria-label="@Text["Archive.PokemonHistory.Open", entry.Name, entry.HighestLevel]" @onclick="() => OpenPokemonAsync(entry.SpeciesId)">
+                        <PokemonSprite Interactive="false" GameRoot="@GameRoot" SpritePath="@entry.SpritePath" Label="@entry.Name" Size="40" FitVisibleBounds="true" />
+                        <span class="archive-pokemon-history-identity"><small>@(lastPokemon ? Text["Archive.PokemonHistory.Last"].Value + " · " : string.Empty)@TransitionLabel(entry.Transition)</small><strong>@entry.Name</strong></span>
+                        <span class="archive-pokemon-history-level" title="@Text["Archive.PokemonHistory.PeakLevel"]">@Text["Archive.PokemonHistory.Level", entry.HighestLevel]</span>
+                        <ObsidianIcon Kind="ObsidianIconKind.ArrowUpRight" />
+                    </button>
+                </li>
+            }
+        </ol>
+    }
+</section>
+}

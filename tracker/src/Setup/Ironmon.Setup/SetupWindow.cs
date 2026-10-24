@@ -33,6 +33,7 @@ internal sealed class SetupWindow : Window
     private const string SelectedResource = "SetupSelected";
     private const string NotSelectedResource = "SetupNotSelected";
     private const string PackageGroup = "TrackerPackage";
+    private const string HelpSymbol = "?";
     private readonly SetupSession _session;
     private bool _displayedBusy;
     private readonly System.Windows.Threading.DispatcherTimer _progressTimer = new() { Interval = TimeSpan.FromSeconds(1) };
@@ -171,6 +172,9 @@ internal sealed class SetupWindow : Window
         }
         else if (_page == 1)
         {
+            if (!_session.TrackerRuntimeAvailable)
+                _flavor = ReleaseProtocol.SelfContained;
+
             Heading(UpdaterText.SetupWindowMakeItYours);
             Card(Option(UpdaterText.SetupWindowDownloadSpriteSheets, _sprites, value => _sprites = value, UpdaterText.SetupWindowLargeOptionalDownloadYouCanAlsoDownloadSpritesLater),
                 Option(UpdaterText.SetupWindowCreateADesktopShortcut, _shortcut, value => _shortcut = value));
@@ -603,9 +607,9 @@ internal sealed class SetupWindow : Window
     {
         ReviewDetail[] versions =
         [
-            new(UpdaterText.SetupReviewIronmon, review.Manifest.IronmonVersion, UpdaterText.SetupReviewDownload),
+            new(UpdaterText.SetupReviewIronmon, review.Manifest.IronmonVersion, DownloadSize(review.PackageBytes), SizeHint: UpdaterText.SetupReviewIronmonSizeHint),
             new(UpdaterText.SetupReviewGame, review.Manifest.Game.VersionLabel, DownloadSize(review.IncludesGame ? review.GameDownloadBytes : 0, review.IncludesGame), SizeHint: UpdaterText.SetupReviewGameEstimateHint),
-            new(UpdaterText.SetupReviewTrackerPackage, PackageLabel(review.Authorization.Request.Flavor), DownloadSize(review.PackageBytes))
+            new(UpdaterText.SetupReviewTrackerPackage, PackageLabel(review.Authorization.Request.Flavor), string.Empty)
         ];
 
         ReviewGroup(versions);
@@ -627,12 +631,13 @@ internal sealed class SetupWindow : Window
         if (summary.Incomplete)
             totalHint += Environment.NewLine + UpdaterText.SetupReviewIncompleteHint;
 
-        var total = new Grid { Margin = new Thickness(0, 2, 0, 14), ToolTip = totalHint };
+        var total = new Grid { Margin = new Thickness(0, 2, 0, 8), ToolTip = totalHint };
         var title = UpdaterText.SetupReviewEstimatedDownload;
         total.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold });
         var totalSize = DownloadSize(summary.KnownBytes, summary.Estimated || summary.Incomplete);
         total.Children.Add(new TextBlock { Text = summary.Incomplete ? UpdaterText.SetupReviewPartialSize(totalSize) : totalSize, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Right });
         _body.Children.Add(total);
+        _body.Children.Add(Description(UpdaterText.SetupReviewRunHistorySpace));
     }
 
     /// <summary>
@@ -702,15 +707,41 @@ internal sealed class SetupWindow : Window
     /// <param name="flavor">The release package identity.</param>
     /// <param name="description">The prerequisite explanation.</param>
     /// <returns>The themed native radio choice.</returns>
-    private RadioButton PackageChoice(string flavor, string description)
+    private FrameworkElement PackageChoice(string flavor, string description)
     {
         var content = new StackPanel();
         content.Children.Add(new TextBlock { Text = PackageLabel(flavor), FontWeight = FontWeights.SemiBold });
         content.Children.Add(Description(description));
         var choice = new RadioButton { Content = content, GroupName = PackageGroup, IsChecked = _flavor == flavor, HorizontalContentAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetName(choice, PackageLabel(flavor));
-        choice.Checked += (_, _) => _flavor = flavor;
-        return choice;
+        choice.Checked += (_, _) =>
+        {
+            if (choice.IsEnabled)
+                _flavor = flavor;
+        };
+        if (flavor != ReleaseProtocol.RuntimeRequired || _session.TrackerRuntimeAvailable)
+            return choice;
+
+        choice.IsEnabled = false;
+        choice.ToolTip = UpdaterText.SetupTrackerRuntimeUnavailable;
+        ToolTipService.SetShowOnDisabled(choice, true);
+        AutomationProperties.SetHelpText(choice, UpdaterText.SetupTrackerRuntimeUnavailable);
+        var help = Action(HelpSymbol, () => MessageBox.Show(this, UpdaterText.SetupTrackerRuntimeUnavailable, UpdaterText.SetupTrackerRuntimeHelp, MessageBoxButton.OK, MessageBoxImage.Information));
+        help.ToolTip = UpdaterText.SetupTrackerRuntimeUnavailable;
+        help.Width = 24;
+        help.MinWidth = 24;
+        help.MinHeight = 24;
+        help.Padding = new Thickness(2);
+        help.Margin = new Thickness(5, 0, 0, 0);
+        help.VerticalAlignment = VerticalAlignment.Top;
+        AutomationProperties.SetName(help, UpdaterText.SetupTrackerRuntimeHelp);
+        var row = new Grid();
+        row.ColumnDefinitions.Add(new ColumnDefinition());
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.Children.Add(choice);
+        Grid.SetColumn(help, 1);
+        row.Children.Add(help);
+        return row;
     }
 
     /// <summary>

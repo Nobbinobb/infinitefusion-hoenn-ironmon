@@ -3561,6 +3561,14 @@
         {
           "name": "terminal_revision",
           "type": "integer"
+        },
+        {
+          "name": "completion_milestone",
+          "type": "nullable(text)"
+        },
+        {
+          "name": "completion_trainer_class_ids",
+          "type": "nullable(native_id[])"
         }
       ]
     },
@@ -27735,6 +27743,56 @@
           "selector": {
             "paths": [
               "outcome"
+            ]
+          }
+        }
+      ],
+      "measures": [
+        {
+          "key": "occurrence_count",
+          "kind": "scalar",
+          "merge_operator": "sum",
+          "unit": "count"
+        }
+      ]
+    },
+    {
+      "id": "649a10d8c392",
+      "key": "attempt_completion_milestone_joint",
+      "version": 1,
+      "variant_key": "4393f7e0363d3afa",
+      "context": "lifetime",
+      "source_families": [
+        "attempt.results"
+      ],
+      "dimensions": [
+        {
+          "key": "result",
+          "kind": "text",
+          "required": true,
+          "selector": {
+            "paths": [
+              "result"
+            ]
+          }
+        },
+        {
+          "key": "completion_milestone",
+          "kind": "text",
+          "required": true,
+          "selector": {
+            "paths": [
+              "completion_milestone"
+            ]
+          }
+        },
+        {
+          "key": "trainer_class",
+          "kind": "set",
+          "required": true,
+          "selector": {
+            "paths": [
+              "completion_trainer_class_ids"
             ]
           }
         }

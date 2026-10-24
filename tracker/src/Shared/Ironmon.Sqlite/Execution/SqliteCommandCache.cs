@@ -2,14 +2,14 @@ using System.Data;
 using System.Runtime.CompilerServices;
 using Microsoft.Data.Sqlite;
 
-namespace Ironmon.Sqlite.Runtime;
+namespace Ironmon.Sqlite.Execution;
 
 /// <summary>
 /// Reuses bounded generated commands on their owning connection without sharing active readers.
 /// </summary>
 public static class SqliteCommandCache
 {
-    private static readonly ConditionalWeakTable<SqliteConnection, SqliteCommandPool> _connections = new();
+    private static readonly ConditionalWeakTable<SqliteConnection, SqliteCommandPool> _connections = [];
     private static readonly Lock _initialization = new();
 
     /// <summary>

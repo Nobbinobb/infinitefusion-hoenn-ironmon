@@ -8,13 +8,6 @@ namespace Ironmon.Tracker.App.Components.Pages;
 /// </summary>
 public partial class Home : IDisposable
 {
-    /// <summary>
-    /// Requests the shared sample notification without creating an earned achievement.
-    /// </summary>
-    /// <returns>A task completing when the connected game accepts the preview.</returns>
-    private Task PreviewAchievementNotificationAsync()
-        => TrackerConnection.Requests.PreviewAchievementNotificationAsync();
-
     private const string _gameConnectedCalculatingResourceKey = "App.Shell.GameConnectedCalculating";
     private const string _obtainabilityCompleteResourceKey = "App.Shell.ObtainabilityComplete";
     private const string _obtainabilityErrorResourceKey = "App.Shell.ObtainabilityError";
@@ -324,7 +317,16 @@ public partial class Home : IDisposable
     /// </summary>
     /// <returns>The settings synchronized to the game.</returns>
     private TrackerSettingsPayload CreateSettingsPayload()
-        => new() { AutoSelectStarter = _autoSelectStarter, MaximumStarterBaseStatTotal = _maximumStarterBaseStatTotal, FavoriteSpeciesIds = ConnectionOptions.FavoriteSpeciesIds, AutomaticReset = ConnectionOptions.AutomaticReset };
+    {
+        return new()
+        {
+            Features = ConnectionOptions.Features,
+            AutoSelectStarter = _autoSelectStarter,
+            MaximumStarterBaseStatTotal = _maximumStarterBaseStatTotal,
+            FavoriteSpeciesIds = ConnectionOptions.FavoriteSpeciesIds,
+            AutomaticReset = ConnectionOptions.AutomaticReset
+        };
+    }
 
     /// <summary>
     /// Handles keyboard shortcuts for switching between primary tracker views.

@@ -38,17 +38,25 @@ internal sealed class AchievementIconPack
     internal static AchievementIconPack Shared => _shared.Value;
 
     /// <summary>
-    /// Gets the explicitly previewable shared test artwork without reading achievement rules or progress.
+    /// Gets shared fallback artwork for achievements without an assigned icon.
     /// </summary>
-    internal AchievementIcon Preview => Open(_catalogue.DefaultId);
+    internal AchievementIcon Fallback => Open(_catalogue.DefaultId);
 
     /// <summary>
     /// Resolves artwork for an identity already verified as earned by the collection service.
     /// </summary>
     /// <param name="achievementId">The authenticated earned identity.</param>
-    /// <returns>The assigned artwork, or the shared test image while final icons are unfinished.</returns>
+    /// <returns>The assigned artwork, or the shared fallback image while final icons are unfinished.</returns>
     internal AchievementIcon ForEarned(Guid achievementId)
         => Open(_catalogue.Assignments.GetValueOrDefault(achievementId, _catalogue.DefaultId));
+
+    /// <summary>
+    /// Resolves an earned achievement's explicit image without opening its pixels or using unfinished fallback art.
+    /// </summary>
+    /// <param name="achievementId">The stable achievement identity.</param>
+    /// <returns>The assigned image identity, or null when only the shared placeholder exists.</returns>
+    internal Guid? AssignedIconId(Guid achievementId)
+        => _catalogue.Assignments.TryGetValue(achievementId, out Guid id) ? id : null;
 
     /// <summary>
     /// Authenticates one icon and expands its bounded pixel buffer only when requested.

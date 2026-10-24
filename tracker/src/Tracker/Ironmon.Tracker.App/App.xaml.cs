@@ -10,6 +10,7 @@ public partial class App : Application
     private readonly IStringLocalizer<TrackerResources> _text;
     private readonly TrackerWindowService _windowService;
     private readonly TrackerGameLauncher _gameLauncher;
+    private readonly IAchievementNotificationOverlay? _achievementOverlay;
     private readonly CancellationTokenSource _startupCancellation = new();
 
     /// <summary>
@@ -21,7 +22,8 @@ public partial class App : Application
     /// <param name="windowService">The native tracker-window coordinator.</param>
     /// <param name="compatibility">The background installation revalidation service.</param>
     /// <param name="gameLauncher">The optional automatic game-start coordinator.</param>
-    public App(TrackerConnectionService connectionService, TrackerGlobalShortcutService shortcutService, IStringLocalizer<TrackerResources> text, TrackerWindowService windowService, TrackerInstallationCompatibility compatibility, TrackerGameLauncher gameLauncher)
+    /// <param name="achievementOverlay">The application-owned desktop notification renderer, when available.</param>
+    public App(TrackerConnectionService connectionService, TrackerGlobalShortcutService shortcutService, IStringLocalizer<TrackerResources> text, TrackerWindowService windowService, TrackerInstallationCompatibility compatibility, TrackerGameLauncher gameLauncher, IAchievementNotificationOverlay? achievementOverlay = null)
     {
         ArgumentNullException.ThrowIfNull(connectionService);
         ArgumentNullException.ThrowIfNull(shortcutService);
@@ -33,6 +35,10 @@ public partial class App : Application
         _text = text;
         _windowService = windowService;
         _gameLauncher = gameLauncher;
+        _achievementOverlay = achievementOverlay;
+        if (achievementOverlay is not null)
+            _connectionService.Requests.AttachAchievementOverlay(achievementOverlay);
+
         _ = compatibility.Inspection;
         InitializeComponent();
         _connectionService.Start();
@@ -114,5 +120,7 @@ public partial class App : Application
         _startupCancellation.Cancel();
         await _shortcutService.StopAsync();
         await _connectionService.StopAsync();
+        if (_achievementOverlay is not null)
+            await _achievementOverlay.DisposeAsync();
     }
 }

@@ -36,6 +36,24 @@ public partial class TrackerControlsPage
     private bool _previewFocused;
 
     /// <summary>
+    /// Gets or sets the feature switches controlling optional battle bindings.
+    /// </summary>
+    [Parameter]
+    public TrackerFeatureSettings Features { get; set; } = new();
+
+    /// <summary>
+    /// Checks whether a binding belongs to an enabled feature.
+    /// </summary>
+    /// <param name="action">The binding action identifier.</param>
+    /// <returns>Whether the action can be configured.</returns>
+    private bool FeatureEnabled(string action) => action switch
+    {
+        ControlCatalog.BattleRun => Features.QuickRun,
+        ControlCatalog.QuickItemLeft or ControlCatalog.QuickItemRight or ControlCatalog.QuickItemUp or ControlCatalog.QuickItemDown or ControlCatalog.QuickItemUse => Features.BattleQuickItems,
+        _ => true
+    };
+
+    /// <summary>
     /// Gets the persisted input profiles.
     /// </summary>
     [Inject]
@@ -146,6 +164,9 @@ public partial class TrackerControlsPage
     /// <param name="slot">The zero-based binding slot.</param>
     private void BeginCapture(string action, int slot)
     {
+        if (!FeatureEnabled(action))
+            return;
+
         _captureSlot = slot;
         _error = null;
         _previewFocused = false;

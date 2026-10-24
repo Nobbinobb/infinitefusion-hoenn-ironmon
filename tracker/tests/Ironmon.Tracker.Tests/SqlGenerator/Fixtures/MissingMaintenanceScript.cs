@@ -1,4 +1,4 @@
-using Ironmon.Sqlite.Querying;
+using Ironmon.Sqlite.Definitions;
 using Microsoft.Data.Sqlite;
 
 namespace MaintenanceFixture;

@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace Ironmon.Sqlite.Querying;
+namespace Ironmon.Sqlite.Definitions;
 
 /// <summary>
 /// Describes a checked inner-join selection over 2 mapped source tables.

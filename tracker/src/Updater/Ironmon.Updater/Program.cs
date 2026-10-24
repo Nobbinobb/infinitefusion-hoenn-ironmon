@@ -1,6 +1,6 @@
 using System.Windows;
 using Ironmon.Updater.Infrastructure;
-using Ironmon.Tracker.Connection.Sprites;
+using Ironmon.SpriteLibrary;
 
 namespace Ironmon.Updater;
 

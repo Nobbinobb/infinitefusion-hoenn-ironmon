@@ -1,5 +1,6 @@
 .tracker-settings-tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     margin: 12px 0 16px;
     border-bottom: 1px solid #2a3544;
@@ -498,3 +499,6 @@
         height: 12px;
     }
 }
+
+.tracker-control-disabled { opacity: .45; }
+.tracker-control-disabled button:disabled { cursor: default; }

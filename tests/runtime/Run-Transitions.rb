@@ -156,7 +156,9 @@ module IronmonRunTransitionRuntimeTests
       original_scene = $scene
       variables = [:tracker_obtainability_services, :tracker_battle_id,
                    :tracker_obtainability_ready_scene, :reset_in_progress,
-                   :tracker_seed_import_pending]
+                   :tracker_seed_import_pending, :main_menu_open,
+                   :management_screen_state, :game_management_request,
+                   :tracker_area_fusion_work, :tracker_wild_occurrence_work]
       originals = {}
       variables.each do |name|
         originals[name] = Ironmon.instance_variable_get("@#{name}")
@@ -261,6 +263,96 @@ module IronmonRunTransitionRuntimeTests
       Ironmon.update_tracker_obtainability
       assert(budgets.last == Ironmon::TrackerObtainabilityService::FOREGROUND_MILLISECONDS,
         "safe map frames retain the existing priority calculation budget")
+    end
+  end
+
+  def self.test_archive_lookup_at_title
+    with_lookup_preparation_runtime do
+      original_globals = [$PokemonGlobal, $Trainer, $game_map, $game_player, $PokemonSystem]
+      begin
+        active_recipe = Ironmon.tracker_debug_active_recipe
+        recipe = active_recipe.merge("active_run" => false, "result" => "lost", "run_id" => "archive-title-run")
+        active_service = Ironmon.tracker_obtainability_service(active_recipe)
+        service = Ironmon.tracker_obtainability_service(recipe)
+        budgets = []
+        active_service.define_singleton_method(:advance_for_milliseconds) { |_milliseconds| raise "Active-run work ran at the title screen" }
+        service.define_singleton_method(:advance_for_milliseconds) { |milliseconds| budgets << milliseconds }
+        service.request_background
+        active_service.request_foreground
+        $PokemonGlobal, $Trainer, $game_map, $game_player, $PokemonSystem = nil, nil, nil, nil, nil
+        $scene = Scene_Intro.allocate
+        Ironmon.update_tracker_obtainability
+        assert(budgets.empty?, "archive work waits until the title menu is ready")
+        Ironmon.instance_variable_set(:@main_menu_open, true)
+        Ironmon.instance_variable_set(:@management_screen_state, "title_screen")
+        Ironmon.update_tracker_obtainability
+        assert(budgets == [Ironmon::TrackerObtainabilityService::BACKGROUND_MILLISECONDS],
+          "an archived background lease advances at the title screen without a loaded save")
+        Ironmon.instance_variable_set(:@management_screen_state, "main_menu")
+        service.request_foreground
+        Ironmon.update_tracker_obtainability
+        assert(budgets.length == 2 && budgets.last == Ironmon::TrackerObtainabilityService::BACKGROUND_MILLISECONDS,
+          "archive foreground work also advances within a small slice in the load menu")
+
+        area_calls = []
+        archived_area = Ironmon::TrackerAreaFusionWork.new(recipe)
+        active_area = Ironmon::TrackerAreaFusionWork.new(active_recipe)
+        archived_occurrence = Ironmon::TrackerWildOccurrenceWork.new(nil, recipe, nil)
+        active_occurrence = Ironmon::TrackerWildOccurrenceWork.new(nil, active_recipe, nil)
+        [["area", archived_area], ["occurrence", archived_occurrence]].each do |label, work|
+          work.define_singleton_method(:advance) { area_calls << label }
+        end
+        [active_area, active_occurrence].each do |work|
+          work.define_singleton_method(:advance) { raise "Active area work ran at the title screen" }
+        end
+        Ironmon.instance_variable_set(:@tracker_area_fusion_work, { "active" => active_area, "archived" => archived_area })
+        Ironmon.instance_variable_set(:@tracker_wild_occurrence_work, { "active" => active_occurrence, "archived" => archived_occurrence })
+        Ironmon.update_tracker_area_fusions
+        assert(area_calls == ["area", "occurrence"], "archived area and Pokemon-location workers advance without a loaded map")
+
+        [:reset_in_progress, :tracker_seed_import_pending, :game_management_request].each do |name|
+          Ironmon.instance_variable_set("@#{name}", true)
+          Ironmon.update_tracker_obtainability
+          Ironmon.update_tracker_area_fusions
+          Ironmon.instance_variable_set("@#{name}", nil)
+        end
+        Ironmon.instance_variable_set(:@main_menu_open, false)
+        Ironmon.update_tracker_obtainability
+        Ironmon.update_tracker_area_fusions
+        assert(budgets.length == 2 && area_calls.length == 2,
+          "archive work pauses during reset, import, menu commands and the transition into gameplay")
+        Ironmon.instance_variable_set(:@main_menu_open, true)
+        connection = Ironmon.tracker_connection
+        connection.define_singleton_method(:connected?) { false }
+        Ironmon.update_tracker_obtainability
+        Ironmon.update_tracker_area_fusions
+        assert(budgets.length == 2 && area_calls.length == 2, "disconnected title-screen workers remain paused")
+        connection.define_singleton_method(:connected?) { true }
+        service.instance_variable_set(:@foreground_until, 0.0)
+        service.instance_variable_set(:@background_until, 0.0)
+        Ironmon.update_tracker_obtainability
+        assert(budgets.length == 2, "stopping archive polling lets the title-screen lease expire")
+
+        service.singleton_class.send(:remove_method, :advance_for_milliseconds)
+        deadline = Ironmon.tracker_uptime_seconds + 15.0
+        while service.instance_variable_get(:@configuration).nil? && Ironmon.tracker_uptime_seconds < deadline
+          service.request_background
+          Ironmon.update_tracker_obtainability
+        end
+        assert(!service.instance_variable_get(:@configuration).nil? && service.snapshot["phase"] != "prepare_generators",
+          "real archived generator preparation makes progress at the title screen without live game globals")
+        completed_active = Ironmon.tracker_obtainability_service(active_recipe.merge("active_run" => false, "result" => "lost"))
+        assert(completed_active.equal?(active_service) && completed_active.archived?,
+          "a completed run reuses its existing calculation when it later opens in Archive at the title screen")
+        completed_budgets = []
+        completed_active.define_singleton_method(:advance_for_milliseconds) { |milliseconds| completed_budgets << milliseconds }
+        completed_active.request_foreground
+        Ironmon.update_tracker_obtainability
+        assert(completed_budgets == [Ironmon::TrackerObtainabilityService::BACKGROUND_MILLISECONDS],
+          "the reused completed-run service advances at the title screen")
+      ensure
+        $PokemonGlobal, $Trainer, $game_map, $game_player, $PokemonSystem = original_globals
+      end
     end
   end
 
@@ -539,6 +631,7 @@ module IronmonRunTransitionRuntimeTests
     test_active_run_preparation_boundary
     test_manual_lookup_before_rival
     test_manual_lookup_during_opening_battle
+    test_archive_lookup_at_title
     test_generation_failure_rollback
     test_save_failure_rollback
     test_successful_reset_commit_order

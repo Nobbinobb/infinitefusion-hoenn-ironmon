@@ -55,8 +55,10 @@ module IronmonRuntimeHookTests
         :early_game_loss_reset,
         :tracker,
         :starter_bst_reset,
+        :status_overlays,
         :gameplay_collection_world,
-        :achievement_notifications
+        :achievement_notifications,
+        :first_alpha_completion
       ],
       "frame callbacks retain their established execution order"
     )

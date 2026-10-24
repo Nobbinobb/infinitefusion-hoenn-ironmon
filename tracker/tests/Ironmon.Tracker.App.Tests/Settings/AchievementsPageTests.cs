@@ -24,6 +24,10 @@ public sealed class AchievementsPageTests
     private const string _progressMaximum = "aria-valuemax=\"{0}\"";
     private const string _imagePrefix = "data:image/png;base64,";
     private const string _previewAction = "Preview notification";
+    private const string _assignedItemIdentity = "2915e809-e221-560b-a953-b8a4585002b0";
+    private const string _itemConsumptionBatch = """
+        {"schema_version":1,"profile_id":"11111111111111111111111111111111","epoch_id":"22222222222222222222222222222222","stream_id":"33333333333333333333333333333333","events":[{"sequence":"1","type":"item.disposition_resolved","attempt_id":"55555555555555555555555555555555","context":{},"payload":{"item_id":"POTION","disposition":"consumed","quantity":1,"battle_entry_owner":"player","current_controller":"player"}}]}
+        """;
     private const string _batch = """
         {"schema_version":1,"profile_id":"11111111111111111111111111111111","epoch_id":"22222222222222222222222222222222","stream_id":"33333333333333333333333333333333","events":[{"sequence":"1","type":"battle.started","attempt_id":"55555555555555555555555555555555","battle_id":"rival","context":{},"payload":{"battle_kind":"trainer","encounter":{"trainer_class_ids":["RIVAL1"],"authored_entry_ids":[]}}},{"sequence":"2","type":"battle.ended","attempt_id":"55555555555555555555555555555555","battle_id":"rival","context":{},"payload":{"outcome":"win"}}]}
         """;
@@ -45,19 +49,12 @@ public sealed class AchievementsPageTests
             if (earn)
                 await store.AcceptBatchAsync(JsonSerializer.Deserialize<JsonElement>(_batch));
 
-            ServiceCollection services = new();
-            services.AddLogging();
-            services.AddLocalization(options => options.ResourcesPath = TrackerLocalizationConstants.ResourcesPath);
-            services.AddSingleton(store);
-            await using ServiceProvider provider = services.BuildServiceProvider();
-            await using HtmlRenderer renderer = new(provider, provider.GetRequiredService<ILoggerFactory>());
-            string markup = await renderer.Dispatcher.InvokeAsync(async () =>
-            {
-                var page = await renderer.RenderComponentAsync<AchievementsPage>();
-                return page.ToHtmlString();
-            });
+            string markup = await RenderAsync(store);
             var earned = await store.GetAchievementsAsync();
-            Assert.Contains(_previewAction, markup);
+            Assert.DoesNotContain(_previewAction, markup);
+            Assert.DoesNotContain("Show all for testing", markup);
+            Assert.DoesNotContain("Preview all achievements", markup);
+            Assert.DoesNotContain("Stop preview", markup);
             Assert.Equal(earned.Count, markup.Split(_rowMarkup, StringSplitOptions.None).Length - 1);
             if (earn)
             {
@@ -81,6 +78,52 @@ public sealed class AchievementsPageTests
             if (Directory.Exists(directory) && Path.GetFileName(directory).StartsWith(_prefix, StringComparison.Ordinal))
                 Directory.Delete(directory, true);
         }
+    }
+
+    /// <summary>
+    /// Renders the assigned first-stage image after real item consumption without exposing locked artwork.
+    /// </summary>
+    /// <returns>A task completing after the production page contains the earned in-memory PNG.</returns>
+    [Fact]
+    public async Task PageShowsAssignedItemArtwork()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), _prefix + Guid.NewGuid());
+        try
+        {
+            await using GameplayCollectionStore store = new(directory);
+            await store.AcceptBatchAsync(JsonSerializer.Deserialize<JsonElement>(_itemConsumptionBatch));
+            Guid id = Guid.Parse(_assignedItemIdentity);
+            var icons = await store.GetAchievementIconsAsync([id]);
+            Assert.True(icons.TryGetValue(id, out var icon));
+            Assert.True(icon.HasArtwork);
+            string markup = await RenderAsync(store);
+            Assert.Contains(icon.ImageDataUri, System.Net.WebUtility.HtmlDecode(markup));
+        }
+        finally
+        {
+            if (Directory.Exists(directory) && Path.GetFileName(directory).StartsWith(_prefix, StringComparison.Ordinal))
+                Directory.Delete(directory, true);
+        }
+    }
+
+    /// <summary>
+    /// Renders the actual achievement page against an isolated collection store.
+    /// </summary>
+    /// <param name="store">The disposable fixture profile containing only test evidence.</param>
+    /// <returns>The completed production page markup.</returns>
+    private static async Task<string> RenderAsync(GameplayCollectionStore store)
+    {
+        ServiceCollection services = new();
+        services.AddLogging();
+        services.AddLocalization(options => options.ResourcesPath = TrackerLocalizationConstants.ResourcesPath);
+        services.AddSingleton(store);
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        await using HtmlRenderer renderer = new(provider, provider.GetRequiredService<ILoggerFactory>());
+        return await renderer.Dispatcher.InvokeAsync(async () =>
+        {
+            var page = await renderer.RenderComponentAsync<AchievementsPage>();
+            return page.ToHtmlString();
+        });
     }
 
     /// <summary>

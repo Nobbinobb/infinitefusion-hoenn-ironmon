@@ -7,4 +7,10 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(IronmonQuickTests)' == 'true'">
+    <BaseOutputPath>bin/quick-tests/</BaseOutputPath>
+    <BaseIntermediateOutputPath>obj/quick-tests/</BaseIntermediateOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);bin/**;obj/**</DefaultItemExcludes>
+    <UpdaterMetadataOnly>true</UpdaterMetadataOnly>
+  </PropertyGroup>
 </Project>

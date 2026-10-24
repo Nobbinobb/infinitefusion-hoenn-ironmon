@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Threading.Channels;
 using Ironmon.Tracker.Collection.Achievements;
+using Ironmon.Tracker.Collection.Storage;
+using Ironmon.Tracker.Collection.Storage.Encoding;
 
 namespace Ironmon.Tracker.Collection;
 
@@ -13,15 +15,27 @@ public sealed partial class GameplayCollectionStore : IAsyncDisposable
     private readonly Channel<CollectionWork> _queue = Channel.CreateBounded<CollectionWork>(new BoundedChannelOptions(32) { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });
     private readonly Task _worker;
     private readonly string _profileDirectory;
+    private readonly string? _historyRunDirectory;
+    private const string _historyEventsProperty = "events";
+    private const string _historyTypeProperty = "type";
+    private const string _historyAttemptProperty = "attempt_id";
+    private const string _historyOwnedEvent = "pokemon.owned_configuration_committed";
+
+    /// <summary>
+    /// Reports exact attempts whose ownership records were durably received, including delayed terminal batches.
+    /// </summary>
+    public event Action<IReadOnlyList<string>>? OwnedHistoryChanged;
 
     /// <summary>
     /// Creates a collection worker for an external profile directory.
     /// </summary>
     /// <param name="profileDirectory">The directory containing the collection database, separate from game saves.</param>
-    public GameplayCollectionStore(string profileDirectory)
+    /// <param name="runDirectory">Optional tracker-owned completed-run recipe directory included in history maintenance.</param>
+    public GameplayCollectionStore(string profileDirectory, string? runDirectory = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(profileDirectory);
         _profileDirectory = Path.GetFullPath(profileDirectory);
+        _historyRunDirectory = runDirectory is null ? null : Path.GetFullPath(runDirectory);
         _worker = Task.Run(RunWriterAsync);
     }
 
@@ -41,10 +55,40 @@ public sealed partial class GameplayCollectionStore : IAsyncDisposable
     /// <param name="payload">An immutable versioned collection batch.</param>
     /// <param name="cancellationToken">Cancels the caller's wait, never a committed collection transaction.</param>
     /// <returns>The matching store binding and durable contiguous receipt prefix.</returns>
-    public Task<JsonElement> AcceptBatchAsync(JsonElement payload, CancellationToken cancellationToken = default)
+    public async Task<JsonElement> AcceptBatchAsync(JsonElement payload, CancellationToken cancellationToken = default)
     {
         JsonElement copy = payload.Clone();
-        return EnqueueAsync(database => database.Accept(copy), cancellationToken, true);
+        JsonElement acknowledgement = await EnqueueAsync(database => database.Accept(copy), cancellationToken, true).ConfigureAwait(false);
+        if (OwnedHistoryChanged is not null)
+        {
+            string[] attempts = [.. copy.GetProperty(_historyEventsProperty).EnumerateArray()
+                .Where(occurrence => occurrence.GetProperty(_historyTypeProperty).GetString() == _historyOwnedEvent && occurrence.TryGetProperty(_historyAttemptProperty, out JsonElement attempt) && attempt.ValueKind == JsonValueKind.String)
+                .Select(occurrence => occurrence.GetProperty(_historyAttemptProperty).GetString()!).Distinct(StringComparer.OrdinalIgnoreCase)];
+
+            if (attempts.Length > 0)
+                NotifyOwnedHistoryChanged(attempts);
+        }
+
+        return acknowledgement;
+    }
+
+    /// <summary>
+    /// Delivers history refresh notices without allowing a view failure to invalidate a durable receipt.
+    /// </summary>
+    /// <param name="attempts">The exact attempts affected by the committed batch.</param>
+    private void NotifyOwnedHistoryChanged(IReadOnlyList<string> attempts)
+    {
+        Delegate[] handlers = OwnedHistoryChanged?.GetInvocationList() ?? [];
+        foreach (Action<IReadOnlyList<string>> handler in handlers)
+        {
+            try
+            {
+                handler(attempts);
+            }
+            catch (Exception)
+            {
+            }
+        }
     }
 
     /// <summary>
@@ -70,6 +114,23 @@ public sealed partial class GameplayCollectionStore : IAsyncDisposable
 
         JsonElement snapshot = await EnqueueAsync(database => database.OwnedLookup(attempts), cancellationToken).ConfigureAwait(false);
         return [.. snapshot.EnumerateArray()];
+    }
+
+    /// <summary>
+    /// Reads newest-first retained runner stages and peak levels for an archived run.
+    /// </summary>
+    /// <param name="attemptIds">Exact compact UUIDs explicitly associated with the selected run.</param>
+    /// <param name="cancellationToken">Cancels the read without interrupting collection writes.</param>
+    /// <returns>Recorded stages, empty when the run has no retained ownership evidence.</returns>
+    public async Task<IReadOnlyList<RunPokemonHistoryEntry>> GetRunPokemonHistoryAsync(IReadOnlyList<string> attemptIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(attemptIds);
+        byte[][] attempts = [.. attemptIds.Distinct(StringComparer.OrdinalIgnoreCase).Select(CollectionEncoding.Identifier)];
+        if (attempts.Length == 0)
+            return [];
+
+        JsonElement snapshot = await EnqueueAsync(database => database.RunPokemonHistory(attempts), cancellationToken).ConfigureAwait(false);
+        return snapshot.Deserialize<RunPokemonHistoryEntry[]>() ?? [];
     }
 
     /// <summary>

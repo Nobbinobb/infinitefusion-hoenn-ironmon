@@ -1408,6 +1408,28 @@
   <data name="Archive.Sections.Summary" xml:space="preserve"><value>Summary</value></data>
   <data name="Archive.Sections.Areas" xml:space="preserve"><value>Areas</value></data>
   <data name="Archive.Sections.Pokemon" xml:space="preserve"><value>Pokémon</value></data>
+  <data name="Archive.PokemonHistory.Title" xml:space="preserve"><value>Pokémon history</value></data>
+  <data name="Archive.PokemonHistory.CompactLoading" xml:space="preserve"><value>Loading Pokémon…</value></data>
+  <data name="Archive.PokemonHistory.CompactEmpty" xml:space="preserve"><value>Pokémon not recorded</value></data>
+  <data name="Archive.PokemonHistory.CompactUnavailable" xml:space="preserve"><value>Pokémon unavailable</value></data>
+  <data name="Archive.PokemonHistory.NewestFirst" xml:space="preserve"><value>Newest first</value></data>
+  <data name="Archive.PokemonHistory.Last" xml:space="preserve"><value>Last Pokémon</value></data>
+  <data name="Archive.PokemonHistory.Level" xml:space="preserve"><value>Lv. {0}</value></data>
+  <data name="Archive.PokemonHistory.PeakLevel" xml:space="preserve"><value>Highest level reached during this stage</value></data>
+  <data name="Archive.PokemonHistory.Open" xml:space="preserve"><value>View {0}, highest level {1}, in this run's Pokémon tab</value></data>
+  <data name="Archive.PokemonHistory.Loading" xml:space="preserve"><value>Loading Pokémon history…</value></data>
+  <data name="Archive.PokemonHistory.Empty" xml:space="preserve"><value>Pokémon history was not recorded for this run.</value></data>
+  <data name="Archive.PokemonHistory.Unavailable" xml:space="preserve"><value>Pokémon history could not be loaded.</value></data>
+  <data name="Archive.PokemonHistory.Retry" xml:space="preserve"><value>Retry</value></data>
+  <data name="Archive.PokemonHistory.Transition.Starter" xml:space="preserve"><value>Starter</value></data>
+  <data name="Archive.PokemonHistory.Transition.FusionPivot" xml:space="preserve"><value>Fusion pivot</value></data>
+  <data name="Archive.PokemonHistory.Transition.ReversePivot" xml:space="preserve"><value>Reverse pivot</value></data>
+  <data name="Archive.PokemonHistory.Transition.UnfusionPivot" xml:space="preserve"><value>Unfusion pivot</value></data>
+  <data name="Archive.PokemonHistory.Transition.Pivot" xml:space="preserve"><value>Pivot</value></data>
+  <data name="Archive.PokemonHistory.Transition.Evolution" xml:space="preserve"><value>Evolution</value></data>
+  <data name="Archive.PokemonHistory.Transition.FormChange" xml:space="preserve"><value>Form change</value></data>
+  <data name="Archive.PokemonHistory.Transition.FirstRecorded" xml:space="preserve"><value>First recorded Pokémon</value></data>
+  <data name="Archive.PokemonHistory.Transition.SpeciesChange" xml:space="preserve"><value>Species change</value></data>
   <data name="Archive.SaveSlots.Kicker" xml:space="preserve"><value>SAVE SLOTS</value></data>
   <data name="Archive.SaveSlots.Title" xml:space="preserve"><value>Attempt history</value></data>
   <data name="Archive.SaveSlots.Tabs" xml:space="preserve"><value>Save-slot attempt histories</value></data>
@@ -1825,7 +1847,7 @@
     <value>Reveal all three and select the Random Pick, or choose between it and your favorites.</value>
   </data>
   <data name="Redesign.Settings.MaximumBstDescription" xml:space="preserve">
-    <value>Applies to manual and automatic selection. Autoselect resets if none qualify.</value>
+    <value>Applies to manual and automatic selection while Enforce BST limit is on in Features. Empty or 0 means no limit. Autoselect resets if none qualify.</value>
   </data>
   <data name="Redesign.Settings.ExpansionDepthDescription" xml:space="preserve">
     <value>Predecessor and evolution layers around the initial Pokémon and each selected branch.</value>
@@ -2333,7 +2355,48 @@
   <data name="Stats.IVs.RecordLabel" xml:space="preserve"><value>#{3} · {1} · Lv. {2} · {0}</value></data>
   <data name="Stats.IVs.Runner" xml:space="preserve"><value>Runner</value></data>
   <data name="Stats.IVs.Owned" xml:space="preserve"><value>Owned</value></data>
-  <data name="Achievements.Preview" xml:space="preserve"><value>Preview notification</value></data>
-  <data name="Achievements.PreviewHint" xml:space="preserve"><value>Requires a connected game and loaded save. Does not unlock an achievement.</value></data>
-  <data name="Achievements.PreviewSent" xml:space="preserve"><value>Preview queued in the game.</value></data>
+  <data name="Achievements.ViewArtwork" xml:space="preserve"><value>View artwork: {0}</value></data>
+  <data name="Achievements.Artwork" xml:space="preserve"><value>Achievement artwork</value></data>
+  <data name="Achievements.ArtworkLoading" xml:space="preserve"><value>Loading artwork…</value></data>
+  <data name="Achievements.ArtworkUnavailable" xml:space="preserve"><value>Artwork is unavailable. Please try again.</value></data>
+  <data name="Settings.ToggleSpeed.Title" xml:space="preserve"><value>Toggle speed</value></data>
+  <data name="Settings.ToggleSpeed.Tab" xml:space="preserve"><value>Speed</value></data>
+  <data name="Settings.ToggleSpeed.GameSession" xml:space="preserve"><value>Game session</value></data>
+  <data name="Settings.ToggleSpeed.HelpTitle" xml:space="preserve"><value>Toggle speed help</value></data>
+  <data name="Settings.ToggleSpeed.HelpLabel" xml:space="preserve"><value>Help with toggle speed</value></data>
+  <data name="Settings.ToggleSpeed.Overworld" xml:space="preserve"><value>Overworld</value></data>
+  <data name="Settings.ToggleSpeed.Battle" xml:space="preserve"><value>Battles</value></data>
+  <data name="Settings.ToggleSpeed.Palette" xml:space="preserve"><value>Multiplier palette</value></data>
+  <data name="Settings.ToggleSpeed.Connections" xml:space="preserve"><value>Connections between overworld and battle speed groups</value></data>
+  <data name="Settings.ToggleSpeed.Editor" xml:space="preserve"><value>Draggable toggle speed settings</value></data>
+  <data name="Settings.ToggleSpeed.Preview" xml:space="preserve"><value>Preview</value></data>
+  <data name="Settings.ToggleSpeed.PressKey" xml:space="preserve"><value>Press speed key</value></data>
+  <data name="Settings.ToggleSpeed.EnterBattle" xml:space="preserve"><value>Enter battle</value></data>
+  <data name="Settings.ToggleSpeed.ReturnOverworld" xml:space="preserve"><value>Return to overworld</value></data>
+  <data name="Settings.ToggleSpeed.Undo" xml:space="preserve"><value>Undo</value></data>
+  <data name="Settings.ToggleSpeed.Redo" xml:space="preserve"><value>Redo</value></data>
+  <data name="Settings.ToggleSpeed.Unsaved" xml:space="preserve"><value>Unsaved changes</value></data>
+  <data name="Settings.ToggleSpeed.Saved" xml:space="preserve"><value>Saved</value></data>
+  <data name="Settings.ToggleSpeed.Saving" xml:space="preserve"><value>Saving…</value></data>
+  <data name="Settings.ToggleSpeed.Save" xml:space="preserve"><value>Save changes</value></data>
+  <data name="Settings.ToggleSpeed.Incomplete" xml:space="preserve"><value>Cannot save: every red multiplier or group needs a connection to the other lane.</value></data>
+  <data name="Settings.ToggleSpeed.SaveFailed" xml:space="preserve"><value>The profile could not be saved. Check the game connection and try again.</value></data>
+  <data name="Settings.ToggleSpeed.TooMany" xml:space="preserve"><value>Each lane supports up to 128 toggle positions, including normal speed.</value></data>
+  <data name="Settings.ToggleSpeed.Help0" xml:space="preserve"><value>The two cycles</value></data>
+  <data name="Settings.ToggleSpeed.Help1" xml:space="preserve"><value>Overworld and battles have separate toggle cycles. Both start at 1× → 2× → 3× → 1×. Pressing your speed key advances through the current lane from left to right, including the members of each group, then returns to 1×. You can arrange the speeds in any order and use a multiplier more than once. Normal speed, 1×, always stays first and connects only to 1×.</value></data>
+  <data name="Settings.ToggleSpeed.Help2" xml:space="preserve"><value>Add, remove, and reorder multipliers</value></data>
+  <data name="Settings.ToggleSpeed.Help3" xml:space="preserve"><value>Drag a multiplier from the top palette into a gap or empty space in either lane. Drop it onto an existing multiplier to add it directly to that group. Drag an existing multiplier into a gap to change its position. To remove it, drag it back onto the top palette.</value></data>
+  <data name="Settings.ToggleSpeed.Help4" xml:space="preserve"><value>Create, split, and move groups</value></data>
+  <data name="Settings.ToggleSpeed.Help5" xml:space="preserve"><value>Drop one multiplier onto another in the same lane to create a group. Drag a member out into a gap to make it standalone again. Drag the outer box or its padding to move the whole group within its lane; its member order, connection, and remembered selection stay intact. Dragging the whole box onto the palette removes the entire group.</value></data>
+  <data name="Settings.ToggleSpeed.Help6" xml:space="preserve"><value>Connect and disconnect</value></data>
+  <data name="Settings.ToggleSpeed.Help7" xml:space="preserve"><value>Click a multiplier in one lane, then a multiplier in the other lane. The wire links their groups, and the clicked multipliers become the entry points. Crossed wires and different multiplier values are allowed. Press Escape to cancel a selection.</value></data>
+  <data name="Settings.ToggleSpeed.Help8" xml:space="preserve"><value>Each standalone multiplier or group has one connection to the opposite lane. Making a new connection replaces any previous connections on those groups. Click a wire to remove it. The fixed 1× connection cannot be removed.</value></data>
+  <data name="Settings.ToggleSpeed.Help9" xml:space="preserve"><value>Entering and leaving battle</value></data>
+  <data name="Settings.ToggleSpeed.Help10" xml:space="preserve"><value>On the first visit to a group, the game uses its connected entry point. After that, returning restores the last member used in that group. Each group remembers independently.</value></data>
+  <data name="Settings.ToggleSpeed.Help11" xml:space="preserve"><value>For example, if overworld 2× and 5× share a group whose entry is 2×, entering battle from 5× and returning restores 5×. If you change speed within the battle group, the next visit to that group restores that selection too. Switching contexts at 1× keeps 1×.</value></data>
+  <data name="Settings.ToggleSpeed.Help12" xml:space="preserve"><value>Missing connections and saving</value></data>
+  <data name="Settings.ToggleSpeed.Help13" xml:space="preserve"><value>Every toggle position needs a destination in the other lane. A connection covers all members of its group; a standalone multiplier needs its own connection. Unconnected multipliers and group boxes have red dashed outlines. Connect them or move them into a connected group to resolve the warning. The preview cannot switch from an unconnected state; it never silently falls back to 1×.</value></data>
+  <data name="Settings.ToggleSpeed.Help14" xml:space="preserve"><value>Edits remain a draft until you click Save changes. Save rejects incomplete mappings and keeps the last saved configuration. Undo and Redo move through configuration edits, including additions, removals, grouping, ordering, and connections. Preview actions do not count as edits. Undoing a saved change creates a new unsaved draft.</value></data>
+  <data name="Settings.ToggleSpeed.Help15" xml:space="preserve"><value>Toggle mode only</value></data>
+  <data name="Settings.ToggleSpeed.Help16" xml:space="preserve"><value>These settings apply to toggle speed-up. Hold mode continues to use the game&#x27;s separate overworld and battle sliders. Multipliers are targets; demanding scenes and loading can reduce the actual acceleration.</value></data>
 </root>

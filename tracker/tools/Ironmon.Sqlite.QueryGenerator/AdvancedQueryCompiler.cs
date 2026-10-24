@@ -13,7 +13,7 @@ namespace Ironmon.Sqlite.QueryGenerator;
 /// </summary>
 internal sealed class AdvancedQueryCompiler
 {
-    private const string _namespace = "Ironmon.Sqlite.Querying";
+    private const string _namespace = "Ironmon.Sqlite.Definitions";
     private const string _intrinsics = _namespace + ".Sql";
     private const string _tableAttribute = _namespace + ".SqlTableAttribute";
     private const string _columnAttribute = _namespace + ".SqlColumnAttribute";

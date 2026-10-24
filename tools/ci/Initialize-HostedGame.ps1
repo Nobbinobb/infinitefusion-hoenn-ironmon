@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][string]$SnapshotDirectory)
+param([Parameter(Mandatory)][string]$SnapshotDirectory, [string]$GameRoot, [string]$MesaArchivePath)
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
@@ -6,7 +6,7 @@ if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_OS -ne 'Windows') {
   throw 'Hosted game setup is restricted to a disposable Windows Actions runner.'
 }
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$gameRoot = Split-Path -Parent $projectRoot
+$gameRoot = if ($GameRoot) { [IO.Path]::GetFullPath($GameRoot) } else { Split-Path -Parent $projectRoot }
 . (Join-Path $PSScriptRoot 'UpstreamInputs.ps1')
 $inputs = Install-UpstreamInputs $SnapshotDirectory $gameRoot
 New-Item -ItemType Directory -Force -Path (Join-Path $projectRoot 'data') | Out-Null
@@ -22,10 +22,13 @@ $gameVersion = $versionMatch.Groups['version'].Value
 "game_commit=$gameCommit" >> $env:GITHUB_OUTPUT
 "game_version=$gameVersion" >> $env:GITHUB_OUTPUT
 Write-Output "Using newest Hoenn release: $gameCommit (game version $gameVersion)."
-$mesaArchive = Join-Path $env:RUNNER_TEMP 'mesa3d-26.2.0-release-msvc.7z'
+$mesaArchive = if ($MesaArchivePath) { [IO.Path]::GetFullPath($MesaArchivePath) } else { Join-Path $env:RUNNER_TEMP 'mesa3d-26.2.0-release-msvc.7z' }
 $mesaRoot = Join-Path $env:RUNNER_TEMP 'ironmon-mesa'
 $mesaDigest = 'dcb2719ef346dab5b609fcb193a5f13cfc4b0502e3f4de1ad43d349477402f47'
-Invoke-WebRequest 'https://github.com/pal1000/mesa-dist-win/releases/download/26.2.0/mesa3d-26.2.0-release-msvc.7z' -OutFile $mesaArchive
+if (-not (Test-Path -LiteralPath $mesaArchive)) {
+  New-Item -ItemType Directory -Force -Path (Split-Path -Parent $mesaArchive) | Out-Null
+  Invoke-WebRequest 'https://github.com/pal1000/mesa-dist-win/releases/download/26.2.0/mesa3d-26.2.0-release-msvc.7z' -OutFile $mesaArchive
+}
 if ((Get-FileHash $mesaArchive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $mesaDigest) {
   throw 'Mesa download checksum mismatch.'
 }
@@ -34,7 +37,10 @@ $mesaLibraries = @(Get-ChildItem (Join-Path $mesaRoot 'x64') -Filter '*.dll' -Fi
 if (-not ($mesaLibraries | Where-Object Name -eq 'opengl32.dll')) { throw 'Mesa OpenGL library is missing.' }
 foreach ($library in $mesaLibraries) {
   $destination = Join-Path $gameRoot $library.Name
-  if (Test-Path -LiteralPath $destination) { throw "Refusing to replace bundled game library $($library.Name)." }
+  if (Test-Path -LiteralPath $destination) {
+    if ((Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $library.FullName -Algorithm SHA256).Hash) { throw "Refusing to replace bundled game library $($library.Name)." }
+    continue
+  }
   Copy-Item -LiteralPath $library.FullName -Destination $destination
 }
 'GALLIUM_DRIVER=llvmpipe' >> $env:GITHUB_ENV

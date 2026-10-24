@@ -9,44 +9,26 @@ publish fixtures as a player release. Production trust is documented in
 
 ## Repeatable local checks
 
-Run from the nested Ironmon repository in PowerShell 7 on Windows. Generated
-catalogs and the selected baseline must match the game revision being tested.
+Use the native C# tests on Windows, with matching generated catalogs and the
+pinned Git dependency described in [the tracker README](../../tracker/README.md#validate-and-publish).
 
 ```powershell
-./tools/Test-Updater.ps1 -Configuration Release -IncludeNetwork
-dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj -c Release -p:UseSharedCompilation=false --results-directory data/updater/acceptance/results -- xUnit.ParallelizeTestCollections=false
-dotnet test tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj -c Release -r win-x64 -p:UseSharedCompilation=false --results-directory data/updater/acceptance/results
-dotnet build tracker/Ironmon.Tracker.slnx -c Release -p:UseSharedCompilation=false
-./tools/Test-GameAdoptionInventory.ps1
-./tools/ci/Test-ReleaseAutomation.ps1
-./tools/ci/Test-ReleasePublication.ps1
+dotnet test tracker/tests/Ironmon.Updater.Tests/Ironmon.Updater.Tests.csproj -c Release --settings tracker/tests/Full.runsettings --maxcpucount:1
+dotnet test tracker/tests/Ironmon.Setup.Tests/Ironmon.Setup.Tests.csproj -c Release --settings tracker/tests/Full.runsettings --maxcpucount:1
+dotnet test tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj -c Release --settings tracker/tests/Full.runsettings --maxcpucount:1
 ```
 
-`Test-Updater.ps1` includes Setup tests and serializes updater process fixtures.
-For repeat runs without network, replace `-IncludeNetwork` with `-Offline` after
-provisioning the pinned MinGit archive and restoring dependencies. Automation
-contracts include historical-inventory restoration; `tools/ci/Test-UpdateHistory.ps1`
-can run those cases independently. These tests use synthetic payloads and fixture
-keys, not full player packages.
+The Full settings exclude live network cases. To run those deliberately, omit
+the settings file and use `--filter Category=Network` with
+`-- xUnit.ParallelizeTestCollections=false`. Synthetic test packages and keys do
+not establish acceptance of player payloads.
 
-Create an owned game checkout under `data/updater/acceptance/game`, detached at
-the exact revision in the generated baseline. Do not use player saves. Synchronize
-and validate that copy:
-
-```powershell
-$acceptanceGame = Join-Path $PWD 'data/updater/acceptance/game'
-$acceptanceDistribution = Join-Path $PWD 'data/updater/acceptance/dist'
-./tools/Build-Distribution.ps1 -GameRoot $acceptanceGame -DistributionRoot $acceptanceDistribution
-./tools/Test-UpdaterBootGuard.ps1 -GameRoot $acceptanceGame
-./tools/Test-UpdaterGameStartup.ps1 -GameRoot $acceptanceGame
-```
-
-The boot-guard test creates its own fixture and save directory. The startup test
-requires a game under ignored `data`, checks installed scripts and the full
-production compatibility inventory, and isolates saves before upstream scripts
-load. Both launch only hidden, owned processes. Startup evidence is retained in
-`data/updater/acceptance/startup-<id>`. They do not navigate the title screen, play
-a run, or rehearse Setup-to-tracker-to-helper operation.
+Use an owned game checkout under ignored `data/updater/acceptance/game`, pinned
+to the generated baseline. Synchronize it with `Build-Distribution.ps1` using an
+isolated distribution directory. Verify native startup, update blocking, and
+save preservation in that owned runtime. The former PowerShell runtime fixtures
+are removed; C# test success does not establish those game acceptance cases.
+Retain evidence for the following rehearsal separately.
 
 ## Native Windows rehearsal
 
@@ -61,7 +43,8 @@ rehearsal; do not add trust overrides to production clients.
 | --- | --- |
 | Anonymous download and prerequisites | Download without maintainer credentials. On clean Windows without game, Git, or .NET, Setup starts and installs the self-contained tracker. Exercise missing WebView2 consent and refusal. |
 | Setup presentation and localization | Minimum-size pages fit; focus, path tooltips, file approvals, review failures, Back, and optional-work errors remain usable. Check English fallback under another UI culture and formatted numbers. |
-| Runtime choice and run consent | New installs default to Runtime included and offer Runtime required; existing installs retain their flavor. Missing .NET blocks runtime-required replacement. Run-completion consent appears when game/compatibility requires it. |
+| Runtime choice and run consent | New installs default to Runtime included. Runtime required stays visible but disabled without the registered x64 .NET 10 Desktop Runtime; its tooltip and keyboard-accessible question-mark button explain installing it and restarting Setup. Check missing .NET, core-only, x86-only, wrong major, and matching serviced runtime cases. Existing installs retain their flavor; signed package runtime verification still blocks incompatible replacement. Run-completion consent appears when game/compatibility requires it. |
+| Download sizes and future storage | Ironmon shows its complete signed tracker/helper package size, including embedded achievement artwork and the bundled .NET runtime when selected. The package-choice row does not repeat those bytes. Verify optional sprite/WebView2 totals and unavailable estimates. The separate run-history note describes future disk-space growth without counting it as an installation download or promising a fixed maximum. |
 | Existing ZIP and official checkout | Adopt a recognized historical ZIP without system Git; refuse an unknown baseline unchanged. Update an official checkout and verify subsequent official launcher Git behavior. |
 | Ironmon-only and combined updates | Correct target revisions and helper after success; no game rewrite for tracker/mod-only changes. Active or unverified runs block required game changes. |
 | Player data and runtime downloads | Preserve latest saves, archives, settings, profiles, downloaded settings/Pokedex/catalogs, caches, sprites, edits, renames, and removals during review, shutdown, commit, and rollback. Locked unrelated saves do not block updates. Seed new defaults only into vacant paths. |

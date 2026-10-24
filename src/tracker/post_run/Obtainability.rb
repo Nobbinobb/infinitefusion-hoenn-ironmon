@@ -104,6 +104,14 @@ module Ironmon
       return @recipe["generation_profile_id"].to_s
     end
 
+    def archived?
+      return @archive_requested == true || Ironmon.tracker_archived_lookup_recipe?(@recipe)
+    end
+
+    def request_archive
+      @archive_requested = true
+    end
+
     def configure_material_pair_preparation(native)
       @requested_native_material_pair_preparation = native == true
       return if @phase != :player_fusions || !@material_pairs_prepared ||
@@ -1961,7 +1969,10 @@ module Ironmon
   def self.tracker_obtainability_service(recipe)
     key = recipe["run_id"]
     service = tracker_obtainability_services[key]
-    return service if service
+    if service
+      service.request_archive if tracker_archived_lookup_recipe?(recipe)
+      return service
+    end
     service = TrackerObtainabilityService.new(recipe, true)
     tracker_store_bounded(tracker_obtainability_services, key, service, 4)
     return service
@@ -2082,13 +2093,16 @@ module Ironmon
   end
 
   def self.update_tracker_obtainability
-    return if !tracker_obtainability_session_ready?
-    foreground = tracker_obtainability_services.values.select do |service|
+    archive_menu = tracker_archive_lookup_menu_ready?
+    return if !archive_menu && !tracker_obtainability_session_ready?
+    services = tracker_obtainability_services.values
+    services = services.select { |service| service.archived? } if archive_menu
+    foreground = services.select do |service|
       service.foreground_requested?
     end.max_by { |service| service.foreground_deadline }
     if foreground &&
-       (tracker_battle_id || tracker_obtainability_runtime_ready?)
-      milliseconds = tracker_battle_id ?
+       (archive_menu || tracker_battle_id || tracker_obtainability_runtime_ready?)
+      milliseconds = archive_menu || tracker_battle_id ?
         TrackerObtainabilityService::BACKGROUND_MILLISECONDS :
         TrackerObtainabilityService::FOREGROUND_MILLISECONDS
       with_generation_profile(foreground.generation_profile_id) do
@@ -2096,8 +2110,8 @@ module Ironmon
       end
       return
     end
-    return if !tracker_obtainability_background_safe?
-    service = tracker_obtainability_services.values.select do |candidate|
+    return if !archive_menu && !tracker_obtainability_background_safe?
+    service = services.select do |candidate|
       candidate.background_requested?
     end.max_by { |candidate| candidate.background_deadline }
     return if !service
@@ -2136,10 +2150,25 @@ module Ironmon
 
   def self.tracker_obtainability_session_ready?
     return false if !active? || !$PokemonGlobal
+    return tracker_lookup_connection_ready?
+  end
+
+  def self.tracker_lookup_connection_ready?
     return false if !tracker_connection.connected?
     return false if instance_variable_get(:@reset_in_progress)
     return false if instance_variable_get(:@tracker_seed_import_pending)
     return true
+  end
+
+  def self.tracker_archive_lookup_menu_ready?
+    return false if !tracker_lookup_connection_ready? || @game_management_request
+    return @main_menu_open == true &&
+      ["title_screen", "main_menu"].include?(@management_screen_state)
+  end
+
+  def self.tracker_archived_lookup_recipe?(recipe)
+    return recipe.is_a?(Hash) && !recipe["active_run"] &&
+      !["", "active", "active_debug"].include?(recipe["result"].to_s)
   end
 
   def self.tracker_obtainability_runtime_ready?

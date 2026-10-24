@@ -1,6 +1,6 @@
 using System.Reflection;
 using Ironmon.Sqlite.QueryGenerator;
-using Ironmon.Sqlite.Querying;
+using Ironmon.Sqlite.Definitions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Data.Sqlite;

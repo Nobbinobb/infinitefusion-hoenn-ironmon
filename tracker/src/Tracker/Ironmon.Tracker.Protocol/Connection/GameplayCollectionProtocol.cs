@@ -8,12 +8,32 @@ public static class GameplayCollectionProtocol
     /// <summary>
     /// The optional earned-achievement notification channel version.
     /// </summary>
-    public const int AchievementVersion = 2;
+    public const int AchievementVersion = 3;
 
     /// <summary>
-    /// Requests a presentation-only notification without changing the unlock ledger.
+    /// The optional game-clocked desktop notification renderer version.
     /// </summary>
-    public const string AchievementPreview = "achievement_preview";
+    public const int AchievementOverlayVersion = 1;
+
+    /// <summary>
+    /// Prepares an authorized current notification in the desktop renderer.
+    /// </summary>
+    public const string AchievementOverlayStart = "achievement_overlay_start";
+
+    /// <summary>
+    /// Supplies authoritative animation time without transferring any artwork.
+    /// </summary>
+    public const string AchievementOverlayFrame = "achievement_overlay_frame";
+
+    /// <summary>
+    /// Removes a matching desktop presentation after completion or fallback.
+    /// </summary>
+    public const string AchievementOverlayStop = "achievement_overlay_stop";
+
+    /// <summary>
+    /// Reports renderer health and visibility for game timing and fallback.
+    /// </summary>
+    public const string AchievementOverlayReady = "achievement_overlay_ready";
 
     /// <summary>
     /// Limits image-bearing notification batches well below the one-MiB transport frame.

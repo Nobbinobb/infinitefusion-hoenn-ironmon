@@ -1,4 +1,4 @@
-namespace Ironmon.Sqlite.Querying;
+namespace Ironmon.Sqlite.Definitions;
 
 /// <summary>
 /// Generates a typed native SQLite maintenance operation without authored command text.
@@ -156,7 +156,11 @@ public enum SqliteMaintenanceOperation
     /// <summary>
     /// Rejects the first foreign-key violation without modifying the owning transaction.
     /// </summary>
-    AssertForeignKeyIntegrity = 29
+    AssertForeignKeyIntegrity = 29,
+    /// <summary>
+    /// Streams original physical rows while the caller owns the connection and enumerator.
+    /// </summary>
+    StreamTableRows = 30
 }
 
 /// <summary>

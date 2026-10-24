@@ -14,7 +14,7 @@ namespace Ironmon.Sqlite.QueryGenerator;
 [Generator(LanguageNames.CSharp)]
 public sealed class SqlQueryGenerator : IIncrementalGenerator
 {
-    private const string _attribute = "Ironmon.Sqlite.Querying.SqlQueriesAttribute";
+    private const string _attribute = "Ironmon.Sqlite.Definitions.SqlQueriesAttribute";
     private const string _definitions = "Definitions";
     private const string _diagnosticId = "ISQL001";
     private const string _category = "QueryGeneration";

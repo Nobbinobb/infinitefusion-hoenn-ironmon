@@ -1,13 +1,13 @@
+using Ironmon.Tracker.Collection.Queries.Definitions;
+using Ironmon.Tracker.Collection.Queries.Results;
 using Ironmon.Tracker.Collection.Reduction;
+using Ironmon.Tracker.Collection.Storage.Encoding;
+using Ironmon.Tracker.Collection.Storage.Maintenance;
 using Microsoft.Data.Sqlite;
 using System.Diagnostics;
-using System.Globalization;
-using System.Reflection;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage;
 
 /// <summary>
 /// Implements the serialized relational collection store and its atomic receipt boundary.
@@ -311,7 +311,7 @@ internal sealed partial class CollectionDatabase : IDisposable
         if (batch.ValueKind != JsonValueKind.Object || batch.GetProperty(_schemaVersion).GetInt32() != 1)
             throw new InvalidDataException("Unsupported gameplay collection schema.");
 
-        int receivedBytes = Encoding.UTF8.GetByteCount(batch.GetRawText());
+        int receivedBytes = System.Text.Encoding.UTF8.GetByteCount(batch.GetRawText());
         if (receivedBytes > _maximumBatchBytes)
             throw new InvalidDataException("Gameplay collection batch exceeds the encoded byte budget.");
 

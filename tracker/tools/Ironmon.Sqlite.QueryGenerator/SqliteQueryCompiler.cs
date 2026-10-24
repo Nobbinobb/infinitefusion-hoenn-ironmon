@@ -14,7 +14,7 @@ namespace Ironmon.Sqlite.QueryGenerator;
 /// </summary>
 internal sealed class SqliteQueryCompiler
 {
-    private const string _dslNamespace = "Ironmon.Sqlite.Querying";
+    private const string _dslNamespace = "Ironmon.Sqlite.Definitions";
     private const string _queryType = "SqlQuery";
     private const string _tableAttribute = _dslNamespace + ".SqlTableAttribute";
     private const string _columnAttribute = _dslNamespace + ".SqlColumnAttribute";

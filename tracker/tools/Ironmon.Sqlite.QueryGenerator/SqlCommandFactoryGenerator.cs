@@ -14,7 +14,7 @@ namespace Ironmon.Sqlite.QueryGenerator;
 [Generator(LanguageNames.CSharp)]
 public sealed class SqlCommandFactoryGenerator : IIncrementalGenerator
 {
-    private const string _attribute = "Ironmon.Sqlite.Querying.SqlCommandFactoryAttribute";
+    private const string _attribute = "Ironmon.Sqlite.Definitions.SqlCommandFactoryAttribute";
     private const string _definitions = "Definitions";
     private const string _id = "ISQL003";
     private const string _category = "QueryGeneration";

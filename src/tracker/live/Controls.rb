@@ -106,6 +106,8 @@ module Ironmon
   end
 
   def self.tracker_control_action_triggered?(action, repeat = false)
+    return false if action.start_with?("quick_item_") && !feature_enabled?("battle_quick_items")
+    return false if action == "battle_run" && !feature_enabled?("quick_run")
     return false if !tracker_controls_active? ||
       !@tracker_control_managed.include?(action)
     frames = (@tracker_control_frames || {}).fetch(action, 0)

@@ -46,7 +46,7 @@ public sealed class AchievementTests
         AchievementPack pack = new();
         SealedAchievement[] nodes = [.. pack.Nodes];
         HashSet<Guid> all = [.. nodes.Select(node => node.Id)];
-        Assert.Equal(513, all.Count);
+        Assert.Equal(514, all.Count);
         Assert.Equal(all.Count, GameplayCollectionStore.AchievementCount);
         Assert.All(nodes, node => Assert.False(pack.IsOpen(node.Id)));
         SealedAchievement dormant = nodes.First(node => node.Gates.Length > 0);

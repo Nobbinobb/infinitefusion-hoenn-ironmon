@@ -9,6 +9,7 @@ namespace Ironmon.Tracker.Tests.Collection;
 /// </summary>
 public sealed partial class CollectionStoreTests
 {
+    private const int _achievementDisplaySize = 50;
     private const string _iconDataPrefix = "data:image/png;base64,";
     private const string _unlocksKey = "unlocks";
     private const string _iconKey = "icon";
@@ -33,19 +34,21 @@ public sealed partial class CollectionStoreTests
         var earned = await store.GetAchievementsAsync();
         var icons = await store.GetAchievementIconsAsync(ids);
         Assert.Equal(earned.Select(item => item.Id).Order(), icons.Keys.Order());
-        Assert.All(icons.Values, icon => Assert.Equal(64 * 64 * 4, Convert.FromBase64String(icon.Pixels).Length));
+        Assert.All(icons.Values, icon => Assert.Equal(_achievementDisplaySize * _achievementDisplaySize * 4, Convert.FromBase64String(icon.Pixels).Length));
     }
 
     /// <summary>
-    /// Opens the encrypted shared preview without registering progress or writing image files.
+    /// Checks the shared fallback image without registering progress or writing image files.
     /// </summary>
     /// <returns>A task completing after the preview and durable ledger are inspected.</returns>
     [Fact]
-    public async Task SharedPreviewPreservesTheAchievementLedger()
+    public async Task FallbackArtworkPreservesTheAchievementLedger()
     {
         using TestDirectory directory = new();
         await using GameplayCollectionStore store = new(directory.Path);
-        AchievementIcon icon = GameplayCollectionStore.PreviewAchievementIcon;
+        AchievementIcon icon = AchievementIconPack.Shared.Fallback;
+        Assert.Equal(_achievementDisplaySize, icon.Width);
+        Assert.Equal(_achievementDisplaySize, icon.Height);
         Assert.StartsWith(_iconDataPrefix, icon.ImageDataUri);
         byte[] png = Convert.FromBase64String(icon.ImageDataUri[_iconDataPrefix.Length..]);
         Assert.Equal(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }, png[..8]);
@@ -85,53 +88,11 @@ public sealed partial class CollectionStoreTests
         foreach (var notice in unlocks.EnumerateArray())
         {
             Assert.False(notice.TryGetProperty(_conditionKey, out _));
-            Assert.Equal(64 * 64 * 4, notice.GetProperty(_iconKey).GetProperty(_pixelsKey).GetBytesFromBase64().Length);
+            Assert.Equal(_achievementDisplaySize * _achievementDisplaySize * 4, notice.GetProperty(_iconKey).GetProperty(_pixelsKey).GetBytesFromBase64().Length);
         }
 
         Assert.All(diagnostics.Entries, entry => Assert.True(entry.RawValue.Length < 256));
         Assert.NotEmpty(await store.GetAchievementsAsync(true));
     }
 
-    /// <summary>
-    /// Exercises the normal, non-debug client's correlated preview request and game acceptance result.
-    /// </summary>
-    /// <param name="queued">Whether the game accepts the presentation request.</param>
-    /// <returns>A task completing after the real request and response have been serialized and correlated.</returns>
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task AchievementPreviewUsesTheNormalConnectedRequestPath(bool queued)
-    {
-        using TestDirectory directory = new();
-        TrackerDiagnosticsStore diagnostics = new();
-        using TrackerRequestSession session = new(diagnostics);
-        using MemoryStream bytes = new();
-        await using TrackerMessageWriter writer = new(bytes, leaveOpen: true);
-        session.Connect(writer);
-        TrackerConnectionState state = new();
-        GameHandshakePayload game = new(_previewTestVersion, _previewTestVersion, true, false, directory.Path, null, null)
-        {
-            AchievementProtocolVersion = GameplayCollectionProtocol.AchievementVersion
-        };
-        state.Publish(TrackerConnectionStatus.Connected, game);
-        TrackerRequestClient client = new(session, new(0, _previewTestVersion, false, TimeSpan.FromSeconds(2)), state, new(new TrackerKnowledgeOptions(directory.Path)));
-        Assert.True(client.CanPreviewAchievementNotification);
-        Assert.False(client.DebugAuthorized);
-        using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(2));
-        Task preview = client.PreviewAchievementNotificationAsync(cancellation.Token);
-        TrackerMessage request = TrackerMessageCodec.Deserialize(Encoding.UTF8.GetString(bytes.ToArray()).Trim());
-        Assert.Equal(GameplayCollectionProtocol.AchievementPreview, request.Command);
-        Assert.False(request.Payload.TryGetProperty(_conditionKey, out _));
-        Assert.Equal(64 * 64 * 4, request.Payload.GetProperty(_iconKey).GetProperty(_pixelsKey).GetBytesFromBase64().Length);
-        Assert.All(diagnostics.Entries, entry => Assert.True(entry.RawValue.Length < 256));
-        Assert.True(session.TryComplete(TrackerMessageFactory.CreateResponse(request.RequestId!, new { Queued = queued })));
-        if (queued)
-        {
-            await preview;
-        }
-        else
-        {
-            await Assert.ThrowsAsync<InvalidOperationException>(() => preview);
-        }
-    }
 }

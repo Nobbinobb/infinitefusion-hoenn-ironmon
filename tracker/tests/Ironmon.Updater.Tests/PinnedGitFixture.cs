@@ -29,7 +29,7 @@ public sealed class PinnedGitFixture : IAsyncLifetime
     {
         var archive = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, AssetRelativePath));
         if (!File.Exists(archive))
-            throw new FileNotFoundException("Run tools/Test-Updater.ps1 to provision the pinned integration-test archive.", archive);
+            throw new FileNotFoundException("Download the pinned MinGit archive as documented in tracker/README.md before running updater integration tests.", archive);
 
         Cache = new MinGitCache(_workspace.PathFor(CacheName), new FileArtifact(archive));
         Executable = await Cache.AcquireAsync();

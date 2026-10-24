@@ -6,19 +6,24 @@ namespace Ironmon.Tracker.App.Components.Pages;
 internal static class AchievementText
 {
     /// <summary>
-    /// Identifies the presentation-only notification preview action.
+    /// Identifies the accessible action opening one earned image.
     /// </summary>
-    internal const string Preview = "Achievements.Preview";
+    internal const string ViewArtwork = "Achievements.ViewArtwork";
 
     /// <summary>
-    /// Identifies the preview's save-loading and progress explanation.
+    /// Identifies the detail viewer's short context label.
     /// </summary>
-    internal const string PreviewHint = "Achievements.PreviewHint";
+    internal const string Artwork = "Achievements.Artwork";
 
     /// <summary>
-    /// Identifies a preview accepted by the connected game.
+    /// Identifies an active detail-image read.
     /// </summary>
-    internal const string PreviewSent = "Achievements.PreviewSent";
+    internal const string ArtworkLoading = "Achievements.ArtworkLoading";
+
+    /// <summary>
+    /// Identifies a missing or failed detail image without revealing locked artwork.
+    /// </summary>
+    internal const string ArtworkUnavailable = "Achievements.ArtworkUnavailable";
 
     /// <summary>
     /// Identifies the collection title.

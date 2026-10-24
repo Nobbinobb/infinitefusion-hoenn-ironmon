@@ -1,6 +1,6 @@
-using Ironmon.Sqlite.Querying;
-using Ironmon.Sqlite.Runtime;
-using Ironmon.Tracker.Collection;
+using Ironmon.Sqlite.Definitions;
+using Ironmon.Sqlite.Execution;
+using Ironmon.Tracker.Collection.Queries.Definitions;
 using Ironmon.Tracker.Tests.Collection;
 using Microsoft.Data.Sqlite;
 

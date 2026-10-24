@@ -14,8 +14,8 @@ namespace Ironmon.Sqlite.QueryGenerator;
 [Generator(LanguageNames.CSharp)]
 public sealed class SqliteMaintenanceGenerator : IIncrementalGenerator
 {
-    private const string _maintenanceAttribute = "Ironmon.Sqlite.Querying.SqliteMaintenanceAttribute";
-    private const string _scriptAttribute = "Ironmon.Sqlite.Querying.SqliteScriptAttribute";
+    private const string _maintenanceAttribute = "Ironmon.Sqlite.Definitions.SqliteMaintenanceAttribute";
+    private const string _scriptAttribute = "Ironmon.Sqlite.Definitions.SqliteScriptAttribute";
     private const string _category = "MaintenanceGeneration";
     private const string _diagnosticId = "ISQL002";
     private const string _messageFormat = "{0}";
@@ -37,13 +37,13 @@ public sealed class SqliteMaintenanceGenerator : IIncrementalGenerator
     private const string _stringExecution = "return (string)(command.ExecuteScalar() ?? throw new global::System.IO.InvalidDataException(\"SQLite did not return its requested native metadata.\"));";
     private const string _booleanExecution = "return global::System.Convert.ToInt64(command.ExecuteScalar(), global::System.Globalization.CultureInfo.InvariantCulture) != 0;";
     private const string _commandStart = "global::System.ArgumentNullException.ThrowIfNull(connection);\nusing global::Microsoft.Data.Sqlite.SqliteCommand command = connection.CreateCommand();\ncommand.Transaction = transaction;\ncommand.CommandText = ";
-    private const string _readObjects = "global::System.Collections.Generic.List<global::Ironmon.Sqlite.Querying.SqliteSchemaObject> result = [];\nusing global::Microsoft.Data.Sqlite.SqliteDataReader reader = command.ExecuteReader();\nwhile (reader.Read())\n    result.Add(new(reader.GetString(0), reader.GetString(1), reader.GetString(2)));\nreturn result;";
+    private const string _readObjects = "global::System.Collections.Generic.List<global::Ironmon.Sqlite.Definitions.SqliteSchemaObject> result = [];\nusing global::Microsoft.Data.Sqlite.SqliteDataReader reader = command.ExecuteReader();\nwhile (reader.Read())\n    result.Add(new(reader.GetString(0), reader.GetString(1), reader.GetString(2)));\nreturn result;";
     private const string _readNames = "global::System.Collections.Generic.List<string> result = [];\nusing global::Microsoft.Data.Sqlite.SqliteDataReader reader = command.ExecuteReader();\nwhile (reader.Read())\n    result.Add(reader.GetString(0));\nreturn result;";
-    private const string _readReferences = "global::System.Collections.Generic.List<global::Ironmon.Sqlite.Querying.SqliteForeignKeyReference> result = [];\nusing global::Microsoft.Data.Sqlite.SqliteDataReader reader = command.ExecuteReader();\nwhile (reader.Read())\n    result.Add(new(reader.GetString(0), reader.GetString(1)));\nreturn result;";
-    private const string _readColumns = "global::System.Collections.Generic.List<global::Ironmon.Sqlite.Querying.SqliteColumnInfo> result = [];\nusing global::Microsoft.Data.Sqlite.SqliteDataReader reader = command.ExecuteReader();\nwhile (reader.Read())\n    result.Add(new(reader.GetInt64(0), reader.GetString(1), reader.GetInt64(6)));\nreturn result;";
+    private const string _readReferences = "global::System.Collections.Generic.List<global::Ironmon.Sqlite.Definitions.SqliteForeignKeyReference> result = [];\nusing global::Microsoft.Data.Sqlite.SqliteDataReader reader = command.ExecuteReader();\nwhile (reader.Read())\n    result.Add(new(reader.GetString(0), reader.GetString(1)));\nreturn result;";
+    private const string _readColumns = "global::System.Collections.Generic.List<global::Ironmon.Sqlite.Definitions.SqliteColumnInfo> result = [];\nusing global::Microsoft.Data.Sqlite.SqliteDataReader reader = command.ExecuteReader();\nwhile (reader.Read())\n    result.Add(new(reader.GetInt64(0), reader.GetString(1), reader.GetInt64(6)));\nreturn result;";
     private const string _readRows = "global::System.Collections.Generic.List<object[]> result = [];\nusing global::Microsoft.Data.Sqlite.SqliteDataReader reader = command.ExecuteReader();\nwhile (reader.Read())\n{\n    object[] row = new object[reader.FieldCount];\n    reader.GetValues(row);\n    result.Add(row);\n}\nreturn result;";
     private const string _integrityCheck = "using global::Microsoft.Data.Sqlite.SqliteDataReader reader = command.ExecuteReader();\nif (reader.Read())\n    throw new global::System.IO.InvalidDataException($P2$);";
-    private const string _insertRows = "global::System.ArgumentNullException.ThrowIfNull($P3$);\nglobal::System.ArgumentNullException.ThrowIfNull($P4$);\nglobal::System.Collections.Generic.List<string> quotedColumns = [];\nglobal::System.Collections.Generic.List<string> parameterNames = [];\nforeach (global::Ironmon.Sqlite.Querying.SqliteColumnInfo column in $P3$)\n{\n    if (column.Hidden != 0 || column.Ordinal < 0 || column.Ordinal >= $P4$.LongLength)\n        throw new global::System.ArgumentException(\"A replacement row must supply every requested stored-column ordinal.\");\n\n    quotedColumns.Add(global::Ironmon.Sqlite.Querying.SqliteIdentifier.Quote(column.Name));\n    string parameter = \"$v\" + column.Ordinal.ToString(global::System.Globalization.CultureInfo.InvariantCulture);\n    parameterNames.Add(parameter);\n    command.Parameters.AddWithValue(parameter, $P4$[checked((int)column.Ordinal)] ?? global::System.DBNull.Value);\n}\nif (quotedColumns.Count == 0)\n    throw new global::System.ArgumentException(\"A replacement row must include at least one stored column.\");\n\ncommand.CommandText = \"INSERT INTO \" + global::Ironmon.Sqlite.Querying.SqliteIdentifier.Quote($P2$) + \"(\" + string.Join(\",\", quotedColumns) + \") VALUES(\" + string.Join(\",\", parameterNames) + \")\";\ncommand.ExecuteNonQuery();";
+    private const string _insertRows = "global::System.ArgumentNullException.ThrowIfNull($P3$);\nglobal::System.ArgumentNullException.ThrowIfNull($P4$);\nglobal::System.Collections.Generic.List<string> quotedColumns = [];\nglobal::System.Collections.Generic.List<string> parameterNames = [];\nforeach (global::Ironmon.Sqlite.Definitions.SqliteColumnInfo column in $P3$)\n{\n    if (column.Hidden != 0 || column.Ordinal < 0 || column.Ordinal >= $P4$.LongLength)\n        throw new global::System.ArgumentException(\"A replacement row must supply every requested stored-column ordinal.\");\n\n    quotedColumns.Add(global::Ironmon.Sqlite.Definitions.SqliteIdentifier.Quote(column.Name));\n    string parameter = \"$v\" + column.Ordinal.ToString(global::System.Globalization.CultureInfo.InvariantCulture);\n    parameterNames.Add(parameter);\n    command.Parameters.AddWithValue(parameter, $P4$[checked((int)column.Ordinal)] ?? global::System.DBNull.Value);\n}\nif (quotedColumns.Count == 0)\n    throw new global::System.ArgumentException(\"A replacement row must include at least one stored column.\");\n\ncommand.CommandText = \"INSERT INTO \" + global::Ironmon.Sqlite.Definitions.SqliteIdentifier.Quote($P2$) + \"(\" + string.Join(\",\", quotedColumns) + \") VALUES(\" + string.Join(\",\", parameterNames) + \")\";\ncommand.ExecuteNonQuery();";
     private const string _pathSeparator = "/";
     private const string _parentPathComponent = "..";
     private const string _currentPathComponent = ".";
@@ -60,13 +60,15 @@ public sealed class SqliteMaintenanceGenerator : IIncrementalGenerator
     private const string _stringType = "string";
     private const string _longType = "long";
     private const string _booleanType = "bool";
-    private const string _schemaObjectsType = "global::System.Collections.Generic.IReadOnlyList<global::Ironmon.Sqlite.Querying.SqliteSchemaObject>";
+    private const string _schemaObjectsType = "global::System.Collections.Generic.IReadOnlyList<global::Ironmon.Sqlite.Definitions.SqliteSchemaObject>";
     private const string _namesType = "global::System.Collections.Generic.IReadOnlyList<string>";
-    private const string _referencesType = "global::System.Collections.Generic.IReadOnlyList<global::Ironmon.Sqlite.Querying.SqliteForeignKeyReference>";
-    private const string _columnsType = "global::System.Collections.Generic.IReadOnlyList<global::Ironmon.Sqlite.Querying.SqliteColumnInfo>";
+    private const string _referencesType = "global::System.Collections.Generic.IReadOnlyList<global::Ironmon.Sqlite.Definitions.SqliteForeignKeyReference>";
+    private const string _columnsType = "global::System.Collections.Generic.IReadOnlyList<global::Ironmon.Sqlite.Definitions.SqliteColumnInfo>";
     private const string _rowsType = "global::System.Collections.Generic.IReadOnlyList<object[]>";
+    private const string _streamRowsType = "global::System.Collections.Generic.IEnumerable<object[]>";
+    private const string _streamRows = "using global::Microsoft.Data.Sqlite.SqliteDataReader reader = command.ExecuteReader();\nwhile (reader.Read())\n{\n    object[] values = new object[reader.FieldCount];\n    reader.GetValues(values);\n    yield return values;\n}";
     private const string _voidType = "void";
-    private const string _schemaObjectType = "global::Ironmon.Sqlite.Querying.SqliteSchemaObject";
+    private const string _schemaObjectType = "global::Ironmon.Sqlite.Definitions.SqliteSchemaObject";
     private const string _objectArrayType = "object[]";
     private const string _commandLocal = "command";
     private const string _readerLocal = "reader";
@@ -118,7 +120,7 @@ public sealed class SqliteMaintenanceGenerator : IIncrementalGenerator
     private const string _addParameterExpression = "command.Parameters.AddWithValue(";
     private const string _argumentSeparator = ", ";
     private const string _invocationEnd = ");\n";
-    private const string _quoteIdentifierExpression = "global::Ironmon.Sqlite.Querying.SqliteIdentifier.Quote(";
+    private const string _quoteIdentifierExpression = "global::Ironmon.Sqlite.Definitions.SqliteIdentifier.Quote(";
     private const string _closeInvocation = ")";
     private static readonly DiagnosticDescriptor _unsupported = new(_diagnosticId, "Unsupported SQLite maintenance declaration", _messageFormat, _category, DiagnosticSeverity.Error, true);
     private static readonly SymbolDisplayFormat _typeDisplay = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
@@ -228,7 +230,7 @@ public sealed class SqliteMaintenanceGenerator : IIncrementalGenerator
     /// <param name="method">The author-maintained typed partial declaration.</param>
     private static void ValidateIntrinsicSignature(int operation, IMethodSymbol method)
     {
-        if (operation < 0 || operation > 29)
+        if (operation < 0 || operation > 30)
             throw new InvalidOperationException("Unknown native SQLite maintenance operation.");
 
         string expectedReturn = operation switch
@@ -241,6 +243,7 @@ public sealed class SqliteMaintenanceGenerator : IIncrementalGenerator
             18 => _referencesType,
             19 => _columnsType,
             20 => _rowsType,
+            30 => _streamRowsType,
             _ => _voidType
         };
         if (method.ReturnType.ToDisplayString(_typeDisplay) != expectedReturn)
@@ -248,7 +251,7 @@ public sealed class SqliteMaintenanceGenerator : IIncrementalGenerator
 
         string[] extraTypes = operation switch
         {
-            4 or 18 or 19 or 20 or 21 or 22 or 25 or 29 => [_stringType],
+            4 or 18 or 19 or 20 or 21 or 22 or 25 or 29 or 30 => [_stringType],
             15 or 23 => [_stringType, _stringType],
             24 => [_schemaObjectType],
             26 => [_stringType, _stringType, _stringType],
@@ -272,7 +275,7 @@ public sealed class SqliteMaintenanceGenerator : IIncrementalGenerator
     /// <returns>The direct provider method body.</returns>
     private static string Intrinsic(int operation, IMethodSymbol method)
     {
-        int extra = operation switch { 4 or 18 or 19 or 20 or 21 or 22 or 24 or 25 or 29 => 1, 15 or 23 => 2, 26 or 27 or 28 => 3, _ => 0 };
+        int extra = operation switch { 4 or 18 or 19 or 20 or 21 or 22 or 24 or 25 or 29 or 30 => 1, 15 or 23 => 2, 26 or 27 or 28 => 3, _ => 0 };
         if (method.Parameters.Length != extra + 2)
             throw new InvalidOperationException("The native maintenance declaration has the wrong argument count.");
 
@@ -308,6 +311,7 @@ public sealed class SqliteMaintenanceGenerator : IIncrementalGenerator
             27 => Command(_emptyStringExpression, _insertRows),
             28 => Command(_referenceCountExpression + Quote(_argumentTwo) + _whereExpression + Quote(_argumentThree) + _referenceValueExpression, Bind(_valueParameter, _argumentFour) + _longExecution),
             29 => Fixed(_foreignKeyAuditSql, _integrityCheck),
+            30 => Command(_tableRowsExpression + Quote(_argumentTwo), _streamRows),
             _ => throw new InvalidOperationException("Unknown native SQLite maintenance operation.")
         };
     }

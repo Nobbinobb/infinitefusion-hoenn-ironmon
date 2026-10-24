@@ -123,7 +123,7 @@ public sealed partial class CollectionStoreTests
         Assert.True(Version.Parse(storage.GetProperty(_versionProperty).GetString()!) >= new Version(3, 51, 3));
         Assert.Equal(_pinnedNativeVersion, storage.GetProperty(_versionProperty).GetString());
         Assert.Equal(258, storage.GetProperty(_tablesProperty).GetProperty(_familiesTable).GetInt64());
-        Assert.Equal(84, storage.GetProperty(_tablesProperty).GetProperty(_groupsTable).GetInt64());
+        Assert.Equal(85, storage.GetProperty(_tablesProperty).GetProperty(_groupsTable).GetInt64());
         AssertIntegrity(directory.Path);
     }
 

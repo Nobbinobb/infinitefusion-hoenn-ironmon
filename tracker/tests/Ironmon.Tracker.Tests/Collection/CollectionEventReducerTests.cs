@@ -56,7 +56,7 @@ public sealed partial class CollectionEventReducerTests
         CollectionCatalogue catalogue = CollectionCatalogue.LoadDefault();
         Assert.Equal(258, catalogue.Families.Count);
         Assert.Equal(103, catalogue.Events.Count);
-        Assert.Equal(84, catalogue.DirectGroups.Count);
+        Assert.Equal(85, catalogue.DirectGroups.Count);
         Assert.Equal(19, catalogue.Relationships.Count);
         Assert.Equal(Enumerable.Range(1, 258), catalogue.Families.Select(family => family.Id));
         Assert.All(catalogue.Events, value => Assert.NotEmpty(catalogue.ForEvent(value.GetProperty(CollectionReducerTestTokens.Key).GetString()!)));

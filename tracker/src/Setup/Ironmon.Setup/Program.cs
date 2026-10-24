@@ -1,6 +1,5 @@
 using Ironmon.Setup.Core;
 using Ironmon.SpriteLibrary;
-using Ironmon.Tracker.Connection.Sprites;
 using Ironmon.Updater.Core;
 using Ironmon.Updater.Infrastructure;
 using System.IO;

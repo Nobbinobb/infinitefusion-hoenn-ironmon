@@ -8,12 +8,13 @@ module Ironmon
 
     class Toast
       HEIGHT = 64
-      MAXIMUM_WIDTH = 280
+      MAXIMUM_WIDTH = 340
       MARGIN = 8
-      ICON_SIZE = 48
+      ICON_SIZE = 50
+      ICON_INSET = (HEIGHT - ICON_SIZE) / 2
       TITLE_SIZE = 20
       TITLE_LINE_HEIGHT = 22
-      PANEL_ALPHA = 217
+      PANEL_ALPHA = Ironmon::OverlayStyle::PANEL_ALPHA
       SEPARATOR_X = 63
       TEXT_X = 77
       attr_reader :width, :height, :name
@@ -61,18 +62,15 @@ module Ironmon
 
       def draw(notice)
         bitmap = @sprite.bitmap
-        fill_rounded_rect(bitmap, 0, 0, @width, HEIGHT, 5, Color.new(67, 87, 106, PANEL_ALPHA))
-        fill_rounded_rect(bitmap, 1, 1, @width - 2, HEIGHT - 2, 4, Color.new(19, 26, 36, PANEL_ALPHA))
-        (1...SEPARATOR_X).each do |x|
-          fraction = (x - 1).to_f / (SEPARATOR_X - 2)
-          color = Color.new((26 - 7 * fraction).round, (40 - 14 * fraction).round, (53 - 17 * fraction).round, PANEL_ALPHA)
-          inset = 1 + rounded_inset(x - 1, @width - 2, 4)
-          bitmap.fill_rect(x, inset, 1, HEIGHT - inset * 2, color)
-        end
+        Ironmon::OverlayStyle.draw_panel(bitmap)
         bitmap.fill_rect(SEPARATOR_X, 12, 1, 40, Color.new(69, 103, 121, PANEL_ALPHA))
         icon = Bitmap.new(notice["icon_width"], notice["icon_height"])
         icon.raw_data = notice["pixels"]
-        bitmap.stretch_blt(Rect.new(8, 8, ICON_SIZE, ICON_SIZE), icon, icon.rect)
+        if icon.width == ICON_SIZE && icon.height == ICON_SIZE
+          bitmap.blt(ICON_INSET, ICON_INSET, icon, icon.rect)
+        else
+          bitmap.stretch_blt(Rect.new(ICON_INSET, ICON_INSET, ICON_SIZE, ICON_SIZE), icon, icon.rect)
+        end
         bitmap.font.name = MessageConfig.pbTryFonts("Arial")
         bitmap.font.size = TITLE_SIZE
         bitmap.font.bold = true
@@ -86,20 +84,6 @@ module Ironmon
         end
       ensure
         icon.dispose if icon && !icon.disposed?
-      end
-
-      def rounded_inset(position, length, radius)
-        edge = [position, length - 1 - position].min
-        return 0 if edge >= radius
-        distance = radius - edge - 0.5
-        return (radius - Math.sqrt(radius * radius - distance * distance)).round
-      end
-
-      def fill_rounded_rect(bitmap, x, y, width, height, radius, color)
-        height.times do |row|
-          inset = rounded_inset(row, height, radius)
-          bitmap.fill_rect(x + inset, y + row, width - inset * 2, 1, color)
-        end
       end
 
       def wrapped_lines(bitmap, text, available, maximum_lines)
@@ -131,6 +115,87 @@ module Ironmon
       end
     end
 
+    class OverlayToast
+      LEASE_SECONDS = 0.75
+      attr_reader :presentation_id
+
+      def initialize(notice, now)
+        @notice = notice
+        @connection = Ironmon.tracker_connection
+        @presentation_id = Random.new.bytes(16).unpack1("H*")
+        @pending_since = now
+        @last_tick = now
+        @elapsed = 0.0
+        @visible = false
+        send_start(now)
+      end
+
+      def disposed?; return !!@disposed; end
+
+      def accept_overlay(payload, now)
+        return if @fallback || @disposed || payload["presentation_id"] != @presentation_id
+        @ready = payload["ready"] == true
+        @visible = payload["visible"] == true
+        @last_acknowledged = now
+      end
+
+      def update(now)
+        return @fallback.update(now) if @fallback
+        if @ready.nil?
+          send_start(now) if !@last_start_at || now - @last_start_at >= 0.2
+          fallback(now) if now - @pending_since >= LEASE_SECONDS
+          return false
+        end
+        if !@ready || !@last_acknowledged || now - @last_acknowledged >= LEASE_SECONDS
+          fallback(now)
+          return false
+        end
+        if !@started
+          @started = true
+          @last_tick = now
+          send_frame
+          return false
+        end
+        @elapsed += [now - @last_tick, 0.0].max if @visible
+        @last_tick = now
+        send_frame
+        return @elapsed >= DISPLAY_SECONDS
+      end
+
+      def dispose
+        return if @disposed
+        send_stop
+        @fallback.dispose if @fallback
+        @disposed = true
+      end
+
+      def fallback(now)
+        send_stop
+        @fallback = Toast.new(@notice, now)
+      end
+
+      def send_start(now)
+        return if !@connection || !@connection.session_ready? || !@connection.output_drained?
+        payload = { "presentation_id" => @presentation_id, "achievement_id" => @notice["id"] }
+        @sent_start = true if @connection.send_event("achievement_overlay_start", payload)
+        @last_start_at = now
+      end
+
+      def send_frame
+        return if !@connection || !@connection.session_ready? || !@connection.output_drained?
+        @connection.send_event("achievement_overlay_frame", { "presentation_id" => @presentation_id, "elapsed" => [@elapsed, DISPLAY_SECONDS].min })
+      end
+
+      def send_stop
+        return if @stopped || !@sent_start || !@connection || !@connection.session_ready?
+        @stopped = @connection.send_event("achievement_overlay_stop", { "presentation_id" => @presentation_id })
+      end
+    end
+
+    def self.overlay_ready(payload)
+      @window.accept_overlay(payload, Ironmon::GameplayCollection.clock) if @window && @window.respond_to?(:accept_overlay)
+    end
+
     def self.decode_notice(notice)
       return nil if !notice.is_a?(Hash)
       name, icon = notice.values_at("name", "icon")
@@ -154,7 +219,8 @@ module Ironmon
         id = notice["id"]
         next if !id.is_a?(String) || id !~ /\A[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\z/
         id = id.downcase
-        if @known[id] == :displayed
+        if !Ironmon.feature_enabled?("achievement_popups") || @known[id] == :displayed
+          @known[id] = :displayed
           @displayed[id] = true
         elsif !@known[id] && @queue.length < MAXIMUM_QUEUE
           decoded = decode_notice(notice)
@@ -165,25 +231,33 @@ module Ironmon
       end
     end
 
-    def self.preview(payload)
-      return false if !Ironmon::GameplayCollection::World.loaded?
-      @queue ||= []
-      return false if @queue.length >= MAXIMUM_QUEUE || (@current && @current["preview"]) || @queue.any? { |notice| notice["preview"] }
-      decoded = decode_notice(payload)
-      return false if !decoded
-      @queue << decoded.merge("preview" => true)
-      return true
+    def self.suppress_notifications
+      return if Ironmon.feature_enabled?("achievement_popups")
+      @known ||= {}
+      @displayed ||= {}
+      notices = @queue || []
+      if @current
+        @window.dispose if @window
+        @window = nil
+        notices << @current
+        @current = nil
+      end
+      notices.each do |notice|
+        @known[notice["id"]] = :displayed
+        @displayed[notice["id"]] = true
+      end
+      @queue.clear if @queue
     end
 
     def self.tick(now = Ironmon::GameplayCollection.clock)
+      suppress_notifications
       if !Ironmon::GameplayCollection::World.loaded?
         if @window
           @window.dispose
           @window = nil
-          @queue.unshift(@current) if !@current["preview"]
+          @queue.unshift(@current)
           @current = nil
         end
-        @queue.reject! { |notice| notice["preview"] } if @queue
         return
       end
       connection = Ironmon.tracker_connection
@@ -198,15 +272,14 @@ module Ironmon
         if @window.update(now)
           @window.dispose
           @window = nil
-          if !@current["preview"]
-            @known[@current["id"]] = :displayed
-            (@displayed ||= {})[@current["id"]] = true
-          end
+          @known[@current["id"]] = :displayed
+          (@displayed ||= {})[@current["id"]] = true
           @current = nil
         end
       elsif @queue && !@queue.empty? && (!@retry_at || now >= @retry_at)
         @current = @queue.shift
-        @window = Toast.new(@current, now)
+        use_overlay = connection && connection.respond_to?(:achievement_overlay_supported?) && connection.achievement_overlay_supported?
+        @window = use_overlay ? OverlayToast.new(@current, now) : Toast.new(@current, now)
         @shown_at = now
         @last_error = nil
         @retry_at = nil
@@ -215,7 +288,7 @@ module Ironmon
       @last_error = "#{error.class}: #{error.message}"
       @window.dispose if @window && !@window.disposed?
       @window = nil
-      @queue.unshift(@current) if @current && !@current["preview"]
+      @queue.unshift(@current) if @current
       @current = nil
       @retry_at = now + POLL_SECONDS
       echoln "Ironmon achievement notification: #{@last_error}"

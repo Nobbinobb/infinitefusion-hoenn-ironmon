@@ -119,11 +119,14 @@
   { "source": "presentation/Battle_Quick_Items.rb", "output": "023_Battle_Quick_Items.rb" },
   { "source": "presentation/Battle_Run_Hotkey.rb", "output": "023_Battle_Run_Hotkey.rb" },
   { "source": "presentation/Hidden_Item_Markers.rb", "output": "023_Hidden_Item_Markers.rb" },
+  { "source": "presentation/Speed_Up.rb", "output": "023_Speed_Up.rb" },
   { "source": "presentation/Sprite_Performance_Fixes.rb", "output": "023_Sprite_Performance_Fixes.rb" },
   { "source": "presentation/Tracker_Starter_Selection.rb", "output": "023_Tracker_Starter_Selection.rb" },
   { "source": "compatibility/Gameplay_073.rb", "output": "024_Release_073_Gameplay.rb" },
+  { "source": "presentation/Overlay_Style.rb", "output": "025_Overlay_Style.rb" },
   { "source": "presentation/Repel_Overlay.rb", "output": "025_Repel_Overlay.rb" },
   { "source": "run/Seeded_Run_Import.rb", "output": "025_Seeded_Run_Import.rb" },
+  { "source": "presentation/Speed_Overlay.rb", "output": "025_Speed_Overlay.rb" },
   { "source": "cosmetics/Catalog.rb", "output": "026_Cosmetics_Catalog.rb" },
   { "source": "cosmetics/Profile.rb", "output": "026_Cosmetics_Profile.rb" },
   { "source": "cosmetics/Runtime.rb", "output": "026_Cosmetics_Runtime.rb" },
@@ -147,5 +150,6 @@
   { "source": "collection/Native_Evidence.rb", "output": "030_Collection_14_Native_Evidence.rb" },
   { "source": "collection/Source_Context.rb", "output": "030_Collection_15_Source_Context.rb" },
   { "source": "collection/Item_Identity.rb", "output": "030_Collection_16_Item_Identity.rb" },
-  { "source": "presentation/Achievements.rb", "output": "031_Achievements.rb" }
+  { "source": "presentation/Achievements.rb", "output": "031_Achievements.rb" },
+  { "source": "run/Alpha_Completion.rb", "output": "032_Alpha_Completion.rb" }
 ]

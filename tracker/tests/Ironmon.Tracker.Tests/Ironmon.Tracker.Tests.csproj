@@ -14,12 +14,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <TestDataInput Include="..\..\..\data\type_coverage.json" />
-    <TestDataInput Include="..\..\..\data\generation_custom_fusion_pool.bin" />
-    <TestDataInput Include="..\..\..\data\generation_profile.json" />
+    <TestDataInput Condition="'$(IronmonQuickTests)' != 'true'" Include="..\..\..\data\type_coverage.json" />
+    <TestDataInput Condition="'$(IronmonQuickTests)' != 'true'" Include="..\..\..\data\generation_custom_fusion_pool.bin" />
+    <TestDataInput Condition="'$(IronmonQuickTests)' != 'true'" Include="..\..\..\data\generation_profile.json" />
     <TestDataInput Include="..\..\..\tests\fixtures\custom-fusion-pool-v1.json" />
     <TestDataInput Include="..\..\..\tests\fixtures\generation-profile-v1.json" />
     <TestDataInput Include="..\..\..\tests\fixtures\fusion-stats-v2.json" />
+    <TestDataInput Include="..\..\..\tests\fixtures\alpha-completion-native.json" />
     <ProjectReference Include="..\..\src\Shared\Ironmon.Tracker.Access\Ironmon.Tracker.Access.csproj" />
     <ProjectReference Include="..\..\src\Tracker\Ironmon.Tracker.Collection\Ironmon.Tracker.Collection.csproj" />
     <ProjectReference Include="..\..\src\Tracker\Ironmon.Tracker.Connection\Ironmon.Tracker.Connection.csproj" />

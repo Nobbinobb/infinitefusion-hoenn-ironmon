@@ -1,6 +1,7 @@
-using Ironmon.Sqlite.Querying;
+using Ironmon.Sqlite.Definitions;
+using Ironmon.Tracker.Collection.Queries.Tables;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Queries.Definitions;
 
 /// <summary>
 /// Defines generated identity storage operations.

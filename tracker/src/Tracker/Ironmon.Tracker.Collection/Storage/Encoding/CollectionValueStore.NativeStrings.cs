@@ -1,10 +1,10 @@
+using Ironmon.Tracker.Collection.Queries.Definitions;
+using Ironmon.Tracker.Collection.Queries.Results;
 using System.Globalization;
 using System.Numerics;
 using System.Security.Cryptography;
-using System.Text;
-using Microsoft.Data.Sqlite;
 
-namespace Ironmon.Tracker.Collection;
+namespace Ironmon.Tracker.Collection.Storage.Encoding;
 
 /// <summary>
 /// Shares source reference components and stores hexadecimal native strings as exact binary bytes.
@@ -62,7 +62,7 @@ internal sealed partial class CollectionValueStore
         if (identities.TryGetValue(text, out long existing))
             return existing;
 
-        byte[] payload = Encoding.UTF8.GetBytes(text);
+        byte[] payload = System.Text.Encoding.UTF8.GetBytes(text);
         long id = CollectionQueries.InsertValue(connection, transaction(), (int)ValueKind.String, payload, SHA256.HashData(payload)[..8]);
         identities[text] = id;
         pending.Add((id, text));
@@ -96,11 +96,11 @@ internal sealed partial class CollectionValueStore
             WriteUnsigned(output, resolve(text[33..separator]));
             output.Write(CollectionEncoding.Unsigned(BigInteger.Parse(text.AsSpan(separator + 1), NumberStyles.None, CultureInfo.InvariantCulture)));
             byte[] compact = output.ToArray();
-            if (compact.Length < Encoding.UTF8.GetByteCount(text))
+            if (compact.Length < System.Text.Encoding.UTF8.GetByteCount(text))
                 return compact;
         }
 
-        return Encoding.UTF8.GetBytes(text);
+        return System.Text.Encoding.UTF8.GetBytes(text);
     }
 
     /// <summary>
@@ -113,7 +113,7 @@ internal sealed partial class CollectionValueStore
     {
         GuardDepth(depth);
         if (payload.Length == 0 || payload[0] != _nativeStringMarker)
-            return Encoding.UTF8.GetString(payload);
+            return System.Text.Encoding.UTF8.GetString(payload);
 
         if (payload.Length < 3)
             throw new InvalidDataException("A compact native string is truncated.");

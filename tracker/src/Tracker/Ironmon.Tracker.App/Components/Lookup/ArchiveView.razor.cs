@@ -15,6 +15,8 @@ public partial class ArchiveView : IDisposable
     private ArchiveSection _selectedSection = ArchiveSection.Summary;
     private TrackerConnectionStatus _connectionStatus;
     private bool _showHistory;
+    private string? _historySpeciesId;
+    private long _historyLookupVersion;
 
     /// <summary>
     /// Gets or initializes the completed-run recipe archive.
@@ -80,6 +82,9 @@ public partial class ArchiveView : IDisposable
         if (!_recipes.Any(recipe => recipe.RunId == runId))
             return;
 
+        if (_selection.SelectedRunId != runId)
+            _historySpeciesId = null;
+
         _selection.Select(runId);
         _selection.SetExpanded(true);
         _showHistory = false;
@@ -109,6 +114,20 @@ public partial class ArchiveView : IDisposable
     /// <param name="section">The selected section.</param>
     private void SelectSection(ArchiveSection section)
         => _selectedSection = section;
+
+    /// <summary>
+    /// Opens a recorded runner directly in the selected run's normal Pokemon tab, including repeated visits.
+    /// </summary>
+    /// <param name="speciesId">The retained species and form identity to inspect.</param>
+    private void OpenHistoryPokemon(string speciesId)
+    {
+        if (string.IsNullOrWhiteSpace(speciesId) || GetSelectedRecipe() is null)
+            return;
+
+        _historySpeciesId = speciesId;
+        _historyLookupVersion++;
+        _selectedSection = ArchiveSection.Pokemon;
+    }
 
     /// <summary>
     /// Gets the localized name of one Archive section.
@@ -141,8 +160,11 @@ public partial class ArchiveView : IDisposable
     /// <param name="requestedRunId">An explicitly requested completed run.</param>
     private void RefreshRecipes(string? requestedRunId = null)
     {
+        string? previous = _selection.SelectedRunId;
         _recipes = CompletedRuns.Recipes;
         _selection.Refresh([.. _recipes.Select(recipe => recipe.RunId)], requestedRunId);
+        if (previous != _selection.SelectedRunId)
+            _historySpeciesId = null;
     }
 
     /// <summary>

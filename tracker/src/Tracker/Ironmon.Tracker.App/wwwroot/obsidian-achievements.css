@@ -24,10 +24,13 @@
 .achievement-list { list-style:none; margin:0; padding:0; }
 .achievement-row { display:grid; grid-template-columns:50px minmax(0,1fr); column-gap:12px; align-items:center; height:100px; padding:8px 7px 8px 1px; border-bottom:1px solid #222b38; }
 .achievement-earned-icon { display:block; width:50px; height:50px; object-fit:contain; }
-.achievement-preview-controls { display:flex; align-items:center; flex:none; flex-wrap:wrap; gap:8px; margin-top:10px; }
-.achievement-preview-controls .achievement-state-action { flex:none; margin:0; }
-.achievement-preview-controls span,.achievement-preview-status { margin:0; color:var(--muted); font-size:11px; line-height:1.5; }
-.achievement-preview-controls button:disabled { opacity:.5; cursor:default; }
+.achievement-artwork-button { display:block; width:50px; height:50px; padding:0; border:0; border-radius:5px; background:transparent; cursor:zoom-in; }
+.achievement-artwork-button:hover { background:#ffffff0a; }
+.achievement-artwork-button:focus-visible { outline:2px solid var(--accent-soft); outline-offset:4px; }
+.obsidian .detail-panel.achievement-artwork-dialog { width:min(100%,568px); max-width:568px; }
+.achievement-artwork-canvas { display:grid; place-items:center; min-height:180px; }
+.achievement-artwork-image { display:block; width:min(100%,512px); height:auto; max-height:calc(100dvh - 190px); object-fit:contain; image-rendering:auto; }
+.achievement-artwork-status { margin:0; padding:28px 12px; color:var(--muted); text-align:center; font-size:13px; }
 .achievement-details { min-width:0; }
 .achievement-row-heading { display:flex; align-items:flex-start; gap:8px; min-width:0; }
 .achievement-row-heading h2 { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden; flex:1; min-width:0; margin:0; font-size:13px; font-weight:600; line-height:1.4; overflow-wrap:anywhere; }

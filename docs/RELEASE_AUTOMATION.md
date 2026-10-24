@@ -7,10 +7,15 @@ metadata, and signing details, see the [updater release guide](guides/UPDATER_RE
 ## Pull requests
 
 `tracker-ci.yml` runs for PR openings, updates, reopenings, and ready-for-review
-events, including drafts. Ordinary PRs validate current generated catalogs,
-bundled-game behavior, core tracker tests, and Windows app tests. A version
-increase selects the full release gate and package build instead. `PR validation`
-and `Release readiness` report the outcome of the selected path.
+events, including drafts. Routine PRs run important native C# smoke tests,
+bundled Ruby smoke tests, offline Python sprite tests, release metadata checks,
+and upstream snapshots.
+They do not generate catalogs or run complete regression suites. The Ruby job
+caches the pinned runtime and renderer, refreshes verified metadata, and loads
+canonical source in an owned process. Full C# hosted validation with Ruby smoke
+is an explicit manual choice. Developers run full local validation
+before creating a PR. A version increase does not build a candidate on every
+PR update; approved publication prepares and validates the release on `main`.
 
 For a release PR:
 
@@ -20,8 +25,8 @@ For a release PR:
 2. Add `docs/releases/RELEASE_NOTES_<version>.md` headed `# Ironmon <version>`.
    Update the player version references in the repository README,
    `docs/DISTRIBUTION_README.md`, and `docs/guides/INSTALLATION.md`.
-3. Review the candidate artifacts, test results, release notes, and fusion-pool
-   membership comparison before merging. Ordinary feature and fix PRs keep
+3. Review local full-test evidence and release notes before merging. Review the
+   generated candidate artifacts and fusion-pool comparison before publication. Ordinary feature and fix PRs keep
    their version unchanged.
 
 Build and publication permissions remain separate. PR code runs with read-only
@@ -88,6 +93,8 @@ Workflow files define artifact retention; download evidence before it expires.
 Use an isolated game checkout for local release validation: the default build
 commands synchronize scripts into the parent game installation.
 
-Offline workflow checks are `tools/ci/Test-ReleaseAutomation.ps1`,
-`Test-ReleasePublication.ps1`, `Test-UpstreamWatch.ps1`, and
-`Test-GenerationCache.ps1`. They use temporary fixtures and do not publish.
+
+Native C# tests are invoked directly with `dotnet test`. PowerShell regression
+scripts and their offline automation fixtures have been removed. An xUnit host
+executes the four-group native Ruby smoke entry point; larger Ruby regressions
+remain separate.
