@@ -65,11 +65,11 @@ public sealed class SetupWindowTests
     /// <summary>
     /// Disables the smaller package on a clean machine while keeping its help keyboard-accessible and the default usable.
     /// </summary>
-    /// <param name="available">Whether the matching x64 Desktop Runtime was detected.</param>
+    /// <param name="available">Whether the matching x64 core runtime was detected.</param>
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task RuntimeRequiredChoiceReflectsTheInstalledDesktopRuntime(bool available)
+    public async Task RuntimeRequiredChoiceReflectsTheInstalledCoreRuntime(bool available)
     {
         using var fixture = new TrackerUpdateTestFixture();
         using var sprites = new CustomSpriteSheetInstaller();
@@ -627,7 +627,7 @@ public sealed class SetupWindowTests
     private sealed class Platform : ISetupPlatform
     {
         /// <summary>
-        /// Gets or sets whether the rendering fixture has the matching Desktop Runtime.
+        /// Gets or sets whether the rendering fixture has the matching core runtime.
         /// </summary>
         public bool TrackerRuntimeAvailable { get; set; } = true;
 

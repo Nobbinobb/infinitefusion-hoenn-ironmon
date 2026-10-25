@@ -1633,7 +1633,7 @@
     <value>Close Infinite Fusion, the tracker, and the Infinite Fusion launcher or installer. This operation will continue automatically.</value>
   </data>
   <data name="SetupTrackerRuntimeUnavailable" xml:space="preserve">
-    <value>Microsoft .NET 10 Desktop Runtime for Windows x64 was not found. Choose Runtime included, or install the x64 Desktop Runtime yourself and restart Setup to enable this smaller package. The standard .NET Runtime, x86 runtime, and other major versions do not meet this requirement.</value>
+    <value>Microsoft .NET 10 Runtime for Windows x64 was not found. Choose Runtime included, or install the x64 .NET 10 Runtime yourself and restart Setup to enable this smaller package. The Desktop Runtime also includes the required runtime. The x86 runtime and other major versions do not meet this requirement.</value>
   </data>
   <data name="SetupTrackerRuntimeHelp" xml:space="preserve">
     <value>Why is Runtime required unavailable?</value>

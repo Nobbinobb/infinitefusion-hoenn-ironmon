@@ -10,7 +10,7 @@ namespace Ironmon.Setup.Core;
 public interface ISetupPlatform
 {
     /// <summary>
-    /// Gets whether the matching Windows x64 .NET Desktop Runtime is available for the smaller tracker package.
+    /// Gets whether the matching Windows x64 .NET Runtime is available for the smaller tracker package.
     /// </summary>
     bool TrackerRuntimeAvailable { get; }
 

@@ -101,6 +101,8 @@ accurate world lookup.
   packs rather than loose image folders.
 - Compact in-game notifications show the earned icon and title, queue unlocks
   individually, and follow the game window's position and display size.
+  They use a native Windows overlay without WPF, retaining sharp 50-, 75-, and
+  100-pixel artwork, transparency, click-through behavior, and game-controlled timing.
 - Compatible achievement-definition and artwork updates retain earned identities
   and original unlock dates. Collection begins when the new recorder is used;
   importing a seed does not recreate older, unrecorded gameplay.
@@ -192,7 +194,7 @@ accurate world lookup.
 
 ## Installation, documentation, and technical changes
 
-- Setup detects the required installed Windows x64 .NET Desktop Runtime before
+- Setup detects the required installed Windows x64 .NET Runtime before
   enabling the smaller runtime-required package and explains missing prerequisites.
   The standard package includes its runtime; WebView2 remains a separate prerequisite.
 - Durable journal replacement and verified directory promotion retry short Windows
@@ -229,7 +231,7 @@ the complete matching ZIP. Changed program files may need confirmation and backu
 a different required game revision may require a fresh test folder.
 
 The standard ZIP includes .NET; the smaller runtime-required ZIP needs the Windows
-x64 .NET 10 Desktop Runtime. `SHA256SUMS.txt` lists the current download and metadata
+x64 .NET 10 Runtime; the Desktop Runtime is unnecessary. `SHA256SUMS.txt` lists the current download and metadata
 hashes. Previously downloaded files do not change automatically. After testing is
 accepted, the exact tested assets can be frozen and promoted to stable without
 rebuilding them.

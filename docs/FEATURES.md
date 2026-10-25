@@ -365,7 +365,7 @@ Details: [Cosmetic wardrobe](IRONMON_MECHANICS.html#shared-cosmetic-wardrobe).
 - Standalone **Setup** downloads and installs the required game and mod, or reuses
   a supported installation, without requiring a separate Git installation.
 - Available package types include the bundled-runtime tracker and the smaller
-  package for an installed Windows x64 .NET 10 Desktop Runtime.
+  package for an installed Windows x64 .NET 10 Runtime.
 - Setup checks runtime availability, offers WebView2 when needed, and can install
   sprite sheets and a desktop shortcut.
 - Advanced release selection uses available signed metadata and matching game revisions.

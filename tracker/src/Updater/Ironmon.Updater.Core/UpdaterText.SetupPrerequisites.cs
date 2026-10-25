@@ -6,7 +6,7 @@ namespace Ironmon.Updater.Core;
 public static partial class UpdaterText
 {
     /// <summary>
-    /// Gets the missing .NET Desktop Runtime explanation and restart instructions.
+    /// Gets the missing .NET Runtime explanation and restart instructions.
     /// </summary>
     public static string SetupTrackerRuntimeUnavailable => Get(nameof(SetupTrackerRuntimeUnavailable));
 
