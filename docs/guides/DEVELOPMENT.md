@@ -65,7 +65,8 @@ the settings file and pass `--filter Category=Network` together with
 `TreatNoTestsAsError` rejects accidental empty selections.
 
 The native Ruby entry point is `tests/runtime/Quick.rb`, launched by the ordinary
-xUnit test `Runtime/BundledRubySmokeTests.cs`. It checks current-source startup,
+xUnit test `Runtime/BundledRubySmokeTests.cs`. It checks current-source and
+collector startup with both LF archive and CRLF Windows scripts,
 deterministic hashing, battle Run behavior, and feature defaults/settings,
 including BST/favorites, input suppression, overlays, and achievement notices.
 It uses the bundled executable in an owned fixture, isolated save data, base
@@ -92,7 +93,7 @@ is refreshed and renderer hashes are verified on each run. Cold cache setup can
 still take longer than the smoke tests themselves.
 
 The larger Ruby regression files remain under `tests/runtime`; this smoke entry
-point deliberately selects only the four groups above. It does not restore the
+point deliberately selects only the five groups above. It does not restore the
 removed PowerShell harnesses or automatically run long gameplay, generation,
 or simulation suites. Native UI and clean-machine acceptance remain separate.
 

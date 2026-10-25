@@ -371,6 +371,7 @@ module Ironmon
     def self.metrics
       return {
         "schema_version" => SCHEMA_VERSION, "status" => @last_error ? "error" : "active",
+        "capture_disabled" => @disabled == true, "capture_suspended" => @capture_suspended == true,
         "capture_events" => @capture_count || 0, "capture_seconds" => @capture_seconds || 0.0,
         "last_error" => @last_error, "journal" => @journal ? @journal.metrics : nil
       }

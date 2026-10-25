@@ -7,17 +7,18 @@ module Ironmon
     TRANSPORT_MAXIMUM_BATCH_BYTES = 16_777_216
 
     def self.transport_tick(connection)
-      return if !@journal || !connection.session_ready? || !connection.collection_supported?
+      return if !connection.session_ready? || !connection.collection_supported?
       now = clock
       return if !connection.output_drained?
-      if @transfer && @transfer["acknowledged"]
-        return if !journal.acknowledged?(@transfer["stream_id"], @transfer["last_sequence"])
-        @transfer = nil
-      end
       if !@status_sent_at || now - @status_sent_at >= 10.0
         connection.send_event("collection_status", metrics.merge("transport_error" => @transport_error))
         @status_sent_at = now
         return
+      end
+      return if !@journal
+      if @transfer && @transfer["acknowledged"]
+        return if !journal.acknowledged?(@transfer["stream_id"], @transfer["last_sequence"])
+        @transfer = nil
       end
       if @transfer && now < @transfer["next_send_at"]
         return

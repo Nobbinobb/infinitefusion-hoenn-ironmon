@@ -21,9 +21,14 @@ def ruby(value):
     return str(value)
 
 
+def read_source(path):
+    """Use the same LF source identity for archived and Windows checkout scripts."""
+    return path.read_bytes().replace(b"\r\n", b"\n")
+
+
 def definition(root, file, owner, method, kind, reasons, *, accuracy=False, locals=False):
     """Require an exact reviewed branch count and retain the source digest."""
-    source = (root / file).read_bytes()
+    source = read_source(root / file)
     lines = source.decode("utf-8-sig").splitlines()
     current = None
     candidates = []
@@ -151,7 +156,7 @@ def main():
         relative = file.relative_to(root).as_posix()
         if relative.startswith(("997", "998", "999")):
             continue
-        raw = file.read_bytes()
+        raw = read_source(file)
         lines = raw.decode("utf-8-sig").splitlines()
         owner, method, handler = "", "", None
         found = {}
@@ -187,7 +192,7 @@ def main():
         ("EORGainItemAbility", "HARVEST", "battler.item = battler.recycleItem", 'ItemIdentity.prepare_recovery(battler,battler,"harvest")'),
         ("EORGainItemAbility", "PICKUP", "battler.item = foundItem", 'ItemIdentity.prepare_recovery(fromBattler,battler,"pickup")'),
     ]:
-        source = (root / abilities).read_bytes()
+        source = read_source(root / abilities)
         lines = source.decode("utf-8-sig").splitlines()
         start = next(i for i, line in enumerate(lines) if f".add(:{identifier}," in line)
         registry = re.search(r"BattleHandlers::(\w+)\.add", lines[start])[1]

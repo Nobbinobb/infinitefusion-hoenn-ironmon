@@ -32,6 +32,7 @@ begin
   $ironmon_battle_run_hotkey_test_output_path = File.join(output_root, "battle-run.txt")
   $ironmon_feature_settings_result = File.join(output_root, "features.txt")
   [
+    ["collection startup", "Collection-Startup.rb"],
     ["deterministic hashing", "Deterministic-Hashing.rb"],
     ["UTF-8 tracker text", "Tracker-JSON.rb"],
     ["battle Run shortcut", "Battle-Run-Hotkey.rb"],
