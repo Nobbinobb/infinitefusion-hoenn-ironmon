@@ -147,7 +147,7 @@ foreach ($asset in $assets) {
 }
 if ($PrepareTest) {
   if (-not $verified.draft -or -not $verified.prerelease -or $verified.immutable -or $verified.target_commitish -cne $SourceCommit) { throw 'Test draft identity or publication state changed during preparation.' }
-  "Prepared signed test draft $tag from approved source $SourceCommit. All seven asset digests were verified. Publish it as a prerelease only after disabling repository release immutability; do not mark it latest. Freezing and stable promotion require a separate explicit action after testing." >> $env:GITHUB_STEP_SUMMARY
+  "Prepared signed test draft $tag from approved source $SourceCommit. All seven asset digests were verified. Publish it as a prerelease only after disabling repository release immutability; leave that policy disabled throughout testing and do not mark it latest. Freezing and stable promotion require a separate explicit action after testing." >> $env:GITHUB_STEP_SUMMARY
 } else {
   if ($verified.draft) { gh release edit $tag --repo $env:GITHUB_REPOSITORY --draft=false --latest }
   "Published $tag from approved source $SourceCommit using the verified candidate bytes." >> $env:GITHUB_STEP_SUMMARY

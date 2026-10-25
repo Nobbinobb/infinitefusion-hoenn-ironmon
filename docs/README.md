@@ -30,6 +30,7 @@ not maintained guides. Their generators are listed in the tools index.
 
 ## Recent releases
 
+- [0.10.0 test release](releases/RELEASE_NOTES_0.10.0.md): fusion generation, wardrobe, achievements, and a native achievement overlay.
 - [0.8.15](releases/RELEASE_NOTES_0.8.15.md): progress stays visible while update details scroll.
 - [0.8.14](releases/RELEASE_NOTES_0.8.14.md): fresh startup checks, update version selection, and automatic updater closure.
 - [0.8.13](releases/RELEASE_NOTES_0.8.13.md): stable Setup filename and verified historical version selection.

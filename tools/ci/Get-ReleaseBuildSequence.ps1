@@ -11,11 +11,13 @@ $PSNativeCommandUseErrorActionPreference = $true
 . (Join-Path $PSScriptRoot 'UpdateArtifacts.ps1')
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $trust = Join-Path $projectRoot 'resources/updater/trusted-keys.json'
-$sequence = 1L
+# Sequence 9 was issued for the withdrawn 0.9.0 test release. Removing its
+# public release must not allow that signed sequence or helper identity to recur.
+$sequence = 10L
 if ($HistoryDirectory -and (Test-Path -LiteralPath (Join-Path $HistoryDirectory 'update-manifest.json'))) {
   Invoke-UpdateCandidateTool $Tool @('verify', $HistoryDirectory, $trust, 'history') | Out-Null
   $previous = Get-Content -LiteralPath (Join-Path $HistoryDirectory 'update-manifest.json') -Raw | ConvertFrom-Json
-  $sequence = [long]$previous.releaseSequence + 1
+  $sequence = [Math]::Max($sequence, ([long]$previous.releaseSequence + 1))
 }
 if ($env:GITHUB_ACTIONS -eq 'true') {
   $repository = 'Nobbinobb/infinitefusion-hoenn-ironmon'
