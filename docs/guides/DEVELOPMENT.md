@@ -73,6 +73,12 @@ compiled data, and small window-skin assets. It never rewrites the installed
 loader or generates gameplay catalogs. Logs and per-group timing stay in ignored
 `data/ruby-smoke`. The owned engine is stopped on failure or timeout.
 
+Native smoke, rival, and wardrobe tests launch their disposable engines from
+short GUID directories under ignored `data/n` and remove them afterward. Keep
+the engine separate from the named evidence directories: the bundled engine
+fails to read configuration in long launch paths, including the former nested
+release-runner paths. A path guard fails immediately if the checkout is too deep.
+
 ```powershell
 dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj -c Release --settings tracker/tests/Quick.runsettings --filter Category=BundledRuby -p:IronmonQuickTests=true --maxcpucount:1
 ```
