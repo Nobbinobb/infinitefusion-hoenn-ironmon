@@ -1,7 +1,7 @@
 # Release automation
 
 The workflows in [`.github/workflows`](../.github/workflows/) validate pull
-requests, build release candidates, and publish approved versions. For package,
+requests, build release candidates, and prepare signed test releases. For package,
 metadata, and signing details, see the [updater release guide](guides/UPDATER_RELEASES.md).
 
 ## Pull requests
@@ -46,9 +46,10 @@ its identity. Restored files must match their manifest hashes. Tests and package
 assembly still run; executables, signing material, and test results are not
 restored from this cache.
 
-Candidates carry source and upstream identities. Publication reuses their bytes
-only while those identities and release history still match. Otherwise it
-dispatches a fresh full build of the approved source. A final upstream change
+Candidates carry source and upstream identities. Test preparation builds a fresh
+candidate with a sequence above authenticated stable and previous test builds.
+Release preparations are serialized, and candidate reuse is disabled so an older
+test helper identity cannot be assigned to changed bytes. A final upstream change
 triggers another full gate, bounded to three refreshes; repeated changes or
 failed checks stop publication.
 
@@ -60,21 +61,66 @@ present. Manual dispatch accepts an approved 40-character `source_commit` and
 normally uses `refresh_attempt` of `0`.
 
 The publisher verifies remote sizes and SHA-256 digests for all seven assets
-before publishing the draft: both player ZIPs, Setup, `update-manifest.json`,
+and leaves an unpublished prerelease draft: both player ZIPs, Setup, `update-manifest.json`,
 `update-manifest.sig.json`, `update-data.json`, and `SHA256SUMS.txt`.
 
 The installer is named `Ironmon-Setup-win-x64.exe`; its binary retains the build
-version. It defaults to latest, with verified historical selection as described
-in the installation guide. Older versioned Setup downloads retain latest-only
+version. It defaults to latest stable. Advanced selection also lists signed,
+published test releases and marks them **Test release**. Testers must explicitly
+select their version; downloading a newer Setup alone does not change the default.
+Older versioned Setup downloads retain latest-only
 behavior.
 
-Identical retries and matching partial drafts can resume. Conflicting tags,
-assets, or published versions require investigation; published files are never
-overwritten. A newer published version also prevents an older version becoming
-latest.
+Stable and immutable releases cannot be replaced. A mutable prerelease can be
+rebuilt from another approved `main` commit without increasing its display version.
+The internal signed release sequence and helper version advance. The read-only
+build verifies prior test metadata but imports adoption inventories only from
+stable history. The signing job validates the complete candidate, unpublishes the
+old test release, updates its lightweight tag, replaces draft assets, and verifies
+every uploaded digest. It never exposes a partially replaced test build publicly.
+Unexpected attachments, unauthenticated history, stale sequences, stable releases,
+or immutable releases stop the operation. A failed upload can resume by rerunning
+its publication job with the original candidate; do not reset signed test history.
+
+### Publish a mutable test release
+
+After the preparation workflow succeeds, use authenticated repository-admin
+access to publish the verified draft:
+
+1. Confirm the intended version, approved source, seven asset digests, successful
+   candidate gate, and `draft: true`, `prerelease: true`, `immutable: false`.
+2. Disable repository release immutability with
+   `DELETE /repos/Nobbinobb/infinitefusion-hoenn-ironmon/immutable-releases`.
+3. Publish that release using `draft: false`, `prerelease: true`, and
+   `make_latest: "false"`. Verify `immutable: false` and that latest stable did not
+   change.
+4. Re-enable repository release immutability in a `finally` cleanup with the
+   matching `PUT` endpoint. Enabling this setting is not retroactive: the already
+   published test release stays mutable. Verify its mutable state again.
+
+The Actions token never receives repository-administration permissions or disables
+this policy. It only prepares the private signed draft. Existing immutable
+releases remain locked throughout. Every replacement test publication repeats
+the same controlled disable/publish/restore sequence.
+
+Test the downloaded Setup and both ZIP variants outside the development checkout.
+Use Setup's advanced version selector for 0.9 test builds. Same-version replacement
+requires rerunning Setup or reinstalling the complete matching ZIP; automatic
+tracker updates still require a newer stable version. Keep native and
+clean-machine acceptance distinct from automated build checks.
+
+### Freeze and promote the accepted build
+
+After explicit testing approval, retain the exact seven tested asset digests.
+Enable repository immutability, temporarily unpublish the mutable prerelease,
+then republish it with `prerelease: false` and `make_latest: "true"`. Verify
+`immutable: true`, the unchanged asset digests and tag commit, and anonymous stable
+updater discovery. This is a promotion of the tested bytes; do not dispatch a new
+build or refresh upstream inputs as part of promotion. Merely enabling repository
+immutability does not freeze an existing published test release.
 
 For failed PR checks, fix the source and rerun validation. For a transient
-post-merge failure, rerun the failed workflow or dispatch `Publish release` on
+post-merge failure, rerun the failed workflow or dispatch `Prepare test release` on
 `main` for the approved commit. An expired or changed candidate is rebuilt
 automatically. Keep native installer/update acceptance separate from automated
 checks; use the [acceptance guide](guides/UPDATER_ACCEPTANCE.md).
@@ -96,5 +142,5 @@ commands synchronize scripts into the parent game installation.
 
 Native C# tests are invoked directly with `dotnet test`. PowerShell regression
 scripts and their offline automation fixtures have been removed. An xUnit host
-executes the four-group native Ruby smoke entry point; larger Ruby regressions
+executes the native Ruby smoke entry point; larger Ruby regressions
 remain separate.

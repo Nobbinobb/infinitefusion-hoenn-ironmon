@@ -1,4 +1,4 @@
-name: Publish release
+name: Prepare test release
 on:
   push:
     branches: [main]
@@ -19,7 +19,7 @@ permissions:
   actions: read
   pull-requests: read
 concurrency:
-  group: production-release-${{ inputs.source_commit || github.sha }}
+  group: test-release-preparation
   cancel-in-progress: false
   queue: max
 jobs:
@@ -68,7 +68,7 @@ jobs:
     with:
       source_ref: ${{ needs.plan.outputs.source_commit }}
       game_commit: ${{ needs.inputs.outputs.game_commit }}
-      reuse_candidate: true
+      reuse_candidate: false
   publish:
     needs: [plan, inputs, candidate]
     if: needs.plan.outputs.release == 'true'
@@ -107,7 +107,7 @@ jobs:
         run: |
           dotnet publish automation/tracker/tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj -c Release -p:UpdaterMetadataOnly=true -p:UseSharedCompilation=false -o (Join-Path $env:RUNNER_TEMP 'release-tools')
           if ($LASTEXITCODE -ne 0) { throw 'Trusted release tools failed to build.' }
-      - name: Publish verified bytes, or automatically rebuild if upstream changed
+      - name: Prepare a signed test draft, or rebuild if upstream changed
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -115,4 +115,4 @@ jobs:
           IRONMON_UPDATER_SIGNING_KEY_ID: ${{ vars.IRONMON_UPDATER_SIGNING_KEY_ID }}
           SOURCE_COMMIT: ${{ needs.plan.outputs.source_commit }}
           REFRESH_ATTEMPT: ${{ inputs.refresh_attempt || '0' }}
-        run: ./automation/tools/ci/Publish-Release.ps1 -SourceCommit $env:SOURCE_COMMIT -RefreshAttempt ([int]$env:REFRESH_ATTEMPT) -UpdateTool (Join-Path $env:RUNNER_TEMP 'release-tools/Ironmon.ReleaseTool.dll')
+        run: ./automation/tools/ci/Publish-Release.ps1 -SourceCommit $env:SOURCE_COMMIT -RefreshAttempt ([int]$env:REFRESH_ATTEMPT) -UpdateTool (Join-Path $env:RUNNER_TEMP 'release-tools/Ironmon.ReleaseTool.dll') -PrepareTest

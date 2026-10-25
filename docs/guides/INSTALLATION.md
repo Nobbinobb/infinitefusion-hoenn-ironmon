@@ -1,6 +1,6 @@
 # Installing Ironmon
 
-Ironmon **0.8.15** supports **Pokémon Infinite Fusion 2: Hoenn 6.8.2** on
+Ironmon **0.9.0** supports **Pokémon Infinite Fusion 2: Hoenn 6.8.2** on
 Windows x64. Use the game scripts and tracker from the same release.
 
 ## Install with Setup
@@ -23,13 +23,20 @@ Windows x64. Use the game scripts and tracker from the same release.
    from the game's title screen or main menu to create or continue an Ironmon run.
 
 Setup defaults to the newest stable release and its matching game revision.
-Expand **Advanced: Ironmon version** on the first page to choose an older
-available release. Signed metadata, the exact game revision, and required
+Expand **Advanced: Ironmon version** on the first page to choose another
+available stable or test release. Test releases are explicitly labeled and may
+change during testing. Signed metadata, the exact game revision, and required
 downloads must be verifiable; disabled choices explain why. **Refresh versions**
 checks again. Review and installation recheck the selection and stop if it changes
 or disappears. Existing installations cannot be downgraded. Older versioned Setup
 downloads always select latest; use a versioned ZIP and matching game for releases
 without supported signed installer metadata.
+
+For a mutable test release, download Setup from that release and explicitly select
+its entry labeled **Test release**. To install a replacement build of the same
+version, rerun Setup and repeat selection and review. Changed program files may
+need confirmation and backup; normal tracker update checks offer stable versions
+only. Use a fresh test folder if the replacement requires a different game revision.
 
 Start Setup and the tracker normally. A verified helper requests administrator
 permission when a protected folder requires it; the tracker itself continues
@@ -46,8 +53,8 @@ optional download does not undo the installed game. You can finish it later from
 1. Install the supported game version, fully close the game and tracker, and back
    up saves you care about.
 2. Download one package:
-   - `Ironmon-v0.8.15-win-x64.zip` includes the .NET runtime.
-   - `Ironmon-v0.8.15-win-x64-runtime-required.zip` requires the Windows x64
+   - `Ironmon-v0.9.0-win-x64.zip` includes the .NET runtime.
+   - `Ironmon-v0.9.0-win-x64-runtime-required.zip` requires the Windows x64
      .NET 10 Runtime; the SDK and MAUI workload are unnecessary.
 3. Extract the **complete archive** into the directory containing
    `InfiniteFusion2.exe`. Merge its `Data` directory with the existing one.
@@ -133,6 +140,7 @@ backups; automatic cleanup is not implemented.
 
 | Ironmon | Infinite Fusion 2 |
 | --- | --- |
+| 0.9.0 | 6.8.2 |
 | 0.8.15 | 6.8.2 |
 | 0.8.0–0.8.14 | 6.8.2 |
 | 0.2.1–0.7.9 | 6.8.0 |

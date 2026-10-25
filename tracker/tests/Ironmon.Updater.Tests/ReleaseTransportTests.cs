@@ -28,6 +28,30 @@ public sealed class ReleaseTransportTests
     private const string TruncatedJson = "{";
 
     /// <summary>
+    /// Keeps prereleases out of automatic discovery and permits them only through explicit installer validation.
+    /// </summary>
+    /// <param name="draft">Whether the release is unpublished.</param>
+    /// <param name="testRelease">Whether the public release is marked as a prerelease.</param>
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void AutomaticDiscoveryNeverAcceptsTestOrDraftReleases(bool draft, bool testRelease)
+    {
+        using var fixture = new SignedReleaseFixture();
+        var api = Api(fixture, draft, testRelease);
+        Assert.Throws<InvalidDataException>(() => ReleaseDiscovery.ValidateApi(api));
+        if (draft)
+        {
+            Assert.Throws<InvalidDataException>(() => ReleaseDiscovery.ValidateApi(api, allowTestRelease: true));
+        }
+        else
+        {
+            Assert.Equal(fixture.Manifest.IronmonVersion, ReleaseDiscovery.ValidateApi(api, allowTestRelease: true));
+        }
+    }
+
+    /// <summary>
     /// Replaces an unusable optional cache through fresh authenticated discovery on an ordinary manual retry.
     /// </summary>
     [Fact]
@@ -372,9 +396,11 @@ public sealed class ReleaseTransportTests
     /// Builds only the public API fields used by discovery.
     /// </summary>
     /// <param name="fixture">The signed release being advertised.</param>
+    /// <param name="draft">Whether the fixture release is unpublished.</param>
+    /// <param name="testRelease">Whether explicit selection is required for a prerelease.</param>
     /// <returns>The bounded API response bytes.</returns>
-    private static byte[] Api(SignedReleaseFixture fixture)
-        => ReleaseJson.Serialize(new { tag_name = TagPrefix + fixture.Manifest.IronmonVersion, draft = false, prerelease = false, html_url = ReleaseProtocol.ReleaseBaseUrl + TagSegment + TagPrefix + fixture.Manifest.IronmonVersion, assets = new[] { ReleaseProtocol.ManifestName, ReleaseProtocol.SignatureName }.Select(name => new { name, browser_download_url = ReleaseProtocol.AssetUrl(fixture.Manifest.IronmonVersion, name) }) });
+    private static byte[] Api(SignedReleaseFixture fixture, bool draft = false, bool testRelease = false)
+        => ReleaseJson.Serialize(new { tag_name = TagPrefix + fixture.Manifest.IronmonVersion, draft, prerelease = testRelease, html_url = ReleaseProtocol.ReleaseBaseUrl + TagSegment + TagPrefix + fixture.Manifest.IronmonVersion, assets = new[] { ReleaseProtocol.ManifestName, ReleaseProtocol.SignatureName }.Select(name => new { name, browser_download_url = ReleaseProtocol.AssetUrl(fixture.Manifest.IronmonVersion, name) }) });
 
     /// <summary>
     /// Creates an owned successful response body.

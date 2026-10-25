@@ -372,6 +372,9 @@ internal sealed class SetupWindow : Window
         foreach (var choice in _session.ReleaseChoices)
         {
             var label = choice.CanInstall ? UpdaterText.SetupVersionsChoice(choice.Version, choice.GameVersion!) : UpdaterText.SetupVersionsUnavailableChoice(choice.Version);
+            if (choice.IsTestRelease)
+                label = UpdaterText.SetupVersionsTestRelease(label);
+
             var item = new ComboBoxItem { Content = label, Tag = choice.Version, IsEnabled = choice.CanInstall, IsSelected = _session.SelectedReleaseVersion == choice.Version, ToolTip = choice.UnavailableReason };
             ToolTipService.SetShowOnDisabled(item, true);
             versions.Items.Add(item);

@@ -139,14 +139,15 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
     /// Validates only the needed public GitHub fields while allowing unrelated API metadata to evolve.
     /// </summary>
     /// <param name="bytes">The bounded API document.</param>
-    /// <returns>The stable version attached to the fixed repository release.</returns>
-    internal static string ValidateApi(byte[] bytes)
+    /// <param name="allowTestRelease">Whether explicit installer selection may accept a published prerelease.</param>
+    /// <returns>The canonical version attached to the fixed repository release.</returns>
+    internal static string ValidateApi(byte[] bytes, bool allowTestRelease = false)
     {
         ReleaseJson.Validate(bytes, ReleaseJson.ManifestLimit);
         using var document = JsonDocument.Parse(bytes);
         var root = document.RootElement;
         var tag = root.GetProperty(TagProperty).GetString() ?? throw new InvalidDataException(UpdaterText.ReleaseDiscoveryTheReleaseTagIsMissing);
-        if (root.GetProperty(DraftProperty).GetBoolean() || root.GetProperty(PrereleaseProperty).GetBoolean() || !tag.StartsWith(TagPrefix, StringComparison.Ordinal) || root.GetProperty(HtmlProperty).GetString() != ReleaseProtocol.ReleaseBaseUrl + TagSegment + tag)
+        if (root.GetProperty(DraftProperty).GetBoolean() || (!allowTestRelease && root.GetProperty(PrereleaseProperty).GetBoolean()) || !tag.StartsWith(TagPrefix, StringComparison.Ordinal) || root.GetProperty(HtmlProperty).GetString() != ReleaseProtocol.ReleaseBaseUrl + TagSegment + tag)
             throw new InvalidDataException(UpdaterText.ReleaseDiscoveryOnlyPublishedStableReleasesFromTheFixedRepositoryAre);
 
         var version = tag[TagPrefix.Length..];

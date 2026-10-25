@@ -1,4 +1,4 @@
-# Ironmon 0.8.15
+# Ironmon 0.9.0
 
 This distribution targets Pokemon Infinite Fusion 2 version 6.8.2.
 
@@ -24,6 +24,7 @@ recovery information before replacing installed files.
 Setup defaults to the newest stable Ironmon release and its matching game revision.
 Its download is named `Ironmon-Setup-win-x64.exe`. Advanced selection offers older
 signed releases when their game revision and required downloads remain available.
+Published test releases are labeled **Test release** and require explicit selection.
 Older versioned Setup downloads always select latest. Use this versioned archive
 with its matching game for a historical release without supported installer metadata.
 The player package contains no maintainer generator, release-data generator,

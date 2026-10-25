@@ -25,6 +25,7 @@ public sealed class SetupWindowTests
     private const string OptionsImage = "options.png";
     private const string _availableVersionsImage = "versions-available.png";
     private const string _unavailableVersionsImage = "versions-unavailable.png";
+    private const string _testVersionsImage = "versions-test.png";
     private const string _versionLabelPart = "SelectionLabel";
     private const string ExistingOptionsImage = "options-existing.png";
     private const string NewDestination = "new-installation";
@@ -397,14 +398,18 @@ public sealed class SetupWindowTests
     /// Fits expanded historical selection at minimum size and makes missing game revisions visibly unselectable.
     /// </summary>
     /// <param name="missingGame">Whether the upstream game disappeared.</param>
+    /// <param name="testRelease">Whether explicit historical selection is a mutable prerelease.</param>
+    /// <returns>Completion after the real native selector and labels were rendered and exercised.</returns>
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AdvancedVersionsShowAvailabilityAndPreserveLatestDefault(bool missingGame)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task AdvancedVersionsShowAvailabilityAndPreserveLatestDefault(bool missingGame, bool testRelease)
     {
         using var fixture = new TrackerUpdateTestFixture();
         using var versions = await SetupReleaseCatalogFixture.CreateAsync(fixture.Release);
         versions.GameAvailable = !missingGame;
+        versions.HistoricalReleaseIsTest = testRelease;
         using var sprites = new CustomSpriteSheetInstaller();
         using var session = CreateSession(fixture, sprites, versions);
         await session.LoadReleaseChoicesAsync();
@@ -430,8 +435,12 @@ public sealed class SetupWindowTests
                 Assert.Equal(SignedReleaseFixture.VersionB, session.SelectedReleaseVersion);
             }
 
-            Capture(window, missingGame ? _unavailableVersionsImage : _availableVersionsImage);
-            Assert.Equal(missingGame ? UpdaterText.SetupVersionsLatest : UpdaterText.SetupVersionsChoice(SignedReleaseFixture.VersionB, SignedReleaseFixture.VersionA), Assert.IsType<TextBlock>(selector.Template.FindName(_versionLabelPart, selector)).Text);
+            Capture(window, testRelease ? _testVersionsImage : missingGame ? _unavailableVersionsImage : _availableVersionsImage);
+            var expected = UpdaterText.SetupVersionsChoice(SignedReleaseFixture.VersionB, SignedReleaseFixture.VersionA);
+            if (testRelease)
+                expected = UpdaterText.SetupVersionsTestRelease(expected);
+
+            Assert.Equal(missingGame ? UpdaterText.SetupVersionsLatest : expected, Assert.IsType<TextBlock>(selector.Template.FindName(_versionLabelPart, selector)).Text);
             if (!missingGame)
             {
                 versions.HistoricalReleasePublished = false;

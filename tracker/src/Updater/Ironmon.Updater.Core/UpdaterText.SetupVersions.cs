@@ -82,6 +82,14 @@ public static partial class UpdaterText
         => string.Format(CultureInfo.CurrentCulture, Get(nameof(SetupVersionsChoice)), version, game);
 
     /// <summary>
+    /// Labels an explicitly selected prerelease whose files may change during testing.
+    /// </summary>
+    /// <param name="label">The verified availability label.</param>
+    /// <returns>The label marked as a test release.</returns>
+    public static string SetupVersionsTestRelease(string label)
+        => string.Format(CultureInfo.CurrentCulture, Get(nameof(SetupVersionsTestRelease)), label);
+
+    /// <summary>
     /// Formats an unavailable version without claiming a verified game mapping.
     /// </summary>
     /// <param name="version">The historical Ironmon version.</param>

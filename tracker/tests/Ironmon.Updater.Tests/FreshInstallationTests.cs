@@ -219,7 +219,8 @@ public sealed class FreshInstallationTests(ITestOutputHelper output)
                 if (progress.Phase == TransactionPhase.Applying && progress.Boundary == TransactionBoundary.Intent)
                     intents++;
             });
-            Assert.Equal(TransactionPhase.Committed, (await engine.ApplyAsync(fixture.Root, fixture.Description.TransactionId)).Phase);
+            var result = await engine.ApplyAsync(fixture.Root, fixture.Description.TransactionId);
+            Assert.True(result.Phase == TransactionPhase.Committed, result.Error);
             output.WriteLine($"Existing={existing}; files={files.Length}; prepare={preparation.TotalSeconds:F2}s; apply={timer.Elapsed.TotalSeconds:F2}s; intents={intents}");
             Assert.Equal(existing ? files.Length + 2 : 1, intents);
         }

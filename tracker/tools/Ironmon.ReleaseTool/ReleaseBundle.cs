@@ -47,6 +47,8 @@ internal static class ReleaseBundle
     internal static string HelperVersion(long sequence)
     {
         var engine = ReleaseProtocol.ParseVersion(ReleaseProtocol.EngineVersion);
+        ArgumentOutOfRangeException.ThrowIfLessThan(sequence, 1L);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(sequence, (long)ushort.MaxValue - engine.Build);
         return new Version(engine.Major, engine.Minor, checked(engine.Build + (int)sequence)).ToString(3);
     }
 
@@ -158,6 +160,14 @@ internal static class ReleaseBundle
                     baselines[inventory.GameCommit] = baseline with { LegacyPackages = [.. baseline.LegacyPackages, new LegacyPackage(inventory.Version, inventory.Flavor!, asset.Name)] };
                 }
             }
+        }
+
+        if (request.ReleaseSequence is { } requestedSequence)
+        {
+            if (requestedSequence < sequence)
+                throw new InvalidDataException("A release build cannot reuse an earlier signed release sequence.");
+
+            sequence = requestedSequence;
         }
 
         var gameName = GamePrefix + game.Commit + JsonExtension;

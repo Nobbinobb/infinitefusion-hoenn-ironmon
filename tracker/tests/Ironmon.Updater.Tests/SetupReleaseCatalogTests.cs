@@ -9,6 +9,44 @@ namespace Ironmon.Updater.Tests;
 public sealed class SetupReleaseCatalogTests
 {
     private const string _unsupportedEngineVersion = "1.0.1";
+
+    /// <summary>
+    /// Allows an explicitly chosen signed test release while keeping automatic latest discovery stable.
+    /// </summary>
+    /// <returns>Completion after signature and independent stable discovery checks.</returns>
+    [Fact]
+    public async Task SignedTestReleasesRequireExplicitSelection()
+    {
+        using var release = new SignedReleaseFixture();
+        using var fixture = await SetupReleaseCatalogFixture.CreateAsync(release);
+        fixture.HistoricalReleaseIsTest = true;
+        var choices = await fixture.Catalog.ListAsync(CancellationToken.None);
+        var test = Assert.Single(choices, choice => choice.Version == SignedReleaseFixture.VersionB);
+        Assert.True(test.IsTestRelease);
+        Assert.True(test.CanInstall);
+        var selected = await fixture.Catalog.ReadAsync(test.Version, CancellationToken.None);
+        Assert.Equal(test.Version, release.Verifier.Verify(selected.Manifest, selected.Signatures).IronmonVersion);
+        var latest = await fixture.Discovery.CheckAsync(true);
+        Assert.Equal(SignedReleaseFixture.VersionC, release.Verifier.Verify(latest.Release!.Manifest, latest.Release.Signatures).IronmonVersion);
+        fixture.ValidSignatures = false;
+        await Assert.ThrowsAsync<InvalidDataException>(() => fixture.Catalog.ReadAsync(test.Version, CancellationToken.None));
+    }
+
+    /// <summary>
+    /// Removes unpublished test builds from selection and refuses a previously selected draft during fresh review.
+    /// </summary>
+    /// <returns>Completion after enumeration and explicit target rejection.</returns>
+    [Fact]
+    public async Task ReplacingTestBuildCannotBeInstalledWhileDraft()
+    {
+        using var release = new SignedReleaseFixture();
+        using var fixture = await SetupReleaseCatalogFixture.CreateAsync(release);
+        fixture.HistoricalReleaseIsTest = true;
+        fixture.HistoricalReleaseIsDraft = true;
+        Assert.DoesNotContain(await fixture.Catalog.ListAsync(CancellationToken.None), choice => choice.Version == SignedReleaseFixture.VersionB);
+        await Assert.ThrowsAsync<InvalidDataException>(() => fixture.Catalog.ReadAsync(SignedReleaseFixture.VersionB, CancellationToken.None));
+    }
+
     /// <summary>
     /// Lists genuine signed releases in numeric order with exact game mappings and disables unsigned legacy downloads.
     /// </summary>

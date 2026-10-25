@@ -1755,7 +1755,7 @@
     <value>Refresh versions</value>
   </data>
   <data name="SetupVersionsHint" xml:space="preserve">
-    <value>Only verified releases with available game files can be selected. Older versions may require a new folder. Installed versions cannot be downgraded.</value>
+    <value>Only verified releases with available game files can be selected. Test releases may change and require manual reinstallation. Older versions may require a new folder. Installed versions cannot be downgraded.</value>
   </data>
   <data name="SetupVersionsSelectAvailable" xml:space="preserve">
     <value>Select an available version, or keep the latest stable release.</value>
@@ -1768,5 +1768,8 @@
   </data>
   <data name="SetupVersionsUnavailableChoice" xml:space="preserve">
     <value>Ironmon {0} · Unavailable</value>
+  </data>
+  <data name="SetupVersionsTestRelease" xml:space="preserve">
+    <value>{0} · Test release</value>
   </data>
 </root>

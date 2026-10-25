@@ -1,7 +1,8 @@
 param(
   [Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{40}$')][string]$SourceCommit,
   [ValidateRange(0, 3)][int]$RefreshAttempt = 0,
-  [Parameter(Mandatory)][string]$UpdateTool
+  [Parameter(Mandatory)][string]$UpdateTool,
+  [switch]$PrepareTest
 )
 
 $ErrorActionPreference = 'Stop'
@@ -61,7 +62,11 @@ if (-not $existing) {
   # Detect an existing tag before creating a draft; never silently target the wrong source.
   $refs = gh api "repos/$env:GITHUB_REPOSITORY/git/matching-refs/tags/$tag" | ConvertFrom-Json
   if ($refs | Where-Object ref -eq "refs/tags/$tag") { throw 'Release tag already exists without a matching release; manual investigation is required.' }
-  gh release create $tag --repo $env:GITHUB_REPOSITORY --target $SourceCommit --draft --title "Ironmon $version" --notes-file $releaseNotes
+  if ($PrepareTest) {
+    gh release create $tag --repo $env:GITHUB_REPOSITORY --target $SourceCommit --draft --prerelease --title "Ironmon $version test release" --notes-file $releaseNotes
+  } else {
+    gh release create $tag --repo $env:GITHUB_REPOSITORY --target $SourceCommit --draft --title "Ironmon $version" --notes-file $releaseNotes
+  }
 }
 # GitHub's by-tag REST endpoint does not reliably return unpublished drafts.
 # The CLI resolves both drafts and published releases; retain the numeric identity
@@ -70,13 +75,16 @@ $releaseId = gh release view $tag --repo $env:GITHUB_REPOSITORY --json databaseI
 if ($releaseId -notmatch '^[1-9]\d*$') { throw 'Release identity is unavailable.' }
 $release = gh api "repos/$env:GITHUB_REPOSITORY/releases/$releaseId" | ConvertFrom-Json
 if ($release.tag_name -cne $tag) { throw 'Resolved release tag mismatch.' }
-if ($release.target_commitish -ne $SourceCommit) { throw 'Existing release targets different source.' }
+if ($PrepareTest -and ($release.immutable -or -not $release.prerelease)) {
+  throw 'Test preparation can replace only a mutable prerelease; stable or immutable releases cannot be replaced.'
+}
+if ($release.target_commitish -ne $SourceCommit -and -not $PrepareTest) { throw 'Existing release targets different source.' }
 $trust = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'resources/updater/trusted-keys.json'
 Invoke-UpdateCandidateTool $UpdateTool @('verify', $directory, $trust, 'unsigned')
 $signatures = Join-Path $directory 'update-manifest.sig.json'
 # Retried publication must reuse the exact original signature bytes, including an incomplete draft.
 $prior = @(gh release list --repo $env:GITHUB_REPOSITORY --limit 1000 --json tagName,isDraft | ConvertFrom-Json) | Where-Object tagName -CEQ $tag | Select-Object -First 1
-if ($prior -and -not (Test-Path -LiteralPath $signatures)) {
+if (-not $PrepareTest -and $prior -and -not (Test-Path -LiteralPath $signatures)) {
   $existingAssets = gh release view $tag --repo $env:GITHUB_REPOSITORY --json assets | ConvertFrom-Json
   if ($existingAssets.assets | Where-Object name -CEQ 'update-manifest.sig.json') {
     gh release download $tag --repo $env:GITHUB_REPOSITORY --pattern 'update-manifest.sig.json' --dir $directory
@@ -86,11 +94,41 @@ if ($prior -and -not (Test-Path -LiteralPath $signatures)) {
 Invoke-UpdateCandidateTool $UpdateTool @('sign', $directory, $trust)
 $assets = @(Get-PublishedReleaseFiles $directory $version)
 $assets += Write-ReleaseChecksums $directory $assets
+if ($PrepareTest) {
+  if (@($release.assets | Where-Object { $_.name -cnotin $assets.Name }).Count) { throw 'Unexpected assets in the test draft; no assets were replaced.' }
+  $previousManifest = $release.assets | Where-Object name -CEQ 'update-manifest.json' | Select-Object -First 1
+  $previousSignature = $release.assets | Where-Object name -CEQ 'update-manifest.sig.json' | Select-Object -First 1
+  $manifestDigest = 'sha256:' + (Get-FileHash -LiteralPath (Join-Path $directory 'update-manifest.json') -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($previousManifest -and $previousSignature -and $previousManifest.digest -cne $manifestDigest) {
+    $minimumSequence = & (Join-Path $PSScriptRoot 'Get-ReleaseBuildSequence.ps1') -Version $version -Tool $UpdateTool
+    $update = Get-Content -LiteralPath (Join-Path $directory 'update-manifest.json') -Raw | ConvertFrom-Json
+    if ($update.releaseSequence -lt $minimumSequence) { throw 'The candidate predates the latest signed test build. Rebuild before replacing test assets.' }
+  }
+  if (-not $release.draft) {
+    gh release edit $tag --repo $env:GITHUB_REPOSITORY --draft=true
+    $release = gh api "repos/$env:GITHUB_REPOSITORY/releases/$releaseId" | ConvertFrom-Json
+    if (-not $release.draft -or -not $release.prerelease -or $release.immutable) { throw 'The test release could not be safely unpublished.' }
+  }
+  $refs = @(gh api "repos/$env:GITHUB_REPOSITORY/git/matching-refs/tags/$tag" | ConvertFrom-Json)
+  $ref = $refs | Where-Object ref -CEQ "refs/tags/$tag" | Select-Object -First 1
+  if ($ref) {
+    if ($ref.object.type -cne 'commit') { throw 'Only a test release lightweight tag may be updated.' }
+    if ($ref.object.sha -cne $SourceCommit) {
+      gh api --method PATCH "repos/$env:GITHUB_REPOSITORY/git/refs/tags/$tag" -f "sha=$SourceCommit" -F force=true
+    }
+  }
+  $requestPath = Join-Path $env:RUNNER_TEMP 'test-release-request.json'
+  @{target_commitish=$SourceCommit;prerelease=$true;name="Ironmon $version test release";body=(Get-Content -LiteralPath $releaseNotes -Raw)} | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $requestPath -Encoding utf8NoBOM
+  gh api --method PATCH "repos/$env:GITHUB_REPOSITORY/releases/$releaseId" --input $requestPath
+}
 foreach ($asset in $assets) {
   $remote = $release.assets | Where-Object name -eq $asset.Name | Select-Object -First 1
   $digest = 'sha256:' + (Get-FileHash -LiteralPath $asset.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
   if ($remote) {
-    if ($remote.digest -cne $digest -or $remote.size -ne $asset.Length) { throw "Existing release asset differs: $($asset.Name)." }
+    if ($remote.digest -cne $digest -or $remote.size -ne $asset.Length) {
+      if (-not $PrepareTest) { throw "Existing release asset differs: $($asset.Name)." }
+      gh release upload $tag $asset.FullName --repo $env:GITHUB_REPOSITORY --clobber
+    }
   } elseif (-not $release.draft) {
     throw 'Published release is incomplete; immutable assets were not modified.'
   } else {
@@ -105,5 +143,10 @@ foreach ($asset in $assets) {
     throw 'Uploaded release asset failed independent digest verification.'
   }
 }
-if ($verified.draft) { gh release edit $tag --repo $env:GITHUB_REPOSITORY --draft=false --latest }
-"Published $tag from approved source $SourceCommit using the verified candidate bytes." >> $env:GITHUB_STEP_SUMMARY
+if ($PrepareTest) {
+  if (-not $verified.draft -or -not $verified.prerelease -or $verified.immutable -or $verified.target_commitish -cne $SourceCommit) { throw 'Test draft identity or publication state changed during preparation.' }
+  "Prepared signed test draft $tag from approved source $SourceCommit. All seven asset digests were verified. Publish it as a prerelease only after disabling repository release immutability; do not mark it latest. Freezing and stable promotion require a separate explicit action after testing." >> $env:GITHUB_STEP_SUMMARY
+} else {
+  if ($verified.draft) { gh release edit $tag --repo $env:GITHUB_REPOSITORY --draft=false --latest }
+  "Published $tag from approved source $SourceCommit using the verified candidate bytes." >> $env:GITHUB_STEP_SUMMARY
+}
