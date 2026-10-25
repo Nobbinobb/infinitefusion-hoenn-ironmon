@@ -149,7 +149,7 @@ public sealed class SeededRunViewTests
         GenerationProfileId = _profileId,
         GameVersion = _gameVersion,
         IronmonVersion = _version,
-        Configuration = new() { SchemaVersion = SeedTokenConstants.ConfigurationSchemaVersion, WildPolicy = _mixed, TrainerPolicy = _mixed, UnfusionSetting = _playerChoice },
+        Configuration = new() { SchemaVersion = SeedTokenConstants.ConfigurationSchemaVersion, WildPolicy = _mixed, TrainerPolicy = _mixed, StarterPolicy = _mixed, UnfusionSetting = _playerChoice },
         SpeciesGenerator = new() { Version = 1, PoolFingerprint = _species },
         AbilityGenerator = new() { Version = 1, PoolSize = 310, PoolFingerprint = _abilities },
         PlayerFusionGenerator = new() { Version = 1, PoolSize = 174348, PoolFingerprint = _fusions }

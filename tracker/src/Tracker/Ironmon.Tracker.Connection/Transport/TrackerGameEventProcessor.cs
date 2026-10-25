@@ -103,6 +103,18 @@ internal sealed class TrackerGameEventProcessor
         if (message.Type != TrackerMessageType.Event)
             throw new ArgumentException("The game event processor requires an event message.", nameof(message));
 
+        if (message.Event == Ironmon.Tracker.Protocol.Wardrobe.WardrobeProtocol.StateEvent)
+        {
+            _requestClient.Wardrobe.Observe(TrackerJson.DeserializePayload<Ironmon.Tracker.Protocol.Wardrobe.WardrobeSnapshotPayload>(message.Payload), game);
+            return;
+        }
+
+        if (message.Event is TrackerEvents.RivalFusionPrepare or TrackerEvents.RivalFusionRequested)
+        {
+            _requestClient.HandleRivalFusion(message, game, cancellationToken);
+            return;
+        }
+
         if (message.Event is TrackerEvents.RunStarted or TrackerEvents.ActiveRunPreparationReady)
         {
             RecoverCurrentState(game, TrackerJson.DeserializePayload<GameCurrentStatePayload>(message.Payload));

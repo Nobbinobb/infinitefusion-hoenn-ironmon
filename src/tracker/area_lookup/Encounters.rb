@@ -62,6 +62,7 @@ module Ironmon
     end
     encounter_data.each do |data|
       data.types.each do |encounter_type, entries|
+        next if !tracker_area_encounter_table_available?(data.map, encounter_type)
         total = entries.inject(0) { |sum, entry| sum + entry[0].to_i }
         entries.each_with_index do |entry, slot|
           work_checkpoint.call if work_checkpoint

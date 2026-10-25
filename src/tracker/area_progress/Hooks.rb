@@ -35,19 +35,20 @@ module Ironmon
   end
 
   def self.current_area_event_entry_id(category, explicit_event_id = nil,
-                                       explicit_map_id = nil)
+                                       explicit_map_id = nil, trainer_type = nil, trainer_name = nil)
     reference = current_area_event_reference(
       explicit_event_id, explicit_map_id
     )
     return nil if !reference
     return tracker_area_event_entry_id(
-      category, reference[0], reference[1]
+      category, reference[0], reference[1], trainer_type, trainer_name
     )
   end
 
   def self.begin_area_trainer_event(entry_id)
     @pending_area_trainer_entries ||= []
     @current_area_trainer_entry = entry_id
+    @pending_area_story_trainer_parties = {}
   end
 
   def self.queue_area_trainer_entries(entry_ids)
@@ -60,6 +61,9 @@ module Ironmon
     entry_id = @current_area_trainer_entry
     @current_area_trainer_entry = nil
     if won
+      (@pending_area_story_trainer_parties || {}).each do |id, party|
+        record_story_trainer_party(id, party)
+      end
       entries = (@pending_area_trainer_entries || []) + [entry_id]
       publish_area_discoveries("trainer", entries)
       @pending_area_trainer_entries = []
@@ -70,11 +74,13 @@ module Ironmon
     else
       @pending_area_trainer_entries = []
     end
+    @pending_area_story_trainer_parties = {}
   end
 
   def self.cancel_area_trainer_event
     @current_area_trainer_entry = nil
     @pending_area_trainer_entries = []
+    @pending_area_story_trainer_parties = {}
   end
 
   def self.begin_area_item_event(entry_id)

@@ -321,19 +321,24 @@ module Ironmon
       rival_character = materialize_early_game_rival_character(
         rival_gender, rival_appearance
       )
-      rival.moveto(8, 14)
+      rival.moveto(8, rival_lab_choice_enabled? ? 16 : 14)
       rival.opacity = 0
       rival.direction_fix = false
       rival.character_name = rival_character
       rival.direction = 8
       pbWait(1)
       pbSEPlay("Entering Door")
-      pbMoveRoute(rival, [
-        PBMoveRoute::Opacity, 255,
-        PBMoveRoute::ChangeSpeed, 4,
-        PBMoveRoute::Up, PBMoveRoute::Up, PBMoveRoute::Up,
-        PBMoveRoute::Up, PBMoveRoute::Up, PBMoveRoute::Up
-      ])
+      if rival_lab_choice_enabled?
+        rival.opacity = 255
+        position_rival_for_lab_battle(rival)
+      else
+        pbMoveRoute(rival, [
+          PBMoveRoute::Opacity, 255,
+          PBMoveRoute::ChangeSpeed, 4,
+          PBMoveRoute::Up, PBMoveRoute::Up, PBMoveRoute::Up,
+          PBMoveRoute::Up, PBMoveRoute::Up, PBMoveRoute::Up
+        ])
+      end
       wait_for_early_game_movement(rival)
       rival.turn_toward_player
       pbWait(6)
@@ -348,14 +353,15 @@ module Ironmon
       _INTL("Wow! That's great! You're pretty good!"), true
     )
     return true if !won || failed_run_locked?
+    $game_switches[EARLY_GAME_SWITCH_FIRST_RIVAL_WON] = true
+    resolve_rival_lab_choice(rival)
+    announce_tracker_active_run_preparation_ready
 
     pbCallBub(2, EARLY_GAME_LAB_RIVAL_EVENT_ID)
     pbMessage(_INTL(
       "That was a great battle, \\PN! You've gotten strong already."
     ))
 
-    $game_switches[EARLY_GAME_SWITCH_FIRST_RIVAL_WON] = true
-    announce_tracker_active_run_preparation_ready
     $Trainer.has_pokedex = true
     pbUnlockDex
     pbCallBub(2, EARLY_GAME_LAB_PROFESSOR_EVENT_ID)
@@ -369,12 +375,16 @@ module Ironmon
       pbMessage(_INTL("I'm heading out too. See you on the road!"))
       rival.turn_down
       pbWait(6)
-      pbMoveRoute(rival, [
-        PBMoveRoute::ChangeSpeed, 5,
-        PBMoveRoute::Down, PBMoveRoute::Down, PBMoveRoute::Down,
-        PBMoveRoute::Down, PBMoveRoute::Down, PBMoveRoute::Down,
-        PBMoveRoute::Opacity, 0
-      ])
+      if rival_lab_choice_enabled?
+        leave_rival_lab(rival)
+      else
+        pbMoveRoute(rival, [
+          PBMoveRoute::ChangeSpeed, 5,
+          PBMoveRoute::Down, PBMoveRoute::Down, PBMoveRoute::Down,
+          PBMoveRoute::Down, PBMoveRoute::Down, PBMoveRoute::Down,
+          PBMoveRoute::Opacity, 0
+        ])
+      end
       wait_for_early_game_movement(rival)
       pbSEPlay("Exit Door")
     end

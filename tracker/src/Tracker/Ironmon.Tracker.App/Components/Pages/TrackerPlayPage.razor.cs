@@ -17,6 +17,7 @@ public partial class TrackerPlayPage : IDisposable
     private List<IronmonRuleProfile> _profiles = RunProfileStore.Load();
     private string _wild = RunManagementProtocol.MixedPolicy;
     private string _trainer = RunManagementProtocol.MixedPolicy;
+    private string _starter = RunManagementProtocol.MixedPolicy;
     private string _unfusion = RunManagementProtocol.RandomUnfusion;
     private string _profileName = string.Empty;
     private string? _status;
@@ -181,6 +182,7 @@ public partial class TrackerPlayPage : IDisposable
         IronmonRuleProfile profile = _profiles[_profileIndex];
         _wild = profile.Rules.WildPolicy;
         _trainer = profile.Rules.TrainerPolicy;
+        _starter = profile.Rules.StarterPolicy;
         _unfusion = profile.Rules.UnfusionSetting;
         _profileName = profile.Name;
     }
@@ -190,7 +192,7 @@ public partial class TrackerPlayPage : IDisposable
     /// </summary>
     /// <returns>A new rule record containing the current draft selections.</returns>
     private IronmonRunRules Rules()
-        => new() { WildPolicy = _wild, TrainerPolicy = _trainer, UnfusionSetting = _unfusion };
+        => new() { WildPolicy = _wild, TrainerPolicy = _trainer, StarterPolicy = _starter, UnfusionSetting = _unfusion };
 
     /// <summary>
     /// Saves or updates a named template without editing any game save.

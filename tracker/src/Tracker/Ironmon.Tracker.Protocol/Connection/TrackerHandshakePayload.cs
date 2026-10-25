@@ -6,6 +6,16 @@ namespace Ironmon.Tracker.Protocol.Connection;
 public sealed class TrackerHandshakePayload
 {
     /// <summary>
+    /// Gets or initializes support for editing an existing game-owned wardrobe session.
+    /// </summary>
+    public int WardrobeProtocolVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the negotiated future-achievement wardrobe reward version.
+    /// </summary>
+    public int WardrobeAchievementRewardsVersion { get; init; }
+
+    /// <summary>
     /// Gets or initializes the independent feature switches.
     /// </summary>
     public TrackerFeatureSettings Features { get; init; } = new();
@@ -52,6 +62,11 @@ public sealed class TrackerHandshakePayload
     /// Gets or initializes the game-management protocol version.
     /// </summary>
     public int ManagementProtocolVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes support for native, single-pair rival fusion calculation.
+    /// </summary>
+    public int RivalFusionWorkerVersion { get; init; }
 
     /// <summary>
     /// Gets or initializes the durable gameplay collection protocol, or zero when unavailable.

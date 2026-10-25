@@ -369,7 +369,7 @@ public sealed class AreaDiscoveryStore
         {
             EntryId = persisted.EntryId,
             MapId = persisted.MapId,
-            TrainerType = persisted.TrainerType,
+            TrainerType = reconstructed.TrainerType,
             TrainerName = persisted.TrainerName,
             PartySize = persisted.PartySize,
             Defeated = persisted.Defeated,

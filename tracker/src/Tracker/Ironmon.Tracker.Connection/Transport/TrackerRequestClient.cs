@@ -1,5 +1,6 @@
 using Ironmon.Tracker.Connection.Lookup;
 using Ironmon.Tracker.Connection.Obtainability;
+using Ironmon.Tracker.Connection.Wardrobe;
 
 namespace Ironmon.Tracker.Connection.Transport;
 
@@ -54,12 +55,18 @@ public sealed partial class TrackerRequestClient
         _completedRunRequests = new TrackerCompletedRunRequestClient(session, _cache, _fusionMappings, _nameSearch, _trainerLocations);
         _diagnosticRequests = new TrackerDiagnosticRequestClient(session, _authorization, _fusionMappings, _nameSearch, _trainerLocations);
         _runPreparation = new TrackerRunPreparationClient(session, _fusionMappings, state);
+        Wardrobe = new TrackerWardrobeClient(session);
     }
 
     /// <summary>
     /// Gets whether both the tracker launch mode and connected game authorize debug access.
     /// </summary>
     public bool DebugAuthorized => _authorization.DebugAuthorized;
+
+    /// <summary>
+    /// Gets the controller for wardrobe sessions opened exclusively by the game.
+    /// </summary>
+    public TrackerWardrobeClient Wardrobe { get; }
 
     /// <summary>
     /// Sends a temporary input snapshot without waiting for a correlated game request.

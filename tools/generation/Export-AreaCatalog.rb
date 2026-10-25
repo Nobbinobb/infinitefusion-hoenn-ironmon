@@ -4,6 +4,8 @@ module IronmonAreaCatalogExporter
   def self.run(output_path)
     map_infos = load_data("Data/MapInfos.rxdata")
     encounter_map_ids = encounter_map_ids()
+    tilesets = load_data("Data/Tilesets.rxdata")
+    encounter_triggers = {}
     physical_maps = []
     Dir.glob(File.join("Data", "Map[0-9][0-9][0-9].rxdata")).sort.each do |path|
       map_id = File.basename(path)[/\d+/].to_i
@@ -12,6 +14,13 @@ module IronmonAreaCatalogExporter
       name = info.name.to_s
       next if name.match?(EXCLUDED_MAP_NAME)
       map = load_data(path)
+      Ironmon.patch_early_game_map(map_id, map) if Ironmon.respond_to?(:patch_early_game_map)
+      Ironmon.patch_devon_sequence_map(map_id, map) if Ironmon.respond_to?(:patch_devon_sequence_map)
+      if encounter_map_ids[map_id]
+        encounter_triggers[map_id] = IronmonEncounterTriggers.for_map(
+          map, tilesets[map.tileset_id]
+        )
+      end
       trainers = trainer_entries(map_id, map)
       items = item_entries(map_id, map)
       next if trainers.empty? && items.empty? && !encounter_map_ids[map_id]
@@ -22,6 +31,7 @@ module IronmonAreaCatalogExporter
         "items" => items
       }
     end
+    IronmonAreaTrainerSources.resolve(physical_maps)
     areas = physical_maps.group_by { |map| map["name"] }.map do |name, maps|
       maps.sort_by! { |map| map["map_id"] }
       map_ids = maps.map { |map| map["map_id"] }
@@ -34,7 +44,10 @@ module IronmonAreaCatalogExporter
       }
     end
     areas.sort_by! { |area| area["map_ids"].first }
-    document = { "schema_version" => 1, "areas" => areas }
+    document = {
+      "schema_version" => 1, "areas" => areas,
+      "encounter_triggers" => encounter_triggers, "trainer_sources_version" => 1
+    }
     temporary_path = "#{output_path}.tmp"
     File.open(temporary_path, "wb") { |file| Marshal.dump(document, file) }
     File.rename(temporary_path, output_path)
@@ -97,7 +110,7 @@ module IronmonAreaCatalogExporter
 
   def self.collect_parameter_strings(value, result)
     if value.is_a?(String)
-      result << value
+      result << value.dup.force_encoding(Encoding::UTF_8)
     elsif value.is_a?(Array)
       value.each { |entry| collect_parameter_strings(entry, result) }
     elsif value.is_a?(Hash)
@@ -109,27 +122,7 @@ module IronmonAreaCatalogExporter
   end
 
   def self.trainer_entries(map_id, map)
-    result = []
-    map.events.each_value do |event|
-      script = event_script(event)
-      match = script.match(
-        /pbTrainerBattle\(\s*:([A-Za-z0-9_]+)\s*,\s*["']([^"']+)["']([^;]*)/
-      )
-      next if !match
-      party_match = match[3].match(/,\s*(?:true|false)\s*,\s*(\d+)\s*,/)
-      party_id = party_match ? party_match[1].to_i : 0
-      result << {
-        "entry_id" => "trainer:#{map_id}:#{match[1]}:#{match[2]}",
-        "map_id" => map_id,
-        "event_id" => event.id.to_i,
-        "trainer_type" => match[1],
-        "trainer_name" => match[2],
-        "party_id" => party_id
-      }
-    end
-    return result.sort_by do |entry|
-      [entry["event_id"], entry["trainer_type"], entry["trainer_name"]]
-    end
+    return IronmonAreaTrainerSources.for_map(map_id, map)
   end
 
   def self.item_entries(map_id, map)
@@ -200,6 +193,15 @@ begin
     file.write("game scripts loaded\n")
   end
   GameData.load_all
+  if $ironmon_area_catalog_source_root
+    IronmonScriptLoader.load_manifest(
+      File.join($ironmon_area_catalog_source_root, "src"),
+      File.join($ironmon_area_catalog_source_root, "src/load_order.json"), false
+    )
+    $PokemonGlobal = PokemonGlobalMetadata.new
+    $PokemonGlobal.ironmon_mode = true
+    $PokemonGlobal.ironmon_configuration = Ironmon::Configuration.new(:normal_only, :normal_only)
+  end
   File.open("#{area_catalog_output}.progress", "ab") do |file|
     file.write("game data loaded\n")
   end

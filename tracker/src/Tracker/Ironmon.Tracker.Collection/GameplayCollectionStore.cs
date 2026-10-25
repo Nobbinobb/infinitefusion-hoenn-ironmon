@@ -157,6 +157,28 @@ public sealed partial class GameplayCollectionStore : IAsyncDisposable
     }
 
     /// <summary>
+    /// Reads only future-unlock wardrobe rewards waiting for durable game credit.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the caller's wait.</param>
+    /// <returns>The pending earned identities, without retroactive existing unlocks.</returns>
+    public async Task<IReadOnlyList<Guid>> GetWardrobeRewardsAsync(CancellationToken cancellationToken = default)
+    {
+        JsonElement snapshot = await EnqueueAsync(database => database.WardrobeRewardsSnapshot(), cancellationToken).ConfigureAwait(false);
+        return snapshot.Deserialize<Guid[]>() ?? [];
+    }
+
+    /// <summary>
+    /// Completes reward delivery only after the game persists its corresponding currency claims.
+    /// </summary>
+    /// <param name="ids">The identities credited by the game.</param>
+    /// <param name="cancellationToken">Cancels admission or waiting, never a committed acknowledgement.</param>
+    /// <returns>Completion after the reward acknowledgement is durable.</returns>
+    public async Task AcknowledgeWardrobeRewardsAsync(IReadOnlySet<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        await EnqueueAsync(database => database.AcknowledgeWardrobeRewards(ids), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Drains accepted work, checkpoints the database and releases profile ownership.
     /// </summary>
     /// <returns>A value task that completes after accepted work drains, SQLite checkpoints and exclusive profile ownership is released.</returns>

@@ -8,6 +8,7 @@ namespace Ironmon.Tracker.Tests.Seeds;
 /// </summary>
 public sealed class SeedTokenCodecTests
 {
+    private const string _normalStarterPolicy = "normal_only";
     private const string _testGenerationProfileId = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private static readonly byte[] _key = [.. Enumerable.Range(1, SeedTokenConstants.MinimumKeySize).Select(value => (byte)value)];
     private static readonly DateTimeOffset _issuedAt = new(2026, 8, 17, 12, 0, 0, TimeSpan.Zero);
@@ -34,6 +35,7 @@ public sealed class SeedTokenCodecTests
         Assert.Equal(recipe.DataMode, data.DataMode);
         Assert.Equal(recipe.Configuration.WildPolicy, data.Configuration.WildPolicy);
         Assert.Equal(recipe.Configuration.TrainerPolicy, data.Configuration.TrainerPolicy);
+        Assert.Equal(recipe.Configuration.StarterPolicy, data.Configuration.StarterPolicy);
         Assert.Equal(recipe.Configuration.UnfusionSetting, data.Configuration.UnfusionSetting);
         Assert.True(data.Configuration.AutomaticReset);
         Assert.Equal(RunCompatibilityFingerprint.Create(recipe), data.CompatibilityFingerprint);
@@ -53,6 +55,44 @@ public sealed class SeedTokenCodecTests
 
         Assert.True(result.IsValid);
         Assert.Equal("shared-seed-token", result.Data?.TokenId);
+    }
+
+    /// <summary>
+    /// Verifies old seed tokens retain their original wild-controlled starter contract.
+    /// </summary>
+    /// <returns>A task representing legacy signature and configuration validation.</returns>
+    [Fact]
+    public async Task LegacyConfigurationRemainsValidWithoutStarterProperty()
+    {
+        string token = CreateRawToken(configuration: CreateConfiguration(SeedTokenConstants.LegacyConfigurationSchemaVersion));
+
+        SeedTokenValidationResult result = await _codec.ValidateAsync(token);
+
+        Assert.True(result.IsValid);
+        Assert.Equal(SeedTokenConstants.LegacyConfigurationSchemaVersion, result.Data?.Configuration.SchemaVersion);
+        Assert.Null(result.Data?.Configuration.StarterPolicy);
+    }
+
+    /// <summary>
+    /// Verifies malformed schema values fail validation without throwing from the JSON reader.
+    /// </summary>
+    /// <returns>A task representing malformed signed-configuration validation.</returns>
+    [Fact]
+    public async Task TextConfigurationSchemaIsRejected()
+    {
+        var configuration = new
+        {
+            SchemaVersion = SeedTokenConstants.ConfigurationSchemaVersion.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            WildPolicy = _normalStarterPolicy,
+            TrainerPolicy = _normalStarterPolicy,
+            StarterPolicy = _normalStarterPolicy,
+            UnfusionSetting = RunManagementProtocol.RandomUnfusion,
+            AutomaticReset = false
+        };
+
+        SeedTokenValidationResult result = await _codec.ValidateAsync(CreateRawToken(configuration: configuration));
+
+        Assert.Equal(SeedTokenValidationStatus.InvalidClaims, result.Status);
     }
 
     /// <summary>
@@ -166,7 +206,7 @@ public sealed class SeedTokenCodecTests
     [Theory]
     [InlineData(-1, 3, "mixed")]
     [InlineData(2147483647, 3, "mixed")]
-    [InlineData(42, 2, "mixed")]
+    [InlineData(42, 3, "mixed")]
     [InlineData(42, 3, "unsupported")]
     public async Task InvalidNewRunInputsAreRejected(long seed, int configurationVersion, string wildPolicy)
     {
@@ -358,6 +398,7 @@ public sealed class SeedTokenCodecTests
             SchemaVersion = schemaVersion,
             WildPolicy = wildPolicy,
             TrainerPolicy = "custom_fusions_only",
+            StarterPolicy = schemaVersion == SeedTokenConstants.LegacyConfigurationSchemaVersion ? null : _normalStarterPolicy,
             UnfusionSetting = "player_choice",
             AutomaticReset = true
         };

@@ -2399,4 +2399,82 @@
   <data name="Settings.ToggleSpeed.Help14" xml:space="preserve"><value>Edits remain a draft until you click Save changes. Save rejects incomplete mappings and keeps the last saved configuration. Undo and Redo move through configuration edits, including additions, removals, grouping, ordering, and connections. Preview actions do not count as edits. Undoing a saved change creates a new unsaved draft.</value></data>
   <data name="Settings.ToggleSpeed.Help15" xml:space="preserve"><value>Toggle mode only</value></data>
   <data name="Settings.ToggleSpeed.Help16" xml:space="preserve"><value>These settings apply to toggle speed-up. Hold mode continues to use the game&#x27;s separate overworld and battle sliders. Multipliers are targets; demanding scenes and loading can reduce the actual acceleration.</value></data>
+  <data name="Wardrobe.Title" xml:space="preserve"><value>Wardrobe</value></data>
+  <data name="Wardrobe.Points" xml:space="preserve"><value>{0} points</value></data>
+  <data name="Wardrobe.Connected" xml:space="preserve"><value>Connected</value></data>
+  <data name="Wardrobe.Disconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="Wardrobe.ChooseProfile" xml:space="preserve"><value>Choose outfit profile…</value></data>
+  <data name="Wardrobe.Load" xml:space="preserve"><value>Load</value></data>
+  <data name="Wardrobe.SaveAs" xml:space="preserve"><value>Save as…</value></data>
+  <data name="Wardrobe.Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Wardrobe.Apply" xml:space="preserve"><value>Apply &amp; return</value></data>
+  <data name="Wardrobe.ClaimFree" xml:space="preserve"><value>Claim free look</value></data>
+  <data name="Wardrobe.Unlock" xml:space="preserve"><value>Unlock · {0} pts</value></data>
+  <data name="Wardrobe.PointsNeeded" xml:space="preserve"><value>{0} pts needed</value></data>
+  <data name="Wardrobe.Outfits" xml:space="preserve"><value>Outfits</value></data>
+  <data name="Wardrobe.Hair" xml:space="preserve"><value>Hair</value></data>
+  <data name="Wardrobe.Extras" xml:space="preserve"><value>Extras</value></data>
+  <data name="Wardrobe.Colors" xml:space="preserve"><value>Colors</value></data>
+  <data name="Wardrobe.Profiles" xml:space="preserve"><value>Profiles</value></data>
+  <data name="Wardrobe.Portrait" xml:space="preserve"><value>Portrait</value></data>
+  <data name="Wardrobe.Front" xml:space="preserve"><value>Front</value></data>
+  <data name="Wardrobe.Back" xml:space="preserve"><value>Back</value></data>
+  <data name="Wardrobe.Left" xml:space="preserve"><value>Left</value></data>
+  <data name="Wardrobe.Right" xml:space="preserve"><value>Right</value></data>
+  <data name="Wardrobe.Bike" xml:space="preserve"><value>Bike</value></data>
+  <data name="Wardrobe.Expand" xml:space="preserve"><value>Expand dialog</value></data>
+  <data name="Wardrobe.Restore" xml:space="preserve"><value>Restore tracker size</value></data>
+  <data name="Wardrobe.SearchOutfits" xml:space="preserve"><value>Search outfits…</value></data>
+  <data name="Wardrobe.SearchHair" xml:space="preserve"><value>Search hairstyles…</value></data>
+  <data name="Wardrobe.SearchExtras" xml:space="preserve"><value>Search accessories…</value></data>
+  <data name="Wardrobe.AllItems" xml:space="preserve"><value>All items</value></data>
+  <data name="Wardrobe.Owned" xml:space="preserve"><value>Owned</value></data>
+  <data name="Wardrobe.NotOwned" xml:space="preserve"><value>Not owned</value></data>
+  <data name="Wardrobe.Wearing" xml:space="preserve"><value>Wearing</value></data>
+  <data name="Wardrobe.Trying" xml:space="preserve"><value>Trying</value></data>
+  <data name="Wardrobe.FreeChoice" xml:space="preserve"><value>Free choice</value></data>
+  <data name="Wardrobe.ItemPoints" xml:space="preserve"><value>{0} pts</value></data>
+  <data name="Wardrobe.Previous" xml:space="preserve"><value>‹ Previous</value></data>
+  <data name="Wardrobe.Next" xml:space="preserve"><value>Next ›</value></data>
+  <data name="Wardrobe.Pages" xml:space="preserve"><value>{0} items · {1}/{2}</value></data>
+  <data name="Wardrobe.NoMatches" xml:space="preserve"><value>No matching items.</value></data>
+  <data name="Wardrobe.Accessory1" xml:space="preserve"><value>Accessory 1</value></data>
+  <data name="Wardrobe.Accessory2" xml:space="preserve"><value>Accessory 2</value></data>
+  <data name="Wardrobe.None" xml:space="preserve"><value>None</value></data>
+  <data name="Wardrobe.BaseHairColor" xml:space="preserve"><value>Base hair color</value></data>
+  <data name="Wardrobe.HairDye" xml:space="preserve"><value>Hair dye</value></data>
+  <data name="Wardrobe.ClothesDye" xml:space="preserve"><value>Outfit dye</value></data>
+  <data name="Wardrobe.HatDye" xml:space="preserve"><value>Accessory 1 dye</value></data>
+  <data name="Wardrobe.Hat2Dye" xml:space="preserve"><value>Accessory 2 dye</value></data>
+  <data name="Wardrobe.BikeDye" xml:space="preserve"><value>Bicycle dye</value></data>
+  <data name="Wardrobe.SkinTone" xml:space="preserve"><value>Skin tone</value></data>
+  <data name="Wardrobe.Original" xml:space="preserve"><value>Original</value></data>
+  <data name="Wardrobe.ExactDye" xml:space="preserve"><value>Exact dye</value></data>
+  <data name="Wardrobe.OutfitProfiles" xml:space="preserve"><value>Outfit profiles</value></data>
+  <data name="Wardrobe.SaveCurrent" xml:space="preserve"><value>Save current look</value></data>
+  <data name="Wardrobe.Rename" xml:space="preserve"><value>Rename</value></data>
+  <data name="Wardrobe.Replace" xml:space="preserve"><value>Replace</value></data>
+  <data name="Wardrobe.Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Wardrobe.Unavailable" xml:space="preserve"><value>Items unavailable</value></data>
+  <data name="Wardrobe.ProfileName" xml:space="preserve"><value>Profile name</value></data>
+  <data name="Wardrobe.NamePlaceholder" xml:space="preserve"><value>e.g. Weekend</value></data>
+  <data name="Wardrobe.SaveProfile" xml:space="preserve"><value>Save profile</value></data>
+  <data name="Wardrobe.SaveName" xml:space="preserve"><value>Save name</value></data>
+  <data name="Wardrobe.DeleteProfile" xml:space="preserve"><value>Delete profile</value></data>
+  <data name="Wardrobe.ReplaceProfile" xml:space="preserve"><value>Replace saved look</value></data>
+  <data name="Wardrobe.BackForm" xml:space="preserve"><value>Back</value></data>
+  <data name="Wardrobe.DeleteQuestion" xml:space="preserve"><value>Delete profile?</value></data>
+  <data name="Wardrobe.ReplaceQuestion" xml:space="preserve"><value>Replace profile?</value></data>
+  <data name="Wardrobe.UnlockQuestion" xml:space="preserve"><value>Unlock {0} permanently?</value></data>
+  <data name="Wardrobe.PurchaseCost" xml:space="preserve"><value>{0} points · {1} → {2}</value></data>
+  <data name="Wardrobe.ConfirmPurchase" xml:space="preserve"><value>Confirm purchase</value></data>
+  <data name="Wardrobe.KeepBrowsing" xml:space="preserve"><value>Keep browsing</value></data>
+  <data name="Wardrobe.DiscardQuestion" xml:space="preserve"><value>Discard appearance changes?</value></data>
+  <data name="Wardrobe.Discard" xml:space="preserve"><value>Discard</value></data>
+  <data name="Wardrobe.KeepEditing" xml:space="preserve"><value>Keep editing</value></data>
+  <data name="Wardrobe.PreviewUnavailable" xml:space="preserve"><value>Preview unavailable.</value></data>
+  <data name="Wardrobe.InvalidName" xml:space="preserve"><value>Enter a profile name of 1–48 characters.</value></data>
+  <data name="Wardrobe.DuplicateName" xml:space="preserve"><value>Name already used.</value></data>
+  <data name="Wardrobe.ColorValue" xml:space="preserve"><value>{0}°</value></data>
+  <data name="Wardrobe.HairValues" xml:space="preserve"><value>base {0} · {1}°</value></data>
 </root>

@@ -19,7 +19,7 @@ public sealed partial class CollectionStoreTests
     private const string _resistedConfirmed = "confirmed";
     private const string _resistedUnconfirmed = "unconfirmed";
     private const string _resistedLegacyPackHash = "03559e9398f3c369987415f8b0abae0c6220e2c635fce49b4c19348e867bf8f1";
-    private const string _resistedRewriteSql = "UPDATE private_consumers SET pack_binding_token=$binding,nonce=$nonce,auth_tag=$tag,ciphertext=$ciphertext";
+    private const string _resistedRewriteSql = "UPDATE private_consumers SET pack_binding_token=$binding,nonce=$nonce,auth_tag=$tag,ciphertext=$ciphertext" + _achievementConsumerFilter;
     private const string _resistedBindingParameter = "$binding";
     private const string _resistedNonceParameter = "$nonce";
     private const string _resistedTagParameter = "$tag";

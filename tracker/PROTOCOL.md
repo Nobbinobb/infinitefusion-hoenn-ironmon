@@ -1286,3 +1286,71 @@ stored separately and are echoed unchanged while their feature is disabled.
 Suppressed earned notices use the existing achievement acknowledgement, retaining
 unlocks without creating a later notification backlog. These local preferences
 are not added to saved run rules or seed recipes.
+
+## Game-owned wardrobe sessions
+
+Both handshakes negotiate `wardrobe_protocol_version: 1`. The tracker has no
+opening operation: only the game's Change outfit or bedroom entry constructs a
+session. The game emits `wardrobe_state` with `open: true`, the process
+`game_session_id`, random `wardrobe_id`, monotonically increasing `revision`,
+shared `profile_revision`, slot `appearance_key`, point balance, permanent
+`owned_keys`, draft `appearance`, `equipped_appearance`, `initial_selection`,
+`loaded_profile_id`, and named `outfit_profiles`. Opening and recovery include
+`catalog`; ordinary action responses retain the previously supplied catalogue.
+A closed event has `open: false` and records whether the look was confirmed.
+
+`wardrobe_state` is also a read-only recovery request. It can return a closed
+session and never opens the game wardrobe. `wardrobe_action` requires both
+session identities, the exact editing revision and a fresh 32-character lowercase
+hex `operation_id`. Allowed actions are `change`, `purchase`, `confirm`, `cancel`,
+`save_profile`, `replace_profile`, `rename_profile`, `delete_profile`, and
+`load_profile`. Shared-profile mutations also require the expected
+`profile_revision`, checked inside the profile's cross-process transaction lock.
+Repeated identical operations in the current session return their original
+response. Reusing an operation ID for different data, stale sessions or revisions,
+invalid assets, locked profile pieces, duplicate names, and insufficient points
+are rejected. Purchases use the canonical game catalogue price. A lost response
+is reconciled by reading state; the tracker never blindly retries a mutation.
+
+A change contains the full appearance, including explicit null `hat` and `hat2`
+slots, integer skin tone 1–6, installed hair `version_style`, and all five integer
+hue fields in 0–359. Preview changes and profile loads never equip the player.
+Confirmation atomically persists the per-slot look and one-time free claim when
+applicable, then equips it. Cancel retains permanent purchases and profile edits.
+Saved outfits contain all appearance fields except skin tone and use stable
+32-character IDs and unique 1–48 character names.
+
+`wardrobe_preview` requires the current session and revision. It accepts native
+`mode` (`portrait`, `front`, `back`, `left`, `right`, `bike`), optional candidate
+`piece_key` and `accessory_slot`, optional saved `profile_id`, `head_only`, and
+`dye_field`. It returns a cropped native `png_base64`, pixel `width`/`height`,
+matching wardrobe identity and revision, installed `base_colors`, 36 native
+10-degree `dye_colors`, and six `skin_colors`. Images use actual layered game
+assets and native hue transforms without modifying the draft. Thumbnails load
+only for the current catalogue page; obsolete work is cancelled and image caches
+are bounded. The tracker accepts PNGs at most 512 pixels per dimension and
+131,072 bytes. The game pauses gameplay and its attempt timer while continuing
+native input and transport updates. Native Back cancels independently of tracker
+control forwarding. A reconnect republishes the same session and draft.
+
+### Future achievement wardrobe rewards
+
+Both handshakes independently negotiate `wardrobe_achievement_rewards_version: 1`.
+The collection transaction queues only newly earned identities in a separate
+encrypted consumer outbox. Existing achievement checkpoints are never backfilled.
+The outbox is independent of the existing achievement-popup pending queue and
+survives tracker restarts and notification acknowledgements.
+
+On compatible connection startup, achievement polls and committed collection
+batches, the tracker sends `wardrobe_achievement_rewards` with `version: 1`, the
+current game `session_id`, and `ids` containing at most 4,096 earned UUIDs. The
+game validates the entire batch, atomically adds 100 points for each previously
+uncredited identity in its shared cosmetic ledger, and sends
+`wardrobe_achievement_rewards_acknowledged` with the same `session_id` and `ids`.
+Only that durable game acknowledgement removes identities from the tracker
+outbox. Repeated deliveries are harmless even after reload or a lost response.
+Transient cosmetic-profile failures retain the pending delivery for retry.
+The tracker sends no reward channel to older games and keeps pending rewards.
+Reward IDs disclose only achievements already earned; locked metadata remains
+protected. The point rate comes from game policy, never from an event-supplied
+currency amount. Active wardrobe snapshots refresh after successful credits.

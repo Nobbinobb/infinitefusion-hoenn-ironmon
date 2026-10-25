@@ -9,9 +9,8 @@ module Ironmon
   class ObtainabilitySourceCatalogError < StandardError
   end
 
-  def self.tracker_area_catalog_document
+  def self.tracker_area_catalog_document(profile_id = active_generation_profile_id)
     @tracker_area_catalog_documents ||= {}
-    profile_id = active_generation_profile_id
     return @tracker_area_catalog_documents[profile_id] if
       @tracker_area_catalog_documents[profile_id]
     path = generation_profile_component_path("area_catalog", profile_id)
@@ -19,6 +18,18 @@ module Ironmon
       Marshal.load(file)
     end
     tracker_validate_area_catalog(document)
+    if profile_id != current_generation_profile_id
+      current = tracker_area_catalog_document(current_generation_profile_id)
+      current["areas"].each do |current_area|
+        area = document["areas"].find { |candidate| candidate["name"] == current_area["name"] }
+        if area
+          area["trainers"] = current_area["trainers"]
+          area["map_ids"] = (area["map_ids"] + current_area["map_ids"]).uniq.sort
+        elsif !current_area["trainers"].empty?
+          document["areas"] << current_area.merge("items" => [])
+        end
+      end
+    end
     @tracker_area_catalog_documents[profile_id] = document
     return document
   rescue Exception => e
@@ -28,6 +39,27 @@ module Ironmon
 
   def self.tracker_area_catalog
     return tracker_area_catalog_document["areas"]
+  end
+
+  def self.tracker_area_encounter_table_available?(map_id, encounter_type)
+    triggers = tracker_area_catalog_document["encounter_triggers"]
+    triggers ||= tracker_area_catalog_document(
+      current_generation_profile_id
+    )["encounter_triggers"]
+    if !triggers
+      raise AreaCatalogError, "The bundled Ironmon area catalog is missing encounter triggers."
+    end
+    methods = triggers[map_id.to_i] || []
+    value = encounter_type.to_s
+    return true if methods.include?(value)
+    return methods.include?("Fishing") if value.end_with?("Rod")
+    return methods.include?("Water") if value.start_with?("Water")
+    return methods.include?("Cave") if value.start_with?("Cave")
+    if value.match?(/\ALand(?:Rain|Sunny|Wind|Fog|Storm|Snow)\z/)
+      return methods.any? { |method| method.start_with?("Land") || method == "TallGrass" }
+    end
+    base = value.sub(/(?:Morning|Day|Afternoon|Evening|Night)\z/, "")
+    return methods.include?(base)
   end
 
   def self.tracker_obtainability_source_catalog
@@ -60,7 +92,7 @@ module Ironmon
     return value
   end
 
-  def self.tracker_area_event_entry_id(category, map_id, event_id)
+  def self.tracker_area_event_entry_id(category, map_id, event_id, trainer_type = nil, trainer_name = nil)
     @tracker_area_event_entry_indexes ||= {}
     cache_key = [active_generation_profile_id, category]
     index = @tracker_area_event_entry_indexes[cache_key]
@@ -69,13 +101,21 @@ module Ironmon
       tracker_area_catalog.each do |area|
         entries = area[category] || []
         entries.each do |entry|
-          key = [entry["map_id"].to_i, entry["event_id"].to_i]
-          index[key] = entry["entry_id"]
+          event_ids = entry["event_ids"] || [entry["event_id"]]
+          event_ids.each do |id|
+            key = [entry["map_id"].to_i, id.to_i]
+            (index[key] ||= []) << entry
+          end
         end
       end
       @tracker_area_event_entry_indexes[cache_key] = index
     end
-    return index[[map_id.to_i, event_id.to_i]]
+    entries = index[[map_id.to_i, event_id.to_i]] || []
+    selected = entries.find do |entry|
+      (!trainer_type || entry["trainer_type"] == trainer_type.to_s) &&
+        (!trainer_name || entry["trainer_name"] == trainer_name.to_s || entry["battle_kind"] == "rival")
+    end
+    return selected && selected["entry_id"]
   end
 
   def self.tracker_area_hidden_items(map_id)
@@ -119,6 +159,13 @@ module Ironmon
         raise "duplicate area content identifier" if entry_ids[entry_id]
         entry_ids[entry_id] = true
       end
+    end
+    triggers = document["encounter_triggers"]
+    if triggers && (!triggers.is_a?(Hash) || triggers.any? do |map_id, methods|
+      !map_id.is_a?(Integer) || map_id < 1 || !methods.is_a?(Array) ||
+        methods.any? { |method| !method.is_a?(String) || method.empty? }
+    end)
+      raise "the area encounter triggers are malformed"
     end
     return true
   end

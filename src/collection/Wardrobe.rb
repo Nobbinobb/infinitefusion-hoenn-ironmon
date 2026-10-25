@@ -102,6 +102,28 @@ module Ironmon
 end
 
 module IronmonCollectionCosmeticProfile
+  def award_achievements(ids)
+    result = super
+    return result if !Ironmon::GameplayCollection::Resources.active?
+    Ironmon::GameplayCollection::Resources.observe do
+      after = result["state"]
+      points = Ironmon::Cosmetics::ACHIEVEMENT_REWARD_POINTS
+      result["awarded_ids"].each_with_index do |id, index|
+        before_balance = result["balance_before"] + index * points
+        Ironmon::GameplayCollection.emit("wardrobe.points_award_resolved", {
+          "cosmetic_profile_ref" => Ironmon::GameplayCollection::Wardrobe.profile_ref(self),
+          "profile_revision_before" => result["revision_before"],
+          "profile_revision_after" => after["revision"],
+          "claim_ref" => Digest::SHA256.hexdigest(Ironmon::Cosmetics.encode(["achievement_unlocks", id])),
+          "award_source_kind" => "achievement", "award_event_key" => "achievement:#{id}",
+          "nominal_points" => points, "balance_before" => before_balance, "balance_after" => before_balance + points,
+          "actual_points_awarded" => points, "award_outcome" => "granted"
+        })
+      end
+    end
+    return result
+  end
+
   def award(attempt_id, event_key, points)
     return super if !Ironmon::GameplayCollection::Resources.active?
     before = read
@@ -121,7 +143,7 @@ module IronmonCollectionCosmeticProfile
     return result
   end
 
-  def purchase(entry)
+  def purchase(entry, expected_revision = nil)
     return super if !Ironmon::GameplayCollection::Resources.active?
     before = read
     result = super
@@ -145,7 +167,7 @@ module IronmonCollectionCosmeticProfile
     return result
   end
 
-  def confirm(catalog, appearance, appearance_key, initial)
+  def confirm(catalog, appearance, appearance_key, initial, expected_revision = nil)
     return super if !Ironmon::GameplayCollection::Resources.active?
     before = read
     previous_actual = Ironmon::Cosmetics.capture
@@ -214,19 +236,11 @@ module IronmonCollectionWardrobeScreen
     Thread.current[:ironmon_collection_wardrobe_screen] = previous_screen if defined?(previous_screen)
   end
 
-  def move_horizontal(direction)
+  def change_appearance(appearance)
     before = @appearance.dup
     mode = @preview_mode
     result = super
-    Ironmon::GameplayCollection::Resources.observe { Ironmon::GameplayCollection::Wardrobe.preview(self, before, mode, "horizontal") } if @collection_session_id
-    return result
-  end
-
-  def choose_item
-    before = @appearance.dup
-    mode = @preview_mode
-    result = super
-    Ironmon::GameplayCollection::Resources.observe { Ironmon::GameplayCollection::Wardrobe.preview(self, before, mode, "selection") } if @collection_session_id
+    Ironmon::GameplayCollection::Resources.observe { Ironmon::GameplayCollection::Wardrobe.preview(self, before, mode, "tracker") } if @collection_session_id
     return result
   end
 end

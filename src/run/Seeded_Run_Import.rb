@@ -124,11 +124,17 @@ module Ironmon
   def self.validate_seed_import_configuration(configuration)
     return "Seeded-run configuration is missing." if
       !configuration.is_a?(Hash)
+    version = configuration["schema_version"]
+    expected_keys = SEED_IMPORT_CONFIGURATION_KEYS
+    expected_keys += ["starter_policy"] if version == Configuration::SCHEMA_VERSION
     return "Seeded-run configuration has unsupported fields." if
       !configuration.keys.all? { |key| key.is_a?(String) } ||
-      configuration.keys.sort != SEED_IMPORT_CONFIGURATION_KEYS.sort
+      configuration.keys.sort != expected_keys.sort
     return "Seeded-run configuration schema is unsupported." if
-      configuration["schema_version"] != Configuration::SCHEMA_VERSION
+      ![Configuration::LEGACY_SCHEMA_VERSION, Configuration::SCHEMA_VERSION].include?(version)
+    return "Seeded-run starter policy is unsupported." if
+      version == Configuration::SCHEMA_VERSION &&
+      !Configuration::POLICY_IDS.include?(configuration["starter_policy"].to_s.to_sym)
     return "Seeded-run wild policy is unsupported." if
       !Configuration::POLICY_IDS.include?(
         configuration["wild_policy"].to_s.to_sym

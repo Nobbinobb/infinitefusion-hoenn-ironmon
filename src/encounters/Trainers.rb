@@ -68,6 +68,7 @@ module Ironmon
   end
 
   def self.rival_story_initial_species
+    return rival_starter_offers[rival_starter_slots[0]] if rival_lab_choice_enabled?
     policy = configuration.trainer_policy
     if policy == Configuration::POLICY_NORMAL_ONLY
       pool = normal_species_pool
@@ -127,6 +128,7 @@ module Ironmon
     return trainer if !replacement
     species = starter.species
     if configuration.trainer_policy == Configuration::POLICY_MIXED &&
+       !rival_lab_choice_enabled? &&
        GameData::Species.get(species).id_number <= NB_POKEMON
       species = rival_story_fusion_plan[:fusion]
     end

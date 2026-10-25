@@ -2,6 +2,8 @@
 
 ## Players
 
+- [Full feature list](FEATURES.md): detailed gameplay, tracker, controls, and
+  convenience features.
 - [Mechanics manual](IRONMON_MECHANICS.html): the current rules and tracker behavior.
   Open it directly in a browser; no server is required.
 - [Installation](guides/INSTALLATION.md): installation, updates, recovery, and removal.

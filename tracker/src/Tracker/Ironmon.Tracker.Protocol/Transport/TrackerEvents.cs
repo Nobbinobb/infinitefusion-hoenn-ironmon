@@ -31,6 +31,21 @@ public static class TrackerEvents
     public const string ActiveRunPreparationReady = "active_run_preparation_ready";
 
     /// <summary>
+    /// Gets the metadata-only native rival fusion preparation event.
+    /// </summary>
+    public const string RivalFusionPrepare = "rival_fusion_prepare";
+
+    /// <summary>
+    /// Gets the single ordered rival fusion request event.
+    /// </summary>
+    public const string RivalFusionRequested = "rival_fusion_requested";
+
+    /// <summary>
+    /// Gets the correlated native rival fusion result event.
+    /// </summary>
+    public const string RivalFusionResult = "rival_fusion_result";
+
+    /// <summary>
     /// Gets the current-state update announcing a changed overworld encounter option.
     /// </summary>
     public const string EncounterModeChanged = "encounter_mode_changed";

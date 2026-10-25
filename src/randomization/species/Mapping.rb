@@ -219,6 +219,7 @@ module Ironmon
   def self.ensure_trainer_party_policy(trainer)
     return trainer if !active? || !trainer || !trainer.party
     trainer.party.each_with_index do |pokemon, slot|
+      next if rival_opening_starter?(pokemon)
       level = trainer_pokemon_effective_level(pokemon)
       requires_final = trainer_requires_fully_evolved_species?(level) &&
         !trainer_maturity_exception?(pokemon)
@@ -254,8 +255,8 @@ module Ironmon
       context = [*party_context, slot]
       if entry.is_a?(Pokemon)
         mapped = entry.clone
-        next mapped if persistent_trainer_species?(entry) &&
-          trainer_species_allowed?(entry.species)
+        next mapped if rival_opening_starter?(entry) ||
+          (persistent_trainer_species?(entry) && trainer_species_allowed?(entry.species))
         level = trainer_maturity_exception?(entry) ? nil :
           trainer_effective_level(entry.level)
         mapped_species = trainer_species_for(entry.species, context, level)

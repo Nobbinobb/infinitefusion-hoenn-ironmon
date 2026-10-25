@@ -106,6 +106,7 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_wild_species_map
   attr_accessor :ironmon_trainer_species_map
   attr_accessor :ironmon_gym_leader_teams
+  attr_accessor :ironmon_story_trainer_parties
   attr_accessor :ironmon_pivot_state
   attr_accessor :ironmon_run_id
   attr_accessor :ironmon_tracker_sequence
@@ -122,6 +123,8 @@ class PokemonGlobalMetadata
   attr_accessor :ironmon_item_shop_policy_version
   attr_accessor :ironmon_first_rival_heal_applied
   attr_accessor :ironmon_starter_item_reward_applied
+  attr_accessor :ironmon_starter_species
+  attr_accessor :ironmon_rival_lab_decision
 end
 
 class Pokemon

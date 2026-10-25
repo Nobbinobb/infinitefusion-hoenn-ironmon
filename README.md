@@ -1,266 +1,123 @@
 # Ironmon for Pokémon Infinite Fusion 2
 
-Ironmon is a deterministic challenge mode for **Pokémon Infinite Fusion 2:
-Hoenn**. It combines seeded randomization, fusion-aware encounters, stricter
-challenge rules, rapid resets, and a companion tracker designed around
-hidden-information boundaries.
+Ironmon is a seeded, fusion-aware challenge mode for **Pokémon Infinite Fusion
+2: Hoenn**, with a single-Pokémon pivot system and a companion tracker.
 
 > [!IMPORTANT]
 > Ironmon **0.8.15** targets **Pokémon Infinite Fusion 2 version 6.8.2**.
-> The included tracker currently targets Windows x64.
+> The tracker requires Windows x64.
 
-## Tracker required from 0.8.10
-
-Starting with **Ironmon 0.8.10**, the tracker must be running and connected
-while you play an Ironmon run. Open **Ironmon Tracker** to start the game
-automatically, then use the **Play header action** to create or continue a run.
-
-Some preparation and lookup work is expensive in the game's Ruby runtime, so
-we moved substantial work into the tracker to improve performance. Requiring
-the tracker lets Ironmon rely on that work consistently, without maintaining
-a slower tracker-free path or limiting future improvements. Run setup and
-configuration now also live in the tracker.
-
-If you prefer to keep the tracker out of the way, enable **Settings > Game
-session > Start tracker minimized**. Its background services remain active.
-If the connection is lost, Ironmon pauses until the tracker reconnects,
-preserving the current attempt. Ordinary non-Ironmon play remains available
-without the tracker.
+This README describes the current source tree. Published downloads may contain
+fewer features; see the [release notes](docs/releases/) for each version.
+The current Alpha challenge ends after defeating Wattson in his normal Hoenn
+Gym battle.
 
 ## Features
 
-- Deterministic, shareable seeded runs.
-- Mixed, fusion-only, and normal-only encounter policies.
-- Fusion-aware starter, encounter, gift, trainer, and evolution generation.
-- Randomized abilities, base stats, move access, evolutions, and item rewards.
-- A single-Pokémon pivot system with concealed choices and irreversible
-  outcomes.
-- Immutable generation profiles that preserve the exact data used by each run.
-- Fast challenge resets and automatic attempt archiving.
-- Progression safeguards for required story Pokémon, trades, HMs, and healing.
-- A shared cosmetic wardrobe with default outfits, obtained-only filtering,
-  and save-slot-specific equipped appearances.
-- A local companion tracker with area lookup, Pokémon lookup, evolution graphs,
-  run statistics, and completed-run archives.
-- A standalone installer with optional sprite-sheet downloads, plus signed
-  updates from inside the tracker.
-- Configurable keyboard and controller profiles for game controls and tracker
-  shortcuts, with automatic game startup and optional minimized tracker startup.
-- Privacy-aware tracker communication: concealed gameplay information is
-  filtered by the game before it reaches the tracker.
+- Shareable seeded runs with randomized Pokémon, abilities, stats, moves,
+  evolutions, and items.
+- Fusion-aware encounters, concealed pivot choices, and fast challenge resets.
+- A companion tracker with live battle information, world and Pokémon lookup,
+  run history, and persistent achievements.
+- Configurable keyboard and controller controls, speed profiles, and battle
+  item shortcuts.
+- A shared cosmetic wardrobe with unlockable appearances.
 
-The complete rules and edge cases are documented in the
-[Ironmon Mechanics Manual](docs/IRONMON_MECHANICS.html).
+## AI usage disclosure
+
+**Ironmon contains AI-generated code and AI-generated assets.** AI tools have
+been used to generate and modify code and create mod artwork, including
+achievement icons and detail artwork.
+
+Existing credits for Pokémon Infinite Fusion, community sprites, and
+third-party components remain in place.
+
+## Tracker required
+
+Keep **Ironmon Tracker** running and connected while playing an Ironmon run.
+Opening the tracker starts the game automatically. Use the **Play** header
+button to create or continue a run from the game's title screen or main menu.
+If the connection is lost, the attempt pauses until the tracker reconnects.
+
+For a less visible tracker, enable **Settings > Features > Game session > Start
+tracker minimized**. Ordinary non-Ironmon play does not require the tracker.
 
 ## Download
 
-Download the latest version from
+Get the latest version from
 [GitHub Releases](https://github.com/Nobbinobb/infinitefusion-hoenn-ironmon/releases/latest).
+Choose **one** download:
 
-Choose the installer or one of the two Windows x64 ZIP packages:
-
-| Package | Recommended for |
+| Package | Use |
 | --- | --- |
-| `Ironmon-Setup-win-x64.exe` | Recommended. Defaults to the newest stable Ironmon release. Advanced options can select an available older release with its matching game revision. |
-| `Ironmon-vX.Y.Z-win-x64.zip` | Manual installation into an existing game folder. Includes the required .NET runtime. |
-| `Ironmon-vX.Y.Z-win-x64-runtime-required.zip` | Smaller manual download for players who already have the Windows x64 .NET 10 Runtime installed. |
-
-You only need one of these downloads. Setup downloads the required game and
-Ironmon files for you. The JSON files on the release page are read automatically
-by the updater; `SHA256SUMS.txt` provides one checksum list for the release.
+| `Ironmon-Setup-win-x64.exe` | Recommended. Downloads and installs the game and Ironmon, or updates a supported existing installation. |
+| `Ironmon-vX.Y.Z-win-x64.zip` | Manual installation into an existing game folder; includes the required .NET runtime. |
+| `Ironmon-vX.Y.Z-win-x64-runtime-required.zip` | Smaller manual package; requires the Windows x64 .NET 10 Desktop Runtime. |
 
 ## Installation
 
 ### Recommended: use the installer
 
-Setup can download the game for you and does not require Git to be installed.
-It includes its own .NET runtime.
+1. Download and open `Ironmon-Setup-win-x64.exe`.
+2. Choose an installation folder or a supported existing game folder. Back up
+   existing saves before making changes.
+3. Optionally select sprite-sheet downloads and a desktop tracker shortcut.
+   Keep **Runtime included** unless the required .NET Desktop Runtime is
+   already installed.
+4. Save and close any running game, review the installation, then choose
+   **Install**.
+5. Open **Ironmon Tracker** when Setup finishes, then use **Play** to create or
+   continue a run.
 
-1. Download and open `Ironmon-Setup-win-x64.exe` from the latest release.
-   Setup defaults to the newest stable Ironmon release. Expand **Advanced:
-   Ironmon version** on the first page to select an older available release.
-   Setup verifies its signed metadata and exact matching game revision; missing
-   or unverifiable versions are disabled. Availability is checked again during
-   review and before installation. Existing installations cannot be downgraded.
-   Older Setup downloads with a version in their filename always select latest
-   and do not provide this selector. Releases without signed installer metadata
-   need a versioned ZIP archive and a matching game for manual installation.
-2. Choose any folder. Setup reuses a supported existing game or installs into a
-   **Pokémon Infinite Fusion 2** subfolder. Back up existing saves before making changes.
-3. Optionally select the sprite-sheet download and a desktop tracker shortcut.
-   For a new installation, keep **Runtime included** unless you want to use an
-   already installed .NET runtime. Existing installations retain their package type.
-4. Review the installation, save and close any running game, then choose
-   **Install**. Setup downloads, verifies, and installs the required files and
-   shows progress. Windows may request permission for a protected folder.
-5. Open the tracker when Setup finishes. It starts the game automatically.
-   Use its **Play header action** to create or continue an Ironmon run from the
-   game's title screen or main menu.
-
-You can delete Setup afterward. Future updates are available inside the tracker.
-The tracker also starts the game when opened directly or after a manual ZIP
-installation, and reuses a game already running from the same installation.
-Sprite sheets can also be downloaded later from **Settings > Custom sprite
-library**. Setup offers to install WebView2 if the tracker needs it.
+Setup does not require Git and offers to install WebView2 when needed.
+Advanced options can select an available older Ironmon release with its
+matching game revision. Sprite sheets can also be downloaded later from
+**Settings > General > Custom sprite library**.
 
 ### Manual installation
 
-1. Install the supported version of Pokémon Infinite Fusion 2, fully close the
-   game, and back up any saves you care about.
-2. Download one Ironmon ZIP package and extract the complete archive into the
-   directory containing `InfiniteFusion2.exe`. Allow its `Data` directory to merge
-   with the existing `Data` directory; keep the scripts and tracker together.
-3. Start `Ironmon Tracker/Ironmon Tracker.exe`. It opens the game automatically;
-   use its **Play header action** to create or continue an Ironmon run from the
-   game's title screen or main menu.
+1. Install the supported Pokémon Infinite Fusion 2 version, close the game,
+   and back up existing saves.
+2. Extract one complete Ironmon ZIP into the folder containing
+   `InfiniteFusion2.exe`. Merge the `Data` folders and keep the supplied tracker
+   and scripts together.
+3. Open `Ironmon Tracker/Ironmon Tracker.exe`, then use **Play** to create or
+   continue an Ironmon run.
 
-The archive installs:
+Use matching Ironmon and game versions. See the
+[installation guide](docs/guides/INSTALLATION.md) for compatibility, older
+releases, recovery, and troubleshooting.
 
-- Ironmon game scripts under `Data/Scripts/997_Ironmon`.
-- The compatibility guard at `Data/Scripts/000_Ironmon_Guard.rb`.
-- Generated runtime data under `Data/Ironmon`.
-- The companion application under `Ironmon Tracker`.
+## Updating
 
-### Updating
+The tracker checks for updates at startup. Choose **Update** when offered, or
+use **Check for updates** beside the Settings heading.
 
-From Ironmon 0.8.8 onward, the tracker checks for updates at startup. Choose
-**Update** to review an available release or **Later** to dismiss it for this
-launch. You can also use **Check for updates** beside the Settings heading.
-Save your game before approving an update. If the update requires a finished
+Save your game before applying an update. If the update requires a finished
 Ironmon run, complete that run first; closing the game does not finish it.
-
-To move from 0.8.7 or an older tracker without the updater, use Setup with a
-supported existing installation or follow the manual installation instructions.
-
-See the [installation guide](docs/guides/INSTALLATION.md) for compatibility,
-recovery, sprite-library preparation, seeded runs, and troubleshooting.
-
-## Version compatibility
-
-| Ironmon version | Infinite Fusion 2 version | Status |
-| --- | --- | --- |
-| 0.8.15 | 6.8.2 | Current |
-| 0.8.0–0.8.14 | 6.8.2 | Legacy |
-| 0.2.1–0.7.9 | 6.8.0 | Legacy |
-
-Use an Ironmon release only with its listed Infinite Fusion version.
-
-Every new attempt is pinned to an immutable generation profile. Compatible
-in-place updates preserve the data required by existing runs instead of
-silently regenerating them with newer game data.
-
-Pre-release saves and archive recipes from before the current profile baseline
-cannot be migrated safely. Start a new run when installing the current baseline
-for the first time.
-
-## Companion tracker
-
-The tracker communicates with the game locally through a versioned protocol.
-The game remains authoritative for gameplay state and decides what information
-may be exposed.
-
-Tracker features include:
-
-- New-run setup with save selection, reusable rule profiles, and saved-run loading.
-- Live player and opponent information, including temporary Imposter and
-  Transform battle state.
-- Area encounters, trainers, items, and discovery progress.
-- Pokémon details and move presentation.
-- Fusion-aware evolution and obtainability graphs.
-- Attempt statistics and completed-run archives.
-- Seeded-run export and import.
-- Custom sprite-library synchronization.
-- Signed release updates with startup notifications and a manual Settings check.
-- Capability-limited diagnostic access.
-
-Concealed species, fusion materials, sprites, and generated outcomes are not
-sent merely because a tracker view could hide them visually.
+For older trackers without an updater, use Setup or follow the manual
+installation instructions.
 
 ## Documentation
 
-- [Documentation index](docs/README.md)
-- [Installation guide](docs/guides/INSTALLATION.md)
-- [Configuration guide](docs/guides/CONFIGURATION.md)
-- [Development and diagnostic access](docs/guides/DEVELOPMENT.md)
-- [Mechanics manual](docs/IRONMON_MECHANICS.html)
-- [Release notes](docs/releases/)
-
-## Repository structure
-
-```text
-.github/workflows/  CI validation and release automation
-src/                Canonical Ironmon Ruby source and load-order manifest
-tracker/
-  src/Tracker/      Tracker app, connection, collection, core, protocol, and seeds
-  src/Setup/        Installer and setup logic
-  src/Updater/      Updater and installation infrastructure
-  src/Shared/       Shared SQLite, sprites, access, and UI libraries
-  tests/            .NET unit, integration, and Windows UI tests
-  tools/            SQL generator and maintainer applications
-tests/
-  runtime/          Bundled-game runtime validation
-  fixtures/         Shared runtime test inputs
-tools/              Build and validation entry points
-  generation/       Runtime data exporters and generation helpers
-  ci/               Hosted CI, release, and cache tooling
-  sprites/          Sprite validation tools
-  analysis/         Randomization and obtainability analysis
-resources/          Reviewed generation inputs and updater trust keys
-data/               Collection catalog and ignored generated runtime data
-docs/               Mechanics manual, guides, release notes, and player README
-```
-
-Generated runtime catalogs, compiled tracker output, distributions, simulation
-reports, and release archives are intentionally excluded from Git.
-
-## Development
-
-The canonical game scripts live under `src/`. The ordered manifest at
-`src/load_order.json` maps every source file to its flat runtime filename.
-
-To synchronize the canonical scripts into a local Infinite Fusion installation:
-
-```powershell
-.\tools\Build-Distribution.ps1
-```
-
-Ruby changes must be validated using the bundled Infinite Fusion runtime. A
-separate system Ruby installation is not authoritative for this project.
-
-The tracker solution is located at:
-
-```text
-tracker/Ironmon.Tracker.slnx
-```
-
-Maintainer release builds are produced with:
-
-```powershell
-.\tools\Build-TrackerRelease.ps1
-```
-
-The release builder regenerates runtime datasets, runs the tracker and
-bundled-game validation suites, builds both Windows package variants, validates
-their contents, and creates deterministic ZIP archives with SHA-256 checksums.
-
-See the [development guide](docs/guides/DEVELOPMENT.md) for the complete
-workflow.
+- [Full feature list](docs/FEATURES.md): detailed gameplay and tracker features.
+- [Mechanics manual](docs/IRONMON_MECHANICS.html): complete gameplay rules and tracker features.
+- [Configuration guide](docs/guides/CONFIGURATION.md): run settings and controls.
+- [Installation guide](docs/guides/INSTALLATION.md): setup, updates, and troubleshooting.
+- [Development guide](docs/guides/DEVELOPMENT.md): source builds and validation.
+- [Release notes](docs/releases/): changes included in each release.
+- [Documentation index](docs/README.md): all guides and maintainer references.
 
 ## License
 
-Ironmon's original source code and documentation are licensed under the
-[MIT License](LICENSE).
-
-Third-party components retain their respective licenses. The bundled Open Sans
-font is licensed under the SIL Open Font License 1.1; see
+Ironmon's original source code and documentation use the [MIT License](LICENSE).
+Third-party components retain their respective licenses; see
 [Third-Party Notices](THIRD_PARTY_NOTICES.md).
 
 ## Disclaimer
 
 Ironmon is an independent, unofficial add-on and is not affiliated with or
 endorsed by The Pokémon Company, Nintendo, Game Freak, Creatures Inc., or the
-Pokémon Infinite Fusion project.
-
-Pokémon and related names, characters, and properties belong to their
-respective owners. This repository does not distribute the Pokémon Infinite
-Fusion game or its proprietary assets.
+Pokémon Infinite Fusion project. Pokémon and related properties belong to
+their respective owners. This repository does not distribute the base game
+or its proprietary assets.

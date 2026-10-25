@@ -47,6 +47,30 @@ internal sealed class PlayerFusionMappingCoordinator
     internal int CachedJobCount => _jobs.Count;
 
     /// <summary>
+    /// Prepares only the shared native pairing and maps one ordered pair without enumerating material or evolution indexes.
+    /// </summary>
+    /// <param name="recipe">The game's exact pinned run recipe.</param>
+    /// <param name="bodyId">The normal body material, or one for undisclosed preparation.</param>
+    /// <param name="headId">The normal head material, or one for undisclosed preparation.</param>
+    /// <param name="cancellationToken">The token cancelling this caller's wait.</param>
+    /// <returns>The exact fusion number, or null when this recipe is incompatible.</returns>
+    internal async Task<int?> MapRivalFusionAsync(FusionAssignmentRecipePayload recipe, int bodyId, int headId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        return await Task.Run<int?>(() =>
+        {
+            PlayerFusionWorkerContext? context = ResolveWorkerContext(recipe);
+            if (context is null || !Compatible(recipe, context.Catalog) || recipe.NormalSpeciesCount != context.Catalog.NormalSpeciesCount
+                || recipe.BaseStatGeneratorVersion != GameplayBaseStatGeneratorVersion || string.IsNullOrWhiteSpace(recipe.GenerationProfileId))
+            {
+                return null;
+            }
+
+            return context.MappingWorker.MapOrderedPair(recipe.Seed, recipe.PlayerFusionGeneratorVersion, bodyId, headId);
+        }, cancellationToken).WaitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Starts or reuses both native indexes as soon as an authorized active run is recovered.
     /// </summary>
     /// <param name="runId">The active run identifier.</param>

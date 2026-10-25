@@ -50,6 +50,9 @@ module IronmonCollectionWardrobeRuntimeTests
     end
     screen.singleton_class.prepend(IronmonCollectionWardrobeScreen)
     assert(screen.run, "native profile-backed screen wrapper result is preserved")
+    achievement = "77777777-7777-7777-7777-777777777777"
+    profile.award_achievements([achievement])
+    profile.award_achievements([achievement])
     branch_before = c.branch_id
     attempt_before = c.attempt_id
     group = nil
@@ -73,7 +76,8 @@ module IronmonCollectionWardrobeRuntimeTests
     assert(checkpoint["attempt_id"] != attempt_before && checkpoint["battle_id"].nil?, "new lifecycle event ignores the retired dynamic battle and attempt")
     assert(closure.length == 1 && closure[0]["attempt_id"] == attempt_before && closure[0]["battle_id"] == "source-battle", "late group closes once under its retained original context")
     awards = facts.select { |event| event["type"] == "wardrobe.points_award_resolved" }.map { |event| event["payload"] }
-    assert(awards.map { |payload| payload["award_outcome"] } == ["granted", "duplicate_claim", "granted"], "actual and duplicate award outcomes are canonical")
+    assert(awards.map { |payload| payload["award_outcome"] } == ["granted", "duplicate_claim", "granted", "granted"], "actual and duplicate award outcomes are canonical")
+    assert(awards[-1]["award_source_kind"] == "achievement" && awards[-1]["actual_points_awarded"] == 100, "achievement currency is captured once with its actual source")
     purchase = facts.find { |event| event["type"] == "wardrobe.purchase_resolved" }["payload"]
     assert(purchase["actual_points_spent"] == replacement["points"] && purchase["owned_before"] == false && purchase["owned_after"] == true, "actual paid ownership/debit retained")
     confirmations = facts.select { |event| event["type"] == "wardrobe.appearance_confirmation_resolved" }.map { |event| event["payload"] }

@@ -45,6 +45,7 @@ module Ironmon
   end
 
   def self.tracker_controls_active?
+    return false if defined?(Ironmon::Cosmetics) && Ironmon::Cosmetics.respond_to?(:wardrobe_open?) && Ironmon::Cosmetics.wardrobe_open?
     return @tracker_control_deadline &&
       tracker_uptime_seconds < @tracker_control_deadline
   end

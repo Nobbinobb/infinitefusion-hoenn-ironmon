@@ -4,7 +4,8 @@
 
 module Ironmon
   class Configuration
-    SCHEMA_VERSION = 1
+    SCHEMA_VERSION = 2
+    LEGACY_SCHEMA_VERSION = 1
 
     POLICY_MIXED = :mixed
     POLICY_CUSTOM_FUSIONS_ONLY = :custom_fusions_only
@@ -17,6 +18,7 @@ module Ironmon
 
     DEFAULT_WILD_POLICY = POLICY_MIXED
     DEFAULT_TRAINER_POLICY = POLICY_MIXED
+    DEFAULT_STARTER_POLICY = POLICY_MIXED
 
     UNFUSION_RANDOM_COMPONENT = :random_component
     UNFUSION_PLAYER_CHOICE = :player_choice
@@ -36,10 +38,12 @@ module Ironmon
     def initialize(wild_policy = DEFAULT_WILD_POLICY,
                    trainer_policy = DEFAULT_TRAINER_POLICY,
                    unfusion_setting = DEFAULT_UNFUSION_SETTING,
-                   automatic_reset = DEFAULT_AUTOMATIC_RESET)
+                   automatic_reset = DEFAULT_AUTOMATIC_RESET,
+                   starter_policy = DEFAULT_STARTER_POLICY)
       @schema_version = SCHEMA_VERSION
       self.wild_policy = wild_policy
       self.trainer_policy = trainer_policy
+      self.starter_policy = starter_policy
       self.unfusion_setting = unfusion_setting
       self.automatic_reset = automatic_reset
     end
@@ -50,6 +54,14 @@ module Ironmon
 
     def trainer_policy=(policy)
       @trainer_policy = normalize_policy(policy, DEFAULT_TRAINER_POLICY)
+    end
+
+    def starter_policy
+      return @starter_policy || @wild_policy
+    end
+
+    def starter_policy=(policy)
+      @starter_policy = normalize_policy(policy, DEFAULT_STARTER_POLICY)
     end
 
     def unfusion_setting=(setting)
@@ -65,22 +77,25 @@ module Ironmon
     end
 
     def current?
-      return false if @schema_version != SCHEMA_VERSION
+      return false if ![LEGACY_SCHEMA_VERSION, SCHEMA_VERSION].include?(@schema_version)
       return false if !POLICY_IDS.include?(@wild_policy)
       return false if !POLICY_IDS.include?(@trainer_policy)
+      return false if @schema_version == SCHEMA_VERSION && !POLICY_IDS.include?(@starter_policy)
       return false if !UNFUSION_SETTING_IDS.include?(@unfusion_setting)
       return false if ![true, false].include?(@automatic_reset)
       return true
     end
 
     def to_h
-      return {
+      result = {
         :schema_version => @schema_version,
         :wild_policy => @wild_policy,
         :trainer_policy => @trainer_policy,
         :unfusion_setting => @unfusion_setting,
         :automatic_reset => @automatic_reset
       }
+      result[:starter_policy] = starter_policy if @schema_version == SCHEMA_VERSION
+      return result
     end
 
     def self.from(value)
@@ -91,6 +106,11 @@ module Ironmon
       if value.is_a?(Hash)
         wild_policy = value[:wild_policy] || value["wild_policy"]
         trainer_policy = value[:trainer_policy] || value["trainer_policy"]
+        starter_policy = value[:starter_policy] || value["starter_policy"] || wild_policy
+        schema_version = value[:schema_version] || value["schema_version"] || SCHEMA_VERSION
+        if ![LEGACY_SCHEMA_VERSION, SCHEMA_VERSION].include?(schema_version)
+          raise ArgumentError, "the saved Ironmon configuration is incompatible"
+        end
         unfusion_setting = value[:unfusion_setting] ||
                            value["unfusion_setting"]
         automatic_reset = if value.key?(:automatic_reset)
@@ -98,8 +118,10 @@ module Ironmon
                           else
                             value["automatic_reset"]
                           end
-        return new(wild_policy, trainer_policy, unfusion_setting,
-                   automatic_reset)
+        result = new(wild_policy, trainer_policy, unfusion_setting,
+                     automatic_reset, starter_policy)
+        result.instance_variable_set(:@schema_version, schema_version)
+        return result
       end
       return new
     end

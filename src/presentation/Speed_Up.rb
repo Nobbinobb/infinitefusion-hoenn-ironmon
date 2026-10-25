@@ -143,6 +143,7 @@ module Ironmon
     end
 
     def self.overlay_state
+      return nil if Ironmon::MoveLearningProtection.active?
       return nil if !$PokemonSystem || $PokemonSystem.speedup != 1 || !@was_toggle
       cycle = @cycles[@context]
       index = $GameSpeed.to_i
@@ -158,6 +159,9 @@ module Ironmon
 
     module GraphicsUpdates
       def update
+        if Ironmon::MoveLearningProtection.active?
+          return Ironmon::MoveLearningProtection.normal_speed_frame { super }
+        end
         toggling = Ironmon::ToggleSpeed.before_update
         super
       ensure

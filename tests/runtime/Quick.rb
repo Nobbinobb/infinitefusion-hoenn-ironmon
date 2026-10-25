@@ -33,6 +33,7 @@ begin
   $ironmon_feature_settings_result = File.join(output_root, "features.txt")
   [
     ["deterministic hashing", "Deterministic-Hashing.rb"],
+    ["UTF-8 tracker text", "Tracker-JSON.rb"],
     ["battle Run shortcut", "Battle-Run-Hotkey.rb"],
     ["feature settings", "Feature-Settings.rb"]
   ].each do |name, file|

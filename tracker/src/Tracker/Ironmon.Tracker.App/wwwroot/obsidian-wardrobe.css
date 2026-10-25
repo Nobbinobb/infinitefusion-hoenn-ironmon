@@ -1,0 +1,177 @@
+/* Approved wardrobe layout: native game previews and the existing Obsidian controls. */
+.obsidian .wardrobe-overlay { position:fixed; inset:0; padding:6px; z-index:1120; }
+.obsidian .wardrobe-dialog { height:100%; padding:14px 12px 10px; display:flex; flex-direction:column; min-height:0; border:1px solid #38465a; border-radius:13px; background:linear-gradient(135deg,#1a2230,#10151d 72%); }
+.obsidian .wardrobe-dialog button, .obsidian .wardrobe-dialog input, .obsidian .wardrobe-dialog select {
+  font:inherit; min-width:0; color:var(--ow-text); border:1px solid #354153; border-radius:6px; background:#111923; padding:6px 9px;
+}
+.obsidian .wardrobe-dialog button { min-height:30px; }
+.obsidian .wardrobe-dialog button:hover:not(:disabled) { border-color:#6d688c; background:#1c2332; }
+.obsidian .wardrobe-dialog button:disabled { opacity:.45; }
+.obsidian .wardrobe-dialog button:focus-visible, .obsidian .wardrobe-dialog input:focus-visible, .obsidian .wardrobe-dialog select:focus-visible { outline:2px solid #b0a3ff; outline-offset:2px; }
+.obsidian .wardrobe-dialog .ow-primary { background:#b0a3ff20; border-color:#b0a3ff70; color:#e0d8ff; }
+.obsidian .wardrobe-dialog .ow-primary:hover:not(:disabled) { background:#b0a3ff30; border-color:#b0a3ff; }
+.obsidian .wardrobe-dialog .ow-link { border:0; padding:3px 0; background:none; color:#b0a3ff; min-height:26px; }
+.obsidian .wardrobe-dialog .ow-link:hover:not(:disabled) { background:none; text-decoration:underline; }
+.obsidian .wardrobe-dialog .ow-header { display:flex; align-items:center; gap:10px; margin-bottom:11px; flex:none; }
+.obsidian .wardrobe-dialog .ow-header h2 { font-size:23px; font-weight:600; letter-spacing:-.4px; line-height:1.2; margin:0; color:#f0f3fa; }
+.obsidian .wardrobe-dialog .ow-header-actions { margin-left:auto; display:flex; gap:6px; align-items:center; }
+.obsidian .wardrobe-dialog .ow-balance { text-align:right; margin-right:5px; font-variant-numeric:tabular-nums; }
+.obsidian .wardrobe-dialog .ow-balance strong { display:block; font-size:14px; font-weight:600; color:#e3b96c; }
+.obsidian .wardrobe-dialog .ow-balance small { color:#9eacbf; font-size:10px; }
+.obsidian .wardrobe-dialog .ow-icon-button { width:29px; height:29px; min-width:29px; min-height:29px; border:0; background:#263040; color:#becbe0; padding:0; display:grid; place-items:center; border-radius:7px; }
+.obsidian .wardrobe-dialog .ow-icon-button i { width:15px; height:15px; }
+.obsidian .wardrobe-dialog .ow-profilebar { display:flex; gap:6px; margin-bottom:9px; flex:none; }
+.obsidian .wardrobe-dialog .ow-profilebar select { flex:1; width:0; font-size:12px; height:32px; padding:5px 7px; }
+.obsidian .wardrobe-dialog .ow-profilebar button { font-size:11px; padding:5px 9px; white-space:nowrap; }
+.obsidian .wardrobe-dialog .ow-body { display:flex; flex-direction:column; flex:1; min-height:0; }
+.obsidian .wardrobe-dialog .ow-preview { display:grid; grid-template-columns:116px minmax(0,1fr); gap:7px 12px; flex:none; height:174px; grid-template-rows:minmax(0,1fr) 23px; padding:9px 11px; border:1px solid #2a3544; border-radius:10px; background:radial-gradient(ellipse at 14% 0%,#1d2433,#131820 64%); }
+.obsidian .wardrobe-dialog .ow-avatar { width:116px; height:154px; grid-row:1/3; align-self:center; image-rendering:pixelated; }
+.obsidian .wardrobe-dialog .ow-look { display:grid; align-content:center; gap:5px; min-width:0; }
+.obsidian .wardrobe-dialog .ow-preview .ow-profilebar { margin:0 0 5px; }
+.obsidian .wardrobe-dialog .ow-preview-meta { display:grid; grid-template-columns:minmax(0,1fr) 108px; align-items:start; gap:6px; height:64px; min-width:0; }
+.obsidian .wardrobe-dialog .ow-look-details { display:grid; grid-template-rows:repeat(3,16px); gap:5px; min-width:0; }
+.obsidian .wardrobe-dialog .ow-preview-action { display:grid; align-content:start; justify-items:end; gap:5px; min-width:0; width:108px; height:64px; }
+.obsidian .wardrobe-dialog .ow-preview-action[aria-hidden="true"] { visibility:hidden; }
+.obsidian .wardrobe-dialog .ow-preview-action .ow-error { white-space:nowrap; font-size:10px; }
+.obsidian .wardrobe-dialog .ow-preview-action button { font-size:11px; padding:4px 8px; min-height:28px; width:100%; white-space:nowrap; }
+.obsidian .wardrobe-dialog .ow-content[data-category="hair"] .ow-item :is(img,.ow-image-placeholder) { height:96px; }
+.obsidian .wardrobe-dialog .ow-look-title { display:flex; align-items:baseline; gap:7px; min-width:0; font-size:12px; }
+.obsidian .wardrobe-dialog .ow-look-title strong { font-weight:600; overflow-wrap:anywhere; }
+.obsidian .wardrobe-dialog .ow-look-title small { color:#b0a3ff; font-size:10px; flex:none; }
+.obsidian .wardrobe-dialog .ow-look-detail { color:#a7b5ca; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; height:16px; }
+.obsidian .wardrobe-dialog .ow-hair-detail { display:flex; align-items:center; gap:5px; }
+.obsidian .wardrobe-dialog .ow-piece-name { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.obsidian .wardrobe-dialog .ow-hair-values { flex:none; font-size:10px; }
+.obsidian .wardrobe-dialog .ow-accessories { display:flex; gap:4px; }
+.obsidian .wardrobe-dialog .ow-look-detail b { color:#e7edf7; font-weight:400; }
+.obsidian .wardrobe-dialog .ow-angles { display:flex; flex-wrap:wrap; gap:3px; align-content:start; }
+.obsidian .wardrobe-dialog .ow-angles button { flex:1 1 auto; font-size:10px; padding:3px 5px; min-height:23px; border:0; background:#1b2432; color:#9eacbf; }
+.obsidian .wardrobe-dialog .ow-angles button[aria-pressed=true] { color:#e0d8ff; background:#b0a3ff22; }
+.obsidian .wardrobe-dialog .ow-editor { display:flex; flex-direction:column; flex:1; min-height:0; }
+.obsidian .wardrobe-dialog .ow-tabs { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:3px; margin:7px 0 9px; border-bottom:1px solid #222b39; flex:none; }
+.obsidian .wardrobe-dialog .ow-tabs button { position:relative; display:flex; align-items:center; justify-content:center; min-height:35px; padding:7px 1px 9px; border:0; border-radius:7px 7px 0 0; background:transparent; color:#9eacbf; font-size:12px; }
+.obsidian .wardrobe-dialog .ow-tabs button[aria-pressed=true] { color:#edeaff; background:linear-gradient(0deg,#b0a3ff12,transparent); }
+.obsidian .wardrobe-dialog .ow-tabs button[aria-pressed=true]:after { content:""; position:absolute; left:10px; right:10px; bottom:-1px; height:2px; background:#b0a3ff; }
+.obsidian .wardrobe-dialog .ow-content { flex:1; min-height:0; overflow:auto; scrollbar-width:thin; scrollbar-gutter:stable; scrollbar-color:#48556c transparent; padding:1px 2px 5px; overscroll-behavior:contain; }
+.obsidian .wardrobe-dialog .ow-toolbar { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+.obsidian .wardrobe-dialog .ow-toolbar input { flex:1; width:0; height:31px; font-size:12px; padding:6px 8px; }
+.obsidian .wardrobe-dialog .ow-toolbar select { height:31px; max-width:113px; font-size:11px; padding:4px 5px; }
+.obsidian .wardrobe-dialog .ow-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+.obsidian .wardrobe-dialog .ow-item { display:flex; flex-direction:column; min-width:0; text-align:left; padding:5px 7px 6px; border:1px solid #2a3544; border-radius:8px; background:#11161e; color:#e7edf7; }
+.obsidian .wardrobe-dialog .ow-item[aria-pressed=true] { border-color:#b0a3ff; background:#b0a3ff14; }
+.obsidian .wardrobe-dialog .ow-item :is(img,.ow-image-placeholder) { display:block; width:100%; height:114px; image-rendering:pixelated; }
+.obsidian .wardrobe-dialog .ow-item-name { font-size:11px; line-height:1.25; overflow-wrap:anywhere; height:28px; margin-top:4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.obsidian .wardrobe-dialog .ow-item-state { display:flex; flex-wrap:wrap; gap:2px 7px; justify-content:space-between; font-size:10px; margin-top:4px; }
+.obsidian .wardrobe-dialog .ow-owned { color:#55eaa5; }
+.obsidian .wardrobe-dialog .ow-price { color:#e3b96c; }
+.obsidian .wardrobe-dialog .ow-trying { color:#b0a3ff; }
+.obsidian .wardrobe-dialog .ow-muted { color:#9eacbf; }
+.obsidian .wardrobe-dialog .ow-pager { display:flex; align-items:center; justify-content:space-between; gap:7px; margin:0; color:#9eacbf; white-space:nowrap; font-size:10px; }
+.obsidian .wardrobe-dialog .ow-pager button { border:0; background:none; color:#b0a3ff; min-height:28px; width:24px; padding:1px 3px; font-size:18px; }
+.obsidian .wardrobe-dialog .ow-selection { border-top:1px solid #2a3442; padding-top:8px; margin-top:7px; display:grid; gap:5px; }
+.obsidian .wardrobe-dialog .ow-selection-line { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:5px 9px; }
+.obsidian .wardrobe-dialog .ow-selection strong { font-size:12px; font-weight:600; overflow-wrap:anywhere; }
+.obsidian .wardrobe-dialog .ow-selection small { font-size:11px; color:#a7b5ca; }
+.obsidian .wardrobe-dialog .ow-selection p { margin:0; color:#a7b5ca; font-size:11px; line-height:1.5; }
+.obsidian .wardrobe-dialog .ow-selection button { font-size:11px; min-height:29px; padding:5px 8px; }
+.obsidian .wardrobe-dialog .ow-dye { margin-top:9px; }
+.obsidian .wardrobe-dialog .ow-section-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:5px; font-size:11px; margin-bottom:5px; }
+.obsidian .wardrobe-dialog .ow-section-heading strong { font-weight:600; }
+.obsidian .wardrobe-dialog .ow-section-heading span { color:#9eacbf; }
+.obsidian .wardrobe-dialog .ow-swatches { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:4px; }
+.obsidian .wardrobe-dialog .ow-swatches button { display:grid; place-items:center; position:relative; min-height:25px; height:25px; padding:3px; background:#111923; }
+.obsidian .wardrobe-dialog .ow-swatches button[aria-pressed=true] { border-color:#b0a3ff; background:#b0a3ff22; }
+.obsidian .wardrobe-dialog .ow-dot { display:inline-block; width:14px; height:14px; border:1px solid #ffffff25; border-radius:50%; background:var(--ow-swatch); }
+.obsidian .wardrobe-dialog .ow-mark { position:absolute; color:#fff; text-shadow:0 0 3px #000; font-size:11px; }
+.obsidian .wardrobe-dialog .ow-base-colors { grid-template-columns:repeat(auto-fit,minmax(36px,1fr)); }
+.obsidian .wardrobe-dialog .ow-base-colors button { display:flex; justify-content:center; gap:7px; font-size:11px; height:27px; }
+.obsidian .wardrobe-dialog .ow-exact { display:flex; gap:6px; align-items:center; font-size:10px; color:#9eacbf; margin:5px 0 0; flex:none; }
+.obsidian .wardrobe-dialog .ow-exact input { width:58px; height:24px; padding:2px 5px; font-size:11px; }
+.obsidian .wardrobe-dialog .ow-slotbar { display:flex; align-items:center; gap:4px; margin-bottom:8px; }
+.obsidian .wardrobe-dialog .ow-slotbar button { flex:1; padding:5px; font-size:11px; }
+.obsidian .wardrobe-dialog .ow-slotbar button[aria-pressed=true] { background:#b0a3ff22; color:#e0d8ff; border-color:#6d688c; }
+.obsidian .wardrobe-dialog .ow-color-target { width:100%; height:32px; font-size:12px; margin-bottom:11px; }
+.obsidian .wardrobe-dialog .ow-footer { border-top:1px solid #2a3442; padding-top:8px; margin-top:7px; flex:none; }
+.obsidian .wardrobe-dialog .ow-footer-actions { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+.obsidian .wardrobe-dialog .ow-footer-buttons { display:flex; gap:6px; flex:none; margin-left:auto; }
+.obsidian .wardrobe-dialog .ow-footer-buttons button { font-size:12px; padding:6px 10px; min-height:32px; }
+.obsidian .wardrobe-dialog .ow-profile-heading { display:flex; justify-content:space-between; gap:8px; margin-bottom:9px; align-items:center; }
+.obsidian .wardrobe-dialog .ow-profile-heading h3 { font-size:13px; font-weight:600; margin:0; }
+.obsidian .wardrobe-dialog .ow-profile-heading button { font-size:11px; min-height:28px; padding:4px 7px; }
+.obsidian .wardrobe-dialog .ow-profile { display:grid; grid-template-columns:54px minmax(0,1fr); gap:9px; padding:10px 0; border-bottom:1px solid #2a3442; }
+.obsidian .wardrobe-dialog .ow-profile :is(img,.ow-profile-image) { width:50px; height:70px; image-rendering:pixelated; align-self:center; }
+.obsidian .wardrobe-dialog .ow-profile-name { font-size:13px; font-weight:600; overflow-wrap:anywhere; }
+.obsidian .wardrobe-dialog .ow-profile-meta { color:#9eacbf; font-size:11px; overflow-wrap:anywhere; margin:3px 0 7px; }
+.obsidian .wardrobe-dialog .ow-profile-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.obsidian .wardrobe-dialog .ow-profile-actions button { font-size:11px; min-height:26px; padding:3px 7px; }
+.obsidian .wardrobe-dialog .ow-form { margin:0 0 12px; padding:11px; border:1px solid #354153; background:#0e151f; border-radius:8px; }
+.obsidian .wardrobe-dialog .ow-form label { display:block; font-size:11px; color:#a7b5ca; margin-bottom:5px; }
+.obsidian .wardrobe-dialog .ow-form input { width:100%; height:34px; font-size:12px; margin-bottom:8px; }
+.obsidian .wardrobe-dialog .ow-form p { font-size:11px; color:#9eacbf; margin:0 0 8px; line-height:1.5; }
+.obsidian .wardrobe-dialog .ow-form button { font-size:11px; min-height:29px; }
+.obsidian .wardrobe-dialog .ow-form-actions { display:flex; flex-wrap:wrap; gap:6px; }
+.obsidian .wardrobe-dialog .ow-error { color:#e3b96c!important; font-size:11px; }
+.obsidian .wardrobe-dialog .ow-guard { padding:13px; border:1px solid #756545; background:#e3b96c0b; border-radius:8px; font-size:12px; }
+.obsidian .wardrobe-dialog .ow-guard p { font-size:11px; color:#c4b59c; margin:7px 0 11px; }
+.obsidian .wardrobe-dialog.maximized .ow-body { display:grid; grid-template-columns:185px minmax(0,1fr); gap:12px; }
+.obsidian .wardrobe-dialog.maximized .ow-preview { display:flex; flex-direction:column; align-items:stretch; gap:12px; justify-content:flex-start; height:auto; }
+.obsidian .wardrobe-dialog.maximized .ow-preview-meta { grid-template-columns:minmax(0,1fr); grid-template-rows:58px 40px; height:104px; }
+.obsidian .wardrobe-dialog.maximized .ow-preview-action { height:40px; width:100%; }
+.obsidian .wardrobe-dialog.maximized .ow-avatar { width:150px; height:232px; margin:9px auto 0; }
+.obsidian .wardrobe-dialog.maximized .ow-angles button { flex-basis:28%; }
+.obsidian .wardrobe-dialog.maximized .ow-tabs { margin-top:0; }
+.obsidian .wardrobe-dialog.maximized .ow-look { gap:10px; }
+.obsidian .wardrobe-dialog.maximized .ow-profilebar { flex-wrap:wrap; }
+.obsidian .wardrobe-dialog.maximized .ow-profilebar select { flex-basis:100%; width:100%; }
+.obsidian .wardrobe-dialog.maximized .ow-profilebar button { flex:1; }
+@media(max-width:600px) { .obsidian .wardrobe-dialog.maximized .ow-body { display:flex; } .obsidian .wardrobe-dialog.maximized .ow-preview { display:grid; grid-template-columns:116px minmax(0,1fr); gap:7px 12px; height:174px; } .obsidian .wardrobe-dialog.maximized .ow-preview-meta { grid-template-columns:minmax(0,1fr) 108px; grid-template-rows:auto; height:64px; } .obsidian .wardrobe-dialog.maximized .ow-preview-action { height:64px; width:108px; } .obsidian .wardrobe-dialog.maximized .ow-avatar { width:116px; height:154px; margin:0; } .obsidian .wardrobe-dialog.maximized .ow-look { gap:4px; } }
+@media(max-width:430px) {
+  .obsidian .wardrobe-dialog .ow-preview, .obsidian .wardrobe-dialog.maximized .ow-preview { height:260px; grid-template-rows:minmax(0,1fr) 50px; }
+  .obsidian .wardrobe-dialog .ow-preview-meta, .obsidian .wardrobe-dialog.maximized .ow-preview-meta { grid-template-columns:minmax(0,1fr); grid-template-rows:58px 40px; height:104px; }
+  .obsidian .wardrobe-dialog .ow-preview-action, .obsidian .wardrobe-dialog.maximized .ow-preview-action { height:40px; width:108px; }
+  .obsidian .wardrobe-dialog .ow-preview .ow-profilebar { flex-wrap:wrap; }
+  .obsidian .wardrobe-dialog .ow-preview .ow-profilebar select { width:100%; flex-basis:100%; }
+  .obsidian .wardrobe-dialog .ow-preview .ow-profilebar button { flex:1; }
+  .obsidian .wardrobe-dialog.maximized .ow-preview { grid-template-columns:88px minmax(0,1fr); }
+  .obsidian .wardrobe-dialog.maximized .ow-avatar { width:84px; height:132px; }
+}
+@media(max-width:380px) {
+  .obsidian .wardrobe-dialog { padding:12px 9px 9px; }
+  .obsidian .wardrobe-dialog .ow-header { gap:5px; }
+  .obsidian .wardrobe-dialog .ow-header h2 { font-size:21px; }
+  .obsidian .wardrobe-dialog .ow-balance { margin-right:0; }
+  .obsidian .wardrobe-dialog .ow-header-actions { gap:4px; }
+  .obsidian .wardrobe-dialog .ow-balance small { display:none; }
+  .obsidian .wardrobe-dialog .ow-preview { grid-template-columns:74px minmax(0,1fr); gap:5px 8px; padding:8px; }
+  .obsidian .wardrobe-dialog .ow-avatar { width:70px; height:132px; }
+  .obsidian .wardrobe-dialog .ow-angles button { flex-basis:28%; }
+  .obsidian .wardrobe-dialog .ow-swatches { grid-template-columns:repeat(9,minmax(0,1fr)); }
+  .obsidian .wardrobe-dialog .ow-base-colors { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .obsidian .wardrobe-dialog .ow-item { padding:4px!important; }
+  .obsidian .wardrobe-dialog .ow-item :is(img,.ow-image-placeholder) { height:65px; }
+  .obsidian .wardrobe-dialog .ow-footer-actions { flex-wrap:wrap; }
+  .obsidian .wardrobe-dialog .ow-footer-buttons { margin-left:auto; }
+}
+@media(pointer:coarse) {
+  .obsidian .wardrobe-dialog button { min-height:44px; }
+  .obsidian .wardrobe-dialog .ow-swatches { grid-template-columns:repeat(6,minmax(0,1fr)); }
+  .obsidian .wardrobe-dialog .ow-base-colors { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .obsidian .wardrobe-dialog .ow-swatches button { height:44px; }
+  .obsidian .wardrobe-dialog input, .obsidian .wardrobe-dialog select { font-size:16px; min-height:36px; }
+}
+.obsidian .wardrobe-dialog { width:100%; max-width:720px; height:calc(100vh - 12px); max-height:none; overflow:hidden; margin:0; color:#f0f3fa; font:13px/1.45 "Segoe UI",sans-serif; }
+.obsidian .wardrobe-dialog.maximized { position:fixed; inset:0; width:100%; max-width:none; height:100%; border:0; border-radius:0; }
+.obsidian .wardrobe-dialog .ow-avatar,.obsidian .wardrobe-dialog .ow-item img,.obsidian .wardrobe-dialog .ow-profile img { object-fit:contain; image-rendering:pixelated; }
+.obsidian .wardrobe-dialog .ow-image-placeholder { display:block; flex:none; }
+.obsidian .wardrobe-dialog .ow-skin { margin-top:20px; }
+.obsidian .wardrobe-dialog .ow-guard .ow-form-actions { margin-top:12px; }
+
+
+.obsidian .wardrobe-dialog .ow-dye-heading { margin-top:9px; }
+
+.obsidian .wardrobe-dialog .ow-toolbar .ow-slotbar { flex:none; margin:0; }
+.obsidian .wardrobe-dialog .ow-toolbar .ow-slotbar button { flex:none; white-space:nowrap; }
+@media(max-width:440px) {
+  .obsidian .wardrobe-dialog .ow-toolbar:has(.ow-slotbar) { flex-wrap:wrap; }
+  .obsidian .wardrobe-dialog .ow-toolbar .ow-slotbar { flex-basis:100%; }
+}

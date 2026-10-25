@@ -131,6 +131,7 @@ module Ironmon
     return "[Ironmon #{VERSION}] context=#{context} attempt=#{attempt_number} seed=#{seed} " +
       "wild_policy=#{configuration_value.wild_policy} " +
       "trainer_policy=#{configuration_value.trainer_policy} " +
+      "starter_policy=#{configuration_value.starter_policy} " +
       "unfusion_setting=#{configuration_value.unfusion_setting} " +
       "automatic_reset=#{configuration_value.automatic_reset} " +
       "custom_pool_size=#{pool_size} " +

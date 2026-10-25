@@ -90,6 +90,22 @@ point deliberately selects only the four groups above. It does not restore the
 removed PowerShell harnesses or automatically run long gameplay, generation,
 or simulation suites. Native UI and clean-machine acceptance remain separate.
 
+Wardrobe acceptance uses the bundled engine, installed cosmetic graphics and a
+real loopback tracker listener, with isolated profile data under ignored
+`data/wardrobe-runtime`. It covers the one-time claim, permanent purchases,
+native views and palettes, named outfits, reconnect recovery, physical Back,
+collection hooks and the paused attempt timer. This requires a normal build
+with the generated connection catalogues; do not pass `IronmonQuickTests=true`.
+
+```powershell
+dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj -c Release --filter Category=WardrobeAcceptance
+dotnet test tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj -c Release --filter FullyQualifiedName~WardrobeViewTests
+```
+
+The component test also exports production Obsidian markup for compact,
+expanded, purchase, profile and disconnected layout inspection. Browser layout
+checks and native transport acceptance do not replace desktop WebView review.
+
 For a normal build without tests:
 
 ```powershell

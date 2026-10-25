@@ -6,6 +6,16 @@ namespace Ironmon.Tracker.Protocol.Connection;
 public sealed class GameHandshakePayload
 {
     /// <summary>
+    /// Gets or initializes support for game-issued tracker wardrobe sessions.
+    /// </summary>
+    public int WardrobeProtocolVersion { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the future-achievement wardrobe reward version, or zero when unsupported.
+    /// </summary>
+    public int WardrobeAchievementRewardsVersion { get; init; }
+
+    /// <summary>
     /// Initializes a game handshake payload.
     /// </summary>
     /// <param name="gameVersion">The Infinite Fusion version.</param>

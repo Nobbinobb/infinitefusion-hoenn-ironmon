@@ -609,6 +609,7 @@ module Ironmon
       "collection_attempt_ids" => recipe["collection_attempt_ids"] || [],
       "seed" => recipe["seed"],
       "result" => recipe["result"],
+      "statistics" => recipe["statistics"],
       "generation_profile_id" => recipe["generation_profile_id"],
       "game_version" => recipe["game_version"],
       "ironmon_version" => recipe["ironmon_version"],
@@ -659,7 +660,10 @@ module Ironmon
       "item_result_ban_fingerprint" => items["result_ban_fingerprint"],
       "item_shop_policy_version" => items["shop_policy_version"],
       "item_mappings" => recipe["item_mappings"] || {},
-      "tm_mappings" => recipe["tm_mappings"] || {}
+      "tm_mappings" => recipe["tm_mappings"] || {},
+      "story_trainer_parties" => recipe["story_trainer_parties"] || {},
+      "story_trainer_previews" => recipe["story_trainer_previews"] || {},
+      "opening_rival_context" => tracker_validate_opening_rival_context(recipe["opening_rival_context"])
     }
   end
 end

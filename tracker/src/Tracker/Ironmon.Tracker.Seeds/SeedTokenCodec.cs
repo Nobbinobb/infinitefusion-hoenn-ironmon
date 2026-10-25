@@ -1,6 +1,7 @@
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Text.Json;
+using Ironmon.Tracker.Protocol.Connection;
 
 namespace Ironmon.Tracker.Seeds;
 
@@ -220,10 +221,17 @@ public sealed class SeedTokenCodec
         if (data.DataMode is not ("classic" or "remix" or "expert"))
             return false;
 
-        if (data.Configuration.SchemaVersion != SeedTokenConstants.ConfigurationSchemaVersion
+        if (data.Configuration.SchemaVersion is not (SeedTokenConstants.LegacyConfigurationSchemaVersion or SeedTokenConstants.ConfigurationSchemaVersion)
             || data.Configuration.WildPolicy is not ("mixed" or "custom_fusions_only" or "normal_only")
             || data.Configuration.TrainerPolicy is not ("mixed" or "custom_fusions_only" or "normal_only")
             || data.Configuration.UnfusionSetting is not ("random_component" or "player_choice"))
+        {
+            return false;
+        }
+
+        if (data.Configuration.SchemaVersion == SeedTokenConstants.ConfigurationSchemaVersion
+            ? data.Configuration.StarterPolicy is not (RunManagementProtocol.MixedPolicy or RunManagementProtocol.FusionPolicy or RunManagementProtocol.NormalPolicy)
+            : data.Configuration.StarterPolicy is not null)
         {
             return false;
         }
@@ -268,7 +276,12 @@ public sealed class SeedTokenCodec
                 return false;
         }
 
-        return names.Count == 5;
+        return configuration.TryGetProperty(SeedTokenConstants.ConfigurationVersionProperty, out JsonElement version)
+            && version.ValueKind == JsonValueKind.Number
+            && version.TryGetInt32(out int schema)
+            && (schema == SeedTokenConstants.LegacyConfigurationSchemaVersion
+                ? names.Count == 5 && !names.Contains(SeedTokenConstants.StarterPolicyProperty)
+                : schema == SeedTokenConstants.ConfigurationSchemaVersion && names.Count == 6);
     }
 
     /// <summary>
@@ -281,6 +294,7 @@ public sealed class SeedTokenCodec
         return name is SeedTokenConstants.ConfigurationVersionProperty
             or SeedTokenConstants.WildPolicyProperty
             or SeedTokenConstants.TrainerPolicyProperty
+            or SeedTokenConstants.StarterPolicyProperty
             or SeedTokenConstants.UnfusionSettingProperty
             or SeedTokenConstants.AutomaticResetProperty;
     }

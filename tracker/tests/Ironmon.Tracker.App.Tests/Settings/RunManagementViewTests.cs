@@ -104,6 +104,8 @@ public sealed class RunManagementViewTests
                 Assert.Contains("obsidian-help-button", rulesHtml);
                 Assert.Contains("popovertarget", rulesHtml);
                 Assert.Contains("Trainer Pokémon", System.Net.WebUtility.HtmlDecode(rulesHtml));
+                Assert.Contains("Starter Pokémon", System.Net.WebUtility.HtmlDecode(rulesHtml));
+                Assert.Contains("run-starter", rulesHtml);
                 Assert.DoesNotContain("Automatic reset", rulesHtml);
                 ExportPreview(RulesPreview, rulesHtml);
                 Set(activator.Page!, StepField, 3);

@@ -153,6 +153,27 @@ module Ironmon
       @pending_notice_points = @pending_notice_points.to_i + points
     end
 
+    def self.receive_achievement_rewards(payload, connection)
+      return if !payload.is_a?(Hash) || payload["version"] != 1 || payload["session_id"] != Ironmon.game_session_id
+      @pending_achievement_rewards = payload
+      @achievement_reward_retry_at = nil
+      retry_achievement_rewards(connection)
+    end
+
+    def self.retry_achievement_rewards(connection)
+      payload = @pending_achievement_rewards
+      return if !payload || !connection.wardrobe_achievement_rewards_supported?
+      return if @achievement_reward_retry_at && Ironmon.tracker_uptime_seconds < @achievement_reward_retry_at
+      @achievement_reward_retry_at = Ironmon.tracker_uptime_seconds + 2.0
+      result = safely { profile.award_achievements(payload["ids"]) }
+      return if !result
+      safely { active_wardrobe.publish(false) } if active_wardrobe && !result["awarded_ids"].empty?
+      acknowledged = connection.send_event("wardrobe_achievement_rewards_acknowledged", {
+        "session_id" => Ironmon.game_session_id, "ids" => payload["ids"]
+      })
+      @pending_achievement_rewards = nil if acknowledged
+    end
+
     def self.show_notice
       return false if @pending_notice_points.to_i <= 0 || !$game_temp || $game_temp.message_window_showing
       return false if pbMapInterpreterRunning? || !$game_player || $game_player.moving?

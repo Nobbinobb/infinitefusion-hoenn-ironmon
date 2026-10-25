@@ -8,7 +8,9 @@ module Ironmon
   TRACKER_STARTER_AUTOSELECT_REVEAL_SECONDS = 0.75
 
   def self.begin_tracker_starter_selection(pokemon)
+    remember_starter_offers(pokemon)
     return if !active? || !pokemon || pokemon.empty?
+    prepare_tracker_rival_fusion if rival_lab_choice_enabled?
     auto_select = tracker_auto_select_starter?
     ceiling = tracker_maximum_starter_base_stat_total
     random_pick = tracker_starter_pick_for(pokemon, ceiling)

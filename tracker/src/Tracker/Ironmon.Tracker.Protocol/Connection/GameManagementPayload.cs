@@ -103,6 +103,11 @@ public sealed record IronmonRunRules
     public string TrainerPolicy { get; init; } = RunManagementProtocol.MixedPolicy;
 
     /// <summary>
+    /// Gets or initializes the policy for the three starter offers shared by the player and rival.
+    /// </summary>
+    public string StarterPolicy { get; init; } = RunManagementProtocol.MixedPolicy;
+
+    /// <summary>
     /// Gets or initializes the unfusion selection rule.
     /// </summary>
     public string UnfusionSetting { get; init; } = RunManagementProtocol.RandomUnfusion;

@@ -36,9 +36,12 @@ module Ironmon
   def self.tracker_recoverable_completed_run_recipe
     attempt = current_run_attempt if respond_to?(:current_run_attempt)
     return nil if attempt && attempt["result"] == "active"
+    stored = run_ledger["last_completed_recipe"]
+    return stored if stored.is_a?(Hash) && attempt &&
+      stored["run_id"] == attempt["run_id"] && stored["seed"] == attempt["seed"] &&
+      stored["result"] == attempt["result"]
     recipe = tracker_completed_run_recipe
     return recipe if recipe
-    stored = run_ledger["last_completed_recipe"]
     return stored if stored.is_a?(Hash)
     return nil
   end
@@ -55,6 +58,7 @@ module Ironmon
       "result" => result.to_s
     }
     reproduction.each { |key, value| recipe[key] = value }
+    opening = tracker_opening_rival_context(result)
     recipe.merge!({
       "item_mappings" => tracker_item_mapping_recipe(
         $PokemonGlobal.randomItemsHash
@@ -62,8 +66,11 @@ module Ironmon
       "tm_mappings" => tracker_item_mapping_recipe(
         $PokemonGlobal.randomTMsHash
       ),
+      "story_trainer_parties" => tracker_story_trainer_recipe,
+      "story_trainer_previews" => opening ? {} : tracker_current_story_trainer_previews,
       "statistics" => tracker_attempt_statistics(current_run_attempt)
     })
+    recipe["opening_rival_context"] = opening if opening
     recipe["collection_attempt_ids"] = tracker_owned_iv_attempt_ids(recipe, true)
     return recipe
   end

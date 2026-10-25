@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Ironmon.Tracker.Protocol.Lookup;
 
 /// <summary>
@@ -41,6 +43,21 @@ public sealed class CompletedRunRecipePayload : RunReproductionRecipePayload
     /// Gets or initializes the archived machine-item shuffle by source item identifier.
     /// </summary>
     public IReadOnlyDictionary<string, string> TmMappings { get; init; } = new Dictionary<string, string>();
+
+    /// <summary>
+    /// Gets or initializes the actual victorious story-trainer parties by authored event identity, empty for older recipes.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<StoryTrainerPokemonPayload>> StoryTrainerParties { get; init; } = new Dictionary<string, IReadOnlyList<StoryTrainerPokemonPayload>>();
+
+    /// <summary>
+    /// Gets or initializes generated story-stage previews for full archive inspection without marking unplayed battles defeated.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<StoryTrainerPokemonPayload>> StoryTrainerPreviews { get; init; } = new Dictionary<string, IReadOnlyList<StoryTrainerPokemonPayload>>();
+
+    /// <summary>
+    /// Gets or initializes deferred story inputs captured without blocking an opening-loss reset.
+    /// </summary>
+    public OpeningRivalContextPayload? OpeningRivalContext { get; init; }
 
     /// <summary>
     /// Gets or initializes authoritative attempt statistics when the recipe provides them.
@@ -139,6 +156,12 @@ public sealed class RunConfigurationPayload
     /// Gets or initializes the trainer fusion policy.
     /// </summary>
     public required string TrainerPolicy { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the separate starter policy, or null for legacy runs whose starters follow the wild policy.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? StarterPolicy { get; init; }
 
     /// <summary>
     /// Gets or initializes the caught-fusion unfusion policy.

@@ -240,6 +240,9 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             AchievementProtocolVersion = _collection is null ? 0 : GameplayCollectionProtocol.AchievementVersion,
             AchievementOverlayVersion = _collection is not null && Requests.HasAchievementOverlay && game.AchievementOverlayVersion == GameplayCollectionProtocol.AchievementOverlayVersion ? GameplayCollectionProtocol.AchievementOverlayVersion : 0,
             ManagementProtocolVersion = game.ManagementProtocolVersion == RunManagementProtocol.Version ? RunManagementProtocol.Version : 0,
+            RivalFusionWorkerVersion = RivalFusionWorkPayload.CurrentVersion,
+            WardrobeProtocolVersion = game.WardrobeProtocolVersion == Ironmon.Tracker.Protocol.Wardrobe.WardrobeProtocol.Version ? Ironmon.Tracker.Protocol.Wardrobe.WardrobeProtocol.Version : 0,
+            WardrobeAchievementRewardsVersion = _collection is not null && game.WardrobeAchievementRewardsVersion == Ironmon.Tracker.Protocol.Wardrobe.WardrobeRewardProtocol.Version ? Ironmon.Tracker.Protocol.Wardrobe.WardrobeRewardProtocol.Version : 0,
             SessionId = game.SessionId,
             SimpleMovePowerSupported = TrackerSimpleMovePowerPresentation.SupportsCatalogue(game.SimpleMovePowerCatalogueFingerprint),
             DefenseDamageProfileVersion = TrackerDefenseDamageProfilePresentation.SupportedVersion(game.DefenseDamageProfileVersion),
@@ -258,6 +261,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
         _requests.Connect(writer);
 
         _state.Publish(TrackerConnectionStatus.Connected, game);
+        Requests.Wardrobe.Connect(game);
         _diagnostics.RecordLifecycle(TrackerDiagnosticConstants.Connected, $"Infinite Fusion {game.GameVersion} · Ironmon {game.IronmonVersion}");
 
         using CancellationTokenSource precalculationCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -281,6 +285,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
             }
 
             Requests.ObtainabilityProgress.Reset();
+            Requests.Wardrobe.Disconnect();
             ClearRequestSession();
         }
     }
@@ -444,7 +449,11 @@ public sealed class TrackerConnectionService : IAsyncDisposable
     /// <returns>A task representing the persistent read loop.</returns>
     private async Task ReadMessagesAsync(TrackerMessageReader reader, string currentStateRequestId, GameHandshakePayload game, CancellationToken cancellationToken)
     {
-        using GameplayCollectionReceiver? collection = _collection is null ? null : new(_collection, _requests, _diagnostics, game.AchievementProtocolVersion == GameplayCollectionProtocol.AchievementVersion);
+        string? rewardSessionId = game.WardrobeAchievementRewardsVersion == Ironmon.Tracker.Protocol.Wardrobe.WardrobeRewardProtocol.Version ? game.SessionId : null;
+        using GameplayCollectionReceiver? collection = _collection is null ? null : new(_collection, _requests, _diagnostics, game.AchievementProtocolVersion == GameplayCollectionProtocol.AchievementVersion, rewardSessionId);
+        if (collection is not null)
+            await collection.SendWardrobeRewardsAsync(game.RunId, cancellationToken).ConfigureAwait(false);
+
         while (!cancellationToken.IsCancellationRequested)
         {
             TrackerMessage? message = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
@@ -460,7 +469,7 @@ public sealed class TrackerConnectionService : IAsyncDisposable
                     continue;
                 }
 
-                if (message.Event is GameplayCollectionProtocol.Batch or GameplayCollectionProtocol.CompressedBatch or GameplayCollectionProtocol.Chunk or GameplayCollectionProtocol.AchievementPoll or GameplayCollectionProtocol.AchievementAcknowledged)
+                if (message.Event is GameplayCollectionProtocol.Batch or GameplayCollectionProtocol.CompressedBatch or GameplayCollectionProtocol.Chunk or GameplayCollectionProtocol.AchievementPoll or GameplayCollectionProtocol.AchievementAcknowledged or Ironmon.Tracker.Protocol.Wardrobe.WardrobeRewardProtocol.Acknowledged)
                 {
                     if (collection is not null)
                         await collection.ProcessAsync(message, cancellationToken).ConfigureAwait(false);

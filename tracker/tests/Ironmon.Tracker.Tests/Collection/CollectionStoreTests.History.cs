@@ -22,7 +22,7 @@ public sealed partial class CollectionStoreTests
     private const string _historySecondFilename = "history-second.irmhistory";
     private const string _historyLifetimeDamageSql = "SELECT SUM(c.value_blob) FROM aggregate_cells c JOIN aggregate_series a USING(series_id) JOIN aggregate_families f USING(family_id) JOIN hot_partitions p USING(partition_id) JOIN scopes s USING(scope_id) WHERE f.family_key='actual_hp_lost' AND s.scope_kind='profile_lifetime'";
     private const string _historyDirectDamageSql = "SELECT value_i64 FROM direct_scalar_values v JOIN direct_groups g USING(group_id) WHERE g.projection_key='actual_hp_lost+substitute_hp_damage'";
-    private const string _historyConsumerSql = "SELECT ciphertext FROM private_consumers";
+    private const string _historyConsumerSql = "SELECT ciphertext FROM private_consumers" + _achievementConsumerFilter;
     private const string _historyMeasureCountSql = "SELECT COUNT(*) FROM aggregate_cells";
     private const string _historyRecipeName = "recipe.json";
     private const string _historyRecipeOriginal = "{\"run_id\":\"old-run\"}";

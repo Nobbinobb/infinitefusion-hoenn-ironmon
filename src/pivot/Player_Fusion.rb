@@ -65,6 +65,12 @@ module Ironmon
       ).id
     end
 
+    def preview_species(body_species, head_species)
+      preview = clone
+      preview.instance_variable_set(:@mappings, @mappings.dup)
+      return preview.species(body_species, head_species)
+    end
+
     def species_pair(first_species, second_species)
       first_id, second_id = normal_input_ids(first_species, second_species)
       pair = [first_id, second_id].sort

@@ -38,6 +38,7 @@ internal sealed partial class CollectionDatabase
         AchievementCheckpoint checkpoint = ReadAchievementCheckpoint(stored);
         HashSet<Guid> earned = [.. checkpoint.Earned.Keys];
         HashSet<Guid> evaluated = [];
+        List<Guid> newlyEarned = [];
         Dictionary<string, IReadOnlyList<AchievementEvidence>> evidence = [];
         Dictionary<long, JsonElement> dimensions = [];
         bool changed = stored is null || !stored.Binding.AsSpan().SequenceEqual(_achievementPack.Binding);
@@ -67,6 +68,7 @@ internal sealed partial class CollectionDatabase
                 checkpoint.Earned[node.Id] = DateTimeOffset.UtcNow;
                 checkpoint.Pending.Add(node.Id);
                 earned.Add(node.Id);
+                newlyEarned.Add(node.Id);
                 advanced = true;
                 changed = true;
             }
@@ -77,6 +79,8 @@ internal sealed partial class CollectionDatabase
 
         if (changed)
             SaveAchievementCheckpoint(checkpoint, stored?.StateRevision ?? 0);
+
+        QueueWardrobeRewards(newlyEarned);
 
         _achievementEvaluationRevision = _revision;
     }

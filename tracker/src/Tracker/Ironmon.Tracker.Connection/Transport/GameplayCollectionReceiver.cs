@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.IO.Compression;
 using System.Text.Json;
 using Ironmon.Tracker.Collection;
+using Ironmon.Tracker.Protocol.Wardrobe;
 
 namespace Ironmon.Tracker.Connection.Transport;
 
@@ -15,9 +16,11 @@ namespace Ironmon.Tracker.Connection.Transport;
 /// <param name="requests">The negotiated protocol session used to send acknowledgements and rejections.</param>
 /// <param name="diagnostics">The bounded operational error sink; gameplay payloads are not logged here.</param>
 /// <param name="achievementNotifications">Whether the game advertised the earned-notification protocol.</param>
-internal sealed class GameplayCollectionReceiver(GameplayCollectionStore store, TrackerRequestSession requests, TrackerDiagnosticsStore diagnostics, bool achievementNotifications = false) : IDisposable
+/// <param name="wardrobeRewardSessionId">The negotiated game identity for reward delivery, or null when unsupported.</param>
+internal sealed class GameplayCollectionReceiver(GameplayCollectionStore store, TrackerRequestSession requests, TrackerDiagnosticsStore diagnostics, bool achievementNotifications = false, string? wardrobeRewardSessionId = null) : IDisposable
 {
     private const string _achievementIds = "ids";
+    private const string _rewardSessionProperty = "session_id";
     private const string TransferIdKey = "transfer_id";
     private const string IndexKey = "index";
     private const string CountKey = "count";
@@ -45,6 +48,20 @@ internal sealed class GameplayCollectionReceiver(GameplayCollectionStore store, 
     {
         try
         {
+            if (message.Event == WardrobeRewardProtocol.Acknowledged)
+            {
+                if (wardrobeRewardSessionId is null || message.Payload.GetProperty(_rewardSessionProperty).GetString() != wardrobeRewardSessionId)
+                    throw new InvalidDataException("The wardrobe reward acknowledgement belongs to another game session.");
+
+                JsonElement ids = message.Payload.GetProperty(_achievementIds);
+                if (ids.ValueKind != JsonValueKind.Array || ids.GetArrayLength() > WardrobeRewardProtocol.MaximumIds)
+                    throw new InvalidDataException("Invalid wardrobe reward acknowledgement.");
+
+                HashSet<Guid> credited = [.. ids.EnumerateArray().Select(value => Guid.Parse(value.GetString()!))];
+                await store.AcknowledgeWardrobeRewardsAsync(credited, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
             if (message.Event == GameplayCollectionProtocol.AchievementPoll)
             {
                 await SendAchievementNoticesAsync(message.RunId, cancellationToken).ConfigureAwait(false);
@@ -136,6 +153,7 @@ internal sealed class GameplayCollectionReceiver(GameplayCollectionStore store, 
     /// <returns>A task completing after any pending earned notices have been sent.</returns>
     private async Task SendAchievementNoticesAsync(string? runId, CancellationToken cancellationToken)
     {
+        await SendWardrobeRewardsAsync(runId, cancellationToken).ConfigureAwait(false);
         if (!achievementNotifications)
             return;
 
@@ -154,6 +172,29 @@ internal sealed class GameplayCollectionReceiver(GameplayCollectionStore store, 
                 Icon = new { icons[notice.Id].Width, icons[notice.Id].Height, icons[notice.Id].Pixels }
             }).ToArray();
             await requests.SendEventAsync(GameplayCollectionProtocol.AchievementNotifications, new { Unlocks = payload }, runId, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException && exception is not OutOfMemoryException)
+        {
+            diagnostics.RecordError(exception);
+        }
+    }
+
+    /// <summary>
+    /// Delivers the independent durable reward outbox without replaying existing achievement unlocks.
+    /// </summary>
+    /// <param name="runId">The current run identity, or null on the title screen.</param>
+    /// <param name="cancellationToken">Cancels reading or delivery while retaining the pending rewards.</param>
+    /// <returns>Completion after any pending reward identities have been sent.</returns>
+    public async Task SendWardrobeRewardsAsync(string? runId, CancellationToken cancellationToken)
+    {
+        if (wardrobeRewardSessionId is null)
+            return;
+
+        try
+        {
+            IReadOnlyList<Guid> pending = await store.GetWardrobeRewardsAsync(cancellationToken).ConfigureAwait(false);
+            if (pending.Count > 0)
+                await requests.SendEventAsync(WardrobeRewardProtocol.Delivery, new { Version = WardrobeRewardProtocol.Version, SessionId = wardrobeRewardSessionId, Ids = pending.Take(WardrobeRewardProtocol.MaximumIds).ToArray() }, runId, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException && exception is not OutOfMemoryException)
         {

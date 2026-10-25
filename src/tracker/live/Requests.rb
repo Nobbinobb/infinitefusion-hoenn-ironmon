@@ -46,6 +46,9 @@ module Ironmon
         @session_ready = payload["management_protocol_version"] == GAME_MANAGEMENT_PROTOCOL &&
           payload["session_id"] == Ironmon.game_session_id &&
           payload["game_root"] == File.expand_path(".")
+        @rival_fusion_worker_version = @session_ready ? payload["rival_fusion_worker_version"] : 0
+        @wardrobe_protocol_version = @session_ready ? payload["wardrobe_protocol_version"] : 0
+        @wardrobe_achievement_rewards_version = @session_ready ? payload["wardrobe_achievement_rewards_version"] : 0
         @defense_damage_profile_version = @session_ready &&
           payload["defense_damage_profile_version"] == DEFENSE_DAMAGE_PROFILE_VERSION ?
           DEFENSE_DAMAGE_PROFILE_VERSION : 0
@@ -67,11 +70,16 @@ module Ironmon
         )
         Ironmon.refresh_tracker_starter_rules
         Ironmon.reset_tracker_obtainability_worker_failures
+        Ironmon.prepare_tracker_rival_fusion if Ironmon.active? && Ironmon.rival_lab_choice_enabled?
       elsif message["type"] == "event" && message["event"] == "tracker_heartbeat"
         @last_heartbeat = Ironmon.tracker_uptime_seconds if
           (message["payload"] || {})["session_id"] == Ironmon.game_session_id
+      elsif message["type"] == "event" && message["event"] == "wardrobe_achievement_rewards"
+        Ironmon::Cosmetics.receive_achievement_rewards(message["payload"], self) if wardrobe_achievement_rewards_supported?
       elsif message["type"] == "event" && message["event"] == "controls_state"
         Ironmon.receive_tracker_controls(message["payload"])
+      elsif message["type"] == "event" && message["event"] == "rival_fusion_result"
+        Ironmon.receive_tracker_rival_fusion(message)
       elsif message["type"] == "event" &&
             message["event"] == "diagnostic_access_changed"
         payload = message["payload"] || {}
@@ -131,6 +139,14 @@ module Ironmon
       raise "Tracker request_id is missing." if !request_id.is_a?(String) || request_id.empty?
       request_payload = message["payload"]
       request_recipe = request_payload["recipe"] if request_payload.is_a?(Hash)
+      if request_recipe.is_a?(Hash) && Ironmon.tracker_lookup_transition_pending?
+        @deferred_lookup_requests ||= []
+        if @deferred_lookup_requests.length >= TRACKER_MAXIMUM_DEFERRED_LOOKUP_REQUESTS
+          raise TrackerLookupError.new("lookup_busy", "Archive lookup is waiting for the game transition.")
+        end
+        @deferred_lookup_requests << message
+        return
+      end
       profile_id = request_recipe["generation_profile_id"].to_s if
         request_recipe.is_a?(Hash)
       if profile_id && GenerationProfile::SHA256_PATTERN.match?(profile_id) &&
@@ -139,7 +155,12 @@ module Ironmon
           handle_request(message)
         end
       end
-      if message["command"] == "current_state"
+      if message["command"] == "wardrobe_state"
+        queue_message(success_response(request_id, Ironmon::Cosmetics.wardrobe_snapshot))
+      elsif message["command"] == "wardrobe_action" || message["command"] == "wardrobe_preview"
+        payload = Ironmon::Cosmetics.wardrobe_request(message["payload"], message["command"] == "wardrobe_preview")
+        queue_message(success_response(request_id, payload))
+      elsif message["command"] == "current_state"
         queue_message(success_response(request_id, Ironmon.tracker_current_state))
       elsif message["command"] == "game_management"
         queue_message(success_response(request_id, Ironmon.game_management_snapshot))
@@ -381,6 +402,12 @@ module Ironmon
       ))
     rescue Exception => e
       queue_message(error_response(request_id, "lookup_failed", e.message, message["run_id"]))
+    end
+
+    def resume_deferred_lookup_request
+      return if Ironmon.tracker_lookup_transition_pending? ||
+        !@deferred_lookup_requests || @deferred_lookup_requests.empty?
+      handle_request(@deferred_lookup_requests.shift)
     end
 
     def normalize_favorite_species_ids(values)

@@ -21,12 +21,13 @@ public sealed partial class CollectionStoreTests
     private const string _directInvocationKind = "direct";
     private const string _normal = "NORMAL";
     private const string _distinctMoves = """["TACKLE","GROWL","SCRATCH","POUND","BODYSLAM","HYPERBEAM","QUICKATTACK","SLASH","DOUBLEEDGE","MEGAPUNCH"]""";
-    private const string _checkpointCipherSql = "SELECT ciphertext FROM private_consumers";
-    private const string _checkpointTagSql = "SELECT auth_tag FROM private_consumers";
+    private const string _achievementConsumerFilter = " WHERE consumer_key=X'DD267A41BB35E148B450707D56A1872B'";
+    private const string _checkpointCipherSql = "SELECT ciphertext FROM private_consumers" + _achievementConsumerFilter;
+    private const string _checkpointTagSql = "SELECT auth_tag FROM private_consumers" + _achievementConsumerFilter;
     private const string _achievementText = "Achievement";
     private const string _conditionText = "Win a rival battle";
-    private const string _checkpointBindingSql = "SELECT pack_binding_token FROM private_consumers";
-    private const string _checkpointNonceSql = "SELECT nonce FROM private_consumers";
+    private const string _checkpointBindingSql = "SELECT pack_binding_token FROM private_consumers" + _achievementConsumerFilter;
+    private const string _checkpointNonceSql = "SELECT nonce FROM private_consumers" + _achievementConsumerFilter;
     private const string _additionalMovePrefix = "FIXTURE_MOVE_";
 
     /// <summary>

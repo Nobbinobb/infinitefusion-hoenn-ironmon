@@ -15,15 +15,22 @@ $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $resolvedGameRoot = [IO.Path]::GetFullPath($GameRoot)
 $loaderSourcePath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "Script-Loader.rb"))
 $exporterSource = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "Export-AreaCatalog.rb"))
+$triggerSource = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "Encounter-Triggers.rb"))
+$trainerSource = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "Trainer-Sources.rb"))
 $resolvedOutputPath = [IO.Path]::GetFullPath($OutputPath)
 $resolvedAuditPath = [IO.Path]::GetFullPath($AuditPath)
 Assert-PathWithinDirectory -Path $loaderSourcePath -Directory $resolvedGameRoot
 Assert-PathWithinDirectory -Path $exporterSource -Directory $resolvedGameRoot
+Assert-PathWithinDirectory -Path $triggerSource -Directory $resolvedGameRoot
+Assert-PathWithinDirectory -Path $trainerSource -Directory $resolvedGameRoot
 if (-not (Test-Path -LiteralPath $loaderSourcePath)) {
     throw "The shared game-script loader was not found at '$loaderSourcePath'."
 }
 if (-not (Test-Path -LiteralPath $exporterSource)) {
     throw "The area catalog exporter was not found at '$exporterSource'."
+}
+if (-not (Test-Path -LiteralPath $triggerSource)) {
+    throw "The encounter trigger exporter was not found at '$triggerSource'."
 }
 
 $bootstrapMarker = "$($resolvedOutputPath.Replace('\', '/')).bootstrap"
@@ -32,7 +39,12 @@ $rubyAuditPath = $resolvedAuditPath.Replace('\', '/')
 $rubyGameRoot = $resolvedGameRoot.Replace('\', '/')
 $rubyValidateInstalledScripts = if ($ValidateInstalledScripts) { "true" } else { "false" }
 $loaderCode = [IO.File]::ReadAllText($loaderSourcePath, [Text.Encoding]::UTF8)
-$exporterCode = [IO.File]::ReadAllText($exporterSource, [Text.Encoding]::UTF8)
+$exporterCode = @(
+    "`$ironmon_area_catalog_source_root = `"$($projectRoot.Replace('\', '/'))`""
+    [IO.File]::ReadAllText($triggerSource, [Text.Encoding]::UTF8)
+    [IO.File]::ReadAllText($trainerSource, [Text.Encoding]::UTF8)
+    [IO.File]::ReadAllText($exporterSource, [Text.Encoding]::UTF8)
+) -join "`n"
 $bootstrapSource = "File.binwrite(`"$bootstrapMarker`", `"bootstrap loaded\n`")`n`$ironmon_area_catalog_output_path = `"$rubyOutputPath`"`n`$ironmon_area_catalog_audit_path = `"$rubyAuditPath`"`n`$ironmon_area_catalog_game_root = `"$rubyGameRoot`"`n`$ironmon_area_catalog_validate_installed_scripts = $rubyValidateInstalledScripts`n$loaderCode`n$exporterCode"
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $resolvedOutputPath) | Out-Null
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $resolvedAuditPath) | Out-Null

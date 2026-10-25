@@ -54,6 +54,7 @@ module IronmonTrainerBattleRuntimeTests
     configuration = Ironmon::Configuration.new(
       Ironmon::Configuration::POLICY_MIXED, policy
     )
+    configuration.instance_variable_set(:@schema_version, Ironmon::Configuration::LEGACY_SCHEMA_VERSION)
     return with_singleton_method_stub(
       Ironmon, :configuration, proc { configuration }
     ) { yield }
@@ -228,7 +229,7 @@ module IronmonTrainerBattleRuntimeTests
       [:IRONMON_TEST_LEFT, "Left", 12],
       [:IRONMON_TEST_RIGHT, "Right", 13]
     ]
-    reference_stub = proc do |category, event_id, map_id|
+    reference_stub = proc do |category, event_id, map_id, *_trainer_identity|
       references << [category, event_id, map_id]
       "#{category}:#{event_id}"
     end

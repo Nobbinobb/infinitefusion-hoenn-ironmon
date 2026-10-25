@@ -77,6 +77,34 @@ internal static class CompletedRunRecipeValidator
 
         if (recipe.Statistics is not null)
             ValidateStatistics(recipe.Statistics);
+
+        if (recipe.OpeningRivalContext is { } opening)
+        {
+            ArgumentOutOfRangeException.ThrowIfNotEqual(opening.SchemaVersion, 1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(opening.ChosenStarterIndex, 0);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(opening.ChosenStarterIndex, 2);
+            ArgumentOutOfRangeException.ThrowIfNegative(opening.TrainerGender);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(opening.TrainerGender, 2);
+            ArgumentNullException.ThrowIfNull(opening.RivalName);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(opening.RivalName.Length, 128);
+            ArgumentOutOfRangeException.ThrowIfNegative(opening.SelectedDifficulty);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(opening.SelectedDifficulty, 2);
+            ArgumentOutOfRangeException.ThrowIfNegative(opening.LowestDifficulty);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(opening.LowestDifficulty, 2);
+            ArgumentNullException.ThrowIfNull(opening.StarterSpeciesIds);
+            if (opening.LabSpeciesId is { } labSpecies)
+            {
+                ArgumentException.ThrowIfNullOrWhiteSpace(labSpecies);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(labSpecies.Length, 64);
+            }
+
+            ArgumentOutOfRangeException.ThrowIfNotEqual(opening.StarterSpeciesIds.Count, 3);
+            foreach (string species in opening.StarterSpeciesIds)
+            {
+                ArgumentException.ThrowIfNullOrWhiteSpace(species);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(species.Length, 64);
+            }
+        }
     }
 
     /// <summary>

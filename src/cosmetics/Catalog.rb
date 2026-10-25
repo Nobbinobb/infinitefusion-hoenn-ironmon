@@ -9,8 +9,10 @@ module Ironmon
     RECOVERABLE_ERRORS = [StandardError]
     RECOVERABLE_ERRORS << MKXPError if defined?(MKXPError)
     RECOVERABLE_ERRORS.freeze
-    PRICE_BANDS = [[500, 20], [1500, 40], [4000, 80], [10000, 150],
-                   [25000, 250], [50000, 400]].freeze
+    PRICE_BANDS = [[500, 100], [1500, 200], [4000, 400], [10000, 750],
+                   [25000, 1250], [50000, 2000]].freeze
+    ACHIEVEMENT_REWARD_POINTS = 100
+    MAXIMUM_ACHIEVEMENT_REWARDS = 4096
     CATEGORY_FILES = { "clothes" => "clothes_data.json",
                        "hat" => "hats_data.json",
                        "hair" => "hairstyles_data.json" }.freeze
@@ -19,6 +21,7 @@ module Ironmon
                          "clothes_color", "hair_color", "hat_color",
                          "hat2_color", "bike_color"].freeze
     DYE_FIELDS = ["clothes_color", "hair_color", "hat_color", "hat2_color", "bike_color"].freeze
+    OUTFIT_PROFILE_FIELDS = (APPEARANCE_FIELDS - ["skin_tone"]).freeze
 
     def self.default_outfit_keys
       return [GENDER_MALE, GENDER_FEMALE].map { |gender| "clothes:#{getDefaultClothes(gender)}" }.uniq
@@ -55,9 +58,9 @@ module Ironmon
 
     def self.points_for(category, price)
       number = Float(price) rescue 0
-      return category == "hair" ? 20 : 80 if !number.finite? || number <= 0
+      return category == "hair" ? 100 : 400 if !number.finite? || number <= 0
       band = PRICE_BANDS.find { |maximum, _points| number <= maximum }
-      return band ? band[1] : 600
+      return band ? band[1] : 3000
     end
 
     class Catalog

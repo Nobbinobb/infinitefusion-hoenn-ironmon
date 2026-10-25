@@ -179,7 +179,7 @@ class PokemonEncounters
   alias ironmon_original_setup setup
   def setup(map_id)
     result = ironmon_original_setup(map_id)
-    return result if !Ironmon.active?
+    return result if !Ironmon.active? || Ironmon.checkpoint_reset_loading?
     mode = getEncounterMode()
     data = mode.get(map_id, $PokemonGlobal.encounter_version)
     data = GameData::Encounter.get(

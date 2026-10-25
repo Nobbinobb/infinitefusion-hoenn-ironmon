@@ -51,8 +51,7 @@ end
 alias ironmon_original_obtain_randomized_starter obtainRandomizedStarter
 def obtainRandomizedStarter(starter_index)
   if Ironmon.active?
-    source = [1, 4, 7][starter_index] || 7
-    mapped = Ironmon.wild_species_for(source, [:starter, starter_index])
+    mapped = Ironmon.starter_offer_species(starter_index)
     return GameData::Species.get(mapped).id_number
   end
   return ironmon_original_obtain_randomized_starter(starter_index)

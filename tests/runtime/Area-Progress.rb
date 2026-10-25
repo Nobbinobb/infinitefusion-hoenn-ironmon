@@ -233,9 +233,19 @@ module IronmonAreaProgressRuntimeTests
       encounter_entries = Ironmon.tracker_area_encounter_metadata(
         area, { "data_mode" => Ironmon.tracker_data_mode }
       )
-      encounter_summary = Ironmon.tracker_area_lookup_summary(
+      encounter_summaries = Ironmon.tracker_area_lookup_summary(
         { "category" => "encounter" }, "runtime-test"
-      )["areas"].find { |entry| entry["area_id"] == area["area_id"] }
+      )["areas"]
+      encounter_summary = encounter_summaries.find { |entry| entry["area_id"] == area["area_id"] }
+      ["Rustboro Gym", "Dewford Gym", "Mauville Gym"].each do |name|
+        gym = encounter_summaries.find { |entry| entry["name"] == name }
+        assert(
+          gym && gym["encounter_slot_total"] == 0 && gym["encounter_fusion_total"] == 0,
+          "#{name} has no encounter or fusion counter"
+        )
+      end
+      gym = Ironmon.tracker_area_catalog.find { |entry| entry["name"] == "Dewford Gym" }
+      assert(gym["trainers"].length == 7 && gym["items"].length == 1, "Dewford trainers and item remain catalogued")
       assert(
         encounter_summary["encounter_slot_total"] == encounter_entries.length &&
           encounter_summary["encounter_fusion_total"] >= 0 &&
@@ -518,7 +528,8 @@ module IronmonAreaProgressRuntimeTests
             runtime_tables = runtime_encounters.instance_variable_get(
               :@encounter_tables
             )
-            runtime_ids = runtime_tables.values.flat_map do |entries|
+            runtime_ids = runtime_tables.flat_map do |encounter_type, entries|
+              next [] if !Ironmon.tracker_area_encounter_table_available?(map_id, encounter_type)
               entries.map do |entry|
                 entry.is_a?(Ironmon::AreaEncounterEntry) ?
                   entry.area_entry_id : nil

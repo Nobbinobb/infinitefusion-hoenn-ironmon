@@ -130,6 +130,7 @@ module Ironmon
 
       def update
         result = super
+        Ironmon::Cosmetics.retry_achievement_rewards(self) if defined?(Ironmon::Cosmetics)
         if !GameplayCollection.instance_variable_get(:@retry_after) || GameplayCollection.clock >= GameplayCollection.instance_variable_get(:@retry_after)
           GameplayCollection.transport_tick(self)
         end

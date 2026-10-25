@@ -33,7 +33,12 @@ public static class SeedTokenConstants
     /// <summary>
     /// Gets the supported game configuration schema version.
     /// </summary>
-    public const int ConfigurationSchemaVersion = 1;
+    public const int ConfigurationSchemaVersion = 2;
+
+    /// <summary>
+    /// Gets the legacy configuration schema whose starters follow the wild policy.
+    /// </summary>
+    public const int LegacyConfigurationSchemaVersion = 1;
 
     /// <summary>
     /// Gets the token contract-version claim.
@@ -84,6 +89,11 @@ public static class SeedTokenConstants
     /// Gets the nested trainer-policy property.
     /// </summary>
     public const string TrainerPolicyProperty = "trainer_policy";
+
+    /// <summary>
+    /// Gets the separate starter-policy property.
+    /// </summary>
+    public const string StarterPolicyProperty = "starter_policy";
 
     /// <summary>
     /// Gets the nested unfusion-setting property.

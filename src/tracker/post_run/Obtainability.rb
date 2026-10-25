@@ -768,6 +768,7 @@ module Ironmon
       mode.each do |data|
         data.types.each do |encounter_type, entries|
           cooperative_checkpoint
+          next if !Ironmon.tracker_area_encounter_table_available?(data.map, encounter_type)
           @encounter_tables << [mode.name, data.map, data.version,
                                 encounter_type, entries]
         end
@@ -842,7 +843,9 @@ module Ironmon
     end
 
     def seed_starter_sources
-      generator = species_generator
+      generator = @configuration.schema_version >= Configuration::SCHEMA_VERSION ?
+        Ironmon.starter_species_generator(@recipe["seed"], @configuration,
+          @recipe["species_generator_version"]) : species_generator
       [1, 4, 7].each_with_index do |source, slot|
         cooperative_checkpoint
         identity = normalize_species_id(generator.map_number(source, [:starter, slot]))
@@ -895,8 +898,14 @@ module Ironmon
     def apply_authored_source_catalog_entry(entry)
       identity = normalize_species_id(entry["species_id"].to_i)
       if entry["mapping_kind"] == "wild"
+        generator = if !entry["starter_slot"].nil? && @configuration.schema_version >= Configuration::SCHEMA_VERSION
+                      Ironmon.starter_species_generator(@recipe["seed"], @configuration,
+                        @recipe["species_generator_version"])
+                    else
+                      species_generator
+                    end
         identity = normalize_species_id(
-          species_generator.map_number(identity, entry["mapping_context"])
+          generator.map_number(identity, entry["mapping_context"])
         )
       end
       constraints = entry["starter_slot"] ?
@@ -2025,6 +2034,12 @@ module Ironmon
 
   def self.tracker_obtainability_for_recipe(payload, recipe)
     payload ||= {}
+    if tracker_lookup_transition_pending?
+      return { "phase" => "waiting_for_reset", "complete" => false,
+        "background_complete" => false, "processed_pairs" => 0, "total_pairs" => 0,
+        "obtainable_count" => 0, "obtainable_species_ids" => [],
+        "obtainable_evolution_edge_keys" => [] }
+    end
     species_key = payload["species_id"].to_s.split(":", 2)[0].to_s
     species = species_key.empty? ? nil :
       GameData::Species.try_get(species_key.to_sym)
@@ -2093,6 +2108,7 @@ module Ironmon
   end
 
   def self.update_tracker_obtainability
+    return if tracker_opening_loss_reset_pending?
     archive_menu = tracker_archive_lookup_menu_ready?
     return if !archive_menu && !tracker_obtainability_session_ready?
     services = tracker_obtainability_services.values
@@ -2157,7 +2173,20 @@ module Ironmon
     return false if !tracker_connection.connected?
     return false if instance_variable_get(:@reset_in_progress)
     return false if instance_variable_get(:@tracker_seed_import_pending)
+    return false if tracker_opening_loss_reset_pending?
     return true
+  end
+
+  def self.tracker_opening_loss_reset_pending?
+    return false if @main_menu_open == true
+    return true if @early_game_loss_reset_queued
+    return failed_run_locked? && $game_switches &&
+      !$game_switches[EARLY_GAME_SWITCH_FIRST_RIVAL_WON]
+  end
+
+  def self.tracker_lookup_transition_pending?
+    return @reset_in_progress || @tracker_seed_import_pending ||
+      tracker_opening_loss_reset_pending?
   end
 
   def self.tracker_archive_lookup_menu_ready?

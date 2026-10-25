@@ -1,0 +1,147 @@
+<ObsidianDialogScope Closed="CancelAsync">
+    <div class="detail-overlay wardrobe-overlay" role="presentation">
+        <section class="@DialogClass" role="dialog" aria-modal="true" aria-labelledby="wardrobe-title">
+            <header class="ow-header">
+                <h2 id="wardrobe-title">@Text[WardrobeUi.Title]</h2>
+                <div class="ow-header-actions">
+                    <div class="ow-balance"><strong>@Text[WardrobeUi.Points, _state.Points]</strong><small>@SlotName · @Text[Connected ? WardrobeUi.Connected : WardrobeUi.Disconnected]</small></div>
+                    <button type="button" class="ow-icon-button" aria-label="@Text[_maximized ? WardrobeUi.Restore : WardrobeUi.Expand]" title="@Text[_maximized ? WardrobeUi.Restore : WardrobeUi.Expand]" @onclick="ToggleExpandedAsync"><ObsidianIcon Kind="@(_maximized ? ObsidianIconKind.Shrink : ObsidianIconKind.Expand)" /></button>
+                    <button type="button" class="ow-icon-button" disabled="@Disabled" aria-label="@Text[WardrobeUi.Cancel]" @onclick="CancelAsync"><ObsidianIcon Kind="ObsidianIconKind.Close" /></button>
+                </div>
+            </header>
+            <div class="ow-body">
+                <aside class="ow-preview">
+                    @if (_mainImage is not null) { <img class="ow-avatar" src="@_mainImage" alt="@ItemName(WardrobeProtocol.Clothes, Appearance.Clothes)" /> }
+                    else { <div class="ow-avatar ow-image-placeholder" aria-hidden="true"></div> }
+                    <div class="ow-look">
+                        <div class="ow-profilebar">
+                            <select aria-label="@Text[WardrobeUi.OutfitProfiles]" value="@(_chosenProfile ?? string.Empty)" disabled="@Disabled" @onchange="ProfileSelectionChanged">
+                                <option value="">@Text[WardrobeUi.ChooseProfile]</option>
+                                @foreach (WardrobeOutfitProfilePayload profile in _state.OutfitProfiles) { <option value="@profile.Id">@ProfileOption(profile)</option> }
+                            </select>
+                            <button type="button" disabled="@(Disabled || ChosenProfile is not { Available: true })" @onclick="LoadChosenAsync">@Text[WardrobeUi.Load]</button>
+                            <button type="button" disabled="@(Disabled || HasLockedPieces)" @onclick="() => OpenProfileForm(ProfileForm.New)">@Text[WardrobeUi.SaveAs]</button>
+                        </div>
+                        <div class="ow-preview-meta">
+                            <div class="ow-look-details">
+                                <div class="ow-look-detail" title="@ItemName(WardrobeProtocol.Clothes, Appearance.Clothes)"><b>@ItemName(WardrobeProtocol.Clothes, Appearance.Clothes)</b></div>
+                                <div class="ow-look-detail ow-hair-detail"><span class="ow-piece-name" title="@ItemName(WardrobeProtocol.Hair, HairId)">@ItemName(WardrobeProtocol.Hair, HairId)</span><span class="ow-hair-values">@Text[WardrobeUi.HairValues, HairVersion, Appearance.HairColor]</span></div>
+                                <div class="ow-look-detail ow-accessories"><span class="ow-piece-name" title="@ItemName(WardrobeProtocol.Hat, Appearance.Hat)">@ItemName(WardrobeProtocol.Hat, Appearance.Hat)</span><span>/</span><span class="ow-piece-name" title="@ItemName(WardrobeProtocol.Hat, Appearance.Hat2)">@ItemName(WardrobeProtocol.Hat, Appearance.Hat2)</span></div>
+                            </div>
+                            <div class="ow-preview-action" aria-hidden="@(Purchasable ? "false" : "true")">
+                                <button type="button" class="ow-primary" disabled="@(Disabled || !Purchasable || SelectedItem is null || _state.Points < SelectedItem.Points)" @onclick="AskPurchase">@Text[WardrobeUi.Unlock, SelectedItem?.Points ?? 0]</button>
+                                @if (Purchasable && SelectedItem is { } priced && _state.Points < priced.Points) { <span class="ow-error">@Text[WardrobeUi.PointsNeeded, priced.Points - _state.Points]</span> }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ow-angles" role="group" aria-label="@Text[WardrobeUi.Portrait]">
+                        @foreach ((string mode, string label) in new[] { (WardrobeProtocol.Portrait, WardrobeUi.Portrait), (WardrobeProtocol.Front, WardrobeUi.Front), (WardrobeProtocol.Back, WardrobeUi.Back), (WardrobeProtocol.Left, WardrobeUi.Left), (WardrobeProtocol.Right, WardrobeUi.Right), (WardrobeProtocol.Bike, WardrobeUi.Bike) })
+                        {
+                            <button type="button" disabled="@Disabled" aria-pressed="@(_view == mode ? "true" : "false")" @onclick="() => SelectView(mode)">@Text[label]</button>
+                        }
+                    </div>
+                </aside>
+                <div class="ow-editor">
+                    <nav class="ow-tabs" aria-label="@Text[WardrobeUi.Title]">
+                        @foreach ((string category, string label) in new[] { (WardrobeProtocol.Clothes, WardrobeUi.Outfits), (WardrobeProtocol.Hair, WardrobeUi.Hair), (WardrobeProtocol.Hat, WardrobeUi.Extras), (WardrobeUi.ColorsCategory, WardrobeUi.Colors), (WardrobeUi.ProfilesCategory, WardrobeUi.Profiles) })
+                        {
+                            <button type="button" disabled="@_busy" aria-pressed="@(_category == category ? "true" : "false")" @onclick="() => SelectCategory(category)">@Text[label]</button>
+                        }
+                    </nav>
+                    <div class="ow-content" data-category="@_category" @key="(_category, _page, _form, _confirmation)">
+                        @if ((_error ?? _previewError) is { } error) { <p class="ow-error" role="alert">@error</p> }
+                        @if (_confirmation == Confirmation.Purchase && SelectedItem is { } purchase)
+                        {
+                            <div class="ow-guard"><strong>@Text[WardrobeUi.UnlockQuestion, purchase.Name]</strong><p>@Text[WardrobeUi.PurchaseCost, purchase.Points, _state.Points, _state.Points - purchase.Points]</p><div class="ow-form-actions"><button class="ow-primary" type="button" disabled="@Disabled" @onclick="PurchaseAsync">@Text[WardrobeUi.ConfirmPurchase]</button><button type="button" disabled="@_busy" @onclick="ClearConfirmation">@Text[WardrobeUi.KeepBrowsing]</button></div></div>
+                        }
+                        else if (_confirmation == Confirmation.Discard)
+                        {
+                            <div class="ow-guard"><strong>@Text[WardrobeUi.DiscardQuestion]</strong><div class="ow-form-actions"><button type="button" disabled="@Disabled" @onclick="() => MutateAsync(WardrobeAction.Cancel)">@Text[WardrobeUi.Discard]</button><button type="button" class="ow-primary" disabled="@_busy" @onclick="ClearConfirmation">@Text[WardrobeUi.KeepEditing]</button></div></div>
+                        }
+                        else if (_category == WardrobeUi.ProfilesCategory)
+                        {
+                            <div class="ow-profile-heading"><h3>@Text[WardrobeUi.OutfitProfiles]</h3><button type="button" class="ow-primary" disabled="@(Disabled || HasLockedPieces)" @onclick="() => OpenProfileForm(ProfileForm.New)">@Text[WardrobeUi.SaveCurrent]</button></div>
+                            @if (_form != ProfileForm.None)
+                            {
+                                <div class="ow-form">
+                                    @if (_form is ProfileForm.New or ProfileForm.Rename)
+                                    {
+                                        <label for="wardrobe-profile-name">@Text[WardrobeUi.ProfileName]</label><input id="wardrobe-profile-name" maxlength="48" placeholder="@Text[WardrobeUi.NamePlaceholder]" disabled="@Disabled" @bind="_formName" @bind:event="oninput" @onkeydown="ProfileNameKeyDown" />
+                                    }
+                                    else { <label>@Text[_form == ProfileForm.Delete ? WardrobeUi.DeleteQuestion : WardrobeUi.ReplaceQuestion]</label><p><strong>@FormProfile?.Name</strong></p> }
+                                    @if (_formError is not null) { <p class="ow-error" role="alert">@_formError</p> }
+                                    <div class="ow-form-actions"><button class="ow-primary" type="button" disabled="@(Disabled || (_form is ProfileForm.New or ProfileForm.Replace) && HasLockedPieces)" @onclick="CommitProfileAsync">@Text[_form == ProfileForm.New ? WardrobeUi.SaveProfile : _form == ProfileForm.Rename ? WardrobeUi.SaveName : _form == ProfileForm.Delete ? WardrobeUi.DeleteProfile : WardrobeUi.ReplaceProfile]</button><button type="button" disabled="@_busy" @onclick="CloseProfileForm">@Text[WardrobeUi.BackForm]</button></div>
+                                </div>
+                            }
+                            @foreach (WardrobeOutfitProfilePayload profile in VisibleProfiles)
+                            {
+                                <div class="ow-profile" @key="profile.Id">
+                                    @if (_profileImages.TryGetValue(profile.Id, out string? profileImage)) { <img src="@profileImage" alt="" /> }
+                                    else { <div class="ow-profile-image ow-image-placeholder" aria-hidden="true"></div> }
+                                    <div><div class="ow-profile-name">@profile.Name</div><div class="ow-profile-meta">@ProfilePieces(profile)</div><div class="ow-profile-actions"><button type="button" class="ow-primary" disabled="@(Disabled || !profile.Available)" @onclick="() => LoadProfileAsync(profile)">@Text[WardrobeUi.Load]</button><button type="button" class="ow-link" disabled="@Disabled" @onclick="() => OpenProfileForm(ProfileForm.Rename, profile)">@Text[WardrobeUi.Rename]</button><button type="button" class="ow-link" disabled="@(Disabled || HasLockedPieces)" @onclick="() => OpenProfileForm(ProfileForm.Replace, profile)">@Text[WardrobeUi.Replace]</button><button type="button" class="ow-link" disabled="@Disabled" @onclick="() => OpenProfileForm(ProfileForm.Delete, profile)">@Text[WardrobeUi.Delete]</button></div></div>
+                                </div>
+                            }
+
+                        }
+                        else if (_category == WardrobeUi.ColorsCategory)
+                        {
+                            <select class="ow-color-target" value="@_colorTarget" aria-label="@Text[WardrobeUi.Colors]" disabled="@Disabled" @onchange="ColorTargetChanged">
+                                @foreach (string field in new[] { WardrobeProtocol.HairColor, WardrobeProtocol.ClothesColor, WardrobeProtocol.HatColor, WardrobeProtocol.Hat2Color, WardrobeProtocol.BikeColor }) { <option value="@field">@Text[DyeLabel(field)]</option> }
+                            </select>
+                            <WardrobeDyePicker Title="@Text[DyeLabel(_colorTarget)]" Value="@DyeValue(Appearance, _colorTarget)" Colors="_dyeColors" Disabled="@(Disabled || _dyeColors.Count == 0)" Changed="value => ChangeDyeAsync(_colorTarget, value)" />
+                            <div class="ow-dye ow-skin"><div class="ow-section-heading"><strong>@Text[WardrobeUi.SkinTone]</strong></div><div class="ow-swatches ow-base-colors">
+                                @for (int index = 1; index <= 6; index++) { int tone = index; <button type="button" disabled="@Disabled" aria-pressed="@(Appearance.SkinTone == tone ? "true" : "false")" aria-label="@($"{Text[WardrobeUi.SkinTone]} {tone}")" @onclick="() => ChangeSkinAsync(tone)"><span class="ow-dot" style="@IndexedColor(_skinColors, tone)"></span>@tone</button> }
+                            </div></div>
+                        }
+                        else
+                        {
+                            <div class="ow-toolbar">
+                                <input type="search" value="@_search" placeholder="@Text[SearchLabel]" aria-label="@Text[SearchLabel]" @oninput="SearchChanged" />
+                                <select value="@_filter" aria-label="@Text[WardrobeUi.Owned]" @onchange="FilterChanged"><option value="@WardrobeUi.AllFilter">@Text[WardrobeUi.AllItems]</option><option value="@WardrobeUi.OwnedFilter">@Text[WardrobeUi.Owned]</option><option value="@WardrobeUi.LockedFilter">@Text[WardrobeUi.NotOwned]</option></select>
+                                @if (_category == WardrobeProtocol.Hat)
+                                {
+                                    <div class="ow-slotbar"><button type="button" disabled="@Disabled" aria-pressed="@(_slot == WardrobeProtocol.Hat ? "true" : "false")" @onclick="() => SelectSlot(WardrobeProtocol.Hat)">@Text[WardrobeUi.Accessory1]</button><button type="button" disabled="@Disabled" aria-pressed="@(_slot == WardrobeProtocol.Hat2 ? "true" : "false")" @onclick="() => SelectSlot(WardrobeProtocol.Hat2)">@Text[WardrobeUi.Accessory2]</button><button type="button" disabled="@Disabled" @onclick="RemoveAccessoryAsync">@Text[WardrobeUi.None]</button></div>
+                                }
+                            </div>
+                            <div class="ow-grid">
+                                @foreach (WardrobeCatalogItemPayload item in VisibleItems)
+                                {
+                                    <button type="button" class="@(item.Key == SelectedKey ? _selectedItemClass : _itemClass)" aria-pressed="@(item.Key == SelectedKey ? "true" : "false")" disabled="@(Disabled || !item.Available)" @onclick="() => SelectItemAsync(item)" @key="item.Key">
+                                        @if (_thumbnails.TryGetValue(item.Key, out string? thumbnail)) { <img src="@thumbnail" alt="" /> }
+                                        else { <span class="@_imagePlaceholder" aria-hidden="true"></span> }
+                                        <span class="ow-item-name" title="@item.Name">@item.Name</span><span class="ow-item-state"><span class="@(_owned.Contains(item.Key) ? "ow-owned" : "ow-price")">@(_owned.Contains(item.Key) ? Text[WardrobeUi.Owned] : _state.InitialSelection ? Text[WardrobeUi.FreeChoice] : Text[WardrobeUi.ItemPoints, item.Points])</span><span class="@(item.Key == SelectedKey ? "ow-trying" : "ow-muted")">@(AppearanceKeys(_state.EquippedAppearance).Contains(item.Key) ? Text[WardrobeUi.Wearing] : item.Key == SelectedKey ? Text[WardrobeUi.Trying] : string.Empty)</span></span>
+                                    </button>
+                                }
+                                @if (FilteredItems.Count == 0) { <p class="ow-muted">@Text[WardrobeUi.NoMatches]</p> }
+                            </div>
+
+                            @if (_category == WardrobeProtocol.Hair && SelectedItem is { } hairstyle)
+                            {
+                                <WardrobeDyePicker Title="@Text[WardrobeUi.HairDye]" Value="Appearance.HairColor" Colors="_dyeColors" Disabled="@(Disabled || _dyeColors.Count == 0)" Changed="value => ChangeDyeAsync(WardrobeProtocol.HairColor, value)">
+                                    <BaseColorOptions>
+                                        <div class="ow-swatches ow-base-colors">
+                                            @foreach (int version in hairstyle.Variants) { <button type="button" disabled="@Disabled" aria-pressed="@(HairVersion == version ? "true" : "false")" aria-label="@($"{Text[WardrobeUi.BaseHairColor]} {version}")" @onclick="() => ChangeHairVersionAsync(version)"><span class="ow-dot" style="@IndexedColor(_baseColors, version)"></span>@version</button> }
+                                        </div>
+                                    </BaseColorOptions>
+                                </WardrobeDyePicker>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+            <footer class="ow-footer">
+                <div class="ow-footer-actions">
+                    @if (Browsing)
+                    {
+                        <nav class="ow-pager" aria-label="@Text[WardrobeUi.Pages, BrowseCount, Math.Min(_page + 1, PageCount), PageCount]">
+                            <button type="button" disabled="@(_page <= 0)" aria-label="@Text[WardrobeUi.Previous]" title="@Text[WardrobeUi.Previous]" @onclick="() => ChangePage(-1)">‹</button>
+                            <span>@Text[WardrobeUi.Pages, BrowseCount, Math.Min(_page + 1, PageCount), PageCount]</span>
+                            <button type="button" disabled="@(_page >= PageCount - 1)" aria-label="@Text[WardrobeUi.Next]" title="@Text[WardrobeUi.Next]" @onclick="() => ChangePage(1)">›</button>
+                        </nav>
+                    }
+                    <div class="ow-footer-buttons"><button type="button" disabled="@Disabled" @onclick="CancelAsync">@Text[WardrobeUi.Cancel]</button><button type="button" class="ow-primary" disabled="@(Disabled || !_state.InitialSelection && HasLockedPieces || _confirmation != Confirmation.None || _form != ProfileForm.None)" @onclick="ApplyAsync">@Text[_state.InitialSelection ? WardrobeUi.ClaimFree : WardrobeUi.Apply]</button></div>
+                </div>
+            </footer>
+        </section>
+    </div>
+</ObsidianDialogScope>

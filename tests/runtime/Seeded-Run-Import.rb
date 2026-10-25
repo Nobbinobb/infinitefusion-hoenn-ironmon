@@ -150,6 +150,7 @@ module IronmonSeededRunImportRuntimeTests
       "seed" => 42,
       "configuration" => {
         "schema_version" => Ironmon::Configuration::SCHEMA_VERSION,
+        "starter_policy" => "mixed",
         "wild_policy" => "mixed",
         "trainer_policy" => "normal_only",
         "unfusion_setting" => "player_choice",
@@ -312,7 +313,9 @@ module IronmonSeededRunImportRuntimeTests
         :@profile_custom_fusion_pool_services,
         { Ironmon.current_generation_profile_id => pool_service }
       )
-      Ironmon.configuration = transaction_fixture["configuration"]
+      legacy_configuration = transaction_fixture["configuration"].merge("schema_version" => Ironmon::Configuration::LEGACY_SCHEMA_VERSION)
+      legacy_configuration.delete("starter_policy")
+      Ironmon.configuration = legacy_configuration
       generated_preset = Ironmon.apply_preset(:seed_import, seed, false)
       generation_error = Ironmon.instance_variable_get(
         :@seed_import_error_message
