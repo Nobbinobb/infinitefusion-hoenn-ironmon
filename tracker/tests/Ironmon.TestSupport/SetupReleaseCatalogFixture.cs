@@ -53,6 +53,16 @@ internal sealed class SetupReleaseCatalogFixture : IArtifactSource, IDisposable
     internal bool HistoricalReleasePublished { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets whether explicit historical selection represents a mutable test release.
+    /// </summary>
+    internal bool HistoricalReleaseIsTest { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the historical test release has been unpublished while replacing its files.
+    /// </summary>
+    internal bool HistoricalReleaseIsDraft { get; set; }
+
+    /// <summary>
     /// Gets or sets whether the game archive remains accessible after ancestry succeeds.
     /// </summary>
     internal bool GameArchiveAvailable { get; set; } = true;
@@ -230,14 +240,14 @@ internal sealed class SetupReleaseCatalogFixture : IArtifactSource, IDisposable
     }
 
     /// <summary>
-    /// Builds the minimal stable public API identity without making it signature authority.
+    /// Builds the minimal public API identity without making it signature authority.
     /// </summary>
     /// <param name="manifest">The signed target, or null for an unsupported legacy release.</param>
     /// <returns>The permissive public API projection.</returns>
-    private static object Api(ReleaseManifest? manifest)
+    private object Api(ReleaseManifest? manifest)
     {
         var version = manifest?.IronmonVersion ?? LegacyVersion;
-        return new { tag_name = _tagPrefix + version, draft = false, prerelease = false, html_url = ReleaseProtocol.ReleaseBaseUrl + _tagSegment + _tagPrefix + version, assets = (manifest is null ? Array.Empty<string>() : new[] { ReleaseProtocol.ManifestName, ReleaseProtocol.SignatureName }).Select(name => new { name, browser_download_url = ReleaseProtocol.AssetUrl(version, name) }) };
+        return new { tag_name = _tagPrefix + version, draft = version == SignedReleaseFixture.VersionB && HistoricalReleaseIsDraft, prerelease = version == SignedReleaseFixture.VersionB && HistoricalReleaseIsTest, html_url = ReleaseProtocol.ReleaseBaseUrl + _tagSegment + _tagPrefix + version, assets = (manifest is null ? Array.Empty<string>() : new[] { ReleaseProtocol.ManifestName, ReleaseProtocol.SignatureName }).Select(name => new { name, browser_download_url = ReleaseProtocol.AssetUrl(version, name) }) };
     }
 
     /// <summary>

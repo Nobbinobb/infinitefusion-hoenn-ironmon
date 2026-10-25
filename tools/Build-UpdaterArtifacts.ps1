@@ -6,7 +6,7 @@ Consumes generated game inputs and dedicated public trust. Private signing keys
 are never read by this build step. Production publication signs the exact frozen
 manifest later. Output is restricted to ignored staging and release directories.
 #>
-param([Parameter(Mandatory)][string]$Version, [string]$HistoryDirectory)
+param([Parameter(Mandatory)][string]$Version, [string]$HistoryDirectory, [Nullable[long]]$ReleaseSequence)
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -15,7 +15,7 @@ $tool = Join-Path $projectRoot 'tracker/tools/Ironmon.ReleaseTool/bin/Release/ne
 $trust = Join-Path $projectRoot 'resources/updater/trusted-keys.json'
 Invoke-UpdateCandidateTool $tool @('trust', $trust)
 $history = if ($HistoryDirectory) { $HistoryDirectory } else { '-' }
-$helperVersion = & dotnet $tool helper-version $history $trust
+$helperVersion = if ($null -ne $ReleaseSequence) { & dotnet $tool helper-version $ReleaseSequence.ToString([Globalization.CultureInfo]::InvariantCulture) } else { & dotnet $tool helper-version $history $trust }
 if ($LASTEXITCODE -ne 0 -or $helperVersion -cnotmatch '^\d+\.\d+\.\d+$') { throw 'Cannot determine the next immutable helper version.' }
 $stage = Join-Path $projectRoot 'data/updater/release-tools'
 if (Test-Path -LiteralPath $stage) { throw 'Updater publish staging already exists; clean the owned staging folder before a new release build.' }

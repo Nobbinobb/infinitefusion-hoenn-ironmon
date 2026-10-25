@@ -41,6 +41,10 @@ internal static class Program
             {
                 ReleaseBundle.Verify(directory, trust, mode != Unsigned, mode != History);
             }
+            else if (args is [HelperVersion, var explicitSequence])
+            {
+                Console.WriteLine(ReleaseBundle.HelperVersion(long.Parse(explicitSequence, System.Globalization.CultureInfo.InvariantCulture)));
+            }
             else if (args is [HelperVersion, var history, var trustFile])
             {
                 var sequence = history == NoHistory || !File.Exists(PlainPaths.Child(history, ReleaseProtocol.ManifestName)) ? 1 : checked(ReleaseBundle.Verify(history, trustFile, true, false).ReleaseSequence + 1);

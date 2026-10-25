@@ -35,7 +35,7 @@ For download and setup instructions, start with the [repository README](../READM
 - New runs support **File A–H**, reusable rule profiles, and a review step.
   Replacing an occupied normal or Ironmon save requires confirmation.
 - Continue supports valid Ironmon saves, including **Auto 1** and **Auto 2**.
-- Wild and trainer encounter policies are configured independently. Unfusion
+- Wild, trainer, and starter policies are configured independently. Unfusion
   supports either a random retained component or a player choice.
 - A run keeps the rules copied into its save. Editing a reusable profile changes
   future runs without rewriting existing attempts.
@@ -73,12 +73,14 @@ and [run configuration](guides/CONFIGURATION.md).
 ### Encounters and trainers
 
 - **Mixed**, **Custom fusions only**, and **Normal only** policies apply to the
-  supported wild and trainer slots.
+  supported wild, trainer, and starter slots.
 - Generation covers starters, wild encounters, supported gifts, trainers, and
   evolution results, using validated normal and custom-fusion pools.
 - Eligible encounters can produce derived fusions, including combinations from
   different encounter tables on the same map. Fishing has separate rules.
 - Boss-trainer parties and early Hoenn encounters include challenge adjustments.
+- The rival takes the original counter-slot starter. After the opening victory,
+  the trainer policy determines its persistent keep, swap, unfuse, or fusion choice.
 - Ordinary wild captures receive assistance that increases as the target is
   damaged. Ball and status effects continue through the normal capture rules.
 
@@ -88,7 +90,7 @@ and [run configuration](guides/CONFIGURATION.md).
   inheritance.
 - Eligible normal species and mechanical forms preserve their base-stat total
   while redistributing it across the six stats. Fusions use component-aware
-  calculations.
+  calculations, with seeded inheritance weights for new generation profiles.
 - Move-access randomization covers level-up and evolution moves, Egg moves,
   TM compatibility, ordinary tutors, and the specialized Fusion Move Tutor.
   Native learning and teaching actions use the generated access data.
@@ -124,6 +126,10 @@ Details: [Encounters](IRONMON_MECHANICS.html#encounters),
   one component. Available actions depend on both Pokémon and their history.
 - Choices commit before concealed results are revealed. Unfusion uses the saved
   random-component or player-choice rule.
+- Fusion move selection shows a spread hint and one current calculated stat.
+  Nature inheritance is seeded; the player still selects the retained moves.
+- Versioned reverse pairing can relax its BST tolerance when needed while
+  preserving disjoint components. Existing profiles retain their original rules.
 - Fusion choices preserve their information boundary: hidden identities and
   generated outcomes are not disclosed merely to populate a tracker view.
 - Story helpers, fusion materials, unselected candidates, and retirement copies
@@ -201,6 +207,8 @@ Details: [Player view](IRONMON_MECHANICS.html#tracker-player-view),
 - Encounter information distinguishes authored slots and derived fusion
   possibilities while preserving concealed entries.
 - Trainer lookup shows disclosed party information and battle details.
+- Story-team previews use the relevant persistent partners. Encounter and
+  obtainability sources are filtered by the map's actual encounter triggers.
 - Pokémon search and detail views provide information allowed by the current
   live, completed-run, or diagnostic context.
 - Evolution graphs support branch expansion and configurable layout. Obtainability
@@ -345,6 +353,10 @@ Details: [Controls](IRONMON_MECHANICS.html#tracker-controls),
 - Locked pieces can be previewed and purchased with points. Colors and dye are free.
 - Purchases retain ownership; confirming applies the equipped appearance. Each
   save slot keeps its own confirmed appearance through loading and resets.
+- Named outfit profiles save reusable cosmetic selections and dye settings.
+- Each newly earned achievement grants 100 points once. Preexisting unlocks do
+  not receive retroactive rewards. Current permanent prices are five times the
+  original wardrobe prices; existing balances and ownership are retained.
 
 Details: [Cosmetic wardrobe](IRONMON_MECHANICS.html#shared-cosmetic-wardrobe).
 
@@ -357,6 +369,9 @@ Details: [Cosmetic wardrobe](IRONMON_MECHANICS.html#shared-cosmetic-wardrobe).
 - Setup checks runtime availability, offers WebView2 when needed, and can install
   sprite sheets and a desktop shortcut.
 - Advanced release selection uses available signed metadata and matching game revisions.
+- Mutable test releases are explicitly labeled in Setup's advanced selector.
+  Automatic updates remain stable-only; replacement test builds use new internal
+  sequences and require a fresh Setup review or complete ZIP reinstallation.
 - **Settings > General > Custom sprite library** can review and synchronize sprite
   sheets later, with the game closed.
 - Startup notifications and **Check for updates** provide signed release updates.

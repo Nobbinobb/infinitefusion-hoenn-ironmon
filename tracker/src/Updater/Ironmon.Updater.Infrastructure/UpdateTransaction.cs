@@ -636,11 +636,11 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
         await RequireGitAsync(description.InstallationRoot, description.GitBefore, cancellationToken).ConfigureAwait(false);
         var live = PlainPaths.Child(description.InstallationRoot, GitDirectory);
         if (description.GitBefore is not null)
-            Directory.Move(live, PlainPaths.Child(directory, GitRetiredDirectory));
+            await MoveTreeAsync(live, PlainPaths.Child(directory, GitRetiredDirectory), description.GitBefore, cancellationToken).ConfigureAwait(false);
 
         Notify(journal, TransactionBoundary.GitDetached);
         cancellationToken.ThrowIfCancellationRequested();
-        Directory.Move(PlainPaths.Child(directory, GitPreparedDirectory), live);
+        await MoveTreeAsync(PlainPaths.Child(directory, GitPreparedDirectory), live, description.GitAfter!, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -667,11 +667,11 @@ public sealed partial class UpdateTransaction(ITransactionAuthority authority, F
             await CopyTreeAsync(PlainPaths.Child(directory, GitBackupDirectory), restore, description.GitBefore, CancellationToken.None).ConfigureAwait(false);
 
         if (current is not null)
-            Directory.Move(live, PlainPaths.Child(directory, GitPreparedDirectory));
+            await MoveTreeAsync(live, PlainPaths.Child(directory, GitPreparedDirectory), description.GitAfter!, CancellationToken.None).ConfigureAwait(false);
 
         Notify(journal, TransactionBoundary.GitDetached);
         if (description.GitBefore is not null)
-            Directory.Move(restore, live);
+            await MoveTreeAsync(restore, live, description.GitBefore, CancellationToken.None).ConfigureAwait(false);
     }
 
     /// <summary>

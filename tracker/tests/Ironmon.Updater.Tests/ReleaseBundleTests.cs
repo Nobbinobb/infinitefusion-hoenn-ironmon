@@ -17,6 +17,45 @@ public sealed class ReleaseBundleTests
     private const string _legacySetupName = "Ironmon-Setup-v99.0.1-win-x64.exe";
 
     /// <summary>
+    /// Stages a replacement build of the same public version without colliding with or changing its retained old helper.
+    /// </summary>
+    /// <returns>Completion after both real generated helper packages were verified and staged.</returns>
+    [Fact]
+    public async Task ReplacementTestBuildUsesANewRetainedHelperIdentity()
+    {
+        using var fixture = new ReleaseBundleFixture();
+        var downloads = new ReleaseDownloadStore(fixture.DirectoryFor(VersionB), fixture);
+        fixture.Build(VersionA, releaseSequence: 10);
+        fixture.Sign(VersionA);
+        var first = ReleaseBundle.Verify(fixture.DirectoryFor(VersionA), fixture.Trust, true);
+        var oldHelper = await RecoveryHelperPackage.StageAsync(fixture.Root, first, downloads, ReleaseProtocol.SelfContained, CancellationToken.None);
+        var oldPath = Path.Combine(fixture.Root, InstallationLease.StateDirectory, RecoveryHelperPackage.DirectoryName, oldHelper.Version, UpdaterHandoff.HelperFileName);
+        var retainedBytes = File.ReadAllBytes(oldPath);
+        fixture.ResetBuild(VersionA);
+        fixture.Build(VersionA, releaseSequence: 11);
+        fixture.Sign(VersionA);
+        var replacement = ReleaseBundle.Verify(fixture.DirectoryFor(VersionA), fixture.Trust, true);
+        var newHelper = await RecoveryHelperPackage.StageAsync(fixture.Root, replacement, downloads, ReleaseProtocol.SelfContained, CancellationToken.None);
+        Assert.Equal(first.IronmonVersion, replacement.IronmonVersion);
+        Assert.True(replacement.ReleaseSequence > first.ReleaseSequence);
+        Assert.NotEqual(oldHelper.Version, newHelper.Version);
+        Assert.Equal(retainedBytes, File.ReadAllBytes(oldPath));
+        Assert.NotEqual(oldHelper.Content, newHelper.Content);
+    }
+
+    /// <summary>
+    /// Refuses a requested test sequence that would move behind authenticated stable history.
+    /// </summary>
+    [Fact]
+    public void TestBuildSequenceCannotRollBackStableHistory()
+    {
+        using var fixture = new ReleaseBundleFixture();
+        fixture.Build(VersionA, releaseSequence: 10);
+        fixture.Sign(VersionA);
+        Assert.Throws<InvalidDataException>(() => fixture.Build(VersionB, fixture.DirectoryFor(VersionA), releaseSequence: 9));
+    }
+
+    /// <summary>
     /// Rejects internally consistent ownership hashes when required components or trust disagree with the release.
     /// </summary>
     /// <param name="path">The packaged component to corrupt.</param>

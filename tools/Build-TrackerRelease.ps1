@@ -40,7 +40,11 @@ $existingReleaseArtifacts = $releaseArtifactNames | Where-Object {
   Test-Path -LiteralPath (Join-Path $releaseDirectory $_)
 }
 if (-not $GenerateOnly -and $existingReleaseArtifacts) {
-  throw "Release version $releaseVersion already has published artifacts: $($existingReleaseArtifacts -join ', '). Bump ApplicationDisplayVersion, ApplicationVersion, and Version before building another release. Existing release artifacts are immutable."
+  throw "Release build output already exists for ${releaseVersion}: $($existingReleaseArtifacts -join ', '). Use a fresh owned build directory. Mutable test builds can retain their version; published immutable releases cannot be replaced."
+}
+$releaseSequence = $null
+if (-not $GenerateOnly) {
+  $releaseSequence = & (Join-Path $PSScriptRoot 'ci/Get-ReleaseBuildSequence.ps1') -Version $releaseVersion -Tool $updateTool -HistoryDirectory $UpdateHistoryDirectory
 }
 $areaCatalog = Join-Path $projectRoot "data\area_catalog.dat"
 $fusionPredecessorIndex = Join-Path $projectRoot "data\fusion_predecessor_index.dat"
@@ -433,7 +437,7 @@ foreach ($distributionEntry in "Data", "README.md", "INSTALLATION.md", "RELEASE_
   -DeploymentMode RuntimeRequired `
   -OutputDirectory (Join-Path $resolvedRuntimeRequiredDistribution "Ironmon Tracker")
 
-& (Join-Path $PSScriptRoot 'Build-UpdaterArtifacts.ps1') -Version $releaseVersion -HistoryDirectory $UpdateHistoryDirectory
+& (Join-Path $PSScriptRoot 'Build-UpdaterArtifacts.ps1') -Version $releaseVersion -HistoryDirectory $UpdateHistoryDirectory -ReleaseSequence $releaseSequence
 foreach ($item in @(@{Root=$distribution;Flavor='self-contained'}, @{Root=$resolvedRuntimeRequiredDistribution;Flavor='runtime-required'})) {
   & dotnet $updateTool package $item.Root $releaseVersion $item.Flavor $gameCommit
   if ($LASTEXITCODE -ne 0) { throw 'Package ownership generation failed.' }
@@ -446,4 +450,4 @@ New-Item -ItemType Directory -Force -Path $releaseDirectory | Out-Null
 Add-Type -AssemblyName System.IO.Compression
 New-DeterministicReleaseArchive -DistributionPath $distribution -ArchiveName $selfContainedArchiveName
 New-DeterministicReleaseArchive -DistributionPath $resolvedRuntimeRequiredDistribution -ArchiveName $runtimeRequiredArchiveName
-& (Join-Path $PSScriptRoot 'ci/New-UpdateMetadata.ps1') -Version $releaseVersion -GameCommit $gameCommit -HistoryDirectory $UpdateHistoryDirectory
+& (Join-Path $PSScriptRoot 'ci/New-UpdateMetadata.ps1') -Version $releaseVersion -GameCommit $gameCommit -HistoryDirectory $UpdateHistoryDirectory -ReleaseSequence $releaseSequence

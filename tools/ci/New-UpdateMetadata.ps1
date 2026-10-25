@@ -2,7 +2,7 @@
 .SYNOPSIS
 Generates updater metadata from exact completed archives and the selected game inventory.
 #>
-param([Parameter(Mandatory)][string]$Version, [Parameter(Mandatory)][string]$GameCommit, [string]$HistoryDirectory)
+param([Parameter(Mandatory)][string]$Version, [Parameter(Mandatory)][string]$GameCommit, [string]$HistoryDirectory, [Nullable[long]]$ReleaseSequence)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 . (Join-Path $PSScriptRoot 'UpdateArtifacts.ps1')
@@ -20,6 +20,7 @@ $request = [ordered]@{
   gameDownloadBytes=$gameDownloadBytes
   trustFile=(Join-Path $projectRoot 'resources/updater/trusted-keys.json')
   historyDirectory=$(if ($HistoryDirectory) { $HistoryDirectory } else { $null })
+  releaseSequence=$ReleaseSequence
 }
 $path = Join-Path $projectRoot 'data/updater/release-request.json'
 $request | ConvertTo-Json -Depth 8 -Compress | Set-Content -LiteralPath $path -Encoding utf8NoBOM

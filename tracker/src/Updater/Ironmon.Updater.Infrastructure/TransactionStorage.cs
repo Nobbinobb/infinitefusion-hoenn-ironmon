@@ -27,6 +27,13 @@ internal static class TransactionStorage
     private const string TemporarySuffix = ".temporary";
     private const int MaximumDocumentBytes = 64 * 1024 * 1024;
     private const int MaximumTreeEntries = 200000;
+    private const int _contentionRetries = 10;
+    private const int _contentionRetryMilliseconds = 100;
+    private const int _accessDenied = 5;
+    private const int _sharingViolation = 32;
+    private const int _lockViolation = 33;
+    private const int _unableToRemoveReplaced = 1175;
+    private const int _win32ErrorMask = 0xffff;
     private static readonly JsonSerializerOptions _jsonOptions = new() { UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow, RespectRequiredConstructorParameters = true, RespectNullableAnnotations = true, MaxDepth = 32 };
 
     /// <summary>
@@ -117,13 +124,76 @@ internal static class TransactionStorage
             stream.Flush(true);
         }
 
-        if (File.Exists(path))
+        for (var attempt = 0; ; attempt++)
         {
-            File.Replace(temporary, path, PlainPaths.Full(path + PreviousSuffix));
+            try
+            {
+                PlainPaths.Full(path);
+                PlainPaths.Full(temporary);
+                if (attempt > 0 && !ReadBytes(temporary).AsSpan().SequenceEqual(bytes))
+                    throw new InvalidDataException(UpdaterText.TransactionStorageAStagedOrBackupFileFailedContentVerification);
+
+                if (File.Exists(path))
+                {
+                    File.Replace(temporary, path, PlainPaths.Full(path + PreviousSuffix));
+                }
+                else
+                {
+                    File.Move(temporary, path);
+                }
+
+                return;
+            }
+            catch (Exception error) when (attempt < _contentionRetries && IsFileContention(error))
+            {
+                Thread.Sleep(_contentionRetryMilliseconds);
+            }
         }
-        else
+    }
+
+    /// <summary>
+    /// Retries only Windows errors whose failed operation retains its source names and bytes.
+    /// </summary>
+    /// <remarks>
+    /// Other ReplaceFile errors can leave different name mappings and must retain the recovery blocker instead of being replayed.
+    /// </remarks>
+    /// <param name="error">The failed ordinary filesystem operation.</param>
+    /// <returns>Whether a bounded retry can revalidate and repeat this operation.</returns>
+    private static bool IsFileContention(Exception error)
+        => OperatingSystem.IsWindows() && (error is IOException or UnauthorizedAccessException) && (error.HResult & _win32ErrorMask) is _accessDenied or _sharingViolation or _lockViolation or _unableToRemoveReplaced;
+
+    /// <summary>
+    /// Promotes a verified ordinary tree, retrying short Windows contention without accepting changed source contents.
+    /// </summary>
+    /// <remarks>
+    /// The caller verifies the first attempt's complete tree. Every retry rechecks that authenticated snapshot before moving, and permanent contention still fails with recovery data retained.
+    /// </remarks>
+    /// <param name="source">The checked tree whose initial snapshot is already verified.</param>
+    /// <param name="destination">The checked absent destination on the same volume.</param>
+    /// <param name="expected">The authenticated source entries, relative to its root and ordered by path.</param>
+    /// <param name="cancellationToken">The preparation or non-cancellable rollback token.</param>
+    /// <returns>Completion after the same-volume move, or a retained filesystem or verification failure.</returns>
+    internal static async Task MoveTreeAsync(string source, string destination, LocalFileEntry[] expected, CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; ; attempt++)
         {
-            File.Move(temporary, path);
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                PlainPaths.Full(source);
+                PlainPaths.Full(destination);
+                using var sourceAncestors = OperatingSystem.IsWindows() ? WindowsUpdateAccess.HoldAncestors(source) : null;
+                using var destinationAncestors = OperatingSystem.IsWindows() ? WindowsUpdateAccess.HoldAncestors(destination) : null;
+                if (attempt > 0 && !(await TreeAsync(source, cancellationToken).ConfigureAwait(false)).SequenceEqual(expected))
+                    throw new InvalidDataException(UpdaterText.TransactionStorageGitMetadataChangedAfterPreparation);
+
+                Directory.Move(source, destination);
+                return;
+            }
+            catch (Exception error) when (attempt < _contentionRetries && IsFileContention(error))
+            {
+                await Task.Delay(_contentionRetryMilliseconds, cancellationToken).ConfigureAwait(false);
+            }
         }
     }
 

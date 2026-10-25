@@ -87,12 +87,13 @@ internal sealed class ReleaseBundleFixture : IDisposable, IArtifactSource
     /// <param name="commit">The selected synthetic game commit.</param>
     /// <param name="customize">An optional deliberate package defect introduced before ownership is hashed.</param>
     /// <param name="gameDownloadBytes">The synthetic measured game estimate, or null for older releases.</param>
+    /// <param name="releaseSequence">The internal build sequence for a replacement test release.</param>
     /// <returns>The exact producer inputs, allowing deliberate corruption tests before signing.</returns>
-    internal BundleRequest Build(string version, string? history = null, string commit = CommitA, Action<string, string>? customize = null, long? gameDownloadBytes = 4096)
+    internal BundleRequest Build(string version, string? history = null, string commit = CommitA, Action<string, string>? customize = null, long? gameDownloadBytes = 4096, long? releaseSequence = null)
     {
         var directory = DirectoryFor(version);
         Directory.CreateDirectory(directory);
-        var sequence = history is null || !File.Exists(Path.Combine(history, ReleaseProtocol.ManifestName)) ? 1 : ReleaseBundle.Verify(history, Trust, true).ReleaseSequence + 1;
+        var sequence = releaseSequence ?? (history is null || !File.Exists(Path.Combine(history, ReleaseProtocol.ManifestName)) ? 1 : ReleaseBundle.Verify(history, Trust, true).ReleaseSequence + 1);
         var helper = Encoding.UTF8.GetBytes(ReleaseBundle.HelperVersion(sequence));
         using (var zip = ZipFile.Open(Path.Combine(directory, ReleaseBundle.HelperName(sequence)), ZipArchiveMode.Create))
         using (var entry = zip.CreateEntry(UpdaterHandoff.HelperFileName).Open())
@@ -128,9 +129,20 @@ internal sealed class ReleaseBundleFixture : IDisposable, IArtifactSource
             JsonSerializer.Serialize(gzip, game);
 
         File.WriteAllBytes(companion, JsonSerializer.SerializeToUtf8Bytes(new { Commit = commit, FileCount = game.Files.Count, Sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(baseline))) }));
-        var request = new BundleRequest(directory, version, GameVersion, commit, baseline, companion, Trust, history, gameDownloadBytes);
+        var request = new BundleRequest(directory, version, GameVersion, commit, baseline, companion, Trust, history, gameDownloadBytes, releaseSequence);
         ReleaseBundle.Create(request);
         return request;
+    }
+
+    /// <summary>
+    /// Removes only this fixture's previous build output while retaining its installed helpers and trust key.
+    /// </summary>
+    /// <param name="version">The test version to rebuild.</param>
+    internal void ResetBuild(string version)
+    {
+        PlainPaths.DeleteOwned(_workspace.Root, DirectoryFor(version));
+        foreach (var flavor in new[] { ReleaseProtocol.SelfContained, ReleaseProtocol.RuntimeRequired })
+            PlainPaths.DeleteOwned(_workspace.Root, _workspace.PathFor(PayloadPrefix + version + '-' + flavor));
     }
 
     /// <summary>

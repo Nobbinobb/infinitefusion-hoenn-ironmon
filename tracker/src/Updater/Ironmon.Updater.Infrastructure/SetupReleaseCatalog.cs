@@ -30,7 +30,7 @@ public sealed class SetupReleaseCatalog(ReleaseHttpClient http, ReleaseVerifier 
     private const string _identical = "identical";
 
     /// <summary>
-    /// Lists recent stable releases, disabling each target whose signed content or required game cannot be verified now.
+    /// Lists published stable and test releases for explicit selection, disabling unverifiable targets.
     /// </summary>
     /// <param name="cancellationToken">The caller cancellation token.</param>
     /// <returns>At most one hundred choices ordered by numeric Ironmon version.</returns>
@@ -45,7 +45,7 @@ public sealed class SetupReleaseCatalog(ReleaseHttpClient http, ReleaseVerifier 
         var releases = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
         foreach (var item in document.RootElement.EnumerateArray())
         {
-            if (item.ValueKind != JsonValueKind.Object || !item.TryGetProperty(_tagProperty, out var tag) || tag.ValueKind != JsonValueKind.String || !item.TryGetProperty(_draftProperty, out var draft) || draft.ValueKind != JsonValueKind.False || !item.TryGetProperty(_prereleaseProperty, out var prerelease) || prerelease.ValueKind != JsonValueKind.False)
+            if (item.ValueKind != JsonValueKind.Object || !item.TryGetProperty(_tagProperty, out var tag) || tag.ValueKind != JsonValueKind.String || !item.TryGetProperty(_draftProperty, out var draft) || draft.ValueKind != JsonValueKind.False || !item.TryGetProperty(_prereleaseProperty, out var prerelease) || prerelease.ValueKind is not (JsonValueKind.False or JsonValueKind.True))
                 continue;
 
             var text = tag.GetString()!;
@@ -78,11 +78,11 @@ public sealed class SetupReleaseCatalog(ReleaseHttpClient http, ReleaseVerifier 
                 var evidence = await ReadVerifiedAsync(entry.Key, entry.Value, token).ConfigureAwait(false);
                 manifest = verifier.Verify(evidence.Manifest, evidence.Signatures);
                 await RequireAvailableAsync(manifest, games, token).ConfigureAwait(false);
-                choices[index] = new SetupReleaseChoice(entry.Key, manifest.Game.VersionLabel, manifest.Game.PreferredCommit, null);
+                choices[index] = new SetupReleaseChoice(entry.Key, manifest.Game.VersionLabel, manifest.Game.PreferredCommit, null, entry.Value.GetProperty(_prereleaseProperty).GetBoolean());
             }
             catch (Exception error) when (!token.IsCancellationRequested && IsUnavailable(error))
             {
-                choices[index] = new SetupReleaseChoice(entry.Key, manifest?.Game.VersionLabel, manifest?.Game.PreferredCommit, error is InvalidDataException or InvalidOperationException ? error.Message : UpdaterText.SetupVersionsUnavailable);
+                choices[index] = new SetupReleaseChoice(entry.Key, manifest?.Game.VersionLabel, manifest?.Game.PreferredCommit, error is InvalidDataException or InvalidOperationException ? error.Message : UpdaterText.SetupVersionsUnavailable, entry.Value.GetProperty(_prereleaseProperty).GetBoolean());
             }
         }).ConfigureAwait(false);
         return [.. choices.OrderByDescending(choice => ReleaseProtocol.ParseVersion(choice.Version))];
@@ -91,7 +91,7 @@ public sealed class SetupReleaseCatalog(ReleaseHttpClient http, ReleaseVerifier 
     /// <summary>
     /// Rechecks one exact published target, its signed metadata, downloads and current upstream game availability.
     /// </summary>
-    /// <param name="version">The explicitly chosen stable Ironmon version.</param>
+    /// <param name="version">The explicitly chosen stable or test Ironmon version.</param>
     /// <param name="cancellationToken">The caller cancellation token.</param>
     /// <returns>Fresh authenticated evidence; unavailable targets never fall back to latest.</returns>
     public async Task<ReleaseEvidence> ReadAsync(string version, CancellationToken cancellationToken)
@@ -108,7 +108,7 @@ public sealed class SetupReleaseCatalog(ReleaseHttpClient http, ReleaseVerifier 
     /// <summary>
     /// Validates the public API identity before reading and independently verifying the exact release manifest.
     /// </summary>
-    /// <param name="version">The selected stable version.</param>
+    /// <param name="version">The explicitly selected release version.</param>
     /// <param name="api">The public release API entry.</param>
     /// <param name="cancellationToken">The request token.</param>
     /// <returns>The signed release evidence without program downloads.</returns>
@@ -116,7 +116,7 @@ public sealed class SetupReleaseCatalog(ReleaseHttpClient http, ReleaseVerifier 
     {
         try
         {
-            if (ReleaseDiscovery.ValidateApi(Encoding.UTF8.GetBytes(api.GetRawText())) != version)
+            if (ReleaseDiscovery.ValidateApi(Encoding.UTF8.GetBytes(api.GetRawText()), allowTestRelease: true) != version)
                 throw new InvalidDataException(UpdaterText.SetupVersionsMissingMetadata);
         }
         catch (Exception error) when (error is InvalidDataException or JsonException or KeyNotFoundException or InvalidOperationException)
@@ -211,7 +211,8 @@ public sealed class SetupReleaseCatalog(ReleaseHttpClient http, ReleaseVerifier 
 /// <param name="GameVersion">The signed game display version, when its metadata can be authenticated.</param>
 /// <param name="GameCommit">The exact signed preferred game commit, when known.</param>
 /// <param name="UnavailableReason">The explanation for a disabled choice, or null when currently available.</param>
-public sealed record SetupReleaseChoice(string Version, string? GameVersion, string? GameCommit, string? UnavailableReason)
+/// <param name="IsTestRelease">Whether this explicitly selected target is a published prerelease.</param>
+public sealed record SetupReleaseChoice(string Version, string? GameVersion, string? GameCommit, string? UnavailableReason, bool IsTestRelease = false)
 {
     /// <summary>
     /// Gets whether this target passed the current bounded release and upstream availability checks.

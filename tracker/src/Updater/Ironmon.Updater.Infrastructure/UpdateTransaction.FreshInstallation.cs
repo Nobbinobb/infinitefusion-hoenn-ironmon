@@ -46,7 +46,8 @@ public sealed partial class UpdateTransaction
 
             if (Directory.Exists(source))
             {
-                Directory.Move(source, destination);
+                LocalFileEntry[] expected = [.. group.Where(operation => operation.Path != group.Key).Select(operation => new LocalFileEntry(operation.Path[(group.Key.Length + 1)..], operation.ExpectedAfter)).OrderBy(entry => entry.Path, StringComparer.Ordinal)];
+                await MoveTreeAsync(source, destination, expected, cancellationToken).ConfigureAwait(false);
             }
             else
             {
