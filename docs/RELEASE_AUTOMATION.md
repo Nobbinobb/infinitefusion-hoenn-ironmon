@@ -103,6 +103,12 @@ this policy. It only prepares the private signed draft. Existing immutable
 releases remain locked throughout. Every replacement test publication repeats
 the same controlled disable/publish/restore sequence.
 
+Include the intended `tag_name` and `target_commitish` explicitly when updating
+the draft or publishing it. Re-read the release by numeric ID and verify its tag
+and flags before uploading assets; an `untagged-...` draft cannot be uploaded by
+the intended version tag. Resume a failed publication job against its retained
+verified candidate after repairing an empty private draft.
+
 Test the downloaded Setup and both ZIP variants outside the development checkout.
 Use Setup's advanced version selector for 0.9 test builds. Same-version replacement
 requires rerunning Setup or reinstalling the complete matching ZIP; automatic
