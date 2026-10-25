@@ -118,8 +118,10 @@ if ($PrepareTest) {
     }
   }
   $requestPath = Join-Path $env:RUNNER_TEMP 'test-release-request.json'
-  @{target_commitish=$SourceCommit;prerelease=$true;name="Ironmon $version test release";body=(Get-Content -LiteralPath $releaseNotes -Raw)} | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $requestPath -Encoding utf8NoBOM
+  @{tag_name=$tag;target_commitish=$SourceCommit;draft=$true;prerelease=$true;name="Ironmon $version test release";body=(Get-Content -LiteralPath $releaseNotes -Raw)} | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $requestPath -Encoding utf8NoBOM
   gh api --method PATCH "repos/$env:GITHUB_REPOSITORY/releases/$releaseId" --input $requestPath
+  $release = gh api "repos/$env:GITHUB_REPOSITORY/releases/$releaseId" | ConvertFrom-Json
+  if ($release.tag_name -cne $tag -or $release.target_commitish -cne $SourceCommit -or -not $release.draft -or -not $release.prerelease -or $release.immutable) { throw 'Test draft identity changed before upload.' }
 }
 foreach ($asset in $assets) {
   $remote = $release.assets | Where-Object name -eq $asset.Name | Select-Object -First 1
