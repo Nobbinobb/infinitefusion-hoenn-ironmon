@@ -93,6 +93,8 @@ accurate world lookup.
 
 ## Persistent achievements and artwork
 
+- Fixed achievement tracking silently remaining inactive in clean Setup
+  installations. Collector startup errors are now visible in protocol diagnostics.
 - A new **Achievements** page provides earned names, requirements, unlock dates,
   collection progress, search, and sorting. Progress and earned unlocks persist
   across attempts, resets, and save slots.

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Xunit.Abstractions;
@@ -50,14 +51,20 @@ public sealed class BundledRubySmokeTests(ITestOutputHelper output)
     private const string _developmentPrefix = "998";
     private const string _mainPrefix = "999";
     private const string _idFormat = "N";
+    private const string _rubyExtension = ".rb";
+    private const string _unixLineEnding = "\n";
+    private const string _windowsLineEnding = "\r\n";
 
     /// <summary>
     /// Loads current source and runs the small Ruby suite without generating catalogs or accessing player saves.
     /// </summary>
+    /// <param name="lineEnding">The LF archive or CRLF Windows checkout representation of the native scripts.</param>
     /// <returns>Completion after the owned native process exits and every Ruby smoke group has passed.</returns>
-    [Fact]
+    [Theory]
+    [InlineData(_unixLineEnding)]
+    [InlineData(_windowsLineEnding)]
     [Trait(_category, _bundledRuby)]
-    public async Task CurrentSourcePassesBundledRubySmoke()
+    public async Task CurrentSourcePassesBundledRubySmoke(string lineEnding)
     {
         if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("Bundled Ruby validation requires the Windows Infinite Fusion runtime.");
@@ -74,7 +81,7 @@ public sealed class BundledRubySmokeTests(ITestOutputHelper output)
 
         try
         {
-            CopyRuntime(gameRoot, fixtureRoot);
+            CopyRuntime(gameRoot, fixtureRoot, lineEnding);
             string configuration = JsonSerializer.Serialize(new { gameFolder = _currentDirectory, customScript = Path.Combine(sourceRoot, _entryPath), execName = _gameName, vsync = false, frameSkip = false, dataPathOrg = _testOrganization, dataPathApp = Path.GetFileName(runRoot) });
             await File.WriteAllTextAsync(Path.Combine(fixtureRoot, _configurationName), configuration);
             ProcessStartInfo start = new(Path.Combine(fixtureRoot, _executableName))
@@ -121,7 +128,7 @@ public sealed class BundledRubySmokeTests(ITestOutputHelper output)
             using JsonDocument document = JsonDocument.Parse(result);
             Assert.Equal(_passed, document.RootElement.GetProperty(_statusProperty).GetString());
             JsonElement cases = document.RootElement.GetProperty(_casesProperty);
-            Assert.Equal(5, cases.GetArrayLength());
+            Assert.Equal(6, cases.GetArrayLength());
             Assert.All(cases.EnumerateArray(), item => Assert.Equal(_passed, item.GetProperty(_statusProperty).GetString()));
         }
         finally
@@ -150,7 +157,8 @@ public sealed class BundledRubySmokeTests(ITestOutputHelper output)
     /// </summary>
     /// <param name="source">The selected upstream game installation.</param>
     /// <param name="destination">The owned fixture game directory.</param>
-    private static void CopyRuntime(string source, string destination)
+    /// <param name="lineEnding">The native script line-ending representation to exercise.</param>
+    private static void CopyRuntime(string source, string destination, string lineEnding)
     {
         string[] requiredFiles = [_executableName, _gameIni];
         foreach (string name in requiredFiles)
@@ -169,7 +177,7 @@ public sealed class BundledRubySmokeTests(ITestOutputHelper output)
             File.Copy(path, Path.Combine(data, Path.GetFileName(path)));
         }
 
-        CopyTree(Path.Combine(source, _scriptDirectory), Path.Combine(destination, _scriptDirectory), excludeInstalledMod: true);
+        CopyTree(Path.Combine(source, _scriptDirectory), Path.Combine(destination, _scriptDirectory), excludeInstalledMod: true, lineEnding: lineEnding);
         CopyTree(Path.Combine(source, _fontDirectory), Path.Combine(destination, _fontDirectory), excludeInstalledMod: false);
         CopyTree(Path.Combine(source, _windowskinDirectory), Path.Combine(destination, _windowskinDirectory), excludeInstalledMod: false);
     }
@@ -180,7 +188,8 @@ public sealed class BundledRubySmokeTests(ITestOutputHelper output)
     /// <param name="source">The source directory.</param>
     /// <param name="destination">Its location in the disposable game.</param>
     /// <param name="excludeInstalledMod">Whether to exclude the installed mod, development, and game Main folders.</param>
-    private static void CopyTree(string source, string destination, bool excludeInstalledMod)
+    /// <param name="lineEnding">The native script line-ending representation, or null to preserve file bytes.</param>
+    private static void CopyTree(string source, string destination, bool excludeInstalledMod, string? lineEnding = null)
     {
         EnumerationOptions options = new() { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint };
         foreach (string path in Directory.EnumerateFiles(source, _allFiles, options))
@@ -191,7 +200,15 @@ public sealed class BundledRubySmokeTests(ITestOutputHelper output)
 
             string target = Path.Combine(destination, relative);
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            File.Copy(path, target);
+            if (lineEnding is not null && Path.GetExtension(path) == _rubyExtension)
+            {
+                string text = Encoding.UTF8.GetString(File.ReadAllBytes(path));
+                File.WriteAllBytes(target, Encoding.UTF8.GetBytes(text.Replace(_windowsLineEnding, _unixLineEnding, StringComparison.Ordinal).Replace(_unixLineEnding, lineEnding, StringComparison.Ordinal)));
+            }
+            else
+            {
+                File.Copy(path, target);
+            }
         }
     }
 }

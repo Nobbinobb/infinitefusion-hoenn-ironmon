@@ -243,7 +243,7 @@ module Ironmon
         return existing if !entry
         path = File.join(Dir.pwd, "Data", "Scripts", definition["path"])
         @hp_source_hashes ||= {}
-        verified = @hp_source_hashes.fetch(path) { @hp_source_hashes[path] = Digest::SHA256.hexdigest(File.binread(path)) == definition["sha256"] }
+        verified = @hp_source_hashes.fetch(path) { @hp_source_hashes[path] = source_digest(File.binread(path)) == definition["sha256"] }
         if !verified
           GameplayCollection.fail_collection(RuntimeError.new("Gameplay HP source changed: #{path}"))
           return existing.merge("source_evidence_coverage" => "unsupported_revision")
@@ -278,9 +278,13 @@ module Ironmon
         return answer
       end
 
+      def self.source_digest(source)
+        return Digest::SHA256.hexdigest(source.gsub("\r\n", "\n"))
+      end
+
       def self.install_definition(owner, path, definition)
         source = File.binread(path).force_encoding("UTF-8")
-        raise "Native collection evidence source changed: #{path}" if Digest::SHA256.hexdigest(source) != definition["sha256"]
+        raise "Native collection evidence source changed: #{path}" if source_digest(source) != definition["sha256"]
         start = definition["start_line"] - 1
         start = nil if !source.lines[start]&.match?(/^  def #{Regexp.escape(definition["method"])}(?:\(|;|\s|$)/)
         raise "Native collection method is missing: #{definition['method']}" if !start
@@ -336,7 +340,7 @@ module Ironmon
         SOURCE_OBSERVATIONS.each do |definition|
           path = File.join(Dir.pwd, "Data", "Scripts", definition["path"])
           raw = File.binread(path).force_encoding("UTF-8")
-          raise "Native item source changed: #{path}" if Digest::SHA256.hexdigest(raw) != definition["sha256"]
+          raise "Native item source changed: #{path}" if source_digest(raw) != definition["sha256"]
           registry = BattleHandlers.const_get(definition["registry"])
           original = registry[definition["identifier"].to_sym]
           raise "Native item callback was replaced." if !original || File.basename(original.source_location[0]) != File.basename(path)
