@@ -120,6 +120,9 @@ internal static class Program
             ? await engine.ApplyAsync(args[1], Guid.Parse(args[2]))
             : args[0] == RecoveryMode ? await engine.RecoverAsync(args[1], Guid.Parse(args[2])) : throw new ArgumentException("Unsupported crash fixture mode.");
         Console.WriteLine(result.Phase);
+        if (result.Phase is not (TransactionPhase.Committed or TransactionPhase.RolledBack))
+            Console.Error.WriteLine(result.Error);
+
         return result.Phase is TransactionPhase.Committed or TransactionPhase.RolledBack ? 0 : 1;
     }
 
