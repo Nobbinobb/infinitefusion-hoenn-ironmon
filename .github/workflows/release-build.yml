@@ -134,6 +134,14 @@ jobs:
             game/Ironmon/data/*.progress
             game/Ironmon/data/*.txt
             game/Ironmon/data/area-encounter-lookup-probe.json
+            game/Ironmon/data/ruby-smoke/
+            game/Ironmon/data/rival-fusion-runtime/**/*.log
+            game/Ironmon/data/rival-fusion-runtime/**/*.json
+            game/Ironmon/data/rival-fusion-runtime/**/*.txt
+            game/Ironmon/data/wardrobe-runtime/**/*.log
+            game/Ironmon/data/wardrobe-runtime/**/*.json
+            game/Ironmon/data/wardrobe-runtime/**/*.txt
+            game/Ironmon/data/wardrobe-runtime/**/*.png
             game/errorlog.txt
             ${{ runner.temp }}/ironmon-runtime.*.log
             ${{ runner.temp }}/release-gate.log

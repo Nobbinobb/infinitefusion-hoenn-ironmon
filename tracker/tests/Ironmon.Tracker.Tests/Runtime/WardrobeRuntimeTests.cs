@@ -17,7 +17,6 @@ public sealed class WardrobeRuntimeTests(ITestOutputHelper output)
 {
     private const string _manifest = "src/load_order.json";
     private const string _outputDirectory = "data/wardrobe-runtime";
-    private const string _engineDirectory = "engine";
     private const string _entryPoint = "tests/runtime/Wardrobe-Acceptance.rb";
     private const string _executable = "InfiniteFusion2.exe";
     private const string _gameIni = "Game.ini";
@@ -54,8 +53,9 @@ public sealed class WardrobeRuntimeTests(ITestOutputHelper output)
         string sourceRoot = FindSourceRoot();
         string gameRoot = Environment.GetEnvironmentVariable(_gameRootVariable) ?? Directory.GetParent(sourceRoot)!.FullName;
         string runRoot = Path.Combine(sourceRoot, _outputDirectory, Guid.NewGuid().ToString(_idFormat));
-        string engineRoot = Path.Combine(runRoot, _engineDirectory);
-        Directory.CreateDirectory(engineRoot);
+        using NativeRuntimeFixture runtime = new(sourceRoot);
+        string engineRoot = runtime.DirectoryPath;
+        Directory.CreateDirectory(runRoot);
         foreach (string path in Directory.EnumerateFiles(gameRoot, _dllPattern).Concat([Path.Combine(gameRoot, _executable), Path.Combine(gameRoot, _gameIni)]))
             File.Copy(path, Path.Combine(engineRoot, Path.GetFileName(path)));
 
@@ -106,8 +106,12 @@ public sealed class WardrobeRuntimeTests(ITestOutputHelper output)
                 await process.WaitForExitAsync();
             }
 
-            await File.WriteAllTextAsync(Path.Combine(runRoot, _stdout), await stdout);
-            await File.WriteAllTextAsync(Path.Combine(runRoot, _stderr), await stderr);
+            string standardOutput = await stdout;
+            string standardError = await stderr;
+            await File.WriteAllTextAsync(Path.Combine(runRoot, _stdout), standardOutput);
+            await File.WriteAllTextAsync(Path.Combine(runRoot, _stderr), standardError);
+            output.WriteLine(standardOutput);
+            output.WriteLine(standardError);
             await File.WriteAllTextAsync(Path.Combine(runRoot, _diagnostics), JsonSerializer.Serialize(diagnostics.Entries));
         }
 

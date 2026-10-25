@@ -24,7 +24,6 @@ public sealed class BundledRubySmokeTests(ITestOutputHelper output)
     private const string _manifestPath = "src/load_order.json";
     private const string _entryPath = "tests/runtime/Quick.rb";
     private const string _outputPath = "data/ruby-smoke";
-    private const string _gameDirectory = "game";
     private const string _dataDirectory = "Data";
     private const string _scriptDirectory = "Data/Scripts";
     private const string _fontDirectory = "Fonts";
@@ -68,8 +67,9 @@ public sealed class BundledRubySmokeTests(ITestOutputHelper output)
         string executable = Path.Combine(gameRoot, _executableName);
         Assert.True(File.Exists(executable), $"Set {_gameRootVariable} to an Infinite Fusion installation containing {_executableName}.");
         string runRoot = Path.Combine(sourceRoot, _outputPath, Guid.NewGuid().ToString(_idFormat));
-        string fixtureRoot = Path.Combine(runRoot, _gameDirectory);
-        Directory.CreateDirectory(fixtureRoot);
+        NativeRuntimeFixture runtime = new(sourceRoot);
+        string fixtureRoot = runtime.DirectoryPath;
+        Directory.CreateDirectory(runRoot);
         output.WriteLine($"Ruby smoke evidence: {runRoot}");
 
         try
@@ -126,14 +126,7 @@ public sealed class BundledRubySmokeTests(ITestOutputHelper output)
         }
         finally
         {
-            string expectedParent = Path.GetFullPath(Path.Combine(sourceRoot, _outputPath)) + Path.DirectorySeparatorChar;
-            string resolvedRun = Path.GetFullPath(runRoot);
-            string resolvedFixture = Path.GetFullPath(fixtureRoot);
-            if (!resolvedRun.StartsWith(expectedParent, StringComparison.OrdinalIgnoreCase) || !Guid.TryParseExact(Path.GetFileName(resolvedRun), _idFormat, out _) || Path.GetDirectoryName(resolvedFixture) != resolvedRun)
-                throw new InvalidOperationException("Refusing to clean up a runtime fixture outside its owned output directory.");
-
-            if (Directory.Exists(resolvedFixture))
-                Directory.Delete(resolvedFixture, recursive: true);
+            runtime.Dispose();
         }
     }
 
