@@ -173,6 +173,7 @@ public sealed class WardrobeRuntimeTests(ITestOutputHelper output)
         first = client.Snapshot;
         output.WriteLine($"Credited {rewards.Count} future achievements once despite a lost acknowledgement.");
         Assert.True(client.Catalog.Count > 100);
+        Assert.Null(first.EquippedAppearance.Hat2);
         WardrobeCatalogItemPayload outfit = client.Catalog.First(item => item.Category == WardrobeProtocol.Clothes && item.Available && !first.OwnedKeys.Contains(item.Key));
         WardrobeAppearancePayload free = first.Appearance with { Clothes = outfit.Id, HairColor = 137, Hat = null, Hat2 = null };
         await client.ExecuteAsync(WardrobeAction.Change, free);

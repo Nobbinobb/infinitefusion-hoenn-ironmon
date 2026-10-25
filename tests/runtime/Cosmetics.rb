@@ -177,6 +177,13 @@ module IronmonCosmeticRuntimeTests
     }
     $Trainer = Player.new("Wardrobe test", :POKEMONTRAINER_Red)
     $Trainer.save_slot = "File A"
+    ["hat", "hat2"].each do |field|
+      [nil, "", 0].each do |empty|
+        $Trainer.instance_variable_set("@#{field}", empty)
+        assert(C.capture[field].nil?, "empty #{field} #{empty.inspect} is captured as no accessory")
+        assert($Trainer.public_send(field) == empty, "capture does not rewrite the native #{field} value")
+      end
+    end
     C.apply(draft)
     C.begin_attempt
     first_id = C.attempt_id

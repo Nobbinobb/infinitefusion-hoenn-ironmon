@@ -70,6 +70,8 @@ accurate world lookup.
 - **Wardrobe editing now happens in a game-opened tracker dialog.** Use the
   game's Change outfit command or bedroom wardrobe. Gameplay and the attempt
   timer pause while editing; Apply or Cancel returns to the game.
+- Fresh characters with an empty second accessory slot can open the wardrobe
+  without the tracker disconnecting and reconnecting repeatedly.
 - Browse searchable outfits, hairstyles, and two accessory layers, with filters
   for all, owned, or unowned pieces. Locked pieces can be previewed before purchase.
 - Native previews cover the detailed portrait, front/back/side views, and bicycle.
