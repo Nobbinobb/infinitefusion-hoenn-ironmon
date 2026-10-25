@@ -82,6 +82,10 @@ Unexpected attachments, unauthenticated history, stale sequences, stable release
 or immutable releases stop the operation. A failed upload can resume by rerunning
 its publication job with the original candidate; do not reset signed test history.
 
+Sequence 9 belonged to the withdrawn 0.9.0 test release. The allocator reserves
+sequences through 9 even after that release is deleted; 0.10.0 starts at sequence
+10 or higher, so an installed 0.9.0 test build can accept the newer signed release.
+
 ### Publish a mutable test release
 
 After the preparation workflow succeeds, use authenticated repository-admin
@@ -94,14 +98,16 @@ access to publish the verified draft:
 3. Publish that release using `draft: false`, `prerelease: true`, and
    `make_latest: "false"`. Verify `immutable: false` and that latest stable did not
    change.
-4. Re-enable repository release immutability in a `finally` cleanup with the
-   matching `PUT` endpoint. Enabling this setting is not retroactive: the already
-   published test release stays mutable. Verify its mutable state again.
+4. Leave repository release immutability disabled throughout testing. Verify
+   `enabled: false` using the repository policy endpoint and `immutable: false`
+   on the published test release. Do not re-enable the policy in cleanup or
+   republish the test release under an enabled policy.
 
 The Actions token never receives repository-administration permissions or disables
 this policy. It only prepares the private signed draft. Existing immutable
-releases remain locked throughout. Every replacement test publication repeats
-the same controlled disable/publish/restore sequence.
+releases remain locked throughout. Every replacement test publication verifies
+that the policy is still disabled before publishing. Re-enable it only for the
+explicitly approved freeze and stable promotion below.
 
 Include the intended `tag_name` and `target_commitish` explicitly when updating
 the draft or publishing it. Re-read the release by numeric ID and verify its tag
@@ -110,7 +116,7 @@ the intended version tag. Resume a failed publication job against its retained
 verified candidate after repairing an empty private draft.
 
 Test the downloaded Setup and both ZIP variants outside the development checkout.
-Use Setup's advanced version selector for 0.9 test builds. Same-version replacement
+Use Setup's advanced version selector for 0.10 test builds. Same-version replacement
 requires rerunning Setup or reinstalling the complete matching ZIP; automatic
 tracker updates still require a newer stable version. Keep native and
 clean-machine acceptance distinct from automated build checks.

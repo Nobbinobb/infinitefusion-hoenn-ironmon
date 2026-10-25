@@ -1,6 +1,6 @@
-# Ironmon 0.9.0
+# Ironmon 0.10.0
 
-Ironmon 0.9.0 is a substantial update from 0.8.15. It changes fusion generation
+Ironmon 0.10.0 is a substantial update from 0.8.15. It changes fusion generation
 and the opening rival sequence, adds independent starter rules, brings the
 wardrobe into the tracker, and introduces persistent gameplay collection,
 achievements, richer Pokémon history, configurable speed cycles, and more
@@ -215,16 +215,16 @@ accurate world lookup.
 
 ## Mutable test release and compatibility
 
-Ironmon 0.9.0 targets **Pokémon Infinite Fusion 2: Hoenn 6.8.2** on Windows x64.
+Ironmon 0.10.0 targets **Pokémon Infinite Fusion 2: Hoenn 6.8.2** on Windows x64.
 Keep game scripts and tracker from the same build together. Existing runs retain
 versioned generation data; creating a new run uses the new generation algorithms.
 
 During testing, this is a **mutable GitHub prerelease**. Replacement builds keep
-version 0.9.0 while advancing their signed internal build sequence and recovery
+version 0.10.0 while advancing their signed internal build sequence and recovery
 helper identity. Normal tracker update checks continue to offer stable releases only.
 
 Download `Ironmon-Setup-win-x64.exe` from this release, expand **Advanced:
-Ironmon version**, refresh the list, and explicitly select **0.9.0** labeled
+Ironmon version**, refresh the list, and explicitly select **0.10.0** labeled
 **Test release**. Setup's default still installs the latest stable release. For a
 replacement test build, rerun Setup and repeat selection and review, or reinstall
 the complete matching ZIP. Changed program files may need confirmation and backup;

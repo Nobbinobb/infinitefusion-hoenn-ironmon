@@ -35,7 +35,7 @@ jobs:
           ref: ${{ inputs.source_ref }}
           path: game/Ironmon
           persist-credentials: false
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: upstream-inputs
           path: upstream-inputs
@@ -90,7 +90,7 @@ jobs:
         run: ./tools/ci/New-ReleaseCandidate.ps1 -SnapshotDirectory (Join-Path $env:GITHUB_WORKSPACE 'upstream-inputs')
       - name: Restore the approved candidate's generated catalogs
         if: steps.reuse.outputs.reused == 'true'
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: generated-catalogs
           path: game/Ironmon/data/ci/generated-cache
@@ -108,14 +108,14 @@ jobs:
           path: ${{ steps.approved-catalogs.outputs.directory }}
           key: ${{ steps.approved-catalogs.outputs.key }}
       - name: Retain generated catalogs with candidate provenance
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: generated-catalogs
           path: game/Ironmon/data/ci/generated-cache
           retention-days: 7
           overwrite: true
           if-no-files-found: error
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-candidate
           path: game/Ironmon/release/
@@ -125,7 +125,7 @@ jobs:
           if-no-files-found: error
       - name: Retain failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-failure-diagnostics
           path: |
