@@ -47,7 +47,7 @@ module Ironmon
       end
       DYE_FIELDS.each { |field| appearance[field] = appearance[field].to_i % 360 }
       appearance["skin_tone"] = [[appearance["skin_tone"].to_i, 1].max, 6].min
-      ["hat", "hat2"].each { |field| appearance[field] = nil if appearance[field].to_s.empty? }
+      ["hat", "hat2"].each { |field| appearance[field] = nil if appearance[field].to_s.empty? || appearance[field] == 0 }
       return appearance
     end
 

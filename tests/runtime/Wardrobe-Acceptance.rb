@@ -76,6 +76,7 @@ begin
   end)
   c.profile_directory = File.join(output_root, "shared")
   c.apply(IronmonCosmeticRuntimeTests.appearance(c.catalog))
+  $Trainer.instance_variable_set(:@hat2, 0)
   c.profile.award("acceptance", "trainer:funds", 3000)
   gameplay_before = Marshal.dump([$Trainer.party, $Trainer.money, $PokemonBag, $game_switches, $game_variables])
   raise "A wardrobe was opened without a game entry" if c.wardrobe_snapshot["open"]
