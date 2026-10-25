@@ -92,7 +92,7 @@ jobs:
     uses: ./.github/workflows/upstream-inputs.yml
 
   quick-core:
-    name: Core and updater smoke tests
+    name: Core tracker tests
     if: inputs.profile != 'Full'
     runs-on: windows-latest
     timeout-minutes: 10
@@ -109,7 +109,7 @@ jobs:
         run: dotnet test tracker/tests/Ironmon.Updater.Tests/Ironmon.Updater.Tests.csproj -c Release --settings tracker/tests/Quick.runsettings --maxcpucount:1 -p:UseSharedCompilation=false -p:NuGetAudit=false -p:IronmonQuickTests=true
 
   quick-desktop:
-    name: Desktop smoke tests
+    name: Windows app tests
     if: inputs.profile != 'Full'
     runs-on: windows-latest
     timeout-minutes: 15
