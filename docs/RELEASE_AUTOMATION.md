@@ -88,6 +88,13 @@ sequences through 9 even after that release is deleted; 0.10.0 starts at sequenc
 
 ### Publish a mutable test release
 
+Before dispatching a replacement build, repository-admin access must verify that
+the current mutable test tag can move. The separate **Immutable release tags**
+ruleset protects all `refs/tags/v*` refs from updates and deletion. During 0.10
+testing, exclude only `refs/tags/v0.10.0` from that ruleset while keeping it active
+for every other version tag. Repository release immutability and this custom tag
+rule are separate controls; both must permit the mutable testing phase.
+
 After the preparation workflow succeeds, use authenticated repository-admin
 access to publish the verified draft:
 
@@ -124,6 +131,7 @@ clean-machine acceptance distinct from automated build checks.
 ### Freeze and promote the accepted build
 
 After explicit testing approval, retain the exact seven tested asset digests.
+Remove the accepted tag's testing exception from **Immutable release tags**.
 Enable repository immutability, temporarily unpublish the mutable prerelease,
 then republish it with `prerelease: false` and `make_latest: "true"`. Verify
 `immutable: true`, the unchanged asset digests and tag commit, and anonymous stable
