@@ -40,7 +40,7 @@ public sealed class TrackerRuntimeCompatibility : ITrackerRuntimeCompatibility
     private const string InstallLocation = "InstallLocation";
     private const string SharedDirectory = "shared";
     private const string KnownFrameworks = "Microsoft.NETCore.App|Microsoft.WindowsDesktop.App|Microsoft.AspNetCore.App";
-    private const string TrackerFrameworks = "Microsoft.NETCore.App|Microsoft.WindowsDesktop.App";
+    private const string TrackerFramework = "Microsoft.NETCore.App";
     private static readonly Version _trackerRuntime = new(10, 0, 0);
     private static readonly HashSet<string> _frameworkNames = new(KnownFrameworks.Split('|'), StringComparer.Ordinal);
     private readonly Func<string, IReadOnlyList<Version>> _installed;
@@ -63,7 +63,7 @@ public sealed class TrackerRuntimeCompatibility : ITrackerRuntimeCompatibility
     }
 
     /// <summary>
-    /// Gets whether the registered x64 frameworks meet the current tracker publication baseline of .NET 10.0.
+    /// Gets whether the registered x64 core framework meets the current tracker publication baseline of .NET 10.0.
     /// </summary>
     /// <remarks>
     /// This early choice check does not replace verification of the selected package's signed runtime configuration.
@@ -75,7 +75,7 @@ public sealed class TrackerRuntimeCompatibility : ITrackerRuntimeCompatibility
         {
             try
             {
-                return TrackerFrameworks.Split('|').All(name => _installed(name).Any(version => version.Major == _trackerRuntime.Major && version.Minor == _trackerRuntime.Minor && version >= _trackerRuntime));
+                return _installed(TrackerFramework).Any(version => version.Major == _trackerRuntime.Major && version.Minor == _trackerRuntime.Minor && version >= _trackerRuntime);
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
             {

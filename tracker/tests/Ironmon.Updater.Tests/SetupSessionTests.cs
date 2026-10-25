@@ -184,7 +184,7 @@ public sealed class SetupSessionTests
     /// Preserves the detected package even if a caller submits a different choice for an existing installation.
     /// </summary>
     /// <param name="included">Whether the existing tracker includes its runtime.</param>
-    /// <param name="runtimeAvailable">Whether the matching shared Desktop Runtime is installed.</param>
+    /// <param name="runtimeAvailable">Whether the matching shared core runtime is installed.</param>
     [Theory]
     [InlineData(false, true)]
     [InlineData(true, true)]
@@ -517,7 +517,7 @@ public sealed class SetupSessionTests
     private sealed class Platform : ISetupPlatform
     {
         /// <summary>
-        /// Gets or sets the matching x64 Desktop Runtime observation independently of WebView2.
+        /// Gets or sets the matching x64 core runtime observation independently of WebView2.
         /// </summary>
         public bool TrackerRuntimeAvailable { get; set; } = true;
 

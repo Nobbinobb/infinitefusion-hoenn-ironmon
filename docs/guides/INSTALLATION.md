@@ -42,6 +42,8 @@ Start Setup and the tracker normally. A verified helper requests administrator
 permission when a protected folder requires it; the tracker itself continues
 under your Windows account. Setup offers to install WebView2 when needed.
 The runtime-required package additionally needs the Windows x64 .NET 10 Runtime.
+The standard Runtime is sufficient; the Desktop Runtime, SDK, and MAUI workload
+are unnecessary. Setup and Updater include their own runtimes.
 
 Progress bars describe the current stage, not the entire installation. Sprite
 sheets download after the core installation succeeds; cancelling or failing that

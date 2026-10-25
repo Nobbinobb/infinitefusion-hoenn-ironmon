@@ -5,15 +5,14 @@ using System.Runtime.InteropServices;
 namespace Ironmon.Tracker.AchievementOverlay;
 
 /// <summary>
-/// Reads the intended game's physical client rectangle and configures only the prototype's own window.
+/// Reads the intended game's physical client rectangle and positions only renderer-owned windows.
 /// </summary>
 internal static partial class NativeGameWindow
 {
     private const string _userLibrary = "user32.dll";
     private const string _readStylesEntry = "GetWindowLongPtrW";
-    private const string _writeStylesEntry = "SetWindowLongPtrW";
     private const int _extendedStyleIndex = -20;
-    private const long _overlayStyles = 0x00000020L | 0x00000080L | 0x08000000L;
+    private const long _overlayStyles = 0x00000008L | 0x00080000L | 0x00000020L | 0x00000080L | 0x08000000L;
     private const uint _positionFlags = 0x0010 | 0x0200;
     private static readonly string[] _executables = ["InfiniteFusion2", "InfiniteFusion2-performance"];
 
@@ -79,7 +78,7 @@ internal static partial class NativeGameWindow
     /// <summary>
     /// Reads physical client dimensions independently of the game's aspect-ratio calculation.
     /// </summary>
-    /// <param name="window">The prototype-owned window being checked.</param>
+    /// <param name="window">The renderer-owned window being checked.</param>
     /// <returns>The client width and height in physical pixels.</returns>
     internal static (int Width, int Height) ClientPixels(nint window)
     {
@@ -90,19 +89,9 @@ internal static partial class NativeGameWindow
     }
 
     /// <summary>
-    /// Makes an overlay pass all clicks through and prevents it from taking game focus.
+    /// Positions only the renderer's overlay in physical desktop pixels without activation.
     /// </summary>
-    /// <param name="overlay">The prototype-owned overlay window.</param>
-    internal static void ConfigureOverlay(nint overlay)
-    {
-        nint current = GetWindowLongPtr(overlay, _extendedStyleIndex);
-        SetWindowLongPtr(overlay, _extendedStyleIndex, (nint)(current.ToInt64() | _overlayStyles));
-    }
-
-    /// <summary>
-    /// Positions only the prototype's overlay in physical desktop pixels without activation.
-    /// </summary>
-    /// <param name="overlay">The prototype-owned native window.</param>
+    /// <param name="overlay">The renderer-owned native window.</param>
     /// <param name="placement">The current game-aligned bounds.</param>
     internal static void PlaceOverlay(nint overlay, OverlayPlacement placement)
     {
@@ -113,7 +102,7 @@ internal static partial class NativeGameWindow
     /// <summary>
     /// Reads styles for native nonactivation and click-through acceptance checks.
     /// </summary>
-    /// <param name="overlay">The prototype-owned native window.</param>
+    /// <param name="overlay">The renderer-owned native window.</param>
     /// <returns>True when all required noninteractive styles remain set.</returns>
     internal static bool HasOverlayStyles(nint overlay) => (GetWindowLongPtr(overlay, _extendedStyleIndex).ToInt64() & _overlayStyles) == _overlayStyles;
 
@@ -203,19 +192,9 @@ internal static partial class NativeGameWindow
     private static partial nint GetWindowLongPtr(nint window, int index);
 
     /// <summary>
-    /// Writes styles only on the prototype-owned window.
+    /// Sets physical bounds on the renderer-owned window without activation.
     /// </summary>
-    /// <param name="window">The prototype window.</param>
-    /// <param name="index">The style selector.</param>
-    /// <param name="value">The replacement style value.</param>
-    /// <returns>The previous style value.</returns>
-    [LibraryImport(_userLibrary, EntryPoint = _writeStylesEntry)]
-    private static partial nint SetWindowLongPtr(nint window, int index, nint value);
-
-    /// <summary>
-    /// Sets physical bounds on the prototype-owned window without activation.
-    /// </summary>
-    /// <param name="window">The prototype window.</param>
+    /// <param name="window">The renderer-owned window.</param>
     /// <param name="insertAfter">The requested z order.</param>
     /// <param name="x">Physical desktop x coordinate.</param>
     /// <param name="y">Physical desktop y coordinate.</param>

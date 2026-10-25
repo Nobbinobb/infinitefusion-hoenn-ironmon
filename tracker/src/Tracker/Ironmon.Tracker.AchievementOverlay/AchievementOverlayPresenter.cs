@@ -1,20 +1,19 @@
-using System.Windows.Threading;
 using Ironmon.Tracker.Connection.Transport;
 
 namespace Ironmon.Tracker.AchievementOverlay;
 
 /// <summary>
-/// Renders game-clocked notifications on a dedicated desktop dispatcher within the tracker process.
+/// Renders game-clocked notifications on an owned native Windows thread inside the tracker process.
 /// </summary>
 public sealed class AchievementOverlayPresenter : IAchievementNotificationOverlay, IDisposable
 {
     private const string _threadName = "Ironmon achievement overlay";
     private readonly Lock _startSync = new();
-    private readonly TaskCompletionSource<Dispatcher> _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<OverlayDispatcher> _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource _finished = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Func<string, nint> _findGame;
     private readonly Func<nint, bool> _isForeground;
     private Thread? _thread;
-    private DispatcherTimer? _timer;
     private OverlayWindow? _window;
     private OverlayArtwork? _artwork;
     private string? _presentationId;
@@ -25,14 +24,14 @@ public sealed class AchievementOverlayPresenter : IAchievementNotificationOverla
     private int _disposed;
 
     /// <summary>
-    /// Creates the presenter without starting a thread or opening any window.
+    /// Creates the presenter without starting a thread or opening a window.
     /// </summary>
     public AchievementOverlayPresenter() : this(NativeGameWindow.Find, NativeGameWindow.IsForegroundGame)
     {
     }
 
     /// <summary>
-    /// Creates a renderer with test-owned window discovery and visibility sources.
+    /// Creates a renderer with test-owned discovery and visibility sources.
     /// </summary>
     /// <param name="findGame">Finds only the intended game window.</param>
     /// <param name="isForeground">Reads whether that game owns focus.</param>
@@ -43,11 +42,11 @@ public sealed class AchievementOverlayPresenter : IAchievementNotificationOverla
     }
 
     /// <summary>
-    /// Loads one authorized notification and creates its initially hidden overlay.
+    /// Loads an authorized notification and creates its initially hidden native overlay.
     /// </summary>
-    /// <param name="presentation">The authorized title, installation and in-memory PNG buffers.</param>
+    /// <param name="presentation">The authorized title, installation and PNG buffers.</param>
     /// <param name="cancellationToken">Cancels superseded or disconnected preparation.</param>
-    /// <returns>The available renderer and current foreground state.</returns>
+    /// <returns>The renderer availability and game foreground state.</returns>
     public async Task<AchievementOverlayState> PrepareAsync(AchievementOverlayPresentation presentation, CancellationToken cancellationToken)
     {
         if (Volatile.Read(ref _disposed) != 0)
@@ -55,31 +54,45 @@ public sealed class AchievementOverlayPresenter : IAchievementNotificationOverla
 
         long generation = Interlocked.Increment(ref _generation);
         Volatile.Write(ref _pendingPresentationId, presentation.PresentationId);
-        OverlayArtwork artwork = await Task.Run(() => OverlayArtwork.FromPresentation(presentation), cancellationToken).ConfigureAwait(false);
-        Dispatcher dispatcher = await GetDispatcherAsync(cancellationToken).ConfigureAwait(false);
+        OverlayDispatcher dispatcher = await GetDispatcherAsync(cancellationToken).ConfigureAwait(false);
         return await dispatcher.InvokeAsync(() =>
         {
             if (generation != Volatile.Read(ref _generation) || Volatile.Read(ref _disposed) != 0)
                 return new AchievementOverlayState(false, false);
 
             Clear();
-            _gameWindow = _findGame(presentation.GameRoot);
-            _window = new OverlayWindow(_gameWindow);
-            _artwork = artwork;
-            _presentationId = presentation.PresentationId;
-            _elapsed = 0;
-            _timer!.Start();
-            return new AchievementOverlayState(true, _isForeground(_gameWindow));
-        }, DispatcherPriority.Normal, cancellationToken).Task.ConfigureAwait(false);
+            try
+            {
+                _artwork = OverlayArtwork.FromPresentation(presentation);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (generation != Volatile.Read(ref _generation) || Volatile.Read(ref _disposed) != 0)
+                {
+                    Clear();
+                    return new AchievementOverlayState(false, false);
+                }
+
+                _gameWindow = _findGame(presentation.GameRoot);
+                _window = new OverlayWindow(_gameWindow);
+                _presentationId = presentation.PresentationId;
+                _elapsed = 0;
+                dispatcher.SetActive(true);
+                return new AchievementOverlayState(true, _isForeground(_gameWindow));
+            }
+            catch
+            {
+                Clear();
+                throw;
+            }
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// Applies elapsed animation time from the game, including an unchanged value during F6 pause.
+    /// Applies only game-supplied animation time, including an unchanged time while paused.
     /// </summary>
     /// <param name="presentationId">The matching presentation identity.</param>
     /// <param name="elapsedSeconds">The authoritative visible animation time in seconds.</param>
-    /// <param name="cancellationToken">Cancels the bounded renderer update.</param>
-    /// <returns>The current availability and foreground visibility.</returns>
+    /// <param name="cancellationToken">Cancels the bounded update.</param>
+    /// <returns>The renderer availability and current foreground visibility.</returns>
     public async Task<AchievementOverlayState> UpdateAsync(string presentationId, double elapsedSeconds, CancellationToken cancellationToken)
     {
         if (!_ready.Task.IsCompletedSuccessfully || Volatile.Read(ref _disposed) != 0)
@@ -93,7 +106,7 @@ public sealed class AchievementOverlayPresenter : IAchievementNotificationOverla
             _elapsed = elapsedSeconds;
             RenderCurrent();
             return new AchievementOverlayState(_window is not null, _isForeground(_gameWindow));
-        }, DispatcherPriority.Normal, cancellationToken).Task.ConfigureAwait(false);
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -105,60 +118,71 @@ public sealed class AchievementOverlayPresenter : IAchievementNotificationOverla
         if (Volatile.Read(ref _pendingPresentationId) == presentationId)
             Interlocked.Increment(ref _generation);
 
-        if (_ready.Task.IsCompletedSuccessfully && !_ready.Task.Result.HasShutdownStarted)
-            _ready.Task.Result.BeginInvoke(() => { if (_presentationId == presentationId) Clear(); });
+        if (_ready.Task.IsCompletedSuccessfully && Volatile.Read(ref _disposed) == 0)
+            _ready.Task.Result.Post(() => { if (_presentationId == presentationId) Clear(); });
     }
 
     /// <summary>
-    /// Cancels pending preparation and releases current presentation resources on disconnect.
+    /// Invalidates pending preparation and releases the current presentation on disconnect.
     /// </summary>
     public void Reset()
     {
         Interlocked.Increment(ref _generation);
         Volatile.Write(ref _pendingPresentationId, null);
-        if (_ready.Task.IsCompletedSuccessfully && !_ready.Task.Result.HasShutdownStarted)
-            _ready.Task.Result.BeginInvoke(Clear);
+        if (_ready.Task.IsCompletedSuccessfully && Volatile.Read(ref _disposed) == 0)
+            _ready.Task.Result.Post(Clear);
     }
 
     /// <summary>
-    /// Stops the renderer thread and releases its native resources during tracker shutdown.
+    /// Releases native resources and waits for the owned renderer thread to exit.
     /// </summary>
-    /// <returns>A task completing after the owned dispatcher has been asked to stop.</returns>
+    /// <returns>A task completing after native cleanup and thread shutdown.</returns>
     public async ValueTask DisposeAsync()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        bool started;
+        lock (_startSync)
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                return;
+
+            started = _thread is not null;
+        }
+
+        Interlocked.Increment(ref _generation);
+        if (!started)
             return;
 
-        Reset();
-        if (_ready.Task.IsCompletedSuccessfully)
+        OverlayDispatcher dispatcher = await _ready.Task.ConfigureAwait(false);
+        try
         {
-            Dispatcher dispatcher = _ready.Task.Result;
-            if (!dispatcher.HasShutdownStarted)
-            {
-                await dispatcher.InvokeAsync(Clear).Task.WaitAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
-                dispatcher.BeginInvokeShutdown(DispatcherPriority.Send);
-            }
+            await dispatcher.InvokeAsync(() => { Clear(); return true; }, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
         }
+        finally
+        {
+            dispatcher.Shutdown();
+        }
+
+        await _finished.Task.WaitAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// Supports synchronous application-container cleanup after the normal asynchronous shutdown path.
+    /// Supports synchronous container cleanup after normal application shutdown.
     /// </summary>
     public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();
 
     /// <summary>
-    /// Starts the owned STA dispatcher only when a notification needs it.
+    /// Lazily starts the owned native queue when a notification needs it.
     /// </summary>
-    /// <param name="cancellationToken">Cancels waiting for renderer startup.</param>
-    /// <returns>The initialized notification dispatcher.</returns>
-    private Task<Dispatcher> GetDispatcherAsync(CancellationToken cancellationToken)
+    /// <param name="cancellationToken">Cancels waiting for startup.</param>
+    /// <returns>The initialized native dispatcher.</returns>
+    private Task<OverlayDispatcher> GetDispatcherAsync(CancellationToken cancellationToken)
     {
         lock (_startSync)
         {
+            ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
             if (_thread is null)
             {
                 _thread = new Thread(Run) { IsBackground = true, Name = _threadName };
-                _thread.SetApartmentState(ApartmentState.STA);
                 _thread.Start();
             }
         }
@@ -167,17 +191,15 @@ public sealed class AchievementOverlayPresenter : IAchievementNotificationOverla
     }
 
     /// <summary>
-    /// Pumps the dedicated notification dispatcher, independent of the tracker's main UI.
+    /// Owns and pumps the native notification windows independently of MAUI's main UI thread.
     /// </summary>
     private void Run()
     {
         try
         {
-            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
-            _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
-            _timer.Tick += HandleTick;
+            OverlayDispatcher dispatcher = new();
             _ready.TrySetResult(dispatcher);
-            Dispatcher.Run();
+            dispatcher.Run(HandleTick);
         }
         catch (Exception error)
         {
@@ -186,15 +208,14 @@ public sealed class AchievementOverlayPresenter : IAchievementNotificationOverla
         finally
         {
             Clear();
+            _finished.TrySetResult();
         }
     }
 
     /// <summary>
-    /// Tracks game movement, visibility and physical pixel size without advancing notification time.
+    /// Tracks movement and visibility without advancing the game-owned clock.
     /// </summary>
-    /// <param name="sender">The render timer.</param>
-    /// <param name="args">The timer tick.</param>
-    private void HandleTick(object? sender, EventArgs args)
+    private void HandleTick()
     {
         try
         {
@@ -207,7 +228,7 @@ public sealed class AchievementOverlayPresenter : IAchievementNotificationOverla
     }
 
     /// <summary>
-    /// Draws only the most recent game-supplied phase at the current physical window size.
+    /// Draws the current phase only while the intended game owns focus.
     /// </summary>
     private void RenderCurrent()
     {
@@ -232,7 +253,7 @@ public sealed class AchievementOverlayPresenter : IAchievementNotificationOverla
     }
 
     /// <summary>
-    /// Calculates the approved quick entry, hold and exit animation from game time.
+    /// Calculates the approved quick entry, hold and exit phases from game time.
     /// </summary>
     /// <param name="elapsedSeconds">Elapsed visible notification time in seconds.</param>
     /// <returns>The visible slide fraction between zero and one.</returns>
@@ -240,13 +261,16 @@ public sealed class AchievementOverlayPresenter : IAchievementNotificationOverla
         => elapsedSeconds < 0.18 ? 1 - Math.Pow(1 - Math.Clamp(elapsedSeconds / 0.18, 0, 1), 3) : elapsedSeconds < 2.78 ? 1 : Math.Pow(1 - Math.Clamp((elapsedSeconds - 2.78) / 0.18, 0, 1), 3);
 
     /// <summary>
-    /// Closes only the renderer-owned window and releases the current images.
+    /// Closes only the renderer-owned window and releases its decoded images.
     /// </summary>
     private void Clear()
     {
-        _timer?.Stop();
-        _window?.Close();
+        if (_ready.Task.IsCompletedSuccessfully)
+            _ready.Task.Result.SetActive(false);
+
+        _window?.Dispose();
         _window = null;
+        _artwork?.Dispose();
         _artwork = null;
         _presentationId = null;
         _gameWindow = 0;

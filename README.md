@@ -55,7 +55,7 @@ Choose **one** download:
 | --- | --- |
 | `Ironmon-Setup-win-x64.exe` | Recommended. Downloads and installs the game and Ironmon, or updates a supported existing installation. |
 | `Ironmon-vX.Y.Z-win-x64.zip` | Manual installation into an existing game folder; includes the required .NET runtime. |
-| `Ironmon-vX.Y.Z-win-x64-runtime-required.zip` | Smaller manual package; requires the Windows x64 .NET 10 Desktop Runtime. |
+| `Ironmon-vX.Y.Z-win-x64-runtime-required.zip` | Smaller manual package; requires the Windows x64 .NET 10 Runtime. |
 
 ## Installation
 
@@ -65,7 +65,7 @@ Choose **one** download:
 2. Choose an installation folder or a supported existing game folder. Back up
    existing saves before making changes.
 3. Optionally select sprite-sheet downloads and a desktop tracker shortcut.
-   Keep **Runtime included** unless the required .NET Desktop Runtime is
+   Keep **Runtime included** unless the required .NET Runtime is
    already installed.
 4. Save and close any running game, review the installation, then choose
    **Install**.
