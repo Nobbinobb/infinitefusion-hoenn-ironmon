@@ -1,38 +1,45 @@
-#===============================================================================
-# Shared wardrobe: detached previews, one-time selection, permanent purchases
-#===============================================================================
 module Ironmon
   module Cosmetics
-    class WardrobeScreen
-      ROOT_FIELDS = ["clothes", "hair", "hat", "hat2", "skin_tone", "hair_version",
-                     "hair_color", "clothes_color", "hat_color", "hat2_color",
-                     "bike_color", "preview", "confirm", "cancel"].freeze
-      PREVIEW_MODES = ["portrait", "front", "back", "left", "right", "bike"].freeze
-      LABELS = { "clothes" => "Outfit", "hair" => "Hairstyle", "hat" => "Accessory 1",
-                 "hat2" => "Accessory 2", "skin_tone" => "Skin tone", "hair_version" => "Base hair color",
-                 "hair_color" => "Hair dye", "clothes_color" => "Outfit dye",
-                 "hat_color" => "Accessory 1 dye", "hat2_color" => "Accessory 2 dye",
-                 "bike_color" => "Bicycle dye", "preview" => "Preview",
-                 "confirm" => "Confirm appearance", "cancel" => "Cancel" }.freeze
-      PREVIEW_LABELS = { "portrait" => "Portrait", "front" => "Front sprite",
-                         "back" => "Back sprite", "left" => "Left sprite",
-                         "right" => "Right sprite", "bike" => "Bicycle" }.freeze
-      attr_reader :appearance, :preview_mode
+    WARDROBE_PROTOCOL_VERSION = 1
+    WARDROBE_ACTIONS = %w[change purchase confirm cancel save_profile replace_profile rename_profile delete_profile load_profile].freeze
+
+    class << self
+      attr_accessor :active_wardrobe, :last_wardrobe_snapshot
+    end
+
+    def self.wardrobe_open?
+      return !@active_wardrobe.nil?
+    end
+
+    def self.wardrobe_snapshot
+      return @active_wardrobe.snapshot(true) if @active_wardrobe
+      return @last_wardrobe_snapshot if @last_wardrobe_snapshot && @last_wardrobe_snapshot["game_session_id"] == Ironmon.game_session_id
+      return { "protocol_version" => WARDROBE_PROTOCOL_VERSION, "game_session_id" => Ironmon.game_session_id, "open" => false }
+    end
+
+    def self.wardrobe_request(payload, preview = false)
+      raise "Open the wardrobe in the game first." if !@active_wardrobe
+      raise "A matching tracker is required." if !Ironmon.tracker_connection.wardrobe_supported?
+      return preview ? @active_wardrobe.preview_request(payload) : @active_wardrobe.handle_request(payload)
+    end
+
+    class WardrobeScreen < WardrobePreview
+      PREVIEW_MODES = %w[portrait front back left right bike].freeze
+      attr_reader :appearance, :preview_mode, :revision, :wardrobe_id
 
       def initialize(catalog, profile, appearance_key)
-        @catalog = catalog
-        @profile = profile
-        @appearance_key = appearance_key
+        @catalog, @profile, @appearance_key = catalog, profile, appearance_key
         @state = @profile.read
         @initial = !@state["initial_claimed"]
-        stored = @state["appearances"][@appearance_key]
-        @appearance = (stored || Cosmetics.capture).dup
-        @browser_field = nil
-        @owned_only = false
-        @root_index = 0
+        @appearance = (@state["appearances"][@appearance_key] || Cosmetics.capture).dup
+        @equipped = Cosmetics.capture
         @preview_mode = "portrait"
-        @closed = false
-        @confirmed = false
+        @wardrobe_id = Random.urandom(16).unpack1("H*")
+        @revision = 0
+        @closed = @confirmed = false
+        @preview_cache = {}
+        @palette_cache = {}
+        @operation_cache = {}
         normalize_selection
       end
 
@@ -41,21 +48,46 @@ module Ironmon
         APPEARANCE_FIELDS.each { |field| @appearance[field] = current[field] if !@appearance.has_key?(field) }
         DYE_FIELDS.each { |field| @appearance[field] = @appearance[field].to_i % 360 }
         @appearance["skin_tone"] = [[@appearance["skin_tone"].to_i, 1].max, 6].min
+        version, style = Cosmetics.hair_parts(@appearance["hair"])
         ["clothes", "hair"].each do |category|
-          version, style = Cosmetics.hair_parts(@appearance["hair"])
           id = category == "hair" ? style : @appearance[category]
           entry = @catalog.find(category, id)
-          if !entry || !entry["available"]
-            entry = @catalog.available(category).find { |item| @state["owned"][item["key"]] } || @catalog.available(category).first
-          end
+          entry = @catalog.available(category).find { |item| @state["owned"][item["key"]] } || @catalog.available(category).first if !entry || !entry["available"]
           raise "No complete #{category} graphics are installed." if !entry
-          @appearance[category] = if category == "hair"
-                                    "#{entry["variants"].include?(version) ? version : entry["variants"].first}_#{entry["id"]}"
-                                  else
-                                    entry["id"]
-                                  end
+          @appearance[category] = category == "hair" ? "#{entry["variants"].include?(version) ? version : entry["variants"].first}_#{entry["id"]}" : entry["id"]
         end
         ["hat", "hat2"].each { |field| @appearance[field] = nil if !@catalog.valid?("hat", @appearance[field]) }
+      end
+
+      def run
+        raise "A wardrobe is already open." if Cosmetics.active_wardrobe
+        Ironmon.tick_active_run_duration
+        Cosmetics.active_wardrobe = self
+        Ironmon.clear_tracker_controls
+        create_widgets
+        was_ready = false
+        until @closed
+          Graphics.ironmon_runtime_hooks_original_update
+          Input.update
+          Ironmon.update_tracker_connection
+          ready = Ironmon.tracker_connection.wardrobe_supported?
+          publish(true) if ready && !was_ready
+          redraw_waiting(ready) if ready != was_ready || @waiting_ready.nil?
+          was_ready = ready
+          close(false) if Input.trigger?(Input::BACK)
+        end
+        return @confirmed
+      ensure
+        @closed = true
+        begin
+          Cosmetics.last_wardrobe_snapshot = snapshot(false)
+          publish(false) if Cosmetics.active_wardrobe.equal?(self)
+        ensure
+          Cosmetics.active_wardrobe = nil if Cosmetics.active_wardrobe.equal?(self)
+          Ironmon.resume_run_duration
+          Ironmon.clear_tracker_controls
+          dispose
+        end
       end
 
       def create_widgets
@@ -64,306 +96,167 @@ module Ironmon
         @background = BitmapSprite.new(Graphics.width, Graphics.height, @viewport)
         @background.bitmap.fill_rect(0, 0, Graphics.width, Graphics.height, Color.new(38, 45, 54))
         @overlay = BitmapSprite.new(Graphics.width, Graphics.height, @viewport)
-        @preview = Sprite.new(@viewport)
-        @window = Window_CommandPokemon.newEmpty(8, 54, 300, Graphics.height - 146, @viewport)
-        @window.contents.font.size = 20
-        show_root
       end
 
-      def run
-        create_widgets
-        until @closed
-          Graphics.update
-          Input.update
-          previous_index = @window.index
-          @window.update
-          redraw if previous_index != @window.index
-          if Input.trigger?(Input::BACK)
-            @browser_field ? show_root : cancel
-          elsif Input.trigger?(Input::USE)
-            @browser_field ? choose_item : activate_root
-          elsif Input.trigger?(Input::LEFT)
-            move_horizontal(-1)
-          elsif Input.trigger?(Input::RIGHT)
-            move_horizontal(1)
-          elsif Input.trigger?(Input::ACTION) && @browser_field && !@initial
-            @owned_only = !@owned_only
-            show_browser(@browser_field)
-          end
-        end
-        return @confirmed
-      ensure
-        dispose
-      end
-
-      def dispose
-        @preview.bitmap.dispose if @preview && @preview.bitmap && !@preview.bitmap.disposed?
-        [@window, @preview, @overlay, @background, @viewport].each { |object| object.dispose if object && !object.disposed? }
-      end
-
-      def show_root
-        @browser_field = nil
-        @window.commands = ROOT_FIELDS.map do |field|
-          label = _INTL(LABELS[field])
-          value = if DYE_FIELDS.include?(field)
-                    @appearance[field].zero? ? _INTL("None") : @appearance[field].to_s
-                  elsif field == "skin_tone"
-                    @appearance[field].to_s
-                  elsif field == "hair_version"
-                    Cosmetics.hair_parts(@appearance["hair"])[0].to_s
-                  elsif field == "preview"
-                    _INTL(PREVIEW_LABELS[@preview_mode])
-                  elsif field == "clothes"
-                    entry_name("clothes", @appearance[field])
-                  elsif field == "hair"
-                    entry_name("hair", Cosmetics.hair_parts(@appearance[field])[1])
-                  elsif ["hat", "hat2"].include?(field)
-                    @appearance[field] ? entry_name("hat", @appearance[field]) : _INTL("None")
-                  end
-          value ? "#{label}: #{value}" : label
-        end
-        @window.index = @root_index
-        redraw
-      end
-
-      def entry_name(category, id)
-        entry = @catalog.find(category, id)
-        return entry ? entry["name"] : id.to_s
-      end
-
-      def show_browser(field)
-        @root_index = @window.index if !@browser_field
-        @browser_field = field
-        category = field == "hat2" ? "hat" : field
-        @items = @catalog.available(category)
-        @items = @items.select { |entry| @state["owned"][entry["key"]] } if @owned_only && !@initial
-        @items.unshift(nil) if category == "hat"
-        @items.unshift(:filter) if !@initial
-        @items << :back
-        @window.commands = @items.map do |entry|
-          next _INTL("Back") if entry == :back
-          next @owned_only ? _INTL("Filter: Obtained only") : _INTL("Filter: All items") if entry == :filter
-          next _INTL("None") if !entry
-          entry["name"]
-        end
-        @window.index = 0
-        redraw
-      end
-
-      def preview_appearance
-        draft = @appearance.dup
-        entry = @browser_field ? @items[@window.index] : :back
-        set_piece(draft, @browser_field, entry) if @browser_field && (entry.nil? || entry.is_a?(Hash))
-        return draft
-      end
-
-      def set_piece(draft, field, entry)
-        if field == "hair"
-          version = Cosmetics.hair_parts(draft["hair"])[0]
-          version = entry["variants"].first if !entry["variants"].include?(version)
-          draft[field] = "#{version}_#{entry["id"]}"
-        else
-          draft[field] = entry ? entry["id"] : nil
-        end
-      end
-
-      def redraw
-        return if !@overlay
-        draft = preview_appearance
-        mode = current_preview_mode
-        bitmap = render_preview(draft, mode)
-        @preview.bitmap.dispose if @preview.bitmap
-        @preview.bitmap = bitmap
-        maximum_scale = mode == "portrait" ? 1.35 : 7.5
-        scale = [maximum_scale, (Graphics.width - 320).to_f / bitmap.width, 250.0 / bitmap.height].min
-        @preview.zoom_x = @preview.zoom_y = scale
-        @preview.x = 310 + (Graphics.width - 310 - bitmap.width * scale) / 2
-        @preview.y = 68
+      def redraw_waiting(ready)
+        @waiting_ready = ready
         canvas = @overlay.bitmap
         canvas.clear
         pbSetSystemFont(canvas)
-        base = Color.new(238, 242, 246)
-        shadow = Color.new(14, 18, 23)
-        title = @initial ? _INTL("Choose your first appearance") : _INTL("Ironmon wardrobe")
-        pbDrawShadowText(canvas, 16, 12, 350, 32, title, base, shadow)
-        pbDrawShadowText(canvas, Graphics.width - 132, 12, 120, 32, _INTL("{1} points", @state["points"]), base, shadow, 2)
-        pbDrawShadowText(canvas, 310, 42, Graphics.width - 318, 24, _INTL(PREVIEW_LABELS[mode]), base, shadow, 1)
-        entry = @browser_field ? @items[@window.index] : nil
-        status = if entry.is_a?(Hash)
-                   @initial ? _INTL("Free selection") : (@state["owned"][entry["key"]] ? _INTL("Owned") : _INTL("{1} points", entry["points"]))
-                 else
-                   @initial ? _INTL("One-time selection") : _INTL("Preview")
-                 end
-        pbDrawShadowText(canvas, 310, 326, Graphics.width - 318, 30, status, base, shadow, 1)
-        detail = if entry.is_a?(Hash)
-                   entry["description"]
-                 elsif entry == :filter
-                   @owned_only ? _INTL("Showing only cosmetics you have permanently obtained.") : _INTL("Showing all installed cosmetics, including locked items you can preview.")
-                 elsif @initial
-                   _INTL("Only the final selected pieces become permanently unlocked.")
-                 else
-                   _INTL("Purchases are permanent. Confirm to save this appearance for this save slot.")
-                 end
-        canvas.font.size = 18
-        drawTextEx(canvas, 16, Graphics.height - 86, Graphics.width - 32, 2, detail, base, shadow)
-        hint = @browser_field ? _INTL("Confirm: select or change filter  |  Left/Right: page  |  Back: categories") : _INTL("Left/Right: adjust or rotate preview  |  Confirm: select  |  Back: cancel")
-        pbDrawShadowText(canvas, 16, Graphics.height - 28, Graphics.width - 32, 26, hint, base, shadow)
+        base, shadow = Color.new(238, 242, 246), Color.new(14, 18, 23)
+        pbDrawShadowText(canvas, 16, Graphics.height / 2 - 64, Graphics.width - 32, 40, _INTL("Wardrobe"), base, shadow, 1)
+        text = ready ? _INTL("Continue in the Ironmon Tracker.") : _INTL("Connect the Ironmon Tracker to edit your outfit.")
+        pbDrawShadowText(canvas, 16, Graphics.height / 2 - 14, Graphics.width - 32, 32, text, base, shadow, 1)
+        pbDrawShadowText(canvas, 16, Graphics.height - 50, Graphics.width - 32, 32, _INTL("Back: Cancel"), base, shadow, 1)
       end
 
-      def current_preview_mode
-        return "bike" if !@browser_field && ROOT_FIELDS[@window.index] == "bike_color"
-        return @preview_mode
+      def dispose
+        [@overlay, @background, @viewport].each { |object| object.dispose if object && !object.disposed? }
       end
 
-      def render_preview(draft, mode = "portrait")
-        wrappers = []
-        directions = { "front" => 0, "left" => 1, "right" => 2, "back" => 3 }
-        return render_overworld_preview(draft, directions[mode], "walk", false) if directions.has_key?(mode)
-        return render_overworld_preview(draft, 2, "bike", true) if mode == "bike"
-        base = AnimatedBitmap.new(getBaseTrainerSpriteFilename(draft["skin_tone"]))
-        wrappers << base
-        result = base.bitmap.clone
-        layers = [[getTrainerSpriteOutfitFilename(draft["clothes"]), draft["clothes_color"]],
-                  [getTrainerSpriteHairFilename(draft["hair"]), draft["hair_color"]]]
-        ["hat2", "hat"].each do |field|
-          layers << [getTrainerSpriteHatFilename(draft[field]), draft["#{field}_color"]] if draft[field]
-        end
-        layers.each do |path, dye|
-          layer = AnimatedBitmap.new(path, dye)
-          wrappers << layer
-          result.blt(0, 0, layer.bitmap, layer.bitmap.rect)
-        end
+      def snapshot(include_catalog = false)
+        @state = @profile.read
+        result = {
+          "protocol_version" => WARDROBE_PROTOCOL_VERSION, "game_session_id" => Ironmon.game_session_id,
+          "wardrobe_id" => @wardrobe_id, "revision" => @revision, "profile_revision" => @state["revision"],
+          "appearance_key" => @appearance_key, "open" => !@closed, "confirmed" => @confirmed,
+          "initial_selection" => @initial, "points" => @state["points"], "owned_keys" => @state["owned"].keys,
+          "appearance" => @appearance.dup, "equipped_appearance" => @equipped.dup,
+          "loaded_profile_id" => @loaded_profile_id,
+          "outfit_profiles" => @state["outfit_profiles"].map do |id, entry|
+            draft = @appearance.merge(entry["appearance"])
+            { "id" => id, "name" => entry["name"], "appearance" => draft, "available" => profile_available?(draft) }
+          end.sort_by { |entry| [entry["name"].downcase, entry["id"]] }
+        }
+        result["catalog"] = catalog_payload if include_catalog
         return result
-      rescue *RECOVERABLE_ERRORS
-        result.dispose if result
-        raise
-      ensure
-        wrappers.each(&:dispose)
       end
 
-      def render_overworld_preview(draft, direction, action, include_bicycle)
-        wrappers = []
-        frame_index = 1
-        base = AnimatedBitmap.new(getBaseOverworldSpriteFilename(action, draft["skin_tone"]))
-        wrappers << base
-        frame_width = base.bitmap.width / 4
-        frame_height = base.bitmap.height / 4
-        frame = Bitmap.new(frame_width, frame_height)
-        source = Rect.new(frame_index * frame_width, direction * frame_height, frame_width, frame_height)
-        if include_bicycle
-          bicycle = AnimatedBitmap.new(getOverworldBicycleFilename, draft["bike_color"])
-          wrappers << bicycle
-          frame.blt(0, 0, bicycle.bitmap, source)
-        end
-        frame.blt(0, 0, base.bitmap, source)
-        outfit = AnimatedBitmap.new(getOverworldOutfitFilename(draft["clothes"], action), draft["clothes_color"])
-        wrappers << outfit
-        frame.blt(0, 0, outfit.bitmap, source)
-        hair = AnimatedBitmap.new(getOverworldHairFilename(draft["hair"]), draft["hair_color"])
-        wrappers << hair
-        hair_offset = preview_wearable_offset(action, direction, frame_index, false)
-        frame.blt(hair_offset[0], hair_offset[1], hair.bitmap, source)
-        ["hat2", "hat"].each do |field|
-          next if !draft[field]
-          layer = AnimatedBitmap.new(getOverworldHatFilename(draft[field]), draft["#{field}_color"])
-          wrappers << layer
-          accessory_height = layer.bitmap.height / 4
-          accessory_source = Rect.new(0, direction * accessory_height, layer.bitmap.width, accessory_height)
-          accessory_offset = preview_wearable_offset(action, direction, frame_index, true)
-          frame.blt(accessory_offset[0], accessory_offset[1], layer.bitmap, accessory_source)
-        end
-        return frame
-      rescue *RECOVERABLE_ERRORS
-        frame.dispose if frame
-        raise
-      ensure
-        wrappers.each(&:dispose)
+      def catalog_payload
+        @catalog_payload ||= @catalog.entries.values.map do |entry|
+          entry.select { |key, _value| %w[key id category name tags points available variants].include?(key) }
+        end.sort_by { |entry| [entry["category"], entry["name"].downcase, entry["id"]] }
+        return @catalog_payload
       end
 
-      def preview_wearable_offset(action, direction, frame_index, accessory)
-        offsets = if action == "bike"
-                    [Outfit_Offsets::BIKE_OFFSETS_DOWN, Outfit_Offsets::BIKE_OFFSETS_LEFT,
-                     Outfit_Offsets::BIKE_OFFSETS_RIGHT, Outfit_Offsets::BIKE_OFFSETS_UP][direction]
-                  else
-                    Outfit_Offsets::BASE_OFFSET
-                  end
-        x, y = offsets[frame_index]
-        y -= 2 if accessory && frame_index.odd?
-        return [x, y]
+      def profile_available?(appearance)
+        Cosmetics.validate_appearance(@catalog, appearance)
+        return Cosmetics.appearance_keys(appearance).all? { |key| @state["owned"][key] }
+      rescue StandardError
+        return false
       end
 
-      def activate_root
-        @root_index = @window.index
-        field = ROOT_FIELDS[@root_index]
-        if ["clothes", "hair", "hat", "hat2"].include?(field)
-          show_browser(field)
-        elsif field == "confirm"
-          confirm
-        elsif field == "cancel"
-          cancel
-        else
-          move_horizontal(1)
-        end
+      def publish(include_catalog)
+        Ironmon.tracker_connection.send_event("wardrobe_state", snapshot(include_catalog))
       end
 
-      def move_horizontal(direction)
-        if @browser_field
-          @window.index = [[@window.index + direction * 8, 0].max, @items.length - 1].min
-          redraw
-          return
-        end
-        @root_index = @window.index
-        field = ROOT_FIELDS[@root_index]
-        if DYE_FIELDS.include?(field)
-          @appearance[field] = (@appearance[field] + direction * 10) % 360
-        elsif field == "skin_tone"
-          @appearance[field] = ((@appearance[field] - 1 + direction) % 6) + 1
-        elsif field == "hair_version"
-          version, style = Cosmetics.hair_parts(@appearance["hair"])
-          versions = @catalog.find("hair", style)["variants"]
-          @appearance["hair"] = "#{versions[((versions.index(version) || 0) + direction) % versions.length]}_#{style}"
-        elsif field == "preview"
-          @preview_mode = PREVIEW_MODES[(PREVIEW_MODES.index(@preview_mode) + direction) % PREVIEW_MODES.length]
-        end
-        show_root
+      def validate_request(payload)
+        raise "The wardrobe session has changed." if @closed || !payload.is_a?(Hash) ||
+          payload["game_session_id"] != Ironmon.game_session_id || payload["wardrobe_id"] != @wardrobe_id
+        raise "The wardrobe has changed. Try again." if payload["revision"] != @revision
       end
 
-      def choose_item
-        entry = @items[@window.index]
-        return show_root if entry == :back
-        if entry == :filter
-          @owned_only = !@owned_only
-          return show_browser(@browser_field)
+      def handle_request(payload)
+        operation = payload.is_a?(Hash) ? payload["operation_id"] : nil
+        raise "Invalid wardrobe operation." if !operation.is_a?(String) || !operation.match?(/\A[0-9a-f]{32}\z/)
+        fingerprint = Digest::SHA256.hexdigest(Cosmetics.encode(payload))
+        if @operation_cache.has_key?(operation)
+          cached = @operation_cache[operation]
+          raise "Wardrobe operation identity was reused." if cached[0] != fingerprint
+          return cached[1]
         end
-        if entry && !@initial && !@state["owned"][entry["key"]]
-          return if !pbConfirmMessage(_INTL("Permanently unlock {1} for {2} points?", entry["name"], entry["points"]))
-          begin
-            @state = @profile.purchase(entry)
-          rescue StandardError => error
-            pbMessage(error.message)
-            return
-          end
+        validate_request(payload)
+        action = payload["action"]
+        raise "Invalid wardrobe action." if !WARDROBE_ACTIONS.include?(action)
+        @state = @profile.read
+        if %w[purchase save_profile replace_profile rename_profile delete_profile confirm].include?(action)
+          raise "The wardrobe profile has changed. Try again." if payload["profile_revision"] != @state["revision"]
         end
-        set_piece(@appearance, @browser_field, entry)
-        show_root
+        if action == "change"
+          change_appearance(payload["appearance"])
+        elsif action == "purchase"
+          raise "Confirm your free look first." if @initial
+          entry = @catalog.entries[payload["piece_key"]]
+          raise "This item is not selected." if !entry || !Cosmetics.appearance_keys(@appearance).include?(entry["key"])
+          @state = @profile.purchase(entry, payload["profile_revision"])
+        elsif action == "confirm"
+          @state = @profile.confirm(@catalog, @appearance, @appearance_key, @initial, payload["profile_revision"])
+          Cosmetics.apply(@appearance)
+          @equipped = @appearance.dup
+          close(true)
+        elsif action == "cancel"
+          close(false)
+        elsif action == "save_profile" || action == "replace_profile"
+          @state = @profile.save_outfit_profile(@catalog, payload["profile_id"], payload["name"], @appearance, action == "replace_profile", payload["profile_revision"])
+          @loaded_profile_id = payload["profile_id"]
+        elsif action == "rename_profile"
+          @state = @profile.rename_outfit_profile(payload["profile_id"], payload["name"], payload["profile_revision"])
+        elsif action == "delete_profile"
+          @state = @profile.delete_outfit_profile(payload["profile_id"], payload["profile_revision"])
+          @loaded_profile_id = nil if @loaded_profile_id == payload["profile_id"]
+        elsif action == "load_profile"
+          entry = @state["outfit_profiles"][payload["profile_id"]]
+          raise "This outfit profile no longer exists." if !entry
+          draft = @appearance.merge(entry["appearance"])
+          raise "This profile contains unavailable items." if !profile_available?(draft)
+          change_appearance(draft)
+          @loaded_profile_id = payload["profile_id"]
+        end
+        @revision += 1
+        response = snapshot(false)
+        @operation_cache.shift if @operation_cache.length >= 128
+        @operation_cache[operation] = [fingerprint, response]
+        Cosmetics.last_wardrobe_snapshot = response if @closed
+        return response
       end
 
-      def confirm
-        question = @initial ? _INTL("Permanently unlock these selected pieces? This free selection is shared across all saves and cannot be claimed again.") : _INTL("Save this appearance? It will also be used after resetting this save slot.")
-        return if !pbConfirmMessage(question)
-        begin
-          @state = @profile.confirm(@catalog, @appearance, @appearance_key, @initial)
-        rescue StandardError => error
-          pbMessage(error.message)
-          return
-        end
-        Cosmetics.apply(@appearance)
-        @confirmed = true
+      def change_appearance(appearance)
+        raise "Invalid wardrobe appearance." if !appearance.is_a?(Hash) || appearance.keys.sort != APPEARANCE_FIELDS.sort
+        draft = appearance.dup
+        Cosmetics.validate_appearance(@catalog, draft)
+        @appearance = draft
+      end
+
+      def close(confirmed)
+        @confirmed = confirmed
         @closed = true
       end
 
-      def cancel
-        @closed = true if pbConfirmMessage(_INTL("Discard appearance changes? Any completed purchases remain unlocked."))
+      def preview_request(payload)
+        validate_request(payload)
+        mode = payload["mode"] || "portrait"
+        raise "Invalid wardrobe preview." if !PREVIEW_MODES.include?(mode)
+        draft = @appearance.dup
+        if payload["profile_id"]
+          entry = @state["outfit_profiles"][payload["profile_id"]]
+          raise "This outfit profile no longer exists." if !entry
+          draft.merge!(entry["appearance"])
+          raise "This profile contains unavailable items." if !profile_available?(draft)
+        end
+        piece = payload["piece_key"] ? @catalog.entries[payload["piece_key"]] : nil
+        raise "Unavailable wardrobe item." if payload["piece_key"] && (!piece || !piece["available"])
+        if piece
+          field = piece["category"] == "hat" ? payload["accessory_slot"] : piece["category"]
+          raise "Invalid accessory slot." if piece["category"] == "hat" && !%w[hat hat2].include?(field)
+          if field == "hair"
+            version = Cosmetics.hair_parts(draft["hair"])[0]
+            draft[field] = "#{piece["variants"].include?(version) ? version : piece["variants"].first}_#{piece["id"]}"
+          else
+            draft[field] = piece["id"]
+          end
+        end
+        field = payload["dye_field"] || "hair_color"
+        raise "Invalid dye field." if !DYE_FIELDS.include?(field)
+        head = payload["head_only"] == true && mode == "portrait"
+        cache_key = Digest::SHA256.hexdigest(Cosmetics.encode([draft, mode, head, field, piece.nil?]))
+        result = @preview_cache[cache_key]
+        if !result
+          result = preview_image(draft, mode, head)
+          result.merge!(preview_palette(draft, field)) if !piece
+          @preview_cache.shift if @preview_cache.length >= 96
+          @preview_cache[cache_key] = result
+        end
+        return result.merge("wardrobe_id" => @wardrobe_id, "revision" => @revision)
       end
     end
   end

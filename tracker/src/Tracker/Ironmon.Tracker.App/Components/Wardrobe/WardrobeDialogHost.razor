@@ -1,0 +1,4 @@
+@if (_client?.Snapshot is { Open: true } session)
+{
+    <WardrobeDialog Snapshot="session" Connected="_client.Connected" />
+}

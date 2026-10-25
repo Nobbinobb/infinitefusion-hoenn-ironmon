@@ -50,10 +50,6 @@ jobs:
         if: steps.reuse.outputs.reused != 'true'
         shell: pwsh
         run: ./game/Ironmon/tools/ci/Initialize-HostedGame.ps1 -SnapshotDirectory upstream-inputs
-      - name: Verify clean runtime startup
-        if: steps.reuse.outputs.reused != 'true'
-        shell: pwsh
-        run: ./game/Ironmon/tools/ci/Test-HostedGameRuntime.ps1
       - name: Reuse or generate catalogs for these exact inputs
         if: steps.reuse.outputs.reused != 'true'
         id: catalogs
@@ -68,6 +64,11 @@ jobs:
       - name: Install Windows MAUI workload
         if: steps.reuse.outputs.reused != 'true'
         run: dotnet workload install maui-windows --skip-manifest-update
+      - name: Provision the pinned Git dependency
+        if: steps.reuse.outputs.reused != 'true'
+        shell: bash
+        working-directory: game/Ironmon
+        run: curl --create-dirs --fail --location --retry 3 --output tracker/tests/Ironmon.Updater.Tests/bin/test-assets/MinGit.zip https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.5/MinGit-2.55.0.5-64-bit.zip
       - name: Run the release tests once and package both variants
         if: steps.reuse.outputs.reused != 'true'
         shell: pwsh

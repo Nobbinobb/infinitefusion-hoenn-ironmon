@@ -1,0 +1,19 @@
+<div class="ow-dye">
+    <div class="ow-section-heading"><strong>@(BaseColorOptions is null ? Title : Text[WardrobeUi.BaseHairColor])</strong></div>
+    @if (BaseColorOptions is not null)
+    {
+        @BaseColorOptions
+        <div class="ow-section-heading ow-dye-heading"><strong>@Title</strong></div>
+    }
+    <div class="ow-swatches">
+        @for (int index = 0; index < 36; index++)
+        {
+            int degrees = index * 10;
+            <button type="button" disabled="@Disabled" aria-pressed="@(Value == degrees)" aria-label="@($"{Title} {Text[WardrobeUi.ColorValue, degrees]}")" title="@Text[WardrobeUi.ColorValue, degrees]" @onclick="() => Changed.InvokeAsync(degrees)">
+                <span class="ow-dot" style="@ColorStyle(index)"></span>
+                @if (Value == degrees) { <span class="ow-mark" aria-hidden="true">✓</span> }
+            </button>
+        }
+    </div>
+    <label class="ow-exact">@Text[WardrobeUi.ExactDye] <input type="number" min="0" max="359" value="@Value" disabled="@Disabled" aria-label="@Title" @onchange="ChangeExactAsync" />°</label>
+</div>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Ironmon.Tracker.AchievementOverlay</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Ironmon.Tracker.Connection/Ironmon.Tracker.Connection.csproj" />
+    <InternalsVisibleTo Include="Ironmon.Tracker.AchievementOverlay.Tests" />
+  </ItemGroup>
+</Project>

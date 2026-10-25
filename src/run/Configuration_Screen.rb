@@ -30,6 +30,7 @@ module Ironmon
       initial_configuration = copy_configuration(stored_configuration)
       @wild_policy = initial_configuration.wild_policy
       @trainer_policy = initial_configuration.trainer_policy
+      @starter_policy = initial_configuration.starter_policy
       @unfusion_setting = initial_configuration.unfusion_setting
       @automatic_reset = initial_configuration.automatic_reset
     end
@@ -39,13 +40,14 @@ module Ironmon
         commands = [
           _INTL("Wild Pokemon: {1}", policy_label(@wild_policy)),
           _INTL("Trainer Pokemon: {1}", policy_label(@trainer_policy)),
+          _INTL("Starter Pokemon: {1}", policy_label(@starter_policy)),
           _INTL("Caught-fusion unfusion: {1}", unfusion_label(@unfusion_setting)),
           _INTL("Automatic reset: {1}", automatic_reset_label),
           _INTL("Confirm"),
           _INTL("Back")
         ]
         message = _INTL("Configure this Ironmon run. Settings are applied only after final confirmation.")
-        choice = pbMessage(message, commands, 6)
+        choice = pbMessage(message, commands, 7)
         case choice
         when 0
           selected_policy = choose_policy(@wild_policy, _INTL("Choose the wild Pokemon fusion policy."))
@@ -54,14 +56,17 @@ module Ironmon
           selected_policy = choose_policy(@trainer_policy, _INTL("Choose the trainer Pokemon fusion policy."))
           @trainer_policy = selected_policy if selected_policy
         when 2
+          selected_policy = choose_policy(@starter_policy, _INTL("Choose the three starter offers. The rival takes the original counter slot."))
+          @starter_policy = selected_policy if selected_policy
+        when 3
           selected_setting = choose_unfusion_setting(@unfusion_setting)
           @unfusion_setting = selected_setting if selected_setting
-        when 3
-          @automatic_reset = !@automatic_reset
         when 4
+          @automatic_reset = !@automatic_reset
+        when 5
           configuration = confirmed_configuration
           return configuration if configuration
-        when 5
+        when 6
           return nil
         end
       end
@@ -94,16 +99,17 @@ module Ironmon
 
     def confirmed_configuration
       summary = _INTL(
-        "Begin Ironmon with these settings?\nWild Pokemon: {1}\nTrainer Pokemon: {2}\nCaught-fusion unfusion: {3}\nAutomatic reset: {4}\n\nLeave Download data enabled. Installing the spritepack is optional and reduces downloads during play. Disable Download data only if sprite loading causes performance problems.",
+        "Begin Ironmon with these settings?\nWild Pokemon: {1}\nTrainer Pokemon: {2}\nStarter Pokemon: {5}\nCaught-fusion unfusion: {3}\nAutomatic reset: {4}\n\nLeave Download data enabled. Installing the spritepack is optional and reduces downloads during play. Disable Download data only if sprite loading causes performance problems.",
         policy_label(@wild_policy),
         policy_label(@trainer_policy),
         unfusion_label(@unfusion_setting),
-        automatic_reset_label
+        automatic_reset_label,
+        policy_label(@starter_policy)
       )
       commands = [_INTL("Back"), _INTL("Begin Ironmon")]
       return nil if pbMessage(summary, commands, 1) != 1
       return Configuration.new(@wild_policy, @trainer_policy,
-                               @unfusion_setting, @automatic_reset)
+                               @unfusion_setting, @automatic_reset, @starter_policy)
     end
 
     def choose_unfusion_setting(current_setting)

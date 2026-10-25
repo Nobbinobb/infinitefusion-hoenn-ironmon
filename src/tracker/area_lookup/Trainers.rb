@@ -32,6 +32,13 @@ module Ironmon
       "pokemon.all_active", "pokemon.move_access"
     )
     return area["trainers"].map do |entry|
+      parties = archived ? (recipe["story_trainer_parties"] || {}) : story_trainer_parties
+      if ["wally", "rival"].include?(entry["battle_kind"]) || parties.key?(entry["entry_id"])
+        next tracker_area_story_trainer_entry(
+          entry, recipe, discoveries, full_details, archived,
+          abilities_revealed, moves_revealed
+        )
+      end
       key = [entry["trainer_type"], entry["trainer_name"],
              entry["party_id"]]
       trainer = index[key]

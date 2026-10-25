@@ -270,18 +270,15 @@ module IronmonEarlyGameRuntimeTests
 
   def self.test_early_loss_reset_gate
     singleton = class << Ironmon; self; end
-    singleton.send(
-      :alias_method, :early_game_original_failed_run_locked,
-      :failed_run_locked?
-    )
-    singleton.send(
-      :alias_method, :early_game_original_start_checkpoint_reset,
-      :start_checkpoint_reset
-    )
-    singleton.send(
-      :alias_method, :early_game_original_complete_run,
-      :complete_run
-    )
+    {
+      :early_game_original_failed_run_locked => :failed_run_locked?,
+      :early_game_original_start_checkpoint_reset => :start_checkpoint_reset,
+      :early_game_original_complete_run => :complete_run
+    }.each do |saved, name|
+      implementation = Ironmon.method(name)
+      implementation = implementation.super_method while implementation.owner != singleton
+      singleton.send(:define_method, saved, implementation)
+    end
     resets = []
     completions = []
     locked = false

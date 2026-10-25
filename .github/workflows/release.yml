@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'tracker/src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj'
+      - 'tracker/src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj'
   workflow_dispatch:
     inputs:
       source_commit:
@@ -50,10 +50,11 @@ jobs:
           git merge-base --is-ancestor $env:SOURCE_COMMIT origin/main
           if ($LASTEXITCODE -ne 0) { throw 'Only approved commits on main can be released.' }
           git checkout --detach $env:SOURCE_COMMIT
+          . ./tools/ci/UpstreamInputs.ps1
           if ($env:EVENT_NAME -eq 'push') {
-            ./tools/ci/Test-ReleaseMetadata.ps1 -BaseCommit $env:BASE_COMMIT
+            Assert-IronmonReleaseMetadata -BaseCommit $env:BASE_COMMIT
           } else {
-            ./tools/ci/Test-ReleaseMetadata.ps1
+            Assert-IronmonReleaseMetadata
           }
           "source_commit=$env:SOURCE_COMMIT" >> $env:GITHUB_OUTPUT
   inputs:

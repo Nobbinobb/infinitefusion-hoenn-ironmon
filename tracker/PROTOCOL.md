@@ -811,7 +811,73 @@ TM gifts select uniformly from their TM-only pool. Missing or incompatible
 item metadata is rejected; archived lookup never substitutes the currently
 loaded run's mapping or authored item behavior.
 
+## Immutable generation-profile format
+
+`generation_profile.json` contains `profile_id` and `manifest`. Manifest schema
+1 contains `schema_version`, `algorithms`, and `components`. Each algorithm is
+`{name, version}`; each component is `{name, schema_version, sha256, byte_length}`.
+Names are stable lowercase identifiers. Versions and byte lengths are positive
+integers; component digests are lowercase SHA-256 hashes of the exact bytes.
+Algorithm and component names must be unique. The required algorithm families
+are defined by `Ironmon::GenerationProfile::ALGORITHM_FAMILIES` and
+`GenerationAlgorithmNames.All`; supported implementation versions belong to
+their generators, independently of component formats and cache schemas.
+
+Before hashing, sort both descriptor arrays by name in ordinal order and sort
+object keys ordinally at every depth. Serialize the normalized manifest as
+compact UTF-8 JSON, without a BOM or trailing newline. `profile_id` is its
+lowercase SHA-256 digest; release versions are not part of this identity.
+The shared Ruby/C# generation-profile tests verify canonical-byte parity.
+
+Current packages retain `base_catalog` (normal game data), `custom_fusion_pool`
+(packed eligibility), `custom_sprites` (reviewed sprite catalog), `area_catalog`
+(authored area sources), and `obtainability_sources` (semantic acquisition and
+resource sources). Historical eligibility-version-1 packages omit
+`custom_sprites`; the runtime validates the component set against the pinned
+eligibility implementation. Derived indexes are rebuildable caches, not source
+components or profile identity.
+
+The `custom_fusion_pool` component uses this schema-1 binary layout:
+
+| Offset | Bytes | Encoding |
+| ---: | ---: | --- |
+| 0 | 8 | ASCII `IFCFPOOL` |
+| 8 | 2 | Unsigned little-endian schema version |
+| 10 | 2 | Unsigned little-endian normal-species count, `N` |
+| 12 | 4 | Unsigned little-endian eligible-fusion count |
+| 16 | 4 | Unsigned little-endian bitset byte length |
+| 20 | remaining | Eligibility bitset |
+
+For one-based body/head identifiers, bit index is
+`(body - 1) * N + head - 1`: body is the outer row axis, head is the inner axis,
+and bits within each byte are least-significant first. Bitset length is
+`ceil(N * N / 8)`, with unused padding bits zero. Readers reject unknown schemas,
+invalid dimensions, odd eligibility counts, extra or missing bytes, and counts
+that disagree with set bits. Enumeration follows increasing bit index, retaining
+the runtime pool's deterministic order.
+
+Starting an attempt validates and retains its immutable package under
+`Data/Ironmon/generation_profiles/<profile_id>/` before pinning the ID to the
+attempt and save metadata. Active loads and archived requests use that package;
+an archived request restores the active profile afterward. Reset selects the
+installed current package for the replacement attempt. Missing, damaged, or
+unsupported historical inputs return `generation_profile_unavailable`; they
+never fall back to current catalogs or acquire today's profile implicitly.
+Future deterministic behavior changes must preserve the implementations and
+packages needed by supported pinned profiles rather than rewriting old runs.
+
 ## Deterministic post-run lookup
+
+`pokemon_sprites` accepts `species_ids`, a list of one through eight canonical
+species/form identifiers, and returns a `sprites` object mapping each requested
+identity to a game-relative image path or null. This public presentation request
+does not require a generation recipe, diagnostic access, or generated lookup
+preparation. It selects stable standard artwork without consuming gameplay RNG
+or changing current sprite substitutions. The game materializes missing sheet
+images and writes `history-<species>-<form>.json` under its tracker sprite cache;
+the tracker reuses those paths offline when older ownership records have no
+captured image. Available recorded sprite paths take precedence over this
+species-artwork fallback.
 
 `pokemon_search` accepts a non-empty text query, zero-based `offset`, a `limit`
 from 1 through 50, an optional `normal_only` restriction, and a completed-run
@@ -1027,12 +1093,33 @@ completion recipe and the game resolves them from the currently loaded run.
 These commands are unavailable through the normal post-run API while a run
 remains active.
 
-`debug_development_state` has an empty payload and returns only option catalogs
-covered by the effective development grants. Its player identity, level,
+`debug_development_state` accepts `include_catalogs` and `include_evolutions`
+(both default to true) and returns only option catalogs covered by the effective
+development grants. Its player identity, level,
 ability identifier, and moves describe the single current usable party Pokemon.
 The ability and move collections are complete searchable game catalogs; the
 evolution and devolution collections list every valid direct branch for the
 current Pokemon.
+
+The tracker first requests state without evolutions, then prepares fusion
+directions through its shared native assignment index before sending the
+evolution request. For an authorized fusion development request, the initial
+request also sets `use_native_evolution_assignments` and the response includes
+internal `fusion_assignments` generation inputs. This explicit request works
+before normal background lookup starts without changing its readiness flag;
+other state requests retain their existing disclosure rules. The internal
+recipe is not displayed by Development or retained in its combined response.
+This preparation runs outside the correlated game request
+timeout and never builds the complete fusion predecessor index on the game
+thread. The second request carries `pokemon_id`, `species_id`,
+`use_native_evolution_assignments`, `evolution_assignments`, and
+`predecessor_assignments`. The game binds these arrays to both the current
+individual and species before formatting options. Empty arrays are complete
+results; missing arrays for a fusion fail immediately with
+`evolution_assignments_unavailable`, while a replaced or evolved source fails
+with `pokemon_changed`. Mutation commands still validate the selected direct
+edge independently. Older peers may omit these optional fields.
+
 `debug_development_action` carries an `action` plus only the input used by that
 action: `enabled`, `level`, `ability_id`, `move_ids`, `item_id` and
 `quantity`, or `species_id`. The action-to-capability mapping is:
@@ -1141,3 +1228,129 @@ reports creation/loading failures using its normal message UI.
 Handshake and `update_settings` carry `automatic_reset` (default true). This live
 preference changes loss handling independently of saved rules and historical
 seed recipes. Existing shared-seed commands remain separate from title actions.
+
+## Earned achievement notices
+
+Both handshakes advertise `achievement_protocol_version: 1`. The tracker sends
+`achievement_unlocks` only to a runtime that advertises this version. Its
+`unlocks` array contains earned `id`, `number`, `name`, `condition`, and
+`unlocked_at` values. No dormant definitions or locked progress are transmitted.
+
+The game may send `achievement_poll` with an empty payload to recover pending
+notices after reconnecting. After a notice has actually been displayed, it sends
+`achievement_displayed` with an `ids` array of opaque UUIDs. Delivery and display
+acknowledgements are idempotent; an interrupted display remains pending.
+Notification failure does not reject already committed gameplay data.
+
+## Desktop achievement notifications
+
+`achievement_overlay_version: 1` is optional alongside achievement delivery
+version 3. Both peers must advertise it; older peers retain native game toasts.
+The game sends `achievement_overlay_start` with a unique `presentation_id`
+and an earned `achievement_id`. The tracker opens artwork only after checking
+that identity in the authenticated earned ledger. No images cross this channel:
+the renderer reads the installed encrypted packs in memory.
+
+The tracker responds with `achievement_overlay_ready` containing the matching
+presentation identity, `ready` and `visible`. Preparation does not advance time.
+`achievement_overlay_frame` carries `elapsed` seconds from the game clock;
+health/visibility acknowledgements are bounded to ten per second unless changed.
+The game accumulates time only while visible and sends
+`achievement_overlay_stop` at completion, interruption,
+or fallback. Stale identities never stop a newer presentation. Renderer errors or
+a missing acknowledgement for 0.75 seconds restart a full native notification.
+Only the existing `achievement_displayed` event acknowledges the earned unlock.
+Frame/health traffic never enters persistent collection data or diagnostics.
+The optional `attempt.completed.completion_milestone` and
+`completion_trainer_class_ids` describe a game-authoritative challenge endpoint.
+The additive lifetime summary `attempt_completion_milestone_joint` retains those
+fields with the result, independently of earned or locked achievement rules.
+An absent milestone does not qualify as evidence for a content-limited reward.
+Availability is explicitly retired in the encrypted definition and has no
+automatic release-version expiry. Retired earned nodes remain readable.
+
+### Configurable toggle speed
+
+`tracker_connected.toggle_speed` carries the committed profile. Both lanes default to `[1,2,3]`; 2 connects to 2 and 3 to 3. `update_settings.toggle_speed` replaces the profile atomically after validation and is echoed in the accepted settings. Omission or null in a settings update retains the live profile, allowing unrelated settings to change independently. A handshake without this field restores defaults.
+
+The profile contains `lanes.overworld` and `lanes.battle`, each an ordered array of `{id, nodes:[{id,value}]}` groups, plus `links:[{id,overworld,battle}]`. Link endpoints are stage IDs selecting first-visit entries. Every accelerated group has exactly one opposite group; its connection covers all members. Normal 1 is first, standalone, implicitly connected, and cannot be an explicit endpoint. Other positions are integers 2–10 in arbitrary order, including duplicates. IDs distinguish equal multipliers and retain per-group member memory. Each lane permits at most 128 positions; identifiers are 1–64 ASCII letters, digits, underscores or hyphens. Group IDs, stage IDs, and wire IDs are individually unique across the profile. Invalid profiles leave the active profile unchanged. Context transitions restore the destination group's last selected member, otherwise its entry endpoint. Hold-mode sliders are unaffected.
+
+### Feature switches
+
+Tracker handshakes and `update_settings` carry `features`, an object with Boolean
+`achievement_popups`, `repel_counter`, `speed_indicator`, `battle_quick_items`,
+`quick_run`, `favorite_clause`, and `enforce_bst_limit`. Missing fields default to
+true; an absent/null object in an update preserves the current switches. Responses
+return the normalized complete object. Favorites and maximum starter BST remain
+stored separately and are echoed unchanged while their feature is disabled.
+Suppressed earned notices use the existing achievement acknowledgement, retaining
+unlocks without creating a later notification backlog. These local preferences
+are not added to saved run rules or seed recipes.
+
+## Game-owned wardrobe sessions
+
+Both handshakes negotiate `wardrobe_protocol_version: 1`. The tracker has no
+opening operation: only the game's Change outfit or bedroom entry constructs a
+session. The game emits `wardrobe_state` with `open: true`, the process
+`game_session_id`, random `wardrobe_id`, monotonically increasing `revision`,
+shared `profile_revision`, slot `appearance_key`, point balance, permanent
+`owned_keys`, draft `appearance`, `equipped_appearance`, `initial_selection`,
+`loaded_profile_id`, and named `outfit_profiles`. Opening and recovery include
+`catalog`; ordinary action responses retain the previously supplied catalogue.
+A closed event has `open: false` and records whether the look was confirmed.
+
+`wardrobe_state` is also a read-only recovery request. It can return a closed
+session and never opens the game wardrobe. `wardrobe_action` requires both
+session identities, the exact editing revision and a fresh 32-character lowercase
+hex `operation_id`. Allowed actions are `change`, `purchase`, `confirm`, `cancel`,
+`save_profile`, `replace_profile`, `rename_profile`, `delete_profile`, and
+`load_profile`. Shared-profile mutations also require the expected
+`profile_revision`, checked inside the profile's cross-process transaction lock.
+Repeated identical operations in the current session return their original
+response. Reusing an operation ID for different data, stale sessions or revisions,
+invalid assets, locked profile pieces, duplicate names, and insufficient points
+are rejected. Purchases use the canonical game catalogue price. A lost response
+is reconciled by reading state; the tracker never blindly retries a mutation.
+
+A change contains the full appearance, including explicit null `hat` and `hat2`
+slots, integer skin tone 1–6, installed hair `version_style`, and all five integer
+hue fields in 0–359. Preview changes and profile loads never equip the player.
+Confirmation atomically persists the per-slot look and one-time free claim when
+applicable, then equips it. Cancel retains permanent purchases and profile edits.
+Saved outfits contain all appearance fields except skin tone and use stable
+32-character IDs and unique 1–48 character names.
+
+`wardrobe_preview` requires the current session and revision. It accepts native
+`mode` (`portrait`, `front`, `back`, `left`, `right`, `bike`), optional candidate
+`piece_key` and `accessory_slot`, optional saved `profile_id`, `head_only`, and
+`dye_field`. It returns a cropped native `png_base64`, pixel `width`/`height`,
+matching wardrobe identity and revision, installed `base_colors`, 36 native
+10-degree `dye_colors`, and six `skin_colors`. Images use actual layered game
+assets and native hue transforms without modifying the draft. Thumbnails load
+only for the current catalogue page; obsolete work is cancelled and image caches
+are bounded. The tracker accepts PNGs at most 512 pixels per dimension and
+131,072 bytes. The game pauses gameplay and its attempt timer while continuing
+native input and transport updates. Native Back cancels independently of tracker
+control forwarding. A reconnect republishes the same session and draft.
+
+### Future achievement wardrobe rewards
+
+Both handshakes independently negotiate `wardrobe_achievement_rewards_version: 1`.
+The collection transaction queues only newly earned identities in a separate
+encrypted consumer outbox. Existing achievement checkpoints are never backfilled.
+The outbox is independent of the existing achievement-popup pending queue and
+survives tracker restarts and notification acknowledgements.
+
+On compatible connection startup, achievement polls and committed collection
+batches, the tracker sends `wardrobe_achievement_rewards` with `version: 1`, the
+current game `session_id`, and `ids` containing at most 4,096 earned UUIDs. The
+game validates the entire batch, atomically adds 100 points for each previously
+uncredited identity in its shared cosmetic ledger, and sends
+`wardrobe_achievement_rewards_acknowledged` with the same `session_id` and `ids`.
+Only that durable game acknowledgement removes identities from the tracker
+outbox. Repeated deliveries are harmless even after reload or a lost response.
+Transient cosmetic-profile failures retain the pending delivery for retry.
+The tracker sends no reward channel to older games and keeps pending rewards.
+Reward IDs disclose only achievements already earned; locked metadata remains
+protected. The point rate comes from game policy, never from an event-supplied
+currency amount. Active wardrobe snapshots refresh after successful credits.

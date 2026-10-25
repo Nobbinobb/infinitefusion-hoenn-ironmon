@@ -24,6 +24,10 @@ module Ironmon
       return @recipe["generation_profile_id"].to_s
     end
 
+    def archived?
+      return Ironmon.tracker_archived_lookup_recipe?(@recipe)
+    end
+
     def advance
       return if !@fiber || @error
       @deadline = Ironmon.tracker_uptime_seconds + WORK_SECONDS

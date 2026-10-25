@@ -1,7 +1,6 @@
 using Ironmon.Setup.Core;
 using Ironmon.SpriteLibrary;
 using Ironmon.Updater.Core;
-using Ironmon.Tracker.Connection.Sprites;
 using Ironmon.Updater.Infrastructure;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -10,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using System.Windows.Automation;
 
 namespace Ironmon.Setup.Tests;
 
@@ -57,6 +57,57 @@ public sealed class SetupWindowTests
     private const string SpritesField = "_sprites";
     private const string ShortcutField = "_shortcut";
     private const string WebViewConsentField = "_webViewConsent";
+    private const string RuntimeAvailableImage = "options-runtime-available.png";
+    private const string RuntimeUnavailableImage = "options-runtime-unavailable.png";
+    private const string SizeNumberFormat = "N1";
+
+    /// <summary>
+    /// Disables the smaller package on a clean machine while keeping its help keyboard-accessible and the default usable.
+    /// </summary>
+    /// <param name="available">Whether the matching x64 Desktop Runtime was detected.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RuntimeRequiredChoiceReflectsTheInstalledDesktopRuntime(bool available)
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        using var sprites = new CustomSpriteSheetInstaller();
+        using var session = CreateSession(fixture, sprites, platform: new Platform { TrackerRuntimeAvailable = available });
+        await session.SelectDestinationAsync(Path.Combine(fixture.Release.Cache, NewDestination));
+        RunSta(() =>
+        {
+            var window = new SetupWindow(session);
+            typeof(SetupWindow).GetField(PageField, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, 1);
+            typeof(SetupWindow).GetMethod(RenderMethod, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)!.Invoke(window, null);
+            var content = (DependencyObject)window.Content;
+            var choices = Descendants<RadioButton>(content).ToArray();
+            var included = choices.Single(choice => AutomationProperties.GetName(choice) == UpdaterText.SetupWindowRuntimeIncluded);
+            var required = choices.Single(choice => AutomationProperties.GetName(choice) == UpdaterText.SetupWindowRuntimeRequired);
+            Assert.True(included.IsEnabled);
+            Assert.True(included.IsChecked);
+            Assert.Equal(available, required.IsEnabled);
+            Assert.False(required.IsChecked);
+            if (available)
+            {
+                required.IsChecked = true;
+                Assert.False(included.IsChecked);
+            }
+            else
+            {
+                Assert.True(ToolTipService.GetShowOnDisabled(required));
+                Assert.Equal(UpdaterText.SetupTrackerRuntimeUnavailable, required.ToolTip);
+                Assert.Equal(UpdaterText.SetupTrackerRuntimeUnavailable, AutomationProperties.GetHelpText(required));
+                var help = Buttons(window).Single(button => AutomationProperties.GetName(button) == UpdaterText.SetupTrackerRuntimeHelp);
+                Assert.True(help.IsEnabled);
+                Assert.True(help.Focusable);
+                Assert.Equal(UpdaterText.SetupTrackerRuntimeUnavailable, help.ToolTip);
+            }
+
+            Assert.True(Buttons(window).Single(button => Equals(button.Content, UpdaterText.SetupWindowReviewInstallation)).IsEnabled);
+            Capture(window, available ? RuntimeAvailableImage : RuntimeUnavailableImage);
+            window.Close();
+        });
+    }
 
     /// <summary>
     /// Carries an occupied parent through actual navigation and repeated review using only the resolved child path.
@@ -291,6 +342,11 @@ public sealed class SetupWindowTests
             Assert.Contains(details, text => text.Inlines.OfType<System.Windows.Documents.Run>().Any(run => run.Text == UpdaterText.SetupReviewRequiredBadge));
             Assert.Contains(details, text => text.Text == UpdaterText.SetupReviewSaveReminder);
             Assert.Contains(details, text => text.Text == UpdaterText.SetupReviewEstimatedDownload);
+            var ironmonSize = details.Single(text => Equals(text.ToolTip, UpdaterText.SetupReviewIronmonSizeHint));
+            Assert.Contains(UpdaterText.SetupReviewMiB((149736652 / 1048576d).ToString(SizeNumberFormat, System.Globalization.CultureInfo.CurrentCulture)), ironmonSize.Text, StringComparison.Ordinal);
+            Assert.Single(details, text => text.Text == ironmonSize.Text);
+            Assert.Contains(details, text => text.Text == UpdaterText.SetupReviewRunHistorySpace);
+            Assert.DoesNotContain(details, text => text.Text == UpdaterText.SetupReviewDownload);
             Assert.DoesNotContain(details, text => text.Text == UpdaterText.SetupReviewIncompleteHint);
             Assert.DoesNotContain(details, text => text.Text == UpdaterText.SetupWindowSaveYourGameBeforeInstallingSetupWillCloseThe);
             Capture(window, selected ? SelectedReviewImage : UnselectedReviewImage);
@@ -398,8 +454,9 @@ public sealed class SetupWindowTests
     /// <param name="fixture">The isolated release and filesystem.</param>
     /// <param name="sprites">The shared sprite service, which these render tests do not invoke.</param>
     /// <param name="versions">The optional signed historical-release and game-availability fixture.</param>
+    /// <param name="platform">The optional isolated prerequisite observations.</param>
     /// <returns>The installer session used by native interaction tests.</returns>
-    private static SetupSession CreateSession(TrackerUpdateTestFixture fixture, CustomSpriteSheetInstaller sprites, SetupReleaseCatalogFixture? versions = null)
+    private static SetupSession CreateSession(TrackerUpdateTestFixture fixture, CustomSpriteSheetInstaller sprites, SetupReleaseCatalogFixture? versions = null, Platform? platform = null)
     {
         var downloads = new ReleaseDownloadStore(fixture.Release.Cache, versions is null ? fixture : versions);
         var cache = new MinGitCache(Path.Combine(fixture.Release.Cache, Git), fixture);
@@ -407,7 +464,7 @@ public sealed class SetupWindowTests
         var game = new CombinedGamePreparation(cache, policy, Path.Combine(fixture.Release.Cache, Staging));
         var verification = new CombinedGitVerification(cache, policy, Path.Combine(fixture.Release.Cache, Home));
         var preparation = new SetupPreparation(fixture.Release.Verifier, downloads, SignedReleaseFixture.Runtime(), game, verification, _ => SignedReleaseFixture.VersionA);
-        return new SetupSession(versions?.Discovery ?? fixture.Discovery, preparation, (_, progress) => new UpdateTransaction(new SignedIronmonAuthority(fixture.Release.Verifier, SignedReleaseFixture.Runtime(), verification), _ => Task.CompletedTask, progress), sprites, new Platform(), downloads, releaseCatalog: versions?.Catalog);
+        return new SetupSession(versions?.Discovery ?? fixture.Discovery, preparation, (_, progress) => new UpdateTransaction(new SignedIronmonAuthority(fixture.Release.Verifier, SignedReleaseFixture.Runtime(), verification), _ => Task.CompletedTask, progress), sprites, platform ?? new Platform(), downloads, releaseCatalog: versions?.Catalog);
     }
 
     /// <summary>
@@ -560,6 +617,11 @@ public sealed class SetupWindowTests
     /// </summary>
     private sealed class Platform : ISetupPlatform
     {
+        /// <summary>
+        /// Gets or sets whether the rendering fixture has the matching Desktop Runtime.
+        /// </summary>
+        public bool TrackerRuntimeAvailable { get; set; } = true;
+
         /// <summary>
         /// Gets the fixture's missing WebView prerequisite.
         /// </summary>

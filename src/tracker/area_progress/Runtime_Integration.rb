@@ -115,7 +115,7 @@ def pbTrainerBattle(trainerID, trainerName, endSpeech = nil,
                     canLose = false, outcomeVar = 1, name_override = nil,
                     trainer_type_overide = nil, event_id = nil, map_id = nil)
   entry_id = Ironmon.current_area_event_entry_id(
-    "trainers", event_id, map_id
+    "trainers", event_id, map_id, trainerID, trainerName
   )
   Ironmon.begin_area_trainer_event(entry_id)
   result = ironmon_area_progress_original_pb_trainer_battle(
@@ -135,7 +135,7 @@ def pbDoubleTrainerBattle(trainerID1, trainerName1, trainerPartyID1,
                           endSpeech1, trainerID2, trainerName2,
                           trainerPartyID2 = 0, endSpeech2 = nil,
                           canLose = false, outcomeVar = 1)
-  entry_id = Ironmon.current_area_event_entry_id("trainers")
+  entry_id = Ironmon.current_area_event_entry_id("trainers", nil, nil, trainerID1, trainerName1)
   Ironmon.begin_area_trainer_event(entry_id)
   result = ironmon_area_progress_original_pb_double_trainer_battle(
     trainerID1, trainerName1, trainerPartyID1, endSpeech1, trainerID2,
@@ -154,7 +154,7 @@ def pbTripleTrainerBattle(trainerID1, trainerName1, trainerPartyID1,
                           trainerPartyID2, endSpeech2, trainerID3,
                           trainerName3, trainerPartyID3 = 0,
                           endSpeech3 = nil, canLose = false, outcomeVar = 1)
-  entry_id = Ironmon.current_area_event_entry_id("trainers")
+  entry_id = Ironmon.current_area_event_entry_id("trainers", nil, nil, trainerID1, trainerName1)
   Ironmon.begin_area_trainer_event(entry_id)
   result = ironmon_area_progress_original_pb_triple_trainer_battle(
     trainerID1, trainerName1, trainerPartyID1, endSpeech1, trainerID2,
@@ -173,7 +173,7 @@ def pbMultiTrainerBattle(trainers_array, canLose = false, outcomeVar = 1)
   if Ironmon.active? && trainers_array.size == 2
     map_id = $game_map ? $game_map.map_id : nil
     entry_ids = trainers_array.map do |trainer|
-      Ironmon.current_area_event_entry_id("trainers", trainer[2], map_id)
+      Ironmon.current_area_event_entry_id("trainers", trainer[2], map_id, trainer[0], trainer[1])
     end
     Ironmon.queue_area_trainer_entries(entry_ids)
   end
@@ -182,6 +182,28 @@ def pbMultiTrainerBattle(trainers_array, canLose = false, outcomeVar = 1)
   )
 rescue Exception
   Ironmon.cancel_area_trainer_event
+  raise
+end
+
+Events.onTrainerPartyLoad += proc do |_sender, event_args|
+  Ironmon.capture_area_story_trainer_party(event_args[0])
+end
+
+alias ironmon_area_progress_original_trainer_battle_core pbTrainerBattleCore
+def pbTrainerBattleCore(*args)
+  owned = !Ironmon.instance_variable_get(:@current_area_trainer_entry) &&
+    (Ironmon.instance_variable_get(:@pending_area_trainer_entries) || []).empty?
+  if owned
+    Ironmon.begin_area_trainer_event(Ironmon.current_area_event_entry_id("trainers"))
+  end
+  args.each do |trainer|
+    Ironmon.capture_area_story_trainer_party(trainer) if trainer.is_a?(NPCTrainer)
+  end
+  result = ironmon_area_progress_original_trainer_battle_core(*args)
+  Ironmon.finish_area_trainer_event(result == 1, false) if owned
+  return result
+rescue Exception
+  Ironmon.cancel_area_trainer_event if owned
   raise
 end
 

@@ -114,6 +114,20 @@ module IronmonControlsRuntimeTests
       assert(Ironmon.instance_variable_get(:@tracker_control_context).nil?, "exceptions restore the previous input context")
     end
 
+    Ironmon::TRACKER_CONTROL_KEYS.keys.grep(/\Aquick_item_/).each do |action|
+      state([])
+      Input.update
+      state([action])
+      Input.update
+      assert(Ironmon.tracker_control_action_triggered?(action), "quick-item action reaches its first input frame")
+      assert(!Input.trigger?(Input::C) && Input.dir4 == 0, "quick-item input cannot confirm or move the native menu")
+      Input.update
+      assert(!Ironmon.tracker_control_action_triggered?(action), "held quick confirm and directions do not retrigger immediately")
+      22.times { Input.update }
+      assert(Ironmon.tracker_control_action_triggered?(action, true), "quick-item navigation supports delayed repeat")
+      assert(!Ironmon.tracker_control_action_triggered?(action), "quick-item confirmation never repeats")
+    end
+
     Ironmon.receive_tracker_controls({ "enabled" => false })
     assert(!Ironmon.tracker_controls_active?, "tracker close restores native ownership")
     assert(Input.press?(Input::C) && Input.trigger?(Input::B), "closing the tracker restores held native bindings")

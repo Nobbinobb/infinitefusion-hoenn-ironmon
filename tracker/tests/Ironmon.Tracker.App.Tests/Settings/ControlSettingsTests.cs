@@ -7,6 +7,7 @@ using Ironmon.Tracker.Connection.Diagnostics;
 using Ironmon.Tracker.Connection.Knowledge;
 using Ironmon.Tracker.Connection.RunState;
 using Ironmon.Tracker.Connection.Transport;
+using Ironmon.Tracker.Protocol.Connection;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
@@ -36,7 +37,7 @@ public sealed class ControlSettingsTests
     private const string _renderAction = "StateHasChanged";
     private const string _controllerField = "_controllers";
     private const string _previewEnvironment = "IRONMON_CONTROLS_PREVIEW";
-    private const string _stylesheetPath = "../../tracker/src/Ironmon.Tracker.App/wwwroot";
+    private const string _stylesheetPath = "../../tracker/src/Tracker/Ironmon.Tracker.App/wwwroot";
     private const string _htmlExtension = ".html";
     private const string _eKey = "e";
     private const string _eCode = "KeyE";
@@ -54,12 +55,16 @@ public sealed class ControlSettingsTests
     private const string _stylesheetTemplate = "<link rel=\"stylesheet\" href=\"{0}\">";
     private const string _previewTemplate = "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">{0}<style>body{{margin:0;background:#090d12;color:#e7edf7;font:12px 'Segoe UI',sans-serif}}main{{box-sizing:border-box;width:min(486px,100%);padding:16px}}</style></head><body><main class=\"obsidian\">{1}</main></body></html>";
     private const string _customPreviewName = "custom-combinations";
+    private const string _disabledPreviewName = "disabled-features";
+    private const string _disabledRowClass = "tracker-control-disabled";
+    private const string _disabledAttribute = " disabled";
     private static readonly string[] _stylesheets = ["tracker.css", "obsidian-tools.css", "obsidian.css", "tracker-controls.css"];
 
     /// <summary>
     /// Verifies the real page exposes each action once and renders keyboard and controller layouts and dialogs.
     /// </summary>
     /// <returns>A task that completes after all renderer and connection resources are disposed.</returns>
+    [Trait(TrackerTestCategories.Category, TrackerTestCategories.GameCatalog)]
     [Fact]
     public async Task CategoriesAndDeviceProfilesRenderTheProductionBindingEditor()
     {
@@ -139,7 +144,7 @@ public sealed class ControlSettingsTests
             Export(_customPreviewName, view.ToHtmlString());
 
             Invoke(page, _profileAction, new ChangeEventArgs { Value = _keyboardProfile });
-            Invoke(page, _categoryAction, 2);
+            Invoke(page, _categoryAction, 3);
             ControlAction confirm = ControlCatalog.Actions.Single(action => action.Id == ControlCatalog.Confirm);
             Invoke(page, _captureAction, confirm.Id, 1);
             KeyboardEventArgs key = new() { Key = _eKey, Code = _eCode };
@@ -159,6 +164,22 @@ public sealed class ControlSettingsTests
             Invoke(page, _restoreAction);
             Assert.Equal(confirm.Keyboard, profiles.Keyboard(confirm));
 
+            await page.SetParametersAsync(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(TrackerControlsPage.Features)] = new TrackerFeatureSettings { BattleQuickItems = false, QuickRun = false } }));
+            int[][] savedRun = profiles.Keyboard(ControlCatalog.Actions.Single(action => action.Id == ControlCatalog.BattleRun));
+            Invoke(page, _categoryAction, 3);
+            Assert.Equal(6, System.Text.RegularExpressions.Regex.Matches(view.ToHtmlString(), _disabledRowClass).Count);
+            Assert.Equal(12, System.Text.RegularExpressions.Regex.Matches(view.ToHtmlString(), _disabledAttribute).Count);
+            foreach (string action in new[] { ControlCatalog.BattleRun, ControlCatalog.QuickItemLeft, ControlCatalog.QuickItemRight, ControlCatalog.QuickItemUp, ControlCatalog.QuickItemDown, ControlCatalog.QuickItemUse })
+            {
+                Invoke(page, _captureAction, action, 0);
+                Assert.Null(shortcuts.CaptureAction);
+            }
+
+            Export(_disabledPreviewName, view.ToHtmlString());
+            await page.SetParametersAsync(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(TrackerControlsPage.Features)] = new TrackerFeatureSettings() }));
+            Invoke(page, _categoryAction, 3);
+            Assert.DoesNotContain(_disabledRowClass, view.ToHtmlString());
+            Assert.Equal(savedRun, profiles.Keyboard(ControlCatalog.Actions.Single(action => action.Id == ControlCatalog.BattleRun)));
             Invoke(page, _categoryAction, 4);
             Invoke(page, _captureAction, ControlCatalog.Reset, 1);
             KeyboardEventArgs escape = new() { Key = _escape, Code = _escape };

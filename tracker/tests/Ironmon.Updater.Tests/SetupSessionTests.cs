@@ -1,6 +1,6 @@
 using System.Net;
 using Ironmon.Setup.Core;
-using Ironmon.Tracker.Connection.Sprites;
+using Ironmon.SpriteLibrary;
 using Ironmon.Updater.Core;
 using Ironmon.Updater.Infrastructure;
 
@@ -27,6 +27,29 @@ public sealed class SetupSessionTests
     private const string NewerEngine = "99.0.0";
     private const string NewerHelper = "Ironmon-Updater-v99.0.0.zip";
     private const string NewInstallation = "new";
+
+    /// <summary>
+    /// Rejects a runtime-required selection before release downloads and permits retry after installing the prerequisite.
+    /// </summary>
+    [Fact]
+    public async Task MissingTrackerRuntimeBlocksReviewBeforeDownloads()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        PrepareGame(fixture);
+        using var sprites = new CustomSpriteSheetInstaller();
+        var platform = new Platform { TrackerRuntimeAvailable = false };
+        using var session = Create(fixture, sprites, platform);
+        await session.ReviewAsync(fixture.Release.Root, ReleaseProtocol.RuntimeRequired, true);
+        Assert.Equal(UpdaterText.SetupTrackerRuntimeUnavailable, session.Error);
+        Assert.Null(session.Review);
+        Assert.False(session.CanInstall);
+        Assert.Empty(fixture.Release.Requests);
+        Assert.Null(UpdateTransaction.ReadActiveId(fixture.Release.Root));
+        platform.TrackerRuntimeAvailable = true;
+        await session.ReviewAsync(fixture.Release.Root, ReleaseProtocol.RuntimeRequired, true);
+        Assert.Null(session.Error);
+        Assert.Equal(ReleaseProtocol.RuntimeRequired, session.Review?.Authorization.Request.Flavor);
+    }
 
     /// <summary>
     /// Keeps the original prepared transaction while applications are open and commits it without another review or download.
@@ -161,15 +184,17 @@ public sealed class SetupSessionTests
     /// Preserves the detected package even if a caller submits a different choice for an existing installation.
     /// </summary>
     /// <param name="included">Whether the existing tracker includes its runtime.</param>
+    /// <param name="runtimeAvailable">Whether the matching shared Desktop Runtime is installed.</param>
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ExistingInstallationAlwaysRetainsItsPackage(bool included)
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    public async Task ExistingInstallationAlwaysRetainsItsPackage(bool included, bool runtimeAvailable)
     {
         using var fixture = new TrackerUpdateTestFixture(included ? ReleaseProtocol.SelfContained : ReleaseProtocol.RuntimeRequired);
         PrepareGame(fixture);
         using var sprites = new CustomSpriteSheetInstaller();
-        using var session = Create(fixture, sprites, new Platform());
+        using var session = Create(fixture, sprites, new Platform { TrackerRuntimeAvailable = runtimeAvailable });
         await session.SelectDestinationAsync(fixture.Release.Root);
         var expected = included ? ReleaseProtocol.SelfContained : ReleaseProtocol.RuntimeRequired;
         Assert.Equal(expected, session.Destination?.InstalledFlavor);
@@ -491,6 +516,11 @@ public sealed class SetupSessionTests
     /// </summary>
     private sealed class Platform : ISetupPlatform
     {
+        /// <summary>
+        /// Gets or sets the matching x64 Desktop Runtime observation independently of WebView2.
+        /// </summary>
+        public bool TrackerRuntimeAvailable { get; set; } = true;
+
         /// <summary>
         /// Gets or sets the isolated runtime observation.
         /// </summary>

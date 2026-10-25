@@ -25,6 +25,7 @@ module Ironmon
     :@fully_evolved_custom_fusion_index,
     :@allowed_ability_pool, :@ability_pool_fingerprint,
     :@base_stat_source_fingerprint,
+    :@base_stat_source_fingerprints,
     :@validated_base_stat_source_fingerprint,
     :@evolution_catalog,
     :@allowed_level_up_move_pool, :@damaging_level_up_move_pool,

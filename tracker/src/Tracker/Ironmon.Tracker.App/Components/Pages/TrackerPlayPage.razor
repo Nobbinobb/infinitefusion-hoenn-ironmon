@@ -1,0 +1,149 @@
+@implements IDisposable
+@inject TrackerRequestClient Requests
+@inject TrackerConnectionState ConnectionState
+
+<section class="obsidian-settings ironmon-play" aria-label="Ironmon runs" @onkeydown:stopPropagation="true" @onkeyup:stopPropagation="true">
+    <header class="obsidian-settings-heading">
+        <h2>@(_creating ? "New Ironmon run" : "Ironmon runs")</h2>
+        @if (CanManageRuns && !_creating)
+        {
+            <button class="obsidian-settings-button obsidian-settings-primary" type="button" disabled="@_busy" @onclick="BeginNew"><ObsidianIcon Kind="ObsidianIconKind.Shuffle" />New run</button>
+        }
+    </header>
+    @if (!CanManageRuns)
+    {
+        <ObsidianSection Title="@(ConnectionState.Snapshot.Status == TrackerConnectionStatus.Connected ? "Game in progress" : "Connect the game")" Icon="ObsidianIconKind.Plug">
+            <p class="run-empty">@(ConnectionState.Snapshot.Status == TrackerConnectionStatus.Connected ? "Return to the game's title screen or main menu to start or continue an Ironmon run." : "Connect the game to the tracker to start or continue an Ironmon run.")</p>
+        </ObsidianSection>
+    }
+    else if (!_creating)
+    {
+        <ObsidianSection Title="Saved runs" Icon="ObsidianIconKind.FolderOpen">
+            @if (!_snapshot!.Slots.Any(slot => slot.Ironmon && slot.Loadable))
+            {
+                <p class="run-empty">No Ironmon saves yet. Start a new run to get going.</p>
+            }
+            @foreach (GameSaveSlotPayload slot in _snapshot!.Slots.Where(slot => slot.Ironmon && slot.Loadable))
+            {
+                <article class="run-save-row">
+                    <div class="run-save-copy">
+                        <div class="run-save-heading"><strong>@slot.Slot</strong>@if (slot.AttemptNumber is not null) { <span>Attempt @slot.AttemptNumber</span> }</div>
+                        <p class="run-save-trainer">@slot.Trainer</p>
+                    </div>
+                    <button class="obsidian-settings-button" type="button" disabled="@_busy" @onclick="() => ContinueAsync(slot)">Continue<ObsidianIcon Kind="ObsidianIconKind.ArrowRight" /></button>
+                    @if (slot.Rules is not null)
+                    {
+                        <details class="run-saved-rules">
+                            <summary><span class="run-save-meta">@slot.Location · @slot.Badges badges</span><span class="run-rules-toggle">Run rules</span></summary>
+                            <dl class="run-rule-summary">
+                                <div><dt>Wild Pokémon</dt><dd>@PolicyLabel(slot.Rules.WildPolicy)</dd></div>
+                                <div><dt>Trainer Pokémon</dt><dd>@PolicyLabel(slot.Rules.TrainerPolicy)</dd></div>
+                                <div><dt>Starter Pokémon</dt><dd>@PolicyLabel(slot.Rules.StarterPolicy)</dd></div>
+                                <div><dt>Unfusion</dt><dd>@UnfusionLabel(slot.Rules.UnfusionSetting)</dd></div>
+                            </dl>
+                        </details>
+                    }
+                    else
+                    {
+                        <p class="run-save-meta">@slot.Location · @slot.Badges badges</p>
+                    }
+                </article>
+            }
+        </ObsidianSection>
+    }
+    else
+    {
+        <ol class="run-steps" aria-label="New run steps">
+            <li class="@StepClass(1)" aria-current="@(_step == 1 ? StepAriaCurrent : null)"><span>1</span>Save</li>
+            <li class="@StepClass(2)" aria-current="@(_step == 2 ? StepAriaCurrent : null)"><span>2</span>Rules</li>
+            <li class="@StepClass(3)" aria-current="@(_step == 3 ? StepAriaCurrent : null)"><span>3</span>Review</li>
+        </ol>
+        @if (_step == 1)
+        {
+            <ObsidianSection Title="Choose a save file" Icon="ObsidianIconKind.FolderOpen">
+                <div class="run-slot-grid">
+                    @foreach (GameSaveSlotPayload slot in _snapshot!.Slots.Where(slot => slot.Manual))
+                    {
+                        <button type="button" class="@SlotClass(slot)" disabled="@_busy" aria-pressed="@(slot.Slot == _selected?.Slot)" @onclick="() => SelectSlot(slot)">
+                            <strong>@slot.Slot</strong><span>@(slot.Occupied ? slot.Ironmon ? "Ironmon run" : "Normal game" : "Empty")</span>
+                            @if (slot.Slot == _selected?.Slot) { <ObsidianIcon Kind="ObsidianIconKind.Check" /> }
+                        </button>
+                    }
+                </div>
+                @if (_selected?.Occupied == true)
+                {
+                    <aside class="run-save-warning" role="note">
+                        <strong>@_selected.Slot will be replaced</strong>
+                        <span>@_selected.Trainer · @_selected.Location</span>
+                        <p>You'll confirm the replacement when you start.</p>
+                    </aside>
+                }
+            </ObsidianSection>
+        }
+        else if (_step == 2)
+        {
+            <ObsidianSection Title="Run rules" Icon="ObsidianIconKind.Shuffle">
+                <div class="obsidian-setting-row">
+                    <ObsidianSettingLabel Label="Profile" ControlId="run-profile" Description="Profiles are reusable templates. Editing a profile leaves existing runs unchanged." />
+                    <select id="run-profile" value="@_profileIndex" @onchange="SelectProfile">@for (int i = 0; i < _profiles.Count; i++) { <option value="@i">@_profiles[i].Name</option> }</select>
+                </div>
+                <div class="obsidian-setting-row">
+                    <ObsidianSettingLabel Label="Wild Pokémon" ControlId="run-wild" Description="Choose whether wild encounters contain normal Pokémon, custom fusions, or both." />
+                    <select id="run-wild" @bind="_wild"><option value="@RunManagementProtocol.MixedPolicy">Mixed</option><option value="@RunManagementProtocol.FusionPolicy">Custom fusions only</option><option value="@RunManagementProtocol.NormalPolicy">Normal only</option></select>
+                </div>
+                <div class="obsidian-setting-row">
+                    <ObsidianSettingLabel Label="Trainer Pokémon" ControlId="run-trainer" Description="Choose whether trainer teams contain normal Pokémon, custom fusions, or both." />
+                    <select id="run-trainer" @bind="_trainer"><option value="@RunManagementProtocol.MixedPolicy">Mixed</option><option value="@RunManagementProtocol.FusionPolicy">Custom fusions only</option><option value="@RunManagementProtocol.NormalPolicy">Normal only</option></select>
+                </div>
+                <div class="obsidian-setting-row">
+                    <ObsidianSettingLabel Label="Starter Pokémon" ControlId="run-starter" Description="Choose the three starter offers. The rival takes the original counter slot, then follows Trainer rules after your first victory." />
+                    <select id="run-starter" @bind="_starter"><option value="@RunManagementProtocol.MixedPolicy">Mixed</option><option value="@RunManagementProtocol.FusionPolicy">Custom fusions only</option><option value="@RunManagementProtocol.NormalPolicy">Normal only</option></select>
+                </div>
+                <div class="obsidian-setting-row">
+                    <ObsidianSettingLabel Label="Unfusion" ControlId="run-unfusion" Description="Keep a randomly selected component when unfusing, or choose which component to keep." />
+                    <select id="run-unfusion" @bind="_unfusion"><option value="@RunManagementProtocol.RandomUnfusion">Random component</option><option value="@RunManagementProtocol.ChooseUnfusion">Player choice</option></select>
+                </div>
+                <div class="run-profile-editor">
+                    <label for="run-profile-name">Save these rules as a profile</label>
+                    <div class="run-profile-save"><input id="run-profile-name" maxlength="40" @bind="_profileName" placeholder="Profile name" /><button class="obsidian-settings-button" type="button" @onclick="SaveProfile">Save profile</button></div>
+                </div>
+            </ObsidianSection>
+        }
+        else
+        {
+            <ObsidianSection Title="Ready to start" Icon="ObsidianIconKind.CheckCircle">
+                <div class="run-review-save"><strong>@_selected?.Slot</strong><span>@(_selected?.Occupied == true ? "Replace existing save" : "New save")</span></div>
+                @if (_selected?.Occupied == true) { <p class="run-review-owner">@_selected.Trainer · @_selected.Location</p> }
+                <dl class="run-rule-summary">
+                    <div><dt>Wild Pokémon</dt><dd>@PolicyLabel(_wild)</dd></div>
+                    <div><dt>Trainer Pokémon</dt><dd>@PolicyLabel(_trainer)</dd></div>
+                    <div><dt>Starter Pokémon</dt><dd>@PolicyLabel(_starter)</dd></div>
+                    <div><dt>Unfusion</dt><dd>@UnfusionLabel(_unfusion)</dd></div>
+                </dl>
+            </ObsidianSection>
+        }
+        <footer class="run-wizard-actions">
+            <button class="obsidian-settings-button" type="button" disabled="@_busy" @onclick="Back">@(_step == 1 ? "Cancel" : "Back")</button>
+            @if (_step < 3)
+            {
+                <button class="obsidian-settings-button obsidian-settings-primary" type="button" disabled="@(_selected is null || _busy)" @onclick="Next">Next<ObsidianIcon Kind="ObsidianIconKind.ArrowRight" /></button>
+            }
+            else
+            {
+                <button class="obsidian-settings-button obsidian-settings-primary" type="button" disabled="@_busy" @onclick="RequestStart">@(_busy ? "Starting…" : "Start Ironmon run")</button>
+            }
+        </footer>
+    }
+    @if (_status is not null) { <p class="obsidian-settings-status" role="status">@_status</p> }
+</section>
+@if (_confirm && _selected is not null)
+{
+    <ObsidianDialog Title="@($"Replace {_selected.Slot}?")" Eyebrow="New Ironmon run" Class="run-overwrite-dialog" Closed="CancelConfirm">
+        <div class="obsidian-settings-dialog">
+            <div class="run-overwrite-save"><strong>@_selected.Trainer</strong><span>@_selected.Location · @_selected.Badges badges</span><span>@(_selected.Ironmon ? "Ironmon run" : "Normal game")</span></div>
+            <p>This save will be replaced by your new Ironmon run.</p>
+            <p class="obsidian-settings-note">The game's normal save backup is retained.</p>
+            <div class="run-wizard-actions"><button class="obsidian-settings-button" type="button" disabled="@_busy" @onclick="CancelConfirm">Keep save</button><button class="obsidian-settings-button run-replace-button" type="button" disabled="@_busy" @onclick="() => StartAsync(true)">Replace and start</button></div>
+        </div>
+    </ObsidianDialog>
+}

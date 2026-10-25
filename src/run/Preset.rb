@@ -134,6 +134,9 @@ module Ironmon
                                     seed_override
                                   end
     $PokemonGlobal.ironmon_gym_leader_teams = {}
+    $PokemonGlobal.ironmon_story_trainer_parties = nil
+    $PokemonGlobal.ironmon_starter_species = nil
+    $PokemonGlobal.ironmon_rival_lab_decision = nil
     reset_pivot_state
     prepare_player_fusion_pairing
     ensure_checkpoint_id
@@ -150,6 +153,7 @@ module Ironmon
       !prepare_item_randomization
     return rollback_preset_transaction(transaction) if
       !prepare_species_mappings
+    prepare_rival_lab_resources
     if expected_compatibility_fingerprint &&
        tracker_compatibility_fingerprint != expected_compatibility_fingerprint
       @seed_import_error_message = _INTL(

@@ -15,7 +15,7 @@ $directory = Join-Path $env:GITHUB_WORKSPACE 'candidate'
 $actualCommit = git -C $sourceRoot rev-parse HEAD
 $tree = git -C $sourceRoot rev-parse 'HEAD^{tree}'
 if ($actualCommit -ne $SourceCommit) { throw 'Approved source checkout mismatch.' }
-[xml]$project = Get-Content (Join-Path $sourceRoot 'tracker/src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj') -Raw
+[xml]$project = Get-Content (Join-Path $sourceRoot 'tracker/src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj') -Raw
 $version = [string]$project.Project.PropertyGroup.ApplicationDisplayVersion
 if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid release version.' }
 $manifest = Get-Content (Join-Path $directory 'candidate.json') -Raw | ConvertFrom-Json

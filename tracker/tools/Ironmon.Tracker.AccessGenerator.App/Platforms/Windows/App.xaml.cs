@@ -1,4 +1,4 @@
-namespace Ironmon.Tracker.AccessGenerator.App.WinUI;
+namespace Ironmon.Tracker.AccessGenerator.App.Platforms.Windows;
 
 /// <summary>
 /// Connects the Windows application lifetime to the shared MAUI application.

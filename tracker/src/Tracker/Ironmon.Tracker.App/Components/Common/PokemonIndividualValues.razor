@@ -1,0 +1,29 @@
+@if (HasKnownValues(Ivs) || HasKnownValues(EffectiveIvs))
+{
+    <section class="pokemon-individual-values" aria-label="@Text["Stats.IVs.Heading"]">
+        <p class="section-label">@Text["Stats.IVs.Heading"]</p>
+        @ChildContent
+        <p class="iv-description">@Text["Stats.IVs.Range"]</p>
+        <div class="iv-bars">
+            @foreach (var stat in GetValues())
+            {
+                <div class="iv-bar-row">
+                    <strong>@stat.Name</strong>
+                    <div class="iv-bar-track" aria-hidden="true">
+                        @if (HasEffectiveChanges)
+                        {
+                            <span class="iv-bar-fill effective" style="width: @GetBarWidth(stat.Effective)%"></span>
+                        }
+                        <span class="iv-bar-fill raw" style="width: @GetBarWidth(stat.Raw)%"></span>
+                    </div>
+                    <span class="iv-bar-value">@FormatValue(stat.Raw)@if (HasEffectiveChanges) { <span class="iv-effective-value"> → @FormatValue(stat.Effective)</span> }</span>
+                </div>
+            }
+        </div>
+        @if (HasEffectiveChanges)
+        {
+            <div class="iv-bar-legend"><span class="raw">@Text["Stats.IVs.Raw"]</span><span class="effective">@Text["Stats.IVs.Effective"]</span></div>
+            <p class="iv-description">@Text["Stats.IVs.EffectiveDescription"]</p>
+        }
+    </section>
+}

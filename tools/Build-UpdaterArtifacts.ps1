@@ -21,11 +21,11 @@ $stage = Join-Path $projectRoot 'data/updater/release-tools'
 if (Test-Path -LiteralPath $stage) { throw 'Updater publish staging already exists; clean the owned staging folder before a new release build.' }
 New-Item -ItemType Directory -Path $stage | Out-Null
 foreach ($item in @(
-  @{Project='Ironmon.Updater';Directory='helper';Version=$helperVersion;Executable='Ironmon.Updater.exe'},
-  @{Project='Ironmon.Setup';Directory='setup';Version=$Version;Executable='Ironmon Setup.exe'}
+  @{Project='tracker/src/Updater/Ironmon.Updater/Ironmon.Updater.csproj';Directory='helper';Version=$helperVersion;Executable='Ironmon.Updater.exe'},
+  @{Project='tracker/src/Setup/Ironmon.Setup/Ironmon.Setup.csproj';Directory='setup';Version=$Version;Executable='Ironmon Setup.exe'}
 )) {
   $output = Join-Path $stage $item.Directory
-  & dotnet publish (Join-Path $projectRoot "tracker/src/$($item.Project)/$($item.Project).csproj") -c Release -r win-x64 --self-contained true -p:UseSharedCompilation=false "-p:Version=$($item.Version)" -o $output
+  & dotnet publish (Join-Path $projectRoot $item.Project) -c Release -r win-x64 --self-contained true -p:UseSharedCompilation=false "-p:Version=$($item.Version)" -o $output
   if ($LASTEXITCODE -ne 0) { throw 'Updater or Setup publication failed.' }
   $file = Join-Path $output $item.Executable
   $info = [Diagnostics.FileVersionInfo]::GetVersionInfo($file)

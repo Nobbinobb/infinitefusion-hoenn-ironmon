@@ -1,0 +1,79 @@
+namespace Ironmon.Tracker.Connection.Transport;
+
+/// <summary>
+/// Configures the local tracker listener and its handshake identity.
+/// </summary>
+public sealed class TrackerConnectionOptions
+{
+    /// <summary>
+    /// Gets or sets the independent feature switches.
+    /// </summary>
+    public TrackerFeatureSettings Features { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the saved toggle speed profile sent on every connection.
+    /// </summary>
+    public ToggleSpeedConfiguration ToggleSpeed { get; set; } = ToggleSpeedConfiguration.CreateDefault();
+
+    /// <summary>
+    /// Gets or sets the live automatic-reset preference.
+    /// </summary>
+    public bool AutomaticReset { get; set; } = true;
+
+    /// <summary>
+    /// Initializes tracker connection options.
+    /// </summary>
+    /// <param name="port">The IPv4 loopback port, or zero for an ephemeral test port.</param>
+    /// <param name="trackerVersion">The tracker application version.</param>
+    /// <param name="debugRequested">Whether the tracker requested development access.</param>
+    /// <param name="handshakeTimeout">The maximum time allowed for the game handshake.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the port or timeout is invalid.</exception>
+    /// <exception cref="ArgumentException">Thrown when the tracker version is empty.</exception>
+    public TrackerConnectionOptions(int port, string trackerVersion, bool debugRequested, TimeSpan handshakeTimeout)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(port);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(port, ushort.MaxValue);
+        ArgumentException.ThrowIfNullOrWhiteSpace(trackerVersion);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(handshakeTimeout, TimeSpan.Zero);
+
+        Port = port;
+        TrackerVersion = trackerVersion;
+        DebugRequested = debugRequested;
+        HandshakeTimeout = handshakeTimeout;
+    }
+
+    /// <summary>
+    /// Gets the IPv4 loopback listener port.
+    /// </summary>
+    public int Port { get; }
+
+    /// <summary>
+    /// Gets the tracker application version reported to the game.
+    /// </summary>
+    public string TrackerVersion { get; }
+
+    /// <summary>
+    /// Gets whether the tracker requested development access.
+    /// </summary>
+    public bool DebugRequested { get; }
+
+    /// <summary>
+    /// Gets or sets whether starter selection is controlled automatically.
+    /// </summary>
+    public bool AutoSelectStarter { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the inclusive generated-BST ceiling for automatic starter selection.
+    /// </summary>
+    public int? MaximumStarterBaseStatTotal { get; set; }
+
+    /// <summary>
+    /// Gets or sets the stable normal species covered by the Favorite Clause.
+    /// </summary>
+    public IReadOnlyList<string> FavoriteSpeciesIds { get; set; } = [];
+
+    /// <summary>
+    /// Gets the maximum time allowed for the game handshake.
+    /// </summary>
+    public TimeSpan HandshakeTimeout { get; }
+}

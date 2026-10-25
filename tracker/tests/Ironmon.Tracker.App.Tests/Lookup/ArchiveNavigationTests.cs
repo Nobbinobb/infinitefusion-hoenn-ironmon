@@ -1,4 +1,5 @@
 using Ironmon.Tracker.App.Components.Lookup;
+using Ironmon.Tracker.App.Components.Common;
 using Ironmon.Tracker.App.Seeds;
 using Ironmon.Tracker.App.Tests.Settings;
 using Ironmon.Tracker.Connection.Access;
@@ -24,7 +25,7 @@ namespace Ironmon.Tracker.App.Tests.Lookup;
 /// <summary>
 /// Verifies archive navigation scope, real run selection, and save-file history filtering.
 /// </summary>
-public sealed class ArchiveNavigationTests
+public sealed partial class ArchiveNavigationTests
 {
     private const string _fixture = "navigation-fixture";
     private const string _firstRun = "first-run";
@@ -47,6 +48,67 @@ public sealed class ArchiveNavigationTests
     private const string _runTabs = "obsidian-lookup-tabs obsidian-archive-tabs";
     private const string _navigationSection = "archive-navigation";
     private const BindingFlags _members = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const string _historyEntries = "_entries";
+    private const string _openHistoryPokemon = "OpenPokemonAsync";
+    private const string _historyPokemonId = "B117H339:0";
+    private const string _historyPokemonName = "Syldra";
+    private const string _historyPreviewVariable = "IRONMON_ARCHIVE_HISTORY_PREVIEW";
+    private const string _historyNativeFixtureVariable = "IRONMON_ARCHIVE_HISTORY_NATIVE_FIXTURE";
+    private const string _historyGameRootProperty = "game_root";
+    private const string _historyEvolutionId = "RAICHU:0";
+    private const string _historyEvolutionName = "Raichu with a very long remembered nickname";
+    private const string _historyStarterId = "PIKACHU:0";
+    private const string _historyStarterName = "Pikachu";
+
+    /// <summary>
+    /// Opens recorded runners through the normal selected-run Pokemon tab, including repeated selections.
+    /// </summary>
+    /// <returns>The rendered history and integrated navigation verification task.</returns>
+    [Fact]
+    public async Task RunnerHistoryShowsNewestFirstAndOpensNormalArchivedPokemon()
+    {
+        string? nativeFixture = Environment.GetEnvironmentVariable(_historyNativeFixtureVariable);
+        using System.Text.Json.JsonDocument? native = string.IsNullOrWhiteSpace(nativeFixture) ? null : System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(nativeFixture));
+        Dictionary<string, object?> parameters = native is null ? [] : new() { [nameof(ArchiveHost.GameRoot)] = native.RootElement.GetProperty(_historyGameRootProperty).GetString() };
+        await RenderAsync<ArchiveHost>(parameters, async (components, html) =>
+        {
+            ArchiveView archive = components.Get<ArchiveView>();
+            ArchivePokemonHistory history = components.Get<ArchivePokemonHistory>();
+            Collection.RunPokemonHistoryEntry[] entries =
+            [
+                new(3, _historyPokemonId, _historyPokemonName, null, 27, Collection.RunPokemonTransition.FusionPivot),
+                new(2, _historyEvolutionId, _historyEvolutionName, null, 19, Collection.RunPokemonTransition.Evolution),
+                new(1, _historyStarterId, _historyStarterName, null, 16, Collection.RunPokemonTransition.Starter)
+            ];
+            if (native is not null)
+            {
+                string gameRoot = native.RootElement.GetProperty(_historyGameRootProperty).GetString()!;
+                entries = [.. entries.Select(entry => entry with { SpritePath = ArchivedPokemonSpriteLoader.Resolve(gameRoot, entry.SpeciesId, null) })];
+                Assert.All(entries, entry => Assert.NotNull(entry.SpritePath));
+            }
+            typeof(ArchivePokemonHistory).GetField(_historyEntries, _members)!.SetValue(history, entries);
+            await InvokeAsync(history, _render);
+            if (native is not null)
+                Assert.Equal(entries.Length, html().Split("class=\"pokemon-sprite-image\"", StringSplitOptions.None).Length - 1);
+            Assert.Contains("Last Pokémon · Fusion pivot", html());
+            Assert.Contains("Lv. 27", html());
+            Assert.True(html().IndexOf("<strong>Syldra</strong>", StringComparison.Ordinal) < html().IndexOf("<strong>Pikachu</strong>", StringComparison.Ordinal));
+            string? preview = Environment.GetEnvironmentVariable(_historyPreviewVariable);
+            if (!string.IsNullOrWhiteSpace(preview))
+                await File.WriteAllTextAsync(preview, html());
+
+            await InvokeAsync(history, _openHistoryPokemon, _historyPokemonId);
+            PokemonLookupExplorer first = components.Get<PokemonLookupExplorer>();
+            Assert.Equal(ArchiveSection.Pokemon, typeof(ArchiveView).GetField(_selectedSection, _members)!.GetValue(archive));
+            Assert.Equal(_historyPokemonId, first.RequestedSpeciesId);
+            await InvokeAsync(archive, _selectSection, ArchiveSection.Summary);
+            await InvokeAsync(history, _openHistoryPokemon, _historyPokemonId);
+            Assert.NotSame(first, components.Get<PokemonLookupExplorer>());
+            Assert.Equal(_historyPokemonId, components.Get<PokemonLookupExplorer>().RequestedSpeciesId);
+            await InvokeAsync(archive, _selectRun, _firstRun);
+            Assert.Null(components.Get<PokemonLookupExplorer>().RequestedSpeciesId);
+        });
+    }
 
     /// <summary>
     /// Keeps the history view outside run tabs and lets header navigation reopen the selected run.
@@ -142,13 +204,15 @@ public sealed class ArchiveNavigationTests
     /// <param name="id">The run identifier.</param>
     /// <param name="slot">The save-file identity, or null for a legacy recipe.</param>
     /// <param name="attempt">The recorded attempt number.</param>
+    /// <param name="collectionAttempts">The exact ownership histories associated with this archived run.</param>
     /// <returns>A recipe accepted by the production archive.</returns>
-    private static CompletedRunRecipePayload CreateRecipe(string id, string? slot, int attempt) => new()
+    private static CompletedRunRecipePayload CreateRecipe(string id, string? slot, int attempt, IReadOnlyList<string>? collectionAttempts = null) => new()
     {
         RunId = id, Result = _result, GenerationProfileId = new string('a', 64), GameVersion = _fixture, IronmonVersion = _fixture,
         Configuration = new() { SchemaVersion = 1, WildPolicy = _fixture, TrainerPolicy = _fixture, UnfusionSetting = _fixture },
         SpeciesGenerator = new() { Version = 1, PoolFingerprint = _fixture }, AbilityGenerator = new() { Version = 1, PoolSize = 1, PoolFingerprint = _fixture }, PlayerFusionGenerator = new() { Version = 1, PoolSize = 1, PoolFingerprint = _fixture },
-        Statistics = slot is null ? null : new() { SchemaVersion = 1, Result = _result, SaveSlot = slot, AttemptNumber = attempt, AttemptsStarted = 7 }
+        Statistics = slot is null ? null : new() { SchemaVersion = 1, Result = _result, SaveSlot = slot, AttemptNumber = attempt, AttemptsStarted = 7 },
+        CollectionAttemptIds = collectionAttempts ?? []
     };
 
     /// <summary>
@@ -157,8 +221,9 @@ public sealed class ArchiveNavigationTests
     /// <typeparam name="T">The root component type.</typeparam>
     /// <param name="parameters">The component parameters.</param>
     /// <param name="check">The rendered interaction checks.</param>
+    /// <param name="prepareCollection">Optional durable ownership fixture preparation before rendering.</param>
     /// <returns>The complete rendering and verification task.</returns>
-    private static async Task RenderAsync<T>(Dictionary<string, object?> parameters, Func<CapturingActivator, Func<string>, Task> check) where T : IComponent
+    private static async Task RenderAsync<T>(Dictionary<string, object?> parameters, Func<CapturingActivator, Func<string>, Task> check, Func<Ironmon.Tracker.Collection.GameplayCollectionStore, Task>? prepareCollection = null) where T : IComponent
     {
         string directory = Path.Combine(Path.GetTempPath(), _fixture, Guid.NewGuid().ToString());
         TrackerKnowledgeOptions storage = new(directory);
@@ -174,7 +239,9 @@ public sealed class ArchiveNavigationTests
         services.AddSingleton<IComponentActivator>(components);
         services.AddSingleton<IStringLocalizer<TrackerResources>, Localizer>();
         services.AddSingleton<IJSRuntime, SettingsJsRuntime>();
+        services.AddSingleton<Ironmon.Tracker.App.Components.Common.PokemonSpriteDialogService>();
         services.AddSingleton(archive);
+        services.AddSingleton(_ => new Ironmon.Tracker.Collection.GameplayCollectionStore(storage.RootDirectory));
         services.AddSingleton(state);
         services.AddSingleton(requests);
         services.AddSingleton(new AreaDiscoveryStore(storage));
@@ -185,6 +252,9 @@ public sealed class ArchiveNavigationTests
         try
         {
             await using ServiceProvider provider = services.BuildServiceProvider();
+            if (prepareCollection is not null)
+                await prepareCollection(provider.GetRequiredService<Ironmon.Tracker.Collection.GameplayCollectionStore>());
+
             await using HtmlRenderer renderer = new(provider, provider.GetRequiredService<ILoggerFactory>());
             await renderer.Dispatcher.InvokeAsync(async () =>
             {
@@ -220,6 +290,12 @@ public sealed class ArchiveNavigationTests
     private sealed class ArchiveHost : ComponentBase
     {
         /// <summary>
+        /// Gets or sets the fixture installation used for optional native sprite verification.
+        /// </summary>
+        [Parameter]
+        public string? GameRoot { get; set; }
+
+        /// <summary>
         /// Renders the outlet before the component that supplies its content.
         /// </summary>
         /// <param name="builder">The render tree builder.</param>
@@ -229,6 +305,7 @@ public sealed class ArchiveNavigationTests
             builder.AddAttribute(1, nameof(SectionOutlet.SectionName), _navigationSection);
             builder.CloseComponent();
             builder.OpenComponent<ArchiveView>(2);
+            builder.AddAttribute(3, nameof(ArchiveView.GameRoot), GameRoot);
             builder.CloseComponent();
         }
     }

@@ -13,7 +13,7 @@ module Ironmon
       def empty
         return { "schema_version" => SCHEMA_VERSION, "revision" => 0,
                  "points" => 0, "initial_claimed" => false, "owned" => {},
-                 "appearances" => {}, "initial_appearance" => nil, "awards" => {} }
+                 "appearances" => {}, "initial_appearance" => nil, "awards" => {}, "outfit_profiles" => {} }
       end
 
       def synchronize
@@ -51,6 +51,15 @@ module Ironmon
           !["revision", "points"].all? { |key| state[key].is_a?(Numeric) && state[key] >= 0 && state[key] == state[key].to_i }
         state["revision"] = state["revision"].to_i
         state["points"] = state["points"].to_i
+        state["outfit_profiles"] = {} if !state.has_key?("outfit_profiles")
+        profiles = state["outfit_profiles"]
+        raise "The saved outfit profiles are damaged; they have not been reset." if !profiles.is_a?(Hash)
+        profiles.each do |id, entry|
+          raise "A saved outfit profile is damaged; it has not been reset." if
+            !id.is_a?(String) || !id.match?(/\A[0-9a-f]{32}\z/) || !entry.is_a?(Hash) ||
+            !entry["name"].is_a?(String) || entry["name"].strip.empty? || entry["name"].length > 48 ||
+            !entry["appearance"].is_a?(Hash) || (entry["appearance"].keys - OUTFIT_PROFILE_FIELDS).any?
+        end
       end
 
       def read
@@ -61,9 +70,10 @@ module Ironmon
         end
       end
 
-      def transaction
+      def transaction(expected_revision = nil)
         return synchronize do
           state = read_unlocked
+          raise "The wardrobe profile has changed. Try again." if expected_revision && state["revision"] != expected_revision
           defaults_unlocked = unlock_default_appearance(state)
           changed = yield(state)
           write_unlocked(state) if defaults_unlocked || changed
@@ -112,9 +122,9 @@ module Ironmon
         return granted
       end
 
-      def purchase(entry)
+      def purchase(entry, expected_revision = nil)
         raise "This cosmetic is unavailable." if !entry || !entry["available"]
-        return transaction do |state|
+        return transaction(expected_revision) do |state|
           next false if state["owned"][entry["key"]]
           raise "Not enough wardrobe points." if state["points"] < entry["points"]
           state["points"] -= entry["points"]
@@ -122,11 +132,32 @@ module Ironmon
         end
       end
 
-      def confirm(catalog, appearance, appearance_key, initial)
+      def award_achievements(ids)
+        raise "Invalid wardrobe achievement rewards." if !ids.is_a?(Array) || ids.length > MAXIMUM_ACHIEVEMENT_REWARDS ||
+          ids.any? { |id| !id.is_a?(String) || !id.match?(/\A[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\z/) }
+        awarded = []
+        balance_before = nil
+        revision_before = nil
+        state = transaction do |current|
+          balance_before = current["points"]
+          revision_before = current["revision"]
+          claims = current["awards"]["achievement_unlocks"] ||= {}
+          ids.map(&:downcase).uniq.each do |id|
+            next if claims[id]
+            claims[id] = ACHIEVEMENT_REWARD_POINTS
+            awarded << id
+          end
+          current["points"] += awarded.length * ACHIEVEMENT_REWARD_POINTS
+          !awarded.empty?
+        end
+        return { "state" => state, "awarded_ids" => awarded, "balance_before" => balance_before, "revision_before" => revision_before }
+      end
+
+      def confirm(catalog, appearance, appearance_key, initial, expected_revision = nil)
         selected_keys = Cosmetics.appearance_keys(appearance)
         raise "Select an available outfit and hairstyle." if !appearance["clothes"] || !appearance["hair"]
         Cosmetics.validate_appearance(catalog, appearance)
-        return transaction do |state|
+        return transaction(expected_revision) do |state|
           if initial
             raise "The free selection has already been claimed." if state["initial_claimed"]
             selected_keys.each { |key| state["owned"][key] = true }
@@ -138,6 +169,55 @@ module Ironmon
           state["appearances"][appearance_key] = appearance.dup
           true
         end
+      end
+
+      def save_outfit_profile(catalog, id, name, appearance, replace = false, expected_revision = nil)
+        validate_outfit_profile_id(id)
+        title = validate_outfit_profile_name(name)
+        Cosmetics.validate_appearance(catalog, appearance)
+        selected = Cosmetics.appearance_keys(appearance)
+        return transaction(expected_revision) do |state|
+          profiles = state["outfit_profiles"]
+          raise "This outfit profile no longer exists." if replace && !profiles.has_key?(id)
+          raise "This outfit profile already exists." if !replace && profiles.has_key?(id)
+          raise "Unlock the selected items first." if selected.any? { |key| !state["owned"][key] }
+          reject_duplicate_outfit_name(profiles, id, title)
+          profiles[id] = { "name" => title, "appearance" => appearance.select { |field, _value| OUTFIT_PROFILE_FIELDS.include?(field) } }
+          true
+        end
+      end
+
+      def rename_outfit_profile(id, name, expected_revision = nil)
+        validate_outfit_profile_id(id)
+        title = validate_outfit_profile_name(name)
+        return transaction(expected_revision) do |state|
+          profiles = state["outfit_profiles"]
+          raise "This outfit profile no longer exists." if !profiles.has_key?(id)
+          reject_duplicate_outfit_name(profiles, id, title)
+          next false if profiles[id]["name"] == title
+          profiles[id]["name"] = title
+          true
+        end
+      end
+
+      def delete_outfit_profile(id, expected_revision = nil)
+        validate_outfit_profile_id(id)
+        return transaction(expected_revision) { |state| !state["outfit_profiles"].delete(id).nil? }
+      end
+
+      def validate_outfit_profile_id(id)
+        raise "Invalid outfit profile." if !id.is_a?(String) || !id.match?(/\A[0-9a-f]{32}\z/)
+      end
+
+      def validate_outfit_profile_name(name)
+        raise "Enter a profile name of 1–48 characters." if !name.is_a?(String)
+        title = name.strip
+        raise "Enter a profile name of 1–48 characters." if title.empty? || title.length > 48 || title.match?(/[[:cntrl:]]/)
+        return title
+      end
+
+      def reject_duplicate_outfit_name(profiles, id, title)
+        raise "Name already used." if profiles.any? { |key, entry| key != id && entry["name"].downcase == title.downcase }
       end
     end
 

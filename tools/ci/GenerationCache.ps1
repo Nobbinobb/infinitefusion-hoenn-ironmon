@@ -32,7 +32,7 @@ function Get-GenerationCacheFiles {
 function Get-GenerationCacheKey([string]$ProjectRoot, [string]$Fingerprint) {
   if ($Fingerprint -cnotmatch '^[0-9a-f]{64}$') { throw 'Invalid upstream generation fingerprint.' }
   $paths = @(
-    'src', 'tools/generation', 'tools/sprites', 'resources', 'docs/audits/DEFENSE_PRESENTATION_RULES.json',
+    'src', 'tools/generation', 'tools/sprites', 'resources',
     'tools/Build-Distribution.ps1', 'tools/Build-TrackerRelease.ps1',
     'tools/ci/GenerationCache.ps1', 'tools/ci/Initialize-HostedGame.ps1', '.gitattributes'
   )

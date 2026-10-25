@@ -1,0 +1,165 @@
+<section class="obsidian-settings" aria-label="@Text["Settings.Page.Settings"]" @onkeydown:stopPropagation="true" @onkeyup:stopPropagation="true">
+    <header class="obsidian-settings-heading">
+        <div><p class="card-kicker">@Text["Settings.Page.TrackerPreferences"]</p><h2>@Text["Settings.Page.Settings"]</h2></div>
+        <div class="tracker-settings-heading-actions">
+            <button type="button" class="tracker-update-link" @onclick="OpenUpdatesAsync">@Text[Ironmon.Tracker.App.Components.Updates.UpdateText.CheckAgain]<span aria-hidden="true"> ↗</span></button>
+            <span class="obsidian-settings-saved" role="status" aria-live="polite">@(!string.IsNullOrWhiteSpace(Status) || _localSettingsSaved ? Text["Redesign.Settings.Saved"].Value : string.Empty)</span>
+        </div>
+    </header>
+    <nav class="tracker-settings-tabs" aria-label="Settings pages">
+        <button type="button" aria-pressed="@(_settingsTab == SettingsTab.General ? "true" : "false")" @onclick="() => _settingsTab = SettingsTab.General">General</button>
+        <button type="button" aria-pressed="@(_settingsTab == SettingsTab.Controls ? "true" : "false")" @onclick="() => _settingsTab = SettingsTab.Controls">Controls</button>
+        <button type="button" aria-pressed="@(_settingsTab == SettingsTab.Features ? "true" : "false")" @onclick="() => _settingsTab = SettingsTab.Features">Features</button>
+        <button type="button" aria-pressed="@(_settingsTab == SettingsTab.Speed ? "true" : "false")" @onclick="() => _settingsTab = SettingsTab.Speed">@Text["Settings.ToggleSpeed.Tab"]</button>
+        <button type="button" aria-pressed="@(_settingsTab == SettingsTab.Maintenance ? "true" : "false")" @onclick="() => _settingsTab = SettingsTab.Maintenance">Maintenance</button>
+    </nav>
+    @if (_settingsTab == SettingsTab.Maintenance)
+    {
+        <HistoryMaintenanceSettings />
+    }
+    else if (_settingsTab == SettingsTab.Controls)
+    {
+        <TrackerControlsPage Features="ConnectionOptions.Features" />
+    }
+    else if (_settingsTab == SettingsTab.General)
+    {
+        <ObsidianSection Title="@Text["Settings.Starter.Group"]" Icon="ObsidianIconKind.Shuffle">
+            <div class="obsidian-setting-row">
+                <ObsidianSettingLabel Label="@Text["Settings.Starter.MaximumBst"]" ControlId="@MaximumBstControlId" Description="@Text["Redesign.Settings.MaximumBstDescription"]" />
+                <input id="@MaximumBstControlId" type="number" min="0" max="@StarterSelectionConstants.MaximumBaseStatTotal" value="@MaximumStarterBaseStatTotal" placeholder="@Text["Settings.Starter.MaximumBstPlaceholder"]" aria-invalid="@((!string.IsNullOrEmpty(_maximumBstError)).ToString().ToLowerInvariant())" @onchange="HandleMaximumBstChanged" />
+            </div>
+            @if (_maximumBstError is not null)
+            {
+                <p class="obsidian-setting-error" role="alert">@_maximumBstError</p>
+            }
+            <div class="obsidian-setting-row obsidian-favorites-setting">
+                <div class="obsidian-favorites-copy">
+                    <ObsidianSettingLabel Label="@Text["Settings.Favorites.FavoriteClause"]" Description="@Text["Redesign.Settings.FavoritesDescription"]" />
+                    <span>@FavoriteSummary</span>
+                </div>
+                <div class="obsidian-favorites-action"><span class="obsidian-settings-count">@Text["Settings.Favorites.Count", _favorites.Count]</span><button class="obsidian-settings-button" type="button" @onclick="OpenFavorites">@Text["Redesign.Settings.Manage"] <span aria-hidden="true">›</span></button></div>
+            </div>
+        </ObsidianSection>
+        <ObsidianSection Title="@Text["Settings.EvolutionGraph.Group"]" Icon="ObsidianIconKind.Branch">
+            <div class="obsidian-setting-row">
+                <ObsidianSettingLabel Label="@Text["Settings.EvolutionGraph.ExpansionDepth"]" ControlId="@ExpansionDepthControlId" Description="@Text["Redesign.Settings.ExpansionDepthDescription"]" />
+                <input id="@ExpansionDepthControlId" type="number" min="@EvolutionGraphSettings.MinimumExpansionDepth" max="@EvolutionGraphSettings.MaximumExpansionDepth" value="@EvolutionGraphSettings.ExpansionDepth" aria-invalid="@((!string.IsNullOrEmpty(_graphDepthError)).ToString().ToLowerInvariant())" @onchange="HandleExpansionDepthChanged" />
+            </div>
+            @if (_graphDepthError is not null)
+            {
+                <p class="obsidian-setting-error" role="alert">@_graphDepthError</p>
+            }
+            <div class="obsidian-setting-row">
+                <ObsidianSettingLabel Label="@Text["Settings.EvolutionGraph.NodesPerRow"]" ControlId="@NodesPerRowControlId" Description="@Text["Redesign.Settings.NodesPerRowDescription"]" />
+                <input id="@NodesPerRowControlId" type="number" min="@EvolutionGraphSettings.MinimumNodesPerRow" max="@EvolutionGraphSettings.MaximumNodesPerRow" value="@EvolutionGraphSettings.NodesPerRow" aria-invalid="@((!string.IsNullOrEmpty(_nodesPerRowError)).ToString().ToLowerInvariant())" @onchange="HandleNodesPerRowChanged" />
+            </div>
+            @if (_nodesPerRowError is not null)
+            {
+                <p class="obsidian-setting-error" role="alert">@_nodesPerRowError</p>
+            }
+        </ObsidianSection>
+        <ObsidianSection Title="@Text["Settings.Sprites.Group"]" Icon="ObsidianIconKind.Images" Description="@SpriteLibraryDescription">
+            <div class="obsidian-settings-actions">
+                <button class="obsidian-settings-button obsidian-settings-primary" type="button" disabled="@_spriteInstallPreparing" aria-busy="@((_spriteInstallPreparing && !_spriteReviewIncludesUnavailable).ToString().ToLowerInvariant())" @onclick="OpenSpriteReviewAsync">@(_spriteInstallPreparing && !_spriteReviewIncludesUnavailable ? Text["Settings.Sprites.Preparing"] : _spriteInstallRunning ? Text["Redesign.Settings.ViewProgress"] : Text["Settings.Sprites.Review"]) <span aria-hidden="true">↗</span></button>
+                <button class="obsidian-settings-link" type="button" disabled="@(_spriteInstallRunning || _spriteInstallPreparing)" aria-busy="@((_spriteInstallPreparing && _spriteReviewIncludesUnavailable).ToString().ToLowerInvariant())" @onclick="ReviewUnavailableSpritesAsync">@(_spriteInstallPreparing && _spriteReviewIncludesUnavailable ? Text["Settings.Sprites.Preparing"] : Text["Settings.Sprites.RecheckUnavailable"])</button>
+            </div>
+        </ObsidianSection>
+        <p class="obsidian-settings-status" role="status">@(_localSettingsSaved ? Text["Redesign.Settings.SavedLocally"] : Status ?? Text["Redesign.Settings.AutomaticChanges"])</p>
+    }
+    else if (_settingsTab == SettingsTab.Features)
+    {
+        <ObsidianSection Title="Overworld UI" Icon="ObsidianIconKind.Images">
+            <ObsidianToggle Class="obsidian-setting-row" Label="Achievement pop-ups" Description="Show a notification when an achievement unlocks. Achievements still unlock and remain available in the tracker when this is off." LabelFirst="true" Value="ConnectionOptions.Features.AchievementPopups" ValueChanged="enabled => HandleFeaturesChanged(ConnectionOptions.Features with { AchievementPopups = enabled })" />
+            <ObsidianToggle Class="obsidian-setting-row" Label="Repel step counter" Description="Show remaining Repel steps in the overworld." LabelFirst="true" Value="ConnectionOptions.Features.RepelCounter" ValueChanged="enabled => HandleFeaturesChanged(ConnectionOptions.Features with { RepelCounter = enabled })" />
+            <ObsidianToggle Class="obsidian-setting-row" Label="Speed indicator" Description="Show the active speed in the overworld. Speed controls remain available when the indicator is hidden." LabelFirst="true" Value="ConnectionOptions.Features.SpeedIndicator" ValueChanged="enabled => HandleFeaturesChanged(ConnectionOptions.Features with { SpeedIndicator = enabled })" />
+        </ObsidianSection>
+        <ObsidianSection Title="Battle" Icon="ObsidianIconKind.Plug">
+            <ObsidianToggle Class="obsidian-setting-row" Label="Item quick select" Description="Enable the battle item icon and its navigation and use hotkeys. Your selections and bindings are retained when disabled." LabelFirst="true" Value="ConnectionOptions.Features.BattleQuickItems" ValueChanged="enabled => HandleFeaturesChanged(ConnectionOptions.Features with { BattleQuickItems = enabled })" />
+            <ObsidianToggle Class="obsidian-setting-row" Label="Quick run hotkey" Description="Enable the shortcut to run from a wild encounter. The normal Run command remains available." LabelFirst="true" Value="ConnectionOptions.Features.QuickRun" ValueChanged="enabled => HandleFeaturesChanged(ConnectionOptions.Features with { QuickRun = enabled })" />
+        </ObsidianSection>
+        <ObsidianSection Title="Starter rules" Icon="ObsidianIconKind.Shuffle">
+            <ObsidianToggle Class="obsidian-setting-row" Label="Favorite Clause" Description="Allow configured favorites as alternate starter choices. Turning this off keeps your saved favorites." LabelFirst="true" Value="ConnectionOptions.Features.FavoriteClause" ValueChanged="enabled => HandleFeaturesChanged(ConnectionOptions.Features with { FavoriteClause = enabled })" />
+            <ObsidianToggle Class="obsidian-setting-row" Label="Enforce BST limit" Description="Apply the maximum starter BST from General. Turning this off keeps the saved value. A value of 0 or an empty field always means no limit." LabelFirst="true" Value="ConnectionOptions.Features.EnforceBstLimit" ValueChanged="enabled => HandleFeaturesChanged(ConnectionOptions.Features with { EnforceBstLimit = enabled })" />
+            <ObsidianToggle Class="obsidian-setting-row" Label="@Text["Settings.Starter.AutoSelectStarter"]" Description="@Text["Redesign.Settings.AutoSelectDescription"]" LabelFirst="true" Value="AutoSelectStarter" ValueChanged="HandleAutoSelectChanged" />
+        </ObsidianSection>
+        <ObsidianSection Title="Game session" Icon="ObsidianIconKind.Plug">
+            <ObsidianToggle Class="obsidian-setting-row" Label="Start tracker minimized" Description="Open the tracker minimized while its background services stay active. The game always starts with the tracker." LabelFirst="true" Value="TrackerStartupSettings.StartMinimized" ValueChanged="HandleStartMinimizedChanged" />
+            <ObsidianToggle Class="obsidian-setting-row" Label="Automatic reset after a loss" Description="Automatically return to starter selection with a fresh seed after losing. This applies immediately and does not change saved run rules or shared seeds." LabelFirst="true" Value="TrackerStartupSettings.AutomaticReset" ValueChanged="HandleAutomaticResetChanged" />
+        </ObsidianSection>
+        <p class="obsidian-settings-status" role="status">@(_localSettingsSaved ? Text["Redesign.Settings.SavedLocally"] : Status ?? Text["Redesign.Settings.AutomaticChanges"])</p>
+    }
+    <div hidden="@(_settingsTab != SettingsTab.Speed)" class="toggle-speed-tab">
+        <ToggleSpeedSettings Saved="HandleToggleSpeedSaved" />
+    </div>
+</section>
+
+@if (_favoritesOpen)
+{
+    <ObsidianDialog Title="@Text["Settings.Favorites.FavoriteClause"]" Eyebrow="@Text["Redesign.Settings.YourPokemon"]" Closed="CloseFavorites">
+        <div class="obsidian-settings-dialog">
+            <p>@Text["Settings.Favorites.Description"]</p>
+            <PokemonSearchField Placeholder="@Text["Settings.Favorites.SearchPlaceholder"]" SearchAsync="SearchFavoritesAsync" GetSearchErrorMessage="GetFavoriteSearchErrorMessage" IsSelected="IsFavorite" Selected="AddFavoriteAsync" />
+            <div class="obsidian-favorite-heading"><span>@Text["Settings.Favorites.YourFavorites"]</span><span>@Text["Settings.Favorites.Count", _favorites.Count]</span></div>
+            @if (_favorites.Count == 0)
+            {
+                <p class="obsidian-settings-note">@Text["Settings.Favorites.Empty"]</p>
+            }
+            else
+            {
+                <div class="obsidian-favorite-list">
+                    @foreach (PokemonSearchMatch favorite in PagedFavorites)
+                    {
+                        <div @key="favorite.SpeciesId"><span>@favorite.SpeciesName</span><button type="button" @onclick="() => RemoveFavoriteAsync(favorite.SpeciesId)">@Text["Settings.Favorites.Remove"]</button></div>
+                    }
+                </div>
+                @if (FavoritePageCount > 1)
+                {
+                    <ObsidianPagingControls Label="@Text["Settings.Favorites.Pages"]" RangeText="@Text["Settings.Favorites.Page", _favoritePage + 1, FavoritePageCount]" PreviousDisabled="@(_favoritePage == 0)" NextDisabled="@(_favoritePage + 1 >= FavoritePageCount)" Previous="PreviousFavoritePage" Next="NextFavoritePage" />
+                }
+            }
+        </div>
+    </ObsidianDialog>
+}
+
+@if (_spriteDialogOpen)
+{
+    <ObsidianDialog Title="@Text["Settings.Sprites.DownloadCustom"]" Eyebrow="@Text["Settings.Sprites.Group"]" Closed="CloseSpriteDialog">
+        <div class="obsidian-settings-dialog">
+            @if (_spriteInstallRunning && _spriteInstallProgress is not null)
+            {
+                <p>@Text["Settings.Sprites.DownloadDescription"]</p>
+                <progress aria-label="@Text["Redesign.Settings.SheetsChecked"]" max="@Math.Max(1, _spriteInstallProgress.TotalSheetCount)" value="@_spriteInstallProgress.CompletedSheetCount"></progress>
+                <div class="obsidian-settings-metric"><span>@Text["Redesign.Settings.SheetsChecked"]</span><strong>@_spriteInstallProgress.CompletedSheetCount / @_spriteInstallProgress.TotalSheetCount</strong></div>
+                <div class="obsidian-settings-metric"><span>@Text["Redesign.Settings.Downloaded"]</span><strong>@FormatBytes(_spriteInstallProgress.DownloadedBytes)</strong></div>
+                <div class="obsidian-settings-metric"><span>@Text["Redesign.Settings.FailedUnavailable"]</span><strong>@_spriteInstallProgress.FailedSheetCount · @_spriteInstallProgress.UnavailableSheetCount</strong></div>
+                <p class="obsidian-settings-note">@Text["Redesign.Settings.KeepGameClosed"]</p>
+                <div class="obsidian-settings-actions"><button class="obsidian-settings-button" type="button" @onclick="CancelSpriteInstall">@Text["Settings.Sprites.Cancel"]</button></div>
+            }
+            else if (_showSpriteInstallConfirmation && _spriteInstallPlan is not null)
+            {
+                <p>@Text["Settings.Sprites.Confirmation", _spriteInstallPlan.PendingSheetCount, _spriteInstallPlan.ExistingSheetCount, _spriteInstallPlan.TotalSheetCount]</p>
+                <div class="obsidian-settings-metric"><span>@Text["Redesign.Settings.Installed"]</span><strong>@_spriteInstallPlan.ExistingSheetCount / @_spriteInstallPlan.TotalSheetCount</strong></div>
+                <div class="obsidian-settings-metric"><span>@Text["Redesign.Settings.SheetsToCheck"]</span><strong>@_spriteInstallPlan.PendingSheetCount</strong></div>
+                @if (_spriteInstallPlan.UnavailableSheetCount > 0)
+                {
+                    <p class="obsidian-settings-note">@Text["Settings.Sprites.SkippedUnavailable", _spriteInstallPlan.UnavailableSheetCount]</p>
+                }
+                <p class="obsidian-settings-note">@Text["Settings.Sprites.RecheckDescription"]</p>
+                <p class="obsidian-settings-caution">@Text["Settings.Sprites.DownloadWarning"]</p>
+                <div class="obsidian-settings-actions">
+                    <button class="obsidian-settings-button obsidian-settings-primary" type="button" @onclick="StartSpriteInstallAsync">@Text["Settings.Sprites.Start"]</button>
+                    <button class="obsidian-settings-button" type="button" @onclick="CancelSpriteReview">@Text["Settings.Sprites.Cancel"]</button>
+                </div>
+            }
+            else
+            {
+                <p role="status">@(_spriteInstallPreparing ? Text["Settings.Sprites.Preparing"] : _spriteInstallStatus)</p>
+                <div class="obsidian-settings-actions">
+                    <button class="obsidian-settings-button obsidian-settings-primary" type="button" disabled="@_spriteInstallPreparing" @onclick="ReviewSpriteInstallAsync">@Text["Settings.Sprites.Review"]</button>
+                    <button class="obsidian-settings-link" type="button" disabled="@_spriteInstallPreparing" @onclick="ReviewUnavailableSpritesAsync">@Text["Settings.Sprites.RecheckUnavailable"]</button>
+                </div>
+                <p class="obsidian-settings-note">@Text["Settings.Sprites.RecheckDescription"]</p>
+            }
+        </div>
+    </ObsidianDialog>
+}

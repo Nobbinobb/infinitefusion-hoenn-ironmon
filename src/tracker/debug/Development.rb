@@ -44,13 +44,19 @@ module Ironmon
   end
 
   def self.tracker_development_state(include_catalogs = true,
-                                     include_evolutions = true)
+                                     include_evolutions = true, payload = nil)
     tracker_validate_any_debug_context(TRACKER_DEVELOPMENT_CAPABILITIES)
     pokemon = tracker_development_player
     result = {
       "auto_revive_enabled" => tracker_auto_revive_enabled?,
       "player" => pokemon ? tracker_development_player_state(pokemon) : nil
     }
+    if !include_evolutions && pokemon && payload &&
+       payload["use_native_evolution_assignments"] == true &&
+       tracker_connection.diagnostic_capability?("development.evolution") &&
+       fusion_evolution_runtime_species?(pokemon.species_data)
+      result["fusion_assignments"] = tracker_active_fusion_assignment_recipe(true)
+    end
     if include_catalogs && tracker_connection.diagnostic_capability?(
          "development.change_ability"
        )
@@ -67,11 +73,12 @@ module Ironmon
     if include_evolutions &&
        tracker_connection.diagnostic_capability?("development.evolution") &&
        pokemon
+      tracker_validate_development_evolution_context(pokemon, payload)
       result["evolutions"] = tracker_development_evolution_catalog(
-        pokemon, true
+        pokemon, true, payload
       )
       result["devolutions"] = tracker_development_evolution_catalog(
-        pokemon, false
+        pokemon, false, payload
       )
     end
     return result
@@ -188,15 +195,36 @@ module Ironmon
     return @tracker_development_item_catalog
   end
 
-  def self.tracker_development_evolution_catalog(pokemon, forward)
+  def self.tracker_validate_development_evolution_context(pokemon, payload)
+    return if !payload || payload["use_native_evolution_assignments"] != true
+    if payload["pokemon_id"] != pokemon.personalID.to_s ||
+       payload["species_id"] != tracker_species_id(pokemon)
+      raise TrackerDebugError.new(
+        "pokemon_changed",
+        "The current Pokemon changed while evolution choices were loading. Refresh to load its choices."
+      )
+    end
+    return if !fusion_evolution_runtime_species?(pokemon.species_data)
+    if !payload["evolution_assignments"].is_a?(Array) ||
+       !payload["predecessor_assignments"].is_a?(Array)
+      raise TrackerDebugError.new(
+        "evolution_assignments_unavailable",
+        "Fusion evolution data is not prepared for this run. Refresh after run calculation is ready."
+      )
+    end
+  end
+
+  def self.tracker_development_evolution_catalog(pokemon, forward, payload = nil)
     recipe = tracker_debug_active_recipe
     entries = if forward
                 tracker_lookup_evolution_targets(
-                  pokemon.species_data, recipe, false
+                  pokemon.species_data, recipe, false,
+                  payload && payload["evolution_assignments"]
                 ).values.flatten
               else
                 tracker_development_evolution_predecessors(
-                  pokemon.species_data, recipe
+                  pokemon.species_data, recipe,
+                  payload && payload["predecessor_assignments"]
                 )
               end
     result = entries.map do |entry|
@@ -210,12 +238,13 @@ module Ironmon
     end
   end
 
-  def self.tracker_development_evolution_predecessors(species, recipe)
+  def self.tracker_development_evolution_predecessors(species, recipe,
+                                                     assignments = nil)
     result = []
     offset = 0
     loop do
       page = tracker_lookup_evolution_predecessor_page(
-        species, recipe, offset, 50, false
+        species, recipe, offset, 50, false, assignments
       )
       result.concat(page["matches"])
       break if page["continuation"] == "complete"

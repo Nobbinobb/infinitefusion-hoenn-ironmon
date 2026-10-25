@@ -50,6 +50,11 @@ module Ironmon
       return @numbers
     end
 
+    def packed_pool_membership
+      pool
+      return @packed_pool_membership
+    end
+
     def info
       pool
       return {
@@ -146,6 +151,7 @@ module Ironmon
 
       @accepted_by_number = accepted.freeze
       @numbers = accepted.keys.sort.freeze
+      @packed_pool_membership = Ironmon.pack_custom_fusion_pool_membership(@numbers)
       @pool = @numbers.map { |dex_number| accepted[dex_number] }
       @pool.freeze
       @fingerprint = fingerprint_for(@pool)
@@ -250,6 +256,11 @@ module Ironmon
       return @numbers
     end
 
+    def packed_pool_membership
+      pool
+      return @packed_pool_membership
+    end
+
     def info
       pool
       return {
@@ -297,12 +308,23 @@ module Ironmon
       end
       @accepted_by_number = accepted.freeze
       @numbers = accepted.keys.sort.freeze
+      @packed_pool_membership = Ironmon.pack_custom_fusion_pool_membership(@numbers)
       @pool = @numbers.map { |number| accepted[number] }.freeze
       @fingerprint = Ironmon.species_pool_fingerprint(@pool)
     rescue Exception => exception
       raise CustomFusionPoolError,
         "the archived custom fusion pool is invalid: #{exception.message}"
     end
+  end
+
+  def self.pack_custom_fusion_pool_membership(numbers)
+    packed = "\0".b * (((NB_POKEMON * NB_POKEMON) + 7) / 8)
+    numbers.each do |number|
+      position = number - NB_POKEMON - 1
+      byte_index = position >> 3
+      packed.setbyte(byte_index, packed.getbyte(byte_index) | (1 << (position & 7)))
+    end
+    return packed.freeze
   end
 
   def self.custom_fusion_pool_service

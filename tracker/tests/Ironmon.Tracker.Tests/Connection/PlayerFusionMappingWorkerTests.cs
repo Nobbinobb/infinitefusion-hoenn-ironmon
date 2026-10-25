@@ -1,4 +1,5 @@
 using Ironmon.Tracker.Connection.Obtainability;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Text;
 
@@ -20,6 +21,8 @@ public sealed class PlayerFusionMappingWorkerTests
     private const string RuntimePoolJobId = "runtime-index-pool-worker";
     private const string WorkerRunId = "worker-run";
     private const string WildMappingKind = "wild";
+    private const string IsolatedComponentFailure = "no component-disjoint reverse partner anywhere";
+    private const string CompletePairingFailure = "could not form complete component-disjoint reverse pairs";
 
     /// <summary>
     /// Verifies the continuous range's breakpoint and both upside and downside caps.
@@ -60,7 +63,7 @@ public sealed class PlayerFusionMappingWorkerTests
 
         Assert.Equal(catalog.CustomFusionPool.Count / 2, audit.PairCount);
         Assert.True(audit.MaximumLegalRangeWidth > 0);
-        Assert.True(audit.MaximumBstDifference <= audit.MaximumLegalRangeWidth, $"Seed {seed} has a global reverse pair differing by {audit.MaximumBstDifference} BST, while the widest legal material interval is {audit.MaximumLegalRangeWidth} BST.");
+        Assert.True(audit.MaximumBstDifference <= audit.EffectiveMaximumPairDifference, $"Seed {seed} has a global reverse pair differing by {audit.MaximumBstDifference} BST, while the effective pairing limit is {audit.EffectiveMaximumPairDifference} BST.");
         Assert.True(audit.PairsWithoutSharedType <= audit.PairCount / 100, $"Seed {seed} has {audit.PairsWithoutSharedType} global reverse pairs without a shared type.");
     }
 
@@ -91,7 +94,7 @@ public sealed class PlayerFusionMappingWorkerTests
         PlayerFusionMappingWorker worker = new(catalog);
         int[] materials = [.. catalog.VerificationMappings.SelectMany(mapping => new[] { mapping.FirstMaterialId, mapping.SecondMaterialId }).Distinct()];
 
-        Dictionary<(int First, int Second), PlayerFusionMappedPair> actual = worker.MapAll(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, materials)
+        Dictionary<(int First, int Second), PlayerFusionMappedPair> actual = worker.MapAll(catalog.VerificationSeed, catalog.VerificationGeneratorVersion, materials)
             .ToDictionary(mapping => (mapping.FirstMaterialId, mapping.SecondMaterialId));
 
         Assert.Contains("japeal", catalog.ExcludedSpriteAuthors, StringComparer.OrdinalIgnoreCase);
@@ -100,9 +103,9 @@ public sealed class PlayerFusionMappingWorkerTests
             PlayerFusionMappedPair mapping = actual[(expected.FirstMaterialId, expected.SecondMaterialId)];
             Assert.Equal(expected.FirstResultId, mapping.FirstResultId);
             Assert.Equal(expected.SecondResultId, mapping.SecondResultId);
-            Assert.Equal(expected.FirstResultId, worker.MapOrderedPair(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, expected.FirstMaterialId, expected.SecondMaterialId));
+            Assert.Equal(expected.FirstResultId, worker.MapOrderedPair(catalog.VerificationSeed, catalog.VerificationGeneratorVersion, expected.FirstMaterialId, expected.SecondMaterialId));
             if (expected.FirstMaterialId != expected.SecondMaterialId)
-                Assert.Equal(expected.SecondResultId, worker.MapOrderedPair(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, expected.SecondMaterialId, expected.FirstMaterialId));
+                Assert.Equal(expected.SecondResultId, worker.MapOrderedPair(catalog.VerificationSeed, catalog.VerificationGeneratorVersion, expected.SecondMaterialId, expected.FirstMaterialId));
         }
     }
 
@@ -116,14 +119,100 @@ public sealed class PlayerFusionMappingWorkerTests
     public void IsolatedFusionReportsAnImpossiblePairingPromptly()
     {
         PlayerFusionMappingWorkerCatalog catalog = PlayerFusionMappingWorkerCatalog.Load();
+        catalog = catalog.WithBaseStatFingerprint(catalog.LegacyBaseStatSourceFingerprint);
         PlayerFusionMappingWorker worker = new(catalog);
         Stopwatch elapsed = Stopwatch.StartNew();
 
-        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => worker.AuditPairing(1_271_448_503, catalog.PlayerFusionGeneratorVersion));
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => worker.AuditPairing(1_271_448_503, 1));
 
         Assert.Contains("271035 (824 BST)", error.Message, StringComparison.Ordinal);
         Assert.Contains("within 92 BST", error.Message, StringComparison.Ordinal);
         Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(30), $"An impossible pairing took {elapsed.Elapsed} to reject.");
+    }
+
+    /// <summary>
+    /// Verifies version 2 completes the formerly isolated full roster deterministically without reusing components or partners.
+    /// </summary>
+    [Fact]
+    public void AdaptivePairingCompletesIsolatedSeedWithStableReciprocalPartners()
+    {
+        const long seed = 1_271_448_503;
+        const int generatorVersion = 2;
+        PlayerFusionMappingWorkerCatalog catalog = PlayerFusionMappingWorkerCatalog.Load();
+        catalog = catalog.WithBaseStatFingerprint(catalog.LegacyBaseStatSourceFingerprint);
+        PlayerFusionMappingWorker worker = new(catalog);
+
+        PlayerFusionPairingAudit audit = worker.AuditPairing(seed, generatorVersion);
+        string exported = worker.ExportReversePairing(seed, generatorVersion);
+        byte[] pairs = Convert.FromBase64String(exported);
+
+        Assert.Equal(catalog.CustomFusionPool.Count / 2, audit.PairCount);
+        Assert.Equal(catalog.CustomFusionPool.Count * sizeof(uint), pairs.Length);
+        Assert.True(audit.RelaxationSteps > 0);
+        Assert.Equal(audit.MaximumLegalRangeWidth + 5 * audit.RelaxationSteps, audit.EffectiveMaximumPairDifference);
+        Assert.True(audit.MaximumBstDifference <= audit.EffectiveMaximumPairDifference);
+        Assert.True(audit.EffectiveMaximumPairDifference >= 97);
+        HashSet<int> seen = [];
+        for (int offset = 0; offset < pairs.Length; offset += 8)
+        {
+            int first = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(pairs.AsSpan(offset, 4)));
+            int second = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(pairs.AsSpan(offset + 4, 4)));
+            int firstBody = (first - 1) / catalog.NormalSpeciesCount;
+            int firstHead = first - firstBody * catalog.NormalSpeciesCount;
+            int secondBody = (second - 1) / catalog.NormalSpeciesCount;
+            int secondHead = second - secondBody * catalog.NormalSpeciesCount;
+
+            Assert.True(seen.Add(first));
+            Assert.True(seen.Add(second));
+            Assert.True(firstBody != secondBody && firstBody != secondHead && firstHead != secondBody && firstHead != secondHead);
+            Assert.Equal(second, worker.GetPreparedReversePartner(seed, generatorVersion, first));
+            Assert.Equal(first, worker.GetPreparedReversePartner(seed, generatorVersion, second));
+        }
+
+        Assert.True(seen.SetEquals(catalog.CustomFusionPool.Select(target => (target.PackedComponents >> 10) * catalog.NormalSpeciesCount + (target.PackedComponents & 0x3FF))));
+        Assert.Equal(exported, new PlayerFusionMappingWorker(catalog).ExportReversePairing(seed, generatorVersion));
+    }
+
+    /// <summary>
+    /// Verifies widening cannot hide a pool whose every target reuses the same component.
+    /// </summary>
+    [Fact]
+    public void AdaptivePairingRejectsTargetsWithoutAnyDisjointPartner()
+    {
+        PlayerFusionMappingWorkerCatalog catalog = RuntimeCatalogForTargets([(1, 2), (1, 3), (1, 4), (1, 5)]);
+        PlayerFusionMappingWorker worker = new(catalog);
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => worker.AuditPairing(catalog.VerificationSeed, 2));
+
+        Assert.Contains(IsolatedComponentFailure, error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Verifies a structurally unmatched roster stops once its complete BST span has been searched.
+    /// </summary>
+    [Fact]
+    public void AdaptivePairingStopsAtFullSpanWhenNoCompleteMatchingExists()
+    {
+        PlayerFusionMappingWorkerCatalog catalog = RuntimeCatalogForTargets([(1, 2), (3, 4), (3, 5), (3, 6)]);
+        PlayerFusionMappingWorker worker = new(catalog);
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => worker.AuditPairing(catalog.VerificationSeed, 2));
+
+        Assert.Contains(CompletePairingFailure, error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Verifies an unknown policy cannot enter pairing through diagnostic entry points.
+    /// </summary>
+    /// <param name="generatorVersion">The unimplemented policy identifier.</param>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(3)]
+    public void PairingRejectsUnsupportedPolicyVersions(int generatorVersion)
+    {
+        PlayerFusionMappingWorker worker = new();
+
+        Assert.Throws<NotSupportedException>(() => worker.AuditPairing(1_271_448_503, generatorVersion));
     }
 
     /// <summary>
@@ -269,6 +358,25 @@ public sealed class PlayerFusionMappingWorkerTests
     }
 
     /// <summary>
+    /// Creates a pinned runtime roster with real normal-species metadata and explicitly selected target components.
+    /// </summary>
+    /// <param name="components">The ordered Body and Head identifiers defining the small roster.</param>
+    /// <returns>The validated worker catalog containing only those targets.</returns>
+    private static PlayerFusionMappingWorkerCatalog RuntimeCatalogForTargets(IReadOnlyList<(int Body, int Head)> components)
+    {
+        PlayerFusionMappingWorkerCatalog embedded = PlayerFusionMappingWorkerCatalog.Load();
+        PlayerFusionTargetSpecies[] targets = [.. components.Select(pair => new PlayerFusionTargetSpecies((pair.Body << 10) | pair.Head, 0)).OrderBy(target => target.PackedComponents)];
+        byte[] membership = new byte[(embedded.NormalSpeciesCount * embedded.NormalSpeciesCount + 7) / 8];
+        foreach ((int body, int head) in components)
+        {
+            int position = (body - 1) * embedded.NormalSpeciesCount + head - 1;
+            membership[position >> 3] |= (byte)(1 << (position & 7));
+        }
+
+        return embedded.WithRuntimeFusionPool(embedded.CustomFusionPoolVersion, targets.Length, FusionPoolFingerprint(targets), Convert.ToBase64String(membership));
+    }
+
+    /// <summary>
     /// Guards the representative full material workload against falling back to game-runtime-scale latency.
     /// </summary>
     [Fact]
@@ -295,7 +403,7 @@ public sealed class PlayerFusionMappingWorkerTests
 
         PlayerFusionPairingAudit audit = worker.AuditPairing(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion);
         Assert.Equal(catalog.CustomFusionPool.Count / 2, audit.PairCount);
-        Assert.True(audit.MaximumBstDifference <= audit.MaximumLegalRangeWidth, $"The widest global reverse pair differs by {audit.MaximumBstDifference} BST, while the widest legal material interval is {audit.MaximumLegalRangeWidth} BST.");
+        Assert.True(audit.MaximumBstDifference <= audit.EffectiveMaximumPairDifference, $"The widest global reverse pair differs by {audit.MaximumBstDifference} BST, while the effective pairing limit is {audit.EffectiveMaximumPairDifference} BST.");
         Assert.True(audit.PairsWithoutSharedType <= audit.PairCount / 100, $"{audit.PairsWithoutSharedType} global reverse pairs do not share a type.");
     }
 
@@ -324,11 +432,11 @@ public sealed class PlayerFusionMappingWorkerTests
         PlayerFusionMappingWorker worker = new(catalog);
         PlayerFusionReferenceMapping reference = catalog.VerificationMappings[0];
 
-        Assert.Null(worker.GetPreparedReversePartner(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, reference.FirstResultId));
-        Assert.Equal(reference.SecondResultId, worker.ReversePartner(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, reference.FirstResultId));
-        Assert.Equal(reference.FirstResultId, worker.ReversePartner(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, reference.SecondResultId));
-        Assert.Equal(reference.SecondResultId, worker.GetPreparedReversePartner(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, reference.FirstResultId));
-        Assert.Null(worker.GetPreparedReversePartner(catalog.VerificationSeed, catalog.PlayerFusionGeneratorVersion, 1));
+        Assert.Null(worker.GetPreparedReversePartner(catalog.VerificationSeed, catalog.VerificationGeneratorVersion, reference.FirstResultId));
+        Assert.Equal(reference.SecondResultId, worker.ReversePartner(catalog.VerificationSeed, catalog.VerificationGeneratorVersion, reference.FirstResultId));
+        Assert.Equal(reference.FirstResultId, worker.ReversePartner(catalog.VerificationSeed, catalog.VerificationGeneratorVersion, reference.SecondResultId));
+        Assert.Equal(reference.SecondResultId, worker.GetPreparedReversePartner(catalog.VerificationSeed, catalog.VerificationGeneratorVersion, reference.FirstResultId));
+        Assert.Null(worker.GetPreparedReversePartner(catalog.VerificationSeed, catalog.VerificationGeneratorVersion, 1));
     }
 
     /// <summary>
@@ -346,7 +454,7 @@ public sealed class PlayerFusionMappingWorkerTests
             JobId = $"{DirectProofJobId}:encounters",
             SourceCatalogFingerprint = ObtainabilitySourceCatalog.Load().Fingerprint,
             Seed = catalog.VerificationSeed,
-            GeneratorVersion = catalog.PlayerFusionGeneratorVersion,
+            GeneratorVersion = catalog.VerificationGeneratorVersion,
             BaseStatSourceFingerprint = catalog.BaseStatSourceFingerprint,
             CustomFusionPoolVersion = catalog.CustomFusionPoolVersion,
             CustomFusionPoolSize = catalog.CustomFusionPool.Count,
@@ -367,7 +475,7 @@ public sealed class PlayerFusionMappingWorkerTests
             JobId = DirectProofJobId,
             SourceCatalogFingerprint = ObtainabilitySourceCatalog.Load().Fingerprint,
             Seed = catalog.VerificationSeed,
-            GeneratorVersion = catalog.PlayerFusionGeneratorVersion,
+            GeneratorVersion = catalog.VerificationGeneratorVersion,
             BaseStatSourceFingerprint = catalog.BaseStatSourceFingerprint,
             CustomFusionPoolVersion = catalog.CustomFusionPoolVersion,
             CustomFusionPoolSize = catalog.CustomFusionPool.Count,
@@ -506,7 +614,7 @@ public sealed class PlayerFusionMappingWorkerTests
             JobId = "worker-batch-test",
             SourceCatalogFingerprint = ObtainabilitySourceCatalog.Load().Fingerprint,
             Seed = catalog.VerificationSeed,
-            GeneratorVersion = catalog.PlayerFusionGeneratorVersion,
+            GeneratorVersion = catalog.VerificationGeneratorVersion,
             BaseStatSourceFingerprint = catalog.BaseStatSourceFingerprint,
             CustomFusionPoolVersion = catalog.CustomFusionPoolVersion,
             CustomFusionPoolSize = catalog.CustomFusionPool.Count,
@@ -533,7 +641,7 @@ public sealed class PlayerFusionMappingWorkerTests
         FusionAssignmentRecipePayload assignmentRecipe = new()
         {
             Seed = catalog.VerificationSeed,
-            PlayerFusionGeneratorVersion = catalog.PlayerFusionGeneratorVersion,
+            PlayerFusionGeneratorVersion = catalog.VerificationGeneratorVersion,
             GeneratorVersion = catalog.FusionEvolutionGeneratorVersion,
             RulesVersion = catalog.FusionEvolutionRulesVersion,
             SourceFingerprint = catalog.EvolutionSourceFingerprint,

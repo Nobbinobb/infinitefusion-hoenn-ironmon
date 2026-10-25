@@ -67,6 +67,13 @@ module Ironmon
   end
 
   def self.tracker_area_event_completed?(entry)
+    if entry["completion_switch_id"]
+      return !!($game_switches && $game_switches[entry["completion_switch_id"]] == true)
+    end
+    if entry["completion_self_switch"]
+      key = [entry["completion_map_id"], entry["completion_event_id"], entry["completion_self_switch"]]
+      return !!($game_self_switches && $game_self_switches[key] == true)
+    end
     map_id = entry["map_id"].to_i
     event_id = entry["event_id"].to_i
     return false if map_id < 1 || event_id < 1

@@ -5,6 +5,16 @@
 require "socket"
 
 module Ironmon
+  TRACKER_FEATURE_NAMES = %w[
+    achievement_popups repel_counter speed_indicator battle_quick_items
+    quick_run favorite_clause enforce_bst_limit
+  ].freeze
+
+  def self.feature_enabled?(name)
+    connection = tracker_connection
+    return !connection.respond_to?(:feature_enabled?) || connection.feature_enabled?(name)
+  end
+
   TRACKER_HOST = "127.0.0.1"
   TRACKER_PORT = 38_521
   TRACKER_SCHEMA_VERSION = 1
@@ -12,6 +22,7 @@ module Ironmon
   TRACKER_UPTIME_UNITS_PER_SECOND = 1_000_000.0
   TRACKER_MAXIMUM_MESSAGE_BYTES = 1_048_576
   TRACKER_OUTPUT_WRITE_BYTES = 65_536
+  TRACKER_MAXIMUM_DEFERRED_LOOKUP_REQUESTS = 16
   TRACKER_DIAGNOSTIC_CAPABILITIES = [
     "development.auto_revive",
     "development.change_ability",
@@ -66,7 +77,9 @@ module Ironmon
   end
 
   def self.tracker_json_string(value)
-    escaped = value.to_s.each_codepoint.map do |codepoint|
+    text = value.to_s.dup
+    text.force_encoding(Encoding::UTF_8) if text.encoding == Encoding::ASCII_8BIT
+    escaped = text.each_codepoint.map do |codepoint|
       case codepoint
       when 0x08 then "\\b"
       when 0x09 then "\\t"
@@ -101,7 +114,7 @@ module Ironmon
       @defense_damage_profile_version = 0
       Ironmon.disable_tracker_auto_revive if
         Ironmon.respond_to?(:disable_tracker_auto_revive)
-      @auto_select_starter = false
+      @auto_select_starter = true
       @maximum_starter_base_stat_total = nil
       @favorite_species_ids = []
       @pending_area_discoveries = {}
@@ -117,6 +130,7 @@ module Ironmon
         resend_area_discoveries
         flush_output
         read_input
+        resume_deferred_lookup_request
         if connected? && Ironmon.tracker_uptime_seconds - (@last_heartbeat || 0) > TRACKER_HEARTBEAT_TIMEOUT
           disconnect
           return
@@ -139,6 +153,18 @@ module Ironmon
 
     def session_ready?
       return connected? && @session_ready == true
+    end
+
+    def wardrobe_supported?
+      return session_ready? && @wardrobe_protocol_version == 1
+    end
+
+    def wardrobe_achievement_rewards_supported?
+      return session_ready? && @wardrobe_achievement_rewards_version == 1
+    end
+
+    def rival_fusion_worker_supported?
+      return session_ready? && @rival_fusion_worker_version == 1
     end
 
     def output_drained?
@@ -191,11 +217,30 @@ module Ironmon
       return @auto_select_starter == true
     end
 
+    def feature_enabled?(name)
+      return !@features || @features[name] != false
+    end
+
+    def feature_settings
+      return TRACKER_FEATURE_NAMES.each_with_object({}) do |name, settings|
+        settings[name] = feature_enabled?(name)
+      end
+    end
+
+    def apply_feature_settings(settings)
+      return if !settings.is_a?(Hash)
+      @features = TRACKER_FEATURE_NAMES.each_with_object({}) do |name, result|
+        result[name] = settings[name] != false
+      end
+    end
+
     def favorite_species_ids
+      return [] if !feature_enabled?("favorite_clause")
       return @favorite_species_ids || []
     end
 
     def maximum_starter_base_stat_total
+      return nil if !feature_enabled?("enforce_bst_limit")
       return @maximum_starter_base_stat_total
     end
 
@@ -258,6 +303,8 @@ module Ironmon
     def game_handshake_message
       run_id = Ironmon.ensure_tracker_run_id
       payload = {
+        "wardrobe_protocol_version" => 1,
+        "wardrobe_achievement_rewards_version" => 1,
         "management_protocol_version" => GAME_MANAGEMENT_PROTOCOL,
         "session_id" => Ironmon.game_session_id,
         "game_version" => Ironmon.tracker_game_version,
@@ -349,7 +396,7 @@ module Ironmon
       while (newline = @input_buffer.index("\n"))
         line = @input_buffer.slice!(0, newline + 1).strip
         next if line.empty?
-        handle_message(normalize_json(JSON.parse(line)))
+        handle_message(normalize_json(HTTPLite::JSON.parse(line)))
       end
     end
 
@@ -362,10 +409,12 @@ module Ironmon
         return normalized
       end
       return value.map { |child| normalize_json(child) } if value.is_a?(Array)
+      return value.to_i if value.is_a?(Float) && value.finite? && value == value.to_i
       return value
     end
 
     def disconnect(error = nil)
+      @deferred_lookup_requests = []
       Ironmon.clear_tracker_controls if Ironmon.respond_to?(:clear_tracker_controls)
       was_connected = @state == :connected
       begin

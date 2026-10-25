@@ -1,0 +1,382 @@
+using Ironmon.Tracker.Connection.Transport;
+using Ironmon.Tracker.Connection.Obtainability;
+using Ironmon.Tracker.Connection.Lookup;
+
+namespace Ironmon.Tracker.Connection.Access;
+
+/// <summary>
+/// Validates and sends authorized diagnostic requests for the active run.
+/// </summary>
+internal sealed class TrackerDiagnosticRequestClient
+{
+    private static readonly TimeSpan _occurrencePollInterval = TimeSpan.FromMilliseconds(50);
+    private readonly TrackerDiagnosticAuthorizer _authorization;
+    private readonly PlayerFusionMappingCoordinator _fusionMappings;
+    private readonly TrackerRequestSession _session;
+    private readonly TrackerTrainerLocationIndex? _trainerLocations;
+    private readonly TrackerPokemonNameSearch? _nameSearch;
+
+    /// <summary>
+    /// Initializes active diagnostic requests for one tracker connection.
+    /// </summary>
+    /// <param name="session">The correlated request session.</param>
+    /// <param name="authorization">The diagnostic authorization policy.</param>
+    /// <param name="fusionMappings">The shared tracker-side material-mapping coordinator.</param>
+    /// <param name="trainerLocations">The optional connection-scoped authored trainer location index.</param>
+    /// <param name="nameSearch">The optional compatible tracker-side name matcher.</param>
+    internal TrackerDiagnosticRequestClient(TrackerRequestSession session, TrackerDiagnosticAuthorizer authorization, PlayerFusionMappingCoordinator fusionMappings, TrackerPokemonNameSearch? nameSearch = null, TrackerTrainerLocationIndex? trainerLocations = null)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(authorization);
+        ArgumentNullException.ThrowIfNull(fusionMappings);
+        _session = session;
+        _authorization = authorization;
+        _fusionMappings = fusionMappings;
+        _nameSearch = nameSearch;
+        _trainerLocations = trainerLocations;
+    }
+
+    /// <summary>
+    /// Requests the game-owned Ironmon inspector data for one current Pokémon.
+    /// </summary>
+    /// <param name="request">The Pokémon source selection.</param>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The complete authorized inspector snapshot.</returns>
+    internal Task<DebugPokemonInspectorSnapshot> InspectPokemonAsync(DebugPokemonInspectionRequestPayload request, string? runId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        _authorization.EnsurePokemonSource(request.Target);
+        _authorization.EnsurePokemonInformation(request.Section);
+        return _session.SendAsync<DebugPokemonInspectionRequestPayload, DebugPokemonInspectorSnapshot>(TrackerCommands.DebugInspectPokemon, request, runId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Requests game-owned run and randomizer diagnostics.
+    /// </summary>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The authorized run diagnostics.</returns>
+    internal Task<DebugRunDiagnosticsSnapshot> GetRunDiagnosticsAsync(string? runId, CancellationToken cancellationToken)
+    {
+        _authorization.EnsureAny(DiagnosticCapabilities.RunConfiguration, DiagnosticCapabilities.RunSeed, DiagnosticCapabilities.RunGeneratorManifests, DiagnosticCapabilities.EvolutionGeneratorDetails);
+        DebugRunDiagnosticsRequestPayload request = new();
+        return _session.SendAsync<DebugRunDiagnosticsRequestPayload, DebugRunDiagnosticsSnapshot>(TrackerCommands.DebugRunDiagnostics, request, runId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Requests development controls before preparing Pokémon-bound evolution directions outside the game request.
+    /// </summary>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="includeCatalogs">Whether the shared ability, move, and item catalogs are included.</param>
+    /// <param name="includeEvolutions">Whether the current Pokémon's evolution and devolution options are included.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The current development-control state.</returns>
+    internal async Task<DebugDevelopmentStateSnapshot> GetDevelopmentStateAsync(string? runId, bool includeCatalogs, bool includeEvolutions, CancellationToken cancellationToken)
+    {
+        _authorization.EnsureAny(
+            DiagnosticCapabilities.DevelopmentAutoRevive,
+            DiagnosticCapabilities.DevelopmentChangeAbility,
+            DiagnosticCapabilities.DevelopmentChangeMoves,
+            DiagnosticCapabilities.DevelopmentEvolution,
+            DiagnosticCapabilities.DevelopmentFullHeal,
+            DiagnosticCapabilities.DevelopmentGiveItem,
+            DiagnosticCapabilities.DevelopmentLevel,
+            DiagnosticCapabilities.DevelopmentSwapPokemon);
+
+        DebugDevelopmentStateRequestPayload request = new()
+        {
+            IncludeCatalogs = includeCatalogs,
+            IncludeEvolutions = false,
+            UseNativeEvolutionAssignments = includeEvolutions
+        };
+        DebugDevelopmentStateSnapshot state = await _session.SendAsync<DebugDevelopmentStateRequestPayload, DebugDevelopmentStateSnapshot>(TrackerCommands.DebugDevelopmentState, request, runId, cancellationToken).ConfigureAwait(false);
+        if (!includeEvolutions || state.Player is null || !_authorization.HasCapability(DiagnosticCapabilities.DevelopmentEvolution))
+            return state;
+
+        if (state.FusionAssignments is not null && !string.IsNullOrWhiteSpace(runId))
+            _fusionMappings.PrepareActiveFusionAssignments(runId, state.FusionAssignments);
+
+        DebugDevelopmentPlayerSnapshot player = state.Player;
+        IReadOnlyList<EvolutionTargetAssignmentPayload>? targets = _fusionMappings.GetActiveEvolutionTargetAssignments(runId, player.SpeciesId);
+        IReadOnlyList<EvolutionPredecessorAssignmentPayload>? predecessors = await _fusionMappings.GetActiveEvolutionPredecessorAssignmentsAsync(runId, player.SpeciesId, cancellationToken).ConfigureAwait(false);
+        _authorization.EnsureAll(DiagnosticCapabilities.DevelopmentEvolution);
+        request = new()
+        {
+            IncludeCatalogs = false,
+            IncludeEvolutions = true,
+            PokemonId = player.PokemonId,
+            SpeciesId = player.SpeciesId,
+            UseNativeEvolutionAssignments = true,
+            EvolutionAssignments = targets,
+            PredecessorAssignments = predecessors
+        };
+        DebugDevelopmentStateSnapshot directions = await _session.SendAsync<DebugDevelopmentStateRequestPayload, DebugDevelopmentStateSnapshot>(TrackerCommands.DebugDevelopmentState, request, runId, cancellationToken).ConfigureAwait(false);
+        return new()
+        {
+            AutoReviveEnabled = directions.AutoReviveEnabled,
+            Player = directions.Player,
+            Abilities = state.Abilities,
+            Moves = state.Moves,
+            Items = state.Items,
+            Evolutions = directions.Evolutions,
+            Devolutions = directions.Devolutions
+        };
+    }
+
+    /// <summary>
+    /// Sends one individually authorized development action.
+    /// </summary>
+    /// <param name="request">The requested action and its input.</param>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The authoritative current-player state after the action, without option catalogs.</returns>
+    internal Task<DebugDevelopmentStateSnapshot> ApplyDevelopmentActionAsync(DebugDevelopmentActionRequestPayload request, string? runId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        _authorization.EnsureDevelopmentAction(request.Action);
+        return _session.SendAsync<DebugDevelopmentActionRequestPayload, DebugDevelopmentStateSnapshot>(TrackerCommands.DebugDevelopmentAction, request, runId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Searches generated Pokémon in the active run through the authorized debug channel.
+    /// </summary>
+    /// <remarks>
+    /// Uses the compatible tracker name catalog when available and keeps game-owned validation and annotation.
+    /// </remarks>
+    /// <param name="query">The name fragment entered by the user.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="limit">The maximum number of matches to return.</param>
+    /// <param name="normalOnly">Whether to restrict matches to normal species.</param>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested page of matching active-run Pokémon with game-owned display and obtainability data.</returns>
+    internal Task<PokemonSearchResponsePayload> SearchPokemonAsync(string query, int offset, int limit, bool normalOnly, string? runId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(query);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, TrackerProtocol.MinimumSearchPageSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, TrackerProtocol.MaximumSearchPageSize);
+        _authorization.EnsureAll(DiagnosticCapabilities.PokemonAllActive);
+        DebugPokemonSearchRequestPayload request = new() { Query = query.Trim(), Offset = offset, Limit = limit, NormalOnly = normalOnly };
+        return _nameSearch is null
+            ? _session.SendAsync<DebugPokemonSearchRequestPayload, PokemonSearchResponsePayload>(TrackerCommands.DebugPokemonSearch, request, runId, cancellationToken)
+            : _nameSearch.SearchAsync(TrackerCommands.DebugPokemonSearch, null, query.Trim(), offset, limit, normalOnly, runId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Requests generated information for one Pokémon in the active debug run.
+    /// </summary>
+    /// <param name="speciesId">The selected stable species and form identifier.</param>
+    /// <param name="section">The independently requested information section.</param>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The active-run generated Pokémon information.</returns>
+    internal Task<PokemonLookupSnapshot> LookupPokemonAsync(string speciesId, PokemonLookupSection section, string? runId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        _authorization.EnsurePokemonLookup(section);
+        IReadOnlyList<EvolutionTargetAssignmentPayload>? evolutionAssignments = section == PokemonLookupSection.Evolutions
+            ? _fusionMappings.GetActiveEvolutionTargetAssignments(runId, speciesId)
+            : null;
+
+        int? reverseFusionId = section == PokemonLookupSection.Overview ? _fusionMappings.GetPreparedReverseFusion(runId, null, speciesId) : null;
+        DebugPokemonLookupRequestPayload request = new() { SpeciesId = speciesId, Section = section, EvolutionAssignments = evolutionAssignments, DeferOccurrences = true, ReverseFusionId = reverseFusionId };
+        return _session.SendAsync<DebugPokemonLookupRequestPayload, PokemonLookupSnapshot>(TrackerCommands.DebugPokemonLookup, request, runId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Advances and reads the shared obtainability calculation for the authorized active run.
+    /// </summary>
+    /// <param name="speciesId">The optional species whose witness should be returned.</param>
+    /// <param name="speciesIds">The bounded identifiers whose proven membership should be returned.</param>
+    /// <param name="evolutionEdgeKeys">The bounded evolution connections whose possible membership should be returned.</param>
+    /// <param name="foreground">Whether the game should temporarily prioritize this run's calculation.</param>
+    /// <param name="progress">The optional observer for intermediate calculation responses.</param>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The current shared calculation state.</returns>
+    internal async Task<PokemonObtainabilityResponsePayload> AdvanceObtainabilityAsync(string? speciesId, IReadOnlyList<string>? speciesIds, IReadOnlyList<string>? evolutionEdgeKeys, bool foreground, Action<PokemonObtainabilityResponsePayload>? progress, string? runId, CancellationToken cancellationToken)
+    {
+        _authorization.EnsureAll(DiagnosticCapabilities.EvolutionResults, DiagnosticCapabilities.FusionMaterialPairs, DiagnosticCapabilities.PokemonAllActive, DiagnosticCapabilities.WorldItems, DiagnosticCapabilities.WorldWildEncounters);
+        DebugPokemonObtainabilityRequestPayload request = new() { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, UseNativeMaterialPairPreparation = true };
+        PokemonObtainabilityResponsePayload response = await _session.SendAsync<DebugPokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.DebugPokemonObtainability, request, runId, cancellationToken);
+        progress?.Invoke(response);
+        while (response.FusionClosureWork is not null)
+        {
+            PlayerFusionClosureResultPayload? result = await _fusionMappings.CreateResultAsync(response.FusionClosureWork, cancellationToken, runId).ConfigureAwait(false);
+            request = result is null
+                ? new DebugPokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, UseNativeMaterialPairPreparation = true, FusionClosureWorkerUnavailable = true }
+                : new DebugPokemonObtainabilityRequestPayload { SpeciesId = speciesId, SpeciesIds = speciesIds ?? [], EvolutionEdgeKeys = evolutionEdgeKeys ?? [], Foreground = foreground, UseNativeMaterialPairPreparation = true, FusionClosureResult = result };
+
+            response = await _session.SendAsync<DebugPokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.DebugPokemonObtainability, request, runId, cancellationToken);
+            progress?.Invoke(response);
+            if (!foreground)
+                break;
+        }
+
+        return response;
+    }
+
+    /// <summary>
+    /// Requests one filtered page of valid evolution candidates from the active debug run.
+    /// </summary>
+    /// <param name="speciesId">The source species identifier.</param>
+    /// <param name="side">The normal or component-specific candidate list.</param>
+    /// <param name="query">The optional candidate name filter.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="target">The optional live source that securely supplies the represented species.</param>
+    /// <param name="enemyPosition">The enemy battler position when the live source is an enemy.</param>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested candidate page.</returns>
+    internal Task<EvolutionCandidateSearchResponsePayload> SearchEvolutionCandidatesAsync(string speciesId, EvolutionCandidateSide side, string query, int offset, DebugPokemonTarget? target, int? enemyPosition, string? runId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        _authorization.EnsurePokemonSource(target);
+        _authorization.EnsureAll(DiagnosticCapabilities.EvolutionCandidates);
+        byte[]? candidateAssignments = target is null
+            ? _fusionMappings.GetActiveEvolutionCandidateAssignments(runId, speciesId, side)
+            : null;
+
+        DebugEvolutionCandidateSearchRequestPayload request = new() { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Side = side, Query = query.Trim(), Offset = offset, PackedCandidateAssignments = candidateAssignments };
+        return _session.SendAsync<DebugEvolutionCandidateSearchRequestPayload, EvolutionCandidateSearchResponsePayload>(TrackerCommands.DebugEvolutionCandidateSearch, request, runId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Requests one progressive page of generated evolution predecessors from the active debug run.
+    /// </summary>
+    /// <param name="speciesId">The target species identifier.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="limit">The maximum number of predecessors to return.</param>
+    /// <param name="target">The optional live source that securely supplies the represented species.</param>
+    /// <param name="enemyPosition">The enemy battler position when the live source is an enemy.</param>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested predecessor page.</returns>
+    internal async Task<EvolutionPredecessorSearchResponsePayload> SearchEvolutionPredecessorsAsync(string speciesId, int offset, int limit, DebugPokemonTarget? target, int? enemyPosition, string? runId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, TrackerProtocol.MinimumSearchPageSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(limit, TrackerProtocol.MaximumSearchPageSize);
+        _authorization.EnsurePokemonSource(target);
+        _authorization.EnsureAll(DiagnosticCapabilities.EvolutionResults);
+        IReadOnlyList<EvolutionPredecessorAssignmentPayload>? predecessorAssignments = await _fusionMappings.GetActiveEvolutionPredecessorAssignmentsAsync(runId, speciesId, cancellationToken).ConfigureAwait(false);
+        int requestLimit = predecessorAssignments is null
+            ? limit
+            : Math.Min(TrackerProtocol.MaximumSearchPageSize, Math.Max(limit, predecessorAssignments.Count - offset));
+
+        DebugEvolutionPredecessorSearchRequestPayload request = new() { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset, Limit = requestLimit, PredecessorAssignments = predecessorAssignments };
+        return await _session.SendAsync<DebugEvolutionPredecessorSearchRequestPayload, EvolutionPredecessorSearchResponsePayload>(TrackerCommands.DebugEvolutionPredecessorSearch, request, runId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Requests one page of fusion-material pairs from the authorized active run.
+    /// </summary>
+    /// <param name="speciesId">The fusion species identifier.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="target">The optional live source that securely supplies the represented species.</param>
+    /// <param name="enemyPosition">The enemy battler position when the live source is an enemy.</param>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested material-pair page.</returns>
+    internal async Task<FusionMaterialSearchResponsePayload> SearchFusionMaterialsAsync(string speciesId, int offset, DebugPokemonTarget? target, int? enemyPosition, string? runId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        _authorization.EnsurePokemonSource(target);
+        _authorization.EnsureAll(DiagnosticCapabilities.FusionMaterialPairs);
+        PlayerFusionMaterialPage? assignments = await _fusionMappings.GetActiveFusionMaterialAssignmentsAsync(runId, speciesId, offset, TrackerProtocol.FusionMaterialPageSize, cancellationToken).ConfigureAwait(false);
+
+        DebugFusionMaterialSearchRequestPayload request = new()
+        {
+            SpeciesId = speciesId,
+            Target = target,
+            EnemyPosition = enemyPosition,
+            Offset = offset,
+            MaterialAssignments = assignments?.Assignments,
+            MaterialAssignmentTotal = assignments?.Total
+        };
+
+        return await _session.SendAsync<DebugFusionMaterialSearchRequestPayload, FusionMaterialSearchResponsePayload>(TrackerCommands.DebugFusionMaterialSearch, request, runId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Requests one page of wild occurrences from the authorized active run.
+    /// </summary>
+    /// <param name="speciesId">The generated species identifier.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="target">The optional live source that securely supplies the represented species.</param>
+    /// <param name="enemyPosition">The enemy battler position when the live source is an enemy.</param>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested wild-occurrence page.</returns>
+    internal async Task<WildOccurrenceSearchResponsePayload> SearchWildOccurrencesAsync(string speciesId, int offset, DebugPokemonTarget? target, int? enemyPosition, string? runId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        _authorization.EnsurePokemonSource(target);
+        _authorization.EnsureAll(DiagnosticCapabilities.WorldWildEncounters);
+        byte[]? membership = await _fusionMappings.GetOccurrenceFusionMaterialsAsync(runId, null, speciesId, cancellationToken);
+        DebugWildOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset, FusionMaterialMembership = membership };
+        WildOccurrenceSearchResponsePayload response;
+        do
+        {
+            _authorization.EnsurePokemonSource(target);
+            _authorization.EnsureAll(DiagnosticCapabilities.WorldWildEncounters);
+            response = await _session.SendAsync<DebugWildOccurrenceSearchRequestPayload, WildOccurrenceSearchResponsePayload>(TrackerCommands.DebugWildOccurrenceSearch, request, runId, cancellationToken);
+            if (response.Pending)
+                await Task.Delay(_occurrencePollInterval, cancellationToken);
+
+        } while (response.Pending);
+
+        return response;
+    }
+
+    /// <summary>
+    /// Requests one page of trainer occurrences from the authorized active run.
+    /// </summary>
+    /// <param name="speciesId">The generated species identifier.</param>
+    /// <param name="offset">The zero-based result offset.</param>
+    /// <param name="target">The optional live source that securely supplies the represented species.</param>
+    /// <param name="enemyPosition">The enemy battler position when the live source is an enemy.</param>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The requested trainer-occurrence page.</returns>
+    internal async Task<TrainerOccurrenceSearchResponsePayload> SearchTrainerOccurrencesAsync(string speciesId, int offset, DebugPokemonTarget? target, int? enemyPosition, string? runId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(speciesId);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        _authorization.EnsurePokemonSource(target);
+        _authorization.EnsureAll(DiagnosticCapabilities.WorldTrainerParties);
+        TrainerLocationIndexAssignmentPayload? locations = _trainerLocations is null ? null : await _trainerLocations.GetAssignmentAsync(cancellationToken).ConfigureAwait(false);
+        DebugTrainerOccurrenceSearchRequestPayload request = new() { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset, TrainerLocationIndex = locations };
+        if (locations is not null && !TrackerTrainerLocationIndex.FitsRequest(request))
+            request = new DebugTrainerOccurrenceSearchRequestPayload { SpeciesId = speciesId, Target = target, EnemyPosition = enemyPosition, Offset = offset };
+
+        TrainerOccurrenceSearchResponsePayload response = await _session.SendAsync<DebugTrainerOccurrenceSearchRequestPayload, TrainerOccurrenceSearchResponsePayload>(TrackerCommands.DebugTrainerOccurrenceSearch, request, runId, cancellationToken);
+        if (locations is not null)
+            _trainerLocations?.Acknowledge(response.TrainerLocationIndexContextToken);
+
+        return response;
+    }
+
+    /// <summary>
+    /// Requests both generated fusion orientations for the active debug run.
+    /// </summary>
+    /// <param name="firstSpeciesId">The first normal fusion material.</param>
+    /// <param name="secondSpeciesId">The second normal fusion material.</param>
+    /// <param name="runId">The active run identifier when available.</param>
+    /// <param name="cancellationToken">The token that cancels the request.</param>
+    /// <returns>The active-run fusion outcomes.</returns>
+    internal Task<FusionPreviewResponsePayload> PreviewFusionAsync(string firstSpeciesId, string secondSpeciesId, string? runId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(firstSpeciesId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(secondSpeciesId);
+        _authorization.EnsureAll(DiagnosticCapabilities.FusionPreviewResults);
+        DebugFusionPreviewRequestPayload request = new() { FirstSpeciesId = firstSpeciesId, SecondSpeciesId = secondSpeciesId };
+        return _session.SendAsync<DebugFusionPreviewRequestPayload, FusionPreviewResponsePayload>(TrackerCommands.DebugFusionPreview, request, runId, cancellationToken);
+    }
+}

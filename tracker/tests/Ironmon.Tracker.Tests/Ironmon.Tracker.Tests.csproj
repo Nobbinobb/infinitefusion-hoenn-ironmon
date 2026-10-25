@@ -8,25 +8,38 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>
 
   <ItemGroup>
-    <TestDataInput Include="..\..\..\data\type_coverage.json" />
-    <TestDataInput Include="..\..\..\data\generation_custom_fusion_pool.bin" />
-    <TestDataInput Include="..\..\..\data\generation_profile.json" />
+    <TestDataInput Condition="'$(IronmonQuickTests)' != 'true'" Include="..\..\..\data\type_coverage.json" />
+    <TestDataInput Condition="'$(IronmonQuickTests)' != 'true'" Include="..\..\..\data\generation_custom_fusion_pool.bin" />
+    <TestDataInput Condition="'$(IronmonQuickTests)' != 'true'" Include="..\..\..\data\generation_profile.json" />
     <TestDataInput Include="..\..\..\tests\fixtures\custom-fusion-pool-v1.json" />
     <TestDataInput Include="..\..\..\tests\fixtures\generation-profile-v1.json" />
-    <ProjectReference Include="..\..\src\Ironmon.Tracker.Access\Ironmon.Tracker.Access.csproj" />
-    <ProjectReference Include="..\..\src\Ironmon.Tracker.Connection\Ironmon.Tracker.Connection.csproj" />
-    <ProjectReference Include="..\..\src\Ironmon.Tracker.Core\Ironmon.Tracker.Core.csproj" />
-    <ProjectReference Include="..\..\src\Ironmon.Tracker.Protocol\Ironmon.Tracker.Protocol.csproj" />
-    <ProjectReference Include="..\..\src\Ironmon.Tracker.Seeds\Ironmon.Tracker.Seeds.csproj" />
+    <TestDataInput Include="..\..\..\tests\fixtures\fusion-stats-v2.json" />
+    <TestDataInput Include="..\..\..\tests\fixtures\alpha-completion-native.json" />
+    <ProjectReference Include="..\..\src\Shared\Ironmon.Tracker.Access\Ironmon.Tracker.Access.csproj" />
+    <ProjectReference Include="..\..\src\Tracker\Ironmon.Tracker.Collection\Ironmon.Tracker.Collection.csproj" />
+    <ProjectReference Include="..\..\src\Tracker\Ironmon.Tracker.Connection\Ironmon.Tracker.Connection.csproj" />
+    <ProjectReference Include="..\..\src\Tracker\Ironmon.Tracker.Core\Ironmon.Tracker.Core.csproj" />
+    <ProjectReference Include="..\..\src\Tracker\Ironmon.Tracker.Protocol\Ironmon.Tracker.Protocol.csproj" />
+    <ProjectReference Include="..\..\src\Tracker\Ironmon.Tracker.Seeds\Ironmon.Tracker.Seeds.csproj" />
     <ProjectReference Include="..\..\tools\Ironmon.Tracker.AccessGenerator.Core\Ironmon.Tracker.AccessGenerator.Core.csproj" />
+    <ProjectReference Include="..\..\tools\Ironmon.Sqlite.QueryGenerator\Ironmon.Sqlite.QueryGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Collection\Fixtures\StorageV1.sql" />
+    <EmbeddedResource Include="Collection\Fixtures\StorageV2.sql" />
+    <EmbeddedResource Include="Collection\Fixtures\GeneratedQueries.sql" />
+    <EmbeddedResource Include="Collection\Fixtures\HotCaches\*.sql" />
+    <EmbeddedResource Include="Collection\Fixtures\GeneratedMaintenance\*.sql" />
+    <EmbeddedResource Include="Collection\Fixtures\ReadGeneratedScalar.sql" />
+    <Compile Remove="SqlGenerator\Fixtures\*.cs" />
+    <EmbeddedResource Include="SqlGenerator\Fixtures\*.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 </Project>

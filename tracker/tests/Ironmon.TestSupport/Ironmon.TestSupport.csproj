@@ -3,7 +3,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/Ironmon.Updater.Infrastructure/Ironmon.Updater.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Updater/Ironmon.Updater.Infrastructure/Ironmon.Updater.Infrastructure.csproj" />
     <InternalsVisibleTo Include="Ironmon.Setup.Tests" />
     <InternalsVisibleTo Include="Ironmon.Tracker.App.Tests" />
     <InternalsVisibleTo Include="Ironmon.Updater.Tests" />

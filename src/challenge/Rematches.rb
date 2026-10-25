@@ -16,6 +16,29 @@ module Ironmon
     pbMessage(_INTL(REMATCH_BLOCKED_MESSAGE))
     throw REMATCH_BLOCK_TAG, true
   end
+
+  def self.reject_direct_trainer_rematch
+    pbMessage(_INTL(REMATCH_BLOCKED_MESSAGE))
+    $PokemonGlobal.nextBattleBack = nil if $PokemonGlobal
+  end
+end
+
+alias ironmon_rematches_original_generate_trainer_rematch generateTrainerRematch
+def generateTrainerRematch(trainer, allow_double = true)
+  if Ironmon.rematch_battles_blocked?
+    Ironmon.reject_direct_trainer_rematch
+    return [trainer, false]
+  end
+  return ironmon_rematches_original_generate_trainer_rematch(trainer, allow_double)
+end
+
+alias ironmon_rematches_original_rival_rematch rivalRematch
+def rivalRematch(loseDialog)
+  if Ironmon.rematch_battles_blocked?
+    Ironmon.reject_direct_trainer_rematch
+    return false
+  end
+  return ironmon_rematches_original_rival_rematch(loseDialog)
 end
 
 alias ironmon_rematches_original_do_post_battle_action doPostBattleAction

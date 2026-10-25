@@ -95,11 +95,21 @@ module Ironmon
       @caught_fusion_index = 0
       @work_fiber = nil
       @work_deadline = nil
+      @pending_player_fusion_pairing = nil
+      @pending_fusion_closure_result = nil
       advance_until_ready if !deferred
     end
 
     def generation_profile_id
       return @recipe["generation_profile_id"].to_s
+    end
+
+    def archived?
+      return @archive_requested == true || Ironmon.tracker_archived_lookup_recipe?(@recipe)
+    end
+
+    def request_archive
+      @archive_requested = true
     end
 
     def configure_material_pair_preparation(native)
@@ -117,14 +127,19 @@ module Ironmon
       @work_deadline = Ironmon.tracker_uptime_seconds + duration
       @work_fiber = nil if @work_fiber && !@work_fiber.alive?
       @work_fiber ||= Fiber.new do
-        while ![:complete, :failed].include?(@phase)
+        while @pending_player_fusion_pairing || ![:complete, :failed].include?(@phase)
+          if @pending_player_fusion_pairing
+            apply_pending_player_fusion_pairing
+            cooperative_checkpoint
+          end
+          break if [:complete, :failed].include?(@phase)
           advance_work_unit
           Fiber.yield if @phase == :player_fusions
           cooperative_checkpoint
         end
       end
       @work_fiber.resume if @work_fiber.alive?
-      return @phase == :complete
+      return complete?
     rescue Exception
       @work_fiber = nil
       raise
@@ -156,7 +171,7 @@ module Ironmon
     end
 
     def complete?
-      return @phase == :complete
+      return @phase == :complete && !@pending_player_fusion_pairing
     end
 
     def tracker_closure_unavailable?
@@ -165,7 +180,7 @@ module Ironmon
     end
 
     def background_advance_allowed?
-      return ![:complete, :failed].include?(@phase)
+      return !!@pending_player_fusion_pairing || ![:complete, :failed].include?(@phase)
     end
 
     def background_requested?
@@ -182,6 +197,7 @@ module Ironmon
     end
 
     def scheduled_advance_allowed?
+      return true if @pending_player_fusion_pairing
       return ![:player_fusions, :complete, :failed].include?(@phase)
     end
 
@@ -216,14 +232,45 @@ module Ironmon
 
     def apply_fusion_closure_result(result)
       return if !result
+      validate_fusion_closure_job(result)
+      @work_fiber = nil
+      @work_deadline = nil
+      return complete_fusion_closure_result(result)
+    end
+
+    def queue_player_fusion_pairing(assignment)
+      @pending_player_fusion_pairing ||= assignment
+    end
+
+    def player_fusion_pairing_pending?
+      return !!@pending_player_fusion_pairing
+    end
+
+    def apply_pending_player_fusion_pairing
+      Ironmon.import_tracker_player_fusion_pairing(
+        @pending_player_fusion_pairing, proc { cooperative_checkpoint }
+      )
+    ensure
+      @pending_player_fusion_pairing = nil
+    end
+
+    def queue_fusion_closure_result(result)
+      return if !result
+      validate_fusion_closure_job(result)
+      @pending_fusion_closure_result ||= result
+      @phase = :tracker_closure_result
+    end
+
+    def validate_fusion_closure_job(result)
       if !@material_pairs_prepared || !result.is_a?(Hash) ||
          result["job_id"].to_s != fusion_closure_job_id
         raise TrackerLookupError.new(
           "invalid_query", "The tracker fusion-closure job is stale."
         )
       end
-      @work_fiber = nil
-      @work_deadline = nil
+    end
+
+    def complete_fusion_closure_result(result)
       direct_fusions = tracker_direct_encounter_fusion_numbers(result)
       if !@derived_caught_fusions_expanded && !direct_fusions.empty?
         begin_derived_caught_fusion_expansion(direct_fusions)
@@ -253,7 +300,8 @@ module Ironmon
       end
       values = [] if values.nil?
       maximum = @direct_fusion_pair_offsets.length * 2
-      invalid_number = values.is_a?(Array) && values.any? do |number|
+      invalid_number = values.is_a?(Array) && values.each_with_index.any? do |number, index|
+        cooperative_checkpoint if (index % 128).zero?
         !number.is_a?(Integer) || number <= NB_POKEMON ||
           !Ironmon.custom_fusion_pool_service.include_number?(number)
       end
@@ -287,7 +335,8 @@ module Ironmon
       end
       maximum_number = (NB_POKEMON * NB_POKEMON) + NB_POKEMON
       maximum_words = (maximum_number >> 5) + 1
-      if words.length != maximum_words || words.any? do |word|
+      if words.length != maximum_words || words.each_with_index.any? do |word, index|
+           cooperative_checkpoint if (index % 128).zero?
            !word.is_a?(Integer) || word < 0 || word > 0xFFFFFFFF
          end
         raise TrackerLookupError.new(
@@ -314,7 +363,8 @@ module Ironmon
       shift = 0
       base64_value = 0
       base64_bits = 0
-      encoded.each_byte do |character|
+      encoded.each_byte.with_index do |character, index|
+        cooperative_checkpoint if (index % 256).zero?
         break if character == 61
         sextet = if character >= 65 && character <= 90
                    character - 65
@@ -499,7 +549,7 @@ module Ironmon
 
     def fusion_closure_work_snapshot
       return nil if !@material_pairs_prepared ||
-        @fusion_mapping_complete
+        @fusion_mapping_complete || @pending_fusion_closure_result
       @player_fusion_until = Ironmon.tracker_uptime_seconds +
         PLAYER_FUSION_LEASE_SECONDS
       info = Ironmon.custom_fusion_pool_info
@@ -528,7 +578,7 @@ module Ironmon
         "direct_encounter_only" => direct_encounter_only,
         "reversible_fusion_ids" => direct_encounter_only ? [] :
           @direct_caught_fusions.keys.map do |identity|
-            GameData::Species.get(identity).id_number
+            species_number(identity)
           end.sort,
         "base_proofs" => direct_encounter_only ? [] :
           tracker_base_proof_snapshot,
@@ -560,9 +610,12 @@ module Ironmon
           [@direct_fusion_pair_offsets.length] + @direct_fusion_pair_offsets +
           [@direct_caught_fusions.length] +
           @direct_caught_fusions.keys.map do |identity|
-            GameData::Species.get(identity).id_number
+            species_number(identity)
           end.sort
-      )
+      ) do |value|
+        cooperative_checkpoint
+        value.to_s
+      end
       @fusion_closure_job_id = [
         @recipe["run_id"], @recipe["seed"],
         @recipe["player_fusion_generator_version"], fingerprint
@@ -577,11 +630,10 @@ module Ironmon
       return @tracker_base_proof_snapshot if @tracker_base_proof_snapshot
       result = []
       @plans.each do |identity, plans|
+        cooperative_checkpoint
         next if plans.empty?
-        species = GameData::Species.try_get(identity)
-        next if !species
         result << {
-          "species_id" => species.id_number,
+          "species_id" => species_number(identity),
           "plans" => plans.map do |plan|
             {
               "items" => stringify_counts(plan[:items]),
@@ -605,7 +657,9 @@ module Ironmon
 
     def tracker_custom_fusion_pool_membership
       @tracker_custom_fusion_pool_membership ||=
-        [Ironmon.fusion_predecessor_index.packed_pool_membership].pack("m0")
+        [Ironmon.fusion_predecessor_index(
+          proc { cooperative_checkpoint }
+        ).packed_pool_membership].pack("m0")
       return @tracker_custom_fusion_pool_membership
     end
 
@@ -637,6 +691,8 @@ module Ironmon
 
     def advance_work_unit
       case @phase
+      when :tracker_closure_result
+        apply_pending_fusion_closure_result
       when :prepare_generators
         Ironmon.sprite_credit_catalog(proc { cooperative_checkpoint })
         prepare_generators
@@ -695,11 +751,24 @@ module Ironmon
       end
     end
 
+    def apply_pending_fusion_closure_result
+      complete_fusion_closure_result(@pending_fusion_closure_result)
+      @pending_fusion_closure_result = nil
+    rescue Exception => error
+      @pending_fusion_closure_result = nil
+      @phase = :failed
+      @failure_reason = :invalid_tracker_closure_result
+      @failure_message = error.message
+      raise
+    end
+
     def prepare_encounter_tables
       @encounter_tables = []
       mode = encounter_mode
       mode.each do |data|
         data.types.each do |encounter_type, entries|
+          cooperative_checkpoint
+          next if !Ironmon.tracker_area_encounter_table_available?(data.map, encounter_type)
           @encounter_tables << [mode.name, data.map, data.version,
                                 encounter_type, entries]
         end
@@ -718,10 +787,13 @@ module Ironmon
         return
       end
       area = @derived_encounter_areas[@derived_encounter_area_index]
-      metadata = Ironmon.tracker_area_encounter_metadata(area, @recipe)
+      metadata = Ironmon.tracker_area_encounter_metadata(
+        area, @recipe, proc { cooperative_checkpoint }
+      )
       Ironmon.tracker_area_derived_fusion_material_pair_codes(
-        metadata, @recipe
+        metadata, @recipe, proc { cooperative_checkpoint }
       ).each do |pair_code|
+        cooperative_checkpoint
         @direct_fusion_material_pairs[pair_code] = true
       end
       @derived_encounter_area_index += 1
@@ -757,11 +829,10 @@ module Ironmon
     def process_encounter_table(table)
       mode_name, map_id, version, encounter_type, entries = table
       generator = species_generator
-      mapped = entries.each_with_index.map do |entry, slot|
+      entries.each_with_index do |entry, slot|
+        cooperative_checkpoint
         context = [:table, mode_name, map_id, version, encounter_type, slot]
-        generator.map(entry[1], context)
-      end
-      mapped.each_with_index do |identity, slot|
+        identity = normalize_species_id(generator.map_number(entry[1], context))
         add_direct_source(
           identity, "Wild encounter",
           "Wild encounter on #{pbGetMapNameFromId(map_id)} " +
@@ -772,9 +843,12 @@ module Ironmon
     end
 
     def seed_starter_sources
-      generator = species_generator
+      generator = @configuration.schema_version >= Configuration::SCHEMA_VERSION ?
+        Ironmon.starter_species_generator(@recipe["seed"], @configuration,
+          @recipe["species_generator_version"]) : species_generator
       [1, 4, 7].each_with_index do |source, slot|
-        identity = generator.map(source, [:starter, slot])
+        cooperative_checkpoint
+        identity = normalize_species_id(generator.map_number(source, [:starter, slot]))
         constraint = { :starter => slot }
         add_direct_source(
           identity, "Starter choice", "Starter choice #{slot + 1}",
@@ -822,9 +896,17 @@ module Ironmon
     end
 
     def apply_authored_source_catalog_entry(entry)
-      identity = GameData::Species.get(entry["species_id"].to_i).id
+      identity = normalize_species_id(entry["species_id"].to_i)
       if entry["mapping_kind"] == "wild"
-        identity = species_generator.map(identity, entry["mapping_context"])
+        generator = if !entry["starter_slot"].nil? && @configuration.schema_version >= Configuration::SCHEMA_VERSION
+                      Ironmon.starter_species_generator(@recipe["seed"], @configuration,
+                        @recipe["species_generator_version"])
+                    else
+                      species_generator
+                    end
+        identity = normalize_species_id(
+          generator.map_number(identity, entry["mapping_context"])
+        )
       end
       constraints = entry["starter_slot"] ?
         { :starter => entry["starter_slot"].to_i } : nil
@@ -1200,8 +1282,15 @@ module Ironmon
 
     def add_direct_source(identity, reason, detail, constraints, caught,
                           source_id = nil)
-      species = GameData::Species.try_get(identity)
-      return if !species || !Ironmon.tracker_lookup_species_available?(species)
+      fusion = Ironmon.fusion_species_identity(identity)
+      if fusion
+        return if !Ironmon.custom_fusion_pool_service.include_number?(species_number(fusion))
+        key = fusion
+      else
+        species = GameData::Species.try_get(identity)
+        return if !species || !Ironmon.normal_species_pool.include?(species.id)
+        key = species.id
+      end
       plan = {
         :items => {},
         :constraints => constraints || {},
@@ -1210,10 +1299,10 @@ module Ironmon
         :path => path_step(nil, nil, detail),
         :path_length => 1
       }
-      added = add_plan(species.id, plan)
-      if added && caught && species.is_a?(GameData::FusedSpecies)
-        @direct_caught_fusions[species.id] ||= []
-        @direct_caught_fusions[species.id] << plan
+      added = add_plan(key, plan)
+      if added && caught && fusion
+        @direct_caught_fusions[key] ||= []
+        @direct_caught_fusions[key] << plan
       end
     end
 
@@ -1357,6 +1446,7 @@ module Ironmon
     def build_resource_supply
       Ironmon.tracker_area_catalog.each do |area|
         area["items"].each do |entry|
+          cooperative_checkpoint
           Ironmon.tracker_area_resolved_item_ids(entry, @recipe).each do |item_id|
             @resource_supply[item_id.to_sym] += 1
           end
@@ -1364,6 +1454,7 @@ module Ironmon
       end
       if defined?(MiningGameScene) && MiningGameScene.const_defined?(:ITEMS)
         MiningGameScene::ITEMS.each do |entry|
+          cooperative_checkpoint
           item = GameData::Item.try_get(entry[0])
           next if !item
           @resource_supply[item.id] = MAX_REQUESTED_SPECIES
@@ -1507,6 +1598,7 @@ module Ironmon
       if !@caught_fusion_entries
         @caught_fusion_entries = []
         @direct_caught_fusions.each do |identity, plans|
+          cooperative_checkpoint
           plans.each { |plan| @caught_fusion_entries << [identity, plan] }
         end
       end
@@ -1522,8 +1614,10 @@ module Ironmon
     end
 
     def apply_caught_fusion_transformation(identity, plan)
-      species = GameData::Species.get(identity)
-      components = [species.body_pokemon, species.head_pokemon]
+      number = species_number(identity)
+      body = (number - 1) / NB_POKEMON
+      head = number - (body * NB_POKEMON)
+      components = [GameData::Species.get(body), GameData::Species.get(head)]
       if @configuration.unfusion_setting !=
          Configuration::UNFUSION_PLAYER_CHOICE
         components.each do |component|
@@ -1553,17 +1647,18 @@ module Ironmon
     end
 
     def apply_derived_caught_fusion_transformation(number)
-      species = GameData::Species.get(number)
+      identity = normalize_species_id(number)
+      name = Ironmon.tracker_search_species_name(identity)
       plan = {
         :items => {}, :constraints => {}, :source_uses => {},
         :reason => "Derived wild fusion",
-        :path => path_step(nil, nil, "Catch the derived wild fusion #{species.name}"),
+        :path => path_step(nil, nil, "Catch the derived wild fusion #{name}"),
         :path_length => 1
       }
-      add_plan(species.id, plan)
-      @direct_caught_fusions[species.id] ||= []
-      @direct_caught_fusions[species.id] << plan
-      apply_caught_fusion_transformation(species.id, plan)
+      add_plan(identity, plan)
+      @direct_caught_fusions[identity] ||= []
+      @direct_caught_fusions[identity] << plan
+      apply_caught_fusion_transformation(identity, plan)
     end
 
     def caught_unfusion_choice_key(identity, plan)
@@ -1573,8 +1668,8 @@ module Ironmon
 
     def prepare_material_pairs
       @material_ids = @plans.keys.select do |identity|
-        next false if @requested_native_material_pair_preparation == true &&
-          Ironmon.fusion_species_identity(identity)
+        cooperative_checkpoint
+        next false if Ironmon.fusion_species_identity(identity)
         species = GameData::Species.try_get(identity)
         species && !species.is_a?(GameData::FusedSpecies) &&
           !@plans[identity].empty?
@@ -1585,8 +1680,7 @@ module Ironmon
       @native_material_pair_preparation = @requested_native_material_pair_preparation == true
       if @native_material_pair_preparation
         prepare_direct_material_pair_offsets
-        @material_pairs_prepared = true
-        @phase = @pair_count > 0 ? :player_fusions : :complete
+        finish_material_pair_preparation
         return
       end
       pair_offset = 0
@@ -1604,6 +1698,14 @@ module Ironmon
           pair_offset += 1
         end
       end
+      finish_material_pair_preparation
+    end
+
+    def finish_material_pair_preparation
+      fusion_closure_job_id
+      tracker_custom_fusion_pool_membership
+      tracker_base_proof_snapshot
+      tracker_resource_supply_snapshot
       @material_pairs_prepared = true
       @phase = @pair_count > 0 ? :player_fusions : :complete
     end
@@ -1850,8 +1952,16 @@ module Ironmon
     end
 
     def normalize_species_id(species)
+      fusion = Ironmon.fusion_species_identity(species)
+      return fusion if fusion
       data = species.respond_to?(:id) ? species : GameData::Species.get(species)
       return data.id
+    end
+
+    def species_number(identity)
+      match = /\AB(\d+)H(\d+)\z/.match(identity.to_s)
+      return (match[1].to_i * NB_POKEMON) + match[2].to_i if match
+      return GameData::Species.get(identity).id_number
     end
 
     def stringify_counts(counts)
@@ -1868,7 +1978,10 @@ module Ironmon
   def self.tracker_obtainability_service(recipe)
     key = recipe["run_id"]
     service = tracker_obtainability_services[key]
-    return service if service
+    if service
+      service.request_archive if tracker_archived_lookup_recipe?(recipe)
+      return service
+    end
     service = TrackerObtainabilityService.new(recipe, true)
     tracker_store_bounded(tracker_obtainability_services, key, service, 4)
     return service
@@ -1889,16 +2002,21 @@ module Ironmon
       )
     end
     payload ||= {}
-    import_tracker_player_fusion_pairing(payload["player_fusion_pairing"]) if
+    announce_tracker_active_run_preparation_ready if
+      payload["foreground"] == true && !tracker_active_run_preparation_ready?
+    recipe = tracker_debug_active_recipe
+    service = tracker_obtainability_service(recipe)
+    service.queue_player_fusion_pairing(payload["player_fusion_pairing"]) if
       payload["player_fusion_pairing"]
     request = {}
     ["foreground", "fusion_closure_result", "fusion_closure_worker_unavailable",
      "use_native_material_pair_preparation"].each do |key|
       request[key] = payload[key] if payload.key?(key)
     end
-    snapshot = tracker_obtainability_for_recipe(request, tracker_debug_active_recipe)
+    snapshot = tracker_obtainability_for_recipe(request, recipe)
     response = {}
-    response["player_fusion_pairing_ready"] = player_fusion_pairing_ready?
+    response["player_fusion_pairing_ready"] = player_fusion_pairing_ready? if
+      !service.player_fusion_pairing_pending?
     ["phase", "complete", "background_complete", "processed_pairs",
      "total_pairs", "obtainable_count", "fusion_closure_work"].each do |key|
       response[key] = snapshot[key] if snapshot.key?(key)
@@ -1916,6 +2034,12 @@ module Ironmon
 
   def self.tracker_obtainability_for_recipe(payload, recipe)
     payload ||= {}
+    if tracker_lookup_transition_pending?
+      return { "phase" => "waiting_for_reset", "complete" => false,
+        "background_complete" => false, "processed_pairs" => 0, "total_pairs" => 0,
+        "obtainable_count" => 0, "obtainable_species_ids" => [],
+        "obtainable_evolution_edge_keys" => [] }
+    end
     species_key = payload["species_id"].to_s.split(":", 2)[0].to_s
     species = species_key.empty? ? nil :
       GameData::Species.try_get(species_key.to_sym)
@@ -1946,7 +2070,7 @@ module Ironmon
     )
     service.report_tracker_closure_unavailable if
       payload["fusion_closure_worker_unavailable"] == true
-    service.apply_fusion_closure_result(payload["fusion_closure_result"])
+    service.queue_fusion_closure_result(payload["fusion_closure_result"])
     service.request_background
     service.request_foreground if payload["foreground"] == true
     prefix = "#{recipe["run_id"]}|"
@@ -1984,20 +2108,26 @@ module Ironmon
   end
 
   def self.update_tracker_obtainability
-    return if !tracker_obtainability_runtime_ready?
-    foreground = tracker_obtainability_services.values.select do |service|
+    return if tracker_opening_loss_reset_pending?
+    archive_menu = tracker_archive_lookup_menu_ready?
+    return if !archive_menu && !tracker_obtainability_session_ready?
+    services = tracker_obtainability_services.values
+    services = services.select { |service| service.archived? } if archive_menu
+    foreground = services.select do |service|
       service.foreground_requested?
     end.max_by { |service| service.foreground_deadline }
-    if foreground
+    if foreground &&
+       (archive_menu || tracker_battle_id || tracker_obtainability_runtime_ready?)
+      milliseconds = archive_menu || tracker_battle_id ?
+        TrackerObtainabilityService::BACKGROUND_MILLISECONDS :
+        TrackerObtainabilityService::FOREGROUND_MILLISECONDS
       with_generation_profile(foreground.generation_profile_id) do
-        foreground.advance_for_milliseconds(
-          TrackerObtainabilityService::FOREGROUND_MILLISECONDS
-        )
+        foreground.advance_for_milliseconds(milliseconds)
       end
       return
     end
-    return if !tracker_obtainability_background_safe?
-    service = tracker_obtainability_services.values.select do |candidate|
+    return if !archive_menu && !tracker_obtainability_background_safe?
+    service = services.select do |candidate|
       candidate.background_requested?
     end.max_by { |candidate| candidate.background_deadline }
     return if !service
@@ -2034,11 +2164,44 @@ module Ironmon
     @tracker_obtainability_ready_scene = nil
   end
 
-  def self.tracker_obtainability_runtime_ready?
-    return false if !active? || !$PokemonGlobal || tracker_battle_id
+  def self.tracker_obtainability_session_ready?
+    return false if !active? || !$PokemonGlobal
+    return tracker_lookup_connection_ready?
+  end
+
+  def self.tracker_lookup_connection_ready?
     return false if !tracker_connection.connected?
     return false if instance_variable_get(:@reset_in_progress)
     return false if instance_variable_get(:@tracker_seed_import_pending)
+    return false if tracker_opening_loss_reset_pending?
+    return true
+  end
+
+  def self.tracker_opening_loss_reset_pending?
+    return false if @main_menu_open == true
+    return true if @early_game_loss_reset_queued
+    return failed_run_locked? && $game_switches &&
+      !$game_switches[EARLY_GAME_SWITCH_FIRST_RIVAL_WON]
+  end
+
+  def self.tracker_lookup_transition_pending?
+    return @reset_in_progress || @tracker_seed_import_pending ||
+      tracker_opening_loss_reset_pending?
+  end
+
+  def self.tracker_archive_lookup_menu_ready?
+    return false if !tracker_lookup_connection_ready? || @game_management_request
+    return @main_menu_open == true &&
+      ["title_screen", "main_menu"].include?(@management_screen_state)
+  end
+
+  def self.tracker_archived_lookup_recipe?(recipe)
+    return recipe.is_a?(Hash) && !recipe["active_run"] &&
+      !["", "active", "active_debug"].include?(recipe["result"].to_s)
+  end
+
+  def self.tracker_obtainability_runtime_ready?
+    return false if !tracker_obtainability_session_ready? || tracker_battle_id
     return false if !defined?($scene) || !defined?(Scene_Map) ||
       !$scene.is_a?(Scene_Map)
     return @tracker_obtainability_ready_scene.equal?($scene)

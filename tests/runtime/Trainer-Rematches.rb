@@ -61,6 +61,7 @@ module IronmonTrainerRematchRuntimeTests
   def self.run
     test_scope
     test_battle_action_is_stopped
+    test_direct_rematches_are_stopped
     File.binwrite(OUTPUT_PATH, "trainer rematch runtime tests passed\n")
   rescue Exception => exception
     File.binwrite(
@@ -68,6 +69,27 @@ module IronmonTrainerRematchRuntimeTests
       "#{exception.class}: #{exception.message}\n#{exception.backtrace.join("\n")}\n"
     )
     raise
+  end
+
+  def self.test_direct_rematches_are_stopped
+    messages = []
+    singleton = class << Ironmon; self; end
+    original_global = $PokemonGlobal
+    $PokemonGlobal = PokemonGlobalMetadata.new
+    singleton.send(:define_method, :pbMessage) { |message| messages << message }
+    trainer = Object.new
+    before = Marshal.dump(trainer)
+    with_ironmon_active(true) do
+      $PokemonGlobal.nextBattleBack = "test-backdrop"
+      assert(generateTrainerRematch(trainer) == [trainer, false], "direct trainer rematch returns a loss without starting battle or team growth")
+      assert(Marshal.dump(trainer) == before, "blocked direct trainer rematch leaves the trainer unchanged")
+      assert(!$PokemonGlobal.nextBattleBack, "blocked direct rematch clears the pending backdrop")
+      assert(rivalRematch("test dialogue") == false, "direct rival rematch stops before accessing the rival or applying rewards")
+      assert(messages == [Ironmon::REMATCH_BLOCKED_MESSAGE] * 2, "both direct paths explain why the rematch is deferred")
+    end
+  ensure
+    singleton.send(:remove_method, :pbMessage) if singleton
+    $PokemonGlobal = original_global
   end
 end
 

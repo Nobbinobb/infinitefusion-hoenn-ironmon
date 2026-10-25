@@ -60,6 +60,7 @@ public sealed class RunCompatibilityFingerprintTests
             CreateRecipe(evolutionFingerprint: "evolutions-b"),
             CreateRecipe(moveFingerprint: "moves-b"),
             CreateRecipe(fusionFingerprint: "fusions-b"),
+            CreateRecipe(playerFusionVersion: 2),
             CreateRecipe(itemFingerprint: "items-b")
         ];
 
@@ -99,8 +100,9 @@ public sealed class RunCompatibilityFingerprintTests
     /// <param name="moveFingerprint">The move-pool fingerprint.</param>
     /// <param name="fusionFingerprint">The player-fusion-pool fingerprint.</param>
     /// <param name="itemFingerprint">The ground-item-pool fingerprint.</param>
+    /// <param name="playerFusionVersion">The pinned player-fusion algorithm version.</param>
     /// <returns>A complete completed-run recipe.</returns>
-    private static CompletedRunRecipePayload CreateRecipe(string runId = "run-1", long seed = 123456789, string result = "won", string gameVersion = "6.7.2", string ironmonVersion = "0.7.6", string generationProfileId = _testGenerationProfileId, string dataMode = "classic", string wildPolicy = "mixed", string speciesFingerprint = "species-a", string abilityFingerprint = "abilities-a", string baseStatFingerprint = "stats-a", string evolutionFingerprint = "evolutions-a", string moveFingerprint = "moves-a", string fusionFingerprint = "fusions-a", string itemFingerprint = "items-a")
+    private static CompletedRunRecipePayload CreateRecipe(string runId = "run-1", long seed = 123456789, string result = "won", string gameVersion = "6.7.2", string ironmonVersion = "0.7.6", string generationProfileId = _testGenerationProfileId, string dataMode = "classic", string wildPolicy = "mixed", string speciesFingerprint = "species-a", string abilityFingerprint = "abilities-a", string baseStatFingerprint = "stats-a", string evolutionFingerprint = "evolutions-a", string moveFingerprint = "moves-a", string fusionFingerprint = "fusions-a", string itemFingerprint = "items-a", int playerFusionVersion = 1)
     {
         return new CompletedRunRecipePayload
         {
@@ -149,7 +151,7 @@ public sealed class RunCompatibilityFingerprintTests
                 Tutor = new TutorSourceRecipePayload { CatalogFingerprint = "tutor-catalog-a", SourceFingerprint = "tutor-source-a" },
                 FusionTutor = new TutorSourceRecipePayload { CatalogFingerprint = "fusion-tutor-catalog-a", SourceFingerprint = "fusion-tutor-source-a" }
             },
-            PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 1, PoolSize = 174348, PoolFingerprint = fusionFingerprint },
+            PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = playerFusionVersion, PoolSize = 174348, PoolFingerprint = fusionFingerprint },
             ItemGenerator = new ItemGeneratorRecipePayload
             {
                 Version = 1,

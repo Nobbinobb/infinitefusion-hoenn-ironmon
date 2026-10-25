@@ -46,7 +46,7 @@ module Ironmon
       "tutor_source_fingerprint" => $PokemonGlobal.ironmon_tutor_source_fingerprint,
       "fusion_tutor_catalog_fingerprint" => $PokemonGlobal.ironmon_fusion_tutor_catalog_fingerprint,
       "fusion_tutor_source_fingerprint" => $PokemonGlobal.ironmon_fusion_tutor_source_fingerprint,
-      "player_fusion_generator_version" => PlayerFusionMapper::SCHEMA_VERSION,
+      "player_fusion_generator_version" => player_fusion_generator_version,
       "item_generator" => item_generator_recipe,
       "item_mappings" => tracker_item_mapping_recipe(
         $PokemonGlobal.randomItemsHash

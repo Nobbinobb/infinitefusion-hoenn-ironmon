@@ -1,28 +1,40 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/Ironmon.SpriteLibrary/Ironmon.SpriteLibrary.csproj" />
-    <Project Path="src/Ironmon.Setup.Core/Ironmon.Setup.Core.csproj" />
-    <Project Path="src/Ironmon.Setup/Ironmon.Setup.csproj" />
-    <Project Path="src/Ironmon.Tracker.Access/Ironmon.Tracker.Access.csproj" />
-    <Project Path="src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj" />
-    <Project Path="src/Ironmon.Tracker.Connection/Ironmon.Tracker.Connection.csproj" />
-    <Project Path="src/Ironmon.Tracker.Core/Ironmon.Tracker.Core.csproj" />
-    <Project Path="src/Ironmon.Tracker.Protocol/Ironmon.Tracker.Protocol.csproj" />
-    <Project Path="src/Ironmon.Tracker.Seeds/Ironmon.Tracker.Seeds.csproj" />
-    <Project Path="src/Ironmon.Tracker.UI/Ironmon.Tracker.UI.csproj" />
-    <Project Path="src/Ironmon.Updater.Core/Ironmon.Updater.Core.csproj" />
-    <Project Path="src/Ironmon.Updater.Infrastructure/Ironmon.Updater.Infrastructure.csproj" />
-    <Project Path="src/Ironmon.Updater/Ironmon.Updater.csproj" />
+  <Folder Name="/src/" />
+  <Folder Name="/src/Tracker/">
+    <Project Path="src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj" />
+    <Project Path="src/Tracker/Ironmon.Tracker.Connection/Ironmon.Tracker.Connection.csproj" />
+    <Project Path="src/Tracker/Ironmon.Tracker.AchievementOverlay/Ironmon.Tracker.AchievementOverlay.csproj" />
+    <Project Path="src/Tracker/Ironmon.Tracker.Collection/Ironmon.Tracker.Collection.csproj" />
+    <Project Path="src/Tracker/Ironmon.Tracker.Core/Ironmon.Tracker.Core.csproj" />
+    <Project Path="src/Tracker/Ironmon.Tracker.Protocol/Ironmon.Tracker.Protocol.csproj" />
+    <Project Path="src/Tracker/Ironmon.Tracker.Seeds/Ironmon.Tracker.Seeds.csproj" />
+  </Folder>
+  <Folder Name="/src/Setup/">
+    <Project Path="src/Setup/Ironmon.Setup.Core/Ironmon.Setup.Core.csproj" />
+    <Project Path="src/Setup/Ironmon.Setup/Ironmon.Setup.csproj" />
+  </Folder>
+  <Folder Name="/src/Updater/">
+    <Project Path="src/Updater/Ironmon.Updater.Core/Ironmon.Updater.Core.csproj" />
+    <Project Path="src/Updater/Ironmon.Updater.Infrastructure/Ironmon.Updater.Infrastructure.csproj" />
+    <Project Path="src/Updater/Ironmon.Updater/Ironmon.Updater.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Ironmon.Sqlite/Ironmon.Sqlite.csproj" />
+    <Project Path="src/Shared/Ironmon.SpriteLibrary/Ironmon.SpriteLibrary.csproj" />
+    <Project Path="src/Shared/Ironmon.Tracker.Access/Ironmon.Tracker.Access.csproj" />
+    <Project Path="src/Shared/Ironmon.Tracker.UI/Ironmon.Tracker.UI.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Ironmon.TestSupport/Ironmon.TestSupport.csproj" />
     <Project Path="tests/Ironmon.Setup.Tests/Ironmon.Setup.Tests.csproj" />
     <Project Path="tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj" />
+    <Project Path="tests/Ironmon.Tracker.AchievementOverlay.Tests/Ironmon.Tracker.AchievementOverlay.Tests.csproj" />
     <Project Path="tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj" />
     <Project Path="tests/Ironmon.Updater.Tests/Ironmon.Updater.Tests.csproj" />
     <Project Path="tests/Ironmon.Updater.CrashHost/Ironmon.Updater.CrashHost.csproj" />
   </Folder>
   <Folder Name="/tools/">
+    <Project Path="tools/Ironmon.Sqlite.QueryGenerator/Ironmon.Sqlite.QueryGenerator.csproj" />
     <Project Path="tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj" />
     <Project Path="tools/Ironmon.SpriteSizeTool/Ironmon.SpriteSizeTool.csproj" />
     <Project Path="tools/Ironmon.Tracker.AccessGenerator.App/Ironmon.Tracker.AccessGenerator.App.csproj" />

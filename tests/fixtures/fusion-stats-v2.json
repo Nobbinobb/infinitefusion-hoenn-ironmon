@@ -1,0 +1,770 @@
+[
+  {
+    "seed": 1279932942,
+    "resultId": 75744,
+    "displayBody": "LAPRAS",
+    "displayHead": "GALLADE",
+    "bodyStats": [
+      90,
+      126,
+      122,
+      22,
+      73,
+      102
+    ],
+    "headStats": [
+      101,
+      132,
+      18,
+      119,
+      132,
+      16
+    ],
+    "stats": [
+      98,
+      128,
+      110,
+      86,
+      125,
+      84
+    ],
+    "reveal": 4,
+    "label": 0
+  },
+  {
+    "seed": 634927123,
+    "resultId": 244384,
+    "displayBody": "SCOLIPEDE",
+    "displayHead": "FERALIGATR",
+    "bodyStats": [
+      106,
+      73,
+      107,
+      10,
+      100,
+      89
+    ],
+    "headStats": [
+      99,
+      86,
+      26,
+      98,
+      115,
+      106
+    ],
+    "stats": [
+      100,
+      76,
+      90,
+      68,
+      113,
+      90
+    ],
+    "reveal": 3,
+    "label": 0
+  },
+  {
+    "seed": 1359544124,
+    "resultId": 24381,
+    "displayBody": "GOLBAT",
+    "displayHead": "JUMPLUFF",
+    "bodyStats": [
+      71,
+      90,
+      69,
+      88,
+      46,
+      91
+    ],
+    "headStats": [
+      105,
+      78,
+      93,
+      49,
+      106,
+      29
+    ],
+    "stats": [
+      101,
+      86,
+      71,
+      61,
+      93,
+      77
+    ],
+    "reveal": 4,
+    "label": 0
+  },
+  {
+    "seed": 2513366,
+    "resultId": 166083,
+    "displayBody": "GALLADE",
+    "displayHead": "QUAGSIRE",
+    "bodyStats": [
+      23,
+      114,
+      108,
+      91,
+      80,
+      102
+    ],
+    "headStats": [
+      86,
+      23,
+      90,
+      50,
+      91,
+      90
+    ],
+    "stats": [
+      79,
+      104,
+      104,
+      63,
+      88,
+      98
+    ],
+    "reveal": 3,
+    "label": 0
+  },
+  {
+    "seed": 981038959,
+    "resultId": 117277,
+    "displayBody": "GIRAFARIG",
+    "displayHead": "RESHIRAM",
+    "bodyStats": [
+      33,
+      116,
+      78,
+      97,
+      41,
+      90
+    ],
+    "headStats": [
+      153,
+      12,
+      64,
+      179,
+      113,
+      159
+    ],
+    "stats": [
+      140,
+      81,
+      76,
+      162,
+      88,
+      103
+    ],
+    "reveal": 5,
+    "label": 1
+  },
+  {
+    "seed": 705940527,
+    "resultId": 256914,
+    "displayBody": "GOODRA",
+    "displayHead": "PIDGEOT",
+    "bodyStats": [
+      38,
+      63,
+      172,
+      169,
+      27,
+      131
+    ],
+    "headStats": [
+      109,
+      44,
+      79,
+      70,
+      100,
+      77
+    ],
+    "stats": [
+      84,
+      58,
+      140,
+      79,
+      85,
+      124
+    ],
+    "reveal": 4,
+    "label": 1
+  },
+  {
+    "seed": 796965508,
+    "resultId": 309287,
+    "displayBody": "SWALOT",
+    "displayHead": "CLAYDOL",
+    "bodyStats": [
+      70,
+      88,
+      135,
+      88,
+      26,
+      60
+    ],
+    "headStats": [
+      100,
+      42,
+      121,
+      65,
+      55,
+      117
+    ],
+    "stats": [
+      89,
+      83,
+      132,
+      69,
+      51,
+      79
+    ],
+    "reveal": 1,
+    "label": 1
+  },
+  {
+    "seed": 1026057593,
+    "resultId": 41138,
+    "displayBody": "VICTREEBEL",
+    "displayHead": "BLISSEY",
+    "bodyStats": [
+      44,
+      46,
+      83,
+      134,
+      83,
+      100
+    ],
+    "headStats": [
+      133,
+      28,
+      87,
+      66,
+      135,
+      91
+    ],
+    "stats": [
+      123,
+      43,
+      83,
+      88,
+      124,
+      96
+    ],
+    "reveal": 5,
+    "label": 1
+  },
+  {
+    "seed": 1489784152,
+    "resultId": 273941,
+    "displayBody": "GOLISOPOD",
+    "displayHead": "GROUDON",
+    "bodyStats": [
+      31,
+      32,
+      144,
+      122,
+      145,
+      56
+    ],
+    "headStats": [
+      183,
+      29,
+      74,
+      72,
+      139,
+      173
+    ],
+    "stats": [
+      132,
+      30,
+      129,
+      76,
+      140,
+      67
+    ],
+    "reveal": 4,
+    "label": 2
+  },
+  {
+    "seed": 1412266982,
+    "resultId": 77502,
+    "displayBody": "VAPOREON",
+    "displayHead": "TORTERRA",
+    "bodyStats": [
+      140,
+      46,
+      48,
+      134,
+      10,
+      147
+    ],
+    "headStats": [
+      95,
+      159,
+      42,
+      129,
+      45,
+      55
+    ],
+    "stats": [
+      104,
+      83,
+      47,
+      129,
+      33,
+      128
+    ],
+    "reveal": 5,
+    "label": 2
+  },
+  {
+    "seed": 810312382,
+    "resultId": 214612,
+    "displayBody": "TALONFLAME",
+    "displayHead": "KYOGRE",
+    "bodyStats": [
+      74,
+      78,
+      131,
+      16,
+      133,
+      67
+    ],
+    "headStats": [
+      70,
+      108,
+      91,
+      200,
+      29,
+      172
+    ],
+    "stats": [
+      70,
+      80,
+      122,
+      181,
+      49,
+      101
+    ],
+    "reveal": 5,
+    "label": 2
+  },
+  {
+    "seed": 646294263,
+    "resultId": 202574,
+    "displayBody": "KYUREM",
+    "displayHead": "KLANG",
+    "bodyStats": [
+      126,
+      72,
+      38,
+      152,
+      173,
+      99
+    ],
+    "headStats": [
+      113,
+      47,
+      34,
+      31,
+      98,
+      117
+    ],
+    "stats": [
+      115,
+      66,
+      36,
+      42,
+      122,
+      100
+    ],
+    "reveal": 3,
+    "label": 2
+  },
+  {
+    "seed": 1896081510,
+    "resultId": 140973,
+    "displayBody": "ENTEI",
+    "displayHead": "FROSLASS",
+    "bodyStats": [
+      113,
+      255,
+      38,
+      40,
+      52,
+      82
+    ],
+    "headStats": [
+      91,
+      45,
+      107,
+      42,
+      80,
+      115
+    ],
+    "stats": [
+      92,
+      185,
+      44,
+      41,
+      70,
+      88
+    ],
+    "reveal": 0,
+    "label": 3
+  },
+  {
+    "seed": 1967815056,
+    "resultId": 324056,
+    "displayBody": "CLAMPERL",
+    "displayHead": "PALKIA",
+    "bodyStats": [
+      60,
+      28,
+      67,
+      88,
+      86,
+      16
+    ],
+    "headStats": [
+      119,
+      129,
+      98,
+      149,
+      167,
+      18
+    ],
+    "stats": [
+      99,
+      47,
+      76,
+      136,
+      158,
+      15
+    ],
+    "reveal": 1,
+    "label": 3
+  },
+  {
+    "seed": 694372140,
+    "resultId": 172299,
+    "displayBody": "GARCHOMP",
+    "displayHead": "GRAVELER",
+    "bodyStats": [
+      6,
+      217,
+      125,
+      96,
+      104,
+      52
+    ],
+    "headStats": [
+      93,
+      5,
+      113,
+      21,
+      56,
+      102
+    ],
+    "stats": [
+      64,
+      174,
+      123,
+      27,
+      64,
+      68
+    ],
+    "reveal": 1,
+    "label": 3
+  },
+  {
+    "seed": 2006008973,
+    "resultId": 269832,
+    "displayBody": "CRESSELIA",
+    "displayHead": "LICKILICKY",
+    "bodyStats": [
+      100,
+      55,
+      185,
+      146,
+      72,
+      42
+    ],
+    "headStats": [
+      193,
+      11,
+      78,
+      32,
+      144,
+      57
+    ],
+    "stats": [
+      174,
+      50,
+      149,
+      42,
+      120,
+      44
+    ],
+    "reveal": 4,
+    "label": 3
+  },
+  {
+    "seed": 1549091357,
+    "resultId": 267559,
+    "displayBody": "LYCANROC_D",
+    "displayHead": "SPIRITOMB",
+    "bodyStats": [
+      100,
+      24,
+      69,
+      21,
+      203,
+      70
+    ],
+    "headStats": [
+      27,
+      81,
+      22,
+      175,
+      174,
+      6
+    ],
+    "stats": [
+      41,
+      29,
+      53,
+      159,
+      183,
+      57
+    ],
+    "reveal": 1,
+    "label": 4
+  },
+  {
+    "seed": 796965508,
+    "resultId": 197454,
+    "displayBody": "RAYQUAZA",
+    "displayHead": "AURORUS",
+    "bodyStats": [
+      179,
+      183,
+      31,
+      184,
+      75,
+      28
+    ],
+    "headStats": [
+      136,
+      161,
+      38,
+      125,
+      8,
+      53
+    ],
+    "stats": [
+      139,
+      175,
+      30,
+      144,
+      21,
+      32
+    ],
+    "reveal": 4,
+    "label": 4
+  },
+  {
+    "seed": 1466990437,
+    "resultId": 125127,
+    "displayBody": "URSARING",
+    "displayHead": "JOLTEON",
+    "bodyStats": [
+      101,
+      33,
+      13,
+      146,
+      124,
+      83
+    ],
+    "headStats": [
+      123,
+      23,
+      9,
+      210,
+      145,
+      15
+    ],
+    "stats": [
+      115,
+      30,
+      11,
+      197,
+      142,
+      60
+    ],
+    "reveal": 3,
+    "label": 4
+  },
+  {
+    "seed": 1632011336,
+    "resultId": 84472,
+    "displayBody": "MOLTRES",
+    "displayHead": "ZWEILOUS",
+    "bodyStats": [
+      13,
+      233,
+      168,
+      16,
+      135,
+      15
+    ],
+    "headStats": [
+      7,
+      102,
+      51,
+      151,
+      93,
+      16
+    ],
+    "stats": [
+      8,
+      206,
+      129,
+      136,
+      101,
+      14
+    ],
+    "reveal": 2,
+    "label": 4
+  },
+  {
+    "seed": 734618418,
+    "resultId": 202538,
+    "displayBody": "KYUREM",
+    "displayHead": "COFAGRIGUS",
+    "bodyStats": [
+      106,
+      237,
+      161,
+      22,
+      56,
+      78
+    ],
+    "headStats": [
+      131,
+      116,
+      117,
+      12,
+      21,
+      86
+    ],
+    "stats": [
+      127,
+      224,
+      151,
+      15,
+      27,
+      80
+    ],
+    "reveal": 1,
+    "label": 4
+  },
+  {
+    "seed": 1610430564,
+    "resultId": 303896,
+    "displayBody": "MEDITITE",
+    "displayHead": "PALKIA",
+    "bodyStats": [
+      62,
+      29,
+      52,
+      80,
+      8,
+      49
+    ],
+    "headStats": [
+      70,
+      86,
+      24,
+      255,
+      179,
+      66
+    ],
+    "stats": [
+      69,
+      34,
+      45,
+      220,
+      121,
+      54
+    ],
+    "reveal": 3,
+    "label": 4
+  },
+  {
+    "seed": 1065857092,
+    "resultId": 198522,
+    "displayBody": "PALKIA",
+    "displayHead": "LATIAS",
+    "bodyStats": [
+      227,
+      132,
+      26,
+      66,
+      124,
+      105
+    ],
+    "headStats": [
+      172,
+      137,
+      87,
+      26,
+      7,
+      171
+    ],
+    "stats": [
+      189,
+      131,
+      37,
+      33,
+      18,
+      127
+    ],
+    "reveal": 2,
+    "label": 4
+  },
+  {
+    "seed": 901773109,
+    "resultId": 142954,
+    "displayBody": "TYRANITAR",
+    "displayHead": "HITMONLEE",
+    "bodyStats": [
+      155,
+      255,
+      35,
+      11,
+      53,
+      91
+    ],
+    "headStats": [
+      65,
+      83,
+      99,
+      33,
+      66,
+      109
+    ],
+    "stats": [
+      73,
+      220,
+      56,
+      25,
+      62,
+      91
+    ],
+    "reveal": 5,
+    "label": 4
+  }
+]

@@ -1,0 +1,41 @@
+@implements IAsyncDisposable
+<ObsidianSection Title="@Text["Settings.ToggleSpeed.Title"]" Icon="ObsidianIconKind.Lightning" Class="toggle-speed-settings">
+    <HeadingContent>
+        <button type="button" class="toggle-speed-help-button" aria-label="@Text["Settings.ToggleSpeed.HelpLabel"]" aria-haspopup="dialog" @onclick="() => _helpOpen = true">?</button>
+    </HeadingContent>
+    <ChildContent>
+        <div class="toggle-speed-root" @ref="_root">
+            <section class="sl-editor" aria-label="@Text["Settings.ToggleSpeed.Editor"]">
+                <div class="sl-palette" data-drop="remove" aria-label="@Text["Settings.ToggleSpeed.Palette"]"></div>
+                <div class="sl-board"><svg class="sl-wires" role="img" aria-label="@Text["Settings.ToggleSpeed.Connections"]"></svg><div class="sl-lanes"></div></div>
+                <footer class="sl-preview"></footer>
+                <div class="sl-edit-actions"></div>
+                <div class="sl-error" role="alert" hidden></div>
+            </section>
+        </div>
+    </ChildContent>
+</ObsidianSection>
+@if (_helpOpen)
+{
+    <ObsidianDialog Title="@Text["Settings.ToggleSpeed.HelpTitle"]" Eyebrow="@Text["Settings.ToggleSpeed.Tab"]" Closed="() => _helpOpen = false">
+        <div class="toggle-speed-help-body">
+            <h4>@Text["Settings.ToggleSpeed.Help0"]</h4>
+            <p>@Text["Settings.ToggleSpeed.Help1"]</p>
+            <h4>@Text["Settings.ToggleSpeed.Help2"]</h4>
+            <p>@Text["Settings.ToggleSpeed.Help3"]</p>
+            <h4>@Text["Settings.ToggleSpeed.Help4"]</h4>
+            <p>@Text["Settings.ToggleSpeed.Help5"]</p>
+            <h4>@Text["Settings.ToggleSpeed.Help6"]</h4>
+            <p>@Text["Settings.ToggleSpeed.Help7"]</p>
+            <p>@Text["Settings.ToggleSpeed.Help8"]</p>
+            <h4>@Text["Settings.ToggleSpeed.Help9"]</h4>
+            <p>@Text["Settings.ToggleSpeed.Help10"]</p>
+            <p>@Text["Settings.ToggleSpeed.Help11"]</p>
+            <h4>@Text["Settings.ToggleSpeed.Help12"]</h4>
+            <p>@Text["Settings.ToggleSpeed.Help13"]</p>
+            <p>@Text["Settings.ToggleSpeed.Help14"]</p>
+            <h4>@Text["Settings.ToggleSpeed.Help15"]</h4>
+            <p>@Text["Settings.ToggleSpeed.Help16"]</p>
+        </div>
+    </ObsidianDialog>
+}

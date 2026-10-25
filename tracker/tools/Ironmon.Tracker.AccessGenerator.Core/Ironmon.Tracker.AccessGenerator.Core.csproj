@@ -8,6 +8,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Ironmon.Tracker.Access\Ironmon.Tracker.Access.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Ironmon.Tracker.Access\Ironmon.Tracker.Access.csproj" />
   </ItemGroup>
 </Project>

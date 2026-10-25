@@ -77,6 +77,10 @@ module Ironmon
       attempt["generation_profile_id"] =
         value["generation_profile_id"].to_s
     end
+    if value["completion_milestone"].is_a?(String)
+      attempt["completion_milestone"] = value["completion_milestone"]
+      attempt["completion_trainer_class_ids"] = Array(value["completion_trainer_class_ids"]).select { |identity| identity.is_a?(String) }
+    end
     return attempt
   end
 

@@ -99,6 +99,15 @@ module Ironmon
         "generator" => tracker_debug_base_stat_generator_snapshot
       }
     end
+    if payload["target"].to_s == "player" &&
+       tracker_connection.diagnostic_capability?("pokemon.base_stats")
+      result["ivs"] = tracker_base_stat_snapshot(pokemon.iv)
+      result["effective_ivs"] = tracker_base_stat_snapshot(pokemon.calcIV)
+      if result["stats"]
+        result["stats"]["ivs"] = result["ivs"]
+        result["stats"]["effective_ivs"] = result["effective_ivs"]
+      end
+    end
     return result
   end
 

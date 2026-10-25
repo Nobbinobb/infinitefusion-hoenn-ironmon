@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)$(Configuration)/$(TargetFramework)/generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Shared/Ironmon.Sqlite/Ironmon.Sqlite.csproj" />
+    <ProjectReference Include="../../../tools/Ironmon.Sqlite.QueryGenerator/Ironmon.Sqlite.QueryGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ironmon.Tracker.Tests" />
+    <InternalsVisibleTo Include="Ironmon.Tracker.AchievementOverlay.Tests" />
+    <EmbeddedResource Include="Resources/Schema.sql" LogicalName="Ironmon.Tracker.Collection.Schema.sql" />
+    <EmbeddedResourceInput Include="../../../../data/gameplay_collection_catalog.json" LogicalName="Ironmon.Tracker.Collection.GameplayCatalogue.json" />
+    <EmbeddedResourceInput Include="../../../../data/achievements.pack" LogicalName="Ironmon.Tracker.Collection.Achievements.pack" />
+    <EmbeddedResourceInput Include="../../../../data/achievement-icons.pack" LogicalName="Ironmon.Tracker.Collection.AchievementIcons.pack" />
+    <EmbeddedResourceInput Include="../../../../data/achievement-artwork/*.pack" LogicalName="Ironmon.Tracker.Collection.Achievements.AchievementArtwork.%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="Resources/*.sql" />
+  </ItemGroup>
+</Project>

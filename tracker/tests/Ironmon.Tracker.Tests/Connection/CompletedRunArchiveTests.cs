@@ -5,6 +5,19 @@ namespace Ironmon.Tracker.Tests.Connection;
 /// </summary>
 public sealed class CompletedRunArchiveTests : IDisposable
 {
+    private const string _resultKey = "result";
+    private const string _statisticsKey = "statistics";
+    private const string _wonResult = "won";
+    private const string _wonRunId = "alpha-winner";
+    private const string _wallyEntryId = "trainer:73:RIVAL2:Wally";
+    private const string _wallyStarterId = "B241H58:0";
+    private const string _wallyAbilityId = "INTIMIDATE";
+    private const string _wallyMoveId = "TACKLE";
+    private const string _rivalPreviewEntryId = "trainer:18:RIVAL1:Rival";
+    private const string _openingContextRunId = "run-opening-context";
+    private const string _openingStarterId = "SPOINK";
+    private const string _openingFusionId = "B241H58";
+    private const string _openingRivalName = "Merge";
     private const string _testGenerationProfileId = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private readonly List<string> _roots = [];
 
@@ -30,17 +43,21 @@ public sealed class CompletedRunArchiveTests : IDisposable
     /// <summary>
     /// Verifies that a stored nested recipe survives archive reconstruction without lookup results.
     /// </summary>
-    [Fact]
-    public void StorePersistsOnlyCompletedRunRecipe()
+    /// <param name="playerFusionVersion">The historical or current player-fusion algorithm to preserve.</param>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void StorePersistsOnlyCompletedRunRecipe(int playerFusionVersion)
     {
         string root = CreateRoot();
         CompletedRunArchive archive = new(new TrackerKnowledgeOptions(root));
-        archive.Store(CreateRecipe("run-archive"));
+        archive.Store(CreateRecipe("run-archive", playerFusionVersion: playerFusionVersion));
 
         CompletedRunRecipePayload stored = Assert.Single(new CompletedRunArchive(new TrackerKnowledgeOptions(root)).Recipes);
 
         Assert.Equal("run-archive", stored.RunId);
         Assert.Equal(98765, stored.Seed);
+        Assert.Equal(playerFusionVersion, stored.PlayerFusionGenerator.Version);
         Assert.Equal(1, stored.MoveAccessGenerator!.Version);
         Assert.Equal("fusion-tutor-source", stored.MoveAccessGenerator.FusionTutor.SourceFingerprint);
         Assert.Equal(1, stored.EvolutionGenerator!.Version);
@@ -48,6 +65,12 @@ public sealed class CompletedRunArchiveTests : IDisposable
         Assert.Equal(14, stored.Statistics!.ItemsUsed);
         Assert.Equal("HYPERPOTION", stored.ItemMappings["POTION"]);
         Assert.Equal("TM02", stored.TmMappings["TM01"]);
+        StoryTrainerPokemonPayload starter = Assert.Single(stored.StoryTrainerParties[_wallyEntryId]);
+        Assert.Equal(_wallyStarterId, starter.SpeciesId);
+        Assert.Equal(28, starter.Level);
+        Assert.Equal(_wallyAbilityId, starter.AbilityId);
+        Assert.Equal(_wallyMoveId, Assert.Single(starter.MoveIds));
+        Assert.Equal(_wallyStarterId, Assert.Single(stored.StoryTrainerPreviews[_rivalPreviewEntryId]).SpeciesId);
         Assert.Equal(600, stored.ItemGenerator!.GroundPoolSize);
         Assert.Equal(5253, stored.ItemGenerator.GroundTotalWeight);
         Assert.Equal(["DNASPLICERS", "DYNAMITE"], stored.ItemGenerator.ResultBans);
@@ -94,6 +117,30 @@ public sealed class CompletedRunArchiveTests : IDisposable
     }
 
     /// <summary>
+    /// Prevents a reset or an older reloaded save from downgrading a recorded win for the same run identity.
+    /// </summary>
+    /// <param name="laterResult">The stale outcome arriving after the authoritative win.</param>
+    [Theory]
+    [InlineData("lost")]
+    [InlineData("abandoned")]
+    public void RecordedWinSurvivesLaterResetOrLoss(string laterResult)
+    {
+        string root = CreateRoot();
+        var payload = JsonSerializer.SerializeToNode(CreateRecipe(_wonRunId), TrackerJson.Options)!.AsObject();
+        payload[_resultKey] = _wonResult;
+        payload[_statisticsKey]![_resultKey] = _wonResult;
+        CompletedRunRecipePayload winner = payload.Deserialize<CompletedRunRecipePayload>(TrackerJson.Options)!;
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(root));
+        archive.Store(winner);
+        archive.Store(winner);
+        payload[_resultKey] = laterResult;
+        payload[_statisticsKey]![_resultKey] = laterResult;
+        archive.Store(payload.Deserialize<CompletedRunRecipePayload>(TrackerJson.Options)!);
+        Assert.Equal(_wonResult, Assert.Single(archive.Recipes).Result);
+        Assert.Equal(_wonResult, Assert.Single(new CompletedRunArchive(new TrackerKnowledgeOptions(root)).Recipes).Statistics!.Result);
+    }
+
+    /// <summary>
     /// Verifies that automatic resets archive a completed run without selecting it for preparation.
     /// </summary>
     [Fact]
@@ -108,6 +155,53 @@ public sealed class CompletedRunArchiveTests : IDisposable
         Assert.Equal("run-automatic-reset", Assert.Single(archive.Recipes).RunId);
         Assert.Null(archive.RequestedRunId);
         Assert.Equal(0, requests);
+    }
+
+    /// <summary>
+    /// Keeps deferred opening story inputs intact through archive serialization and reload.
+    /// </summary>
+    [Fact]
+    public void OpeningContextSurvivesArchiveReload()
+    {
+        string root = CreateRoot();
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(root));
+        OpeningRivalContextPayload context = new()
+        {
+            ChosenStarterIndex = 2,
+            TrainerGender = 1,
+            RivalName = _openingRivalName,
+            SelectedDifficulty = 2,
+            LowestDifficulty = 2,
+            LabSpeciesId = _openingFusionId,
+            StarterSpeciesIds = [_openingFusionId, _openingStarterId, _openingStarterId]
+        };
+        archive.Store(CreateRecipe(_openingContextRunId, openingContext: context));
+        OpeningRivalContextPayload saved = Assert.Single(new CompletedRunArchive(new TrackerKnowledgeOptions(root)).Recipes).OpeningRivalContext!;
+        Assert.Equal(context.ChosenStarterIndex, saved.ChosenStarterIndex);
+        Assert.Equal(context.TrainerGender, saved.TrainerGender);
+        Assert.Equal(context.RivalName, saved.RivalName);
+        Assert.Equal(context.SelectedDifficulty, saved.SelectedDifficulty);
+        Assert.Equal(context.LowestDifficulty, saved.LowestDifficulty);
+        Assert.Equal(context.LabSpeciesId, saved.LabSpeciesId);
+        Assert.Equal(context.StarterSpeciesIds, saved.StarterSpeciesIds);
+    }
+
+    /// <summary>
+    /// Rejects opening contexts that cannot identify exactly one of three starter offers.
+    /// </summary>
+    /// <param name="slot">The invalid starter slot.</param>
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(3)]
+    public void OpeningContextRejectsInvalidSlot(int slot)
+    {
+        CompletedRunArchive archive = new(new TrackerKnowledgeOptions(CreateRoot()));
+        OpeningRivalContextPayload context = new()
+        {
+            ChosenStarterIndex = slot,
+            StarterSpeciesIds = [_openingStarterId, _openingStarterId, _openingStarterId]
+        };
+        Assert.Throws<ArgumentOutOfRangeException>(() => archive.Store(CreateRecipe(_openingContextRunId, openingContext: context)));
     }
 
     /// <summary>
@@ -273,8 +367,10 @@ public sealed class CompletedRunArchiveTests : IDisposable
     /// <param name="itemGroundTotalWeight">An optional ground-selection ticket total.</param>
     /// <param name="statistics">Optional authoritative attempt statistics.</param>
     /// <param name="generationProfileId">The immutable generation profile identity.</param>
+    /// <param name="playerFusionVersion">The pinned player-fusion algorithm version.</param>
+    /// <param name="openingContext">Optional deferred opening story inputs.</param>
     /// <returns>The recipe.</returns>
-    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, bool includeMoveGenerator = true, bool includeEvolutionGenerator = true, int statisticsSchemaVersion = 1, int itemRulesVersion = 1, int? itemGroundTotalWeight = null, RunStatisticsPayload? statistics = null, string generationProfileId = _testGenerationProfileId) => new()
+    private static CompletedRunRecipePayload CreateRecipe(string runId, int schemaVersion = 1, bool includeMoveGenerator = true, bool includeEvolutionGenerator = true, int statisticsSchemaVersion = 1, int itemRulesVersion = 1, int? itemGroundTotalWeight = null, RunStatisticsPayload? statistics = null, string generationProfileId = _testGenerationProfileId, int playerFusionVersion = 1, OpeningRivalContextPayload? openingContext = null) => new()
     {
         SchemaVersion = schemaVersion,
         RunId = runId,
@@ -289,7 +385,10 @@ public sealed class CompletedRunArchiveTests : IDisposable
         BaseStatGenerator = new BaseStatGeneratorRecipePayload { Version = 1, SourceFingerprint = "base-stats" },
         EvolutionGenerator = includeEvolutionGenerator ? CreateEvolutionGenerator() : null,
         MoveAccessGenerator = includeMoveGenerator ? CreateMoveGenerator() : null,
-        PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = 1, PoolSize = 100, PoolFingerprint = "fusions" },
+        PlayerFusionGenerator = new PlayerFusionGeneratorRecipePayload { Version = playerFusionVersion, PoolSize = 100, PoolFingerprint = "fusions" },
+        StoryTrainerParties = new Dictionary<string, IReadOnlyList<StoryTrainerPokemonPayload>> { [_wallyEntryId] = [new() { SpeciesId = _wallyStarterId, Level = 28, AbilityId = _wallyAbilityId, MoveIds = [_wallyMoveId] }] },
+        StoryTrainerPreviews = new Dictionary<string, IReadOnlyList<StoryTrainerPokemonPayload>> { [_rivalPreviewEntryId] = [new() { SpeciesId = _wallyStarterId, Level = 5, AbilityId = _wallyAbilityId, MoveIds = [_wallyMoveId] }] },
+        OpeningRivalContext = openingContext,
         ItemGenerator = new ItemGeneratorRecipePayload
         {
             Version = 1,

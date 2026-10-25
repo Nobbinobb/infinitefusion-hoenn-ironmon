@@ -14,7 +14,51 @@ public sealed class AreaDiscoveryStoreTests : IDisposable
     private const string _battleType = "DARK";
     private const string _battleEffect = "May cause flinching.";
     private const string _changedBattleEffect = "Updated effect.";
+    private const string _breederType = "Pokémon Breeder";
+    private const string _brokenBreederType = "PokÃ©mon Breeder";
     private readonly List<string> _roots = [];
+
+    /// <summary>
+    /// Refreshes a trainer class label while preserving the recorded party and progress.
+    /// </summary>
+    [Fact]
+    public void ArchiveRefreshesTrainerTypeFromCurrentCatalog()
+    {
+        AreaDiscoveryStore store = new(new TrackerKnowledgeOptions(CreateRoot()));
+        AreaLookupDetailResponsePayload source = CreateBattleResponse(false, false);
+        AreaTrainerEntryPayload trainer = Assert.Single(source.Trainers);
+        Assert.True(store.RecordDetails(_battleRun, WithTrainerType(source, trainer, _brokenBreederType)));
+        AreaLookupDetailResponsePayload response = store.RestoreArchivedDetails(_battleRun, WithTrainerType(source, trainer, _breederType), false);
+        AreaTrainerEntryPayload restored = Assert.Single(response.Trainers);
+        Assert.Equal(_breederType, restored.TrainerType);
+        Assert.Equal(trainer.TrainerName, restored.TrainerName);
+        AreaTrainerPokemonPayload recorded = Assert.Single(trainer.Party);
+        AreaTrainerPokemonPayload member = Assert.Single(restored.Party);
+        Assert.Equal(recorded.SpeciesId, member.SpeciesId);
+        Assert.Equal(recorded.Level, member.Level);
+        Assert.Equal(recorded.Slot, member.Slot);
+        Assert.True(restored.Defeated);
+    }
+
+    /// <summary>
+    /// Copies a trainer response with a replacement class label.
+    /// </summary>
+    /// <param name="source">The response containing the trainer.</param>
+    /// <param name="trainer">The trainer whose other recorded fields are retained.</param>
+    /// <param name="type">The replacement localized class label.</param>
+    /// <returns>The response containing the renamed trainer class.</returns>
+    private static AreaLookupDetailResponsePayload WithTrainerType(AreaLookupDetailResponsePayload source, AreaTrainerEntryPayload trainer, string type)
+    {
+        return new AreaLookupDetailResponsePayload
+        {
+            AreaId = source.AreaId, Name = source.Name, Category = source.Category,
+            Trainers = [new()
+            {
+                EntryId = trainer.EntryId, MapId = trainer.MapId, TrainerType = type, TrainerName = trainer.TrainerName,
+                PartySize = trainer.PartySize, Defeated = trainer.Defeated, DetailsRevealed = trainer.DetailsRevealed, Party = trainer.Party
+            }]
+        };
+    }
 
     /// <summary>
     /// Restores missing archive data without transferring a battle set between different party members.

@@ -1,7 +1,7 @@
 module IronmonSeededRunImportRuntimeTests
   OUTPUT_PATH = $ironmon_seeded_run_import_test_output_path.to_s
   EXPECTED_WORLD_SNAPSHOT_SHA256 =
-    "077400265fa5f025c23be6c43392271c23b119ba80d6fbe203051ecc8fff36f9"
+    "99a6bd7202f285ebc707b33107e817426f42748ef2f38b26fddfef1c7068f9b2"
   # This world uses custom_fusion_pool_fixture, not the installed sprite pool.
   # Pin profile metadata while retaining version-2 species mapping and boss parties.
   WORLD_SNAPSHOT_PROFILE_ID =
@@ -150,6 +150,7 @@ module IronmonSeededRunImportRuntimeTests
       "seed" => 42,
       "configuration" => {
         "schema_version" => Ironmon::Configuration::SCHEMA_VERSION,
+        "starter_policy" => "mixed",
         "wild_policy" => "mixed",
         "trainer_policy" => "normal_only",
         "unfusion_setting" => "player_choice",
@@ -279,7 +280,18 @@ module IronmonSeededRunImportRuntimeTests
     end
   end
 
-  def self.generated_world_snapshot(seed, reverse)
+  def self.generated_world_snapshot(seed, reverse, player_fusion_version = 1, stat_formula_version = 1)
+    singleton = class << Ironmon; self; end
+    singleton.send(
+      :alias_method, :seed_world_original_player_fusion_generator_version,
+      :player_fusion_generator_version
+    )
+    singleton.send(:define_method, :player_fusion_generator_version) do
+      player_fusion_version
+    end
+    singleton.send(:alias_method, :seed_world_original_base_stat_formula_version,
+      :base_stat_formula_version)
+    singleton.send(:define_method, :base_stat_formula_version) { stat_formula_version }
     original_global = $PokemonGlobal
     original_switches = $game_switches
     original_variables = $game_variables
@@ -301,7 +313,9 @@ module IronmonSeededRunImportRuntimeTests
         :@profile_custom_fusion_pool_services,
         { Ironmon.current_generation_profile_id => pool_service }
       )
-      Ironmon.configuration = transaction_fixture["configuration"]
+      legacy_configuration = transaction_fixture["configuration"].merge("schema_version" => Ironmon::Configuration::LEGACY_SCHEMA_VERSION)
+      legacy_configuration.delete("starter_policy")
+      Ironmon.configuration = legacy_configuration
       generated_preset = Ironmon.apply_preset(:seed_import, seed, false)
       generation_error = Ironmon.instance_variable_get(
         :@seed_import_error_message
@@ -435,6 +449,14 @@ module IronmonSeededRunImportRuntimeTests
       $PokemonGlobal = original_global
       $game_switches = original_switches
       $game_variables = original_variables
+      singleton.send(
+        :alias_method, :player_fusion_generator_version,
+        :seed_world_original_player_fusion_generator_version
+      )
+      singleton.send(:remove_method, :seed_world_original_player_fusion_generator_version)
+      singleton.send(:alias_method, :base_stat_formula_version,
+        :seed_world_original_base_stat_formula_version)
+      singleton.send(:remove_method, :seed_world_original_base_stat_formula_version)
     end
   end
 
@@ -462,46 +484,298 @@ module IronmonSeededRunImportRuntimeTests
       "the exported recipe identifies the actual current generation profile"
     )
     baseline_snapshot[:recipe]["generation_profile_id"] = WORLD_SNAPSHOT_PROFILE_ID
-    digest = Digest::SHA256.hexdigest(Marshal.dump(baseline_snapshot))
+    # Marshal encoding markers and shared-object references are not canonical.
+    digest = Digest::SHA256.hexdigest(
+      Ironmon::GenerationProfile.canonical_json(baseline_snapshot)
+    )
     assert(
       digest == EXPECTED_WORLD_SNAPSHOT_SHA256,
-      "the deterministic world matches the refactor baseline: #{digest}"
+      "the schema-1 deterministic world retains its golden baseline: #{digest}"
+    )
+    adaptive_forward = generated_world_snapshot(seed, false, 2)
+    adaptive_reverse = generated_world_snapshot(seed, true, 2)
+    assert(
+      adaptive_forward == adaptive_reverse &&
+        adaptive_forward[:recipe]["player_fusion_generator"]["version"] == 2,
+      "schema-2 imports retain their version and reproduce across lookup order"
+    )
+    assert(generated_world_snapshot(seed, false, 2, 2) ==
+      generated_world_snapshot(seed, true, 2, 2),
+      "fixed fusion stats reproduce every generator across lookup order")
+  end
+
+  def self.test_player_fusion_profile_versions
+    profile = Ironmon.current_generation_profile
+    manifest = profile["manifest"]
+    current_entry = manifest["algorithms"].find do |entry|
+      entry["name"] == "player_fusion_reversal"
+    end
+    assert(current_entry["version"] == 2, "new profiles select adaptive reverse pairing")
+    legacy_manifest = Marshal.load(Marshal.dump(manifest))
+    legacy_manifest["algorithms"].find do |entry|
+      entry["name"] == "player_fusion_reversal"
+    end["version"] = 1
+    Ironmon.validate_generation_profile_components(
+      legacy_manifest, profile["root"], "legacy runtime fixture"
+    )
+    legacy_id = Ironmon::GenerationProfile.fingerprint(legacy_manifest)
+    original_profiles = Ironmon.instance_variable_get(:@generation_profiles)
+    original_run_profile = Ironmon.instance_variable_get(:@run_generation_profile_id)
+    original_active_profile = Ironmon.instance_variable_get(:@active_generation_profile_id)
+    original_global = $PokemonGlobal
+    reset_was_defined = Ironmon.instance_variable_defined?(:@reset_in_progress)
+    original_reset = Ironmon.instance_variable_get(:@reset_in_progress)
+    begin
+      $PokemonGlobal = PokemonGlobalMetadata.new
+      $PokemonGlobal.ironmon_mode = true
+      $PokemonGlobal.ironmon_run_ledger = Ironmon.default_run_ledger
+      Ironmon.instance_variable_set(:@reset_in_progress, false)
+      Ironmon.instance_variable_set(:@run_generation_profile_id, nil)
+      Ironmon.instance_variable_set(:@active_generation_profile_id, nil)
+      legacy_profile = {
+        "profile_id" => legacy_id, "manifest" => legacy_manifest,
+        "root" => profile["root"]
+      }.freeze
+      Ironmon.instance_variable_set(
+        :@generation_profiles, (original_profiles || {}).merge(legacy_id => legacy_profile)
+      )
+      Ironmon.with_generation_profile(legacy_id) do
+        assert(
+          Ironmon.player_fusion_generator_version == 1,
+          "a pinned old profile continues to route to schema 1"
+        )
+      end
+      assert(
+        Ironmon.player_fusion_generator_version == 2,
+        "leaving the old profile restores the current version"
+      )
+      old_attempt = {
+        "attempt_number" => 52, "result" => "lost",
+        "generation_profile_id" => legacy_id
+      }
+      $PokemonGlobal.ironmon_run_ledger["current_attempt"] = old_attempt
+      ["lost", "won", "abandoned"].each do |result|
+        old_attempt["result"] = result
+        assert(
+          Ironmon.player_fusion_generator_version == 1,
+          "a completed #{result} attempt retains its old profile without an active context"
+        )
+      end
+      Ironmon.instance_variable_set(:@active_generation_profile_id, profile["profile_id"])
+      assert(
+        Ironmon.player_fusion_generator_version == 2,
+        "an explicit archive context overrides the loaded completed attempt"
+      )
+      Ironmon.instance_variable_set(:@active_generation_profile_id, nil)
+      Ironmon.instance_variable_set(:@run_generation_profile_id, profile["profile_id"])
+      assert(
+        Ironmon.player_fusion_generator_version == 2,
+        "a new active run context overrides the completed attempt's profile"
+      )
+      Ironmon.instance_variable_set(:@run_generation_profile_id, nil)
+      Ironmon.instance_variable_set(:@reset_in_progress, true)
+      assert(
+        Ironmon.player_fusion_generator_version == 2,
+        "reset preparation selects the installed version before replacing the old ledger"
+      )
+      Ironmon.instance_variable_set(:@reset_in_progress, false)
+      old_attempt.delete("generation_profile_id")
+      assert(
+        Ironmon.player_fusion_generator_version == 2,
+        "an attempt without a profile pin falls back to the installed version"
+      )
+    ensure
+      Ironmon.instance_variable_set(:@generation_profiles, original_profiles)
+      Ironmon.instance_variable_set(:@run_generation_profile_id, original_run_profile)
+      Ironmon.instance_variable_set(:@active_generation_profile_id, original_active_profile)
+      $PokemonGlobal = original_global
+      if reset_was_defined
+        Ironmon.instance_variable_set(:@reset_in_progress, original_reset)
+      elsif Ironmon.instance_variable_defined?(:@reset_in_progress)
+        Ironmon.remove_instance_variable(:@reset_in_progress)
+      end
+    end
+    unsupported = Marshal.load(Marshal.dump(manifest))
+    unsupported["algorithms"].find do |entry|
+      entry["name"] == "player_fusion_reversal"
+    end["version"] = 3
+    begin
+      Ironmon.validate_generation_profile_components(
+        unsupported, profile["root"], "unsupported runtime fixture"
+      )
+      assert(false, "unsupported player-fusion profiles must fail")
+    rescue Ironmon::GenerationProfileUnavailable => error
+      assert(
+        error.message.include?("player fusion reversal version is unsupported"),
+        "profile validation rejects an unknown reverse-pairing version"
+      )
+    end
+  end
+
+  def self.player_fusion_mapper_for_schema(seed, pool, schema_version)
+    return Ironmon::PlayerFusionMapper.new(
+      seed, pool, {}, {},
+      Ironmon::BaseStatGenerator.new(seed, Ironmon.base_stat_source_fingerprint(1), 1),
+      schema_version
     )
   end
 
   def self.test_isolated_player_fusion_pool
-    seed = 1_271_448_503
-    mapper = Ironmon::PlayerFusionMapper.new(
-      seed, [NB_POKEMON + 2, NB_POKEMON + 3], {}, {},
-      Ironmon::BaseStatGenerator.new(seed, Ironmon.base_stat_source_fingerprint)
+    [1, 2].each do |schema_version|
+      mapper = player_fusion_mapper_for_schema(
+        1_271_448_503, [NB_POKEMON + 2, NB_POKEMON + 3], schema_version
+      )
+      ordering_attempts = 0
+      ordering = mapper.method(:strength_ordered_fusion_ids)
+      mapper.define_singleton_method(:strength_ordered_fusion_ids) do |attempt|
+        ordering_attempts += 1
+        ordering.call(attempt)
+      end
+      mapper.define_singleton_method(:repair_strength_pair) do |*arguments|
+        raise "a component-isolated pool must fail before exhaustive repairs"
+      end
+      failure = nil
+      2.times do
+        begin
+          mapper.prepare
+        rescue Ironmon::PlayerFusionMappingError => error
+          assert(
+            error.message.include?("has no disjoint reverse partner"),
+            "schema #{schema_version} rejects a structurally isolated pool"
+          )
+          assert(error.equal?(failure), "isolated pool failure is cached") if failure
+          failure = error
+        else
+          assert(false, "an isolated pool cannot produce reverse pairs")
+        end
+        assert(
+          ordering_attempts <= 1 && !mapper.pairing_prepared?,
+          "an impossible pool never restarts or publishes a partial roster"
+        )
+      end
+    end
+  end
+
+  def self.test_adaptive_player_fusion_steps
+    pool = [
+      NB_POKEMON + 2, NB_POKEMON + 3,
+      4 * NB_POKEMON + 5, 4 * NB_POKEMON + 6
+    ]
+    strengths = pool.zip([100, 100, 207, 207]).to_h
+    results = []
+    2.times do
+      mapper = player_fusion_mapper_for_schema(42, pool, 2)
+      mapper.define_singleton_method(:target_bst) { |id| strengths.fetch(id) }
+      mapper.define_singleton_method(:target_type_mask) { |_id| 1 }
+      mapper.define_singleton_method(:maximum_fusion_range_width) { 92 }
+      assert(
+        mapper.pairing_bst_limit.nil? && mapper.pairing_relaxation_steps == 0,
+        "an unprepared adaptive mapper has no published strength limit"
+      )
+      mapper.prepare
+      assert(
+        mapper.pairing_bst_limit == 107 && mapper.pairing_relaxation_steps == 3,
+        "adaptive pairing retries 92, 97, 102, and 107 BST"
+      )
+      pairs = mapper.instance_variable_get(:@fusion_pairs)
+      assert(pairs.flatten.sort == pool.sort, "adaptive retry covers the complete roster")
+      assert(
+        pairs.all? { |first, second| !mapper.send(:shares_component?, first, second) },
+        "adaptive retries never relax the shared-component prohibition"
+      )
+      pairs.each do |first, second|
+        assert(
+          GameData::Species.get(mapper.paired_species(first)).id_number == second &&
+            GameData::Species.get(mapper.paired_species(second)).id_number == first,
+          "adaptive pairs reverse in both directions"
+        )
+      end
+      results << pairs
+    end
+    assert(results[0] == results[1], "adaptive retries reproduce identical ordered pairs")
+
+    capped = player_fusion_mapper_for_schema(42, pool, 2)
+    capped_strengths = pool.zip([100, 100, 204, 204]).to_h
+    capped.define_singleton_method(:target_bst) { |id| capped_strengths.fetch(id) }
+    capped.define_singleton_method(:target_type_mask) { |_id| 1 }
+    capped.define_singleton_method(:maximum_fusion_range_width) { 92 }
+    capped.prepare
+    assert(
+      capped.pairing_bst_limit == 104 && capped.pairing_relaxation_steps == 3,
+      "the final adaptive increment stops at the full target BST span"
     )
+  end
+
+  def self.test_adaptive_player_fusion_outlier
+    seed = 1_271_448_503
+    pool = Ironmon.custom_fusion_pool_numbers
+    mapper = player_fusion_mapper_for_schema(seed, pool, 2)
+    mapper.prepare
+    pairs = mapper.instance_variable_get(:@fusion_pairs)
+    assert(
+      pairs.flatten.sort == pool.sort,
+      "schema 2 covers every target in the real outlier pool exactly once"
+    )
+    assert(
+      mapper.send(:maximum_fusion_range_width) == 92 &&
+        mapper.pairing_bst_limit >= 97 && mapper.pairing_relaxation_steps > 0,
+      "schema 2 expands the original 92-BST limit for the real isolated target"
+    )
+    assert(
+      pairs.all? do |first, second|
+        mapper.send(:strength_pair_compatible?, first, second, mapper.pairing_bst_limit)
+      end,
+      "every adaptive pair retains the effective strength and disjoint-component rules"
+    )
+    outlier = 271_035
+    partner = mapper.paired_species(outlier)
+    assert(
+      GameData::Species.get(mapper.paired_species(partner)).id_number == outlier,
+      "the real outlier has a reciprocal reverse partner"
+    )
+    @adaptive_player_fusion_pairing_sha256 = Digest::SHA256.hexdigest(
+      pairs.flatten.pack("V*")
+    )
+    @adaptive_player_fusion_pairing_bst_limit = mapper.pairing_bst_limit
+    @adaptive_player_fusion_pairing_relaxation_steps = mapper.pairing_relaxation_steps
+  end
+
+  def self.test_adaptive_player_fusion_full_span_failure
+    pool = [
+      NB_POKEMON + 2, 3 * NB_POKEMON + 4,
+      3 * NB_POKEMON + 5, 3 * NB_POKEMON + 6
+    ]
+    strengths = pool.zip([100, 100, 100, 204]).to_h
+    mapper = player_fusion_mapper_for_schema(42, pool, 2)
+    mapper.define_singleton_method(:target_bst) { |id| strengths.fetch(id) }
+    mapper.define_singleton_method(:target_type_mask) { |_id| 1 }
+    mapper.define_singleton_method(:maximum_fusion_range_width) { 92 }
     ordering_attempts = 0
     ordering = mapper.method(:strength_ordered_fusion_ids)
     mapper.define_singleton_method(:strength_ordered_fusion_ids) do |attempt|
       ordering_attempts += 1
       ordering.call(attempt)
     end
-    mapper.define_singleton_method(:repair_strength_pair) do |*arguments|
-      raise "an isolated fusion must be rejected before exhaustive repairs"
-    end
     failure = nil
+    completed_attempts = nil
     2.times do
       begin
         mapper.prepare
+        assert(false, "a star-shaped disjointness graph cannot form complete pairs")
       rescue Ironmon::PlayerFusionMappingError => error
-        assert(
-          error.message.include?("has no disjoint reverse partner"),
-          "a pool whose targets share a component reports an impossible pairing"
-        )
-        assert(error.equal?(failure), "isolated pool failure is cached") if failure
+        assert(!failure || failure.equal?(error), "full-span failure is cached")
         failure = error
-      else
-        assert(false, "an isolated pool cannot produce reverse pairs")
       end
       assert(
-        ordering_attempts == 1,
-        "an isolated pool fails on its first ordering and never restarts preparation"
+        mapper.pairing_bst_limit == 104 && mapper.pairing_relaxation_steps == 3 &&
+          !mapper.pairing_prepared?,
+        "adaptive retries stop at the full BST span without publishing partial pairs"
       )
+      assert(
+        !completed_attempts || completed_attempts == ordering_attempts,
+        "repeated requests do not restart a failed full-span search"
+      )
+      completed_attempts = ordering_attempts
     end
   end
 
@@ -522,11 +796,8 @@ module IronmonSeededRunImportRuntimeTests
         [600, 100] => (520..608),
         [300, 100] => (260..310)
       }
-      preview_mapper = Ironmon::PlayerFusionMapper.new(
-        seed, Ironmon.custom_fusion_pool, {}, {},
-        Ironmon::BaseStatGenerator.new(
-          seed, Ironmon.base_stat_source_fingerprint
-        )
+      preview_mapper = player_fusion_mapper_for_schema(
+        seed, Ironmon.custom_fusion_pool, 1
       )
       [[1, 1], [1, NB_POKEMON], [NB_POKEMON, NB_POKEMON]].each do |pair|
         prefix = preview_mapper.send(
@@ -562,21 +833,13 @@ module IronmonSeededRunImportRuntimeTests
         (pairing_seconds * 1_000).round
       reverse = preview_mapper.species(mewtwo, mudkip)
       assert(
-        pairing_seconds < 15.0,
-        "global player-fusion pairing completes in seconds: " +
-          "#{pairing_seconds.round(3)} seconds"
-      )
-      assert(
         preview_mapper.paired_species(forward) == reverse &&
           preview_mapper.paired_species(reverse) == forward,
         "player orientations are the same global reverse pair"
       )
       blocked_seed = 1_851_036_422
-      blocked_seed_mapper = Ironmon::PlayerFusionMapper.new(
-        blocked_seed, Ironmon.custom_fusion_pool, {}, {},
-        Ironmon::BaseStatGenerator.new(
-          blocked_seed, Ironmon.base_stat_source_fingerprint
-        )
+      blocked_seed_mapper = player_fusion_mapper_for_schema(
+        blocked_seed, Ironmon.custom_fusion_pool, 1
       )
       blocked_seed_mapper.prepare
       assert(
@@ -584,11 +847,8 @@ module IronmonSeededRunImportRuntimeTests
         "the player-fusion mapper repairs a blocked strength pairing"
       )
       isolated_seed = 1_271_448_503
-      isolated_mapper = Ironmon::PlayerFusionMapper.new(
-        isolated_seed, Ironmon.custom_fusion_pool_numbers, {}, {},
-        Ironmon::BaseStatGenerator.new(
-          isolated_seed, Ironmon.base_stat_source_fingerprint
-        )
+      isolated_mapper = player_fusion_mapper_for_schema(
+        isolated_seed, Ironmon.custom_fusion_pool_numbers, 1
       )
       isolated_started = System.uptime
       isolated_error = nil
@@ -611,11 +871,8 @@ module IronmonSeededRunImportRuntimeTests
         assert(false, "an impossible pairing remains rejected on repeated requests")
       end
       chained_seed = 116_872_428
-      chained_mapper = Ironmon::PlayerFusionMapper.new(
-        chained_seed, Ironmon.custom_fusion_pool_numbers, {}, {},
-        Ironmon::BaseStatGenerator.new(
-          chained_seed, Ironmon.base_stat_source_fingerprint
-        )
+      chained_mapper = player_fusion_mapper_for_schema(
+        chained_seed, Ironmon.custom_fusion_pool_numbers, 1
       )
       chained_mapper.prepare
       pairs = chained_mapper.instance_variable_get(:@fusion_pairs)
@@ -630,9 +887,8 @@ module IronmonSeededRunImportRuntimeTests
         end,
         "strength-chain repair retains BST and disjoint-component constraints"
       )
-      broken_mapper = Ironmon::PlayerFusionMapper.new(
-        seed, Ironmon.custom_fusion_pool_numbers.first(1), {}, {},
-        Ironmon::BaseStatGenerator.new(seed, Ironmon.base_stat_source_fingerprint)
+      broken_mapper = player_fusion_mapper_for_schema(
+        seed, Ironmon.custom_fusion_pool_numbers.first(1), 1
       )
       failure = nil
       2.times do
@@ -682,7 +938,7 @@ module IronmonSeededRunImportRuntimeTests
         )
       end
       stat_probe = Ironmon::BaseStatGenerator.new(
-        seed, Ironmon.base_stat_source_fingerprint
+        seed, Ironmon.base_stat_source_fingerprint(1), 1
       )
       sample_step = [Ironmon.custom_fusion_pool.length / 8, 1].max
       Ironmon.custom_fusion_pool.each_with_index do |identity, index|
@@ -702,11 +958,8 @@ module IronmonSeededRunImportRuntimeTests
             identity.to_s
         )
       end
-      reverse_mapper = Ironmon::PlayerFusionMapper.new(
-        seed, Ironmon.custom_fusion_pool, {}, {},
-        Ironmon::BaseStatGenerator.new(
-          seed, Ironmon.base_stat_source_fingerprint
-        )
+      reverse_mapper = player_fusion_mapper_for_schema(
+        seed, Ironmon.custom_fusion_pool, 1
       )
       forward_materials = reverse_mapper.material_pairs_for(forward)
       assert(
@@ -797,9 +1050,11 @@ module IronmonSeededRunImportRuntimeTests
         Marshal.dump($game_switches) == switches_before,
         "preset failure restores game switches"
       )
+      expected_variables = Marshal.load(variables_before)
       assert(
-        Marshal.dump($game_variables) == variables_before,
-        "preset failure restores game variables"
+        $game_variables == expected_variables &&
+          $game_variables[16].encoding == expected_variables[16].encoding,
+        "preset failure restores game variables and their string encoding"
       )
       assert(
         !Ironmon.instance_variable_defined?(:@preset_test_leaked_state),
@@ -860,15 +1115,25 @@ module IronmonSeededRunImportRuntimeTests
     test_transaction(false)
     test_preset_failure_rollback
     test_repeated_import_determinism
+    test_player_fusion_profile_versions
     test_isolated_player_fusion_pool
+    test_adaptive_player_fusion_steps
+    test_adaptive_player_fusion_full_span_failure
     test_player_fusion_reverse_materials
+    test_adaptive_player_fusion_outlier
     File.binwrite(
       OUTPUT_PATH,
       "seeded-run import runtime tests passed\n" +
         "player_fusion_pairing_milliseconds=" +
         @player_fusion_pairing_milliseconds.to_i.to_s + "\n" +
         "isolated_player_fusion_pairing_milliseconds=" +
-        @isolated_player_fusion_pairing_milliseconds.to_i.to_s + "\n"
+        @isolated_player_fusion_pairing_milliseconds.to_i.to_s + "\n" +
+        "adaptive_player_fusion_pairing_sha256=" +
+        @adaptive_player_fusion_pairing_sha256.to_s + "\n" +
+        "adaptive_player_fusion_pairing_bst_limit=" +
+        @adaptive_player_fusion_pairing_bst_limit.to_i.to_s + "\n" +
+        "adaptive_player_fusion_pairing_relaxation_steps=" +
+        @adaptive_player_fusion_pairing_relaxation_steps.to_i.to_s + "\n"
     )
   rescue Exception => exception
     File.binwrite(

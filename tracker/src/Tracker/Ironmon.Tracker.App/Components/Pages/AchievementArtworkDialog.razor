@@ -1,0 +1,21 @@
+@implements IDisposable
+
+<ObsidianDialog Title="@Achievement.Name" Eyebrow="@Text[AchievementText.Artwork]" Closed="Closed" Class="achievement-artwork-dialog">
+    <div class="achievement-artwork-canvas" aria-busy="@(_loading ? "true" : "false")">
+        @if (_loading)
+        {
+            <p class="achievement-artwork-status" role="status">@Text[AchievementText.ArtworkLoading]</p>
+        }
+        else if (_artwork is { } artwork)
+        {
+            <img class="achievement-artwork-image" src="@artwork.ImageDataUri" alt="@Achievement.Name" width="@artwork.Width" height="@artwork.Height" />
+        }
+        else
+        {
+            <div class="achievement-artwork-status" role="status">
+                <p>@Text[AchievementText.ArtworkUnavailable]</p>
+                <button type="button" class="achievement-state-action" @onclick="LoadAsync">@Text[AchievementText.Retry]</button>
+            </div>
+        }
+    </div>
+</ObsidianDialog>

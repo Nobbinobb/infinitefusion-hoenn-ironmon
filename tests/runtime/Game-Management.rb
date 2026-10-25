@@ -19,6 +19,7 @@ module IronmonGameManagementRuntimeTests
     value = { "menu_id" => Ironmon.instance_variable_get(:@main_menu_id),
       "slot" => slot, "revision" => Ironmon.save_revision(slot), "overwrite" => false }
     value["rules"] = { "wild_policy" => "normal_only", "trainer_policy" => "mixed",
+      "starter_policy" => "custom_fusions_only",
       "unfusion_setting" => "player_choice" } if rules
     return value
   end
@@ -65,6 +66,7 @@ module IronmonGameManagementRuntimeTests
     assert(SaveData.valid?(saved) && Ironmon.saved_ironmon?(saved), "new slot is a valid native Ironmon save")
     assert(saved[:player].save_slot == "File A", "save slot is bound to the selected letter")
     assert(saved[:global_metadata].ironmon_configuration.wild_policy == :normal_only, "tracker rules persist in native save metadata")
+    assert(saved[:global_metadata].ironmon_configuration.starter_policy == :custom_fusions_only, "tracker starter rules persist independently of wild rules")
     assert(select_game_mode == :IRONMON, "intro reuses tracker-created mode without the old configuration menu")
     original_seed = $PokemonGlobal.ironmon_seed
     original_rules = Ironmon.configuration_snapshot

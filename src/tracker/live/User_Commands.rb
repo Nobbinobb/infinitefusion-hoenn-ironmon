@@ -45,6 +45,14 @@ module Ironmon
     end
   end
 
+  def self.without_tracker_battle_item_command
+    previous = @tracker_battle_command
+    @tracker_battle_command = nil
+    return yield
+  ensure
+    @tracker_battle_command = previous
+  end
+
   def self.request_tracker_battle_item(payload, battle_id)
     return tracker_battle_item_result(false, "No active battle is available.") if
       !@tracker_battle_id || battle_id.to_s != @tracker_battle_id.to_s

@@ -3,7 +3,6 @@ using System.Net.Http.Headers;
 using Ironmon.Setup.Core;
 using Ironmon.SpriteLibrary;
 using Ironmon.Updater.Infrastructure;
-using Ironmon.Tracker.Connection.Sprites;
 
 namespace Ironmon.Updater.Tests;
 

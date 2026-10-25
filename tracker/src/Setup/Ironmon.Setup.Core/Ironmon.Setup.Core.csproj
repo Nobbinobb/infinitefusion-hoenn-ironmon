@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../Updater/Ironmon.Updater.Infrastructure/Ironmon.Updater.Infrastructure.csproj" />
+    <ProjectReference Include="../../Shared/Ironmon.SpriteLibrary/Ironmon.SpriteLibrary.csproj" />
+  </ItemGroup>
+</Project>

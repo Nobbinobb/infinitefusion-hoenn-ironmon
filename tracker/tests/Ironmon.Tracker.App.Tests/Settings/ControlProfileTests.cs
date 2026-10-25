@@ -98,6 +98,7 @@ public sealed class ControlProfileTests(ITestOutputHelper output)
     /// Shows controller conflict warnings only after a successful transaction and preserves old controls on failure.
     /// </summary>
     /// <returns>A task that completes after the capture transport is disposed.</returns>
+    [Trait(TrackerTestCategories.Category, TrackerTestCategories.GameCatalog)]
     [Fact]
     public async Task ControllerCaptureWarnsBeforeReplacementAndAfterSuccessfulSave()
     {
@@ -321,6 +322,40 @@ public sealed class ControlProfileTests(ITestOutputHelper output)
     }
 
     /// <summary>
+    /// Routes each quick-item chord alone and retains defaults and edited alternatives in saved profiles.
+    /// </summary>
+    /// <param name="id">The quick-item action identifier.</param>
+    [Theory]
+    [InlineData(ControlCatalog.QuickItemLeft)]
+    [InlineData(ControlCatalog.QuickItemRight)]
+    [InlineData(ControlCatalog.QuickItemUp)]
+    [InlineData(ControlCatalog.QuickItemDown)]
+    [InlineData(ControlCatalog.QuickItemUse)]
+    public void QuickItemChordsConsumeTheirComponentInputsAndPersist(string id)
+    {
+        ControlAction action = ControlCatalog.Actions.Single(action => action.Id == id);
+        Dictionary<string, string[][]> controller = ControlCatalog.Actions.ToDictionary(action => action.Id, action => action.Controller);
+        Dictionary<string, int[][]> keyboard = ControlCatalog.Actions.ToDictionary(action => action.Id, action => action.Keyboard);
+        Assert.Equal([id], ControlMatcher.Match(controller, action.Controller[0].ToHashSet()));
+        Assert.Equal([id], ControlMatcher.Match(keyboard, action.Keyboard[0].ToHashSet()));
+        Assert.Contains(id, ControlCatalog.GameActions);
+        Assert.Contains(ControlCatalog.Groups, group => group.Actions.Contains(id));
+        string? stored = null;
+        ControlProfiles profiles = new(() => stored, value => stored = value);
+        profiles.Remember(_xboxIdentity, "Xbox", true);
+        ControlProfiles existing = new(() => stored, value => stored = value);
+        Assert.Equal(action.Controller, existing.Controller(action, _xboxIdentity, true));
+        Assert.Equal(action.Keyboard, existing.Keyboard(action));
+        existing.SetKeyboardSlot(id, 1, [0x11, 0x75]);
+        existing.SetControllerSlot(_xboxIdentity, id, 1, [ControlInput.Back, ControlInput.North]);
+        ControlProfiles reloaded = new(() => stored, _ => { });
+        Assert.Equal(action.Keyboard[0], reloaded.Keyboard(action)[0]);
+        Assert.Equal([0x11, 0x75], reloaded.Keyboard(action)[1]);
+        Assert.Equal(action.Controller[0], reloaded.Controller(action, _xboxIdentity, true)[0]);
+        Assert.Equal([ControlInput.Back, ControlInput.North], reloaded.Controller(action, _xboxIdentity, true)[1]);
+    }
+
+    /// <summary>
     /// Preserves a field or battle action when a longer chord belongs to an unrelated input context.
     /// </summary>
     [Fact]
@@ -437,6 +472,7 @@ public sealed class ControlProfileTests(ITestOutputHelper output)
     /// Captures a brief keyboard chord, suppresses navigation during capture, and replaces the old shortcut.
     /// </summary>
     /// <returns>A task that completes when shortcut capture has been verified.</returns>
+    [Trait(TrackerTestCategories.Category, TrackerTestCategories.GameCatalog)]
     [Fact]
     public async Task KeyboardCaptureReplacesTrackerWindowShortcuts()
     {
@@ -549,6 +585,7 @@ public sealed class ControlProfileTests(ITestOutputHelper output)
     /// Leaves a preview unsaved until confirmed and modifies only the requested second slot.
     /// </summary>
     /// <returns>A task that completes after the capture session and transport are disposed.</returns>
+    [Trait(TrackerTestCategories.Category, TrackerTestCategories.GameCatalog)]
     [Fact]
     public async Task CapturePreviewCanBeCancelledOrCommittedToTheSecondSlot()
     {

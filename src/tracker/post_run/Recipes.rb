@@ -36,9 +36,12 @@ module Ironmon
   def self.tracker_recoverable_completed_run_recipe
     attempt = current_run_attempt if respond_to?(:current_run_attempt)
     return nil if attempt && attempt["result"] == "active"
+    stored = run_ledger["last_completed_recipe"]
+    return stored if stored.is_a?(Hash) && attempt &&
+      stored["run_id"] == attempt["run_id"] && stored["seed"] == attempt["seed"] &&
+      stored["result"] == attempt["result"]
     recipe = tracker_completed_run_recipe
     return recipe if recipe
-    stored = run_ledger["last_completed_recipe"]
     return stored if stored.is_a?(Hash)
     return nil
   end
@@ -55,6 +58,7 @@ module Ironmon
       "result" => result.to_s
     }
     reproduction.each { |key, value| recipe[key] = value }
+    opening = tracker_opening_rival_context(result)
     recipe.merge!({
       "item_mappings" => tracker_item_mapping_recipe(
         $PokemonGlobal.randomItemsHash
@@ -62,9 +66,37 @@ module Ironmon
       "tm_mappings" => tracker_item_mapping_recipe(
         $PokemonGlobal.randomTMsHash
       ),
+      "story_trainer_parties" => tracker_story_trainer_recipe,
+      "story_trainer_previews" => opening ? {} : tracker_current_story_trainer_previews,
       "statistics" => tracker_attempt_statistics(current_run_attempt)
     })
+    recipe["opening_rival_context"] = opening if opening
+    recipe["collection_attempt_ids"] = tracker_owned_iv_attempt_ids(recipe, true)
     return recipe
+  end
+
+  def self.tracker_owned_iv_attempt_ids(recipe, current_attempt = false)
+    return [] if !recipe.is_a?(Hash) || recipe["result"].to_s.empty?
+    return [] if recipe["active_run"] || recipe["result"].to_s == "active"
+    identifiers = Array(recipe["collection_attempt_ids"]).select do |id|
+      /\A[0-9a-f]{32}\z/i.match?(id.to_s)
+    end
+    return identifiers.uniq if !identifiers.empty?
+    return [] if !current_attempt || !$PokemonGlobal
+    statistics = recipe["statistics"] || {}
+    number = statistics["attempt_number"]
+    return [] if !number.is_a?(Integer) || number <= 0
+    return [] if !defined?(GameplayCollection) || !GameplayCollection.enabled?
+    journal = GameplayCollection.journal
+    bindings = journal.runtime_context("attempt_bindings")
+    return [] if !bindings.is_a?(Hash)
+    association = $PokemonGlobal.instance_variable_get(:@ironmon_collection_attempt_association)
+    return [] if !association.is_a?(Hash) || association["epoch_id"] != journal.epoch_id
+    binding = bindings[association["token"]]
+    return [] if !binding.is_a?(Hash) || binding["source_run_id"] != recipe["run_id"]
+    return [] if binding["attempt_number"] != number
+    identifier = binding["attempt_id"].to_s
+    return /\A[0-9a-f]{32}\z/i.match?(identifier) ? [identifier] : []
   end
 
   def self.tracker_run_reproduction_recipe
@@ -253,7 +285,7 @@ module Ironmon
 
   def self.tracker_player_fusion_generator_recipe
     return {
-      "version" => PlayerFusionMapper::SCHEMA_VERSION,
+      "version" => player_fusion_generator_version,
       "pool_size" => $PokemonGlobal.ironmon_custom_fusion_pool_size,
       "pool_fingerprint" => $PokemonGlobal.ironmon_custom_fusion_pool_fingerprint
     }

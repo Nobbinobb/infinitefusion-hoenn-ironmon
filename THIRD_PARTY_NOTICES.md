@@ -55,7 +55,7 @@ in `MinGitPackage` in the reviewed updater source.
 ## Open Sans
 
 The file
-`tracker/src/Ironmon.Tracker.App/Resources/Fonts/OpenSans-Regular.ttf` is part
+`tracker/src/Tracker/Ironmon.Tracker.App/Resources/Fonts/OpenSans-Regular.ttf` is part
 of the Open Sans font project.
 
 Copyright 2020 The Open Sans Project Authors

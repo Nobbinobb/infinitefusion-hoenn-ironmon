@@ -8,23 +8,12 @@ module Ironmon
   TRACKER_STARTER_AUTOSELECT_REVEAL_SECONDS = 0.75
 
   def self.begin_tracker_starter_selection(pokemon)
+    remember_starter_offers(pokemon)
     return if !active? || !pokemon || pokemon.empty?
-    random_pick = tracker_starter_random_pick(pokemon.length)
+    prepare_tracker_rival_fusion if rival_lab_choice_enabled?
     auto_select = tracker_auto_select_starter?
     ceiling = tracker_maximum_starter_base_stat_total
-    if ceiling
-      eligible = pokemon.each_index.select do |index|
-        total = pokemon[index].baseStats.values.inject(0) do |sum, value|
-          sum + value
-        end
-        total <= ceiling
-      end
-      random_pick = if eligible.empty?
-                      nil
-                    else
-                      eligible[tracker_starter_random_pick(eligible.length)]
-                    end
-    end
+    random_pick = tracker_starter_pick_for(pokemon, ceiling)
     @tracker_starter_selection_sequence = (@tracker_starter_selection_sequence || 0) + 1
     @tracker_starter_selection = {
       :selection_id => "#{ensure_tracker_run_id}:#{@tracker_starter_selection_sequence}",
@@ -50,6 +39,23 @@ module Ironmon
   rescue Exception => e
     @tracker_starter_selection = nil
     echoln "Ironmon tracker starter selection failed safely: #{e.message}"
+  end
+
+  def self.tracker_starter_pick_for(pokemon, ceiling)
+    eligible = pokemon.each_index.select do |index|
+      !ceiling || pokemon[index].baseStats.values.inject(0) { |sum, value| sum + value } <= ceiling
+    end
+    return nil if eligible.empty?
+    return eligible[tracker_starter_random_pick(eligible.length)]
+  end
+
+  def self.refresh_tracker_starter_rules
+    selection = @tracker_starter_selection
+    return if !selection || selection.key?(:pending_index)
+    selection[:ceiling] = tracker_maximum_starter_base_stat_total
+    selection[:favorites] = selection[:pokemon].map { |pokemon| tracker_favorite_pokemon?(pokemon) }
+    selection[:random_pick_index] = tracker_starter_pick_for(selection[:pokemon], selection[:ceiling])
+    tracker_connection.send_event("starter_selection_changed", tracker_starter_selection_snapshot)
   end
 
   def self.reveal_tracker_starter(index, sprite = nil)
@@ -335,6 +341,11 @@ class StartersSelectionScene
       Input.update
       Graphics.update
     end
+    eligible_indices = @starter_pokemon.each_index.select { |index| Ironmon.tracker_starter_eligible?(index) }
+    if eligible_indices.empty?
+      ironmon_tracker_dispose_unopened_graphics
+      raise Ironmon::StarterBstCeilingExceeded, "No generated starter satisfies the maximum BST."
+    end
     @index = Ironmon.tracker_starter_random_pick_index || eligible_indices[
       Ironmon.tracker_starter_random_pick(eligible_indices.length)
     ]
@@ -383,6 +394,22 @@ class StartersSelectionScene
       loop do
         Graphics.update
         Input.update
+        current_indices = @starter_pokemon.each_index.select { |index| Ironmon.tracker_starter_allowed?(index) }
+        if current_indices.empty?
+          disposeGraphics
+          raise Ironmon::StarterBstCeilingExceeded, "No generated starter satisfies the maximum BST."
+        end
+        if current_indices.sort != allowed_indices.sort || random_pick != Ironmon.tracker_starter_random_pick_index
+          allowed_indices = current_indices
+          random_pick = Ironmon.tracker_starter_random_pick_index
+          command_window.commands = allowed_indices.map do |index|
+            label = index == random_pick ? "Random Pick" : "Favorite"
+            _INTL("{1} ({2})", @starter_pokemon[index].species_data.name, label)
+          end
+          command_window.index = [command_window.index, allowed_indices.length - 1].min
+          command_window.resizeToFit(command_window.commands)
+          pbPositionNearMsgWindow(command_window, message_window, :right)
+        end
         command_window.update
         message_window.update
         requested = Ironmon.take_tracker_starter_choice
@@ -414,8 +441,13 @@ class StartersSelectionScene
   end
 
   def ironmon_tracker_finalize_starter
-    raise "The selected starter is not allowed." if
-      !Ironmon.tracker_starter_allowed?(@index)
+    if !Ironmon.tracker_starter_allowed?(@index)
+      if Ironmon.tracker_starter_selection_auto_select?
+        disposeGraphics
+        return ironmon_tracker_auto_select_starter
+      end
+      raise "The selected starter is not allowed."
+    end
     Ironmon.set_tracker_starter_accepting(false)
     chosen_pokemon = @starter_pokemon[@index]
     @spritesLoader.registerSpriteSubstitution(@pif_sprite)

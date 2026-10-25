@@ -1,156 +1,83 @@
 # Ironmon tracker workspace
 
-The production tracker is being implemented in reviewable parts under `src/`
-and `tests/`. See `IMPLEMENTATION_STATUS.md` for the completed boundary and the
-[Ironmon Mechanics Manual](../docs/IRONMON_MECHANICS.html#tracker) for the
-current product behavior. The exact implemented connection subset is recorded
-in `PROTOCOL.md`.
+The Windows tracker, installer, and updater share the solution
+[`Ironmon.Tracker.slnx`](Ironmon.Tracker.slnx). Product behavior is described in
+the [mechanics manual](../docs/IRONMON_MECHANICS.html#tracker), and communication
+contracts are in [`PROTOCOL.md`](PROTOCOL.md).
 
-## Project organization
+## Source layout
 
-- `src/Ironmon.Tracker.App/Components/` groups the Blazor UI by `Common`,
-  `Player`, `Enemy`, `Lookup`, `Debug`, and `Navigation` features.
-- `src/Ironmon.Tracker.Connection/` separates transport, run state, persisted
-  knowledge, diagnostics, and completed-run storage.
-- `src/Ironmon.Tracker.Core/` contains move rules and completed-run domain
-  types, including strict aggregate type-coverage dataset validation.
-- `src/Ironmon.Tracker.Protocol/` groups transport envelopes, connection
-  payloads, live snapshots, lookup payloads, Pokémon data, and debug payloads.
-- `tests/Ironmon.Tracker.Tests/` mirrors the production project areas.
-- `tests/Ironmon.Tracker.App.Tests/` contains Windows-only UI tests that reference
-  the compiled desktop app. App components and localization resources stay in
-  the app project; no source files are linked or copied into the tests.
+| Directory | Responsibility |
+| --- | --- |
+| `src/Tracker/` | Desktop app, connection, collection, domain rules, protocol, and seed support |
+| `src/Setup/` | Native installer and setup logic |
+| `src/Updater/` | Updater, installation planning, and update infrastructure |
+| `src/Shared/` | SQLite definitions/execution, sprite library, diagnostic access, and shared UI |
+| `tests/` | Tracker, app, setup, and updater tests, plus isolated test hosts |
+| `tools/` | SQL source generator, release and sprite-size tools, and access-token generator |
 
-User-visible tracker text uses standard .NET resources. See
-[`LOCALIZATION.md`](LOCALIZATION.md) for the translation workflow and resource
-boundaries.
+`Ironmon.Tracker.Collection` groups query definitions, mapped tables, and result
+types under `Queries/`, persistence under `Storage/`, and accumulation under
+`Reduction/`. Its two public entry points remain at the project root.
 
-## Run the desktop shell
+`Ironmon.Sqlite` contains the C# query definitions and execution helpers. The
+SQL generator stays in `tools/Ironmon.Sqlite.QueryGenerator` because it runs
+during compilation.
 
-The Player and Enemy cards open a [defensive overview](../docs/IRONMON_MECHANICS.html#tracker-defense-view)
-when a Pokemon's type text is clicked. It combines known damage factors with
-the type matchups and omits neutral results. Protection labels disclose only
-affected move names; Recovery shows a trigger such as **Hail**, with the healing
-amount or status-recovery effect hidden until clicked. Passive and pending healing
-states are included: used Wish shows its remaining turn timing, while unused Wish
-and direct healing moves such as Milk Drink add nothing. Independent stacked heals
-retain their contribution counts. Active guards, survival, hazard avoidance, and
-compact conditional defenses are also represented. The overview does not display ability names,
-effect sources, or explanatory blocks, and never infers concealed enemy state.
-Its informational catalog is regenerated and packaged by the normal release
-build. Ordinary builds reuse existing data, including after base-game updates.
-See the [defense audit workflow](../docs/audits/WEAKNESS_MODIFIERS_AUDIT.md#defense-catalog-generation)
-for the input, generated artifacts, and manual refresh command.
+App components and assets stay in their owning project; shared code uses project
+references. See [`LOCALIZATION.md`](LOCALIZATION.md) for translated UI text.
 
-The current review build is a Windows-only .NET 10 Blazor Hybrid application
-with permanent Player, Enemy, live Lookup, and completed-run Archive views.
-The Player card follows temporary Imposter and Transform battle state while
-retaining the original Pokemon for nature, learnset, and PP-item ownership.
-Archive includes deterministic Pokemon lookup, fusion exploration, and session
-Back/Forward navigation. Live Lookup contains Trainers, Encounters, Items, and
-Type Coverage. The game connects locally on port `38521`; no browser or HTTP
-server is used.
+## Build and run
+
+Run these commands from the repository root on Windows with the .NET 10 SDK
+and `maui-windows` workload installed:
 
 ```powershell
-& 'C:\Program Files\dotnet\dotnet.exe' run `
-  --project 'src\Ironmon.Tracker.App\Ironmon.Tracker.App.csproj'
+dotnet build tracker/Ironmon.Tracker.slnx -c Release
+dotnet run --project tracker/src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj
 ```
 
-Debug builds request the unrestricted local developer override automatically
-and still require a game runtime with the development helper enabled. The
-ordinary Release tracker instead exposes **Diagnostic Access**, where a signed
-token can be pasted or loaded from an `.ironmon-access` file. No special build
-or launch flag is required for token-based access. The legacy Release launch
-flag remains available only for the dual-sided local developer override:
+Prepare the generated runtime data first using the
+[development guide](../docs/guides/DEVELOPMENT.md). Ordinary .NET builds use
+existing data and do not generate it or install game scripts.
+
+## Validate and publish
+
+Run Quick smoke tests against the relevant project using VSTest configuration:
 
 ```powershell
-& 'C:\Program Files\dotnet\dotnet.exe' run `
-  --project 'src\Ironmon.Tracker.App\Ironmon.Tracker.App.csproj' `
-  -- --debug
+dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj -c Release --settings tracker/tests/Quick.runsettings -p:IronmonQuickTests=true --maxcpucount:1
 ```
 
-Each token grants named pages and information groups independently, with an
-optional expiration. All Active Pokemon includes and locks the Current Player
-and Current Enemies quick-access grants. Evolution Results and Evolution
-Candidates remain separate. Area-only access does not expose a Pokemon or raw
-diagnostic page. Activation, replacement, removal, and expiration update a
-connected game immediately, while the raw token and its metadata remain
-tracker-local.
-
-Debug Pokemon, Debug Lookup, and completed-run Archive use the same tabbed
-Pokemon-information card: Overview, Abilities, Stats, Moves, and Evolutions.
-Debug Pokemon merges live player/enemy diagnostics into those shared pages.
-Overview wild locations, trainer locations, and fusion materials use bounded
-10-row pages so high-collision fusions remain compact in the Overview.
-The diagnostic tools hosted with Diagnostic Access also include tracker-owned
-raw protocol and state diagnostics.
-Tokens may also grant eight independent Development controls: NoFail /
-AutoRevive, Full Heal, level adjustment, ability changes, move changes, item
-grants, direct evolution/devolution, and Pokemon swapping. Persistent changes
-are accepted only outside battle. Development provides searchable full-catalog
-ability, move, and item selectors plus explicit choices for every direct
-evolution or devolution branch of the current Pokemon. Active Debug Lookup
-offers the confirmed swap action; a swap creates the selected Pokemon at the
-current player's level with the newest four level-up moves available at that level.
-The Full current debug access preset remains read-only; each gameplay-changing
-Development permission must be selected explicitly.
-Protocol history, raw tracker state, and persisted knowledge are separately
-granted groups. Diagnostic reports contain only currently authorized groups
-and can be copied or exported to
-`%LocalAppData%\IronmonTracker\diagnostics\`.
-Protocol and connection failures are also captured automatically in
-`%LocalAppData%\IronmonTracker\diagnostics\latest-protocol-error.json`. The
-stable file retains the complete exception and recent message history across
-run resets and tracker restarts.
-
-The tracker embeds the release's aggregate type-coverage dataset. Type Coverage
-uses current damaging-move types by default and permits hypothetical selections
-across all standard types. The resource stores only defensive profiles and
-their Normal/Fusion population counts, never individual species or
-seed-generated opponents. The release build derives it from the finalized
-generation profile's normal catalog and packed custom-fusion pool. Tests compare
-the resource directly with that profile so stale coverage cannot be packaged.
-
-While the connected game owns the foreground window, `Ctrl+1`, `Ctrl+2`,
-`Ctrl+3`, and `Ctrl+4` select Player, Enemy, Lookup, and Archive without focusing
-the tracker. On an XInput controller, hold both triggers and flick the right
-stick left, right, up, or down for those same views. Diagnostic tools have no
-direct shortcut and remain unavailable unless signed access or the local
-developer override authorizes them.
-
-## Validate the implementation
+CI applies the same settings directly to the core, app, updater, and overlay test
+projects, with the bundled Ruby category in a separate required job. For affected coverage, select a project and optionally `--filter`. Before a
+PR, prepare matching generated catalogs and run the complete native C# suite:
 
 ```powershell
-& 'C:\Program Files\dotnet\dotnet.exe' test `
-  'tests\Ironmon.Tracker.Tests\Ironmon.Tracker.Tests.csproj' `
-  --no-restore --nologo --disable-build-servers -m:1 `
-  -p:UseSharedCompilation=false
+dotnet test tracker/Ironmon.Tracker.slnx -c Release --settings tracker/tests/Full.runsettings --maxcpucount:1
 ```
 
-Run the desktop UI tests on Windows:
+Updater integration tests require the pinned official MinGit archive. Download
+it once from the repository root; the C# fixture validates it before extraction:
 
 ```powershell
-& 'C:\Program Files\dotnet\dotnet.exe' test `
-  'tests\Ironmon.Tracker.App.Tests\Ironmon.Tracker.App.Tests.csproj' `
-  --nologo --disable-build-servers -m:1 `
-  -p:UseSharedCompilation=false
+curl.exe --create-dirs --fail --location --output tracker/tests/Ironmon.Updater.Tests/bin/test-assets/MinGit.zip https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.5/MinGit-2.55.0.5-64-bit.zip
 ```
 
-Building the shell or running its UI tests requires the Windows-only
-`maui-windows` workload during development. The standard end-user package is
-self-contained. A smaller runtime-required package requires the Windows x64 .NET 10 Runtime,
-but neither package requires the SDK or MAUI workload.
+Quick never uses the private Git fixture. Both profiles serialize xUnit
+collections and exclude live network cases. Full requires normal generated
+resources; Quick uses isolated test-only outputs that cannot be published.
 
-## Publish the release tracker
+Core Quick and Full include an xUnit host for `tests/runtime/Quick.rb`. It runs
+four Ruby smoke groups in the real bundled game: source startup, deterministic
+hashing, battle Run, and feature settings. Set `IRONMON_TEST_GAME_ROOT` when the
+game is not the source checkout's parent directory. The host uses a disposable
+runtime and isolated saves; evidence remains under ignored `data/ruby-smoke`.
+Select `--filter Category=BundledRuby` to run just Ruby smoke, or
+`--filter Category!=BundledRuby` to run core C# checks alone. Larger Ruby suites
+remain separate. No PowerShell regression launchers are used.
 
-Run `tools/Publish-Tracker.ps1` from the repository root to create the
-self-contained `win-x64` application under `dist/Ironmon Tracker`. Pass
-`-DeploymentMode RuntimeRequired` to create the smaller runtime-dependent
-application under `dist-runtime-required/Ironmon Tracker`. Run
-`tools/Build-TrackerRelease.ps1` to rebuild the Ruby distribution, publish both
-tracker variants, and create a deterministic release ZIP and checksum for each.
-The release command first regenerates the source catalogs and audits, finalizes
-and installs the generation profile, and only then generates its coverage
-dataset in the bundled game runtime. It validates coverage against the finalized
-profile before running the tracker tests. It aborts rather than packaging stale
-data and excludes the generators and audits from both player archives.
+`tools/Publish-Tracker.ps1` publishes the tracker. The
+`tools/Build-TrackerRelease.ps1` command generates data, runs native C# tests,
+and builds both player packages. Packaging, signing, and recovery are documented
+in the [updater release guide](../docs/guides/UPDATER_RELEASES.md).

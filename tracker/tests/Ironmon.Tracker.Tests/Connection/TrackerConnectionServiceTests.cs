@@ -35,7 +35,7 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     public async Task TitleManagementNegotiatesSessionAndHeartbeatsWhileRequestIsPending()
     {
         const string sessionId = "title-session";
-        TrackerConnectionOptions options = new(0, _preparationTestTrackerVersion, false, TimeSpan.FromSeconds(2));
+        TrackerConnectionOptions options = new(0, _preparationTestTrackerVersion, false, TimeSpan.FromSeconds(2)) { Features = new() { BattleQuickItems = false, FavoriteClause = false, EnforceBstLimit = false }, MaximumStarterBaseStatTotal = 400 };
         TrackerConnectionState state = new();
         await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, new TrackerRunState(), CreateKnowledgeStore(), CreateAreaDiscoveryStore(), CreateCompletedRunArchive());
         service.Start();
@@ -56,6 +56,8 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         Assert.Equal(game.GameRoot, tracker.GameRoot);
         Assert.Equal(RunManagementProtocol.Version, tracker.ManagementProtocolVersion);
         Assert.True(tracker.AutomaticReset);
+        Assert.Equal(options.Features, tracker.Features);
+        Assert.Equal(400, tracker.MaximumStarterBaseStatTotal);
         TrackerMessage initial = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(_backgroundRequestTimeout));
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(initial.RequestId!, new GameCurrentStatePayload(false, null, null, 0)));
         Task<GameManagementPayload> pending = service.Requests.GetGameManagementAsync();
@@ -210,11 +212,14 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     }
 
     /// <summary>
-    /// Verifies an unready run stays idle until the user requests permission-free foreground preparation.
+    /// Verifies manual preparation receives the native recipe during an opening battle without diagnostic grants.
     /// </summary>
+    /// <returns>The asynchronous connection and native pairing assertions.</returns>
     [Fact]
     public async Task UnreadyActiveRunRemainsIdleOnConnect()
     {
+        const string sessionId = "opening-battle-session";
+        const string battleId = "opening-battle";
         TrackerConnectionState state = new();
         TrackerConnectionOptions options = new(0, _preparationTestTrackerVersion, false, TimeSpan.FromSeconds(2));
         await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, new TrackerRunState(), CreateKnowledgeStore(), CreateAreaDiscoveryStore(), CreateCompletedRunArchive());
@@ -225,12 +230,16 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         NetworkStream stream = client.GetStream();
         using TrackerMessageReader reader = new(stream, leaveOpen: true);
         await using TrackerMessageWriter writer = new(stream, leaveOpen: true);
-        GameHandshakePayload game = new(_preparationTestGameVersion, _preparationTestIronmonVersion, true, true, TrackerTestPaths.GameRoot, _activeRunId, null);
+        GameHandshakePayload game = new(_preparationTestGameVersion, _preparationTestIronmonVersion, true, true, TrackerTestPaths.GameRoot, _activeRunId, battleId)
+        {
+            GameplayFusionPairingVersion = GameplayFusionPairingPayload.CurrentVersion,
+            SessionId = sessionId
+        };
         await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.GameConnected, 0, game, _activeRunId));
 
         _ = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
         TrackerMessage currentStateRequest = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2)));
-        GameCurrentStatePayload currentState = new(true, _activeRunId, null, 0);
+        GameCurrentStatePayload currentState = new(true, _activeRunId, battleId, 0);
         await writer.WriteAsync(TrackerMessageFactory.CreateResponse(currentStateRequest.RequestId!, currentState, _activeRunId));
         await WaitForSnapshotAsync(state, snapshot => snapshot.CurrentState is not null);
         await Task.Delay(TimeSpan.FromMilliseconds(3_500));
@@ -243,7 +252,21 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         Assert.Equal(TrackerCommands.PrepareRunLookup, preparationRequest.Command);
         Assert.Equal(_activeRunId, preparationRequest.RunId);
         Assert.True(TrackerJson.DeserializePayload<RunLookupPreparationRequestPayload>(preparationRequest.Payload).Foreground);
-        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(preparationRequest.RequestId!, new PokemonObtainabilityResponsePayload { BackgroundComplete = true }, _activeRunId));
+        FusionAssignmentRecipePayload recipe = CreateCompatibleFusionAssignmentRecipe();
+        GameCurrentStatePayload readyState = new(true, _activeRunId, battleId, 1, fusionAssignments: recipe, activeRunPreparationReady: true);
+        await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.ActiveRunPreparationReady, 1, readyState, _activeRunId));
+        await WaitForSnapshotAsync(state, snapshot => snapshot.CurrentState?.ActiveRunPreparationReady == true);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(preparationRequest.RequestId!, new PokemonObtainabilityResponsePayload { PlayerFusionPairingReady = false }, _activeRunId));
+
+        TrackerMessage pairingRequest = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(_backgroundRequestTimeout));
+        Assert.Equal(TrackerCommands.PrepareRunLookup, pairingRequest.Command);
+        RunLookupPreparationRequestPayload pairingPayload = TrackerJson.DeserializePayload<RunLookupPreparationRequestPayload>(pairingRequest.Payload);
+        Assert.True(pairingPayload.Foreground);
+        GameplayFusionPairingPayload pairing = Assert.IsType<GameplayFusionPairingPayload>(pairingPayload.PlayerFusionPairing);
+        Assert.Equal(sessionId, pairing.SessionId);
+        Assert.Equal(recipe.Seed, pairing.Recipe.Seed);
+        Assert.NotEmpty(pairing.PackedPairs);
+        await writer.WriteAsync(TrackerMessageFactory.CreateResponse(pairingRequest.RequestId!, new PokemonObtainabilityResponsePayload { BackgroundComplete = true }, _activeRunId));
         await preparation;
 
         Assert.Equal(TrackerObtainabilityProgressStatus.Complete, service.Requests.ObtainabilityProgress.GetActiveRunSnapshot(_activeRunId).Status);
@@ -1511,6 +1534,9 @@ public sealed class TrackerConnectionServiceTests : IDisposable
         PlayerFusionMappingWorkerCatalog catalog = PlayerFusionMappingWorkerCatalog.Load();
         return new FusionAssignmentRecipePayload
         {
+            GenerationProfileId = _testGenerationProfileId,
+            NormalSpeciesCount = catalog.NormalSpeciesCount,
+            BaseStatGeneratorVersion = 1,
             Seed = catalog.VerificationSeed,
             PlayerFusionGeneratorVersion = catalog.PlayerFusionGeneratorVersion,
             GeneratorVersion = catalog.FusionEvolutionGeneratorVersion,

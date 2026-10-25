@@ -39,11 +39,11 @@ public sealed class RunManagementViewTests
     private const string AutoSlot = "Auto 1";
     private const string ProjectRelativeRoot = "../../../..";
     private const string PreviewRelativePath = "data/run-management-{0}-preview.html";
-    private const string StylesRelativePath = "tracker/src/Ironmon.Tracker.App/wwwroot";
+    private const string StylesRelativePath = "tracker/src/Tracker/Ironmon.Tracker.App/wwwroot";
     private const string IndexFileName = "index.html";
     private const string StylePattern = "<link rel=\"stylesheet\" href=\"([^\"]+)\"";
     private const string ScopedStyleFileName = "Ironmon Tracker.styles.css";
-    private const string ScopedStylesRelativePath = "tracker/src/Ironmon.Tracker.App/obj/Release/net10.0-windows10.0.19041.0/win-x64/scopedcss/projectbundle/Ironmon Tracker.bundle.scp.css";
+    private const string ScopedStylesRelativePath = "tracker/src/Tracker/Ironmon.Tracker.App/obj/Release/net10.0-windows10.0.19041.0/win-x64/scopedcss/projectbundle/Ironmon Tracker.bundle.scp.css";
 
     /// <summary>
     /// Verifies real component markup mirrors slots, uses existing help controls, and blocks gameplay actions.
@@ -104,6 +104,8 @@ public sealed class RunManagementViewTests
                 Assert.Contains("obsidian-help-button", rulesHtml);
                 Assert.Contains("popovertarget", rulesHtml);
                 Assert.Contains("Trainer Pokémon", System.Net.WebUtility.HtmlDecode(rulesHtml));
+                Assert.Contains("Starter Pokémon", System.Net.WebUtility.HtmlDecode(rulesHtml));
+                Assert.Contains("run-starter", rulesHtml);
                 Assert.DoesNotContain("Automatic reset", rulesHtml);
                 ExportPreview(RulesPreview, rulesHtml);
                 Set(activator.Page!, StepField, 3);

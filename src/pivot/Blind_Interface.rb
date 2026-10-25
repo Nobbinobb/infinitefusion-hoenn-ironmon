@@ -150,34 +150,19 @@ module Ironmon
     high_level = [body.level, head.level].max
     low_level = [body.level, head.level].min
     body.level = ((2 * high_level) + low_level) / 3
+    body.nature = inherited_fusion_nature(body, head)
+    body.calc_stats
     available_moves = (body.moves + head.moves).uniq { |move| move.id }
     if available_moves.length <= 4
       body.moves = available_moves.map { |move| move.clone }
     elsif interactive
       scene = FusionMovesOptionsScene.new(body, head)
       screen = PokemonOptionScreen.new(scene)
-      screen.pbStartScreen
+      with_tracker_control_context(:menu) { screen.pbStartScreen }
       body.moves = scene.getSelectedMoves.map { |move| move.clone }
     else
-      body.moves = available_moves[0, 4].map { |move| move.clone }
+      body.moves = available_moves.first(4).map { |move| move.clone }
     end
-
-    if interactive && body.nature.id != head.nature.id
-      natures = [body.nature, head.nature]
-      loop do
-        choice = pbMessage(
-          _INTL("Choose the fused Pokemon's nature."),
-          natures.map { |nature| nature.real_name },
-          -1
-        )
-        if choice && choice >= 0 && choice < natures.length
-          body.nature = natures[choice].id
-          break
-        end
-        pbMessage(_INTL("The fusion choice cannot be cancelled."))
-      end
-    end
-
     learned_moves = []
     learned_moves.concat(body.learned_moves) if body.learned_moves
     learned_moves.concat(head.learned_moves) if head.learned_moves
@@ -192,6 +177,15 @@ module Ironmon
     body.obtain_method = 0
     body.calc_stats
     return body
+  end
+
+  def self.inherited_fusion_nature(body, head)
+    hash = fnv1a_64_joined([
+      1, $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0,
+      "player_fusion_nature", body.species_data.id_number,
+      body.personalID, head.personalID
+    ])
+    return [body.nature.id, head.nature.id][fusion_choice_hash(hash) % 2]
   end
 
   def self.build_reversed_caught_result(candidate)

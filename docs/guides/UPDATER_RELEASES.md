@@ -1,318 +1,118 @@
 # Updater release production
 
-The existing release workflow builds the installer, both tracker packages and
-updater metadata together. Ordinary IDE builds do not create release manifests,
-inventories or signing output. `Build-TrackerRelease.ps1 -GenerateOnly` still
-produces catalog and game-baseline inputs without producing releases.
+The release workflow builds Setup, both tracker packages, and updater metadata
+together. Ordinary IDE builds do not produce a signed release.
+`tools/Build-TrackerRelease.ps1 -GenerateOnly` prepares catalogs and the game
+baseline without packaging. See [Release automation](../RELEASE_AUTOMATION.md)
+for candidate selection, CI, and publication.
 
-## Build and publication boundary
+## Published artifacts
 
-The read-only candidate job uses the source tree and upstream game commit already
-selected by the release workflow. It restores published history, tests the updater
-and native Setup, builds both tracker flavors and self-contained Windows tools,
-and freezes the candidate. Publication exposes exactly these seven files:
+Publication exposes seven files, in addition to GitHub's automatic source
+archives:
 
 | Asset | Purpose |
 | --- | --- |
-| `Ironmon-v<V>-win-x64.zip` | Self-contained tracker, scripts and data |
-| `Ironmon-v<V>-win-x64-runtime-required.zip` | Runtime-required tracker, scripts and data |
-| `Ironmon-Setup-win-x64.exe` | Disposable installer, defaulting to the newest stable release |
-| `update-manifest.json` | Versions, compatibility, roles, sizes and SHA-256 hashes |
-| `update-manifest.sig.json` | Detached signature over the exact manifest bytes |
-| `update-data.json` | Current and historical inventories plus release notes |
-| `SHA256SUMS.txt` | One checksum list for the six files above |
+| `Ironmon-v<V>-win-x64.zip` | Self-contained tracker, scripts, and data |
+| `Ironmon-v<V>-win-x64-runtime-required.zip` | Runtime-required tracker, scripts, and data |
+| `Ironmon-Setup-win-x64.exe` | Standalone installer, defaulting to latest |
+| `update-manifest.json` | Versions, compatibility, roles, sizes, and hashes |
+| `update-manifest.sig.json` | Signature over the exact manifest bytes |
+| `update-data.json` | Current and historical inventories and release notes |
+| `SHA256SUMS.txt` | Checksums for the six other published files |
 
-GitHub adds its two automatic source archives. Players choose the installer or one
-of the two Ironmon ZIPs; the updater reads the JSON files automatically. Historical
-inventory growth never adds more public download entries.
+`candidate.json`, `release-evidence.zip`, loose inventories, and per-file checksum
+sidecars belong to the Actions candidate artifact, not the public release.
+Both tracker ZIPs contain the signed helper payload under `Ironmon Tracker/Updater`
+and an `update-package.json` inventory. Helper versions and paths are immutable;
+Setup and tracker binary versions must match the release version.
 
-Setup's filename is independent of the Ironmon version it installs. It defaults
-to the newest stable signed release; its own binary build version remains recorded
-internally. Advanced selection lists up to 100 recent stable releases and disables
-targets without supported signed metadata, available signed downloads, or a
-reachable, downloadable preferred game commit. The fixed upstream comparison
-requires the signed commit to remain an ancestor of the supported releases branch.
-Archive availability is checked with HEAD requests, without downloading the game.
-Explicit historical selection remains separate from the automatic discovery
-watermark. Each tracker process makes a fresh conditional latest-release request
-at startup, including after an update relaunch; later automatic calls in that
-process reuse its observation. Server retry limits and authenticated rollback
-protection remain in force. Review and installation refresh
-the exact selected release and availability, and never substitute latest. Existing
-forward-update and game-history rules still apply. Published versioned Setup assets
-keep their existing names and latest-only behavior. Use a release's versioned ZIP
-and matching game for historical versions without verified installer metadata.
+Setup defaults to the newest stable signed release and its matching game revision.
+Advanced selection offers older releases only while signed metadata, matching game
+history, and required downloads can be verified. Explicit choices are rechecked
+at review and installation without substituting another version. Existing installs
+cannot downgrade. Older published versioned Setup downloads keep their latest-only
+behavior; releases without supported signed metadata require a versioned ZIP.
 
-Tracker updates default directly to the newest stable release, without requiring
-intermediate versions. Its advanced version panel offers available signed targets
-strictly newer than the installation and no newer than that latest observation.
-Changing or refreshing the selection discards file-replacement consent and obtains
-a new review. An explicit target is reauthenticated again before preparation;
-unavailable or changed metadata blocks staging and handoff without substituting
-another release. A committed update closes the independent window after successful
-tracker launch and administrator-session cleanup. Failed launches, rollback and
-recovery remain visible for the player to resolve.
+Each tracker process performs a fresh conditional latest-release check at startup,
+respecting server retry limits. Updates default directly to latest; advanced
+selection offers versions newer than installed and no newer than the latest
+observation. Changing or refreshing the target discards old review consent, and
+preparation reauthenticates the exact selection. Successful tracker restart and
+administrator-session cleanup close the updater; errors, rollback, and recovery
+remain visible. Update progress stays in the fixed footer beside Cancel.
 
-Installer and tracker release discovery use anonymous HTTPS requests. Their
-configured release repository and assets must be publicly accessible. A private
-rehearsal repository can verify authenticated CI publication, but cannot establish
-that a downloaded installer works for players: GitHub returns 404 to anonymous
-clients even when the signed assets exist. Do not embed GitHub credentials in
-Setup or change repository visibility as a workaround without release-owner
-authorization. Rehearse the anonymous download path separately before claiming
-end-to-end installer acceptance.
-
-Setup uses fixed, non-scrolling pages with a minimum window size of 680 × 600
-Windows layout units. Changed files are reviewed one at a time; moving between
-files retains each explicit replacement approval. Long paths and diagnostic
-details have tooltips, while status and actions stay visible in the footer.
-
-Native Setup, its session, the independent updater and shared engine messages
-use `tracker/src/Ironmon.Updater.Core/Resources/Localization/UpdaterResources.resx`
-through the strongly typed `UpdaterText` accessors. Resource lookup follows the
-current UI culture, with the same English fallback as the tracker; formatted
-values use the current formatting culture. Add translations as culture-specific
-resource files with the same keys. The tracker update panel continues to use its
-existing `TrackerResources.resx` entries. Protocol identities, paths and signing
-data are not localized.
-
-Setup validates the selected folder before presenting Options. New Ironmon
-installations offer **Runtime included** (the default self-contained package) or
-**Runtime required**. Existing installations display and retain their detected
-package; signed review independently rechecks that choice. The run-completion
-confirmation appears during review only when the release changes the game or its
-signed compatibility policy requires a finished run. Ordinary new installations
-and compatible updates do not display that confirmation.
-
-The Actions candidate artifact retains `candidate.json`, `release-evidence.zip`,
-loose inventories, public trust and per-file verification evidence for review.
-These build files and their individual checksum sidecars are not release assets.
-The public `SHA256SUMS.txt` uses stable LF line endings and lists every published
-payload and metadata document exactly once, excluding itself.
-
-Release manifest schema 2 binds one metadata container by length and SHA-256, then
-independently binds every document inside it. The container preserves original
-inventory bytes and is downloaded and parsed once for a preparation. Older schema
-1 releases remain readable for authenticated history and recovery.
-
-Both tracker packages contain `Ironmon Tracker/Updater/Ironmon.Updater.exe`,
-public trust and notices. `Ironmon Tracker/update-package.json` inventories the
-payload before archiving; the external signed inventory also hashes this inner
-document. Historical generation profiles retain their immutable ownership policy.
-Setup and the helper embed notices from their exact resolved runtime packs.
-
-Complete signed game evidence retains the original upstream asset entries.
-Installed-game recognition checks executable code and runtime configuration
-(`.rb`, `.rxdata`, `.dat`, `.dll`, `.exe`, `.ini`, `.so`), excluding the game's
-downloaded `Data/Scripts/DownloadedSettings.rb`. Sprite images, credits, catalogs,
-download caches, rate logs and downloaded Pokedex JSON are player/runtime data;
-their contents, absence and names do not establish game compatibility.
-
-Review and transaction revalidation inspect authenticated program paths and their
-ancestors. They do not traverse unrelated saves, imported profiles, sprites or
-generated files, even if those files are locked or exceed the old whole-folder
-entry limit. Those files can change, move, appear or disappear during downloads,
-shutdown, application and rollback. Managed writes and directory replacements
-still require the reviewed bytes and complete collision checks. Published
-generation profiles retain their immutable policy; additional imported profiles
-remain player-owned.
-
-Fresh game installations receive every signed default. Combined game upgrades
-preserve previously available assets, including player edits and removals, and
-seed newly introduced signed assets only into vacant paths. Required game code
-continues to use reviewed conflicts and verified backups. A tracker-only update
-never adopts game asset ownership.
-
-Completed installations can be renamed or copied. The next authorized operation
-captures a fresh directory binding after acquiring the lease and confirming no
-transaction is pending. An active transaction cannot be retargeted by relocation.
-Malformed unrelated history is skipped while finding the independently verified
-current release. Missing current signed authority still requires repair. Damaged
-optional discovery caches trigger fresh signed discovery; authenticated cache
-watermarks and forward-version checks continue to prevent downgrades. Both game
-executable variants participate in normal shutdown and exact-path idle checks.
-When ZIP game inventories have identical required program bytes, recognition
-retains a signed prior-package ownership baseline and prefers a compatible
-revision within that selection, without using player assets to break the tie.
-Older installed clients still execute their old review code; players
-whose old client refuses review need the fixed Setup from the next published
-release to bootstrap these changes.
-
-Helper version `<H>` uses the engine major/minor plus the engine patch and signed
-release sequence. Every release gets an immutable helper path even when only
-embedded game data or trust changes. Setup and tracker binary versions are checked
-against `<V>` before packaging. The signed helper identity must match both player
-packages. Preparation extracts that executable from the selected package's cached
-ZIP, without downloading a separate helper archive or the other tracker flavor.
-
-The protected `release` publication job rechecks source, tree, candidate hashes
-and current upstream inputs. An upstream change dispatches a new read-only build;
-stale manifests are not signed. An intervening stable Ironmon release likewise
-invalidates candidate reuse and triggers a rebuild with current adoption history
-and release sequence. The trusted metadata tool is built from `main`
-in a separate step before the signing secret is exposed. It validates the same
-wire contract as installed clients, then signs the frozen raw manifest bytes,
-adding `update-manifest.sig.json` and the combined `SHA256SUMS.txt`.
-
-Uploads stay in a draft until every remote artifact's length and digest match.
-Retries restore an existing detached signature and preserve its exact bytes.
-Published assets are never overwritten. Stable discovery cannot see a partially
-uploaded draft.
+Setup and tracker discovery use anonymous HTTPS. The configured repository and
+assets must be publicly downloadable. Authenticated CI publication to a private
+repository does not prove anonymous player installation.
 
 ## One-time production trust provisioning
 
-`resources/updater/trusted-keys.json` is reviewed source: a map from lowercase key
-identifiers to base64 DER SubjectPublicKeyInfo public keys. The algorithm is ECDSA
-P-256 with SHA-256 and 64-byte IEEE P1363 signatures. Keep this identity separate
-from tracker access-code and other signing keys.
+`resources/updater/trusted-keys.json` maps key identifiers to base64 DER
+SubjectPublicKeyInfo public keys. The checked-in identity is
+`ironmon-updater-2026`. Signatures use ECDSA P-256, SHA-256, and 64-byte IEEE P1363
+encoding. Keep this key separate from diagnostic-access signing keys.
 
-The production signing identity is `ironmon-updater-2026`. Its public key is
-checked in, and the matching private key and identifier are configured in the
-protected `release` environment. That environment permits only `main`. No
-fixture private key is checked in or used as production trust. Developer builds
-can run with empty trust, but release candidate generation rejects it.
+When provisioning or rotating a key:
 
-When provisioning a new signing identity, the owner must:
+1. Create and retain the private key outside the repository and game installation.
+2. Add its public key and identifier to reviewed trust before building clients.
+3. Set `IRONMON_UPDATER_SIGNING_KEY` to base64 DER PKCS#8 private bytes and
+   `IRONMON_UPDATER_SIGNING_KEY_ID` to the identifier in the protected `release`
+   environment used by `.github/workflows/release.yml`.
 
-1. Create and securely retain a dedicated P-256 signing key outside the repository.
-2. Add only its public SubjectPublicKeyInfo bytes and identifier to the reviewed
-   trust document before candidate executables are built.
-3. Configure the existing protected `release` environment's secret
-   `IRONMON_UPDATER_SIGNING_KEY` with base64 DER PKCS8 private bytes, and its
-   `IRONMON_UPDATER_SIGNING_KEY_ID` variable with the matching identifier.
+Candidate jobs receive no private signing key. Publication builds the trusted
+metadata tool before exposing the secret, checks the public identity, and signs
+the frozen manifest bytes. Never put private material in arguments, repository files,
+release notes, logs, or artifacts. Fixture keys must never enter production trust.
+Clients use embedded trust; downloaded files and environment variables cannot
+replace it. Rotate with overlapping public trust and retain keys needed to verify
+historical releases.
 
-Publication reads private bytes only from that step's environment, checks their
-public identity against reviewed trust, and clears the byte buffer after signing.
-It does not write a key file or print key material. Candidate and test jobs receive
-no signing secret. Never put private material in arguments, source, release notes,
-generated inventories or artifacts.
+## Candidate and history requirements
 
-Clients embed public trust; downloaded files and runtime environment variables
-cannot replace it. For rotation, publish overlapping public trust while the old
-key is still accepted. Retain public keys needed to verify historical releases.
-The initial protocol supports at most four keys.
+The workflow selects the current upstream game revision and refreshed metadata.
+Generated catalogs and the signed baseline must describe those exact inputs.
+`tools/ci/Restore-UpdateHistory.ps1` restores prior stable release evidence;
+existing installs are recognized from authenticated history, never from files
+supplied by a player. Missing or invalid history fails the release gate.
 
-## History and selected game version
+`tools/Build-TrackerRelease.ps1` validates inputs, runs runtime and C# tests,
+publishes both tracker flavors and self-contained Setup/helper, and packages the
+candidate. `tools/ci/New-ReleaseCandidate.ps1` freezes hashes and evidence.
+Publication rechecks the source tree, candidate bytes, upstream fingerprint, and
+release history. Stale candidates are rebuilt before signing. Uploads remain a
+draft until every remote size and digest matches; retries retain the exact
+existing signature and never overwrite published assets.
 
-The candidate job automatically restores the previous stable release. Modern
-history restores the manifest, signature and shared metadata file. It is
-authenticated by the detached signature and referenced hashes; exact inventory
-bytes are copied into the next candidate. Previous current ownership
-becomes an explicit legacy reference. Player installations never become a source
-of trusted ownership.
+## Ownership and recovery boundaries
 
-For the first updater-enabled release, the job downloads the last pre-updater
-candidate and both packages, checking independent GitHub asset digests. It reads
-that candidate's game commit, fetches the official objects, and runs the existing
-inventory generator against that historical tree. The producer checks package
-hashes and game identity before authenticating the resulting legacy inventories.
-Missing historical evidence fails the build rather than dropping adoption support.
+Signed inventories distinguish program files from mutable player/runtime data.
+Saves, profiles, downloaded catalogs, sprite assets, caches, and settings downloaded
+by the game must survive updates and rollback. Fresh installs receive signed
+defaults; game upgrades preserve existing assets and seed newly introduced assets
+only into vacant paths. Required program changes still require reviewed conflicts
+and verified backups. Published generation profiles retain their ownership policy.
 
-The preferred and supported game commit remains the workflow-selected newest
-revision, matching normal release generation. There is no hardcoded 6.8.2 target.
-Historical commits identify older installations; they do not make arbitrary game
-versions compatible. The producer enforces clients' aggregate metadata budget and
-protocol history limits, blocking releases that installed clients cannot consume.
+A completed installation may be relocated; a pending transaction cannot be
+retargeted. Preparation and application verify the selected installation and
+refuse incompatible games or unfinished recovery. Protected folders use an
+authenticated administrator worker; the normal UI and relaunched tracker stay
+under the original user. The independent helper retains recovery capability if
+the tracker cannot start. See [Acceptance and recovery](UPDATER_ACCEPTANCE.md)
+for commands and validation cases.
 
-## Local verification
+## Local verification and localization
 
-`tools/Test-Updater.ps1 -Offline` runs updater and native Setup tests after the
-pinned test runtime has been provisioned. `ReleaseBundleTests` creates synthetic
-`99.0.1`, `99.0.2` and `99.0.3` bundles in disposable output, signs with in-memory
-fixture keys, and installs/updates both flavors through the shared transaction
-engine. Inconsistent, incomplete and corrupt packages fail before signing.
-Production version fields and real release archives remain unchanged.
+Use native `dotnet test` commands with `tracker/tests/Full.runsettings` for the
+updater and Setup projects. The pinned Git dependency and direct commands are
+listed in [the tracker README](../../tracker/README.md#validate-and-publish).
+Synthetic `ReleaseBundleTests` exercise signed bundles through the real engine.
+Native Windows, real UAC, and clean-machine behavior still require the
+[acceptance checklist](UPDATER_ACCEPTANCE.md).
 
-`tools/ci/Test-ReleaseAutomation.ps1` and `Test-ReleasePublication.ps1` test
-orchestration offline. Their fake GitHub and signing boundaries cannot publish;
-cryptography is tested by the real C# producer tests. Fresh Windows, real-game
-acceptance and protected-folder elevation remain separate acceptance gates.
-See [Updater acceptance and recovery](UPDATER_ACCEPTANCE.md) for repeatable checks
-and the remaining native rehearsal matrix. Automated administrator-boundary tests
-are separate from actual Windows permission-dialog acceptance.
-
-## Installation preparation and progress
-
-Fresh game installations fetch a shallow checkout of the signed game revision.
-Preparation deepens history only when needed to prove the previous-to-target and
-target-to-upstream ancestry relationships; an unrelated history still fails.
-Ordinary branch, remote, index, object integrity and signed file checks remain
-required. Existing full checkouts retain their history, and shallow checkouts
-remain usable by the launcher's normal fetch/pull flow.
-
-The disposable game archive is stored without recompression. Its verified files
-move into the combined staging directory instead of passing through another full
-copy. The tracker package downloads alongside game preparation. Game progress
-remains visible until that work finishes; if the package is still downloading,
-its measured byte progress takes over.
-
-For an empty installation on the same volume, the transaction takes ownership of
-the combined extraction folder. Signed root distribution documents are verified
-during extraction, then excluded from this disposable folder using the same
-ownership policy as ordinary updates; existing installation documents are never
-removed by this cleanup. It flushes and verifies the managed files without
-copying them again. Other destinations use verified durable copies. Preparation,
-backup copies and snapshot hashing use at most four concurrent file operations.
-All workers finish or cancel before preparation can return.
-
-Fresh installation promotes complete top-level directories and root files under
-one durable intent covering every planned file operation. The installation root,
-its identity and its recovery directory stay in place. The journal format and
-cursor meaning are unchanged: ordinary file-by-file recovery can reconcile both
-promoted files and files whose promotion never happened. Unexpected content still
-blocks automatic cleanup and remains available for recovery. Rollback prioritizes
-recoverability and can take longer than forward folder promotion.
-
-Existing installations retain individual file intents and process checks. Already
-flushed replacement files move from transaction storage into place; recovery
-backups remain available. Forward application does not rewrite an identical
-journal generation after each file mutation. Final verification and the committed
-record remain mandatory. Temporary extraction is disposable; owned payloads,
-backups and recovery records are durable before installation starts.
-
-Installer and updater operations carry numeric stage measurements through a scoped
-observer, including optional sprite work. Administrator peers opt into bounded
-intermediate progress frames; the terminal reply still controls completion and
-safe cancellation. Progress contains no paths or raw remote output and grants no
-installation authority.
-
-## Protected installations
-
-The same self-contained recovery executable also hosts the administrator worker.
-Setup and tracker preparation probe the destination only after the user chooses
-an operation. Writable folders use the existing in-process engine. Protected
-folders stage a helper from signed release content, hold its executable and
-directory ancestry against replacement, and request Windows `runas` permission.
-Runtime hook variables are removed for the launch and native bundle extraction
-uses the protected updater cache. The normal UI process is not elevated.
-
-One local pipe capability binds the worker to one reviewed installation. Initial
-input includes signed release evidence, exact conflict fingerprints and the
-original filesystem identity; the worker reauthenticates them after UAC. Later
-messages cannot change the root, transaction or release. Windows-reported peer
-PIDs bind initialization to the original UI and transfer to the authenticated
-retained helper. A capability is never persisted in a journal. Network pipe
-clients are denied; credential-based UAC can use a different administrator SID.
-
-Administrator downloads and Git preparation use protected storage under
-`%ProgramFiles%/Ironmon Updater`. Durable evidence, payloads and backups remain
-under the game's `.ironmon-update`, with administrator/system write access and
-ordinary-user read access. No-follow file handles reject redirects and hard links;
-directory identity locks prevent replacing reviewed ancestors. The worker invokes
-the same signed transaction engine, including fresh idle checks and rollback.
-
-Cancellation is acknowledged after the engine reaches a safe state. An abandoned
-untouched preparation is discarded; interrupted application retains recovery
-records. The normal independent helper owns progress and tracker relaunch. Its
-administrator worker never launches the tracker or creates a user's shortcut.
-Completed sessions are closed; an abandoned session also has a fifteen-minute
-idle deadline.
-
-Recovery authenticates a retained helper from the signed tracker inventory and
-uses the protected shared MinGit cache. Intact recovery records and caches avoid
-a network dependency for recovery. Missing/corrupt dependencies still require
-repair. Optional sprite downloads use the same worker after commit, or a new
-installed-release session restricted to sprite work. That session verifies the
-installed receipt and signed payload and cannot apply or recover program files.
-Setup can therefore be discarded while protected sprite synchronization remains
-available in the tracker.
+Setup, the helper, and shared engine messages use `UpdaterText` and
+`tracker/src/Updater/Ironmon.Updater.Core/Resources/Localization/UpdaterResources.resx`.
+Add matching culture-specific resource files for translations. The tracker update
+panel uses its own `TrackerResources.resx`. Keep protocol identities and signing
+data unlocalized.

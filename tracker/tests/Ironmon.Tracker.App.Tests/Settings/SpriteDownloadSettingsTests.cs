@@ -7,7 +7,7 @@ using Ironmon.Tracker.Connection.Areas;
 using Ironmon.Tracker.Connection.Diagnostics;
 using Ironmon.Tracker.Connection.Knowledge;
 using Ironmon.Tracker.Connection.Settings;
-using Ironmon.Tracker.Connection.Sprites;
+using Ironmon.SpriteLibrary;
 using Ironmon.Tracker.Connection.Transport;
 using Ironmon.Tracker.Protocol.Connection;
 using Microsoft.AspNetCore.Components;
@@ -37,6 +37,17 @@ public sealed class SpriteDownloadSettingsTests
     private const string CancelReviewAction = "CancelSpriteReview";
     private const string RenderAction = "StateHasChanged";
     private const string SettingsPreview = "settings";
+    private const string SettingsTabField = "_settingsTab";
+    private const string SpeedTab = "Speed";
+    private const string GeneralTab = "General";
+    private const string SpeedPreview = "speed-tab";
+    private const string FeaturesTab = "Features";
+    private const string FeaturesPreview = "features-tab";
+    private const string FeaturesSavedPreview = "features-saved";
+    private const string SavedStatusElement = "class=\"obsidian-settings-saved\" role=\"status\" aria-live=\"polite\"";
+    private const string FeatureHandler = "HandleFeaturesChanged";
+    private const string BstHandler = "HandleMaximumBstChanged";
+    private const string ZeroBstValue = "0";
 
     /// <summary>
     /// Verifies missing-server resources are never described as installed and the recheck action can recover them.
@@ -83,13 +94,63 @@ public sealed class SpriteDownloadSettingsTests
             {
                 var view = await renderer.RenderComponentAsync<TrackerSettingsPage>(ParameterView.Empty);
                 string settingsHtml = view.ToHtmlString();
-                Assert.Contains("Game session", settingsHtml);
+                Assert.DoesNotContain("Game session", settingsHtml);
+                Assert.DoesNotContain("Start tracker minimized", settingsHtml);
+                Assert.DoesNotContain("Automatic reset after a loss", settingsHtml);
+                Assert.DoesNotContain("Autoselect starter", settingsHtml);
                 Assert.DoesNotContain("aria-label=\"Startup\"", settingsHtml);
                 Assert.DoesNotContain("aria-label=\"Ironmon\"", settingsHtml);
                 Assert.DoesNotContain("aria-label=\"Favorite Clause\"", settingsHtml);
                 Assert.True(settingsHtml.IndexOf("Starter selection", StringComparison.Ordinal) < settingsHtml.IndexOf("Favorite Clause", StringComparison.Ordinal));
                 Assert.True(settingsHtml.IndexOf("Favorite Clause", StringComparison.Ordinal) < settingsHtml.IndexOf("Evolution graph", StringComparison.Ordinal));
                 RunManagementViewTests.ExportPreview(SettingsPreview, settingsHtml);
+                Assert.DoesNotContain("toggle-speed-setting\"", settingsHtml);
+                FieldInfo tab = typeof(TrackerSettingsPage).GetField(SettingsTabField, BindingFlags.NonPublic | BindingFlags.Instance)!;
+                tab.SetValue(activator.Page, Enum.Parse(tab.FieldType, FeaturesTab));
+                await ((IHandleEvent)activator.Page!).HandleEventAsync(new EventCallbackWorkItem((Action)(() => { })), null);
+                string featuresHtml = view.ToHtmlString();
+                Assert.Contains(SavedStatusElement, featuresHtml);
+                Assert.Contains("Achievement pop-ups", featuresHtml);
+                Assert.Contains("Repel step counter", featuresHtml);
+                Assert.Contains("Speed indicator", featuresHtml);
+                Assert.Contains("Item quick select", featuresHtml);
+                Assert.Contains("Quick run hotkey", featuresHtml);
+                Assert.Contains("Favorite Clause", featuresHtml);
+                Assert.Contains("Enforce BST limit", featuresHtml);
+                Assert.Contains("Autoselect starter", featuresHtml);
+                Assert.Contains("Automatic reset after a loss", featuresHtml);
+                Assert.Contains("Start tracker minimized", featuresHtml);
+                Assert.False(TrackerStartupSettings.StartMinimized);
+                Assert.True(TrackerStartupSettings.AutomaticReset);
+                Assert.Equal(new TrackerFeatureSettings(), TrackerFeaturePreferences.Load());
+                RunManagementViewTests.ExportPreview(FeaturesPreview, featuresHtml);
+                TrackerFeatureSettings disabled = new() { AchievementPopups = false, RepelCounter = false, SpeedIndicator = false, BattleQuickItems = false, QuickRun = false, FavoriteClause = false, EnforceBstLimit = false };
+                Task change = (Task)typeof(TrackerSettingsPage).GetMethod(FeatureHandler, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(activator.Page, [disabled])!;
+                await change;
+                typeof(ComponentBase).GetMethod(RenderAction, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(activator.Page, null);
+                string savedHtml = view.ToHtmlString();
+                Assert.Contains(SavedStatusElement, savedHtml);
+                RunManagementViewTests.ExportPreview(FeaturesSavedPreview, savedHtml);
+                Assert.Equal(disabled, TrackerFeaturePreferences.Load());
+                Assert.Equal(disabled, provider.GetRequiredService<TrackerConnectionOptions>().Features);
+                TrackerFeaturePreferences.Save(new());
+                Assert.Equal(new TrackerFeatureSettings(), TrackerFeaturePreferences.Load());
+                int? maximum = 400;
+                await activator.Page!.SetParametersAsync(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(TrackerSettingsPage.MaximumStarterBaseStatTotalChanged)] = EventCallback.Factory.Create<int?>(activator.Page, value => maximum = value) }));
+                await (Task)typeof(TrackerSettingsPage).GetMethod(BstHandler, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(activator.Page, [new ChangeEventArgs { Value = ZeroBstValue }])!;
+                Assert.Null(maximum);
+                tab.SetValue(activator.Page, Enum.Parse(tab.FieldType, SpeedTab));
+                await ((IHandleEvent)activator.Page!).HandleEventAsync(new EventCallbackWorkItem((Action)(() => { })), null);
+                string speedHtml = view.ToHtmlString();
+                Assert.DoesNotContain("Game session", speedHtml);
+                Assert.Contains("toggle-speed-settings", speedHtml);
+                Assert.DoesNotContain("role=\"dialog\"", speedHtml);
+                Assert.DoesNotContain("hidden class=\"toggle-speed-tab\"", speedHtml);
+                RunManagementViewTests.ExportPreview(SpeedPreview, speedHtml);
+                tab.SetValue(activator.Page, Enum.Parse(tab.FieldType, GeneralTab));
+                await ((IHandleEvent)activator.Page!).HandleEventAsync(new EventCallbackWorkItem((Action)(() => { })), null);
+                Assert.Contains("hidden class=\"toggle-speed-tab\"", view.ToHtmlString());
+
                 Assert.Contains("Recheck unavailable files", view.ToHtmlString());
                 await InvokeActionAsync(activator.Page!, ReviewAction);
                 Assert.Contains("Check 2 sheets for updates? 0 of 2 sheets are already installed.", view.ToHtmlString());
@@ -222,49 +283,56 @@ public sealed class SpriteDownloadSettingsTests
     }
 
     /// <summary>
-    /// Supplies unrelated graph defaults without reading or changing desktop user preferences.
+    /// Retains isolated preferences without reading or changing desktop user preferences.
     /// </summary>
     private sealed class DefaultPreferences : IPreferences
     {
+        private readonly Dictionary<string, object?> _values = [];
+
         /// <summary>
-        /// Reports that no user preference is stored in this isolated test.
+        /// Reports whether an isolated preference was stored.
         /// </summary>
         /// <param name="key">The preference key.</param>
         /// <param name="sharedName">The preference group.</param>
-        /// <returns>False for every key.</returns>
-        public bool ContainsKey(string key, string? sharedName = null) => false;
+        /// <returns>Whether the test contains the key.</returns>
+        public bool ContainsKey(string key, string? sharedName = null)
+            => _values.ContainsKey(key);
 
         /// <summary>
-        /// Leaves the empty isolated preferences unchanged.
+        /// Removes isolated test preferences.
         /// </summary>
         /// <param name="key">The preference key.</param>
         /// <param name="sharedName">The preference group.</param>
-        public void Remove(string key, string? sharedName = null) { }
+        public void Remove(string key, string? sharedName = null)
+            => _values.Remove(key);
 
         /// <summary>
-        /// Leaves the empty isolated preferences unchanged.
+        /// Removes isolated test preferences.
         /// </summary>
         /// <param name="sharedName">The preference group.</param>
-        public void Clear(string? sharedName = null) { }
+        public void Clear(string? sharedName = null)
+            => _values.Clear();
 
         /// <summary>
-        /// Ignores unrelated preference writes.
+        /// Retains one isolated preference.
         /// </summary>
         /// <typeparam name="T">The preference value type.</typeparam>
         /// <param name="key">The preference key.</param>
         /// <param name="value">The unused preference value.</param>
         /// <param name="sharedName">The preference group.</param>
-        public void Set<T>(string key, T value, string? sharedName = null) { }
+        public void Set<T>(string key, T value, string? sharedName = null)
+            => _values[key] = value;
 
         /// <summary>
-        /// Returns the default without accessing desktop storage.
+        /// Reads the isolated value without accessing desktop storage.
         /// </summary>
         /// <typeparam name="T">The preference value type.</typeparam>
         /// <param name="key">The preference key.</param>
         /// <param name="defaultValue">The normal application default.</param>
         /// <param name="sharedName">The preference group.</param>
-        /// <returns>The supplied default.</returns>
-        public T Get<T>(string key, T defaultValue, string? sharedName = null) => defaultValue;
+        /// <returns>The saved value or supplied default.</returns>
+        public T Get<T>(string key, T defaultValue, string? sharedName = null)
+            => _values.TryGetValue(key, out object? value) && value is T saved ? saved : defaultValue;
     }
 }
 

@@ -6,9 +6,10 @@ $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 . (Join-Path $PSScriptRoot 'UpdateArtifacts.ps1')
 Set-Location -LiteralPath $projectRoot
 if (git status --porcelain --untracked-files=no) { throw 'Release build changed tracked source.' }
-& (Join-Path $PSScriptRoot 'Test-ReleaseMetadata.ps1')
-& (Join-Path $PSScriptRoot 'Test-ReleaseArchives.ps1')
-[xml]$project = Get-Content tracker/src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj -Raw
+. (Join-Path $PSScriptRoot 'UpstreamInputs.ps1')
+Assert-IronmonReleaseMetadata
+Assert-ReleaseArchives -ProjectRoot $projectRoot
+[xml]$project = Get-Content tracker/src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj -Raw
 $version = [string]$project.Project.PropertyGroup.ApplicationDisplayVersion
 $snapshot = Get-Content (Join-Path $SnapshotDirectory 'upstream-inputs.json') -Raw | ConvertFrom-Json
 $evidence = Join-Path $env:RUNNER_TEMP 'release-evidence'

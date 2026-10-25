@@ -16,13 +16,13 @@ filter satellite assemblies to the supported cultures.
 ## Add a language
 
 1. Copy
-   `src/Ironmon.Tracker.App/Resources/Localization/TrackerResources.resx`.
+   `src/Tracker/Ironmon.Tracker.App/Resources/Localization/TrackerResources.resx`.
 2. Rename the copy with a standard culture suffix, for example
    `TrackerResources.de-DE.resx` or `TrackerResources.fr.resx`.
 3. Keep every `<data name="...">` identifier unchanged and translate only its
    `<value>`.
 4. Add the culture to the semicolon-separated `SatelliteResourceLanguages`
-   property in `src/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj`. The release
+   property in `src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj`. The release
    publisher reads this same property and removes every unsupported culture
    directory, including framework resources.
 5. Build the tracker. .NET creates the matching satellite resource assembly

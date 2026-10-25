@@ -63,6 +63,7 @@ module Ironmon
             entry["loadable"] &&= rules.is_a?(Configuration) && rules.current?
             if entry["loadable"]
               entry["rules"] = { "wild_policy" => rules.wild_policy.to_s,
+                "starter_policy" => rules.starter_policy.to_s,
                 "trainer_policy" => rules.trainer_policy.to_s,
                 "unfusion_setting" => rules.unfusion_setting.to_s }
             end
@@ -114,9 +115,10 @@ module Ironmon
         File.file?(SaveData.get_full_path(slot)) && payload["overwrite"] != true
       rules = payload["rules"]
       raise "Invalid Ironmon rules." if !rules.is_a?(Hash) ||
-        rules.keys.sort != ["trainer_policy", "unfusion_setting", "wild_policy"] ||
+        rules.keys.sort != ["starter_policy", "trainer_policy", "unfusion_setting", "wild_policy"] ||
         !Configuration::POLICY_IDS.map(&:to_s).include?(rules["wild_policy"]) ||
         !Configuration::POLICY_IDS.map(&:to_s).include?(rules["trainer_policy"]) ||
+        !Configuration::POLICY_IDS.map(&:to_s).include?(rules["starter_policy"]) ||
         !Configuration::UNFUSION_SETTING_IDS.map(&:to_s).include?(rules["unfusion_setting"])
     else
       data = SaveData.read_from_file(SaveData.get_full_path(slot))
@@ -163,7 +165,7 @@ module Ironmon
       SaveData.mark_values_as_unloaded
       Game.start_new
       rules = request["rules"]
-      self.configuration = Configuration.new(rules["wild_policy"], rules["trainer_policy"], rules["unfusion_setting"])
+      self.configuration = Configuration.new(rules["wild_policy"], rules["trainer_policy"], rules["unfusion_setting"], false, rules["starter_policy"])
       $Trainer.save_slot = slot
       raise generation_error_message if !apply_preset(:new_run, nil, false)
       raise "The tracker disconnected. Try again." if !tracker_ready?

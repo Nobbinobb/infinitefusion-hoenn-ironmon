@@ -1,99 +1,84 @@
 # Ironmon configuration
 
-## Tracker startup
+Open the tracker's **Play** header action to manage runs, and **Settings** for
+tracker preferences. The [mechanics manual](../IRONMON_MECHANICS.html) explains
+how the rules affect gameplay.
 
-Opening the installed tracker always starts its game, retaining an already
-running normal or performance game from the same installation. There is no
-optional game-start setting. **Settings > Game session > Start tracker minimized**
-defaults to Off and keeps connection and background work active. Startup waits
-for the existing installation compatibility check. Errors restore the tracker
-window and show an explanation.
+## Start or continue a run
 
-Closing the tracker leaves the game open. An active Ironmon game pauses until a
-compatible tracker reconnects. Classic gameplay and the main menu remain
-available without the tracker. Closing the game does not reopen it automatically.
+Start from the game's title screen or main menu. During gameplay, Play asks you
+to return there first. The **New run** wizard has three steps:
 
-## Start or continue
+1. **Save:** select **File A–H**. Replacing an occupied normal or Ironmon file
+   requires a separate confirmation; the game's normal backup is retained.
+2. **Rules:** choose a profile or set the rules below.
+3. **Review:** check the selected file and rules, then start.
 
-Use the **Play header action**. The four tracker tabs remain unchanged. Both
-creation and tracker loading work from the game's title screen (Press a key)
-or main menu. Title-screen actions skip the native menu and startup messages.
-During gameplay, Play asks you to return to the title screen or main menu.
+Saved runs list only valid Ironmon files, including **Auto 1** and **Auto 2**.
+Choose **Continue** to load one. The game's native loading menus also require a
+compatible connected tracker for Ironmon saves.
 
-New Ironmon runs can only start through the tracker. Choose a manual file from
-**File A** through **File H**, configure the rules, and review the result.
-Occupied normal or Ironmon saves require a separate overwrite confirmation.
-The game checks menu identity and exact save revision, stages and validates the
-new native save before replacement, keeps the normal backup, and restores the
-old save and starter checkpoint if creation fails.
+## Saved run rules
 
-Continue lists only valid Ironmon files, including **Auto 1** and **Auto 2**.
-The game's own Continue and save-loading menus also require a compatible
-connected tracker. A disconnect during play pauses the game and attempt timer
-without unwinding the battle or event; reconnecting resumes the same attempt.
+| Setting | Choices | Default |
+| --- | --- | --- |
+| Wild Pokémon | Mixed; Custom fusions only; Normal only | Mixed |
+| Trainer Pokémon | Mixed; Custom fusions only; Normal only | Mixed |
+| Unfusion | Random component; Player choice | Random component |
 
-Shared seeds stay in the separate seed header action. Start an Ironmon run first,
-then import into the active attempt. F7 and automatic resets use fresh seeds.
+Wild and trainer policies are independent. **Random component** commits the
+unfusion before revealing the seed-derived component you keep. **Player choice**
+shows the two component identities and lets you choose without opening their
+summaries. See the [pivot rules](../IRONMON_MECHANICS.html#pivot-system).
 
-## Game configuration
+Profiles are reusable tracker-local templates. Save a new name to keep another
+profile, or reuse a name to update it. Starting a run copies its rules into the
+save; later profile edits do not change existing runs. F7 and automatic resets
+retain those rules and generate a fresh seed.
 
-Ironmon stores an `Ironmon::Configuration` object in `PokemonGlobalMetadata`.
-It is serialized automatically with the rest of the save data.
+## Tracker preferences
 
-## Schema version 1
+Changes in Settings are saved locally and apply automatically. They are separate
+from saved run rules and shared seed identities.
 
-The wild and trainer settings use separate stable identifiers:
+**Game session**
 
-- `:mixed`
-- `:custom_fusions_only`
-- `:normal_only`
+- **Start tracker minimized:** off by default. Background services stay active.
+- **Automatic reset after a loss:** on by default and changeable during play.
+  A loss or draw is archived, then reset after battle and map-event cleanup.
+  Wins never reset automatically. A failed reset leaves the completed run locked
+  and shows an error rather than silently starting another attempt.
 
-Both settings default to `:mixed`.
+Opening the tracker starts the game once, reusing a normal or performance game
+already running from the same installation. Closing the tracker leaves the game
+open; active Ironmon play pauses until reconnection. Closing the game does not
+cause the tracker to launch it again automatically.
 
-The caught-fusion unfusion setting uses two stable identifiers:
+**Starter selection**
 
-- `:random_component` (default)
-- `:player_choice`
+- **Autoselect starter:** reveals all three starters and selects the Random Pick,
+  or offers a choice when favorites qualify.
+- **Maximum starter BST:** an inclusive limit for manual and automatic selection;
+  leave it empty for no limit. Autoselect resets when no starter qualifies, and
+  those attempts still count.
+- **Favorite Clause:** manage your favorite normal species. A fusion qualifies
+  when either component is a favorite.
 
-Random Component commits the unfusion and then reveals one seed-derived
-component. Player Choice shows only the two component identities and allows one
-to be selected without opening either summary.
+**Evolution graph** controls expansion depth and maximum nodes per row.
+**Custom sprite library** reviews and downloads missing or changed sprite sheets;
+keep the game closed during synchronization. See [installation](INSTALLATION.md).
 
-Automatic reset is a live tracker preference, enabled by default under
-**Settings > Game session**. It can be changed during play and is excluded from
-profiles and save-bound rules. Changing it does not change seed identity. A loss
-or draw archives the completed attempt and schedules the checkpoint reset after
-the battle and its map event finish native cleanup. A successful automatic
-reset has no in-game confirmation message. If checkpoint loading, generation,
-or saving fails, the completed run stays locked and the game shows the
-actionable error. Wins never reset automatically.
+## Controls
 
-A save without an `ironmon_configuration` value receives a schema-version-1
-configuration with all defaults. A present serialized configuration must already
-match schema version 1 and contain valid fields; incompatible saved objects are
-rejected rather than migrated. Hash-shaped values remain accepted as explicit
-new configuration input, such as a validated seeded-run import.
+Under **Settings > Controls**, choose Keyboard or a controller profile, then
+select an action's binding. Press and release the desired key, button or
+combination and choose **Use binding**. Each action has two binding slots.
+**Clear binding** removes one; **Restore profile defaults** resets the selected
+profile. Review any displayed conflict warnings before using the bindings.
 
-Before an F7 reset, Ironmon snapshots the current configuration. It restores
-that snapshot after loading the pre-starter checkpoint and before generating
-the new run mappings. The new run receives a different seed while retaining the
-same policy and unfusion-setting identifiers. The connected tracker supplies
-the live automatic-reset preference independently.
-See the [Ironmon Mechanics Manual](../IRONMON_MECHANICS.html#pivot-system) for
-the complete pivot and determinism rules.
+## Shared seeds
 
-## Selection flow
-
-The new-run wizard has three steps: Save, Rules, and Review. It uses the
-tracker's existing question-mark help popovers beside setting labels. Starter
-selection groups autoselect, maximum starter BST, and Favorite Clause in one
-settings card. Game session groups minimized startup and automatic reset.
-Profiles are reusable tracker-local templates. Save under a new name to keep
-another template, or reuse the name to update it. Rules are copied into the
-selected game save; later profile edits do not change existing runs. F7 resets
-retain the saved rules.
-
-Schema-version-1 saves and seed recipes retain their historical
-`automatic_reset` field for compatibility. The game no longer uses that field
-to decide loss-reset behavior; the connected tracker's preference controls it.
-Historical recipes remain readable without changing their identity.
+Use the separate **Seeded runs** header action to export or import tokens. Import
+requires an active Ironmon attempt and confirmation before replacing it. F7 and
+automatic resets generate fresh seeds rather than replaying an imported seed.
+See [sharing a seeded run](INSTALLATION.md#share-a-seeded-run).

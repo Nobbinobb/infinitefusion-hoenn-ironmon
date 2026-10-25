@@ -12,9 +12,9 @@
     <ProjectReference Include="../Ironmon.TestSupport/Ironmon.TestSupport.csproj" />
     <ProjectReference Include="../../tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj" />
     <ProjectReference Include="../../tools/Ironmon.SpriteSizeTool/Ironmon.SpriteSizeTool.csproj" />
-    <ProjectReference Include="../../src/Ironmon.Setup.Core/Ironmon.Setup.Core.csproj" />
-    <ProjectReference Include="../../src/Ironmon.Updater.Core/Ironmon.Updater.Core.csproj" />
-    <ProjectReference Include="../../src/Ironmon.Updater.Infrastructure/Ironmon.Updater.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Setup/Ironmon.Setup.Core/Ironmon.Setup.Core.csproj" />
+    <ProjectReference Include="../../src/Updater/Ironmon.Updater.Core/Ironmon.Updater.Core.csproj" />
+    <ProjectReference Include="../../src/Updater/Ironmon.Updater.Infrastructure/Ironmon.Updater.Infrastructure.csproj" />
     <ProjectReference Include="../Ironmon.Updater.CrashHost/Ironmon.Updater.CrashHost.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

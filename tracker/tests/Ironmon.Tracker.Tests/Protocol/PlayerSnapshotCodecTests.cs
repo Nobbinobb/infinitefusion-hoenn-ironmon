@@ -87,13 +87,16 @@ public sealed class PlayerSnapshotCodecTests
     /// <summary>
     /// Verifies current-state recovery preserves the authorized native fusion assignment recipe.
     /// </summary>
-    [Fact]
-    public void CurrentStateRoundTripsFusionAssignmentRecipe()
+    /// <param name="version">The historical or current player-fusion algorithm.</param>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void CurrentStateRoundTripsFusionAssignmentRecipe(int version)
     {
         FusionAssignmentRecipePayload recipe = new()
         {
             Seed = 42,
-            PlayerFusionGeneratorVersion = 1,
+            PlayerFusionGeneratorVersion = version,
             GeneratorVersion = 1,
             RulesVersion = 1,
             SourceFingerprint = "sources",
@@ -110,7 +113,7 @@ public sealed class PlayerSnapshotCodecTests
         GameCurrentStatePayload restored = TrackerJson.DeserializePayload<GameCurrentStatePayload>(TrackerJson.SerializePayload(state));
 
         Assert.Equal(42, restored.FusionAssignments?.Seed);
-        Assert.Equal(1, restored.FusionAssignments?.PlayerFusionGeneratorVersion);
+        Assert.Equal(version, restored.FusionAssignments?.PlayerFusionGeneratorVersion);
         Assert.Equal("targets", restored.FusionAssignments?.TargetPoolFingerprint);
         Assert.Equal(PackedFusionPool, restored.FusionAssignments?.PackedCustomFusionPool);
         Assert.True(restored.ActiveRunPreparationReady);

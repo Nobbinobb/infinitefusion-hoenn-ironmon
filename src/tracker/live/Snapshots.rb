@@ -66,12 +66,12 @@ module Ironmon
     return !ready_run_id.empty? && ready_run_id == attempt["run_id"].to_s
   end
 
-  def self.tracker_active_fusion_assignment_recipe
-    return nil if !tracker_active_run_preparation_ready?
+  def self.tracker_active_fusion_assignment_recipe(allow_unprepared = false)
+    return nil if !allow_unprepared && !tracker_active_run_preparation_ready?
     return nil if !active? || !$PokemonGlobal
     metadata = [
       $PokemonGlobal.ironmon_seed,
-      PlayerFusionMapper::SCHEMA_VERSION,
+      player_fusion_generator_version,
       $PokemonGlobal.ironmon_evolution_fusion_generator_version,
       $PokemonGlobal.ironmon_evolution_fusion_rules_version,
       $PokemonGlobal.ironmon_evolution_source_fingerprint,
@@ -100,7 +100,7 @@ module Ironmon
       "target_pool_size" => metadata[9],
       "target_pool_fingerprint" => metadata[10],
       "packed_custom_fusion_pool" =>
-        [fusion_predecessor_index.packed_pool_membership].pack("m0")
+        [custom_fusion_pool_service.packed_pool_membership].pack("m0")
     }
   end
 
@@ -476,7 +476,7 @@ module Ironmon
       @move_access_source_entries,
       @evolution_randomization_ready, @evolution_generator,
       @fusion_evolution_generator, @evolution_catalog,
-      @base_stat_source_fingerprint, @base_stat_generator,
+      @base_stat_source_fingerprints, @base_stat_generator,
       @custom_fusion_pool_service,
       @profile_custom_fusion_pool_services,
       @fusion_evolution_target_catalog,
