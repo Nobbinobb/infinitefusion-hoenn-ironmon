@@ -80,8 +80,11 @@ public sealed class SetupPreparation(ReleaseVerifier verifier, ReleaseDownloadSt
         flavor = installed ? currentFlavor : flavor ?? ReleaseProtocol.SelfContained;
         var purpose = empty ? InstallationPurpose.InstallGame : !installed ? InstallationPurpose.AddIronmon : version == manifest.IronmonVersion ? InstallationPurpose.Repair : InstallationPurpose.Update;
         var trackerPreparation = new TrackerUpdatePreparation(_verifier, _downloads, _runtime, _gamePreparation, _gameVerification);
-        var current = purpose == InstallationPurpose.Update ? trackerPreparation.ReadCurrentRelease(root, version) : null;
+        var current = installed ? trackerPreparation.ReadCurrentRelease(root, version) : null;
         var currentManifest = current is null ? null : _verifier.Verify(current.Manifest, current.Signatures);
+        if (purpose == InstallationPurpose.Repair && current is not null && current.Manifest.AsSpan().SequenceEqual(release.Manifest))
+            current = null;
+
         string? previous = null;
         if (!empty)
         {

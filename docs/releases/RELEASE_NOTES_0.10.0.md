@@ -6,6 +6,10 @@ wardrobe into the tracker, and introduces persistent gameplay collection,
 achievements, richer Pokémon history, configurable speed cycles, and more
 accurate world lookup.
 
+- Setup can replace an earlier 0.10.0 test build without treating its original
+  program files as local edits. Use the corrected Setup once when upgrading
+  from a build that predates this fix.
+
 ## Fusion generation and concealed choices
 
 - **New fusion stat inheritance for new runs.** Body- and head-dominant stat

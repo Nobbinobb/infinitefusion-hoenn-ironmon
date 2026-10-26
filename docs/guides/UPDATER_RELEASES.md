@@ -16,8 +16,12 @@ selection; normal tracker discovery remains stable-only.
 Replacement test builds retain the display version but advance the signed
 release sequence and immutable recovery-helper identity. Existing helpers and
 authenticated stable adoption inventories are retained. Testers rerun Setup for
-same-version repair, with fresh review if signed metadata changed. An unpublished
-draft cannot be selected or installed.
+same-version repair, with fresh review if signed metadata changed. Setup uses
+the installed build's retained signed inventory as its replacement baseline,
+even after the test release URLs serve a newer build. Equal or older signed
+sequences cannot replace an installed build with different content. An unchanged
+build remains an ordinary repair. An unpublished draft cannot be selected or
+installed.
 
 After testing is accepted, freeze and promote the exact tested assets without
 rebuilding. See the [publication and promotion procedure](../RELEASE_AUTOMATION.md#publication-and-recovery)
