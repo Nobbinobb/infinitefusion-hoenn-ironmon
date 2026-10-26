@@ -128,7 +128,7 @@ public sealed class BundledRubySmokeTests(ITestOutputHelper output)
             using JsonDocument document = JsonDocument.Parse(result);
             Assert.Equal(_passed, document.RootElement.GetProperty(_statusProperty).GetString());
             JsonElement cases = document.RootElement.GetProperty(_casesProperty);
-            Assert.Equal(6, cases.GetArrayLength());
+            Assert.Equal(7, cases.GetArrayLength());
             Assert.All(cases.EnumerateArray(), item => Assert.Equal(_passed, item.GetProperty(_statusProperty).GetString()));
         }
         finally

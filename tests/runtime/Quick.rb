@@ -36,6 +36,7 @@ begin
     ["deterministic hashing", "Deterministic-Hashing.rb"],
     ["UTF-8 tracker text", "Tracker-JSON.rb"],
     ["battle Run shortcut", "Battle-Run-Hotkey.rb"],
+    ["automatic battle party", "Battle-Party-Selection.rb"],
     ["feature settings", "Feature-Settings.rb"]
   ].each do |name, file|
     case_started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
