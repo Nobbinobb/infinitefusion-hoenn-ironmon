@@ -59,6 +59,10 @@ accurate world lookup.
 
 ## Progression, rewards, and battle safeguards
 
+- Limited-party trainer battles now enter the current healthy Ironmon runner
+  automatically, without asking the player to select a team. This includes
+  Gym Leaders, regional adventurers, and move tutors. Type restrictions still
+  apply, and multi-Pokémon quest hand-ins retain their normal selection rules.
 - **The first Alpha endpoint is recorded as a win.** Winning Wattson's normal
   Hoenn Gym battle completes the attempt, updates win statistics and achievement
   evidence, and saves the completed state after battle and event cleanup.

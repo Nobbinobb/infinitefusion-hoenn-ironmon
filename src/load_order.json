@@ -54,6 +54,7 @@
   { "source": "challenge/Difficulty_Enforcement.rb", "output": "007_Difficulty_Enforcement.rb" },
   { "source": "challenge/Rematches.rb", "output": "007_Rematches.rb" },
   { "source": "tracker/area_progress/State.rb", "output": "008_Area_Progress.rb" },
+  { "source": "challenge/Battle_Party_Selection.rb", "output": "008_Battle_Party_Selection.rb" },
   { "source": "challenge/statistics/Schema.rb", "output": "008_Challenge_Statistics.rb" },
   { "source": "challenge/statistics/Battles.rb", "output": "008_Challenge_Statistics_1_Battles.rb" },
   { "source": "challenge/statistics/Items.rb", "output": "008_Challenge_Statistics_2_Items.rb" },

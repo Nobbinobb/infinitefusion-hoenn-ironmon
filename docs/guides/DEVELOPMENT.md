@@ -93,7 +93,9 @@ is refreshed and renderer hashes are verified on each run. Cold cache setup can
 still take longer than the smoke tests themselves.
 
 The larger Ruby regression files remain under `tests/runtime`; this smoke entry
-point deliberately selects only the five groups above. It does not restore the
+point includes collection startup, deterministic hashing, UTF-8 tracker text,
+the battle Run shortcut, automatic battle-party entry, and feature settings.
+It does not restore the
 removed PowerShell harnesses or automatically run long gameplay, generation,
 or simulation suites. Native UI and clean-machine acceptance remain separate.
 
