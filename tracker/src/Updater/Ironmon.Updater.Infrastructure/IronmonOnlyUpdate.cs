@@ -113,7 +113,7 @@ public sealed class IronmonOnlyUpdate(ReleaseVerifier verifier, ReleaseDownloadS
     }
 
     /// <summary>
-    /// Loads hash-bound inventories into portable evidence that a fresh recovery process can reauthenticate offline.
+    /// Reauthenticates retained inventories and downloads only missing documents into portable recovery evidence.
     /// </summary>
     /// <param name="evidence">The exact signed release.</param>
     /// <param name="manifest">The verified manifest.</param>
@@ -121,6 +121,16 @@ public sealed class IronmonOnlyUpdate(ReleaseVerifier verifier, ReleaseDownloadS
     /// <returns>The release plus its verified inventory documents.</returns>
     internal async Task<ReleaseEvidence> CompleteEvidenceAsync(ReleaseEvidence evidence, ReleaseManifest manifest, CancellationToken cancellationToken)
     {
+        Dictionary<string, InventoryEvidence> retained = new(StringComparer.Ordinal);
+        foreach (var item in evidence.Inventories)
+        {
+            if (!retained.TryAdd(item.AssetName, item))
+                throw new InvalidDataException(UpdaterText.SignedIronmonAuthorityTheRecoveryEvidenceContainsDuplicateInventoryDocuments);
+
+            if (!manifest.Assets.Any(asset => asset.Name == item.AssetName && asset.Role is ReleaseProtocol.InventoryRole or ReleaseProtocol.GameInventoryRole or ReleaseProtocol.LegacyRole))
+                throw new InvalidDataException(UpdaterText.ReleaseVerifierTheInventoryIsNotReferencedByThisSignedRelease);
+        }
+
         var inventories = new List<InventoryEvidence>();
         long total = 0;
         foreach (var asset in manifest.Assets.Where(asset => asset.Role is ReleaseProtocol.InventoryRole or ReleaseProtocol.GameInventoryRole or ReleaseProtocol.LegacyRole))
@@ -129,8 +139,17 @@ public sealed class IronmonOnlyUpdate(ReleaseVerifier verifier, ReleaseDownloadS
             if (asset.Bytes > ReleaseJson.InventoryLimit || total > ReleaseJson.InventoryLimit)
                 throw new InvalidDataException(UpdaterText.IronmonOnlyUpdateTheSignedInventoryExceedsTheSupportedMetadataBudget);
 
-            var path = await _downloads.GetAsync(asset, cancellationToken).ConfigureAwait(false);
-            var item = new InventoryEvidence(asset.Name, TransactionStorage.ReadBytes(path));
+            InventoryEvidence item;
+            if (retained.TryGetValue(asset.Name, out var existing))
+            {
+                item = new InventoryEvidence(asset.Name, (byte[])existing.Bytes.Clone());
+            }
+            else
+            {
+                var path = await _downloads.GetAsync(asset, cancellationToken).ConfigureAwait(false);
+                item = new InventoryEvidence(asset.Name, TransactionStorage.ReadBytes(path));
+            }
+
             _verifier.VerifyInventory(manifest, item);
             inventories.Add(item);
         }

@@ -41,14 +41,17 @@ internal sealed class ReleaseBundleFixture : IDisposable, IArtifactSource
     private readonly Dictionary<string, string> _assets = new(StringComparer.Ordinal);
     private readonly List<string> _downloads = [];
     private readonly string _additionalGamePath;
+    private readonly byte[] _gameConfiguration;
 
     /// <summary>
     /// Writes the ephemeral public key and selects an additional upstream game file for signed baseline tests.
     /// </summary>
     /// <param name="additionalGamePath">The extra upstream path retained in complete signed game evidence.</param>
-    internal ReleaseBundleFixture(string additionalGamePath = ProtectedGamePath)
+    /// <param name="gameConfiguration">The signed game INI bytes, or null for the minimal existing fixture.</param>
+    internal ReleaseBundleFixture(string additionalGamePath = ProtectedGamePath, byte[]? gameConfiguration = null)
     {
         _additionalGamePath = additionalGamePath;
+        _gameConfiguration = gameConfiguration ?? [1];
         File.WriteAllBytes(Trust, ReleaseJson.Serialize(new Dictionary<string, string> { [KeyId] = Convert.ToBase64String(_key.ExportSubjectPublicKeyInfo()) }));
     }
 
@@ -123,7 +126,8 @@ internal sealed class ReleaseBundleFixture : IDisposable, IArtifactSource
         var baseline = _workspace.PathFor(version + '-' + BaselineName);
         var companion = _workspace.PathFor(version + '-' + CompanionName);
         var fingerprint = new GameFileContent(1, Convert.ToHexString(SHA256.HashData(new byte[] { 1 })));
-        var game = new GameBaseline(commit, [new GameBaselineFile(GamePath, Mode, commit, fingerprint, null), new GameBaselineFile(_additionalGamePath, Mode, commit, fingerprint, null)]);
+        var configuration = new GameFileContent(_gameConfiguration.LongLength, Convert.ToHexString(SHA256.HashData(_gameConfiguration)));
+        var game = new GameBaseline(commit, [new GameBaselineFile(GamePath, Mode, commit, configuration, null), new GameBaselineFile(_additionalGamePath, Mode, commit, fingerprint, null)]);
         using (var output = File.Create(baseline))
         using (var gzip = new GZipStream(output, CompressionLevel.SmallestSize))
             JsonSerializer.Serialize(gzip, game);

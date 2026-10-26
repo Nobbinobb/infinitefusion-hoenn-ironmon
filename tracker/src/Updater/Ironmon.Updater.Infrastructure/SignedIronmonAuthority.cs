@@ -97,6 +97,9 @@ public sealed class SignedIronmonAuthority(ReleaseVerifier verifier, ITrackerRun
         var request = authorization.Request;
         var manifest = _verifier.Verify(authorization.Target.Manifest, authorization.Target.Signatures);
         IronmonOnlyUpdate.ValidateSelection(request, manifest, authorization.Purpose);
+        if (authorization.Purpose == InstallationPurpose.Repair && authorization.PreviousGameCommit is not null)
+            throw new InvalidDataException(UpdaterText.SignedIronmonAuthorityRepairCannotChangeTheGameOrUseADifferent);
+
         var previousCommit = authorization.PreviousGameCommit ?? request.GameCommit;
         if (authorization.PreviousGameCommit is not null || authorization.Purpose == InstallationPurpose.InstallGame)
         {
@@ -117,11 +120,8 @@ public sealed class SignedIronmonAuthority(ReleaseVerifier verifier, ITrackerRun
 
             baseline = target with { Files = [] };
         }
-        else if (authorization.Purpose == InstallationPurpose.Repair)
+        else if (authorization.Purpose == InstallationPurpose.Repair && authorization.Current is null)
         {
-            if (authorization.Current is not null || authorization.PreviousGameCommit is not null)
-                throw new InvalidDataException(UpdaterText.SignedIronmonAuthorityRepairCannotChangeTheGameOrUseADifferent);
-
             baseline = Select(inventories, manifest.Assets.Where(asset => asset.Role == ReleaseProtocol.InventoryRole).Select(asset => asset.Name), request.CurrentFlavor);
         }
         else if (authorization.Current is { } current)
