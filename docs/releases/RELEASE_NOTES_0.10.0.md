@@ -9,6 +9,10 @@ accurate world lookup.
 - Setup can replace an earlier 0.10.0 test build without treating its original
   program files as local edits. Use the corrected Setup once when upgrading
   from a build that predates this fix.
+- Losing the opening rival battle now qualifies for its achievement using the
+  game's actual encounter identity. The first main-rival victory milestone
+  requires five wins across runs; later rival milestones keep their thresholds.
+  Existing unlocks remain earned, and main-rival and Wally victories stay separate.
 
 ## Fusion generation and concealed choices
 

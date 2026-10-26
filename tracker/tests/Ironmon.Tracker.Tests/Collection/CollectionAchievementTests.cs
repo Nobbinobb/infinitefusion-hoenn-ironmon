@@ -31,18 +31,18 @@ public sealed partial class CollectionStoreTests
     private const string _additionalMovePrefix = "FIXTURE_MOVE_";
 
     /// <summary>
-    /// Unlocks both parallel first-win rules on the same rival victory and keeps Wally separate.
+    /// Earns the generic first trainer victory without prematurely earning the five-win rival milestone.
     /// </summary>
     /// <returns>A task completing after durable unlocks and replay idempotency are verified.</returns>
     [Fact]
-    public async Task RivalVictoryUnlocksParallelRulesWithoutDuplicateNotices()
+    public async Task FirstRivalVictoryEarnsOnlyGenericTrainerAchievementWithoutDuplicateNotices()
     {
         using TestDirectory directory = new();
         await using GameplayCollectionStore store = new(directory.Path);
         JsonElement batch = Batch(_stream, AchievementTrainer(_rivalClass, 1));
         await store.AcceptBatchAsync(batch);
         IReadOnlyList<UnlockedAchievement> earned = await store.GetAchievementsAsync();
-        Assert.Contains(earned, item => item.Number == 31);
+        Assert.DoesNotContain(earned, item => item.Number == 31);
         Assert.Contains(earned, item => item.Number == 45);
         Assert.DoesNotContain(earned, item => item.Number == 40);
         await store.AcceptBatchAsync(batch);
@@ -151,7 +151,7 @@ public sealed partial class CollectionStoreTests
         await Assert.ThrowsAsync<InvalidDataException>(() => store.AcceptBatchAsync(Batch(_stream, [.. wins, invalid])));
         Assert.Empty(await store.GetAchievementsAsync());
         await store.AcceptBatchAsync(Batch(_stream, wins));
-        Assert.Contains(await store.GetAchievementsAsync(), item => item.Number == 31);
+        Assert.Contains(await store.GetAchievementsAsync(), item => item.Number == 45);
         AssertIntegrity(directory.Path);
     }
 
