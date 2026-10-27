@@ -2477,4 +2477,16 @@
   <data name="Wardrobe.DuplicateName" xml:space="preserve"><value>Name already used.</value></data>
   <data name="Wardrobe.ColorValue" xml:space="preserve"><value>{0}°</value></data>
   <data name="Wardrobe.HairValues" xml:space="preserve"><value>base {0} · {1}°</value></data>
+  <data name="Updates.IncludeTestReleases" xml:space="preserve">
+    <value>Include test releases</value>
+  </data>
+  <data name="Updates.TestReleasesDescription" xml:space="preserve">
+    <value>Receive published prerelease builds for testing. These builds may change and contain bugs.</value>
+  </data>
+  <data name="Updates.TestRelease" xml:space="preserve">
+    <value>Test release</value>
+  </data>
+  <data name="Updates.LatestTestVersion" xml:space="preserve">
+    <value>Latest test release: {0}</value>
+  </data>
 </root>

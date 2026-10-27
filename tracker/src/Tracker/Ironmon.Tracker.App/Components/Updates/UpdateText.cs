@@ -6,6 +6,26 @@ namespace Ironmon.Tracker.App.Components.Updates;
 internal static class UpdateText
 {
     /// <summary>
+    /// Identifies the explicit opt-in label for published test updates.
+    /// </summary>
+    internal const string IncludeTestReleases = "Updates.IncludeTestReleases";
+
+    /// <summary>
+    /// Identifies the explanation of mutable test updates.
+    /// </summary>
+    internal const string TestReleasesDescription = "Updates.TestReleasesDescription";
+
+    /// <summary>
+    /// Identifies the visible marker for a selected prerelease.
+    /// </summary>
+    internal const string TestRelease = "Updates.TestRelease";
+
+    /// <summary>
+    /// Identifies the newest test target without labeling it as the recommended stable version.
+    /// </summary>
+    internal const string LatestTestVersion = "Updates.LatestTestVersion";
+
+    /// <summary>
     /// Identifies the Updates resource in the shared localized catalog.
     /// </summary>
     internal const string Updates = "Updates.Updates";

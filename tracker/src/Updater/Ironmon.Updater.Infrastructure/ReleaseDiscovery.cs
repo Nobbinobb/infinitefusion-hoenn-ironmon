@@ -4,9 +4,9 @@ using Ironmon.Updater.Core;
 namespace Ironmon.Updater.Infrastructure;
 
 /// <summary>
-/// Performs non-blocking stable discovery with authenticated caching, conditional requests and monotonic release observations.
+/// Performs non-blocking release discovery with an explicit test opt-in, authenticated caching, and monotonic channel observations.
 /// </summary>
-public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
+public sealed partial class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
 {
     private const string CacheName = "discovery.json";
     private const string DraftProperty = "draft";
@@ -38,6 +38,9 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
         _verifier = verifier;
         _clock = clock ?? TimeProvider.System;
         _cachePath = PlainPaths.Child(PlainPaths.Full(cacheDirectory), CacheName);
+        _testCachePath = PlainPaths.Child(PlainPaths.Full(cacheDirectory), TestCacheName);
+        _preferencesPath = PlainPaths.Child(PlainPaths.Full(cacheDirectory), PreferencesName);
+        IncludeTestReleases = ReadPreferences();
     }
 
     /// <summary>
@@ -83,15 +86,19 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
 
                 using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 deadline.CancelAfter(TimeSpan.FromSeconds(10));
-                var response = await _http.ReadAsync(new Uri(ReleaseProtocol.LatestReleaseUrl), ReleaseJson.ManifestLimit, cache?.ETag, deadline.Token).ConfigureAwait(false);
+                var endpoint = IncludeTestReleases ? ReleaseProtocol.ReleaseListUrl : ReleaseProtocol.LatestReleaseUrl;
+                var response = await _http.ReadAsync(new Uri(endpoint), ReleaseJson.ManifestLimit, cache?.ETag, deadline.Token).ConfigureAwait(false);
                 ReleaseEvidence evidence;
+                bool testRelease;
                 if (response.NotModified)
                 {
                     evidence = cache?.Release ?? throw new InvalidDataException(UpdaterText.ReleaseDiscoveryAConditionalReleaseResponseHasNoAuthenticatedCachedRelease);
+                    testRelease = cache.IsTestRelease;
                 }
                 else
                 {
-                    var version = ValidateApi(response.Bytes);
+                    var (version, isTestRelease) = ReadDiscoveryIdentity(response.Bytes);
+                    testRelease = isTestRelease;
                     var manifest = await _http.ReadAsync(new Uri(ReleaseProtocol.AssetUrl(version, ReleaseProtocol.ManifestName)), ReleaseJson.ManifestLimit, cancellationToken: deadline.Token).ConfigureAwait(false);
                     var signature = await _http.ReadAsync(new Uri(ReleaseProtocol.AssetUrl(version, ReleaseProtocol.SignatureName)), ReleaseJson.SignatureLimit, cancellationToken: deadline.Token).ConfigureAwait(false);
                     _verifier.Verify(manifest.Bytes, signature.Bytes, TagPrefix + version);
@@ -102,15 +109,15 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
                 if (previous is not null && (verified.ReleaseSequence < previous.ReleaseSequence || ReleaseProtocol.ParseVersion(verified.IronmonVersion) < ReleaseProtocol.ParseVersion(previous.IronmonVersion) || verified.ReleaseSequence == previous.ReleaseSequence && TransactionStorage.Hash(evidence.Manifest) != TransactionStorage.Hash(cache!.Release!.Manifest)))
                     throw new InvalidDataException(UpdaterText.ReleaseDiscoveryTheReleaseFeedAttemptedToRollBackOrReplace);
 
-                var next = new DiscoveryCache(1, now, response.ETag ?? cache?.ETag, null, verified.ReleaseSequence, evidence);
+                var next = new DiscoveryCache(1, now, response.ETag ?? cache?.ETag, null, verified.ReleaseSequence, evidence, testRelease);
                 Save(next);
-                return Observe(new ReleaseDiscoveryResult(evidence, now, null, null));
+                return Observe(new ReleaseDiscoveryResult(evidence, now, null, null, testRelease));
             }
             catch (ReleaseRateLimitException error)
             {
                 try
                 {
-                    Save(new DiscoveryCache(1, cache?.CheckedAt ?? DateTimeOffset.MinValue, cache?.ETag, error.RetryAt, cache?.HighestSequence ?? 0, cache?.Release));
+                    Save(new DiscoveryCache(1, cache?.CheckedAt ?? DateTimeOffset.MinValue, cache?.ETag, error.RetryAt, cache?.HighestSequence ?? 0, cache?.Release, cache?.IsTestRelease ?? false));
                 }
                 catch (Exception storageError) when (storageError is IOException or UnauthorizedAccessException)
                 {
@@ -139,7 +146,7 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
     /// Validates only the needed public GitHub fields while allowing unrelated API metadata to evolve.
     /// </summary>
     /// <param name="bytes">The bounded API document.</param>
-    /// <param name="allowTestRelease">Whether explicit installer selection may accept a published prerelease.</param>
+    /// <param name="allowTestRelease">Whether explicit installer selection or the tracker testing opt-in may accept a published prerelease.</param>
     /// <returns>The canonical version attached to the fixed repository release.</returns>
     internal static string ValidateApi(byte[] bytes, bool allowTestRelease = false)
     {
@@ -190,8 +197,8 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
     /// <param name="cache">The complete cache state.</param>
     private void Save(DiscoveryCache cache)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(_cachePath)!);
-        TransactionStorage.WriteDurable(_cachePath, ReleaseJson.Serialize(cache));
+        Directory.CreateDirectory(Path.GetDirectoryName(CachePath)!);
+        TransactionStorage.WriteDurable(CachePath, ReleaseJson.Serialize(cache));
     }
 
     /// <summary>
@@ -202,13 +209,13 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
     {
         try
         {
-            if (!File.Exists(_cachePath))
+            if (!File.Exists(CachePath))
                 return null;
 
-            var cache = ReleaseJson.Parse<DiscoveryCache>(TransactionStorage.ReadBytes(_cachePath), 4 * ReleaseJson.ManifestLimit);
+            var cache = ReleaseJson.Parse<DiscoveryCache>(TransactionStorage.ReadBytes(CachePath), 4 * ReleaseJson.ManifestLimit);
             var manifest = cache.Release is null ? null : _verifier.Verify(cache.Release.Manifest, cache.Release.Signatures);
             if (cache.SchemaVersion != 1 || cache.HighestSequence != (manifest?.ReleaseSequence ?? 0))
-                return manifest is null ? null : new DiscoveryCache(1, DateTimeOffset.MinValue, null, null, manifest.ReleaseSequence, cache.Release);
+                return manifest is null ? null : new DiscoveryCache(1, DateTimeOffset.MinValue, null, null, manifest.ReleaseSequence, cache.Release, cache.IsTestRelease);
 
             return cache;
         }
@@ -236,7 +243,8 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
     /// <param name="RetryAt">The server retry boundary.</param>
     /// <param name="HighestSequence">The sequence of the authenticated highest observation.</param>
     /// <param name="Release">The exact signed highest observed release.</param>
-    private sealed record DiscoveryCache(int SchemaVersion, DateTimeOffset CheckedAt, string? ETag, DateTimeOffset? RetryAt, long HighestSequence, ReleaseEvidence? Release);
+    /// <param name="IsTestRelease">Whether the cached target was advertised as a prerelease.</param>
+    private sealed record DiscoveryCache(int SchemaVersion, DateTimeOffset CheckedAt, string? ETag, DateTimeOffset? RetryAt, long HighestSequence, ReleaseEvidence? Release, bool IsTestRelease = false);
 }
 
 /// <summary>
@@ -249,4 +257,5 @@ public sealed class ReleaseDiscovery : IUpdateReleaseProvider, IDisposable
 /// <param name="CheckedAt">The observation time.</param>
 /// <param name="RetryAt">The earliest permitted retry after rate limiting.</param>
 /// <param name="Error">The check failure for optional display or diagnostics.</param>
-public sealed record ReleaseDiscoveryResult(ReleaseEvidence? Release, DateTimeOffset CheckedAt, DateTimeOffset? RetryAt, string? Error);
+/// <param name="IsTestRelease">Whether the discovered target is a published prerelease.</param>
+public sealed record ReleaseDiscoveryResult(ReleaseEvidence? Release, DateTimeOffset CheckedAt, DateTimeOffset? RetryAt, string? Error, bool IsTestRelease = false);

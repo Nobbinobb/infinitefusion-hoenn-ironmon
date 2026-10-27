@@ -237,7 +237,16 @@ versioned generation data; creating a new run uses the new generation algorithms
 
 During testing, this is a **mutable GitHub prerelease**. Replacement builds keep
 version 0.10.0 while advancing their signed internal build sequence and recovery
-helper identity. Normal tracker update checks continue to offer stable releases only.
+helper identity. Tracker update checks offer stable releases by default. Enable
+**Include test releases** in the update panel to receive newer published
+prereleases. Test targets are labeled, and the preference survives tracker updates,
+including an upgrade from the 0.8.16 bridge release. Disabling it returns checks to
+the stable channel without downgrading the installed version.
+
+Signed build numbers now advance across release versions and branches. Sequence
+15 remains reserved for the temporary 0.8.16 bridge, so this target starts at 16
+or higher with a distinct recovery helper. This permits a forward tracker update
+from that bridge while retaining the displayed version 0.10.0.
 
 Download `Ironmon-Setup-win-x64.exe` from this release, expand **Advanced:
 Ironmon version**, refresh the list, and explicitly select **0.10.0** labeled

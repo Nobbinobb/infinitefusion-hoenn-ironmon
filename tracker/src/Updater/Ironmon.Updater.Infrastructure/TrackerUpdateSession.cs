@@ -48,6 +48,7 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
     private int _busy;
     private bool _started;
     private bool _manualCheckPending;
+    private bool _latestIsTestRelease;
     private bool _disposed;
     private long _lastProgressTick;
 
@@ -115,6 +116,21 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
     /// Gets the running tracker version shown beside the target release.
     /// </summary>
     public string? CurrentVersion { get; private set; }
+
+    /// <summary>
+    /// Gets whether the user explicitly opted into published test updates.
+    /// </summary>
+    public bool IncludeTestReleases => _discovery.IncludeTestReleases;
+
+    /// <summary>
+    /// Gets whether the latest authenticated offer is a test release independently of an intermediate selection.
+    /// </summary>
+    public bool LatestIsTestRelease => _latestIsTestRelease;
+
+    /// <summary>
+    /// Gets whether the currently offered target must be labeled as a test release.
+    /// </summary>
+    public bool AvailableIsTestRelease => SelectedReleaseVersion is { } selected ? ReleaseChoices.Any(choice => choice.Version == selected && choice.IsTestRelease) : _latestIsTestRelease;
 
     /// <summary>
     /// Gets whether interrupted recovery must be resolved before another update.
@@ -241,6 +257,20 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
         => RunAsync(TrackerUpdatePhase.Checking, token => CheckCoreAsync(true, token));
 
     /// <summary>
+    /// Saves an explicit test-update preference and obtains a new review without retaining consent for the previous channel.
+    /// </summary>
+    /// <param name="includeTestReleases">Whether published test releases may be offered automatically.</param>
+    /// <returns>The durable preference change and authenticated release refresh.</returns>
+    public Task SetIncludeTestReleasesAsync(bool includeTestReleases) => RunAsync(TrackerUpdatePhase.Checking, async token =>
+    {
+        ResetReview();
+        await _discovery.SetIncludeTestReleasesAsync(includeTestReleases, token).ConfigureAwait(false);
+        SelectedReleaseVersion = null;
+        ReleaseChoices = [];
+        await CheckCoreAsync(true, token).ConfigureAwait(false);
+    });
+
+    /// <summary>
     /// Refreshes forward version availability and discards consent tied to the previous review.
     /// </summary>
     /// <returns>The bounded check, availability refresh and selected-target review.</returns>
@@ -262,7 +292,7 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
         Phase = TrackerUpdatePhase.Checking;
         Changed?.Invoke();
         var choices = await _releaseCatalog.ListAsync(token).ConfigureAwait(false);
-        ReleaseChoices = [.. choices.Where(choice => IsForwardChoice(choice.Version))];
+        ReleaseChoices = [.. choices.Where(choice => (!choice.IsTestRelease || IncludeTestReleases) && IsForwardChoice(choice.Version))];
         if (SelectedReleaseVersion is { } selected && !ReleaseChoices.Any(choice => choice.Version == selected && choice.CanInstall))
             throw new InvalidOperationException(UpdaterText.SetupVersionsSelectAvailable);
 
@@ -417,6 +447,7 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
         Recovery = null;
         AvailableVersion = null;
         LatestVersion = null;
+        _latestIsTestRelease = false;
         _release = null;
         CheckedAt = null;
         RetryAt = null;
@@ -442,6 +473,7 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
         RetryAt = found.RetryAt;
         Error = found.Error;
         _release = found.Release;
+        _latestIsTestRelease = found.IsTestRelease;
         AvailableVersion = null;
         if (_release is not null)
         {

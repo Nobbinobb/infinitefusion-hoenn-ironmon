@@ -15,6 +15,10 @@
                     <div class="tracker-update-version-card">
                         <span>@Text[UpdateText.TrackerLabel]</span>
                         <strong>@Session.CurrentVersion <span aria-hidden="true">→</span> @Session.AvailableVersion</strong>
+                        @if (Session.AvailableIsTestRelease)
+                        {
+                            <span>@Text[UpdateText.TestRelease]</span>
+                        }
                     </div>
                 }
                 <div class="tracker-update-prompt-actions">
@@ -38,6 +42,10 @@
                                 <span aria-hidden="true">→</span>
                                 <div><small>@Text[UpdateText.AvailableLabel]</small><strong>@version</strong></div>
                             </div>
+                            @if (Session.AvailableIsTestRelease)
+                            {
+                                <p class="tracker-update-notice">@Text[UpdateText.TestRelease]</p>
+                            }
                             <div class="tracker-update-game-version">
                                 <span>@Text[UpdateText.GameLabel]</span>
                                 <strong>
@@ -48,6 +56,15 @@
                                     }
                                 </strong>
                             </div>
+                        </section>
+                    }
+                    @if (!Session.NeedsRecovery)
+                    {
+                        <section class="tracker-update-versions">
+                            <label class="tracker-update-version-option">
+                                <input type="checkbox" checked="@Session.IncludeTestReleases" disabled="@Session.IsBusy" @onchange="ChangeTestReleasesAsync" />
+                                <span><strong>@Text[UpdateText.IncludeTestReleases]</strong><small>@Text[UpdateText.TestReleasesDescription]</small></span>
+                            </label>
                         </section>
                     }
                     @if (Session.LatestVersion is not null && !Session.NeedsRecovery)
@@ -64,7 +81,7 @@
                                         <legend class="tracker-update-sr-only">@Text[UpdateText.VersionLegend]</legend>
                                         <label class="tracker-update-version-option">
                                             <input type="radio" name="tracker-update-version" checked="@(Session.SelectedReleaseVersion is null)" @onchange="() => Session.SelectReleaseVersionAsync(null)" />
-                                            <span><strong>@Text[UpdateText.LatestVersion, Session.LatestVersion]</strong></span>
+                                            <span><strong>@Text[Session.LatestIsTestRelease ? UpdateText.LatestTestVersion : UpdateText.LatestVersion, Session.LatestVersion]</strong></span>
                                         </label>
                                         @foreach (var choice in Session.ReleaseChoices.Where(choice => choice.Version != Session.LatestVersion || choice.Version == Session.SelectedReleaseVersion))
                                         {
@@ -72,6 +89,10 @@
                                                 <input type="radio" name="tracker-update-version" checked="@(Session.SelectedReleaseVersion == choice.Version)" disabled="@(!choice.CanInstall)" @onchange="() => Session.SelectReleaseVersionAsync(choice.Version)" />
                                                 <span>
                                                     <strong>@Text[UpdateText.ReleaseVersion, choice.Version]</strong>
+                                                    @if (choice.IsTestRelease)
+                                                    {
+                                                        <small>@Text[UpdateText.TestRelease]</small>
+                                                    }
                                                     @if (choice.GameVersion is { } gameVersion)
                                                     {
                                                         <small>@Text[UpdateText.ReleaseGameVersion, gameVersion]</small>

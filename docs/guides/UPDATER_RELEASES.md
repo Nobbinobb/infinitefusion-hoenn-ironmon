@@ -11,7 +11,10 @@ for candidate selection, CI, and publication.
 The preparation workflow leaves a signed prerelease draft. Repository-admin
 publication makes it a mutable test release while keeping the existing stable
 release as latest. Setup offers test releases only through explicit advanced
-selection; normal tracker discovery remains stable-only.
+selection. Tracker discovery defaults to stable releases; **Include test releases**
+explicitly enables published prerelease updates. The preference survives updates.
+See [test updates through the tracker](TEST_RELEASE_UPDATES.md) for bridge-release
+ordering and VM acceptance.
 
 Replacement test builds retain the display version but advance the signed
 release sequence and immutable recovery-helper identity. Existing helpers and

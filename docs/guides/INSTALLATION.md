@@ -35,8 +35,11 @@ without supported signed installer metadata.
 For a mutable test release, download Setup from that release and explicitly select
 its entry labeled **Test release**. To install a replacement build of the same
 version, rerun Setup and repeat selection and review. Changed program files may
-need confirmation and backup; normal tracker update checks offer stable versions
-only. Use a fresh test folder if the replacement requires a different game revision.
+need confirmation and backup. Tracker update checks default to stable versions;
+enable **Include test releases** in the update panel to receive newer published
+prereleases through the same update flow. The choice survives updates. Same-version
+replacement builds still use Setup. Use a fresh test folder if the replacement
+requires a different game revision.
 
 Start Setup and the tracker normally. A verified helper requests administrator
 permission when a protected folder requires it; the tracker itself continues

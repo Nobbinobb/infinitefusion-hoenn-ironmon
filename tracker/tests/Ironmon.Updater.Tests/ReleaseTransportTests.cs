@@ -9,7 +9,7 @@ namespace Ironmon.Updater.Tests;
 /// <summary>
 /// Exercises authenticated discovery, bounded transport, conditional caching and failure behavior.
 /// </summary>
-public sealed class ReleaseTransportTests
+public sealed partial class ReleaseTransportTests
 {
     private const string EntityTag = "\"fixture-release\"";
     private const string _nextEntityTag = "\"fixture-next-release\"";
@@ -28,7 +28,7 @@ public sealed class ReleaseTransportTests
     private const string TruncatedJson = "{";
 
     /// <summary>
-    /// Keeps prereleases out of automatic discovery and permits them only through explicit installer validation.
+    /// Rejects prereleases by default and always rejects drafts while allowing explicitly enabled published test targets.
     /// </summary>
     /// <param name="draft">Whether the release is unpublished.</param>
     /// <param name="testRelease">Whether the public release is marked as a prerelease.</param>
@@ -36,7 +36,7 @@ public sealed class ReleaseTransportTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public void AutomaticDiscoveryNeverAcceptsTestOrDraftReleases(bool draft, bool testRelease)
+    public void DefaultDiscoveryRejectsTestOrDraftReleases(bool draft, bool testRelease)
     {
         using var fixture = new SignedReleaseFixture();
         var api = Api(fixture, draft, testRelease);

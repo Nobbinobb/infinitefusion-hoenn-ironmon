@@ -58,6 +58,11 @@ internal sealed class SetupReleaseCatalogFixture : IArtifactSource, IDisposable
     internal bool HistoricalReleaseIsTest { get; set; }
 
     /// <summary>
+    /// Gets or sets whether the newest release is a prerelease excluded from the stable latest endpoint.
+    /// </summary>
+    internal bool LatestReleaseIsTest { get; set; }
+
+    /// <summary>
     /// Gets or sets whether the historical test release has been unpublished while replacing its files.
     /// </summary>
     internal bool HistoricalReleaseIsDraft { get; set; }
@@ -187,7 +192,7 @@ internal sealed class SetupReleaseCatalogFixture : IArtifactSource, IDisposable
             return Body(ReleaseJson.Serialize(_manifests.Values.Where(manifest => HistoricalReleasePublished || manifest.IronmonVersion != SignedReleaseFixture.VersionB).Select(Api).Append(Api(null)).ToArray()));
 
         if (url == ReleaseProtocol.LatestReleaseUrl)
-            return Body(ReleaseJson.Serialize(Api(_manifests[SignedReleaseFixture.VersionC])));
+            return Body(ReleaseJson.Serialize(Api(_manifests[LatestReleaseIsTest ? SignedReleaseFixture.VersionB : SignedReleaseFixture.VersionC])));
 
         if (url.StartsWith(ReleaseProtocol.ReleaseTagUrl, StringComparison.Ordinal))
             return _manifests.TryGetValue(url[ReleaseProtocol.ReleaseTagUrl.Length..], out var manifest) && (HistoricalReleasePublished || manifest.IronmonVersion != SignedReleaseFixture.VersionB) ? Body(ReleaseJson.Serialize(Api(manifest))) : new(HttpStatusCode.NotFound);
@@ -247,7 +252,7 @@ internal sealed class SetupReleaseCatalogFixture : IArtifactSource, IDisposable
     private object Api(ReleaseManifest? manifest)
     {
         var version = manifest?.IronmonVersion ?? LegacyVersion;
-        return new { tag_name = _tagPrefix + version, draft = version == SignedReleaseFixture.VersionB && HistoricalReleaseIsDraft, prerelease = version == SignedReleaseFixture.VersionB && HistoricalReleaseIsTest, html_url = ReleaseProtocol.ReleaseBaseUrl + _tagSegment + _tagPrefix + version, assets = (manifest is null ? Array.Empty<string>() : new[] { ReleaseProtocol.ManifestName, ReleaseProtocol.SignatureName }).Select(name => new { name, browser_download_url = ReleaseProtocol.AssetUrl(version, name) }) };
+        return new { tag_name = _tagPrefix + version, draft = version == SignedReleaseFixture.VersionB && HistoricalReleaseIsDraft, prerelease = version == SignedReleaseFixture.VersionB && HistoricalReleaseIsTest || version == SignedReleaseFixture.VersionC && LatestReleaseIsTest, html_url = ReleaseProtocol.ReleaseBaseUrl + _tagSegment + _tagPrefix + version, assets = (manifest is null ? Array.Empty<string>() : new[] { ReleaseProtocol.ManifestName, ReleaseProtocol.SignatureName }).Select(name => new { name, browser_download_url = ReleaseProtocol.AssetUrl(version, name) }) };
     }
 
     /// <summary>
