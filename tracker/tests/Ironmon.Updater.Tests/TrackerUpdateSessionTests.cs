@@ -5,7 +5,7 @@ namespace Ironmon.Updater.Tests;
 /// <summary>
 /// Verifies real signed tracker workflows through review, interruption, handoff and recovery boundaries.
 /// </summary>
-public sealed class TrackerUpdateSessionTests
+public sealed partial class TrackerUpdateSessionTests
 {
     private const string ZipExtension = ".zip";
     private const string LocalEdit = "local edit";

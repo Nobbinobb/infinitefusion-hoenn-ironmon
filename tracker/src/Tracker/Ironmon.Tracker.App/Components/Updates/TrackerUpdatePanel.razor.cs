@@ -81,6 +81,20 @@ public partial class TrackerUpdatePanel : IAsyncDisposable
     }
 
     /// <summary>
+    /// Changes the persistent test-update opt-in and invalidates previously enumerated version choices.
+    /// </summary>
+    /// <param name="args">The native checkbox's selected state.</param>
+    /// <returns>The authenticated check and review for the chosen release channel.</returns>
+    private async Task ChangeTestReleasesAsync(ChangeEventArgs args)
+    {
+        if (Session.IsBusy)
+            return;
+
+        _releaseChoicesLoaded = false;
+        await Session.SetIncludeTestReleasesAsync(args.Value is true);
+    }
+
+    /// <summary>
     /// Subscribes to progress without delaying the first normal tracker render.
     /// </summary>
     protected override void OnInitialized()

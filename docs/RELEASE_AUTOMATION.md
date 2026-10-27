@@ -73,18 +73,23 @@ behavior.
 
 Stable and immutable releases cannot be replaced. A mutable prerelease can be
 rebuilt from another approved `main` commit without increasing its display version.
-The internal signed release sequence and helper version advance. The read-only
-build verifies prior test metadata but imports adoption inventories only from
-stable history. The signing job validates the complete candidate, unpublishes the
+The internal signed release sequence and helper version advance across all
+release versions and branches. The read-only build verifies prior test metadata
+but imports adoption inventories only from stable history. Before signing, the
+write-token job rechecks all visible signed prereleases and drafts so an older
+candidate cannot reuse an identity issued during its build. It then unpublishes the
 old test release, updates its lightweight tag, replaces draft assets, and verifies
 every uploaded digest. It never exposes a partially replaced test build publicly.
 Unexpected attachments, unauthenticated history, stale sequences, stable releases,
 or immutable releases stop the operation. A failed upload can resume by rerunning
 its publication job with the original candidate; do not reset signed test history.
 
-Sequence 9 belonged to the withdrawn 0.9.0 test release. The allocator reserves
-sequences through 9 even after that release is deleted; 0.10.0 starts at sequence
-10 or higher, so an installed 0.9.0 test build can accept the newer signed release.
+Sequence 9 belonged to the withdrawn 0.9.0 test release, and the disposable
+0.8.16 bridge uses sequence 15. The allocator retains a floor of 16 even if these
+temporary releases are deleted or hidden from a read-only build token. A 0.10.0
+target must use a higher signed sequence than the installed bridge; display
+version ordering alone does not authorize an upgrade. Recovery helper identities
+remain distinct for every issued build.
 
 ### Publish a mutable test release
 
@@ -125,7 +130,10 @@ verified candidate after repairing an empty private draft.
 Test the downloaded Setup and both ZIP variants outside the development checkout.
 Use Setup's advanced version selector for 0.10 test builds. Same-version replacement
 requires rerunning Setup or reinstalling the complete matching ZIP; automatic
-tracker updates still require a newer stable version. Keep native and
+tracker updates still require a newer display version. Tracker checks default to
+stable releases; **Include test releases** opts into published prereleases.
+For a 0.8.16 bridge, follow the [bridge release order](guides/TEST_RELEASE_UPDATES.md#0816-bridge-and-0100-release-order)
+and rebuild 0.10.0 after publishing the bridge. Keep native and
 clean-machine acceptance distinct from automated build checks.
 
 ### Freeze and promote the accepted build

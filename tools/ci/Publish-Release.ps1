@@ -91,19 +91,20 @@ if (-not $PrepareTest -and $prior -and -not (Test-Path -LiteralPath $signatures)
     Invoke-UpdateCandidateTool $UpdateTool @('verify', $directory, $trust, 'signed')
   }
 }
+if ($PrepareTest) {
+  $previousManifest = $release.assets | Where-Object name -CEQ 'update-manifest.json' | Select-Object -First 1
+  $manifestDigest = 'sha256:' + (Get-FileHash -LiteralPath (Join-Path $directory 'update-manifest.json') -Algorithm SHA256).Hash.ToLowerInvariant()
+  if (-not $previousManifest -or $previousManifest.digest -cne $manifestDigest) {
+    $minimumSequence = & (Join-Path $PSScriptRoot 'Get-ReleaseBuildSequence.ps1') -Version $version -Tool $UpdateTool
+    $update = Get-Content -LiteralPath (Join-Path $directory 'update-manifest.json') -Raw | ConvertFrom-Json
+    if ($update.releaseSequence -lt $minimumSequence) { throw 'The candidate predates an issued signed build. Rebuild before signing or replacing test assets.' }
+  }
+}
 Invoke-UpdateCandidateTool $UpdateTool @('sign', $directory, $trust)
 $assets = @(Get-PublishedReleaseFiles $directory $version)
 $assets += Write-ReleaseChecksums $directory $assets
 if ($PrepareTest) {
   if (@($release.assets | Where-Object { $_.name -cnotin $assets.Name }).Count) { throw 'Unexpected assets in the test draft; no assets were replaced.' }
-  $previousManifest = $release.assets | Where-Object name -CEQ 'update-manifest.json' | Select-Object -First 1
-  $previousSignature = $release.assets | Where-Object name -CEQ 'update-manifest.sig.json' | Select-Object -First 1
-  $manifestDigest = 'sha256:' + (Get-FileHash -LiteralPath (Join-Path $directory 'update-manifest.json') -Algorithm SHA256).Hash.ToLowerInvariant()
-  if ($previousManifest -and $previousSignature -and $previousManifest.digest -cne $manifestDigest) {
-    $minimumSequence = & (Join-Path $PSScriptRoot 'Get-ReleaseBuildSequence.ps1') -Version $version -Tool $UpdateTool
-    $update = Get-Content -LiteralPath (Join-Path $directory 'update-manifest.json') -Raw | ConvertFrom-Json
-    if ($update.releaseSequence -lt $minimumSequence) { throw 'The candidate predates the latest signed test build. Rebuild before replacing test assets.' }
-  }
   if (-not $release.draft) {
     gh release edit $tag --repo $env:GITHUB_REPOSITORY --draft=true
     $release = gh api "repos/$env:GITHUB_REPOSITORY/releases/$releaseId" | ConvertFrom-Json

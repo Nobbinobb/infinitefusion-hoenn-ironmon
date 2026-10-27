@@ -16,7 +16,7 @@ namespace Ironmon.Tracker.App.Tests.Updates;
 /// <summary>
 /// Exercises the production updater renderer and signed session without changing any real installed tracker.
 /// </summary>
-public sealed class TrackerUpdatePanelTests
+public sealed partial class TrackerUpdatePanelTests
 {
     private const string ResourceName = "Ironmon.Tracker.App.Resources.Localization.TrackerResources";
     private const string ScriptNotes = "<script>alert('release notes')</script>\nA quieter tracker update.";
