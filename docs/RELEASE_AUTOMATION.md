@@ -98,7 +98,15 @@ the current mutable test tag can move. The separate **Immutable release tags**
 ruleset protects all `refs/tags/v*` refs from updates and deletion. During 0.10
 testing, exclude only `refs/tags/v0.10.0` from that ruleset while keeping it active
 for every other version tag. Repository release immutability and this custom tag
-rule are separate controls; both must permit the mutable testing phase.
+rule are separate controls; both must permit the mutable testing phase. For a
+future test version, substitute only its exact version tag; never exempt a stable
+or immutable release.
+
+The 0.10.0 testing phase is complete: that release is stable and immutable,
+repository release immutability is enabled, and **Immutable release tags** has
+no testing exceptions. The temporary 0.8.16 bridge release, tag, and remote branch
+have been removed; its sequence remains reserved. Apply the mutable-publication
+procedure below only to a future, explicitly approved test version.
 
 After the preparation workflow succeeds, use authenticated repository-admin
 access to publish the verified draft:

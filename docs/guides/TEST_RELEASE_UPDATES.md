@@ -20,10 +20,16 @@ from the current test release.
 
 ## 0.8.16 bridge and 0.10.0 release order
 
-The maintenance branch `release/0.8.16` starts at stable tag `v0.8.15`
-(`63fb3954ca722e97f150ef08a54c3238e8b4d8a1`). It retains that release's gameplay
-and tracker baseline and adds the test-update opt-in, release version, and signed
-build-sequence allocation. The forward port belongs on current main and retains
+The bridge upgrade test completed successfully on October 27, 2026. The temporary
+0.8.16 release, tag, and remote maintenance branch have been removed. Ironmon
+0.10.0 is now the latest stable, immutable release; normal update checks and Setup
+select it without enabling test releases. Sequence 15 remains reserved. The steps
+below record the completed test procedure rather than an available installation path.
+
+The maintenance branch `release/0.8.16` started at stable tag `v0.8.15`
+(`63fb3954ca722e97f150ef08a54c3238e8b4d8a1`). It retained that release's gameplay
+and tracker baseline and added the test-update opt-in, release version, and signed
+build-sequence allocation. The forward port was merged to main as #52, retaining
 version 0.10.0. Do not replace main with the historical maintenance tree.
 
 1. Publish the signed 0.8.16 bridge as a separate mutable prerelease from

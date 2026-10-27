@@ -44,9 +44,6 @@ tracker minimized**. Ordinary non-Ironmon play does not require the tracker.
 
 ## Download
 
-For 0.10 testing, use the [0.10.0 test release](https://github.com/Nobbinobb/infinitefusion-hoenn-ironmon/releases/tag/v0.10.0).
-In Setup, explicitly select 0.10.0 under **Advanced: Ironmon version**.
-
 Get the latest version from
 [GitHub Releases](https://github.com/Nobbinobb/infinitefusion-hoenn-ironmon/releases/latest).
 Choose **one** download:

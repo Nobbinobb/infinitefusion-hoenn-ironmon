@@ -229,34 +229,24 @@ accurate world lookup.
   Installation/development guidance and the mechanics manual are refreshed, and
   the README explicitly discloses AI-generated code and artwork used by the mod.
 
-## Mutable test release and compatibility
+## Installation and compatibility
 
-Ironmon 0.10.0 targets **Pokémon Infinite Fusion 2: Hoenn 6.8.2** on Windows x64.
-Keep game scripts and tracker from the same build together. Existing runs retain
-versioned generation data; creating a new run uses the new generation algorithms.
+Ironmon 0.10.0 is the stable release for **Pokémon Infinite Fusion 2: Hoenn 6.8.2**
+on Windows x64. Keep game scripts and tracker from the same build together.
+Existing runs retain versioned generation data; creating a new run uses the new
+generation algorithms.
 
-During testing, this is a **mutable GitHub prerelease**. Replacement builds keep
-version 0.10.0 while advancing their signed internal build sequence and recovery
-helper identity. Tracker update checks offer stable releases by default. Enable
-**Include test releases** in the update panel to receive newer published
-prereleases. Test targets are labeled, and the preference survives tracker updates,
-including an upgrade from the 0.8.16 bridge release. Disabling it returns checks to
-the stable channel without downgrading the installed version.
+Download `Ironmon-Setup-win-x64.exe` for a new installation or to update a supported
+existing installation. Setup now selects 0.10.0 by default. Players on an older
+stable release can also update through **Settings > Check for updates** in the
+tracker; enabling test releases is unnecessary.
 
-Signed build numbers now advance across release versions and branches. Sequence
-15 remains reserved for the temporary 0.8.16 bridge, so this target starts at 16
-or higher with a distinct recovery helper. This permits a forward tracker update
-from that bridge while retaining the displayed version 0.10.0.
+This release freezes the exact accepted 0.10.0 test-build files without rebuilding
+them. Players already using that final test build do not need to reinstall.
+The temporary 0.8.16 upgrade-test bridge has been withdrawn after successful
+upgrade testing; its signed build sequence remains reserved.
 
-Download `Ironmon-Setup-win-x64.exe` from this release, expand **Advanced:
-Ironmon version**, refresh the list, and explicitly select **0.10.0** labeled
-**Test release**. Setup's default still installs the latest stable release. For a
-replacement test build, rerun Setup and repeat selection and review, or reinstall
-the complete matching ZIP. Changed program files may need confirmation and backup;
-a different required game revision may require a fresh test folder.
-
-The standard ZIP includes .NET; the smaller runtime-required ZIP needs the Windows
-x64 .NET 10 Runtime; the Desktop Runtime is unnecessary. `SHA256SUMS.txt` lists the current download and metadata
-hashes. Previously downloaded files do not change automatically. After testing is
-accepted, the exact tested assets can be frozen and promoted to stable without
-rebuilding them.
+For manual installation, choose one complete matching ZIP. The standard ZIP
+includes .NET; the smaller runtime-required ZIP needs the Windows x64 .NET 10
+Runtime. The Desktop Runtime is unnecessary. `SHA256SUMS.txt` lists the published
+download and metadata hashes.
