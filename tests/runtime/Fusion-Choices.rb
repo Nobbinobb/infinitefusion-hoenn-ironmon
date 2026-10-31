@@ -60,16 +60,18 @@ module IronmonFusionChoiceRuntimeTests
       head = stat_hash(row["headStats"])
       legacy = Ironmon::BaseStatGenerator.new(row["seed"], nil, 1)
       current = Ironmon::BaseStatGenerator.new(row["seed"], nil, 2)
+      latest = Ironmon::BaseStatGenerator.new(row["seed"], nil, 3)
       expected = stat_hash(row["stats"])
       assert(current.fuse(body, head, row["resultId"]) == expected,
-        "fixed inheritance matches the separately validated simulation")
+        "version-2 inheritance retains the separately validated simulation")
       assert(legacy.fuse(body, head, row["resultId"]) == legacy.fuse(body, head),
         "historical profiles retain native blending")
       species = GameData::Species.get(row["resultId"])
       assert(current.fusion_stats_for(species) == expected,
         "displayed components determine the complete fusion vector")
       [species.body_pokemon, species.head_pokemon].each do |component|
-        assert(current.stats_for(component) == legacy.stats_for(component),
+        assert(current.stats_for(component) == legacy.stats_for(component) &&
+          latest.stats_for(component) == legacy.stats_for(component),
           "normal vectors are unchanged by the fusion formula")
       end
       pokemon = Pokemon.new(row["resultId"], 30)
@@ -81,8 +83,9 @@ module IronmonFusionChoiceRuntimeTests
       stat_method = [:totalhp, :attack, :defense, :spatk, :spdef, :speed][row["reveal"]]
       assert(clue[:value] == pokemon.public_send(stat_method),
         "the revealed value is the current calculated stat, with maximum HP")
-      assert(clue[:label] == Ironmon::FUSION_SPREAD_LABELS[row["label"]],
-        "spread label matches the calibrated reference")
+      assert(clue[:label] == Ironmon.fusion_spread_label(
+        Ironmon.generated_base_stats_for(species)),
+        "spread label follows the active profile's fusion formula")
       pokemon.nature = :ADAMANT
       pokemon.ability_index = 1
       pokemon.level = 80
@@ -95,8 +98,9 @@ module IronmonFusionChoiceRuntimeTests
       assert(Ironmon.fusion_stat_clue(pokemon.clone) == updated_clue,
         "reconstructing the result retains the same clue")
     end
-    assert(Ironmon.base_stat_source_fingerprint(1) !=
-      Ironmon.base_stat_source_fingerprint(2), "formula fingerprints differ")
+    assert([1, 2, 3].map { |version|
+      Ironmon.base_stat_source_fingerprint(version)
+    }.uniq.length == 3, "all formula fingerprints differ")
     test_boundaries
     test_concealed_panel
     assert(Ironmon.prepare_ability_randomization, "abilities prepare")
@@ -228,34 +232,69 @@ module IronmonFusionChoiceRuntimeTests
 
   def self.test_historical_profile
     profile = Ironmon.current_generation_profile
-    manifest = Marshal.load(Marshal.dump(profile["manifest"]))
-    manifest["algorithms"].find { |entry| entry["name"] == "base_stats" }["version"] = 1
-    legacy_id = Ironmon::GenerationProfile.fingerprint(manifest)
     profiles = Ironmon.instance_variable_get(:@generation_profiles)
-    Ironmon.instance_variable_set(:@generation_profiles, (profiles || {}).merge(
-      legacy_id => { "profile_id" => legacy_id, "manifest" => manifest,
-        "root" => profile["root"] }.freeze))
+    current_version = Ironmon.base_stat_formula_version
     current_fingerprint = Ironmon.base_stat_source_fingerprint
     species = GameData::Species.get(75744)
     current_normal = Ironmon.base_stat_generator.stats_for(species.body_pokemon)
-    Ironmon.with_generation_profile(legacy_id) do
-      assert(Ironmon.base_stat_formula_version == 1,
-        "historical profiles select historical stat inheritance")
-      assert(Ironmon.base_stat_source_fingerprint != current_fingerprint,
-        "historical metadata cannot be accepted as current formula metadata")
-      generator = Ironmon.base_stat_generator
-      historical = generator.fuse(generator.stats_for(species.body_pokemon),
-        generator.stats_for(species.head_pokemon))
-      assert(generator.fusion_stats_for(species) == historical,
-        "historical gameplay reproduces the complete original fusion vector")
-      assert(generator.stats_for(species.body_pokemon) == current_normal,
-        "profile activation preserves normal stat vectors")
+    [1, 2].each do |version|
+      manifest = Marshal.load(Marshal.dump(profile["manifest"]))
+      manifest["algorithms"].find { |entry| entry["name"] == "base_stats" }["version"] = version
+      legacy_id = Ironmon::GenerationProfile.fingerprint(manifest)
+      Ironmon.instance_variable_set(:@generation_profiles,
+        (Ironmon.instance_variable_get(:@generation_profiles) || {}).merge(
+          legacy_id => { "profile_id" => legacy_id, "manifest" => manifest,
+            "root" => profile["root"] }.freeze))
+      seed = $PokemonGlobal.ironmon_seed
+      reference = Ironmon::BaseStatGenerator.new(seed,
+        Ironmon.base_stat_source_fingerprint(version), version).fusion_stats_for(species)
+      Ironmon.with_generation_profile(legacy_id) do
+        assert(Ironmon.base_stat_formula_version == version,
+          "historical profiles select version-#{version} stat inheritance")
+        assert(Ironmon.base_stat_source_fingerprint != current_fingerprint,
+          "historical metadata cannot be accepted as current formula metadata")
+        generator = Ironmon.base_stat_generator
+        assert(generator.fusion_stats_for(species) == reference,
+          "historical gameplay reproduces the complete version-#{version} fusion vector")
+        assert(generator.stats_for(species.body_pokemon) == current_normal,
+          "profile activation preserves normal stat vectors")
+        test_profile_clue(version)
+      end
     end
-    assert(Ironmon.base_stat_formula_version == 2 &&
+    assert(Ironmon.base_stat_formula_version == current_version &&
       Ironmon.base_stat_source_fingerprint == current_fingerprint,
       "leaving an archived lookup restores current formula metadata")
   ensure
     Ironmon.instance_variable_set(:@generation_profiles, profiles)
+  end
+
+  def self.test_profile_clue(version)
+    previous_global = $PokemonGlobal
+    $PokemonGlobal = PokemonGlobalMetadata.new
+    $PokemonGlobal.ironmon_mode = true
+    rows = JSON.parse(File.binread($ironmon_fusion_fixture_path))
+    rows.each do |row|
+      row = row.each_with_object({}) { |(key, value), result| result[key.to_s] = value }
+      $PokemonGlobal.ironmon_seed = row["seed"]
+      assert(Ironmon.prepare_base_stat_randomization,
+        "historical version-#{version} stats prepare")
+      expected = Ironmon::BaseStatGenerator.new(row["seed"], nil, version).fuse(
+        stat_hash(row["bodyStats"]), stat_hash(row["headStats"]), row["resultId"])
+      pokemon = Pokemon.new(row["resultId"], 30)
+      assert(pokemon.baseStats == expected,
+        "historical version-#{version} Pokemon use the pinned complete vector")
+      clue = Ironmon.fusion_stat_clue(pokemon)
+      assert(clue[:label] == Ironmon.fusion_spread_label(expected),
+        "historical version-#{version} clue follows the pinned spread")
+      if version == 2
+        assert(clue[:label] == Ironmon::FUSION_SPREAD_LABELS.fetch(row["label"]),
+          "historical version-2 clue retains the independent spread label")
+      end
+    end
+    test_concealed_panel
+    test_native_move_screen
+  ensure
+    $PokemonGlobal = previous_global
   end
 
   def self.test_boundaries

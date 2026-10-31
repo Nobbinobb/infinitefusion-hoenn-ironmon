@@ -7,6 +7,8 @@ public sealed class TrackerGameEventProcessorTests
 {
     private const string _preparedRunId = "prepared-run";
     private const string _testGenerationProfileId = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    private const string _startupIdentity = "startup-processor";
+    private const string _startupPhase = "loading_save";
 
     /// <summary>
     /// Initializes inbound game event processor tests.
@@ -36,6 +38,14 @@ public sealed class TrackerGameEventProcessorTests
             TrackerRequestClient requestClient = new(requestSession, options, connectionState, areaDiscoveries);
             TrackerGameEventProcessor processor = new(connectionState, runState, knowledge, areaDiscoveries, completedRuns, requestSession, requestClient);
             GameHandshakePayload game = new("6.8.0", "0.7.8", true, false, TrackerTestPaths.GameRoot, "run-1", "battle-1");
+            knowledge.SelectRun(game.RunId);
+            TrackerConnectionSnapshot beforeStartup = connectionState.Snapshot;
+            StartupPreparationProgressPayload startup = new() { PreparationId = _startupIdentity, Status = StartupPreparationProgressPayload.RunningStatus, Phase = _startupPhase };
+            await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.StartupPreparationProgress, 0, startup, string.Empty), game, CancellationToken.None);
+            TrackerStartupPreparationSnapshot loading = connectionState.StartupPreparation.Snapshot;
+            Assert.Equal(TrackerStartupPreparationStatus.Running, loading.Status);
+            Assert.Same(beforeStartup, connectionState.Snapshot);
+            Assert.Equal(game.RunId, knowledge.RunId);
             ObservedMoveSnapshot move = new()
             {
                 Id = "ABSORB",
@@ -62,6 +72,8 @@ public sealed class TrackerGameEventProcessorTests
             GameCurrentStatePayload recovered = new(true, "run-1", "battle-1", 4, new BattleSnapshot { BattleId = "battle-1" }, enemies: [enemy]);
             requestClient.ObtainabilityProgress.Begin("previous-run", TrackerObtainabilityProgressScope.ActiveRun);
             processor.RecoverCurrentState(game, recovered);
+
+            Assert.Same(loading, connectionState.StartupPreparation.Snapshot);
 
             Assert.Same(recovered, connectionState.Snapshot.CurrentState);
             Assert.Same(TrackerObtainabilityProgressSnapshot.Idle, requestClient.ObtainabilityProgress.Snapshot);
@@ -120,6 +132,7 @@ public sealed class TrackerGameEventProcessorTests
             GameCurrentStatePayload preparationReady = new(true, "run-1", null, 7, activeRunPreparationReady: true);
             await processor.ProcessAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.ActiveRunPreparationReady, 7, preparationReady, "run-1"), game, CancellationToken.None);
             Assert.True(connectionState.Snapshot.CurrentState?.ActiveRunPreparationReady);
+            Assert.Same(loading, connectionState.StartupPreparation.Snapshot);
 
             EnemyAbilityRevealedPayload ability = new()
             {

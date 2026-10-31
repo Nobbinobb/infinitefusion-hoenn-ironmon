@@ -44,6 +44,7 @@ public partial class Home : IDisposable
     private string? _selectedEnemyId;
     private string? _lastMoveMenuPokemonId;
     private bool _completedRunNavigationPending;
+    private bool _automaticArchiveSelection;
     private bool _achievementsOpen;
     private bool _accessOpen;
     private bool _playOpen;
@@ -52,6 +53,11 @@ public partial class Home : IDisposable
     private bool _autoSelectStarter;
     private int? _maximumStarterBaseStatTotal;
     private string? _settingsStatus;
+
+    /// <summary>
+    /// Gets whether startup preparation currently owns tracker interaction.
+    /// </summary>
+    private bool IsStartupPreparationVisible => ConnectionState.StartupPreparation.Snapshot.Status is TrackerStartupPreparationStatus.Running or TrackerStartupPreparationStatus.Failed;
 
     /// <summary>
     /// Gets or initializes the route used to support direct achievement-page navigation.
@@ -113,6 +119,7 @@ public partial class Home : IDisposable
             _selectedView = TrackerView.Enemy;
 
         ConnectionState.Changed += HandleConnectionChanged;
+        ConnectionState.StartupPreparation.Changed += HandleStartupPreparationChanged;
         TrackerConnection.Requests.ObtainabilityProgress.Changed += HandleObtainabilityProgressChanged;
         RunState.Changed += HandleRunChanged;
         CompletedRuns.SelectionRequested += HandleCompletedRunSelectionRequested;
@@ -134,11 +141,12 @@ public partial class Home : IDisposable
     /// <param name="view">The view selected by the user.</param>
     private void SelectView(TrackerView view)
     {
-        if (UpdateNavigation?.IsUpdateOpen == true)
+        if (IsStartupPreparationVisible || UpdateNavigation?.IsUpdateOpen == true)
             return;
 
         _updateNavigationResuming = false;
         _completedRunNavigationPending = false;
+        _automaticArchiveSelection = false;
         _achievementsOpen = false;
         _playOpen = false;
         _accessOpen = false;
@@ -152,6 +160,9 @@ public partial class Home : IDisposable
     /// </summary>
     private void ToggleAchievements()
     {
+        if (IsStartupPreparationVisible)
+            return;
+
         _achievementsOpen = !_achievementsOpen;
         _playOpen = false;
         _accessOpen = false;
@@ -164,6 +175,9 @@ public partial class Home : IDisposable
     /// </summary>
     private void TogglePlay()
     {
+        if (IsStartupPreparationVisible)
+            return;
+
         _achievementsOpen = false;
         _playOpen = !_playOpen;
         _accessOpen = false;
@@ -176,6 +190,9 @@ public partial class Home : IDisposable
     /// </summary>
     private void ToggleSettings()
     {
+        if (IsStartupPreparationVisible)
+            return;
+
         _settingsOpen = !_settingsOpen;
         _achievementsOpen = false;
         _playOpen = false;
@@ -189,6 +206,9 @@ public partial class Home : IDisposable
     /// </summary>
     private void ToggleAccess()
     {
+        if (IsStartupPreparationVisible)
+            return;
+
         _achievementsOpen = false;
         _playOpen = false;
         _accessOpen = !_accessOpen;
@@ -201,6 +221,9 @@ public partial class Home : IDisposable
     /// </summary>
     private void ToggleSeeds()
     {
+        if (IsStartupPreparationVisible)
+            return;
+
         _seedsOpen = !_seedsOpen;
         _achievementsOpen = false;
         _playOpen = false;
@@ -334,6 +357,9 @@ public partial class Home : IDisposable
     /// <param name="args">The browser keyboard event.</param>
     private void HandleKeyDown(KeyboardEventArgs args)
     {
+        if (IsStartupPreparationVisible)
+            return;
+
         TrackerView? requestedView = ShortcutService.TrackerKeyDown(args);
 
         if (requestedView is not null)
@@ -360,7 +386,7 @@ public partial class Home : IDisposable
     {
         _ = InvokeAsync(() =>
         {
-            if (UpdateNavigation?.IsUpdateOpen == true)
+            if (IsStartupPreparationVisible || UpdateNavigation?.IsUpdateOpen == true)
                 return;
 
             IReadOnlyList<EnemyPokemonSnapshot> enemies = [.. _run.Enemies.OrderBy(enemy => enemy.Position)];
@@ -542,6 +568,22 @@ public partial class Home : IDisposable
     }
 
     /// <summary>
+    /// Isolates the existing tracker view while preparation owns the full window.
+    /// </summary>
+    /// <param name="sender">The shared startup state.</param>
+    /// <param name="args">The startup lifecycle notification.</param>
+    private void HandleStartupPreparationChanged(object? sender, EventArgs args)
+    {
+        _ = InvokeAsync(() =>
+        {
+            if (IsStartupPreparationVisible)
+                ShortcutService.ClearTrackerKeys();
+
+            StateHasChanged();
+        });
+    }
+
+    /// <summary>
     /// Refreshes the shell after shared obtainability progress changes.
     /// </summary>
     /// <param name="sender">The progress state raising the event.</param>
@@ -614,6 +656,7 @@ public partial class Home : IDisposable
             return;
 
         _completedRunNavigationPending = true;
+        _automaticArchiveSelection = true;
         _playOpen = false;
         _accessOpen = false;
         _settingsOpen = false;
@@ -628,6 +671,7 @@ public partial class Home : IDisposable
     {
         UpdateNavigation?.Unregister(UpdateNavigationKey);
         ConnectionState.Changed -= HandleConnectionChanged;
+        ConnectionState.StartupPreparation.Changed -= HandleStartupPreparationChanged;
         TrackerConnection.Requests.ObtainabilityProgress.Changed -= HandleObtainabilityProgressChanged;
         RunState.Changed -= HandleRunChanged;
         CompletedRuns.SelectionRequested -= HandleCompletedRunSelectionRequested;

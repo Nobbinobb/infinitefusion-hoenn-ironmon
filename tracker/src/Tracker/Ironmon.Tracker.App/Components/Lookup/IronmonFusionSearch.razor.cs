@@ -45,6 +45,12 @@ public partial class IronmonFusionSearch : IDisposable
     public bool DebugMode { get; set; }
 
     /// <summary>
+    /// Gets or sets whether the containing information panel is visible and may prioritize requested proofs.
+    /// </summary>
+    [CascadingParameter(Name = nameof(ForegroundPreparation))]
+    public bool ForegroundPreparation { get; set; } = true;
+
+    /// <summary>
     /// Gets or sets the connected game installation directory.
     /// </summary>
     [Parameter]
@@ -230,7 +236,7 @@ public partial class IronmonFusionSearch : IDisposable
     }
 
     /// <summary>
-    /// Starts a passive refresh for calculating statuses on the currently displayed cards.
+    /// Starts a refresh for calculating statuses on the currently displayed cards.
     /// </summary>
     private void StartObtainabilityRefresh()
     {
@@ -252,11 +258,11 @@ public partial class IronmonFusionSearch : IDisposable
     }
 
     /// <summary>
-    /// Refreshes visible material and outcome states without requesting global material work.
+    /// Refreshes material and outcome states at the containing panel's current visibility priority.
     /// </summary>
     /// <param name="speciesIds">The visible identifiers awaiting final states.</param>
     /// <param name="cancellation">The owner of the refresh lifetime.</param>
-    /// <returns>A task representing passive refreshes.</returns>
+    /// <returns>A task representing the requested material and outcome refreshes.</returns>
     private async Task RefreshObtainabilityAsync(IReadOnlyList<string> speciesIds, CancellationTokenSource cancellation)
     {
         try
@@ -264,8 +270,8 @@ public partial class IronmonFusionSearch : IDisposable
             while (!cancellation.IsCancellationRequested)
             {
                 PokemonObtainabilityResponsePayload response = DebugMode
-                    ? await Connection.AdvanceDebugPokemonObtainabilityAsync(speciesIds: speciesIds, foreground: false, cancellationToken: cancellation.Token)
-                    : await Connection.AdvancePokemonObtainabilityAsync(Recipe!, speciesIds: speciesIds, foreground: false, cancellationToken: cancellation.Token);
+                    ? await Connection.AdvanceDebugPokemonObtainabilityAsync(speciesIds: speciesIds, foreground: ForegroundPreparation, cancellationToken: cancellation.Token)
+                    : await Connection.AdvancePokemonObtainabilityAsync(Recipe!, speciesIds: speciesIds, foreground: ForegroundPreparation, cancellationToken: cancellation.Token);
 
                 if (!ReferenceEquals(_obtainabilityRefreshCancellation, cancellation))
                     return;

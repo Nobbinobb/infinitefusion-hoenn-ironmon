@@ -42,8 +42,8 @@ public sealed class RunManagementViewTests
     private const string StylesRelativePath = "tracker/src/Tracker/Ironmon.Tracker.App/wwwroot";
     private const string IndexFileName = "index.html";
     private const string StylePattern = "<link rel=\"stylesheet\" href=\"([^\"]+)\"";
-    private const string ScopedStyleFileName = "Ironmon Tracker.styles.css";
-    private const string ScopedStylesRelativePath = "tracker/src/Tracker/Ironmon.Tracker.App/obj/Release/net10.0-windows10.0.19041.0/win-x64/scopedcss/projectbundle/Ironmon Tracker.bundle.scp.css";
+    private const string ScopedStyleFileName = "tracker-components.styles.css";
+    private const string BuiltWebRoot = "wwwroot";
 
     /// <summary>
     /// Verifies real component markup mirrors slots, uses existing help controls, and blocks gameplay actions.
@@ -165,7 +165,7 @@ public sealed class RunManagementViewTests
         string project = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, ProjectRelativeRoot));
         string stylesRoot = Path.Combine(project, StylesRelativePath);
         string index = File.ReadAllText(Path.Combine(stylesRoot, IndexFileName));
-        string css = string.Join(Environment.NewLine, System.Text.RegularExpressions.Regex.Matches(index, StylePattern).Select(match => File.ReadAllText(match.Groups[1].Value == ScopedStyleFileName ? Path.Combine(project, ScopedStylesRelativePath) : Path.Combine(stylesRoot, match.Groups[1].Value))));
+        string css = string.Join(Environment.NewLine, System.Text.RegularExpressions.Regex.Matches(index, StylePattern).Select(match => File.ReadAllText(match.Groups[1].Value == ScopedStyleFileName ? Path.Combine(AppContext.BaseDirectory, BuiltWebRoot, ScopedStyleFileName) : Path.Combine(stylesRoot, match.Groups[1].Value))));
         File.WriteAllText(Path.Combine(project, string.Format(PreviewRelativePath, screen)), $"<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><style>{css}</style></head><body><main class=\"tracker-shell obsidian\">{html}</main></body></html>");
     }
 

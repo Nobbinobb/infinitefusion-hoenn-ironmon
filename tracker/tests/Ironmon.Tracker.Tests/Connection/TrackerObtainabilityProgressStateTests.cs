@@ -11,6 +11,74 @@ public sealed class TrackerObtainabilityProgressStateTests
     private const string _secondRunId = "progress-run-two";
 
     /// <summary>
+    /// Verifies cached complete responses retain the original calculation duration and cannot reopen completed progress.
+    /// </summary>
+    /// <param name="scope">The surface that owns the completed calculation.</param>
+    [Theory]
+    [InlineData(TrackerObtainabilityProgressScope.ActiveRun)]
+    [InlineData(TrackerObtainabilityProgressScope.ArchivedRun)]
+    public void CompletedResponsesRetainTerminalTimings(TrackerObtainabilityProgressScope scope)
+    {
+        TrackerObtainabilityProgressState state = new();
+        state.Begin(_firstRunId, scope);
+        state.Report(_firstRunId, scope, new() { Phase = _playerFusionsPhase, TotalPairs = 100 });
+        state.Report(_firstRunId, scope, new() { Phase = _completePhase, BackgroundComplete = true, ProcessedPairs = 100, TotalPairs = 100, ObtainableCount = 42 });
+        TrackerObtainabilityProgressSnapshot complete = state.Snapshot;
+
+        state.Begin(_firstRunId, scope);
+        state.Report(_firstRunId, scope, new() { Phase = _completePhase, BackgroundComplete = true, ProcessedPairs = 100, TotalPairs = 100, ObtainableCount = 42 });
+        Assert.Same(complete, state.Snapshot);
+
+        state.Report(_firstRunId, scope, new() { Phase = _playerFusionsPhase, TotalPairs = 100 });
+        state.Fail(_firstRunId, scope, "A later lookup failed.");
+        Assert.Same(complete, state.Snapshot);
+    }
+
+    /// <summary>
+    /// Verifies selecting another run does not restart elapsed clocks when retained completed preparation is selected again.
+    /// </summary>
+    /// <param name="scope">The surface that owns the retained completed calculation.</param>
+    [Theory]
+    [InlineData(TrackerObtainabilityProgressScope.ActiveRun)]
+    [InlineData(TrackerObtainabilityProgressScope.ArchivedRun)]
+    public void SelectingCompletedRunRestoresItsTerminalSnapshot(TrackerObtainabilityProgressScope scope)
+    {
+        TrackerObtainabilityProgressState state = new();
+        state.Begin(_firstRunId, scope);
+        state.Report(_firstRunId, scope, new() { Phase = _completePhase, BackgroundComplete = true, ObtainableCount = 42 });
+        TrackerObtainabilityProgressSnapshot complete = state.Snapshot;
+        state.Begin(_secondRunId, TrackerObtainabilityProgressScope.ArchivedRun);
+
+        state.Begin(_firstRunId, scope);
+        Assert.Same(complete, state.Snapshot);
+        state.Report(_firstRunId, scope, new() { Phase = _completePhase, BackgroundComplete = true, ObtainableCount = 42 });
+        Assert.Same(complete, state.Snapshot);
+    }
+
+    /// <summary>
+    /// Verifies repeated failures and late responses do not extend failed work until an explicit retry starts.
+    /// </summary>
+    [Fact]
+    public void FailedProgressRetainsTerminalTimingsUntilRetry()
+    {
+        TrackerObtainabilityProgressState state = new();
+        state.Begin(_firstRunId, TrackerObtainabilityProgressScope.ActiveRun);
+        state.Report(_firstRunId, TrackerObtainabilityProgressScope.ActiveRun, new() { Phase = _playerFusionsPhase });
+        state.Fail(_firstRunId, TrackerObtainabilityProgressScope.ActiveRun, "Preparation failed.");
+        TrackerObtainabilityProgressSnapshot failed = state.Snapshot;
+
+        state.Fail(_firstRunId, TrackerObtainabilityProgressScope.ActiveRun, "A later lookup failed.");
+        state.Report(_firstRunId, TrackerObtainabilityProgressScope.ActiveRun, new() { Phase = _completePhase, BackgroundComplete = true });
+        Assert.Same(failed, state.Snapshot);
+        Assert.False(state.HasCompletedPreparation(_firstRunId));
+
+        state.Begin(_firstRunId, TrackerObtainabilityProgressScope.ActiveRun);
+        Assert.Equal(TrackerObtainabilityProgressStatus.Running, state.Snapshot.Status);
+        Assert.Equal(TimeSpan.Zero, state.Snapshot.Elapsed);
+        Assert.Equal(TimeSpan.Zero, state.Snapshot.PhaseElapsed);
+    }
+
+    /// <summary>
     /// Verifies archive readiness requires full preparation, stays run-specific, and expires on disconnect.
     /// </summary>
     /// <param name="scope">The surface that finishes preparing the run.</param>

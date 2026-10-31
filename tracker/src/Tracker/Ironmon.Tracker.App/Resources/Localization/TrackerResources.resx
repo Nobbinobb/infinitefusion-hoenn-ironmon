@@ -2489,4 +2489,15 @@
   <data name="Updates.LatestTestVersion" xml:space="preserve">
     <value>Latest test release: {0}</value>
   </data>
+  <data name="Startup.Preparation.Progress" xml:space="preserve"><value>Game preparation in progress</value></data>
+  <data name="Startup.Preparation.FailedTitle" xml:space="preserve"><value>Preparation could not finish</value></data>
+  <data name="Startup.Preparation.FailedDescription" xml:space="preserve"><value>Return to the game for more information.</value></data>
+  <data name="Startup.Preparation.Loading" xml:space="preserve"><value>Loading your save…</value></data>
+  <data name="Startup.Preparation.World" xml:space="preserve"><value>Preparing the world…</value></data>
+  <data name="Startup.Preparation.Pokemon" xml:space="preserve"><value>Preparing Pokémon data…</value></data>
+  <data name="Startup.Preparation.Fusions" xml:space="preserve"><value>Preparing fusion choices…</value></data>
+  <data name="Startup.Preparation.Checking" xml:space="preserve"><value>Checking fusion choices…</value></data>
+  <data name="Startup.Preparation.Finishing" xml:space="preserve"><value>Finishing up…</value></data>
+  <data name="Startup.Preparation.Other" xml:space="preserve"><value>Preparing your game…</value></data>
+  <data name="Startup.Preparation.Back" xml:space="preserve"><value>Back to tracker</value></data>
 </root>

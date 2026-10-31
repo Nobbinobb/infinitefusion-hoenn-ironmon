@@ -79,14 +79,20 @@ module Ironmon
     end
   end
 
-  def self.generation_profile_base_catalog(profile_id)
+  def self.generation_profile_base_catalog(profile_id, work_checkpoint = nil)
     @generation_profile_base_catalogs ||= {}
     return @generation_profile_base_catalogs[profile_id] if
       @generation_profile_base_catalogs[profile_id]
     path = generation_profile_component_path("base_catalog", profile_id)
-    document = generation_profile_stringify_keys(JSON.parse(
-      generation_profile_runtime_json(File.binread(path))
-    ))
+    bytes = File.binread(path)
+    native = work_checkpoint && defined?(HTTPLite::JSON) &&
+      generation_profile_native_json_safe?(bytes, work_checkpoint)
+    parsed = if native
+               HTTPLite::JSON.parse(bytes.dup.force_encoding(Encoding::UTF_8))
+             else
+               JSON.parse(generation_profile_runtime_json(bytes, work_checkpoint))
+             end
+    document = generation_profile_stringify_keys(parsed, work_checkpoint, native)
     if !document.is_a?(Hash) || document["schema_version"] != 1 ||
        document["normal_species_count"] != NB_POKEMON
       raise GenerationProfileUnavailable,
@@ -112,12 +118,31 @@ module Ironmon
       "the generation profile base catalog is invalid: #{exception.message}"
   end
 
-  def self.generation_profile_runtime_json(bytes)
+  def self.generation_profile_native_json_safe?(bytes, work_checkpoint = nil)
+    return false if bytes.include?("\\u0000")
+    tokens = 0
+    bytes.to_enum(:scan, /"(?:\\.|[^"\\])*"|(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)/).each do
+      number = Regexp.last_match[1]
+      work_checkpoint.call if work_checkpoint && tokens % 128 == 0
+      tokens += 1
+      next if !number
+      return false if number.include?(".") || number.match?(/[eE]/) ||
+        number.to_i.abs > 9_007_199_254_740_991
+    end
+    return true
+  end
+
+  def self.generation_profile_runtime_json(bytes, work_checkpoint = nil)
     result = +""
     quoted = false
     escaped = false
     index = 0
+    next_checkpoint = 0
     while index < bytes.length
+      if work_checkpoint && index >= next_checkpoint
+        work_checkpoint.call
+        next_checkpoint = index + 1024
+      end
       character = bytes[index]
       if quoted
         result << character
@@ -146,16 +171,19 @@ module Ironmon
     return result
   end
 
-  def self.generation_profile_stringify_keys(value)
+  def self.generation_profile_stringify_keys(value, work_checkpoint = nil, normalize_integers = false)
+    work_checkpoint.call if work_checkpoint
     if value.is_a?(Hash)
       result = {}
       value.each do |key, entry|
-        result[key.to_s] = generation_profile_stringify_keys(entry)
+        result[key.to_s] = generation_profile_stringify_keys(entry, work_checkpoint, normalize_integers)
       end
       return result
     end
-    return value.map { |entry| generation_profile_stringify_keys(entry) } if
+    return value.map { |entry| generation_profile_stringify_keys(entry, work_checkpoint, normalize_integers) } if
       value.is_a?(Array)
+    return value.to_i if normalize_integers && value.is_a?(Float) &&
+      value.finite? && value == value.to_i
     return value
   end
 
@@ -185,12 +213,13 @@ module Ironmon
     return result
   end
 
-  def self.generation_profile_fusion_name_parts(profile_id)
-    records = generation_profile_base_catalog(profile_id)["fusion_name_parts"]
+  def self.generation_profile_fusion_name_parts(profile_id, work_checkpoint = nil)
+    records = generation_profile_base_catalog(profile_id, work_checkpoint)["fusion_name_parts"]
     return nil if !records.is_a?(Array) || records.empty?
     prefixes = []
     suffixes = []
     records.each do |record|
+      work_checkpoint.call if work_checkpoint
       id_number = record["id_number"].to_i
       next if id_number < 1 || id_number > NB_POKEMON
       prefixes[id_number] = record["prefix"]

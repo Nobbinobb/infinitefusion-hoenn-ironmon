@@ -3,6 +3,7 @@ module Ironmon
     MAGIC = "IFCFPOOL".b.freeze
     SCHEMA_VERSION = 1
     HEADER_BYTES = 20
+    BYTE_POPULATION_COUNTS = Array.new(256) { |byte| byte.to_s(2).count("1") }.freeze
 
     def self.encode(normal_species_count, identities)
       validate_species_count(normal_species_count)
@@ -28,7 +29,7 @@ module Ironmon
       return header + bitset
     end
 
-    def self.decode(bytes)
+    def self.decode(bytes, work_checkpoint = nil)
       raise ArgumentError, "custom fusion component must be binary data" if !bytes.is_a?(String)
       raise ArgumentError, "custom fusion component header is truncated" if bytes.bytesize < HEADER_BYTES
       magic, schema_version, normal_species_count, eligible_count,
@@ -55,8 +56,10 @@ module Ironmon
          (bitset.getbyte(bitset.bytesize - 1) & (0xFF << remainder)) != 0
         raise ArgumentError, "custom fusion component padding bits must be zero"
       end
-      actual_count = bitset.bytes.inject(0) do |count, byte|
-        count + byte.to_s(2).count("1")
+      actual_count = 0
+      bitset.each_byte.with_index do |byte, index|
+        work_checkpoint.call if work_checkpoint && index % 256 == 0
+        actual_count += BYTE_POPULATION_COUNTS[byte]
       end
       if actual_count != eligible_count
         raise ArgumentError, "custom fusion eligibility count does not match its bitset"
@@ -69,13 +72,14 @@ module Ironmon
       }
     end
 
-    def self.identities(bytes)
-      component = decode(bytes)
+    def self.identities(bytes, work_checkpoint = nil)
+      component = decode(bytes, work_checkpoint)
       normal_species_count = component["normal_species_count"]
       bitset = component["bitset"]
       result = []
       (1..normal_species_count).each do |body_id|
         (1..normal_species_count).each do |head_id|
+          work_checkpoint.call if work_checkpoint && head_id % 128 == 0
           index = bit_index(body_id, head_id, normal_species_count)
           byte = bitset.getbyte(index >> 3)
           next if (byte & (1 << (index & 7))) == 0

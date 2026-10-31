@@ -17,28 +17,51 @@ internal sealed class PlayerFusionMappingCoordinator
     private const int MaximumPlansPerSpecies = 8;
     private static readonly IReadOnlyDictionary<string, string> _emptyConstraints = new Dictionary<string, string>(StringComparer.Ordinal);
     private static readonly IReadOnlyDictionary<string, int> _emptyCounts = new Dictionary<string, int>(StringComparer.Ordinal);
-    private readonly PlayerFusionMappingWorkerCatalog _catalog;
-    private readonly ConcurrentDictionary<string, PlayerFusionWorkerContext> _workerContexts = new(StringComparer.Ordinal);
+    private readonly Lazy<WorkerCatalogState> _catalogState = new(LoadCatalogState);
     private readonly ConcurrentDictionary<EvolutionAssignmentKey, Lazy<Task<FusionEvolutionAssignmentIndex>>> _evolutionJobs = new();
     private readonly ConcurrentDictionary<PlayerFusionMaterialKey, Lazy<Task<PlayerFusionMaterialIndex>>> _materialJobs = new();
     private readonly ConcurrentDictionary<string, Task<PlayerFusionWorkerResult>> _jobs = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, EvolutionAssignmentKey> _runEvolutionKeys = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, PlayerFusionMaterialKey> _runMaterialKeys = new(StringComparer.Ordinal);
-    private readonly ObtainabilitySourceCatalog _sourceCatalog;
 
     /// <summary>
-    /// Initializes a coordinator from the embedded generated mapping catalog.
+    /// Initializes a coordinator without loading generated catalogs until mapping work is requested.
     /// </summary>
     internal PlayerFusionMappingCoordinator()
     {
-        _catalog = PlayerFusionMappingWorkerCatalog.Load();
-        _sourceCatalog = ObtainabilitySourceCatalog.Load();
-        _workerContexts[WorkerContextKey(_catalog.CustomFusionPoolFingerprint, _catalog.BaseStatSourceFingerprint)] = new PlayerFusionWorkerContext(_catalog);
-        if (!string.IsNullOrEmpty(_catalog.LegacyBaseStatSourceFingerprint) && _catalog.LegacyBaseStatSourceFingerprint != _catalog.BaseStatSourceFingerprint)
+    }
+
+    /// <summary>
+    /// Gets the shared generated catalog on the first mapping request.
+    /// </summary>
+    private PlayerFusionMappingWorkerCatalog Catalog => _catalogState.Value.Catalog;
+
+    /// <summary>
+    /// Gets the acquisition source catalog initialized with the mapping workers.
+    /// </summary>
+    private ObtainabilitySourceCatalog SourceCatalog => _catalogState.Value.SourceCatalog;
+
+    /// <summary>
+    /// Gets the initialized worker contexts, including each historical formula.
+    /// </summary>
+    private ConcurrentDictionary<string, PlayerFusionWorkerContext> WorkerContexts => _catalogState.Value.Contexts;
+
+    /// <summary>
+    /// Loads both generated catalogs and publishes their complete historical worker contexts together.
+    /// </summary>
+    /// <returns>The shared catalog state used by all mapping requests.</returns>
+    private static WorkerCatalogState LoadCatalogState()
+    {
+        PlayerFusionMappingWorkerCatalog current = PlayerFusionMappingWorkerCatalog.Load();
+        ObtainabilitySourceCatalog sources = ObtainabilitySourceCatalog.Load();
+        ConcurrentDictionary<string, PlayerFusionWorkerContext> contexts = new(StringComparer.Ordinal);
+        foreach (string fingerprint in current.BaseStatSourceFingerprints.Values)
         {
-            PlayerFusionMappingWorkerCatalog legacy = _catalog.WithBaseStatFingerprint(_catalog.LegacyBaseStatSourceFingerprint);
-            _workerContexts[WorkerContextKey(legacy.CustomFusionPoolFingerprint, legacy.BaseStatSourceFingerprint)] = new PlayerFusionWorkerContext(legacy);
+            PlayerFusionMappingWorkerCatalog catalog = fingerprint == current.BaseStatSourceFingerprint ? current : current.WithBaseStatFingerprint(fingerprint);
+            contexts[WorkerContextKey(catalog.CustomFusionPoolFingerprint, catalog.BaseStatSourceFingerprint)] = new PlayerFusionWorkerContext(catalog);
         }
+
+        return new WorkerCatalogState(current, sources, contexts);
     }
 
     /// <summary>
@@ -140,7 +163,7 @@ internal sealed class PlayerFusionMappingCoordinator
     internal async Task<PlayerFusionClosureResultPayload?> CreateResultAsync(PlayerFusionClosureWorkPayload work, CancellationToken cancellationToken, string? runId = null)
     {
         ArgumentNullException.ThrowIfNull(work);
-        if (work.SourceCatalogFingerprint != _sourceCatalog.Fingerprint)
+        if (work.SourceCatalogFingerprint != SourceCatalog.Fingerprint)
             throw new InvalidOperationException("The game and tracker obtainability source catalogs do not match.");
 
         PlayerFusionWorkerContext? context = ResolveWorkerContext(work);
@@ -395,7 +418,7 @@ internal sealed class PlayerFusionMappingCoordinator
             return null;
 
         PlayerFusionMaterialKey key = recipe is null ? _runMaterialKeys[runId] : PlayerFusionMaterialKey.From(recipe);
-        if (!_workerContexts.TryGetValue(WorkerContextKey(key.TargetPoolFingerprint, key.BaseStatFingerprint), out PlayerFusionWorkerContext? context))
+        if (!WorkerContexts.TryGetValue(WorkerContextKey(key.TargetPoolFingerprint, key.BaseStatFingerprint), out PlayerFusionWorkerContext? context))
             return null;
 
         return context.MappingWorker.GetPreparedReversePartner(key.Seed, key.GeneratorVersion, targetId);
@@ -788,7 +811,7 @@ internal sealed class PlayerFusionMappingCoordinator
         if (!TryParseFusionComponents(speciesId, out int bodyId, out int headId))
             return false;
 
-        targetId = checked(bodyId * _catalog.NormalSpeciesCount + headId);
+        targetId = checked(bodyId * Catalog.NormalSpeciesCount + headId);
         return true;
     }
 
@@ -808,8 +831,8 @@ internal sealed class PlayerFusionMappingCoordinator
         return identity.Length >= 4 && identity[0] == FusionBodyPrefix && separator >= 2
             && int.TryParse(identity.AsSpan(1, separator - 1), out bodyId)
             && int.TryParse(identity.AsSpan(separator + 1), out headId)
-            && bodyId > 0 && bodyId <= _catalog.NormalSpeciesCount
-            && headId > 0 && headId <= _catalog.NormalSpeciesCount;
+            && bodyId > 0 && bodyId <= Catalog.NormalSpeciesCount
+            && headId > 0 && headId <= Catalog.NormalSpeciesCount;
     }
 
     /// <summary>
@@ -840,11 +863,11 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <returns>The fixed-size membership words with one bit for each proven custom fusion.</returns>
     private uint[] BuildObtainableFusionWords(IReadOnlyDictionary<int, List<PlayerFusionProofPlan>> plansBySpecies)
     {
-        int maximumSpeciesId = checked(_catalog.NormalSpeciesCount * _catalog.NormalSpeciesCount + _catalog.NormalSpeciesCount);
+        int maximumSpeciesId = checked(Catalog.NormalSpeciesCount * Catalog.NormalSpeciesCount + Catalog.NormalSpeciesCount);
         uint[] words = new uint[(maximumSpeciesId >> 5) + 1];
         foreach ((int speciesId, List<PlayerFusionProofPlan> plans) in plansBySpecies)
         {
-            if (speciesId <= _catalog.NormalSpeciesCount || speciesId > maximumSpeciesId || plans.Count == 0)
+            if (speciesId <= Catalog.NormalSpeciesCount || speciesId > maximumSpeciesId || plans.Count == 0)
                 continue;
 
             words[speciesId >> 5] |= 1U << (speciesId & 31);
@@ -864,7 +887,7 @@ internal sealed class PlayerFusionMappingCoordinator
         {
             int body = assignment.PackedSourceComponents >> 10;
             int head = assignment.PackedSourceComponents & 0x3FF;
-            uint source = checked((uint)(body * _catalog.NormalSpeciesCount + head));
+            uint source = checked((uint)(body * Catalog.NormalSpeciesCount + head));
             return assignment.Branches.Select(branch => ((long)source << 32) | (uint)branch.TargetId);
         }).Distinct().Order()];
 
@@ -1359,18 +1382,18 @@ internal sealed class PlayerFusionMappingCoordinator
     private PlayerFusionWorkerContext? ResolveWorkerContext(PlayerFusionClosureWorkPayload work)
     {
         if (!PlayerFusionMappingWorkerCatalog.SupportsPlayerFusionGeneratorVersion(work.GeneratorVersion)
-            || work.SourceCatalogFingerprint != _sourceCatalog.Fingerprint
-            || !_catalog.SupportsBaseStatFingerprint(work.BaseStatSourceFingerprint)
-            || work.FusionEvolutionGeneratorVersion != _catalog.FusionEvolutionGeneratorVersion
-            || work.FusionEvolutionRulesVersion != _catalog.FusionEvolutionRulesVersion
-            || work.EvolutionSourceFingerprint != _catalog.EvolutionSourceFingerprint
-            || work.EvolutionTaxonomyFingerprint != _catalog.EvolutionTaxonomyFingerprint
-            || work.EvolutionMethodFingerprint != _catalog.EvolutionMethodFingerprint)
+            || work.SourceCatalogFingerprint != SourceCatalog.Fingerprint
+            || !Catalog.SupportsBaseStatFingerprint(work.BaseStatSourceFingerprint)
+            || work.FusionEvolutionGeneratorVersion != Catalog.FusionEvolutionGeneratorVersion
+            || work.FusionEvolutionRulesVersion != Catalog.FusionEvolutionRulesVersion
+            || work.EvolutionSourceFingerprint != Catalog.EvolutionSourceFingerprint
+            || work.EvolutionTaxonomyFingerprint != Catalog.EvolutionTaxonomyFingerprint
+            || work.EvolutionMethodFingerprint != Catalog.EvolutionMethodFingerprint)
         {
             return null;
         }
 
-        if (_workerContexts.TryGetValue(WorkerContextKey(work.CustomFusionPoolFingerprint, work.BaseStatSourceFingerprint), out PlayerFusionWorkerContext? retained))
+        if (WorkerContexts.TryGetValue(WorkerContextKey(work.CustomFusionPoolFingerprint, work.BaseStatSourceFingerprint), out PlayerFusionWorkerContext? retained))
         {
             return retained.Catalog.CustomFusionPoolVersion == work.CustomFusionPoolVersion && retained.Catalog.CustomFusionPool.Count == work.CustomFusionPoolSize
                 ? retained
@@ -1380,8 +1403,8 @@ internal sealed class PlayerFusionMappingCoordinator
         if (string.IsNullOrWhiteSpace(work.PackedCustomFusionPool))
             return null;
 
-        PlayerFusionMappingWorkerCatalog runtimeCatalog = _catalog.WithRuntimeFusionPool(work.CustomFusionPoolVersion, work.CustomFusionPoolSize, work.CustomFusionPoolFingerprint, work.PackedCustomFusionPool, work.BaseStatSourceFingerprint);
-        PlayerFusionWorkerContext context = _workerContexts.GetOrAdd(WorkerContextKey(work.CustomFusionPoolFingerprint, work.BaseStatSourceFingerprint), _ => new PlayerFusionWorkerContext(runtimeCatalog));
+        PlayerFusionMappingWorkerCatalog runtimeCatalog = Catalog.WithRuntimeFusionPool(work.CustomFusionPoolVersion, work.CustomFusionPoolSize, work.CustomFusionPoolFingerprint, work.PackedCustomFusionPool, work.BaseStatSourceFingerprint);
+        PlayerFusionWorkerContext context = WorkerContexts.GetOrAdd(WorkerContextKey(work.CustomFusionPoolFingerprint, work.BaseStatSourceFingerprint), _ => new PlayerFusionWorkerContext(runtimeCatalog));
         return context.Catalog.CustomFusionPoolVersion == work.CustomFusionPoolVersion && context.Catalog.CustomFusionPool.Count == work.CustomFusionPoolSize
             ? context
             : null;
@@ -1405,7 +1428,7 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <exception cref="InvalidOperationException">Thrown when no compatible worker context has been registered.</exception>
     private PlayerFusionWorkerContext WorkerContext(string fingerprint, string baseStatFingerprint)
     {
-        return _workerContexts.TryGetValue(WorkerContextKey(fingerprint, baseStatFingerprint), out PlayerFusionWorkerContext? context)
+        return WorkerContexts.TryGetValue(WorkerContextKey(fingerprint, baseStatFingerprint), out PlayerFusionWorkerContext? context)
             ? context
             : throw new InvalidOperationException("The pinned custom-fusion worker context is unavailable.");
     }
@@ -1418,7 +1441,7 @@ internal sealed class PlayerFusionMappingCoordinator
     private bool Compatible(CompletedRunRecipePayload recipe)
     {
         EvolutionGeneratorRecipePayload? evolution = recipe.EvolutionGenerator;
-        if (!_workerContexts.TryGetValue(WorkerContextKey(recipe.PlayerFusionGenerator.PoolFingerprint, recipe.BaseStatGenerator?.SourceFingerprint ?? string.Empty), out PlayerFusionWorkerContext? context))
+        if (!WorkerContexts.TryGetValue(WorkerContextKey(recipe.PlayerFusionGenerator.PoolFingerprint, recipe.BaseStatGenerator?.SourceFingerprint ?? string.Empty), out PlayerFusionWorkerContext? context))
             return false;
 
         PlayerFusionMappingWorkerCatalog catalog = context.Catalog;
@@ -1444,7 +1467,7 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <returns>True when exact tracker-side assignments are safe to prepare.</returns>
     private bool Compatible(FusionAssignmentRecipePayload recipe)
     {
-        if (!_workerContexts.TryGetValue(WorkerContextKey(recipe.TargetPoolFingerprint, recipe.BaseStatSourceFingerprint), out PlayerFusionWorkerContext? context))
+        if (!WorkerContexts.TryGetValue(WorkerContextKey(recipe.TargetPoolFingerprint, recipe.BaseStatSourceFingerprint), out PlayerFusionWorkerContext? context))
             return false;
 
         return Compatible(recipe, context.Catalog);
@@ -1477,22 +1500,33 @@ internal sealed class PlayerFusionMappingCoordinator
     /// <returns>The matching worker context, or null when the recipe is incompatible.</returns>
     private PlayerFusionWorkerContext? ResolveWorkerContext(FusionAssignmentRecipePayload recipe)
     {
-        if (_workerContexts.TryGetValue(WorkerContextKey(recipe.TargetPoolFingerprint, recipe.BaseStatSourceFingerprint), out PlayerFusionWorkerContext? retained))
+        if (WorkerContexts.TryGetValue(WorkerContextKey(recipe.TargetPoolFingerprint, recipe.BaseStatSourceFingerprint), out PlayerFusionWorkerContext? retained))
         {
             return retained.Catalog.CustomFusionPoolVersion == recipe.TargetPoolVersion && retained.Catalog.CustomFusionPool.Count == recipe.TargetPoolSize
                 ? retained
                 : null;
         }
 
-        if (!_catalog.SupportsBaseStatFingerprint(recipe.BaseStatSourceFingerprint) || string.IsNullOrWhiteSpace(recipe.PackedCustomFusionPool))
+        if (!Catalog.SupportsBaseStatFingerprint(recipe.BaseStatSourceFingerprint) || string.IsNullOrWhiteSpace(recipe.PackedCustomFusionPool))
             return null;
 
-        PlayerFusionMappingWorkerCatalog runtimeCatalog = _catalog.WithRuntimeFusionPool(recipe.TargetPoolVersion, recipe.TargetPoolSize, recipe.TargetPoolFingerprint, recipe.PackedCustomFusionPool, recipe.BaseStatSourceFingerprint);
-        PlayerFusionWorkerContext context = _workerContexts.GetOrAdd(WorkerContextKey(recipe.TargetPoolFingerprint, recipe.BaseStatSourceFingerprint), _ => new PlayerFusionWorkerContext(runtimeCatalog));
+        PlayerFusionMappingWorkerCatalog runtimeCatalog = Catalog.WithRuntimeFusionPool(recipe.TargetPoolVersion, recipe.TargetPoolSize, recipe.TargetPoolFingerprint, recipe.PackedCustomFusionPool, recipe.BaseStatSourceFingerprint);
+        PlayerFusionWorkerContext context = WorkerContexts.GetOrAdd(WorkerContextKey(recipe.TargetPoolFingerprint, recipe.BaseStatSourceFingerprint), _ => new PlayerFusionWorkerContext(runtimeCatalog));
         return context.Catalog.CustomFusionPoolVersion == recipe.TargetPoolVersion && context.Catalog.CustomFusionPool.Count == recipe.TargetPoolSize
             ? context
             : null;
     }
+
+    /// <summary>
+    /// Keeps generated inputs and their initialized worker contexts in one lazily published state.
+    /// </summary>
+    /// <remarks>
+    /// Initializes the shared catalogs and complete context registry after generated resources have loaded.
+    /// </remarks>
+    /// <param name="Catalog">The generated stat, species, and fusion-pool catalog.</param>
+    /// <param name="SourceCatalog">The generated acquisition-source catalog.</param>
+    /// <param name="Contexts">The exact pool and formula contexts available to mapping requests.</param>
+    private sealed record WorkerCatalogState(PlayerFusionMappingWorkerCatalog Catalog, ObtainabilitySourceCatalog SourceCatalog, ConcurrentDictionary<string, PlayerFusionWorkerContext> Contexts);
 }
 
 /// <summary>

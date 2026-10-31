@@ -74,6 +74,7 @@ module Ironmon
   end
 
   def self.run_graphics_update_hooks
+    return nil if defined?(Ironmon::StartupPreparation) && Ironmon::StartupPreparation.active?
     result = nil
     @graphics_update_hooks.each do |hook|
       result = hook[:callback].call

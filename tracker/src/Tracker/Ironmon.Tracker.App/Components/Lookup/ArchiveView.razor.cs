@@ -17,6 +17,8 @@ public partial class ArchiveView : IDisposable
     private bool _showHistory;
     private string? _historySpeciesId;
     private long _historyLookupVersion;
+    private bool _explicitPreparationRequested;
+    private bool _observedAutomaticSelection;
 
     /// <summary>
     /// Gets or initializes the completed-run recipe archive.
@@ -49,10 +51,22 @@ public partial class ArchiveView : IDisposable
     public RunStatisticsPayload? CurrentStatistics { get; set; }
 
     /// <summary>
+    /// Gets or sets whether run completion opened Archive automatically rather than through user navigation.
+    /// </summary>
+    [Parameter]
+    public bool AutomaticSelection { get; set; }
+
+    /// <summary>
+    /// Gets whether the current Archive selection has been explicitly requested by the user.
+    /// </summary>
+    private bool ForegroundPreparationRequested => !AutomaticSelection || _explicitPreparationRequested;
+
+    /// <summary>
     /// Loads available recipes and subscribes to archive changes.
     /// </summary>
     protected override void OnInitialized()
     {
+        _observedAutomaticSelection = AutomaticSelection;
         _connectionStatus = ConnectionState.Snapshot.Status;
         RefreshRecipes(CompletedRuns.RequestedRunId);
         _showHistory = _recipes.Count == 0;
@@ -62,6 +76,21 @@ public partial class ArchiveView : IDisposable
         CompletedRuns.Changed += HandleCompletedRunsChanged;
         CompletedRuns.SelectionRequested += HandleCompletedRunSelectionRequested;
         ConnectionState.Changed += HandleConnectionChanged;
+    }
+
+    /// <summary>
+    /// Promotes explicit Archive navigation while retaining background priority for automatic reset navigation.
+    /// </summary>
+    protected override void OnParametersSet()
+    {
+        if (_observedAutomaticSelection == AutomaticSelection)
+            return;
+
+        _observedAutomaticSelection = AutomaticSelection;
+        if (AutomaticSelection)
+            _explicitPreparationRequested = false;
+
+        RestartObtainabilityPrecalculation();
     }
 
     /// <summary>
@@ -88,6 +117,7 @@ public partial class ArchiveView : IDisposable
         _selection.Select(runId);
         _selection.SetExpanded(true);
         _showHistory = false;
+        _explicitPreparationRequested = true;
         RestartObtainabilityPrecalculation();
     }
 
@@ -113,7 +143,21 @@ public partial class ArchiveView : IDisposable
     /// </summary>
     /// <param name="section">The selected section.</param>
     private void SelectSection(ArchiveSection section)
-        => _selectedSection = section;
+    {
+        _selectedSection = section;
+        RequestForegroundPreparation();
+    }
+
+    /// <summary>
+    /// Promotes an automatically selected run once the user requests its visible information.
+    /// </summary>
+    private void RequestForegroundPreparation()
+    {
+        bool alreadyForeground = ForegroundPreparationRequested;
+        _explicitPreparationRequested = true;
+        if (!alreadyForeground)
+            RestartObtainabilityPrecalculation();
+    }
 
     /// <summary>
     /// Opens a recorded runner directly in the selected run's normal Pokemon tab, including repeated visits.
@@ -127,6 +171,7 @@ public partial class ArchiveView : IDisposable
         _historySpeciesId = speciesId;
         _historyLookupVersion++;
         _selectedSection = ArchiveSection.Pokemon;
+        RequestForegroundPreparation();
     }
 
     /// <summary>
@@ -168,21 +213,27 @@ public partial class ArchiveView : IDisposable
     }
 
     /// <summary>
-    /// Cancels any previous Archive calculation and starts the selected run in the background.
+    /// Keeps the selected run's work and timings, or replaces it when selection and availability change.
     /// </summary>
     private void RestartObtainabilityPrecalculation()
     {
-        StopObtainabilityPrecalculation();
-        if (_showHistory || !_selection.IsExpanded)
-            return;
-
         CompletedRunRecipePayload? recipe = GetSelectedRecipe();
-        if (recipe is null || _connectionStatus != TrackerConnectionStatus.Connected || Connection.ObtainabilityProgress.HasCompletedPreparation(recipe.RunId))
+        bool prepare = !_showHistory && _selection.IsExpanded && recipe is not null
+            && _connectionStatus == TrackerConnectionStatus.Connected
+            && !Connection.ObtainabilityProgress.HasCompletedPreparation(recipe.RunId);
+        if (prepare && _obtainabilityPrecalculationCancellation is { IsCancellationRequested: false }
+            && string.Equals(_obtainabilityPrecalculationRunId, recipe!.RunId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        StopObtainabilityPrecalculation();
+        if (!prepare)
             return;
 
         CancellationTokenSource cancellation = new();
         _obtainabilityPrecalculationCancellation = cancellation;
-        _obtainabilityPrecalculationRunId = recipe.RunId;
+        _obtainabilityPrecalculationRunId = recipe!.RunId;
         Connection.SelectArchiveObtainabilityPrecalculation(recipe.RunId);
         _ = PrecalculateObtainabilityAsync(recipe, cancellation);
     }
@@ -192,14 +243,14 @@ public partial class ArchiveView : IDisposable
     /// </summary>
     /// <param name="recipe">The selected archived run recipe.</param>
     /// <param name="cancellation">The selection-owned cancellation source.</param>
-    /// <returns>A task representing background preparation.</returns>
+    /// <returns>A task representing preparation at the visible selection's priority.</returns>
     private async Task PrecalculateObtainabilityAsync(CompletedRunRecipePayload recipe, CancellationTokenSource cancellation)
     {
         try
         {
             while (true)
             {
-                PokemonObtainabilityResponsePayload response = await Connection.AdvancePokemonObtainabilityAsync(recipe, foreground: false, cancellationToken: cancellation.Token);
+                PokemonObtainabilityResponsePayload response = await Connection.AdvancePokemonObtainabilityAsync(recipe, foreground: ForegroundPreparationRequested, cancellationToken: cancellation.Token);
                 if (response.Complete || response.BackgroundComplete)
                     break;
 
@@ -254,6 +305,7 @@ public partial class ArchiveView : IDisposable
                 StringComparison.Ordinal);
         if (newlyRequestedRun)
         {
+            _explicitPreparationRequested = false;
             _selection.SetExpanded(true);
             _showHistory = false;
             _selectedSection = ArchiveSection.Summary;
@@ -277,6 +329,7 @@ public partial class ArchiveView : IDisposable
     /// <param name="args">The selection event arguments.</param>
     private void HandleCompletedRunSelectionRequested(object? sender, EventArgs args)
     {
+        _explicitPreparationRequested = false;
         _selection.SetExpanded(true);
         _showHistory = false;
         _selectedSection = ArchiveSection.Summary;

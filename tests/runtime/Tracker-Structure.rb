@@ -606,11 +606,16 @@ module IronmonTrackerStructureRuntimeTests
     transport_update = Ironmon::TrackerConnection.instance_method(:update)
     assert_source(
       transport_update,
+      "033_Startup_Transport.rb",
+      "startup loading transport quarantine"
+    )
+    assert_source(
+      transport_update.super_method,
       "030_Collection_12_Transport.rb",
       "durable collection transport integration"
     )
     assert_source(
-      transport_update.super_method,
+      transport_update.super_method.super_method,
       "018_Tracker_Connection.rb",
       "tracker transport"
     )

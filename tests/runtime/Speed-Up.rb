@@ -53,9 +53,10 @@ module IronmonSpeedUpRuntimeTests
       controls(["speed"])
       $frame = 0
       before = @native_updates
-      expected = in_battle ? 6 : 4
+      multiplier = in_battle ? 6 : 4
       24.times { Graphics.update; controls(["speed"]) }
-      assert(@native_updates - before == 24 / expected, "hold-mode settings retain their original pacing")
+      expected = 24 * [Graphics.frame_rate * multiplier, Ironmon::SpeedUp.native_update_limit].min / (Graphics.frame_rate * multiplier)
+      assert(@native_updates - before == expected, "hold-mode sliders retain their multipliers with smoother native pacing")
       controls([])
     end
     $PokemonSystem.speedup = 1
@@ -147,10 +148,10 @@ module IronmonSpeedUpRuntimeTests
     results = []
     2.times do |repeat|
       SPEEDUP_STAGES.each_with_index do |multiplier, index|
+        $GameSpeed = index == 0 ? 1 : 0
+        controls([]); yield
         $GameSpeed = index
-        $frame = 0
-        12.times { controls([]); yield }
-        $frame = 0
+        10.times { controls([]); yield }
         Graphics.frame_reset
         before = @native_updates
         durations = []
@@ -163,7 +164,8 @@ module IronmonSpeedUpRuntimeTests
         end
         elapsed = now - started
         rendered = @native_updates - before
-        assert(rendered == UPDATES / multiplier, "#{scene_name}: native rendering cadence at #{multiplier}x")
+        expected = UPDATES * [Graphics.frame_rate * multiplier, Ironmon::SpeedUp.native_update_limit].min / (Graphics.frame_rate * multiplier)
+        assert(rendered == expected, "#{scene_name}: native rendering cadence at #{multiplier}x")
         ordered = durations.sort
         result = { "scene" => scene_name, "repeat" => repeat + 1,
           "target_multiplier" => multiplier, "updates" => UPDATES,
@@ -365,16 +367,18 @@ module IronmonSpeedUpRuntimeTests
   end
 
   def self.run
+    original_scene = $scene
+    original_battle = $game_temp.in_battle
     Game.initialize
     SaveData.load_new_game_values
     $PokemonSystem.speedup = 1
     Graphics.resize_screen(Settings::SCREEN_WIDTH, Settings::SCREEN_HEIGHT)
-    Graphics.singleton_class.class_eval do
-      alias speed_up_validation_native_update fast_forward_update
-      define_method(:fast_forward_update) do
-        IronmonSpeedUpRuntimeTests.native_update
-        speed_up_validation_native_update
-      end
+    native_owner = Graphics.singleton_class
+    original_native_update = native_owner.instance_method(:update_KGC_SpecialTransition)
+    original_native_update = original_native_update.super_method while original_native_update.owner != native_owner
+    native_owner.send(:define_method, :update_KGC_SpecialTransition) do
+      IronmonSpeedUpRuntimeTests.native_update
+      original_native_update.bind(self).call
     end
     @native_updates = 0
     cycle = test_cycle
@@ -409,13 +413,24 @@ module IronmonSpeedUpRuntimeTests
     report = { "status" => "PASS", "toggle_cycle" => cycle,
       "profiles_and_transitions" => profiles, "settings_transport" => transport,
       "speed_and_repel_overlays" => overlays,
-      "hold_mode_unchanged" => true, "toggle_hold_and_lock_passed" => true,
+      "hold_mode_configuration_preserved" => true, "toggle_hold_and_lock_passed" => true,
       "native_map_movement_at_6x" => movement,
       "fixture" => "Disposable map 10 and native battle scene; Ironmon hooks loaded; no player saves or live tracker connection",
       "measurements" => results, "battle_behavior" => behavior }
     File.binwrite(File.join(OUTPUT, "result.json"), Ironmon.tracker_json_generate(report))
     battle.pbDisposeSprites
     battle.viewport.dispose
+  ensure
+    native_owner.send(:define_method, :update_KGC_SpecialTransition, original_native_update) if original_native_update
+    if battle
+      battle.pbDisposeSprites if !battle.viewport.disposed?
+      battle.viewport.dispose if !battle.viewport.disposed?
+    end
+    map.dispose if map && map.map_renderer && !map.map_renderer.disposed?
+    Ironmon::StatusOverlays.dispose
+    Ironmon.clear_tracker_controls
+    $scene = original_scene
+    $game_temp.in_battle = original_battle
   end
 
   def self.native_update

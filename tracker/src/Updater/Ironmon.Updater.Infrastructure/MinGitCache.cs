@@ -56,7 +56,7 @@ public sealed class MinGitCache
     /// Returns a verified executable path, repairing only this private cache if necessary.
     /// </summary>
     /// <remarks>
-    /// Checks the archive pin and all runtime files on every acquisition. Cache access is serialized across processes; the overall operation has a five-minute deadline.
+    /// Checks the archive pin and all runtime files on every acquisition. Cache access is serialized across processes; the overall operation has a five-minute deadline. Short Windows contention waits reauthenticate the staged tree before publication.
     /// </remarks>
     /// <param name="cancellationToken">The token used to cancel the operation.</param>
     /// <returns>A task whose result is the fully qualified path to the verified private Git executable.</returns>
@@ -106,12 +106,16 @@ public sealed class MinGitCache
                 await input.CopyToAsync(output, cancellationToken).ConfigureAwait(false);
             }
 
-            if (!await MatchesAsync(zip, extracted, cancellationToken).ConfigureAwait(false))
-                throw new InvalidDataException(UpdaterText.MinGitCacheTheExtractedGitRuntimeFailedVerification);
+            await WindowsFileContention.RetryAsync(async _ =>
+            {
+                if (!await MatchesAsync(zip, extracted, cancellationToken).ConfigureAwait(false))
+                    throw new InvalidDataException(UpdaterText.MinGitCacheTheExtractedGitRuntimeFailedVerification);
 
-            cancellationToken.ThrowIfCancellationRequested();
-            PlainPaths.DeleteOwned(_root, runtime);
-            Directory.Move(extracted, runtime);
+                cancellationToken.ThrowIfCancellationRequested();
+                PlainPaths.DeleteOwned(_root, runtime);
+                Directory.Move(PlainPaths.Full(extracted), PlainPaths.Full(runtime));
+            }, cancellationToken, _clock).ConfigureAwait(false);
+
             return PlainPaths.Child(runtime, MinGitPackage.Executable);
         }
         finally

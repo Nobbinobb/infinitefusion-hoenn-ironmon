@@ -179,12 +179,15 @@ module IronmonPlayerFusionWorkerCatalogExporter
     codes = type_codes
     info = Ironmon.custom_fusion_pool_info
     document = {
-      "schema_version" => 3,
+      "schema_version" => 4,
       "normal_species_count" => NB_POKEMON,
       "base_stat_source_fingerprint" =>
         Ironmon.base_stat_source_fingerprint(BASE_STAT_FORMULA_VERSION),
       "base_stat_formula_version" => BASE_STAT_FORMULA_VERSION,
       "legacy_base_stat_source_fingerprint" => Ironmon.base_stat_source_fingerprint(1),
+      "base_stat_source_fingerprints" => [1, 2, 3].each_with_object({}) do |version, fingerprints|
+        fingerprints[version.to_s] = Ironmon.base_stat_source_fingerprint(version)
+      end,
       "player_fusion_generator_version" =>
         Ironmon::PlayerFusionMapper::SCHEMA_VERSION,
       "custom_fusion_pool_version" => info[:schema_version],

@@ -125,8 +125,12 @@
   { "source": "presentation/Battle_Run_Hotkey.rb", "output": "023_Battle_Run_Hotkey.rb" },
   { "source": "presentation/Hidden_Item_Markers.rb", "output": "023_Hidden_Item_Markers.rb" },
   { "source": "presentation/Move_Learning_Protection.rb", "output": "023_Move_Learning_Protection.rb" },
+  { "source": "compatibility/Sky_Drop.rb", "output": "023_Sky_Drop.rb" },
   { "source": "presentation/Speed_Up.rb", "output": "023_Speed_Up.rb" },
+  { "source": "presentation/Speed_Clock.rb", "output": "023_Speed_Up_Clock.rb" },
+  { "source": "presentation/Speed_Transitions.rb", "output": "023_Speed_Up_Transitions.rb" },
   { "source": "presentation/Sprite_Performance_Fixes.rb", "output": "023_Sprite_Performance_Fixes.rb" },
+  { "source": "compatibility/Switch_Out_Moves.rb", "output": "023_Switch_Out_Moves.rb" },
   { "source": "presentation/Tracker_Starter_Selection.rb", "output": "023_Tracker_Starter_Selection.rb" },
   { "source": "compatibility/Gameplay_073.rb", "output": "024_Release_073_Gameplay.rb" },
   { "source": "presentation/Overlay_Style.rb", "output": "025_Overlay_Style.rb" },
@@ -140,6 +144,7 @@
   { "source": "cosmetics/Wardrobe.rb", "output": "026_Cosmetics_Wardrobe.rb" },
   { "source": "cosmetics/Wardrobe_Rendering.rb", "output": "026_Cosmetics_Wardrobe_Rendering.rb" },
   { "source": "tracker/live/Controls.rb", "output": "027_Tracker_Controls.rb" },
+  { "source": "presentation/Responsive_Input.rb", "output": "027_Tracker_Controls_1_Responsive_Input.rb" },
   { "source": "run/Game_Management.rb", "output": "028_Game_Management.rb" },
   { "source": "collection/Core.rb", "output": "030_Collection_00_Core.rb" },
   { "source": "collection/Journal.rb", "output": "030_Collection_01_Journal.rb" },
@@ -159,5 +164,7 @@
   { "source": "collection/Source_Context.rb", "output": "030_Collection_15_Source_Context.rb" },
   { "source": "collection/Item_Identity.rb", "output": "030_Collection_16_Item_Identity.rb" },
   { "source": "presentation/Achievements.rb", "output": "031_Achievements.rb" },
-  { "source": "run/Alpha_Completion.rb", "output": "032_Alpha_Completion.rb" }
+  { "source": "run/Alpha_Completion.rb", "output": "032_Alpha_Completion.rb" },
+  { "source": "presentation/Startup_Preparation.rb", "output": "033_Startup_Preparation.rb" },
+  { "source": "presentation/Startup_Transport.rb", "output": "033_Startup_Transport.rb" }
 ]

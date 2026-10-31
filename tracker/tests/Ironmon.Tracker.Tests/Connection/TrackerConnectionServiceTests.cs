@@ -17,6 +17,10 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     private const string _preparationTestTrackerVersion = "0.1.0";
     private const string _fusionPreparationFailureCode = "fusion_lookup_failed";
     private const string _testGenerationProfileId = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    private const string _startupIdentity = "startup-service";
+    private const string _startupLoadingPhase = "loading_save";
+    private const string _startupWorldPhase = "world_data";
+    private const string _lateStartupIdentity = "older-startup-service";
     private static readonly TimeSpan _backgroundRequestTimeout = TimeSpan.FromSeconds(10);
     private readonly List<string> _roots = [];
 
@@ -25,6 +29,65 @@ public sealed class TrackerConnectionServiceTests : IDisposable
     /// </summary>
     public TrackerConnectionServiceTests()
     {
+    }
+
+    /// <summary>
+    /// Verifies detached startup events arrive over the real receiver before current state and survive run recovery.
+    /// </summary>
+    /// <returns>Completion after startup stages, run identity preservation and disconnect cleanup are verified.</returns>
+    [Fact]
+    public async Task StartupStagesArriveWhileInitialCurrentStateRequestIsPending()
+    {
+        TrackerConnectionOptions options = new(0, _preparationTestTrackerVersion, false, TimeSpan.FromSeconds(2));
+        TrackerConnectionState state = new();
+        TrackerKnowledgeStore knowledge = CreateKnowledgeStore();
+        await using TrackerConnectionService service = new(options, new TrackerDiagnosticsStore(), state, new TrackerRunState(), knowledge, CreateAreaDiscoveryStore(), CreateCompletedRunArchive());
+        service.Start();
+        using TcpClient client = new();
+        await client.ConnectAsync(IPAddress.Loopback, service.BoundPort);
+        using TrackerMessageReader reader = new(client.GetStream(), leaveOpen: true);
+        await using TrackerMessageWriter writer = new(client.GetStream(), leaveOpen: true);
+        GameHandshakePayload game = new(_preparationTestGameVersion, _preparationTestIronmonVersion, true, false, TrackerTestPaths.GameRoot, _activeRunId, null);
+        await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.GameConnected, 0, game, _activeRunId));
+        _ = await reader.ReadAsync().AsTask().WaitAsync(_backgroundRequestTimeout);
+        TrackerMessage initial = Assert.IsType<TrackerMessage>(await reader.ReadAsync().AsTask().WaitAsync(_backgroundRequestTimeout));
+        Assert.Equal(TrackerCommands.CurrentState, initial.Command);
+        TaskCompletionSource running = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource world = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource complete = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        state.StartupPreparation.Changed += (_, _) =>
+        {
+            TrackerStartupPreparationSnapshot progress = state.StartupPreparation.Snapshot;
+            if (progress.Status == TrackerStartupPreparationStatus.Running)
+                running.TrySetResult();
+
+            if (progress.Phase == _startupWorldPhase)
+                world.TrySetResult();
+
+            if (progress.Status == TrackerStartupPreparationStatus.Complete)
+                complete.TrySetResult();
+        };
+        StartupPreparationProgressPayload startup = new() { PreparationId = _startupIdentity, Status = StartupPreparationProgressPayload.RunningStatus, Phase = _startupLoadingPhase };
+        await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.StartupPreparationProgress, 0, startup, string.Empty));
+        await running.Task.WaitAsync(_backgroundRequestTimeout);
+        Assert.Null(state.Snapshot.CurrentState);
+        Assert.Equal(_activeRunId, knowledge.RunId);
+        GameCurrentStatePayload recovered = new(true, _archivedRunId, null, 77);
+        await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.RunStarted, 77, recovered, _archivedRunId));
+        await WaitForSnapshotAsync(state, snapshot => snapshot.CurrentState?.RunId == _archivedRunId);
+        Assert.Equal(TrackerStartupPreparationStatus.Running, state.StartupPreparation.Snapshot.Status);
+        await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.StartupPreparationProgress, 0, new StartupPreparationProgressPayload { PreparationId = _lateStartupIdentity, Status = StartupPreparationProgressPayload.CompleteStatus, Phase = _startupWorldPhase }, string.Empty));
+        await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.StartupPreparationProgress, 0, new StartupPreparationProgressPayload { PreparationId = _startupIdentity, Status = StartupPreparationProgressPayload.RunningStatus, Phase = _startupWorldPhase }, string.Empty));
+        await world.Task.WaitAsync(_backgroundRequestTimeout);
+        Assert.Equal(_startupIdentity, state.StartupPreparation.Snapshot.PreparationId);
+        Assert.Equal(TrackerStartupPreparationStatus.Running, state.StartupPreparation.Snapshot.Status);
+        Assert.Equal(77, state.Snapshot.CurrentState?.Sequence);
+        Assert.Equal(_archivedRunId, knowledge.RunId);
+        await writer.WriteAsync(TrackerMessageFactory.CreateEvent(TrackerEvents.StartupPreparationProgress, 0, new StartupPreparationProgressPayload { PreparationId = _startupIdentity, Status = StartupPreparationProgressPayload.CompleteStatus, Phase = _startupWorldPhase }, string.Empty));
+        await complete.Task.WaitAsync(_backgroundRequestTimeout);
+        client.Close();
+        await WaitForSnapshotAsync(state, snapshot => snapshot.Status == TrackerConnectionStatus.Waiting);
+        Assert.Same(TrackerStartupPreparationSnapshot.Idle, state.StartupPreparation.Snapshot);
     }
 
     /// <summary>

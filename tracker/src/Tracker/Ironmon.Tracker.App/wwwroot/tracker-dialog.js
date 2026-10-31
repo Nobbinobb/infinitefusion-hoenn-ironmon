@@ -9,7 +9,7 @@
             const isolated = [];
             for (let node = root; node && node !== document.body; node = node.parentElement) {
                 for (const sibling of node.parentElement.children) {
-                    if (sibling !== node && !sibling.inert && !['SCRIPT', 'STYLE', 'LINK'].includes(sibling.tagName)) {
+                    if (sibling !== node && !sibling.inert && !sibling.matches('dialog[data-startup-preparation]') && !['SCRIPT', 'STYLE', 'LINK'].includes(sibling.tagName)) {
                         sibling.inert = true;
                         isolated.push(sibling);
                     }
@@ -51,6 +51,19 @@
         }
     };
 })();
+
+window.ironmonStartup = {
+    show(dialog) {
+        if (!dialog?.isConnected) return;
+        if (typeof ironmonHideSettingHelp === 'function') ironmonHideSettingHelp();
+        dialog.inert = false;
+        dialog.oncancel = event => event.preventDefault();
+        if (!dialog.open) dialog.showModal();
+    },
+    close(dialog) {
+        if (dialog?.open) dialog.close();
+    }
+};
 
 window.ironmonSearch = {
     initialize(input) {

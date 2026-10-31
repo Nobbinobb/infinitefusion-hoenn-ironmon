@@ -9,6 +9,27 @@ namespace Ironmon.Tracker.Tests.Connection;
 public sealed class FusionEvolutionAssignmentWorkerTests
 {
     private const int MaterialIdBits = 10;
+    private const long _impossibleBranchSeed = 373_774_241;
+    private const int _bayleefId = 153;
+    private const int _regigigasId = 346;
+    private const string _impossibleBranchFailure = "B153H346|body|BAYLEEF>MEGANIUM has no valid stronger custom target.";
+
+    /// <summary>
+    /// Preserves explicit failure when the real playtest seed has no legal stronger target instead of inventing an invalid evolution.
+    /// </summary>
+    [Fact]
+    public void ImpossibleStrongerTargetReportsTheExactSourceBranch()
+    {
+        PlayerFusionMappingWorkerCatalog catalog = PlayerFusionMappingWorkerCatalog.Load();
+        catalog = catalog.WithBaseStatFingerprint(catalog.BaseStatSourceFingerprints[2]);
+        FusionEvolutionAssignmentWorker worker = new(catalog);
+        int source = _bayleefId << MaterialIdBits | _regigigasId;
+
+        Assert.Empty(worker.GetCandidateTargets(_impossibleBranchSeed, source, FusionComponentSide.Body));
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => worker.Generate(_impossibleBranchSeed, source));
+
+        Assert.Equal(_impossibleBranchFailure, exception.Message);
+    }
 
     /// <summary>
     /// Confirms every generated Ruby reference assignment is reproduced exactly.

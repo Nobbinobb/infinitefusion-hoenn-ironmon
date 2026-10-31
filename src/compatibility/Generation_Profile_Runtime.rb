@@ -107,7 +107,7 @@ module Ironmon
     end
     expected_names -= ["custom_sprites"] if eligibility["version"] < 2
     base_stats = manifest["algorithms"].find { |entry| entry["name"] == "base_stats" }
-    if ![1, 2].include?(base_stats["version"])
+    if ![1, 2, 3].include?(base_stats["version"])
       raise GenerationProfileUnavailable, "the base stat formula version is unsupported"
     end
     if names != expected_names

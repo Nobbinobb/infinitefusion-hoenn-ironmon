@@ -11,7 +11,8 @@ internal static class FusionBaseStats
     private const string _inheritanceNamespace = "analysis_fusion_inheritance";
     private static readonly int[][] _groups = [[1, 2, 5], [0, 3, 4]];
     private static readonly int[][] _orders = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
-    private static readonly (int Numerator, int Denominator)[] _ratios = [(9, 10), (4, 5), (2, 3)];
+    private static readonly (int Numerator, int Denominator)[] _versionTwoRatios = [(9, 10), (4, 5), (2, 3)];
+    private static readonly (int Numerator, int Denominator)[] _versionThreeRatios = [(17, 20), (3, 4), (2, 3)];
 
     /// <summary>
     /// Calculates the generated BST for one oriented fusion and run seed.
@@ -20,12 +21,13 @@ internal static class FusionBaseStats
     /// <param name="fusionId">The numeric fusion species identifier.</param>
     /// <param name="body">The body's six randomized base stats in canonical order.</param>
     /// <param name="head">The head's six randomized base stats in canonical order.</param>
-    /// <param name="version">One for historical blending or two for fixed 90/80/two-thirds inheritance.</param>
+    /// <param name="version">One for historical blending, two for 90/80/two-thirds inheritance, or three for 85/75/two-thirds inheritance.</param>
     /// <returns>The sum of the six separately rounded inherited base stats.</returns>
     internal static int Total(long seed, int fusionId, IReadOnlyList<int> body, IReadOnlyList<int> head, int version)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(version, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(version, 2);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(version, 3);
+        (int Numerator, int Denominator)[] ratios = version == 3 ? _versionThreeRatios : _versionTwoRatios;
         int total = 0;
         foreach (int[] group in _groups)
         {
@@ -36,7 +38,7 @@ internal static class FusionBaseStats
                 bool headDominant = stat is 0 or 3 or 4;
                 int dominant = headDominant ? head[stat] : body[stat];
                 int other = headDominant ? body[stat] : head[stat];
-                (int numerator, int denominator) = version == 1 ? (2, 3) : _ratios[index];
+                (int numerator, int denominator) = version == 1 ? (2, 3) : ratios[index];
                 total += numerator * dominant / denominator + (denominator - numerator) * other / denominator;
             }
         }

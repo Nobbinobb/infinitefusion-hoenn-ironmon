@@ -159,16 +159,231 @@ module Ironmon
 
     module GraphicsUpdates
       def update
-        if Ironmon::MoveLearningProtection.active?
-          return Ironmon::MoveLearningProtection.normal_speed_frame { super }
-        end
-        toggling = Ironmon::ToggleSpeed.before_update
-        super
+        return Ironmon::SpeedUp.update { fast_forward_update }
+      end
+
+      def update_KGC_SpecialTransition
+        return Ironmon::SpeedUp.native_frame { super }
+      end
+
+      def frame_rate
+        return Ironmon::SpeedUp.base_rate
+      end
+
+      def frame_rate=(value)
+        Ironmon::SpeedUp.base_rate = value
+      end
+
+      def delta_s
+        return 1.0 / frame_rate if Ironmon::SpeedUp.multiplier > 1
+        return super
+      end
+
+      def freeze
+        result = super
+        Ironmon::SpeedUp.frozen = true
+        return result
+      end
+
+      def transition(*args)
+        Ironmon::SpeedUp.frozen = false
+        return super
       ensure
-        Ironmon::ToggleSpeed.after_update if toggling
+        Ironmon::SpeedUp.frozen = false
+      end
+
+      def __reset__
+        result = super
+        Ironmon::SpeedUp.reset_engine
+        return result
       end
     end
     reset
+  end
+
+  # Pace logical ticks independently of presentation, using the bundled
+  # engine's 120 Hz limit and native skipping for slower displays.
+  module SpeedUp
+    NATIVE_RATE = Graphics.method(:frame_rate) unless const_defined?(:NATIVE_RATE, false)
+    SET_NATIVE_RATE = Graphics.method(:frame_rate=) unless const_defined?(:SET_NATIVE_RATE, false)
+    SET_NATIVE_FRAMESKIP = Graphics.method(:frameskip=) unless const_defined?(:SET_NATIVE_FRAMESKIP, false)
+    ORIGINAL_FRAMESKIP = Graphics.frameskip unless const_defined?(:ORIGINAL_FRAMESKIP, false)
+    NATIVE_UPDATE_LIMIT = 120
+    STALL_SECONDS = 0.1
+    RAPID_STAGE_SECONDS = 0.2
+    STAGE_SETTLE_SECONDS = 0.08
+    @base_rate = NATIVE_RATE.call
+    @multiplier = 1
+    @phase = 0
+    @frozen = false
+
+    class << self
+      attr_reader :base_rate, :multiplier
+      attr_accessor :frozen
+    end
+
+    def self.base_rate=(value)
+      @base_rate = [value.to_i, 1].max
+      @target_rate = nil
+      apply_rate(true)
+    end
+
+    def self.now
+      return Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+
+    def self.native_update_limit
+      return NATIVE_UPDATE_LIMIT
+    end
+
+    def self.apply_rate(force_native = false)
+      target = @base_rate * @multiplier
+      limit = native_update_limit
+      requested = target < limit ? target : limit
+      actual = NATIVE_RATE.call
+      skipping = @multiplier > 1 || ORIGINAL_FRAMESKIP
+      return if @target_rate == target && @requested_native_rate == requested &&
+        actual == @native_rate && @applied_frameskip == skipping && !@pending_native_rate
+
+      previous_target = @target_rate
+      stamp = now
+      visual = defined?(Ironmon::SpeedTransitions) && Ironmon::SpeedTransitions.active?
+      deferred = requested > actual && !force_native && !visual && @native_rate == actual &&
+        @coalesce_until && stamp < @coalesce_until
+      if deferred
+        @pending_native_rate = requested
+        applied = actual
+      else
+        applied = requested
+      end
+      reconfigured = @native_rate.nil? || applied != actual
+      if reconfigured
+        SET_NATIVE_RATE.call(applied)
+        @native_rate = NATIVE_RATE.call
+        Graphics.frame_reset
+      else
+        @native_rate = actual
+      end
+      if @applied_frameskip != skipping
+        SET_NATIVE_FRAMESKIP.call(skipping)
+        @applied_frameskip = skipping
+      end
+      if previous_target && previous_target > 0
+        # Preserve progress toward the next presentation when only the logical
+        # multiplier changes; restarting the limiter here forces excess waits.
+        @phase = @phase * target / previous_target
+      else
+        @phase = target - @native_rate
+      end
+      @target_rate = target
+      @requested_native_rate = requested
+      if !deferred
+        @pending_native_rate = nil
+      end
+      return reconfigured
+    end
+
+    def self.reset_engine
+      @target_rate = nil
+      @last_tick = nil
+      @frozen = false
+      @toggle_sequence = nil
+      @pending_native_rate = nil
+      @coalesce_until = nil
+      @last_speed_edge_at = nil
+      @applied_frameskip = nil
+      reconfigured = apply_rate(true)
+      Graphics.frame_reset if !reconfigured
+    end
+
+    def self.refresh_rate
+      protected = Ironmon::MoveLearningProtection.active?
+      Ironmon::ToggleSpeed.before_update if !protected
+      Ironmon::SpeedClock.synchronize_native_frames if defined?(Ironmon::SpeedClock)
+      @multiplier = selected_multiplier(protected)
+      apply_rate(true)
+      Ironmon::SpeedClock.synchronize_native_frames if defined?(Ironmon::SpeedClock)
+    end
+
+    def self.resume_after_loading
+      @last_tick = nil
+      @phase = @target_rate - @native_rate if @target_rate && @native_rate
+      Graphics.frame_reset
+    end
+
+    def self.update
+      return Ironmon::StartupPreparation.render_frame if
+        defined?(Ironmon::StartupPreparation) && Ironmon::StartupPreparation.active?
+      protected = Ironmon::MoveLearningProtection.active?
+      mode = $PokemonSystem && $PokemonSystem.speedup
+      battle = !!($game_temp && $game_temp.in_battle)
+      boundary = @previous_protection != protected || @previous_mode != mode || @previous_battle != battle
+      @previous_protection = protected
+      @previous_mode = mode
+      @previous_battle = battle
+      toggling = Ironmon::ToggleSpeed.before_update if !protected
+      sequence = defined?(Ironmon::ResponsiveInput) ? Ironmon::ResponsiveInput.sequence : nil
+      fresh = sequence != @toggle_sequence
+      @toggle_sequence = sequence
+      if !protected && $CanToggle && fresh && Input.trigger?(Input::X) &&
+          $PokemonSystem && $PokemonSystem.speedup == 1
+        $GameSpeed = ($GameSpeed.to_i + 1) % SPEEDUP_STAGES.length
+        stamp = now
+        @coalesce_until = stamp + STAGE_SETTLE_SECONDS if @last_speed_edge_at && stamp - @last_speed_edge_at < RAPID_STAGE_SECONDS
+        @last_speed_edge_at = stamp
+      end
+      @multiplier = selected_multiplier(protected)
+      apply_rate(boundary || mode != 1)
+      stamp = now
+      if @last_tick && stamp - @last_tick > STALL_SECONDS
+        Graphics.frame_reset
+        @phase = @target_rate - @native_rate
+      end
+      @last_tick = stamp
+      $frame = 0
+      Ironmon::SpeedClock.begin_tick if defined?(Ironmon::SpeedClock)
+      tick_open = true
+      yield
+      Ironmon::SpeedClock.advance(@multiplier, @frozen) if defined?(Ironmon::SpeedClock)
+      tick_open = false
+      Ironmon.run_graphics_update_hooks
+    ensure
+      Ironmon::SpeedClock.cancel_tick if tick_open && defined?(Ironmon::SpeedClock)
+      Ironmon::ToggleSpeed.after_update if toggling
+    end
+
+    def self.selected_multiplier(protected = false)
+      value = configured_multiplier(protected)
+      return Ironmon::SpeedTransitions.constrain_multiplier(value) if defined?(Ironmon::SpeedTransitions)
+      return value
+    end
+
+    def self.configured_multiplier(protected = false)
+      return 1 if protected || !$PokemonSystem
+      if $PokemonSystem.speedup == 1
+        $GameSpeed = 0 if !$GameSpeed.to_i.between?(0, SPEEDUP_STAGES.length - 1)
+        value = SPEEDUP_STAGES[$GameSpeed.to_i].to_i
+        return value > 0 ? value : 1
+      end
+      return 1 if !$CanToggle || !Input.press?(Input::X)
+      return Graphics.get_speedup_speed + 1
+    end
+
+    def self.native_frame
+      @phase += @native_rate || @base_rate
+      if @phase >= @target_rate.to_i
+        @phase -= @target_rate.to_i
+        return yield
+      end
+      if !@frozen
+        if defined?(Ironmon::SpeedClock)
+          Ironmon::SpeedClock.set_raw_frame_count(Ironmon::SpeedClock.raw_frame_count + 1)
+        else
+          Graphics.frame_count += 1
+        end
+      end
+      return nil
+    end
   end
 end
 Graphics.singleton_class.prepend(Ironmon::ToggleSpeed::GraphicsUpdates)
