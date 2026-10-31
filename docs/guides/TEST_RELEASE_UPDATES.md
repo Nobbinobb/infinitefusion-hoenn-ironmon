@@ -22,8 +22,8 @@ from the current test release.
 
 The bridge upgrade test completed successfully on October 27, 2026. The temporary
 0.8.16 release, tag, and remote maintenance branch have been removed. Ironmon
-0.10.0 is now the latest stable, immutable release; normal update checks and Setup
-select it without enabling test releases. Sequence 15 remains reserved. The steps
+0.10.0 became a stable, immutable release; normal update checks and Setup select
+the latest stable release without enabling test releases. Sequence 15 remains reserved. The steps
 below record the completed test procedure rather than an available installation path.
 
 The maintenance branch `release/0.8.16` started at stable tag `v0.8.15`

@@ -13,7 +13,7 @@ preserving existing runs and archives.
   Move-learning protection remains in place.
 - **Clearer transitions.** Encounter effects, battle introductions and fades run
   at no more than 3× speed before returning to the selected gameplay speed.
-- **Preparation before play.** Loading a save finishes game preparation before
+- **Preparation before play.** Loading an Ironmon save finishes game preparation before
   returning control to the map. The game shows a simple waiting message, while
   the tracker temporarily fills its window with an animated preparation view
   and the current step. The normal tracker page returns without shifting.
