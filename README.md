@@ -4,7 +4,7 @@ Ironmon is a seeded, fusion-aware challenge mode for **Pokémon Infinite Fusion
 2: Hoenn**, with a single-Pokémon pivot system and a companion tracker.
 
 > [!IMPORTANT]
-> Ironmon **0.10.0** targets **Pokémon Infinite Fusion 2 version 6.8.2**.
+> Ironmon **0.10.1** targets **Pokémon Infinite Fusion 2 version 6.8.2**.
 > The tracker requires Windows x64.
 
 This README describes the current source tree. Published downloads may contain
