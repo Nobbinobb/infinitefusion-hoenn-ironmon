@@ -21,7 +21,27 @@ synchronization. With a shared installation or worktree, use an owned game copy;
 [updater acceptance](UPDATER_ACCEPTANCE.md#repeatable-local-checks) shows the
 isolated game and distribution paths.
 
+### Speed-up runtime checks
+
+Run the focused bundled-engine suite after changes to speed-up, input,
+transitions, or startup preparation:
+
+```powershell
+dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj -c Release -p:IronmonQuickTests=true --filter Category=SpeedUpAcceptance --maxcpucount:1 -- xUnit.ParallelizeTestCollections=false
+```
+
+Run this category without `Quick.runsettings`. The tests use isolated game and
+save fixtures. Set `IRONMON_SPEED_UP_GROUPS` to comma-separated group names from
+[the suite entry point](../../tests/runtime/Speed-Up-Acceptance.rb) to narrow the
+run, or `IRONMON_SPEED_UP_VSYNC=1` to enable vertical synchronization. During
+manual playtesting, check movement, menu input, move replacement, and normal
+music playback at several configured speed stages.
+
 ## Tracker builds
+
+Keep `wwwroot/index.html` linked to `obsidian-startup.css` and the URL-safe
+`tracker-components.styles.css` bundle. Run `TrackerStylesheetPackagingTests`
+when changing stylesheet packaging.
 
 Use Windows, the .NET 10 SDK, the Windows MAUI workload, and PowerShell 7 for the
 repository scripts. The CI workflows specify the SDK version used for releases.

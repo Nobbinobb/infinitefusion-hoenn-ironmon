@@ -187,7 +187,7 @@ public sealed class TrackerObtainabilityProgressState
     }
 
     /// <summary>
-    /// Marks one run's shared calculation as active.
+    /// Marks one run's shared calculation as active, or restores its retained terminal completion.
     /// </summary>
     /// <param name="runId">The active run identifier.</param>
     /// <param name="scope">The run surface owning the calculation.</param>
@@ -205,13 +205,23 @@ public sealed class TrackerObtainabilityProgressState
                 return;
             }
 
-            long now = Stopwatch.GetTimestamp();
             _activeRunId = runId;
             _scope = scope;
-            _phase = string.Empty;
-            _startedTimestamp = now;
-            _phaseStartedTimestamp = now;
-            _snapshot = new TrackerObtainabilityProgressSnapshot(TrackerObtainabilityProgressStatus.Running, scope, string.Empty, 0, 0, 0, TimeSpan.Zero, TimeSpan.Zero, null);
+            Dictionary<string, TrackerObtainabilityProgressSnapshot> preparedRuns = scope == TrackerObtainabilityProgressScope.ActiveRun ? _preparedActiveRuns : _preparedArchivedRuns;
+            if (runId is not null && preparedRuns.TryGetValue(runId, out TrackerObtainabilityProgressSnapshot? prepared))
+            {
+                _phase = prepared.Phase;
+                _snapshot = prepared;
+            }
+            else
+            {
+                long now = Stopwatch.GetTimestamp();
+                _phase = string.Empty;
+                _startedTimestamp = now;
+                _phaseStartedTimestamp = now;
+                _snapshot = new TrackerObtainabilityProgressSnapshot(TrackerObtainabilityProgressStatus.Running, scope, string.Empty, 0, 0, 0, TimeSpan.Zero, TimeSpan.Zero, null);
+            }
+
             changed = true;
         }
 
@@ -220,7 +230,7 @@ public sealed class TrackerObtainabilityProgressState
     }
 
     /// <summary>
-    /// Publishes one intermediate or terminal game response.
+    /// Publishes one intermediate or terminal game response while retaining the original terminal timings.
     /// </summary>
     /// <param name="runId">The reporting run identifier.</param>
     /// <param name="scope">The reporting run surface.</param>
@@ -234,6 +244,13 @@ public sealed class TrackerObtainabilityProgressState
             bool prepared = response.BackgroundComplete || string.Equals(response.Phase, _completePhase, StringComparison.Ordinal);
             if (!ownsProgress && !(prepared && scope == TrackerObtainabilityProgressScope.ActiveRun && runId is not null && _startedActiveRuns.Contains(runId)))
                 return;
+
+            Dictionary<string, TrackerObtainabilityProgressSnapshot> preparedRuns = scope == TrackerObtainabilityProgressScope.ActiveRun ? _preparedActiveRuns : _preparedArchivedRuns;
+            if ((ownsProgress && _snapshot.Status is TrackerObtainabilityProgressStatus.Complete or TrackerObtainabilityProgressStatus.Error)
+                || (runId is not null && preparedRuns.ContainsKey(runId)))
+            {
+                return;
+            }
 
             long now = Stopwatch.GetTimestamp();
             if (ownsProgress && !string.Equals(_phase, response.Phase, StringComparison.Ordinal))
@@ -252,7 +269,6 @@ public sealed class TrackerObtainabilityProgressState
 
             if (prepared && !string.IsNullOrWhiteSpace(runId))
             {
-                Dictionary<string, TrackerObtainabilityProgressSnapshot> preparedRuns = scope == TrackerObtainabilityProgressScope.ActiveRun ? _preparedActiveRuns : _preparedArchivedRuns;
                 preparedRuns[runId] = progress;
                 if (preparedRuns.Count > _maximumPreparedRuns)
                     preparedRuns.Remove(preparedRuns.Keys.First());
@@ -263,7 +279,7 @@ public sealed class TrackerObtainabilityProgressState
     }
 
     /// <summary>
-    /// Marks the active calculation as failed.
+    /// Marks a still-running calculation as failed without extending a previous terminal snapshot.
     /// </summary>
     /// <param name="runId">The reporting run identifier.</param>
     /// <param name="scope">The reporting run surface.</param>
@@ -273,7 +289,7 @@ public sealed class TrackerObtainabilityProgressState
         ArgumentException.ThrowIfNullOrWhiteSpace(error);
         lock (_sync)
         {
-            if (!string.Equals(_activeRunId, runId, StringComparison.Ordinal) || _scope != scope)
+            if (!string.Equals(_activeRunId, runId, StringComparison.Ordinal) || _scope != scope || _snapshot.Status != TrackerObtainabilityProgressStatus.Running)
                 return;
 
             long now = Stopwatch.GetTimestamp();

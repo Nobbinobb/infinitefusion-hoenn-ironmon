@@ -1,3 +1,5 @@
+using System.Collections.Frozen;
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -14,6 +16,7 @@ internal sealed class PlayerFusionMappingWorkerCatalog
     private const string _verificationGeneratorVersionProperty = "verification_generator_version";
     private const string _baseStatFormulaVersionProperty = "base_stat_formula_version";
     private const string _legacyBaseStatFingerprintProperty = "legacy_base_stat_source_fingerprint";
+    private const string _baseStatFingerprintsProperty = "base_stat_source_fingerprints";
 
     /// <summary>
     /// Gets the generated catalog schema version.
@@ -34,6 +37,11 @@ internal sealed class PlayerFusionMappingWorkerCatalog
     /// Gets the historical source identity retained for version-one runs.
     /// </summary>
     internal string LegacyBaseStatSourceFingerprint { get; private init; } = string.Empty;
+
+    /// <summary>
+    /// Gets every retained fusion formula version and its exact source fingerprint independently of the currently bound context.
+    /// </summary>
+    internal IReadOnlyDictionary<int, string> BaseStatSourceFingerprints { get; private init; } = FrozenDictionary<int, string>.Empty;
 
     /// <summary>
     /// Gets the fusion stat formula bound to this immutable worker context.
@@ -143,6 +151,18 @@ internal sealed class PlayerFusionMappingWorkerCatalog
         using Stream stream = assembly.GetManifestResourceStream(ResourceName)
             ?? throw new InvalidOperationException("The player-fusion worker catalog resource is missing.");
 
+        return Load(stream);
+    }
+
+    /// <summary>
+    /// Loads and validates an exported catalog while leaving its stream owned by the caller.
+    /// </summary>
+    /// <param name="stream">The UTF-8 generated worker catalog stream.</param>
+    /// <returns>The immutable worker catalog.</returns>
+    internal static PlayerFusionMappingWorkerCatalog Load(Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+
         using JsonDocument document = JsonDocument.Parse(stream);
         JsonElement root = document.RootElement;
         int playerFusionGeneratorVersion = root.GetProperty(_playerFusionGeneratorVersionProperty).GetInt32();
@@ -186,13 +206,17 @@ internal sealed class PlayerFusionMappingWorkerCatalog
 
         string[] excludedAuthors = [.. root.GetProperty("excluded_sprite_authors").EnumerateArray().Select(value => value.GetString() ?? string.Empty)];
         string[] typeNames = [.. root.GetProperty("type_names").EnumerateArray().Select(value => value.GetString() ?? string.Empty)];
+        string baseStatFingerprint = root.GetProperty("base_stat_source_fingerprint").GetString() ?? string.Empty;
+        string legacyBaseStatFingerprint = root.TryGetProperty(_legacyBaseStatFingerprintProperty, out JsonElement legacyStats) ? legacyStats.GetString() ?? string.Empty : string.Empty;
+        int baseStatFormulaVersion = root.TryGetProperty(_baseStatFormulaVersionProperty, out JsonElement formula) ? formula.GetInt32() : 1;
         PlayerFusionMappingWorkerCatalog result = new()
         {
             SchemaVersion = root.GetProperty("schema_version").GetInt32(),
             NormalSpeciesCount = normalSpeciesCount,
-            BaseStatSourceFingerprint = root.GetProperty("base_stat_source_fingerprint").GetString() ?? string.Empty,
-            LegacyBaseStatSourceFingerprint = root.TryGetProperty(_legacyBaseStatFingerprintProperty, out JsonElement legacyStats) ? legacyStats.GetString() ?? string.Empty : string.Empty,
-            BaseStatFormulaVersion = root.TryGetProperty(_baseStatFormulaVersionProperty, out JsonElement formula) ? formula.GetInt32() : 1,
+            BaseStatSourceFingerprint = baseStatFingerprint,
+            LegacyBaseStatSourceFingerprint = legacyBaseStatFingerprint,
+            BaseStatSourceFingerprints = ReadBaseStatSourceFingerprints(root, baseStatFormulaVersion, baseStatFingerprint, legacyBaseStatFingerprint),
+            BaseStatFormulaVersion = baseStatFormulaVersion,
             PlayerFusionGeneratorVersion = playerFusionGeneratorVersion,
             FusionEvolutionGeneratorVersion = root.GetProperty("evolution_generator_version").GetInt32(),
             FusionEvolutionRulesVersion = root.GetProperty("evolution_rules_version").GetInt32(),
@@ -230,8 +254,7 @@ internal sealed class PlayerFusionMappingWorkerCatalog
     internal PlayerFusionMappingWorkerCatalog WithRuntimeFusionPool(int version, int expectedSize, string expectedFingerprint, string packedMembership, string? baseStatFingerprint = null)
     {
         baseStatFingerprint ??= BaseStatSourceFingerprint;
-        if (!SupportsBaseStatFingerprint(baseStatFingerprint))
-            throw new InvalidDataException("The base-stat formula fingerprint is unsupported.");
+        int baseStatFormulaVersion = BaseStatFormulaVersionFor(baseStatFingerprint);
 
         byte[] membership;
         try
@@ -287,7 +310,8 @@ internal sealed class PlayerFusionMappingWorkerCatalog
             NormalSpeciesCount = NormalSpeciesCount,
             BaseStatSourceFingerprint = baseStatFingerprint,
             LegacyBaseStatSourceFingerprint = LegacyBaseStatSourceFingerprint,
-            BaseStatFormulaVersion = baseStatFingerprint == BaseStatSourceFingerprint ? BaseStatFormulaVersion : 1,
+            BaseStatSourceFingerprints = BaseStatSourceFingerprints,
+            BaseStatFormulaVersion = baseStatFormulaVersion,
             PlayerFusionGeneratorVersion = PlayerFusionGeneratorVersion,
             FusionEvolutionGeneratorVersion = FusionEvolutionGeneratorVersion,
             FusionEvolutionRulesVersion = FusionEvolutionRulesVersion,
@@ -318,8 +342,7 @@ internal sealed class PlayerFusionMappingWorkerCatalog
     /// <returns>A catalog bound to the same species and pool with the requested formula.</returns>
     internal PlayerFusionMappingWorkerCatalog WithBaseStatFingerprint(string baseStatFingerprint)
     {
-        if (!SupportsBaseStatFingerprint(baseStatFingerprint))
-            throw new InvalidDataException("The base-stat formula fingerprint is unsupported.");
+        int baseStatFormulaVersion = BaseStatFormulaVersionFor(baseStatFingerprint);
 
         PlayerFusionMappingWorkerCatalog result = new()
         {
@@ -327,7 +350,8 @@ internal sealed class PlayerFusionMappingWorkerCatalog
             NormalSpeciesCount = NormalSpeciesCount,
             BaseStatSourceFingerprint = baseStatFingerprint,
             LegacyBaseStatSourceFingerprint = LegacyBaseStatSourceFingerprint,
-            BaseStatFormulaVersion = baseStatFingerprint == BaseStatSourceFingerprint ? BaseStatFormulaVersion : 1,
+            BaseStatSourceFingerprints = BaseStatSourceFingerprints,
+            BaseStatFormulaVersion = baseStatFormulaVersion,
             PlayerFusionGeneratorVersion = PlayerFusionGeneratorVersion,
             FusionEvolutionGeneratorVersion = FusionEvolutionGeneratorVersion,
             FusionEvolutionRulesVersion = FusionEvolutionRulesVersion,
@@ -357,7 +381,62 @@ internal sealed class PlayerFusionMappingWorkerCatalog
     /// <param name="fingerprint">The formula and source fingerprint pinned by the run.</param>
     /// <returns>True when this catalog can reproduce that stat formula.</returns>
     internal bool SupportsBaseStatFingerprint(string fingerprint)
-        => fingerprint == BaseStatSourceFingerprint || (!string.IsNullOrEmpty(LegacyBaseStatSourceFingerprint) && fingerprint == LegacyBaseStatSourceFingerprint);
+        => BaseStatSourceFingerprints.Values.Contains(fingerprint, StringComparer.Ordinal);
+
+    /// <summary>
+    /// Resolves the exact formula pinned by a source fingerprint without reinterpreting an unknown identity as a historical default.
+    /// </summary>
+    /// <param name="fingerprint">The stat source identity carried by the run.</param>
+    /// <returns>The retained formula version matching the fingerprint.</returns>
+    private int BaseStatFormulaVersionFor(string fingerprint)
+    {
+        foreach ((int version, string retainedFingerprint) in BaseStatSourceFingerprints)
+        {
+            if (fingerprint == retainedFingerprint)
+                return version;
+        }
+
+        throw new InvalidDataException("The base-stat formula fingerprint is unsupported.");
+    }
+
+    /// <summary>
+    /// Reads version-specific stat identities while retaining the two identities supplied by older catalog exports.
+    /// </summary>
+    /// <param name="root">The exported worker catalog.</param>
+    /// <param name="version">The catalog's current formula version.</param>
+    /// <param name="fingerprint">The catalog's current stat source identity.</param>
+    /// <param name="legacyFingerprint">The optional version-one identity supplied by older exports.</param>
+    /// <returns>An immutable formula-version to source-fingerprint map.</returns>
+    private static IReadOnlyDictionary<int, string> ReadBaseStatSourceFingerprints(JsonElement root, int version, string fingerprint, string legacyFingerprint)
+    {
+        Dictionary<int, string> fingerprints = [];
+        if (root.TryGetProperty(_baseStatFingerprintsProperty, out JsonElement entries))
+        {
+            if (entries.ValueKind != JsonValueKind.Object)
+                throw new InvalidDataException("The retained base-stat formula fingerprints are malformed.");
+
+            foreach (JsonProperty entry in entries.EnumerateObject())
+            {
+                if (!int.TryParse(entry.Name, NumberStyles.None, CultureInfo.InvariantCulture, out int formulaVersion)
+                    || formulaVersion is not (1 or 2 or 3) || entry.Value.ValueKind != JsonValueKind.String
+                    || string.IsNullOrWhiteSpace(entry.Value.GetString()) || !fingerprints.TryAdd(formulaVersion, entry.Value.GetString()!))
+                {
+                    throw new InvalidDataException("The retained base-stat formula fingerprints are malformed.");
+                }
+            }
+        }
+        else
+        {
+            fingerprints[version] = fingerprint;
+            if (!string.IsNullOrEmpty(legacyFingerprint))
+                fingerprints[1] = legacyFingerprint;
+        }
+
+        if (fingerprints.Values.Distinct(StringComparer.Ordinal).Count() != fingerprints.Count)
+            throw new InvalidDataException("The retained base-stat formula fingerprints are ambiguous.");
+
+        return fingerprints.ToFrozenDictionary();
+    }
 
     /// <summary>
     /// Calculates Infinite Fusion's ordered displayed type mask for one fusion.
@@ -386,11 +465,19 @@ internal sealed class PlayerFusionMappingWorkerCatalog
     /// </summary>
     private void Validate()
     {
-        if (SchemaVersion != 3)
+        if (SchemaVersion is not (3 or 4))
             throw new InvalidDataException($"Player-fusion worker catalog schema {SchemaVersion} is unsupported.");
 
-        if (BaseStatFormulaVersion is not (1 or 2))
+        if (BaseStatFormulaVersion is not (1 or 2 or 3))
             throw new InvalidDataException("The fusion base-stat formula version is unsupported.");
+
+        if (!BaseStatSourceFingerprints.TryGetValue(BaseStatFormulaVersion, out string? boundFingerprint) || boundFingerprint != BaseStatSourceFingerprint
+            || BaseStatSourceFingerprints.Any(entry => entry.Key is not (1 or 2 or 3) || string.IsNullOrWhiteSpace(entry.Value))
+            || (SchemaVersion >= 4 && !new[] { 1, 2, 3 }.All(BaseStatSourceFingerprints.ContainsKey))
+            || (!string.IsNullOrEmpty(LegacyBaseStatSourceFingerprint) && (!BaseStatSourceFingerprints.TryGetValue(1, out string? legacyFingerprint) || legacyFingerprint != LegacyBaseStatSourceFingerprint)))
+        {
+            throw new InvalidDataException("The retained base-stat formula fingerprints do not match this worker context.");
+        }
 
         if (!SupportsPlayerFusionGeneratorVersion(PlayerFusionGeneratorVersion) || !SupportsPlayerFusionGeneratorVersion(VerificationGeneratorVersion))
             throw new InvalidDataException("The player-fusion worker catalog requires an unsupported generator version.");

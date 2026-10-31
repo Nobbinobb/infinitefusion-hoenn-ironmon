@@ -111,6 +111,8 @@ module Ironmon
     return false if action == "battle_run" && !feature_enabled?("quick_run")
     return false if !tracker_controls_active? ||
       !@tracker_control_managed.include?(action)
+    return ResponsiveInput.quick_action_triggered?(action, repeat) if
+      defined?(ResponsiveInput) && ResponsiveInput.accelerated?
     frames = (@tracker_control_frames || {}).fetch(action, 0)
     return frames == 1 || (repeat && frames >= 24 && frames % 6 == 0)
   end

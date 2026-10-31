@@ -108,13 +108,13 @@ module Ironmon
     return nil
   end
 
-  def self.tracker_search_fusion_name_parts
+  def self.tracker_search_fusion_name_parts(work_checkpoint = nil)
     @tracker_search_fusion_name_parts ||= {}
     profile_id = active_generation_profile_id
     return @tracker_search_fusion_name_parts[profile_id] if
       @tracker_search_fusion_name_parts[profile_id]
     if generation_profile_context?
-      archived = generation_profile_fusion_name_parts(profile_id)
+      archived = generation_profile_fusion_name_parts(profile_id, work_checkpoint)
       if archived
         @tracker_search_fusion_name_parts[profile_id] = archived
         return archived
@@ -123,6 +123,7 @@ module Ironmon
     prefixes = []
     suffixes = []
     (1..NB_POKEMON).each do |species_id|
+      work_checkpoint.call if work_checkpoint
       dex = GameData::NAT_DEX_MAPPING[species_id] || species_id
       split = GameData::SPLIT_NAMES[dex]
       next if !split

@@ -9,7 +9,7 @@ module Ironmon
   class ObtainabilitySourceCatalogError < StandardError
   end
 
-  def self.tracker_area_catalog_document(profile_id = active_generation_profile_id)
+  def self.tracker_area_catalog_document(profile_id = active_generation_profile_id, work_checkpoint = nil)
     @tracker_area_catalog_documents ||= {}
     return @tracker_area_catalog_documents[profile_id] if
       @tracker_area_catalog_documents[profile_id]
@@ -17,10 +17,11 @@ module Ironmon
     document = File.open(path, "rb") do |file|
       Marshal.load(file)
     end
-    tracker_validate_area_catalog(document)
+    tracker_validate_area_catalog(document, work_checkpoint)
     if profile_id != current_generation_profile_id
-      current = tracker_area_catalog_document(current_generation_profile_id)
+      current = tracker_area_catalog_document(current_generation_profile_id, work_checkpoint)
       current["areas"].each do |current_area|
+        work_checkpoint.call if work_checkpoint
         area = document["areas"].find { |candidate| candidate["name"] == current_area["name"] }
         if area
           area["trainers"] = current_area["trainers"]
@@ -37,8 +38,8 @@ module Ironmon
       "The bundled Ironmon area catalog is unavailable: #{e.message}"
   end
 
-  def self.tracker_area_catalog
-    return tracker_area_catalog_document["areas"]
+  def self.tracker_area_catalog(work_checkpoint = nil)
+    return tracker_area_catalog_document(active_generation_profile_id, work_checkpoint)["areas"]
   end
 
   def self.tracker_area_encounter_table_available?(map_id, encounter_type)
@@ -62,16 +63,16 @@ module Ironmon
     return methods.include?(base)
   end
 
-  def self.tracker_obtainability_source_catalog
+  def self.tracker_obtainability_source_catalog(work_checkpoint = nil)
     @tracker_obtainability_source_catalogs ||= {}
     profile_id = active_generation_profile_id
     return @tracker_obtainability_source_catalogs[profile_id] if
       @tracker_obtainability_source_catalogs[profile_id]
     path = generation_profile_component_path("obtainability_sources", profile_id)
     document = File.open(path, "rb") do |file|
-      tracker_stringify_catalog_keys(JSON.parse(file.read))
+      tracker_stringify_catalog_keys(JSON.parse(file.read), work_checkpoint)
     end
-    tracker_validate_obtainability_source_catalog(document)
+    tracker_validate_obtainability_source_catalog(document, work_checkpoint)
     @tracker_obtainability_source_catalogs[profile_id] = document
     return document
   rescue Exception => e
@@ -79,15 +80,16 @@ module Ironmon
       "The bundled obtainability source catalog is unavailable: #{e.message}"
   end
 
-  def self.tracker_stringify_catalog_keys(value)
+  def self.tracker_stringify_catalog_keys(value, work_checkpoint = nil)
+    work_checkpoint.call if work_checkpoint
     if value.is_a?(Hash)
       result = {}
       value.each do |key, entry|
-        result[key.to_s] = tracker_stringify_catalog_keys(entry)
+        result[key.to_s] = tracker_stringify_catalog_keys(entry, work_checkpoint)
       end
       return result
     end
-    return value.map { |entry| tracker_stringify_catalog_keys(entry) } if
+    return value.map { |entry| tracker_stringify_catalog_keys(entry, work_checkpoint) } if
       value.is_a?(Array)
     return value
   end
@@ -135,7 +137,7 @@ module Ironmon
     return entries
   end
 
-  def self.tracker_validate_area_catalog(document)
+  def self.tracker_validate_area_catalog(document, work_checkpoint = nil)
     if !document.is_a?(Hash) || document["schema_version"].to_i != 1 ||
        !document["areas"].is_a?(Array)
       raise "unsupported area catalog schema"
@@ -143,6 +145,7 @@ module Ironmon
     area_ids = {}
     entry_ids = {}
     document["areas"].each do |area|
+      work_checkpoint.call if work_checkpoint
       if !area.is_a?(Hash) || area["area_id"].to_s.empty? ||
          area["name"].to_s.empty? || !area["map_ids"].is_a?(Array) ||
          !area["trainers"].is_a?(Array) || !area["items"].is_a?(Array)
@@ -154,6 +157,7 @@ module Ironmon
         raise "invalid area map identifier" if map_id.to_i < 1
       end
       (area["trainers"] + area["items"]).each do |entry|
+        work_checkpoint.call if work_checkpoint
         entry_id = entry.is_a?(Hash) ? entry["entry_id"].to_s : ""
         raise "an area content entry is malformed" if entry_id.empty?
         raise "duplicate area content identifier" if entry_ids[entry_id]
@@ -170,7 +174,7 @@ module Ironmon
     return true
   end
 
-  def self.tracker_validate_obtainability_source_catalog(document)
+  def self.tracker_validate_obtainability_source_catalog(document, work_checkpoint = nil)
     if !document.is_a?(Hash) || document["schema_version"] != 1 ||
        document["fingerprint"].to_s.empty? ||
        !document["sources"].is_a?(Array) ||
@@ -178,6 +182,7 @@ module Ironmon
       raise "unsupported obtainability source catalog schema"
     end
     document["sources"].each do |entry|
+      work_checkpoint.call if work_checkpoint
       if !entry.is_a?(Hash) || entry["species_id"].to_i < 1 ||
          !["none", "wild"].include?(entry["mapping_kind"].to_s) ||
          !entry["mapping_context"].is_a?(Array) ||
@@ -186,6 +191,7 @@ module Ironmon
       end
     end
     document["resources"].each do |entry|
+      work_checkpoint.call if work_checkpoint
       if !entry.is_a?(Hash) || !entry["item_ids"].is_a?(Array) ||
          entry["item_ids"].empty? || entry["quantity"].to_i < 1 ||
          entry["slot_id"].to_s.empty?

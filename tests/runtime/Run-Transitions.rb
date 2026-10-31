@@ -153,8 +153,9 @@ module IronmonRunTransitionRuntimeTests
     with_active_run_runtime do
       original_connection = Ironmon.method(:tracker_connection)
       original_state = Ironmon.method(:tracker_current_state)
+      original_work_due = Ironmon.method(:tracker_obtainability_work_due?)
       original_scene = $scene
-      variables = [:tracker_obtainability_services, :tracker_battle_id,
+      variables = [:tracker_obtainability_services, :tracker_obtainability_last_work_at, :tracker_battle_id,
                    :tracker_obtainability_ready_scene, :reset_in_progress,
                    :tracker_seed_import_pending, :main_menu_open,
                    :management_screen_state, :game_management_request,
@@ -190,11 +191,13 @@ module IronmonRunTransitionRuntimeTests
           "fusion_assignments" => tracker_active_fusion_assignment_recipe
         }
       end
+      Ironmon.define_singleton_method(:tracker_obtainability_work_due?) { true }
       $scene = Scene_Map.allocate
       yield events
     ensure
       Ironmon.define_singleton_method(:tracker_connection, original_connection)
       Ironmon.define_singleton_method(:tracker_current_state, original_state)
+      Ironmon.define_singleton_method(:tracker_obtainability_work_due?, original_work_due)
       originals.each do |name, value|
         Ironmon.instance_variable_set("@#{name}", value)
       end
@@ -245,7 +248,7 @@ module IronmonRunTransitionRuntimeTests
       assert(budgets.empty?, "manual preparation still waits through map startup")
       Ironmon.instance_variable_set(:@tracker_battle_id, "opening-battle")
       Ironmon.update_tracker_obtainability
-      assert(budgets == [Ironmon::TrackerObtainabilityService::BACKGROUND_MILLISECONDS],
+      assert(budgets == [Ironmon::TrackerObtainabilityService::LIVE_FOREGROUND_MILLISECONDS],
         "explicit calculation advances within a frame slice in the opening battle")
       [:reset_in_progress, :tracker_seed_import_pending].each do |name|
         Ironmon.instance_variable_set("@#{name}", true)
@@ -261,8 +264,8 @@ module IronmonRunTransitionRuntimeTests
       Ironmon.mark_tracker_obtainability_map_ready($scene)
       service.request_foreground
       Ironmon.update_tracker_obtainability
-      assert(budgets.last == Ironmon::TrackerObtainabilityService::FOREGROUND_MILLISECONDS,
-        "safe map frames retain the existing priority calculation budget")
+      assert(budgets.last == Ironmon::TrackerObtainabilityService::LIVE_FOREGROUND_MILLISECONDS,
+        "safe map frames keep explicit preparation within a responsive live slice")
     end
   end
 
@@ -291,7 +294,7 @@ module IronmonRunTransitionRuntimeTests
         Ironmon.instance_variable_set(:@management_screen_state, "main_menu")
         service.request_foreground
         Ironmon.update_tracker_obtainability
-        assert(budgets.length == 2 && budgets.last == Ironmon::TrackerObtainabilityService::BACKGROUND_MILLISECONDS,
+        assert(budgets.length == 2 && budgets.last == Ironmon::TrackerObtainabilityService::LIVE_FOREGROUND_MILLISECONDS,
           "archive foreground work also advances within a small slice in the load menu")
 
         area_calls = []
@@ -335,7 +338,7 @@ module IronmonRunTransitionRuntimeTests
 
         service.singleton_class.send(:remove_method, :advance_for_milliseconds)
         deadline = Ironmon.tracker_uptime_seconds + 15.0
-        while service.instance_variable_get(:@configuration).nil? && Ironmon.tracker_uptime_seconds < deadline
+        while service.snapshot["phase"] == "prepare_generators" && Ironmon.tracker_uptime_seconds < deadline
           service.request_background
           Ironmon.update_tracker_obtainability
         end
@@ -348,7 +351,7 @@ module IronmonRunTransitionRuntimeTests
         completed_active.define_singleton_method(:advance_for_milliseconds) { |milliseconds| completed_budgets << milliseconds }
         completed_active.request_foreground
         Ironmon.update_tracker_obtainability
-        assert(completed_budgets == [Ironmon::TrackerObtainabilityService::BACKGROUND_MILLISECONDS],
+        assert(completed_budgets == [Ironmon::TrackerObtainabilityService::LIVE_FOREGROUND_MILLISECONDS],
           "the reused completed-run service advances at the title screen")
       ensure
         $PokemonGlobal, $Trainer, $game_map, $game_player, $PokemonSystem = original_globals

@@ -121,7 +121,10 @@ internal sealed class TrackerCompletedRunRequestClient
         string requestedEdgesKey = string.Join(",", requestedEvolutionEdgeKeys.Select(value => value.ToUpperInvariant()));
         string cacheKey = $"{recipe.RunId}|{speciesId?.ToUpperInvariant() ?? "NONE"}|{requestedKey}|{requestedEdgesKey}";
         if (_cache.TryGet(TrackerCommands.PokemonObtainability, cacheKey, out PokemonObtainabilityResponsePayload cached))
+        {
+            progress?.Invoke(cached);
             return cached;
+        }
 
         PokemonObtainabilityRequestPayload request = new() { SpeciesId = speciesId, SpeciesIds = requestedSpeciesIds, EvolutionEdgeKeys = requestedEvolutionEdgeKeys, Foreground = foreground, UseNativeMaterialPairPreparation = true, Recipe = recipe };
         PokemonObtainabilityResponsePayload response = await _session.SendAsync<PokemonObtainabilityRequestPayload, PokemonObtainabilityResponsePayload>(TrackerCommands.PokemonObtainability, request, recipe.RunId, cancellationToken);

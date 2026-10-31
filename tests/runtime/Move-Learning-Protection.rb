@@ -100,7 +100,8 @@ module IronmonMoveLearningProtectionRuntimeTests
         $frame = 0
         before = @native_frames
         20.times { Graphics.update }
-        assert(@native_frames - before == 2, "ordinary 10x pacing is retained")
+        expected = 20 * [Graphics.frame_rate * 10, Ironmon::SpeedUp.native_update_limit].min / (Graphics.frame_rate * 10)
+        assert(@native_frames - before == expected, "ordinary 10x pacing uses the native frame budget")
         selected_stage = $GameSpeed
         if mode == 1
           send_controls(["speed"])
@@ -114,7 +115,7 @@ module IronmonMoveLearningProtectionRuntimeTests
         assert($GameSpeed == selected_stage && $CanToggle, "selected stage and speed lock survive protected frames")
         before = @native_frames
         20.times { Graphics.update }
-        assert(@native_frames - before == 2, "10x pacing resumes after protection")
+        assert(@native_frames - before == expected, "10x pacing resumes after protection")
       end
     end
   end
@@ -168,16 +169,18 @@ module IronmonMoveLearningProtectionRuntimeTests
 
   def self.run
     original_hooks = Ironmon.instance_variable_get(:@graphics_update_hooks)
-    original_native_update = Graphics.method(:fast_forward_update)
+    native_owner = Graphics.singleton_class
+    original_native_update = native_owner.instance_method(:update_KGC_SpecialTransition)
+    original_native_update = original_native_update.super_method while original_native_update.owner != native_owner
     original_profile = Ironmon::ToggleSpeed.configuration
     original_speed = [$PokemonSystem.speedup, $PokemonSystem.speedup_speed,
       $PokemonSystem.speedup_speed_battles, $GameSpeed, $frame, $CanToggle, $game_temp.in_battle]
     hooks = original_hooks.reject { |hook| [:tracker, :status_overlays].include?(hook[:name]) }
     hooks << { :name => :move_learning_test, :callback => proc { on_frame } }
     Ironmon.instance_variable_set(:@graphics_update_hooks, hooks)
-    Graphics.singleton_class.send(:define_method, :fast_forward_update) do
+    native_owner.send(:define_method, :update_KGC_SpecialTransition) do
       IronmonMoveLearningProtectionRuntimeTests.native_frame
-      original_native_update.call
+      original_native_update.bind(self).call
     end
     @native_frames = @hook_frames = 0
     profile = Ironmon::ToggleSpeed.default_configuration
@@ -195,7 +198,7 @@ module IronmonMoveLearningProtectionRuntimeTests
     puts "Move-learning protection: native 10x/1x pacing, held input, mashing, selection, cancellation, browsing, and interruption passed"
   ensure
     Ironmon.instance_variable_set(:@graphics_update_hooks, original_hooks)
-    Graphics.singleton_class.send(:define_method, :fast_forward_update, original_native_update)
+    native_owner.send(:define_method, :update_KGC_SpecialTransition, original_native_update) if original_native_update
     Ironmon::ToggleSpeed.configure(original_profile)
     $PokemonSystem.speedup, $PokemonSystem.speedup_speed,
       $PokemonSystem.speedup_speed_battles, $GameSpeed, $frame, $CanToggle, $game_temp.in_battle = original_speed

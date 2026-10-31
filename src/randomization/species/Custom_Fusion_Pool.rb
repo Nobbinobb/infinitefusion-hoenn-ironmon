@@ -3,8 +3,15 @@
 #===============================================================================
 
 module Ironmon
-  def self.species_pool_fingerprint(species_pool)
-    return fnv1a_64_fingerprint(species_pool)
+  def self.species_pool_fingerprint(species_pool, work_checkpoint = nil)
+    return fnv1a_64_fingerprint(species_pool) if !work_checkpoint
+    value = FNV1A_64_OFFSET_BASIS
+    species_pool.each_with_index do |species, index|
+      work_checkpoint.call if index % 128 == 0
+      value = fnv1a_64(species.to_s, value)
+      value = (value * FNV1A_64_PRIME) & FNV1A_64_MASK
+    end
+    return sprintf("%016x", value)
   end
 
   class CustomFusionPoolError < StandardError; end
@@ -242,8 +249,8 @@ module Ironmon
       @fingerprint = nil
     end
 
-    def pool
-      build_pool if !@pool
+    def pool(work_checkpoint = nil)
+      build_pool(work_checkpoint) if !@pool
       return @pool
     end
 
@@ -296,30 +303,39 @@ module Ironmon
       )
     end
 
-    def build_pool
-      identities = CustomFusionComponent.identities(File.binread(@path))
-      @build_count += 1
-      @source_entry_count = identities.length
+    def build_pool(work_checkpoint = nil)
+      identities = CustomFusionComponent.identities(File.binread(@path), work_checkpoint)
       accepted = {}
-      identities.each do |identity|
+      identities.each_with_index do |identity, index|
+        work_checkpoint.call if work_checkpoint && index % 128 == 0
         match = /\AB(\d+)H(\d+)\z/.match(identity.to_s)
         dex_number = (match[1].to_i * NB_POKEMON) + match[2].to_i
         accepted[dex_number] = identity
       end
+      numbers = accepted.keys.sort.freeze
+      membership = Ironmon.pack_custom_fusion_pool_membership(numbers, work_checkpoint)
+      pool = numbers.each_with_index.map do |number, index|
+        work_checkpoint.call if work_checkpoint && index % 128 == 0
+        accepted[number]
+      end.freeze
+      fingerprint = Ironmon.species_pool_fingerprint(pool, work_checkpoint)
+      @build_count += 1
+      @source_entry_count = identities.length
       @accepted_by_number = accepted.freeze
-      @numbers = accepted.keys.sort.freeze
-      @packed_pool_membership = Ironmon.pack_custom_fusion_pool_membership(@numbers)
-      @pool = @numbers.map { |number| accepted[number] }.freeze
-      @fingerprint = Ironmon.species_pool_fingerprint(@pool)
+      @numbers = numbers
+      @packed_pool_membership = membership
+      @fingerprint = fingerprint
+      @pool = pool
     rescue Exception => exception
       raise CustomFusionPoolError,
         "the archived custom fusion pool is invalid: #{exception.message}"
     end
   end
 
-  def self.pack_custom_fusion_pool_membership(numbers)
+  def self.pack_custom_fusion_pool_membership(numbers, work_checkpoint = nil)
     packed = "\0".b * (((NB_POKEMON * NB_POKEMON) + 7) / 8)
-    numbers.each do |number|
+    numbers.each_with_index do |number, index|
+      work_checkpoint.call if work_checkpoint && index % 128 == 0
       position = number - NB_POKEMON - 1
       byte_index = position >> 3
       packed.setbyte(byte_index, packed.getbyte(byte_index) | (1 << (position & 7)))

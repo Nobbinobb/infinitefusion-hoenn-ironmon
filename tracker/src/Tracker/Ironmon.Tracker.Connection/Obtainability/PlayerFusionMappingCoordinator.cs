@@ -33,11 +33,10 @@ internal sealed class PlayerFusionMappingCoordinator
     {
         _catalog = PlayerFusionMappingWorkerCatalog.Load();
         _sourceCatalog = ObtainabilitySourceCatalog.Load();
-        _workerContexts[WorkerContextKey(_catalog.CustomFusionPoolFingerprint, _catalog.BaseStatSourceFingerprint)] = new PlayerFusionWorkerContext(_catalog);
-        if (!string.IsNullOrEmpty(_catalog.LegacyBaseStatSourceFingerprint) && _catalog.LegacyBaseStatSourceFingerprint != _catalog.BaseStatSourceFingerprint)
+        foreach (string fingerprint in _catalog.BaseStatSourceFingerprints.Values)
         {
-            PlayerFusionMappingWorkerCatalog legacy = _catalog.WithBaseStatFingerprint(_catalog.LegacyBaseStatSourceFingerprint);
-            _workerContexts[WorkerContextKey(legacy.CustomFusionPoolFingerprint, legacy.BaseStatSourceFingerprint)] = new PlayerFusionWorkerContext(legacy);
+            PlayerFusionMappingWorkerCatalog catalog = fingerprint == _catalog.BaseStatSourceFingerprint ? _catalog : _catalog.WithBaseStatFingerprint(fingerprint);
+            _workerContexts[WorkerContextKey(catalog.CustomFusionPoolFingerprint, catalog.BaseStatSourceFingerprint)] = new PlayerFusionWorkerContext(catalog);
         }
     }
 

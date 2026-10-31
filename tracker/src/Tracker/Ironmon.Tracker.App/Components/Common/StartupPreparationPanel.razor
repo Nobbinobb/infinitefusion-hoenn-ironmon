@@ -1,0 +1,22 @@
+<dialog class="obsidian startup-preparation @(IsFailed ? "startup-preparation-failed" : null)" data-startup-preparation
+        @ref="_dialog" role="dialog" aria-modal="true" aria-labelledby="startup-preparation-title"
+        aria-busy="@(IsVisible && !IsFailed ? "true" : "false")" tabindex="-1" @onkeydown:stopPropagation>
+    @if (IsVisible)
+    {
+        <div class="startup-preparation-content">
+        @if (IsFailed)
+        {
+            <h2 id="startup-preparation-title">@Text[_failedTitleKey]</h2>
+            <p class="startup-preparation-error" role="alert">@(string.IsNullOrWhiteSpace(_snapshot.Error) ? Text[_failedDescriptionKey].Value : _snapshot.Error)</p>
+            <button class="startup-preparation-back" type="button" @onclick="DismissFailure">@Text[_backKey]</button>
+        }
+        else
+        {
+            <h2 id="startup-preparation-title" class="startup-preparation-phase" role="status" aria-live="polite">@PhaseText</h2>
+            <div class="startup-preparation-track" role="progressbar" aria-label="@Text[_progressKey]" aria-valuetext="@PhaseText">
+                <span class="startup-preparation-motion"></span>
+            </div>
+        }
+        </div>
+    }
+</dialog>

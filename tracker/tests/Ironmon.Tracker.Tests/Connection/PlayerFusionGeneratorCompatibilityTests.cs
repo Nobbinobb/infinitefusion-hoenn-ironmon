@@ -8,21 +8,34 @@ namespace Ironmon.Tracker.Tests.Connection;
 public sealed class PlayerFusionGeneratorCompatibilityTests
 {
     /// <summary>
-    /// Keeps archived native-stat profiles available beside the current stat formula.
+    /// Keeps each historical stat formula available beside the new-run formula without sharing archive cache identities.
     /// </summary>
     [Fact]
     public void HistoricalStatFormulaHasItsOwnCompatibleContext()
     {
         PlayerFusionMappingWorkerCatalog current = PlayerFusionMappingWorkerCatalog.Load();
-        PlayerFusionMappingWorkerCatalog legacy = current.WithBaseStatFingerprint(current.LegacyBaseStatSourceFingerprint);
         PlayerFusionMappingCoordinator coordinator = new();
-        CompletedRunRecipePayload legacyRecipe = CreateCompletedRecipe(legacy, 1);
-        CompletedRunRecipePayload currentRecipe = CreateCompletedRecipe(current, 2);
-        Assert.Equal(1, legacy.BaseStatFormulaVersion);
-        Assert.Equal(2, current.BaseStatFormulaVersion);
-        Assert.True(coordinator.CanMapAreaFusions(_runId, legacyRecipe));
-        Assert.True(coordinator.CanMapAreaFusions(_runId, currentRecipe));
-        Assert.NotEqual(PlayerFusionMaterialKey.From(legacyRecipe), PlayerFusionMaterialKey.From(currentRecipe));
+        HashSet<PlayerFusionMaterialKey> archiveKeys = [];
+        HashSet<PlayerFusionMaterialKey> activeKeys = [];
+        HashSet<EvolutionAssignmentKey> archivedEvolutionKeys = [];
+        HashSet<EvolutionAssignmentKey> activeEvolutionKeys = [];
+        Assert.Equal(3, current.BaseStatFormulaVersion);
+        Assert.Equal(new[] { 1, 2, 3 }, current.BaseStatSourceFingerprints.Keys.Order());
+        foreach ((int formulaVersion, string fingerprint) in current.BaseStatSourceFingerprints)
+        {
+            PlayerFusionMappingWorkerCatalog pinned = current.WithBaseStatFingerprint(fingerprint);
+            CompletedRunRecipePayload archivedRecipe = CreateCompletedRecipe(pinned, 2);
+            FusionAssignmentRecipePayload activeRecipe = CreateActiveRecipe(pinned, 2);
+            Assert.Equal(formulaVersion, pinned.BaseStatFormulaVersion);
+            Assert.True(coordinator.CanMapAreaFusions(_runId, archivedRecipe));
+            Assert.True(archiveKeys.Add(PlayerFusionMaterialKey.From(archivedRecipe)));
+            Assert.True(activeKeys.Add(PlayerFusionMaterialKey.From(activeRecipe)));
+            Assert.True(archivedEvolutionKeys.Add(EvolutionAssignmentKey.From(archivedRecipe)));
+            Assert.True(activeEvolutionKeys.Add(EvolutionAssignmentKey.From(activeRecipe)));
+        }
+
+        Assert.True(archiveKeys.SetEquals(activeKeys));
+        Assert.True(archivedEvolutionKeys.SetEquals(activeEvolutionKeys));
     }
 
     private const string _runId = "fusion-version-compatibility";

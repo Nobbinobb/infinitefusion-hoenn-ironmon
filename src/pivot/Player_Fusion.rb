@@ -3,7 +3,8 @@
 #===============================================================================
 
 module Ironmon
-  PLAYER_FUSION_PREPARATION_BUDGET_SECONDS = 0.004
+  PLAYER_FUSION_PREPARATION_BUDGET_SECONDS = 0.001
+  PLAYER_FUSION_PREPARATION_INTERVAL_SECONDS = 1.0 / 60
   PLAYER_FUSION_UPTIME_UNITS_PER_SECOND = 1_000_000.0
   PLAYER_FUSION_TRACE_FILENAME = "player_fusion_preparation_trace.log"
 
@@ -168,6 +169,25 @@ module Ironmon
 
     def pairing_prepared?
       return !!(@fusion_pairs && @paired_result_ids)
+    end
+
+    def startup_prepared?
+      return pairing_prepared? && !!@result_bst_index
+    end
+
+    def prepare_startup_result_index(work_checkpoint = nil)
+      return true if @result_bst_index
+      previous_checkpoint = @work_checkpoint
+      restore_checkpoint = true
+      @work_checkpoint = work_checkpoint || previous_checkpoint
+      @preparation_stage = :result_index
+      @preparation_progress = 0
+      ensure_fusion_pool
+      ensure_result_bst_index
+      @preparation_stage = :prepared
+      return true
+    ensure
+      @work_checkpoint = previous_checkpoint if restore_checkpoint
     end
 
     def import_prepared_pairing(packed_pairs, work_checkpoint = nil)
@@ -387,6 +407,7 @@ module Ironmon
       return if @result_bst_index
       index = {}
       @fusion_pairs.each_with_index do |fusion_pair, position|
+        @preparation_progress = position if @preparation_stage == :result_index
         @work_checkpoint.call if @work_checkpoint && (position % 32).zero?
         fusion_pair.each_with_index do |species_id, orientation|
           bst = target_bst(species_id)
@@ -539,7 +560,9 @@ module Ironmon
       ensure_disjoint_partners_exist
       minimum_bst = nil
       maximum_bst = nil
+      @preparation_stage = :target_data
       @fusion_pool_ids.each_with_index do |species_id, index|
+        @preparation_progress = index
         @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
         bst = target_bst(species_id)
         minimum_bst = bst if !minimum_bst || bst < minimum_bst
@@ -928,6 +951,8 @@ module Ironmon
       @player_fusion_mapper_state_id == state.object_id &&
       @player_fusion_mapper_version == generator_version
     return true if player_fusion_preparation_matches?(seed, state.object_id)
+    started = player_fusion_preparation_uptime
+    gc_before = player_fusion_preparation_gc_snapshot
     mapper = PlayerFusionMapper.new(
       seed,
       custom_fusion_pool_numbers,
@@ -942,8 +967,11 @@ module Ironmon
     @player_fusion_preparation_state_id = state.object_id
     @player_fusion_preparation_version = generator_version
     @player_fusion_preparation_fiber = Fiber.new { mapper.prepare }
+    @player_fusion_preparation_last_work_at = nil
     write_player_fusion_preparation_trace(mapper, "scheduled")
     return true
+  ensure
+    record_player_fusion_preparation_work("player_fusion_schedule", started, mapper, nil, gc_before) if started
   end
 
   def self.player_fusion_pairing_ready?
@@ -1008,16 +1036,26 @@ module Ironmon
   def self.advance_player_fusion_pairing
     fiber = @player_fusion_preparation_fiber
     return false if !fiber
+    now = player_fusion_preparation_uptime
+    return false if @player_fusion_preparation_last_work_at &&
+      now >= @player_fusion_preparation_last_work_at &&
+      now - @player_fusion_preparation_last_work_at < PLAYER_FUSION_PREPARATION_INTERVAL_SECONDS
     state = pivot_state
     seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0
     if !player_fusion_preparation_matches?(seed, state.object_id)
       clear_player_fusion_preparation
       return false
     end
-    deadline = player_fusion_preparation_uptime +
-      PLAYER_FUSION_PREPARATION_BUDGET_SECONDS
-    fiber.resume while fiber.alive? &&
-      player_fusion_preparation_uptime < deadline
+    mapper = @player_fusion_preparation_mapper
+    started = player_fusion_preparation_uptime
+    gc_before = player_fusion_preparation_gc_snapshot
+    @player_fusion_preparation_last_work_at = started
+    deadline = started + PLAYER_FUSION_PREPARATION_BUDGET_SECONDS
+    while fiber.alive? && player_fusion_preparation_uptime < deadline
+      resume_started = player_fusion_preparation_uptime
+      fiber.resume
+      record_player_fusion_preparation_work("player_fusion_resume", resume_started, mapper)
+    end
     write_player_fusion_preparation_trace(
       @player_fusion_preparation_mapper, "prepared"
     ) if !fiber.alive?
@@ -1027,17 +1065,84 @@ module Ironmon
     echoln "Ironmon background player-fusion pairing failed: #{e.message}"
     clear_player_fusion_preparation
     return false
+  ensure
+    if started
+      @player_fusion_preparation_last_work_at = player_fusion_preparation_uptime
+      record_player_fusion_preparation_work("player_fusion_background", started, mapper,
+        PLAYER_FUSION_PREPARATION_BUDGET_SECONDS * 1000, gc_before)
+    end
   end
 
   def self.finish_player_fusion_preparation
     fiber = @player_fusion_preparation_fiber
     return false if !fiber
+    mapper = @player_fusion_preparation_mapper
+    started = player_fusion_preparation_uptime
+    gc_before = player_fusion_preparation_gc_snapshot
     fiber.resume while fiber.alive?
     install_prepared_player_fusion_mapper
     return true
   rescue Exception
     clear_player_fusion_preparation
     raise
+  ensure
+    record_player_fusion_preparation_work("player_fusion_foreground", started, mapper, nil, gc_before) if started
+  end
+
+  def self.finish_player_fusion_startup_preparation
+    prepare_player_fusion_pairing
+    fiber = @player_fusion_preparation_fiber
+    mapper = fiber ? @player_fusion_preparation_mapper : @player_fusion_mapper
+    return false if !mapper
+    seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0
+    state_id = pivot_state.object_id
+    version = player_fusion_generator_version
+    started = player_fusion_preparation_uptime
+    active_seconds = 0.0
+    gc_before = player_fusion_preparation_gc_snapshot
+    while fiber && fiber.alive?
+      resume_started = player_fusion_preparation_uptime
+      fiber.resume
+      active_seconds += player_fusion_preparation_uptime - resume_started
+      yield mapper if block_given?
+      validate_player_fusion_startup_context(mapper, fiber, seed, state_id, version)
+    end
+    index_fiber = Fiber.new do
+      mapper.prepare_startup_result_index(proc { Fiber.yield })
+    end
+    while index_fiber.alive?
+      resume_started = player_fusion_preparation_uptime
+      index_fiber.resume
+      active_seconds += player_fusion_preparation_uptime - resume_started
+      yield mapper if block_given?
+      validate_player_fusion_startup_context(mapper, fiber, seed, state_id, version)
+    end
+    validate_player_fusion_startup_context(mapper, fiber, seed, state_id, version)
+    if fiber
+      install_prepared_player_fusion_mapper
+    else
+      mapper.finish_cooperative_preparation
+    end
+    yield mapper if block_given?
+    return true
+  rescue Exception
+    clear_player_fusion_preparation if @player_fusion_preparation_mapper.equal?(mapper)
+    raise
+  ensure
+    record_player_fusion_preparation_work("player_fusion_startup",
+      player_fusion_preparation_uptime - active_seconds, mapper, nil, gc_before) if started
+  end
+
+  def self.validate_player_fusion_startup_context(mapper, fiber, seed, state_id, version)
+    current_seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0
+    valid = current_seed == seed && pivot_state.object_id == state_id &&
+      player_fusion_generator_version == version
+    valid &&= fiber ? @player_fusion_preparation_fiber.equal?(fiber) &&
+      @player_fusion_preparation_mapper.equal?(mapper) : @player_fusion_mapper.equal?(mapper)
+    if !valid
+      raise PlayerFusionMappingError, "The loaded run changed during startup preparation"
+    end
+    return true
   end
 
   def self.player_fusion_preparation_matches?(seed, state_id)
@@ -1084,6 +1189,28 @@ module Ironmon
     @player_fusion_preparation_state_id = nil
     @player_fusion_preparation_version = nil
     @player_fusion_preparation_fiber = nil
+    @player_fusion_preparation_last_work_at = nil
+  end
+
+  def self.player_fusion_preparation_gc_snapshot
+    return nil if !defined?(Ironmon::SpeedDiagnostics) || !Ironmon::SpeedDiagnostics.respond_to?(:gc_time_nanoseconds)
+    return [GC.count, Ironmon::SpeedDiagnostics.gc_time_nanoseconds]
+  end
+
+  def self.record_player_fusion_preparation_work(operation, started, mapper, budget_ms = nil, gc_before = nil)
+    return if !defined?(Ironmon::SpeedDiagnostics) || !Ironmon::SpeedDiagnostics.respond_to?(:record_work)
+    elapsed = player_fusion_preparation_uptime - started
+    threshold = budget_ms ? [budget_ms / 1000.0, 0.016].min : 0.016
+    return if elapsed < threshold
+    details = { "operation" => operation }
+    details["phase"] = mapper.preparation_stage.to_s if mapper
+    details["processed"] = mapper.preparation_progress.to_i if mapper
+    details["budget_ms"] = budget_ms if budget_ms
+    if gc_before
+      details["gc_count_delta"] = GC.count - gc_before[0]
+      details["gc_time_ms"] = (Ironmon::SpeedDiagnostics.gc_time_nanoseconds - gc_before[1]) / 1_000_000.0
+    end
+    Ironmon::SpeedDiagnostics.record_work(:calculation_chunk, elapsed, details)
   end
 
   def self.player_fusion_preparation_uptime

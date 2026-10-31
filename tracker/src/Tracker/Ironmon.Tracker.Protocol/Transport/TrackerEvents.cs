@@ -31,6 +31,11 @@ public static class TrackerEvents
     public const string ActiveRunPreparationReady = "active_run_preparation_ready";
 
     /// <summary>
+    /// Gets the connection-scoped startup preparation stage event.
+    /// </summary>
+    public const string StartupPreparationProgress = "startup_preparation_progress";
+
+    /// <summary>
     /// Gets the metadata-only native rival fusion preparation event.
     /// </summary>
     public const string RivalFusionPrepare = "rival_fusion_prepare";

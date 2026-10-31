@@ -3,7 +3,7 @@
 
 <PageTitle>@Text["App.Shell.AppTitle"]</PageTitle>
 
-<main class="tracker-shell @(_accessOpen ? "obsidian-access-shell" : null) @(!_accessOpen ? "obsidian" : null)" tabindex="0" @onkeydown="HandleKeyDown" @onkeyup="ShortcutService.TrackerKeyUp" @onfocusout="ShortcutService.ClearTrackerKeys">
+<main class="tracker-shell @(_accessOpen ? "obsidian-access-shell" : null) @(!_accessOpen ? "obsidian" : null)" inert="@IsStartupPreparationVisible" aria-hidden="@(IsStartupPreparationVisible ? "true" : null)" tabindex="0" @onkeydown="HandleKeyDown" @onkeyup="ShortcutService.TrackerKeyUp" @onfocusout="ShortcutService.ClearTrackerKeys">
     <header class="tracker-header">
         <div class="connection-state" role="status" title="@GetConnectionDetail()" aria-label="@GetConnectionAccessibleText()">
             <span class="@GetConnectionDotClass()" aria-hidden="true"></span>
@@ -35,6 +35,7 @@
             </button>
         </div>
     </header>
+
 
     @if (!_achievementsOpen)
     {
@@ -133,8 +134,12 @@
     else
     {
         <ArchiveView GameRoot="@_connection.Game?.GameRoot"
-                     CurrentStatistics="@_connection.CurrentState?.AttemptStatistics" />
+                     CurrentStatistics="@_connection.CurrentState?.AttemptStatistics"
+                     AutomaticSelection="@_automaticArchiveSelection" />
     }
 
 </main>
-<WardrobeDialogHost />
+<div style="display:contents" inert="@IsStartupPreparationVisible" aria-hidden="@(IsStartupPreparationVisible ? "true" : null)">
+    <WardrobeDialogHost />
+</div>
+<StartupPreparationPanel />

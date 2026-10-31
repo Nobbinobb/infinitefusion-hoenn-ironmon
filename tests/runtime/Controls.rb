@@ -13,11 +13,19 @@ module IronmonControlsRuntimeTests
 
   def self.run
     original_temp = $game_temp
+    # These routing checks exercise the original 1x repeat contract. Accelerated
+    # wall-time repetition has separate native and real-window acceptance.
+    if defined?(Ironmon::ResponsiveInput)
+      original_accelerated = Ironmon::ResponsiveInput.method(:accelerated?)
+      Ironmon::ResponsiveInput.define_singleton_method(:accelerated?) { false }
+    end
     native_input = Input.singleton_class
     native_methods = {}
     { :press? => true, :trigger? => true, :repeat? => true,
       :release? => true, :time? => 9.0 }.each do |query, result|
-      original = Input.method(query).super_method
+      original = Input.method(query)
+      original = original.super_method while original && original.owner != native_input
+      raise "The original native Input.#{query} method is missing" if !original
       native_methods[query] = original
       native_input.define_method(query) do |key|
         [Input::C, Input::B, Input::LEFT, Input::F9].include?(key) ? result : original.call(key)
@@ -29,6 +37,10 @@ module IronmonControlsRuntimeTests
     Ironmon.clear_tracker_controls
     assert(!Ironmon.tracker_controls_active?, "native input starts in ownership")
     assert(Input.press?(Input::C) && Input.trigger?(Input::B), "test backend supplies held native confirm and cancel")
+    assert(Input.repeat?(Input::F7) == native_methods[:repeat?].call(Input::F7),
+      "unmanaged repeat queries reach the original native backend")
+    assert(Input.time?(Input::F7) == native_methods[:time?].call(Input::F7),
+      "unmanaged duration queries reach the original native backend")
 
     state([])
     Input.update
@@ -151,6 +163,7 @@ module IronmonControlsRuntimeTests
     assert(!Input.press?(Input::F7), "pressed input must also be managed")
     File.binwrite(OUTPUT_PATH, "PASS: bundled runtime input override, triggers, repeat, release, buffered taps, movement, separate field/menu/battle bindings, nested contexts, reset routing, disconnect, timeout, and native fallback.\n")
   ensure
+    Ironmon::ResponsiveInput.define_singleton_method(:accelerated?, original_accelerated) if original_accelerated
     $game_temp = original_temp if defined?(original_temp)
     Ironmon.clear_tracker_controls
     native_methods.each { |query, original| native_input.define_method(query, original) } if native_methods

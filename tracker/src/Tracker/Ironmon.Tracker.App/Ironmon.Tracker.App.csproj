@@ -11,6 +11,8 @@
     <ApplicationDisplayVersion>0.10.0</ApplicationDisplayVersion>
     <ApplicationVersion>1000</ApplicationVersion>
     <AssemblyName>Ironmon Tracker</AssemblyName>
+    <!-- The desktop WebView does not unescape scoped stylesheet request paths. -->
+    <PackageId>tracker-components</PackageId>
     <Version>0.10.0</Version>
     <NeutralLanguage>en-US</NeutralLanguage>
     <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>

@@ -1,0 +1,3002 @@
+[
+  {
+    "seed": 880231924,
+    "resultId": 259343,
+    "displayBody": "NECROZMA",
+    "displayHead": "SNORLAX",
+    "bodyStats": [
+      74,
+      40,
+      44,
+      82,
+      144,
+      216
+    ],
+    "headStats": [
+      68,
+      140,
+      42,
+      145,
+      20,
+      125
+    ],
+    "stats": [
+      69,
+      72,
+      43,
+      135,
+      61,
+      201
+    ]
+  },
+  {
+    "seed": 880231924,
+    "resultId": 116758,
+    "displayBody": "WOBBUFFET",
+    "displayHead": "SOLOSIS",
+    "bodyStats": [
+      105,
+      47,
+      97,
+      106,
+      38,
+      12
+    ],
+    "headStats": [
+      29,
+      48,
+      73,
+      44,
+      26,
+      70
+    ],
+    "stats": [
+      39,
+      47,
+      92,
+      59,
+      29,
+      31
+    ]
+  },
+  {
+    "seed": 880231924,
+    "resultId": 325105,
+    "displayBody": "GOREBYSS",
+    "displayHead": "MILTANK",
+    "bodyStats": [
+      54,
+      47,
+      113,
+      152,
+      23,
+      96
+    ],
+    "headStats": [
+      116,
+      54,
+      18,
+      97,
+      53,
+      152
+    ],
+    "stats": [
+      95,
+      47,
+      88,
+      110,
+      48,
+      114
+    ]
+  },
+  {
+    "seed": 880231924,
+    "resultId": 156402,
+    "displayBody": "LEAFEON",
+    "displayHead": "RAMPARDOS",
+    "bodyStats": [
+      5,
+      118,
+      61,
+      98,
+      96,
+      147
+    ],
+    "headStats": [
+      179,
+      118,
+      50,
+      69,
+      23,
+      56
+    ],
+    "stats": [
+      152,
+      117,
+      57,
+      75,
+      47,
+      116
+    ]
+  },
+  {
+    "seed": 880231924,
+    "resultId": 306403,
+    "displayBody": "PLUSLE",
+    "displayHead": "WHISCASH",
+    "bodyStats": [
+      73,
+      82,
+      9,
+      109,
+      117,
+      15
+    ],
+    "headStats": [
+      106,
+      80,
+      138,
+      27,
+      5,
+      112
+    ],
+    "stats": [
+      97,
+      81,
+      27,
+      38,
+      42,
+      47
+    ]
+  },
+  {
+    "seed": 880231924,
+    "resultId": 148850,
+    "displayBody": "MIMEJR",
+    "displayHead": "BLISSEY",
+    "bodyStats": [
+      28,
+      36,
+      7,
+      93,
+      107,
+      39
+    ],
+    "headStats": [
+      62,
+      132,
+      105,
+      193,
+      15,
+      33
+    ],
+    "stats": [
+      53,
+      68,
+      20,
+      159,
+      28,
+      37
+    ]
+  },
+  {
+    "seed": 880231924,
+    "resultId": 58360,
+    "displayBody": "ELECTRODE",
+    "displayHead": "AZUMARILL",
+    "bodyStats": [
+      46,
+      117,
+      133,
+      146,
+      38,
+      10
+    ],
+    "headStats": [
+      20,
+      80,
+      102,
+      91,
+      48,
+      79
+    ],
+    "stats": [
+      23,
+      107,
+      122,
+      108,
+      45,
+      19
+    ]
+  },
+  {
+    "seed": 880231924,
+    "resultId": 140268,
+    "displayBody": "RAIKOU",
+    "displayHead": "MAWILE",
+    "bodyStats": [
+      196,
+      149,
+      120,
+      12,
+      82,
+      21
+    ],
+    "headStats": [
+      54,
+      93,
+      88,
+      37,
+      81,
+      27
+    ],
+    "stats": [
+      74,
+      130,
+      115,
+      30,
+      81,
+      21
+    ]
+  },
+  {
+    "seed": 880231924,
+    "resultId": 246004,
+    "displayBody": "SNORUNT",
+    "displayHead": "MEOWTH",
+    "bodyStats": [
+      64,
+      39,
+      23,
+      52,
+      87,
+      35
+    ],
+    "headStats": [
+      23,
+      47,
+      59,
+      89,
+      28,
+      44
+    ],
+    "stats": [
+      36,
+      40,
+      34,
+      82,
+      42,
+      37
+    ]
+  },
+  {
+    "seed": 880231924,
+    "resultId": 250479,
+    "displayBody": "TRUBBISH",
+    "displayHead": "LOTAD",
+    "bodyStats": [
+      35,
+      47,
+      108,
+      22,
+      77,
+      40
+    ],
+    "headStats": [
+      57,
+      20,
+      20,
+      51,
+      27,
+      45
+    ],
+    "stats": [
+      53,
+      40,
+      78,
+      41,
+      39,
+      40
+    ]
+  },
+  {
+    "seed": 948990964,
+    "resultId": 92255,
+    "displayBody": "FERALIGATR",
+    "displayHead": "ONIX",
+    "bodyStats": [
+      153,
+      150,
+      14,
+      37,
+      121,
+      55
+    ],
+    "headStats": [
+      56,
+      63,
+      101,
+      25,
+      79,
+      61
+    ],
+    "stats": [
+      80,
+      127,
+      26,
+      26,
+      92,
+      56
+    ]
+  },
+  {
+    "seed": 948990964,
+    "resultId": 8661,
+    "displayBody": "BEEDRILL",
+    "displayHead": "SPEAROW",
+    "bodyStats": [
+      98,
+      38,
+      82,
+      40,
+      72,
+      65
+    ],
+    "headStats": [
+      81,
+      45,
+      77,
+      27,
+      8,
+      24
+    ],
+    "stats": [
+      86,
+      38,
+      79,
+      30,
+      16,
+      54
+    ]
+  },
+  {
+    "seed": 948990964,
+    "resultId": 196247,
+    "displayBody": "KYOGRE",
+    "displayHead": "DUOSION",
+    "bodyStats": [
+      70,
+      54,
+      238,
+      98,
+      47,
+      163
+    ],
+    "headStats": [
+      21,
+      71,
+      65,
+      99,
+      86,
+      28
+    ],
+    "stats": [
+      37,
+      59,
+      194,
+      98,
+      75,
+      142
+    ]
+  },
+  {
+    "seed": 948990964,
+    "resultId": 95918,
+    "displayBody": "LEDIAN",
+    "displayHead": "CRADILY",
+    "bodyStats": [
+      37,
+      20,
+      50,
+      38,
+      117,
+      128
+    ],
+    "headStats": [
+      145,
+      134,
+      10,
+      7,
+      57,
+      142
+    ],
+    "stats": [
+      108,
+      48,
+      43,
+      14,
+      65,
+      132
+    ]
+  },
+  {
+    "seed": 948990964,
+    "resultId": 197310,
+    "displayBody": "RAYQUAZA",
+    "displayHead": "TORTERRA",
+    "bodyStats": [
+      179,
+      171,
+      141,
+      99,
+      17,
+      73
+    ],
+    "headStats": [
+      104,
+      122,
+      129,
+      46,
+      22,
+      102
+    ],
+    "stats": [
+      122,
+      163,
+      137,
+      63,
+      20,
+      82
+    ]
+  },
+  {
+    "seed": 948990964,
+    "resultId": 239259,
+    "displayBody": "FRAXURE",
+    "displayHead": "MAGCARGO",
+    "bodyStats": [
+      62,
+      97,
+      87,
+      10,
+      17,
+      137
+    ],
+    "headStats": [
+      68,
+      48,
+      88,
+      37,
+      47,
+      142
+    ],
+    "stats": [
+      65,
+      84,
+      87,
+      29,
+      41,
+      137
+    ]
+  },
+  {
+    "seed": 948990964,
+    "resultId": 48158,
+    "displayBody": "FARFETCHD",
+    "displayHead": "ZEKROM",
+    "bodyStats": [
+      65,
+      75,
+      121,
+      51,
+      40,
+      25
+    ],
+    "headStats": [
+      30,
+      182,
+      56,
+      138,
+      127,
+      147
+    ],
+    "stats": [
+      34,
+      110,
+      110,
+      115,
+      97,
+      54
+    ]
+  },
+  {
+    "seed": 948990964,
+    "resultId": 44840,
+    "displayBody": "PONYTA",
+    "displayHead": "TORKOAL",
+    "bodyStats": [
+      73,
+      9,
+      76,
+      44,
+      105,
+      103
+    ],
+    "headStats": [
+      47,
+      44,
+      113,
+      21,
+      121,
+      124
+    ],
+    "stats": [
+      53,
+      13,
+      85,
+      23,
+      115,
+      109
+    ]
+  },
+  {
+    "seed": 948990964,
+    "resultId": 143781,
+    "displayBody": "LUGIA",
+    "displayHead": "BANETTE",
+    "bodyStats": [
+      156,
+      115,
+      85,
+      17,
+      215,
+      92
+    ],
+    "headStats": [
+      66,
+      60,
+      111,
+      102,
+      103,
+      13
+    ],
+    "stats": [
+      79,
+      101,
+      88,
+      73,
+      130,
+      65
+    ]
+  },
+  {
+    "seed": 948990964,
+    "resultId": 222692,
+    "displayBody": "VIGOROTH",
+    "displayHead": "NINJASK",
+    "bodyStats": [
+      155,
+      50,
+      40,
+      68,
+      98,
+      29
+    ],
+    "headStats": [
+      104,
+      78,
+      51,
+      89,
+      82,
+      52
+    ],
+    "stats": [
+      120,
+      59,
+      42,
+      83,
+      83,
+      31
+    ]
+  },
+  {
+    "seed": 1210635703,
+    "resultId": 125399,
+    "displayBody": "URSARING",
+    "displayHead": "DUOSION",
+    "bodyStats": [
+      122,
+      101,
+      59,
+      116,
+      45,
+      57
+    ],
+    "headStats": [
+      22,
+      81,
+      55,
+      90,
+      6,
+      116
+    ],
+    "stats": [
+      54,
+      95,
+      58,
+      93,
+      15,
+      76
+    ]
+  },
+  {
+    "seed": 1210635703,
+    "resultId": 45516,
+    "displayBody": "SLOWPOKE",
+    "displayHead": "BUTTERFREE",
+    "bodyStats": [
+      52,
+      65,
+      21,
+      104,
+      49,
+      24
+    ],
+    "headStats": [
+      79,
+      87,
+      50,
+      70,
+      59,
+      50
+    ],
+    "stats": [
+      74,
+      72,
+      27,
+      80,
+      56,
+      27
+    ]
+  },
+  {
+    "seed": 1210635703,
+    "resultId": 147729,
+    "displayBody": "HONCHKROW",
+    "displayHead": "GLISCOR",
+    "bodyStats": [
+      99,
+      91,
+      117,
+      66,
+      23,
+      109
+    ],
+    "headStats": [
+      46,
+      112,
+      72,
+      120,
+      38,
+      122
+    ],
+    "stats": [
+      63,
+      93,
+      105,
+      111,
+      33,
+      112
+    ]
+  },
+  {
+    "seed": 1210635703,
+    "resultId": 249532,
+    "displayBody": "ORICORIO_4",
+    "displayHead": "JYNX",
+    "bodyStats": [
+      105,
+      84,
+      107,
+      73,
+      100,
+      7
+    ],
+    "headStats": [
+      117,
+      47,
+      114,
+      83,
+      62,
+      32
+    ],
+    "stats": [
+      113,
+      74,
+      109,
+      80,
+      67,
+      9
+    ]
+  },
+  {
+    "seed": 1210635703,
+    "resultId": 221999,
+    "displayBody": "SLAKOTH",
+    "displayHead": "ELEKID",
+    "bodyStats": [
+      50,
+      41,
+      39,
+      77,
+      31,
+      42
+    ],
+    "headStats": [
+      33,
+      70,
+      40,
+      124,
+      57,
+      36
+    ],
+    "stats": [
+      36,
+      47,
+      39,
+      116,
+      48,
+      40
+    ]
+  },
+  {
+    "seed": 1210635703,
+    "resultId": 98320,
+    "displayBody": "CHINCHOU",
+    "displayHead": "BUDEW",
+    "bodyStats": [
+      11,
+      92,
+      98,
+      48,
+      32,
+      49
+    ],
+    "headStats": [
+      70,
+      66,
+      25,
+      17,
+      48,
+      54
+    ],
+    "stats": [
+      54,
+      87,
+      73,
+      27,
+      44,
+      49
+    ]
+  },
+  {
+    "seed": 1210635703,
+    "resultId": 306296,
+    "displayBody": "PLUSLE",
+    "displayHead": "NOIBAT",
+    "bodyStats": [
+      81,
+      17,
+      76,
+      74,
+      67,
+      90
+    ],
+    "headStats": [
+      7,
+      29,
+      60,
+      41,
+      59,
+      49
+    ],
+    "stats": [
+      17,
+      18,
+      72,
+      48,
+      61,
+      76
+    ]
+  },
+  {
+    "seed": 1210635703,
+    "resultId": 136977,
+    "displayBody": "HITMONTOP",
+    "displayHead": "LYCANROC_N",
+    "bodyStats": [
+      43,
+      77,
+      85,
+      90,
+      101,
+      59
+    ],
+    "headStats": [
+      20,
+      38,
+      116,
+      53,
+      127,
+      133
+    ],
+    "stats": [
+      23,
+      63,
+      89,
+      65,
+      120,
+      77
+    ]
+  },
+  {
+    "seed": 1210635703,
+    "resultId": 192096,
+    "displayBody": "AGGRON",
+    "displayHead": "GALLADE",
+    "bodyStats": [
+      75,
+      186,
+      140,
+      43,
+      49,
+      37
+    ],
+    "headStats": [
+      76,
+      67,
+      123,
+      131,
+      96,
+      25
+    ],
+    "stats": [
+      75,
+      146,
+      135,
+      108,
+      88,
+      34
+    ]
+  },
+  {
+    "seed": 1210635703,
+    "resultId": 31838,
+    "displayBody": "GOLDUCK",
+    "displayHead": "TOTODILE",
+    "bodyStats": [
+      72,
+      79,
+      133,
+      70,
+      25,
+      121
+    ],
+    "headStats": [
+      114,
+      58,
+      34,
+      41,
+      23,
+      44
+    ],
+    "stats": [
+      103,
+      71,
+      107,
+      50,
+      22,
+      108
+    ]
+  },
+  {
+    "seed": 1884213011,
+    "resultId": 144202,
+    "displayBody": "HOOH",
+    "displayHead": "WOBBUFFET",
+    "bodyStats": [
+      126,
+      126,
+      9,
+      136,
+      176,
+      107
+    ],
+    "headStats": [
+      109,
+      12,
+      89,
+      39,
+      75,
+      81
+    ],
+    "stats": [
+      112,
+      88,
+      28,
+      53,
+      108,
+      102
+    ]
+  },
+  {
+    "seed": 1884213011,
+    "resultId": 260501,
+    "displayBody": "BEWEAR",
+    "displayHead": "DRAGONITE",
+    "bodyStats": [
+      137,
+      55,
+      6,
+      150,
+      87,
+      65
+    ],
+    "headStats": [
+      115,
+      66,
+      125,
+      52,
+      154,
+      88
+    ],
+    "stats": [
+      120,
+      58,
+      35,
+      66,
+      131,
+      68
+    ]
+  },
+  {
+    "seed": 1884213011,
+    "resultId": 306243,
+    "displayBody": "PLUSLE",
+    "displayHead": "WAILMER",
+    "bodyStats": [
+      81,
+      84,
+      74,
+      9,
+      54,
+      103
+    ],
+    "headStats": [
+      33,
+      56,
+      98,
+      69,
+      89,
+      55
+    ],
+    "stats": [
+      49,
+      77,
+      76,
+      53,
+      83,
+      86
+    ]
+  },
+  {
+    "seed": 1884213011,
+    "resultId": 9806,
+    "displayBody": "PIDGEOTTO",
+    "displayHead": "KAKUNA",
+    "bodyStats": [
+      7,
+      58,
+      122,
+      8,
+      11,
+      143
+    ],
+    "headStats": [
+      36,
+      48,
+      15,
+      71,
+      8,
+      27
+    ],
+    "stats": [
+      31,
+      55,
+      105,
+      55,
+      8,
+      104
+    ]
+  },
+  {
+    "seed": 1884213011,
+    "resultId": 109768,
+    "displayBody": "AIPOM",
+    "displayHead": "DOUBLADE",
+    "bodyStats": [
+      87,
+      10,
+      94,
+      35,
+      82,
+      52
+    ],
+    "headStats": [
+      79,
+      153,
+      38,
+      34,
+      125,
+      19
+    ],
+    "stats": [
+      80,
+      57,
+      84,
+      33,
+      110,
+      43
+    ]
+  },
+  {
+    "seed": 1884213011,
+    "resultId": 238331,
+    "displayBody": "FERROSEED",
+    "displayHead": "ALTARIA",
+    "bodyStats": [
+      87,
+      51,
+      59,
+      15,
+      83,
+      10
+    ],
+    "headStats": [
+      49,
+      9,
+      120,
+      110,
+      91,
+      111
+    ],
+    "stats": [
+      54,
+      40,
+      79,
+      78,
+      88,
+      24
+    ]
+  },
+  {
+    "seed": 1884213011,
+    "resultId": 46199,
+    "displayBody": "SLOWBRO",
+    "displayHead": "SEAKING",
+    "bodyStats": [
+      62,
+      21,
+      163,
+      123,
+      95,
+      26
+    ],
+    "headStats": [
+      74,
+      118,
+      150,
+      60,
+      18,
+      30
+    ],
+    "stats": [
+      69,
+      53,
+      159,
+      75,
+      29,
+      26
+    ]
+  },
+  {
+    "seed": 1884213011,
+    "resultId": 5541,
+    "displayBody": "BLASTOISE",
+    "displayHead": "BANETTE",
+    "bodyStats": [
+      139,
+      7,
+      32,
+      138,
+      57,
+      157
+    ],
+    "headStats": [
+      99,
+      10,
+      85,
+      53,
+      83,
+      125
+    ],
+    "stats": [
+      104,
+      6,
+      45,
+      81,
+      76,
+      145
+    ]
+  },
+  {
+    "seed": 1884213011,
+    "resultId": 130757,
+    "displayBody": "SKARMORY",
+    "displayHead": "CHARMELEON",
+    "bodyStats": [
+      11,
+      23,
+      165,
+      88,
+      108,
+      70
+    ],
+    "headStats": [
+      58,
+      95,
+      85,
+      42,
+      30,
+      95
+    ],
+    "stats": [
+      45,
+      46,
+      152,
+      48,
+      56,
+      75
+    ]
+  },
+  {
+    "seed": 1884213011,
+    "resultId": 101016,
+    "displayBody": "TOGEPI",
+    "displayHead": "TEDDIURSA",
+    "bodyStats": [
+      45,
+      49,
+      35,
+      41,
+      37,
+      38
+    ],
+    "headStats": [
+      18,
+      63,
+      90,
+      47,
+      33,
+      79
+    ],
+    "stats": [
+      21,
+      51,
+      53,
+      45,
+      34,
+      43
+    ]
+  },
+  {
+    "seed": 1767764700,
+    "resultId": 182473,
+    "displayBody": "TURTWIG",
+    "displayHead": "CACNEA",
+    "bodyStats": [
+      19,
+      93,
+      74,
+      27,
+      14,
+      91
+    ],
+    "headStats": [
+      75,
+      65,
+      9,
+      62,
+      60,
+      64
+    ],
+    "stats": [
+      56,
+      85,
+      63,
+      52,
+      53,
+      81
+    ]
+  },
+  {
+    "seed": 1767764700,
+    "resultId": 87406,
+    "displayBody": "MEW",
+    "displayHead": "ORICORIO_1",
+    "bodyStats": [
+      244,
+      127,
+      16,
+      11,
+      65,
+      137
+    ],
+    "headStats": [
+      59,
+      117,
+      93,
+      75,
+      110,
+      22
+    ],
+    "stats": [
+      120,
+      124,
+      41,
+      58,
+      102,
+      107
+    ]
+  },
+  {
+    "seed": 1767764700,
+    "resultId": 78986,
+    "displayBody": "PORYGON",
+    "displayHead": "GEODUDE",
+    "bodyStats": [
+      56,
+      95,
+      39,
+      37,
+      80,
+      88
+    ],
+    "headStats": [
+      71,
+      51,
+      61,
+      68,
+      21,
+      28
+    ],
+    "stats": [
+      67,
+      83,
+      46,
+      62,
+      40,
+      78
+    ]
+  },
+  {
+    "seed": 1767764700,
+    "resultId": 263503,
+    "displayBody": "CACNEA",
+    "displayHead": "LEAFEON",
+    "bodyStats": [
+      75,
+      65,
+      9,
+      62,
+      60,
+      64
+    ],
+    "headStats": [
+      77,
+      81,
+      48,
+      56,
+      243,
+      20
+    ],
+    "stats": [
+      76,
+      70,
+      14,
+      57,
+      215,
+      53
+    ]
+  },
+  {
+    "seed": 1767764700,
+    "resultId": 193368,
+    "displayBody": "MILOTIC",
+    "displayHead": "COTTONEE",
+    "bodyStats": [
+      255,
+      17,
+      14,
+      32,
+      53,
+      169
+    ],
+    "headStats": [
+      47,
+      61,
+      56,
+      30,
+      61,
+      25
+    ],
+    "stats": [
+      77,
+      31,
+      19,
+      30,
+      57,
+      132
+    ]
+  },
+  {
+    "seed": 1767764700,
+    "resultId": 140936,
+    "displayBody": "ENTEI",
+    "displayHead": "TRAPINCH",
+    "bodyStats": [
+      38,
+      150,
+      189,
+      104,
+      19,
+      80
+    ],
+    "headStats": [
+      32,
+      25,
+      61,
+      48,
+      65,
+      59
+    ],
+    "stats": [
+      33,
+      118,
+      169,
+      62,
+      57,
+      72
+    ]
+  },
+  {
+    "seed": 1767764700,
+    "resultId": 264831,
+    "displayBody": "SANDYGAST",
+    "displayHead": "REGIROCK",
+    "bodyStats": [
+      39,
+      8,
+      26,
+      89,
+      73,
+      85
+    ],
+    "headStats": [
+      42,
+      95,
+      51,
+      123,
+      135,
+      134
+    ],
+    "stats": [
+      40,
+      29,
+      29,
+      114,
+      114,
+      100
+    ]
+  },
+  {
+    "seed": 1767764700,
+    "resultId": 226217,
+    "displayBody": "TRAPINCH",
+    "displayHead": "TYRUNT",
+    "bodyStats": [
+      32,
+      25,
+      61,
+      48,
+      65,
+      59
+    ],
+    "headStats": [
+      82,
+      58,
+      37,
+      119,
+      12,
+      54
+    ],
+    "stats": [
+      64,
+      35,
+      56,
+      101,
+      19,
+      57
+    ]
+  },
+  {
+    "seed": 1767764700,
+    "resultId": 102070,
+    "displayBody": "NATU",
+    "displayHead": "GOLDEEN",
+    "bodyStats": [
+      80,
+      6,
+      50,
+      75,
+      13,
+      96
+    ],
+    "headStats": [
+      78,
+      22,
+      98,
+      95,
+      7,
+      20
+    ],
+    "stats": [
+      78,
+      9,
+      56,
+      89,
+      8,
+      70
+    ]
+  },
+  {
+    "seed": 1767764700,
+    "resultId": 244725,
+    "displayBody": "SCOLIPEDE",
+    "displayHead": "LUVDISC",
+    "bodyStats": [
+      128,
+      103,
+      55,
+      70,
+      51,
+      78
+    ],
+    "headStats": [
+      44,
+      46,
+      27,
+      54,
+      56,
+      103
+    ],
+    "stats": [
+      65,
+      88,
+      45,
+      59,
+      54,
+      81
+    ]
+  },
+  {
+    "seed": 74617958,
+    "resultId": 28562,
+    "displayBody": "VENOMOTH",
+    "displayHead": "ZOROARK",
+    "bodyStats": [
+      43,
+      94,
+      74,
+      86,
+      83,
+      70
+    ],
+    "headStats": [
+      26,
+      105,
+      26,
+      111,
+      108,
+      134
+    ],
+    "stats": [
+      28,
+      94,
+      57,
+      104,
+      99,
+      85
+    ]
+  },
+  {
+    "seed": 74617958,
+    "resultId": 100556,
+    "displayBody": "IGGLYBUFF",
+    "displayHead": "LUXRAY",
+    "bodyStats": [
+      8,
+      22,
+      54,
+      49,
+      54,
+      23
+    ],
+    "headStats": [
+      54,
+      59,
+      45,
+      177,
+      107,
+      81
+    ],
+    "stats": [
+      38,
+      33,
+      51,
+      144,
+      98,
+      37
+    ]
+  },
+  {
+    "seed": 74617958,
+    "resultId": 45674,
+    "displayBody": "SLOWPOKE",
+    "displayHead": "CHINCHOU",
+    "bodyStats": [
+      55,
+      57,
+      37,
+      85,
+      58,
+      23
+    ],
+    "headStats": [
+      22,
+      20,
+      96,
+      88,
+      16,
+      88
+    ],
+    "stats": [
+      26,
+      44,
+      45,
+      86,
+      26,
+      39
+    ]
+  },
+  {
+    "seed": 74617958,
+    "resultId": 256385,
+    "displayBody": "SLIGGOO",
+    "displayHead": "ALAKAZAM",
+    "bodyStats": [
+      65,
+      38,
+      52,
+      143,
+      59,
+      95
+    ],
+    "headStats": [
+      72,
+      139,
+      18,
+      137,
+      37,
+      97
+    ],
+    "stats": [
+      70,
+      52,
+      43,
+      137,
+      43,
+      95
+    ]
+  },
+  {
+    "seed": 74617958,
+    "resultId": 183315,
+    "displayBody": "TORTERRA",
+    "displayHead": "DRATINI",
+    "bodyStats": [
+      130,
+      68,
+      65,
+      111,
+      126,
+      25
+    ],
+    "headStats": [
+      35,
+      68,
+      64,
+      84,
+      24,
+      25
+    ],
+    "stats": [
+      66,
+      68,
+      64,
+      87,
+      49,
+      24
+    ]
+  },
+  {
+    "seed": 74617958,
+    "resultId": 131117,
+    "displayBody": "SKARMORY",
+    "displayHead": "LITWICK",
+    "bodyStats": [
+      41,
+      78,
+      84,
+      100,
+      117,
+      45
+    ],
+    "headStats": [
+      81,
+      37,
+      14,
+      21,
+      15,
+      107
+    ],
+    "stats": [
+      74,
+      64,
+      73,
+      47,
+      40,
+      59
+    ]
+  },
+  {
+    "seed": 74617958,
+    "resultId": 173083,
+    "displayBody": "MAWILE",
+    "displayHead": "MARSHTOMP",
+    "bodyStats": [
+      101,
+      74,
+      120,
+      8,
+      40,
+      37
+    ],
+    "headStats": [
+      136,
+      13,
+      123,
+      11,
+      79,
+      43
+    ],
+    "stats": [
+      127,
+      58,
+      121,
+      9,
+      73,
+      37
+    ]
+  },
+  {
+    "seed": 74617958,
+    "resultId": 119229,
+    "displayBody": "DUNSPARCE",
+    "displayHead": "SHELLOS_E",
+    "bodyStats": [
+      117,
+      9,
+      113,
+      148,
+      7,
+      21
+    ],
+    "headStats": [
+      10,
+      37,
+      12,
+      78,
+      28,
+      160
+    ],
+    "stats": [
+      36,
+      15,
+      79,
+      88,
+      20,
+      41
+    ]
+  },
+  {
+    "seed": 74617958,
+    "resultId": 29175,
+    "displayBody": "DIGLETT",
+    "displayHead": "DEINO",
+    "bodyStats": [
+      72,
+      38,
+      6,
+      52,
+      52,
+      45
+    ],
+    "headStats": [
+      50,
+      17,
+      27,
+      62,
+      86,
+      58
+    ],
+    "stats": [
+      57,
+      34,
+      13,
+      59,
+      80,
+      47
+    ]
+  },
+  {
+    "seed": 74617958,
+    "resultId": 99209,
+    "displayBody": "PICHU",
+    "displayHead": "PORYGON",
+    "bodyStats": [
+      52,
+      41,
+      49,
+      11,
+      30,
+      22
+    ],
+    "headStats": [
+      57,
+      67,
+      91,
+      78,
+      22,
+      80
+    ],
+    "stats": [
+      55,
+      49,
+      54,
+      55,
+      22,
+      36
+    ]
+  },
+  {
+    "seed": 1980785008,
+    "resultId": 143971,
+    "displayBody": "LUGIA",
+    "displayHead": "WHISCASH",
+    "bodyStats": [
+      140,
+      49,
+      199,
+      183,
+      68,
+      41
+    ],
+    "headStats": [
+      66,
+      96,
+      145,
+      17,
+      93,
+      51
+    ],
+    "stats": [
+      84,
+      55,
+      180,
+      41,
+      84,
+      42
+    ]
+  },
+  {
+    "seed": 1980785008,
+    "resultId": 119638,
+    "displayBody": "GLIGAR",
+    "displayHead": "SOLOSIS",
+    "bodyStats": [
+      40,
+      109,
+      83,
+      62,
+      85,
+      51
+    ],
+    "headStats": [
+      61,
+      72,
+      74,
+      53,
+      25,
+      5
+    ],
+    "stats": [
+      53,
+      96,
+      81,
+      54,
+      39,
+      39
+    ]
+  },
+  {
+    "seed": 1980785008,
+    "resultId": 144319,
+    "displayBody": "HOOH",
+    "displayHead": "CHIMCHAR",
+    "bodyStats": [
+      106,
+      51,
+      62,
+      103,
+      195,
+      163
+    ],
+    "headStats": [
+      7,
+      89,
+      45,
+      17,
+      54,
+      97
+    ],
+    "stats": [
+      39,
+      63,
+      57,
+      37,
+      74,
+      152
+    ]
+  },
+  {
+    "seed": 1980785008,
+    "resultId": 85663,
+    "displayBody": "DRAGONAIR",
+    "displayHead": "FRAXURE",
+    "bodyStats": [
+      128,
+      110,
+      48,
+      44,
+      60,
+      30
+    ],
+    "headStats": [
+      68,
+      84,
+      89,
+      5,
+      95,
+      69
+    ],
+    "stats": [
+      83,
+      101,
+      53,
+      17,
+      89,
+      39
+    ]
+  },
+  {
+    "seed": 1980785008,
+    "resultId": 260568,
+    "displayBody": "BEWEAR",
+    "displayHead": "TEDDIURSA",
+    "bodyStats": [
+      64,
+      61,
+      127,
+      154,
+      86,
+      8
+    ],
+    "headStats": [
+      79,
+      6,
+      84,
+      68,
+      11,
+      82
+    ],
+    "stats": [
+      76,
+      51,
+      112,
+      96,
+      29,
+      26
+    ]
+  },
+  {
+    "seed": 1980785008,
+    "resultId": 28079,
+    "displayBody": "VENONAT",
+    "displayHead": "ORICORIO_2",
+    "bodyStats": [
+      63,
+      21,
+      43,
+      75,
+      73,
+      30
+    ],
+    "headStats": [
+      113,
+      50,
+      121,
+      144,
+      11,
+      37
+    ],
+    "stats": [
+      96,
+      27,
+      54,
+      133,
+      26,
+      32
+    ]
+  },
+  {
+    "seed": 1980785008,
+    "resultId": 246077,
+    "displayBody": "SNORUNT",
+    "displayHead": "ELECTABUZZ",
+    "bodyStats": [
+      74,
+      114,
+      22,
+      49,
+      20,
+      21
+    ],
+    "headStats": [
+      119,
+      78,
+      102,
+      98,
+      14,
+      79
+    ],
+    "stats": [
+      107,
+      104,
+      33,
+      90,
+      15,
+      40
+    ]
+  },
+  {
+    "seed": 1980785008,
+    "resultId": 262433,
+    "displayBody": "TOXAPEX",
+    "displayHead": "DRIFBLIM",
+    "bodyStats": [
+      128,
+      109,
+      54,
+      107,
+      81,
+      16
+    ],
+    "headStats": [
+      116,
+      58,
+      54,
+      97,
+      37,
+      136
+    ],
+    "stats": [
+      117,
+      95,
+      54,
+      98,
+      51,
+      33
+    ]
+  },
+  {
+    "seed": 1980785008,
+    "resultId": 260159,
+    "displayBody": "STUFFUL",
+    "displayHead": "BIBAREL",
+    "bodyStats": [
+      21,
+      88,
+      87,
+      31,
+      79,
+      34
+    ],
+    "headStats": [
+      86,
+      116,
+      20,
+      20,
+      118,
+      50
+    ],
+    "stats": [
+      64,
+      91,
+      70,
+      21,
+      107,
+      38
+    ]
+  },
+  {
+    "seed": 1980785008,
+    "resultId": 85562,
+    "displayBody": "DRAGONAIR",
+    "displayHead": "WAILORD",
+    "bodyStats": [
+      128,
+      110,
+      48,
+      44,
+      60,
+      30
+    ],
+    "headStats": [
+      48,
+      109,
+      24,
+      128,
+      12,
+      179
+    ],
+    "stats": [
+      68,
+      109,
+      40,
+      114,
+      28,
+      66
+    ]
+  },
+  {
+    "seed": 1002389724,
+    "resultId": 157368,
+    "displayBody": "GLISCOR",
+    "displayHead": "STARYU",
+    "bodyStats": [
+      112,
+      89,
+      70,
+      104,
+      87,
+      48
+    ],
+    "headStats": [
+      41,
+      101,
+      80,
+      69,
+      37,
+      12
+    ],
+    "stats": [
+      50,
+      90,
+      72,
+      77,
+      53,
+      36
+    ]
+  },
+  {
+    "seed": 1002389724,
+    "resultId": 18611,
+    "displayBody": "NIDORANmA",
+    "displayHead": "MAREEP",
+    "bodyStats": [
+      38,
+      32,
+      40,
+      23,
+      69,
+      71
+    ],
+    "headStats": [
+      70,
+      14,
+      34,
+      47,
+      41,
+      74
+    ],
+    "stats": [
+      61,
+      27,
+      37,
+      38,
+      44,
+      71
+    ]
+  },
+  {
+    "seed": 1002389724,
+    "resultId": 228393,
+    "displayBody": "SHELGON",
+    "displayHead": "GIBLE",
+    "bodyStats": [
+      50,
+      85,
+      109,
+      97,
+      21,
+      58
+    ],
+    "headStats": [
+      63,
+      6,
+      53,
+      62,
+      9,
+      107
+    ],
+    "stats": [
+      58,
+      58,
+      94,
+      66,
+      11,
+      65
+    ]
+  },
+  {
+    "seed": 1002389724,
+    "resultId": 322281,
+    "displayBody": "SPHEAL",
+    "displayHead": "GIBLE",
+    "bodyStats": [
+      49,
+      76,
+      36,
+      30,
+      30,
+      69
+    ],
+    "headStats": [
+      63,
+      6,
+      53,
+      62,
+      9,
+      107
+    ],
+    "stats": [
+      59,
+      58,
+      37,
+      56,
+      16,
+      81
+    ]
+  },
+  {
+    "seed": 1002389724,
+    "resultId": 262710,
+    "displayBody": "HAWLUCHA",
+    "displayHead": "PSYDUCK",
+    "bodyStats": [
+      126,
+      105,
+      28,
+      103,
+      81,
+      57
+    ],
+    "headStats": [
+      64,
+      69,
+      34,
+      20,
+      28,
+      105
+    ],
+    "stats": [
+      84,
+      93,
+      28,
+      40,
+      35,
+      68
+    ]
+  },
+  {
+    "seed": 1002389724,
+    "resultId": 135511,
+    "displayBody": "SMEARGLE",
+    "displayHead": "MEW",
+    "bodyStats": [
+      23,
+      57,
+      58,
+      48,
+      46,
+      18
+    ],
+    "headStats": [
+      135,
+      166,
+      37,
+      86,
+      35,
+      141
+    ],
+    "stats": [
+      97,
+      93,
+      52,
+      76,
+      35,
+      36
+    ]
+  },
+  {
+    "seed": 1002389724,
+    "resultId": 136301,
+    "displayBody": "TYROGUE",
+    "displayHead": "LITWICK",
+    "bodyStats": [
+      41,
+      40,
+      30,
+      25,
+      48,
+      26
+    ],
+    "headStats": [
+      40,
+      57,
+      27,
+      57,
+      50,
+      44
+    ],
+    "stats": [
+      40,
+      44,
+      29,
+      48,
+      49,
+      28
+    ]
+  },
+  {
+    "seed": 1002389724,
+    "resultId": 225273,
+    "displayBody": "LAIRON",
+    "displayHead": "PRIMEAPE",
+    "bodyStats": [
+      10,
+      103,
+      107,
+      20,
+      88,
+      102
+    ],
+    "headStats": [
+      21,
+      209,
+      164,
+      25,
+      31,
+      5
+    ],
+    "stats": [
+      17,
+      118,
+      125,
+      24,
+      49,
+      77
+    ]
+  },
+  {
+    "seed": 1002389724,
+    "resultId": 21905,
+    "displayBody": "NINETALES",
+    "displayHead": "PIDGEOTTO",
+    "bodyStats": [
+      140,
+      94,
+      110,
+      111,
+      17,
+      33
+    ],
+    "headStats": [
+      16,
+      74,
+      79,
+      67,
+      80,
+      33
+    ],
+    "stats": [
+      34,
+      88,
+      104,
+      77,
+      58,
+      33
+    ]
+  },
+  {
+    "seed": 1002389724,
+    "resultId": 225483,
+    "displayBody": "LAIRON",
+    "displayHead": "ELECTIVIRE",
+    "bodyStats": [
+      10,
+      103,
+      107,
+      20,
+      88,
+      102
+    ],
+    "headStats": [
+      67,
+      120,
+      135,
+      62,
+      84,
+      72
+    ],
+    "stats": [
+      47,
+      107,
+      110,
+      51,
+      84,
+      92
+    ]
+  },
+  {
+    "seed": 145541614,
+    "resultId": 313056,
+    "displayBody": "SEVIPER",
+    "displayHead": "GALLADE",
+    "bodyStats": [
+      89,
+      176,
+      128,
+      39,
+      20,
+      6
+    ],
+    "headStats": [
+      89,
+      133,
+      60,
+      51,
+      105,
+      80
+    ],
+    "stats": [
+      88,
+      165,
+      117,
+      47,
+      92,
+      30
+    ]
+  },
+  {
+    "seed": 145541614,
+    "resultId": 39509,
+    "displayBody": "MACHAMP",
+    "displayHead": "GROUDON",
+    "bodyStats": [
+      75,
+      77,
+      95,
+      24,
+      93,
+      141
+    ],
+    "headStats": [
+      138,
+      110,
+      109,
+      95,
+      145,
+      73
+    ],
+    "stats": [
+      128,
+      87,
+      96,
+      77,
+      127,
+      123
+    ]
+  },
+  {
+    "seed": 145541614,
+    "resultId": 204916,
+    "displayBody": "BRELOOM",
+    "displayHead": "CARVANHA",
+    "bodyStats": [
+      38,
+      89,
+      70,
+      85,
+      48,
+      130
+    ],
+    "headStats": [
+      57,
+      68,
+      65,
+      25,
+      69,
+      21
+    ],
+    "stats": [
+      51,
+      83,
+      67,
+      44,
+      65,
+      113
+    ]
+  },
+  {
+    "seed": 145541614,
+    "resultId": 98995,
+    "displayBody": "LANTURN",
+    "displayHead": "MINIOR_C",
+    "bodyStats": [
+      23,
+      34,
+      194,
+      40,
+      63,
+      106
+    ],
+    "headStats": [
+      22,
+      13,
+      48,
+      104,
+      126,
+      187
+    ],
+    "stats": [
+      21,
+      28,
+      145,
+      94,
+      109,
+      118
+    ]
+  },
+  {
+    "seed": 145541614,
+    "resultId": 288293,
+    "displayBody": "DIANCIE",
+    "displayHead": "METAGROSS",
+    "bodyStats": [
+      23,
+      40,
+      131,
+      167,
+      46,
+      193
+    ],
+    "headStats": [
+      87,
+      26,
+      117,
+      6,
+      180,
+      184
+    ],
+    "stats": [
+      70,
+      37,
+      126,
+      59,
+      159,
+      190
+    ]
+  },
+  {
+    "seed": 145541614,
+    "resultId": 231983,
+    "displayBody": "DRIFLOON",
+    "displayHead": "ORICORIO_2",
+    "bodyStats": [
+      78,
+      86,
+      71,
+      27,
+      27,
+      59
+    ],
+    "headStats": [
+      30,
+      126,
+      48,
+      123,
+      59,
+      90
+    ],
+    "stats": [
+      41,
+      99,
+      65,
+      91,
+      54,
+      63
+    ]
+  },
+  {
+    "seed": 145541614,
+    "resultId": 13940,
+    "displayBody": "ARBOK",
+    "displayHead": "HORSEA",
+    "bodyStats": [
+      100,
+      67,
+      14,
+      49,
+      107,
+      111
+    ],
+    "headStats": [
+      43,
+      37,
+      62,
+      65,
+      34,
+      54
+    ],
+    "stats": [
+      51,
+      61,
+      25,
+      59,
+      51,
+      92
+    ]
+  },
+  {
+    "seed": 145541614,
+    "resultId": 178436,
+    "displayBody": "SLAKING",
+    "displayHead": "BEWEAR",
+    "bodyStats": [
+      61,
+      145,
+      221,
+      192,
+      10,
+      41
+    ],
+    "headStats": [
+      93,
+      23,
+      93,
+      100,
+      84,
+      107
+    ],
+    "stats": [
+      84,
+      113,
+      200,
+      113,
+      59,
+      62
+    ]
+  },
+  {
+    "seed": 145541614,
+    "resultId": 289016,
+    "displayBody": "LUVDISC",
+    "displayHead": "NOIBAT",
+    "bodyStats": [
+      84,
+      43,
+      27,
+      48,
+      50,
+      78
+    ],
+    "headStats": [
+      61,
+      34,
+      6,
+      61,
+      14,
+      69
+    ],
+    "stats": [
+      68,
+      40,
+      20,
+      57,
+      18,
+      76
+    ]
+  },
+  {
+    "seed": 145541614,
+    "resultId": 308260,
+    "displayBody": "GULPIN",
+    "displayHead": "VOLTORB",
+    "bodyStats": [
+      22,
+      47,
+      24,
+      27,
+      21,
+      161
+    ],
+    "headStats": [
+      78,
+      48,
+      57,
+      29,
+      47,
+      71
+    ],
+    "stats": [
+      63,
+      47,
+      35,
+      28,
+      42,
+      146
+    ]
+  },
+  {
+    "seed": 1689902569,
+    "resultId": 265710,
+    "displayBody": "AMAURA",
+    "displayHead": "IGGLYBUFF",
+    "bodyStats": [
+      13,
+      110,
+      15,
+      84,
+      55,
+      85
+    ],
+    "headStats": [
+      47,
+      60,
+      19,
+      8,
+      70,
+      6
+    ],
+    "stats": [
+      35,
+      102,
+      15,
+      27,
+      67,
+      58
+    ]
+  },
+  {
+    "seed": 1689902569,
+    "resultId": 51576,
+    "displayBody": "MUK",
+    "displayHead": "DUSCLOPS",
+    "bodyStats": [
+      69,
+      39,
+      75,
+      45,
+      151,
+      121
+    ],
+    "headStats": [
+      133,
+      29,
+      66,
+      74,
+      71,
+      82
+    ],
+    "stats": [
+      123,
+      36,
+      72,
+      64,
+      90,
+      107
+    ]
+  },
+  {
+    "seed": 1689902569,
+    "resultId": 105664,
+    "displayBody": "MARILL",
+    "displayHead": "HONCHKROW",
+    "bodyStats": [
+      50,
+      17,
+      78,
+      76,
+      7,
+      22
+    ],
+    "headStats": [
+      122,
+      49,
+      41,
+      138,
+      84,
+      71
+    ],
+    "stats": [
+      110,
+      21,
+      65,
+      122,
+      58,
+      33
+    ]
+  },
+  {
+    "seed": 1689902569,
+    "resultId": 97495,
+    "displayBody": "CROBAT",
+    "displayHead": "MEW",
+    "bodyStats": [
+      9,
+      14,
+      251,
+      52,
+      80,
+      129
+    ],
+    "headStats": [
+      134,
+      135,
+      143,
+      53,
+      10,
+      125
+    ],
+    "stats": [
+      102,
+      54,
+      223,
+      52,
+      32,
+      127
+    ]
+  },
+  {
+    "seed": 1689902569,
+    "resultId": 285380,
+    "displayBody": "LOTAD",
+    "displayHead": "MUNCHLAX",
+    "bodyStats": [
+      18,
+      59,
+      13,
+      37,
+      45,
+      48
+    ],
+    "headStats": [
+      54,
+      56,
+      69,
+      21,
+      82,
+      108
+    ],
+    "stats": [
+      42,
+      58,
+      26,
+      24,
+      75,
+      68
+    ]
+  },
+  {
+    "seed": 1689902569,
+    "resultId": 57700,
+    "displayBody": "VOLTORB",
+    "displayHead": "VOLTORB",
+    "bodyStats": [
+      61,
+      75,
+      63,
+      34,
+      63,
+      34
+    ],
+    "headStats": [
+      61,
+      75,
+      63,
+      34,
+      63,
+      34
+    ],
+    "stats": [
+      60,
+      74,
+      62,
+      33,
+      62,
+      33
+    ]
+  },
+  {
+    "seed": 1689902569,
+    "resultId": 77573,
+    "displayBody": "VAPOREON",
+    "displayHead": "LUXIO",
+    "bodyStats": [
+      107,
+      84,
+      101,
+      80,
+      49,
+      104
+    ],
+    "headStats": [
+      101,
+      17,
+      62,
+      35,
+      83,
+      65
+    ],
+    "stats": [
+      101,
+      67,
+      87,
+      49,
+      77,
+      97
+    ]
+  },
+  {
+    "seed": 1689902569,
+    "resultId": 69665,
+    "displayBody": "STARYU",
+    "displayHead": "SOLROCK",
+    "bodyStats": [
+      64,
+      40,
+      55,
+      89,
+      39,
+      53
+    ],
+    "headStats": [
+      13,
+      65,
+      145,
+      128,
+      98,
+      11
+    ],
+    "stats": [
+      25,
+      46,
+      84,
+      121,
+      78,
+      46
+    ]
+  },
+  {
+    "seed": 1689902569,
+    "resultId": 60189,
+    "displayBody": "CUBONE",
+    "displayHead": "RALTS",
+    "bodyStats": [
+      48,
+      55,
+      18,
+      66,
+      73,
+      60
+    ],
+    "headStats": [
+      44,
+      36,
+      47,
+      14,
+      24,
+      33
+    ],
+    "stats": [
+      45,
+      50,
+      22,
+      20,
+      36,
+      51
+    ]
+  },
+  {
+    "seed": 1689902569,
+    "resultId": 317292,
+    "displayBody": "BALTOY",
+    "displayHead": "SLURPUFF",
+    "bodyStats": [
+      49,
+      95,
+      29,
+      14,
+      72,
+      41
+    ],
+    "headStats": [
+      109,
+      13,
+      140,
+      50,
+      108,
+      60
+    ],
+    "stats": [
+      99,
+      67,
+      45,
+      40,
+      96,
+      45
+    ]
+  }
+]

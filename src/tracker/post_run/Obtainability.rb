@@ -14,6 +14,9 @@ module Ironmon
     MAX_REQUESTED_EVOLUTION_EDGES = 4_000
     BACKGROUND_MILLISECONDS = 6.0
     FOREGROUND_MILLISECONDS = 250.0
+    LIVE_BACKGROUND_MILLISECONDS = 1.0
+    LIVE_FOREGROUND_MILLISECONDS = 12.0
+    WORK_INTERVAL_SECONDS = 1.0 / 60
     BACKGROUND_LEASE_SECONDS = 1.0
     FOREGROUND_LEASE_SECONDS = 2.0
     PLAYER_FUSION_LEASE_SECONDS = 60.0
@@ -123,6 +126,11 @@ module Ironmon
     end
 
     def advance_for_milliseconds(milliseconds)
+      started = Ironmon.tracker_uptime_seconds
+      initial_phase = @phase
+      initial_gc_count = GC.count
+      initial_gc_time = Ironmon::SpeedDiagnostics.gc_time_nanoseconds if
+        defined?(Ironmon::SpeedDiagnostics) && Ironmon::SpeedDiagnostics.respond_to?(:gc_time_nanoseconds)
       duration = [milliseconds.to_f, 0.1].max / 1000.0
       @work_deadline = Ironmon.tracker_uptime_seconds + duration
       @work_fiber = nil if @work_fiber && !@work_fiber.alive?
@@ -145,6 +153,17 @@ module Ironmon
       raise
     ensure
       @work_deadline = nil
+      if started && defined?(Ironmon::SpeedDiagnostics) && Ironmon::SpeedDiagnostics.respond_to?(:record_work)
+        elapsed = Ironmon.tracker_uptime_seconds - started
+        details = { "operation" => "obtainability_#{initial_phase}",
+          "phase" => @phase.to_s, "budget_ms" => milliseconds.to_f,
+          "gc_count_delta" => GC.count - initial_gc_count }
+        details["gc_time_ms"] = (Ironmon::SpeedDiagnostics.gc_time_nanoseconds - initial_gc_time) / 1_000_000.0 if initial_gc_time
+        Ironmon::SpeedDiagnostics.record_work(:calculation_chunk, elapsed, details)
+        if @phase != initial_phase && Ironmon::SpeedDiagnostics.respond_to?(:record_context)
+          Ironmon::SpeedDiagnostics.record_context(:calculation_state, details)
+        end
+      end
     end
 
     def request_foreground
@@ -343,9 +362,6 @@ module Ironmon
           "invalid_query", "The tracker obtainability bitset is malformed."
         )
       end
-      @tracker_executable_evolution_edges =
-        decode_tracker_executable_edges(encoded_edges)
-      @tracker_obtainable_fusion_words = words
       obtainable_count = batch["obtainable_count"]
       if !obtainable_count.is_a?(Integer) || obtainable_count < 0 ||
          obtainable_count > maximum_number
@@ -353,6 +369,9 @@ module Ironmon
           "invalid_query", "The tracker obtainability count is malformed."
         )
       end
+      edges = decode_tracker_executable_edges(encoded_edges)
+      @tracker_executable_evolution_edges = edges
+      @tracker_obtainable_fusion_words = words
       @obtainable_count = obtainable_count
     end
 
@@ -694,7 +713,6 @@ module Ironmon
       when :tracker_closure_result
         apply_pending_fusion_closure_result
       when :prepare_generators
-        Ironmon.sprite_credit_catalog(proc { cooperative_checkpoint })
         prepare_generators
       when :prepare_encounters
         prepare_encounter_tables
@@ -801,6 +819,10 @@ module Ironmon
 
     def prepare_generators
       @configuration ||= Configuration.from(@recipe["configuration"])
+      pool_service = Ironmon.custom_fusion_pool_service
+      pool_service.pool(proc { cooperative_checkpoint }) if
+        pool_service.is_a?(ProfileCustomFusionPool)
+      Ironmon.tracker_area_catalog(proc { cooperative_checkpoint })
       @normal_generator ||= Ironmon.tracker_normal_evolution_generator(@recipe)
       @phase = :prepare_encounters
     end
@@ -858,7 +880,7 @@ module Ironmon
     end
 
     def prepare_authored_map_scan
-      catalog = Ironmon.tracker_obtainability_source_catalog
+      catalog = Ironmon.tracker_obtainability_source_catalog(proc { cooperative_checkpoint })
       @authored_catalog_entries = catalog["sources"].map do |entry|
         [:source, entry]
       end
@@ -1647,6 +1669,7 @@ module Ironmon
     end
 
     def apply_derived_caught_fusion_transformation(number)
+      Ironmon.tracker_search_fusion_name_parts(proc { cooperative_checkpoint })
       identity = normalize_species_id(number)
       name = Ironmon.tracker_search_species_name(identity)
       plan = {
@@ -1990,6 +2013,7 @@ module Ironmon
   # Calculation access is public; target proofs and world discovery stay on
   # their existing authorized routes. Never forward arbitrary query fields.
   def self.tracker_run_lookup_preparation(payload, envelope_run_id)
+    started = tracker_uptime_seconds
     attempt = current_run_attempt
     if !active? || !$PokemonGlobal || !attempt || attempt["result"] != "active"
       raise TrackerLookupError.new(
@@ -2022,14 +2046,19 @@ module Ironmon
       response[key] = snapshot[key] if snapshot.key?(key)
     end
     return response
+  ensure
+    record_tracker_obtainability_request(started, "active_run_preparation", snapshot)
   end
 
   def self.tracker_obtainability(payload, envelope_run_id)
+    started = tracker_uptime_seconds
     payload ||= {}
     recipe = tracker_validate_completed_recipe(
       payload["recipe"], envelope_run_id
     )
     return tracker_obtainability_for_recipe(payload, recipe)
+  ensure
+    record_tracker_obtainability_request(started, "archived_run_preparation")
   end
 
   def self.tracker_obtainability_for_recipe(payload, recipe)
@@ -2111,33 +2140,68 @@ module Ironmon
     return if tracker_opening_loss_reset_pending?
     archive_menu = tracker_archive_lookup_menu_ready?
     return if !archive_menu && !tracker_obtainability_session_ready?
-    services = tracker_obtainability_services.values
-    services = services.select { |service| service.archived? } if archive_menu
-    foreground = services.select do |service|
-      service.foreground_requested?
-    end.max_by { |service| service.foreground_deadline }
+    return if !tracker_obtainability_work_due?
+    foreground = nil
+    background = nil
+    tracker_obtainability_services.each_value do |service|
+      next if archive_menu && !service.archived?
+      if service.foreground_requested? && (!foreground || service.foreground_deadline > foreground.foreground_deadline)
+        foreground = service
+      end
+      if service.background_requested? && (!background || service.background_deadline > background.background_deadline)
+        background = service
+      end
+    end
     if foreground &&
        (archive_menu || tracker_battle_id || tracker_obtainability_runtime_ready?)
-      milliseconds = archive_menu || tracker_battle_id ?
-        TrackerObtainabilityService::BACKGROUND_MILLISECONDS :
-        TrackerObtainabilityService::FOREGROUND_MILLISECONDS
-      with_generation_profile(foreground.generation_profile_id) do
-        foreground.advance_for_milliseconds(milliseconds)
-      end
+      advance_tracker_obtainability_service(foreground,
+        TrackerObtainabilityService::LIVE_FOREGROUND_MILLISECONDS, true)
       return
     end
     return if !archive_menu && !tracker_obtainability_background_safe?
-    service = services.select do |candidate|
-      candidate.background_requested?
-    end.max_by { |candidate| candidate.background_deadline }
-    return if !service
-    with_generation_profile(service.generation_profile_id) do
-      service.advance_for_milliseconds(
-        TrackerObtainabilityService::BACKGROUND_MILLISECONDS
-      )
-    end
+    return if !background
+    milliseconds = archive_menu ? TrackerObtainabilityService::BACKGROUND_MILLISECONDS :
+      TrackerObtainabilityService::LIVE_BACKGROUND_MILLISECONDS
+    advance_tracker_obtainability_service(background, milliseconds)
   rescue Exception => e
     echoln "Ironmon obtainability background update failed: #{e.message}"
+  end
+
+  def self.tracker_obtainability_work_due?
+    now = tracker_uptime_seconds
+    return true if !@tracker_obtainability_last_work_at || now < @tracker_obtainability_last_work_at
+    return now - @tracker_obtainability_last_work_at >= TrackerObtainabilityService::WORK_INTERVAL_SECONDS
+  end
+
+  def self.advance_tracker_obtainability_service(service, milliseconds, foreground = false)
+    return false if !tracker_obtainability_work_due?
+    started = tracker_uptime_seconds
+    @tracker_obtainability_last_work_at = started
+    begin
+      with_generation_profile(service.generation_profile_id) do
+        service.advance_for_milliseconds(milliseconds)
+      end
+    ensure
+      finished = tracker_uptime_seconds
+      elapsed = finished - started
+      @tracker_obtainability_last_work_at = foreground &&
+        elapsed < TrackerObtainabilityService::WORK_INTERVAL_SECONDS ? started : finished
+      if elapsed >= 0.016 && defined?(Ironmon::SpeedDiagnostics)
+        Ironmon::SpeedDiagnostics.record_work(:calculation_prepare, elapsed, {
+          "operation" => "obtainability_profile", "budget_ms" => milliseconds
+        })
+      end
+    end
+    return true
+  end
+
+  def self.record_tracker_obtainability_request(started, operation, snapshot = nil)
+    return if !started || !defined?(Ironmon::SpeedDiagnostics)
+    elapsed = tracker_uptime_seconds - started
+    return if elapsed < 0.016
+    details = { "operation" => operation }
+    details["phase"] = snapshot["phase"] if snapshot.is_a?(Hash)
+    Ironmon::SpeedDiagnostics.record_work(:calculation_request, elapsed, details)
   end
 
   def self.tracker_obtainability_game_work_pending?

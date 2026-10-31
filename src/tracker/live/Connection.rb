@@ -23,6 +23,11 @@ module Ironmon
   TRACKER_MAXIMUM_MESSAGE_BYTES = 1_048_576
   TRACKER_OUTPUT_WRITE_BYTES = 65_536
   TRACKER_MAXIMUM_DEFERRED_LOOKUP_REQUESTS = 16
+  TRACKER_JSON_STRING_ESCAPES = {
+    "\b" => "\\b", "\t" => "\\t", "\n" => "\\n", "\f" => "\\f", "\r" => "\\r",
+    '"' => '\\"', "\\" => "\\\\"
+  }.freeze
+  TRACKER_JSON_ESCAPE_PATTERN = /["\\\x00-\x1f]/
   TRACKER_DIAGNOSTIC_CAPABILITIES = [
     "development.auto_revive",
     "development.change_ability",
@@ -77,21 +82,29 @@ module Ironmon
   end
 
   def self.tracker_json_string(value)
-    text = value.to_s.dup
-    text.force_encoding(Encoding::UTF_8) if text.encoding == Encoding::ASCII_8BIT
-    escaped = text.each_codepoint.map do |codepoint|
-      case codepoint
-      when 0x08 then "\\b"
-      when 0x09 then "\\t"
-      when 0x0A then "\\n"
-      when 0x0C then "\\f"
-      when 0x0D then "\\r"
-      when 0x22 then '\\"'
-      when 0x5C then "\\\\"
-      else
-        codepoint < 0x20 ? sprintf("\\u%04x", codepoint) : codepoint.chr(Encoding::UTF_8)
-      end
-    end.join
+    text = value.to_s
+    text = text.dup.force_encoding(Encoding::UTF_8) if text.encoding == Encoding::ASCII_8BIT
+    native_utf8 = text.encoding == Encoding::UTF_8
+    ascii_bytes = text.encoding.ascii_compatible? && text.ascii_only?
+    escaped = if native_utf8 || ascii_bytes
+                text.gsub(TRACKER_JSON_ESCAPE_PATTERN) do |character|
+                  TRACKER_JSON_STRING_ESCAPES[character] || sprintf("\\u%04x", character.ord)
+                end.force_encoding(Encoding::UTF_8)
+              else
+                text.each_codepoint.map do |codepoint|
+                  case codepoint
+                  when 0x08 then "\\b"
+                  when 0x09 then "\\t"
+                  when 0x0A then "\\n"
+                  when 0x0C then "\\f"
+                  when 0x0D then "\\r"
+                  when 0x22 then '\\"'
+                  when 0x5C then "\\\\"
+                  else
+                    codepoint < 0x20 ? sprintf("\\u%04x", codepoint) : codepoint.chr(Encoding::UTF_8)
+                  end
+                end.join
+              end
     return "\"#{escaped}\""
   end
 

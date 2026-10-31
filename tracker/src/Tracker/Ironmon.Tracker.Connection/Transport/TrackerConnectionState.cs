@@ -21,6 +21,11 @@ public sealed class TrackerConnectionState
     public event EventHandler? Changed;
 
     /// <summary>
+    /// Gets startup loading stages independently of recovered run and battle state.
+    /// </summary>
+    public TrackerStartupPreparationState StartupPreparation { get; } = new();
+
+    /// <summary>
     /// Gets the latest immutable connection snapshot.
     /// </summary>
     public TrackerConnectionSnapshot Snapshot
@@ -41,8 +46,16 @@ public sealed class TrackerConnectionState
     /// <param name="lastError">The most recent connection error.</param>
     internal void Publish(TrackerConnectionStatus status, GameHandshakePayload? game = null, GameCurrentStatePayload? currentState = null, string? lastError = null)
     {
+        bool resetStartup;
         lock (_sync)
+        {
+            resetStartup = status != TrackerConnectionStatus.Connected ||
+                (game is not null && _snapshot.Game is not null && !string.Equals(game.SessionId, _snapshot.Game.SessionId, StringComparison.Ordinal));
             _snapshot = new TrackerConnectionSnapshot(status, game, currentState, lastError);
+        }
+
+        if (resetStartup)
+            StartupPreparation.Reset();
 
         Changed?.Invoke(this, EventArgs.Empty);
     }

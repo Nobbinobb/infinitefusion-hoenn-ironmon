@@ -19,6 +19,7 @@ module Ironmon
     ].freeze
     INHERITANCE_GROUPS = [[1, 2, 5], [0, 3, 4]].freeze
     INHERITANCE_RATIOS = [[9, 10], [4, 5], [2, 3]].freeze
+    INHERITANCE_RATIOS_V3 = [[17, 20], [3, 4], [2, 3]].freeze
     INHERITANCE_ORDERS = [
       [0, 1, 2], [0, 2, 1], [1, 0, 2],
       [1, 2, 0], [2, 0, 1], [2, 1, 0]
@@ -30,7 +31,7 @@ module Ironmon
       @source_fingerprint = source_fingerprint
       @fusion_formula_version = fusion_formula_version ||
         Ironmon.base_stat_formula_version
-      if ![1, 2].include?(@fusion_formula_version)
+      if ![1, 2, 3].include?(@fusion_formula_version)
         raise BaseStatRandomizationError, "the fusion stat formula version is unsupported"
       end
       @stat_cache = {}
@@ -92,13 +93,15 @@ module Ironmon
     def fuse(body_stats, head_stats, fusion_id = nil)
       ratios = {}
       if fusion_id && @fusion_formula_version >= 2
+        inheritance_ratios = @fusion_formula_version >= 3 ?
+          INHERITANCE_RATIOS_V3 : INHERITANCE_RATIOS
         INHERITANCE_GROUPS.each do |group|
           hash = Ironmon.fnv1a_64_joined([
             1, @seed, "analysis_fusion_inheritance", fusion_id, group[0]
           ])
           order = INHERITANCE_ORDERS[Ironmon.fusion_choice_hash(hash) % 6]
           order.each_with_index do |position, index|
-            ratios[STAT_ORDER[group[position]]] = INHERITANCE_RATIOS[index]
+            ratios[STAT_ORDER[group[position]]] = inheritance_ratios[index]
           end
         end
       end
