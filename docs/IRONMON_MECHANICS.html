@@ -1643,7 +1643,6 @@ footer { padding:2rem 9% 4rem; color:var(--muted); font-size:.88rem; }
 <p>Loading metadata without a valid profile never assigns it today's profile implicitly. A missing or damaged historical package reports that its generation profile is unavailable instead of reconstructing the run through current catalogs. Recipes that are themselves active or incomplete remain unavailable.</p>
 <p>The <a href="#challenge-lifecycle-failure-enforcement">normal loss and reset rules</a> apply during diagnostic inspection unless the separately authorized NoFail / AutoRevive control is enabled. Inspection alone never permits a lost attempt to continue, including encounters the base game marks as safe to lose.</p>
 <h4 id="tracker-run-and-protocol-diagnostics">Run and protocol diagnostics</h4>
-<p>Local performance diagnostics write timings and runtime context to <code>performance/speed-up-stalls.jsonl</code> in the game's save directory. The asynchronous log is limited to 1 MiB and excludes run seeds and Pokemon details.</p>
 <p>The capability-controlled diagnostic tools hosted beside Diagnostic Access also show:</p>
 <ul>
 <li>Ironmon and game versions;</li>

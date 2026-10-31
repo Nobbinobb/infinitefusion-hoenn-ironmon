@@ -76,24 +76,8 @@ module Ironmon
   def self.run_graphics_update_hooks
     return nil if defined?(Ironmon::StartupPreparation) && Ironmon::StartupPreparation.active?
     result = nil
-    diagnostics = defined?(Ironmon::SpeedDiagnostics)
-    Ironmon::SpeedDiagnostics.note_frame if diagnostics
     @graphics_update_hooks.each do |hook|
-      started = Process.clock_gettime(Process::CLOCK_MONOTONIC) if diagnostics
-      before_gc = GC.count if diagnostics
-      before_gc_time = Ironmon::SpeedDiagnostics.gc_time_nanoseconds if diagnostics
       result = hook[:callback].call
-      if started
-        elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
-        Ironmon::SpeedDiagnostics.note_hook(elapsed)
-        if elapsed >= Ironmon::SpeedDiagnostics::WORK_THRESHOLD_SECONDS
-          details = Ironmon::SpeedDiagnostics.runtime_details
-          details["hook"] = hook[:name]
-          details["gc_count_delta"] = GC.count - before_gc
-          details["gc_time_ms"] = (Ironmon::SpeedDiagnostics.gc_time_nanoseconds - before_gc_time) / 1_000_000.0
-          Ironmon::SpeedDiagnostics.record_work(:graphics_hook, elapsed, details)
-        end
-      end
     end
     return result
   end

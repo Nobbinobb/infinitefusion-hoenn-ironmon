@@ -76,23 +76,26 @@ internal static class PlainPaths
     /// Deletes only a checked child directory owned by the caller.
     /// </summary>
     /// <remarks>
-    /// Ownership is a caller precondition. This method checks containment and reparse points, normalizes file attributes, and deletes the tree if it exists.
+    /// Ownership is a caller precondition. Each bounded Windows contention retry rechecks containment and reparse points before normalizing file attributes and deleting the tree.
     /// </remarks>
     /// <param name="parent">The fully qualified parent that bounds the caller's owned directories.</param>
     /// <param name="child">The owned directory to remove; it must be a strict descendant of the parent.</param>
     internal static void DeleteOwned(string parent, string child)
     {
-        var full = Full(child);
-        if (!full.StartsWith(Full(parent) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-            throw new IOException(UpdaterText.PlainPathsRefusingToRemoveADirectoryOutsideTheOwnedParent);
+        WindowsFileContention.Retry(_ =>
+        {
+            var full = Full(child);
+            if (!full.StartsWith(Full(parent) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                throw new IOException(UpdaterText.PlainPathsRefusingToRemoveADirectoryOutsideTheOwnedParent);
 
-        if (!Directory.Exists(full))
-            return;
+            if (!Directory.Exists(full))
+                return;
 
-        CheckTree(full);
-        foreach (var file in Directory.EnumerateFiles(full, Wildcard, SearchOption.AllDirectories))
-            File.SetAttributes(file, FileAttributes.Normal);
+            CheckTree(full);
+            foreach (var file in Directory.EnumerateFiles(full, Wildcard, SearchOption.AllDirectories))
+                File.SetAttributes(file, FileAttributes.Normal);
 
-        Directory.Delete(full, recursive: true);
+            Directory.Delete(full, recursive: true);
+        });
     }
 }

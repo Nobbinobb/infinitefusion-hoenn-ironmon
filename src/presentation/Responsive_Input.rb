@@ -96,10 +96,8 @@ module Ironmon
 
     module InputUpdates
       def update
-        started = Ironmon::SpeedUp.now
         result = super
         Ironmon::ResponsiveInput.update
-        Ironmon::SpeedUp.record_delay(:input_update, Ironmon::SpeedUp.now - started)
         return result
       end
 

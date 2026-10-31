@@ -128,7 +128,6 @@
   { "source": "compatibility/Sky_Drop.rb", "output": "023_Sky_Drop.rb" },
   { "source": "presentation/Speed_Up.rb", "output": "023_Speed_Up.rb" },
   { "source": "presentation/Speed_Clock.rb", "output": "023_Speed_Up_Clock.rb" },
-  { "source": "presentation/Speed_Diagnostics.rb", "output": "023_Speed_Up_Diagnostics.rb" },
   { "source": "presentation/Speed_Transitions.rb", "output": "023_Speed_Up_Transitions.rb" },
   { "source": "presentation/Sprite_Performance_Fixes.rb", "output": "023_Sprite_Performance_Fixes.rb" },
   { "source": "compatibility/Switch_Out_Moves.rb", "output": "023_Switch_Out_Moves.rb" },

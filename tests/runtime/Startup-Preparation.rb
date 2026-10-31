@@ -153,9 +153,8 @@ module IronmonStartupPreparationTests
         state[:events].all? { |event| event.keys.sort == %w[phase preparation_id status] },
         "tracker loading events contain only stage changes and always terminate")
       assert(Ironmon::SpeedClock.raw_frame_count == 12_345 && Ironmon::SpeedClock.playtime_frame_count == 4_567 &&
-        Ironmon::SpeedUp.instance_variable_get(:@last_tick).nil? &&
-        Ironmon::SpeedDiagnostics.instance_variable_get(:@last_frame_stamp).nil?,
-        "loading renders do not advance saved clocks or appear as a later gameplay stall")
+        Ironmon::SpeedUp.instance_variable_get(:@last_tick).nil?,
+        "loading renders preserve saved clocks and reset gameplay pacing")
       baseline = Ironmon::PlayerFusionMapper.new($PokemonGlobal.ironmon_seed, pool, {}, {}, Ironmon.base_stat_generator)
       baseline.prepare
       baseline.prepare_startup_result_index

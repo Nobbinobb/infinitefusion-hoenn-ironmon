@@ -124,8 +124,6 @@ module IronmonResponsiveInputRuntimeTests
     10.times { service.update }
     # GC's allocation counter covers all Ruby threads. Drain queued diagnostic
     # encoding from earlier scene tests before measuring this service alone.
-    assert(Ironmon::SpeedDiagnostics.flush, "prior diagnostic writes finish before input allocation measurement") if
-      defined?(Ironmon::SpeedDiagnostics)
     frames = Ironmon.instance_variable_get(:@tracker_control_frames)
     assert(frames["down"].to_i > 1 && frames["quick_item_right"].to_i > 1,
       "allocation measurement uses held input after its first frame")

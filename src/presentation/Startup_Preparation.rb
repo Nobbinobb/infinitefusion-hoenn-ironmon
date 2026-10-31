@@ -87,7 +87,7 @@ module Ironmon
 
     def self.load(save_data)
       return yield if !required?(save_data)
-      started = now
+      preparing = true
       @active = true
       entry_frame_count = Ironmon::SpeedClock.raw_frame_count
       begin_progress
@@ -109,7 +109,7 @@ module Ironmon
     rescue Exception => failure
       raise
     ensure
-      if started
+      if preparing
         begin
           screen.close if screen
         rescue Exception => error
@@ -120,7 +120,6 @@ module Ironmon
             Ironmon::SpeedClock.set_raw_frame_count(loaded_frame_count || entry_frame_count)
             Ironmon::SpeedClock.rebase_native_frames
             Ironmon::SpeedUp.resume_after_loading
-            Ironmon::SpeedDiagnostics.reset_frame_summary
             pump_connection if loaded_frame_count
             Ironmon.clear_tracker_controls
             drain_input
@@ -133,10 +132,6 @@ module Ironmon
             ensure
               @active = false
               @screen = nil
-              if defined?(Ironmon::SpeedDiagnostics)
-                Ironmon::SpeedDiagnostics.record_work(:calculation_prepare, now - started,
-                  { "operation" => "startup_preparation" })
-              end
             end
           end
         end

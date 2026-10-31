@@ -373,12 +373,9 @@ module IronmonCalculationPacingTests
     first_processed = nil
     until service.instance_variable_get(:@derived_caught_fusion_index) > 0
       started = now
-      gc_count = GC.count
-      gc_time = Ironmon::SpeedDiagnostics.gc_time_nanoseconds
       Ironmon.with_generation_profile(profile_id) { service.advance_for_milliseconds(1.0) }
       timings << (now - started) * 1000
-      slow_chunks << { "milliseconds" => timings.last, "gc_count_delta" => GC.count - gc_count,
-        "gc_time_ms" => (Ironmon::SpeedDiagnostics.gc_time_nanoseconds - gc_time) / 1_000_000.0 } if timings.last >= 16
+      slow_chunks << { "milliseconds" => timings.last } if timings.last >= 16
       first_processed ||= service.instance_variable_get(:@derived_caught_fusion_index) if timings.length == 1
       assert(timings.length < 5_000, "a cold closure handoff resumes to completion")
       if !baseline && !Ironmon.instance_variable_get(:@generation_profile_base_catalogs)[profile_id]

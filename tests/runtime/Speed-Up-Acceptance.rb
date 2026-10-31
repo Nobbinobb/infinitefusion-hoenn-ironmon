@@ -62,7 +62,6 @@ begin
     "sky_drop" => "Sky-Drop.rb",
     "switch_out_moves" => "Switch-Out-Moves.rb",
     "loss" => "Speed-Up-Loss.rb",
-    "diagnostics" => "Speed-Diagnostics.rb",
     "performance" => "Gameplay-Performance.rb",
     "json" => "Tracker-JSON-Performance.rb",
     "responsive" => "Responsive-Speed-Up.rb"

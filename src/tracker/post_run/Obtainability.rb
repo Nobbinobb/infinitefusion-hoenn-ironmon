@@ -126,11 +126,6 @@ module Ironmon
     end
 
     def advance_for_milliseconds(milliseconds)
-      started = Ironmon.tracker_uptime_seconds
-      initial_phase = @phase
-      initial_gc_count = GC.count
-      initial_gc_time = Ironmon::SpeedDiagnostics.gc_time_nanoseconds if
-        defined?(Ironmon::SpeedDiagnostics) && Ironmon::SpeedDiagnostics.respond_to?(:gc_time_nanoseconds)
       duration = [milliseconds.to_f, 0.1].max / 1000.0
       @work_deadline = Ironmon.tracker_uptime_seconds + duration
       @work_fiber = nil if @work_fiber && !@work_fiber.alive?
@@ -153,17 +148,6 @@ module Ironmon
       raise
     ensure
       @work_deadline = nil
-      if started && defined?(Ironmon::SpeedDiagnostics) && Ironmon::SpeedDiagnostics.respond_to?(:record_work)
-        elapsed = Ironmon.tracker_uptime_seconds - started
-        details = { "operation" => "obtainability_#{initial_phase}",
-          "phase" => @phase.to_s, "budget_ms" => milliseconds.to_f,
-          "gc_count_delta" => GC.count - initial_gc_count }
-        details["gc_time_ms"] = (Ironmon::SpeedDiagnostics.gc_time_nanoseconds - initial_gc_time) / 1_000_000.0 if initial_gc_time
-        Ironmon::SpeedDiagnostics.record_work(:calculation_chunk, elapsed, details)
-        if @phase != initial_phase && Ironmon::SpeedDiagnostics.respond_to?(:record_context)
-          Ironmon::SpeedDiagnostics.record_context(:calculation_state, details)
-        end
-      end
     end
 
     def request_foreground
@@ -2013,7 +1997,6 @@ module Ironmon
   # Calculation access is public; target proofs and world discovery stay on
   # their existing authorized routes. Never forward arbitrary query fields.
   def self.tracker_run_lookup_preparation(payload, envelope_run_id)
-    started = tracker_uptime_seconds
     attempt = current_run_attempt
     if !active? || !$PokemonGlobal || !attempt || attempt["result"] != "active"
       raise TrackerLookupError.new(
@@ -2046,19 +2029,14 @@ module Ironmon
       response[key] = snapshot[key] if snapshot.key?(key)
     end
     return response
-  ensure
-    record_tracker_obtainability_request(started, "active_run_preparation", snapshot)
   end
 
   def self.tracker_obtainability(payload, envelope_run_id)
-    started = tracker_uptime_seconds
     payload ||= {}
     recipe = tracker_validate_completed_recipe(
       payload["recipe"], envelope_run_id
     )
     return tracker_obtainability_for_recipe(payload, recipe)
-  ensure
-    record_tracker_obtainability_request(started, "archived_run_preparation")
   end
 
   def self.tracker_obtainability_for_recipe(payload, recipe)
@@ -2186,22 +2164,8 @@ module Ironmon
       elapsed = finished - started
       @tracker_obtainability_last_work_at = foreground &&
         elapsed < TrackerObtainabilityService::WORK_INTERVAL_SECONDS ? started : finished
-      if elapsed >= 0.016 && defined?(Ironmon::SpeedDiagnostics)
-        Ironmon::SpeedDiagnostics.record_work(:calculation_prepare, elapsed, {
-          "operation" => "obtainability_profile", "budget_ms" => milliseconds
-        })
-      end
     end
     return true
-  end
-
-  def self.record_tracker_obtainability_request(started, operation, snapshot = nil)
-    return if !started || !defined?(Ironmon::SpeedDiagnostics)
-    elapsed = tracker_uptime_seconds - started
-    return if elapsed < 0.016
-    details = { "operation" => operation }
-    details["phase"] = snapshot["phase"] if snapshot.is_a?(Hash)
-    Ironmon::SpeedDiagnostics.record_work(:calculation_request, elapsed, details)
   end
 
   def self.tracker_obtainability_game_work_pending?

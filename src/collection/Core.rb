@@ -352,12 +352,9 @@ module Ironmon
     end
 
     def self.flush
-      started = clock
       journal.fence if @journal
     rescue StandardError => error
       fail_collection(error)
-    ensure
-      Ironmon::SpeedDiagnostics.record(:collection_flush, clock - started) if started && defined?(Ironmon::SpeedDiagnostics)
     end
 
     def self.fail_collection(error)

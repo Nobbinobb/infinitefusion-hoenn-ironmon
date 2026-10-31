@@ -29,7 +29,6 @@ module IronmonPlayerFusionPacingTests
   def self.install_test_fiber(state, duration = Ironmon::PLAYER_FUSION_PREPARATION_BUDGET_SECONDS)
     mapper = Object.new
     mapper.define_singleton_method(:preparation_stage) { :fusion_pool }
-    mapper.define_singleton_method(:preparation_progress) { state[:calls] || 0 }
     mapper.define_singleton_method(:finish_cooperative_preparation) { self }
     fiber = Fiber.new do
       20.times do
@@ -107,8 +106,6 @@ module IronmonPlayerFusionPacingTests
     maximum_stage = nil
     stages = {}
     cold_resumes = 0
-    gc_count = GC.count
-    gc_time = Ironmon::SpeedDiagnostics.gc_time_nanoseconds
     while cold_fiber.alive?
       chunk_started = now
       cold_fiber.resume
@@ -135,8 +132,6 @@ module IronmonPlayerFusionPacingTests
       "cold_seconds" => now - started, "maximum_resume_ms" => maximum * 1000,
       "installation_ms" => install_ms,
       "maximum_resume_stage" => maximum_stage, "stages" => stages.keys,
-      "gc_count_delta" => GC.count - gc_count,
-      "gc_time_ms" => (Ironmon::SpeedDiagnostics.gc_time_nanoseconds - gc_time) / 1_000_000.0,
       "background_budget_ms" => Ironmon::PLAYER_FUSION_PREPARATION_BUDGET_SECONDS * 1000,
       "background_interval_ms" => Ironmon::PLAYER_FUSION_PREPARATION_INTERVAL_SECONDS * 1000 }
   end

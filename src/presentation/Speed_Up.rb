@@ -252,27 +252,15 @@ module Ironmon
         @coalesce_until && stamp < @coalesce_until
       if deferred
         @pending_native_rate = requested
-        @pending_rate_started ||= stamp
         applied = actual
       else
         applied = requested
       end
       reconfigured = @native_rate.nil? || applied != actual
       if reconfigured
-        began = now
         SET_NATIVE_RATE.call(applied)
         @native_rate = NATIVE_RATE.call
         Graphics.frame_reset
-        @rate_reconfigurations = @rate_reconfigurations.to_i + 1
-        if defined?(Ironmon::SpeedDiagnostics)
-          details = { "multiplier" => @multiplier, "base_rate" => @base_rate,
-            "native_rate" => @native_rate, "desired_native_rate" => requested,
-            "target_rate" => target, "reconfigurations" => @rate_reconfigurations,
-            "defer_duration_ms" => @pending_rate_started ? (stamp - @pending_rate_started) * 1000 : 0,
-            "reason" => force_native ? "boundary" : "speed_change" }
-          Ironmon::SpeedDiagnostics.record_context(:pacing_reconfigure, details)
-          Ironmon::SpeedDiagnostics.record_work(:pacing_reconfigure, now - began, details)
-        end
       else
         @native_rate = actual
       end
@@ -291,7 +279,6 @@ module Ironmon
       @requested_native_rate = requested
       if !deferred
         @pending_native_rate = nil
-        @pending_rate_started = nil
       end
       return reconfigured
     end
@@ -299,11 +286,9 @@ module Ironmon
     def self.reset_engine
       @target_rate = nil
       @last_tick = nil
-      @last_update_finished = nil
       @frozen = false
       @toggle_sequence = nil
       @pending_native_rate = nil
-      @pending_rate_started = nil
       @coalesce_until = nil
       @last_speed_edge_at = nil
       @applied_frameskip = nil
@@ -320,23 +305,8 @@ module Ironmon
       Ironmon::SpeedClock.synchronize_native_frames if defined?(Ironmon::SpeedClock)
     end
 
-    def self.record_delay(component, seconds, extra_details = nil)
-      return if seconds < STALL_SECONDS || !defined?(Ironmon::SpeedDiagnostics)
-      details = {
-        "multiplier" => @multiplier, "native_rate" => @native_rate,
-        "base_rate" => @base_rate, "in_battle" => !!($game_temp && $game_temp.in_battle),
-        "gc_count" => GC.stat(:count)
-      }
-      details.merge!(extra_details) if extra_details
-      if component == :between_updates
-        details["source"] = Ironmon::SpeedDiagnostics.caller_source
-      end
-      Ironmon::SpeedDiagnostics.record(component, seconds, details)
-    end
-
     def self.resume_after_loading
       @last_tick = nil
-      @last_update_finished = nil
       @phase = @target_rate - @native_rate if @target_rate && @native_rate
       Graphics.frame_reset
     end
@@ -344,8 +314,6 @@ module Ironmon
     def self.update
       return Ironmon::StartupPreparation.render_frame if
         defined?(Ironmon::StartupPreparation) && Ironmon::StartupPreparation.active?
-      tick_started = now
-      record_delay(:between_updates, tick_started - @last_update_finished) if @last_update_finished
       protected = Ironmon::MoveLearningProtection.active?
       mode = $PokemonSystem && $PokemonSystem.speedup
       battle = !!($game_temp && $game_temp.in_battle)
@@ -359,17 +327,10 @@ module Ironmon
       @toggle_sequence = sequence
       if !protected && $CanToggle && fresh && Input.trigger?(Input::X) &&
           $PokemonSystem && $PokemonSystem.speedup == 1
-        previous_multiplier = configured_multiplier
         $GameSpeed = ($GameSpeed.to_i + 1) % SPEEDUP_STAGES.length
         stamp = now
         @coalesce_until = stamp + STAGE_SETTLE_SECONDS if @last_speed_edge_at && stamp - @last_speed_edge_at < RAPID_STAGE_SECONDS
         @last_speed_edge_at = stamp
-        if defined?(Ironmon::SpeedDiagnostics)
-          Ironmon::SpeedDiagnostics.record_context(:speed_selection, {
-            "previous_multiplier" => previous_multiplier, "multiplier" => configured_multiplier,
-            "stage_index" => $GameSpeed, "native_rate" => @native_rate,
-            "base_rate" => @base_rate, "reason" => "toggle" })
-        end
       end
       @multiplier = selected_multiplier(protected)
       apply_rate(boundary || mode != 1)
@@ -382,16 +343,11 @@ module Ironmon
       $frame = 0
       Ironmon::SpeedClock.begin_tick if defined?(Ironmon::SpeedClock)
       tick_open = true
-      native_started = now
       yield
-      record_delay(:native_graphics, now - native_started)
       Ironmon::SpeedClock.advance(@multiplier, @frozen) if defined?(Ironmon::SpeedClock)
       tick_open = false
-      hooks_started = now
       Ironmon.run_graphics_update_hooks
-      record_delay(:graphics_hooks, now - hooks_started)
     ensure
-      @last_update_finished = now
       Ironmon::SpeedClock.cancel_tick if tick_open && defined?(Ironmon::SpeedClock)
       Ironmon::ToggleSpeed.after_update if toggling
     end
