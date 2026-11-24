@@ -1,5 +1,9 @@
 # Ironmon 0.10.2
 
+> [!IMPORTANT]
+> **Ironmon 0.10.2 is a mutable test prerelease.** This experimental build may
+> contain regressions. Downloads may change without a version bump.
+
 ## Mutable test release
 
 Use this experimental build at your own risk. Gameplay, tracker features, and
@@ -14,6 +18,12 @@ matching ZIP. The tracker does not automatically replace a build with the same
 version. Setup defaults to stable. In the tracker, **Include test releases**
 opts in to newer test versions.
 
+### One-time Setup update
+
+From 0.10.1 or earlier, run the latest signed Setup and point it at your
+existing game folder. Select **0.10.2 (Test release)** in the advanced version
+options. After this migration, use **Update** in the tracker again.
+
 ## What's new
 
 - Updates the base game to **Pokémon Infinite Fusion 2: Hoenn 1.3.2** (engine
@@ -21,6 +31,11 @@ opts in to newer test versions.
 - Updates Ironmon's battle collection, save loading, and encounter handling for
   Hoenn 1.3.2. The game enables 576 base species for fusion.
 - Moves Ironmon Tracker, Setup, and the updater to **.NET 11**.
+- Opens a separately signed updater from the tracker. It handles installation
+  review and game file preparation, and can receive fixes independently of the
+  game and tracker. The update archive uses the signed game file bytes on Windows.
+- Renders headings, lists, links, and important notices in the tracker's
+  **What has changed** section.
 
 ## Windows runtime
 

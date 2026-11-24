@@ -82,6 +82,11 @@ internal sealed partial class TrackerUpdateTestFixture : ITrackerUpdateHost, IAr
     internal bool Offline { get; set; }
 
     /// <summary>
+    /// Gets or sets whether the display-only release notes asset is unavailable.
+    /// </summary>
+    internal bool NotesUnavailable { get; set; }
+
+    /// <summary>
     /// Gets or sets the callback run before a program archive is supplied.
     /// </summary>
     internal Action? DuringArchive { get; set; }
@@ -127,6 +132,18 @@ internal sealed partial class TrackerUpdateTestFixture : ITrackerUpdateHost, IAr
         var verification = new CombinedGitVerification(cache, policy, _workspace.PathFor(HomeDirectory));
         Preparation = new TrackerUpdatePreparation(Release.Verifier, _downloads, SignedReleaseFixture.Runtime(), game, verification);
         Session = new TrackerUpdateSession(_discovery, Release.Verifier, Preparation, _downloads, this);
+    }
+
+    /// <summary>
+    /// Enables the production signed offer and standalone updater route before the session starts.
+    /// </summary>
+    /// <param name="updater">The recorded launch boundary.</param>
+    internal void UseStandaloneUpdater(IStandaloneUpdater updater)
+    {
+        Session.Dispose();
+        _discovery.Dispose();
+        _discovery = new ReleaseDiscovery(_http, Release.Verifier, _workspace.PathFor(DiscoveryDirectory), offerOnly: true);
+        Session = new TrackerUpdateSession(_discovery, Release.Verifier, Preparation, _downloads, this, null, updater);
     }
 
     /// <summary>
@@ -195,6 +212,9 @@ internal sealed partial class TrackerUpdateTestFixture : ITrackerUpdateHost, IAr
     /// <returns>The actual fixture asset stream.</returns>
     public async Task CopyToAsync(Uri source, Stream destination, long maximumBytes, CancellationToken cancellationToken)
     {
+        if (NotesUnavailable && source.AbsoluteUri == Release.Manifest.Assets.Single(asset => asset.Role == ReleaseProtocol.NotesRole).Url)
+            throw new IOException();
+
         if (source.AbsolutePath.EndsWith(ZipExtension, StringComparison.Ordinal))
         {
             ArchiveStarted.TrySetResult();

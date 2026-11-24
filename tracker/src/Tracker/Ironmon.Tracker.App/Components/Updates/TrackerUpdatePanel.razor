@@ -121,6 +121,13 @@
                     {
                         <p>@Text[UpdateText.RecoveryDescription]</p>
                     }
+                    @if (Session.Review is null && Session.Notes is { } notes)
+                    {
+                        <section aria-labelledby="tracker-update-notes">
+                            <h2 id="tracker-update-notes">@Text[UpdateText.WhatsNew]</h2>
+                            <TrackerReleaseNotes MarkdownText="@notes" />
+                        </section>
+                    }
                     @if (Session.Review is { } review)
                     {
                         @if (review.Authorization.PreviousGameCommit is not null)
@@ -133,7 +140,7 @@
                         }
                         <section aria-labelledby="tracker-update-notes">
                             <h2 id="tracker-update-notes">@Text[UpdateText.WhatsNew]</h2>
-                            <pre class="tracker-update-notes">@review.Notes</pre>
+                            <TrackerReleaseNotes MarkdownText="@review.Notes" />
                         </section>
                         @if (review.Plan.Entries.Any(entry => entry.Action == FilePlanAction.Conflict))
                         {

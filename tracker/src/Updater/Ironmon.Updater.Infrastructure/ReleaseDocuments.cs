@@ -166,6 +166,14 @@ public sealed record ReleaseSignature(string KeyId, string Algorithm, string Sig
 public sealed record ReleaseEvidence(byte[] Manifest, byte[] Signatures, InventoryEvidence[] Inventories);
 
 /// <summary>
+/// Identifies a release to the tracker independently of the worker's installation contract.
+/// </summary>
+/// <param name="IronmonVersion">The display version from signed release metadata.</param>
+/// <param name="ReleaseSequence">The signed monotonic release identity.</param>
+/// <param name="Notes">The authenticated Markdown asset, when available in a format the tracker understands.</param>
+internal sealed record ReleaseOffer(string IronmonVersion, long ReleaseSequence, ReleaseAsset? Notes);
+
+/// <summary>
 /// Stores an inventory without turning its cache location into authority.
 /// </summary>
 /// <remarks>

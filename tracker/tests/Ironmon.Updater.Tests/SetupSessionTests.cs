@@ -460,6 +460,30 @@ public sealed class SetupSessionTests
     }
 
     /// <summary>
+    /// Rejects a mutable release replacement before reviewing the standalone tracker's pinned selection.
+    /// </summary>
+    [Fact]
+    public async Task StandaloneLaunchRejectsChangedReleaseAndCannotSelectAnotherVersion()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        PrepareGame(fixture);
+        using var versions = await SetupReleaseCatalogFixture.CreateAsync(fixture.Release);
+        using var sprites = new CustomSpriteSheetInstaller();
+        using var session = Create(fixture, sprites, new Platform(), versions);
+        var root = fixture.Release.Root;
+        var before = await InstallationFileSnapshot.ReadAsync(root);
+        var target = new StandaloneUpdateTarget(root, SignedReleaseFixture.VersionB, new string('0', 64));
+        session.BindUpdateTarget(target);
+        session.SelectReleaseVersion(null);
+        Assert.Equal(SignedReleaseFixture.VersionB, session.SelectedReleaseVersion);
+
+        await session.ReviewAsync(root, null, true);
+        Assert.Equal(UpdaterText.SetupVersionsReleaseChanged, session.Error);
+        Assert.Null(session.Review);
+        Assert.Equal(before, await InstallationFileSnapshot.ReadAsync(root));
+    }
+
+    /// <summary>
     /// Rechecks selected availability before prerequisites, payload staging or application shutdown can begin.
     /// </summary>
     [Fact]

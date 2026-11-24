@@ -17,7 +17,7 @@ namespace Ironmon.Updater.Infrastructure;
 /// <param name="protectedUpdates">The optional Windows administrator boundary configured by the application.</param>
 public sealed class TrackerUpdatePreparation(ReleaseVerifier verifier, ReleaseDownloadStore downloads, ITrackerRuntimeCompatibility runtime, CombinedGamePreparation gamePreparation, CombinedGitVerification gameVerification, ProtectedUpdateClient? protectedUpdates = null)
 {
-    private const int NotesLimit = 256 * 1024;
+    internal const int NotesLimit = 256 * 1024;
     private const string GitDirectory = ".git";
     private readonly ReleaseVerifier _verifier = verifier;
     private readonly ReleaseDownloadStore _downloads = downloads;
@@ -197,7 +197,7 @@ public sealed class TrackerUpdatePreparation(ReleaseVerifier verifier, ReleaseDo
 /// <param name="Authorization">The authenticated selected component combination.</param>
 /// <param name="Manifest">The verified target release.</param>
 /// <param name="Plan">The captured local file decisions.</param>
-/// <param name="Notes">Bounded authenticated release notes rendered as plain text.</param>
+/// <param name="Notes">Bounded authenticated release notes in Markdown format.</param>
 /// <param name="PackageBytes">The known tracker and helper download sizes, excluding unknown game traffic.</param>
 /// <param name="FirstPreparation">Whether a combined update must prepare an ordinary repository for a ZIP installation.</param>
 public sealed record TrackerUpdateReview(IronmonUpdateAuthorization Authorization, ReleaseManifest Manifest, FileUpdatePlan Plan, string Notes, long PackageBytes, bool FirstPreparation);

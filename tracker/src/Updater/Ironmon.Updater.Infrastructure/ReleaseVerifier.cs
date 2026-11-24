@@ -1,4 +1,6 @@
 using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using Ironmon.Updater.Core;
 using static Ironmon.Updater.Infrastructure.ReleaseProtocol;
 
@@ -11,6 +13,14 @@ public sealed class ReleaseVerifier
 {
     private const string CurveOid = "1.2.840.10045.3.1.7";
     private const string TagPrefix = "v";
+    private const string OfferVersion = "ironmonVersion";
+    private const string OfferSequence = "releaseSequence";
+    private const string OfferDocumentType = "documentType";
+    private const string OfferRepository = "repository";
+    private const string OfferChannel = "channel";
+    private const string OfferNotes = "releaseNotesAsset";
+    private const string OfferAssets = "assets";
+    private const string AssetName = "name";
     private const string DownloadedSettingsPath = "Data/Scripts/DownloadedSettings.rb";
     private const string RequiredGameExtensions = ".rb|.rxdata|.dat|.dll|.exe|.ini|.so";
     private static readonly HashSet<string> _requiredGameExtensions = new(RequiredGameExtensions.Split('|'), StringComparer.OrdinalIgnoreCase);
@@ -44,6 +54,73 @@ public sealed class ReleaseVerifier
     /// <returns>A detached authenticated manifest with validated identities and asset roles.</returns>
     public ReleaseManifest Verify(byte[] manifestBytes, byte[] signatureBytes, string? expectedTag = null)
     {
+        VerifySignature(manifestBytes, signatureBytes);
+        var manifest = ReleaseJson.Parse<ReleaseManifest>(manifestBytes, ReleaseJson.ManifestLimit);
+        ValidateManifest(manifest, expectedTag);
+        return manifest;
+    }
+
+    /// <summary>
+    /// Authenticates the stable subset of a release used to display an offer and hand it to the updater.
+    /// </summary>
+    /// <param name="evidence">The exact signed payload and detached signatures.</param>
+    /// <param name="expectedVersion">The version selected from the public feed.</param>
+    /// <returns>The authenticated release identity and notes asset.</returns>
+    internal ReleaseOffer VerifyOffer(ReleaseEvidence evidence, string? expectedVersion = null)
+    {
+        VerifySignature(evidence.Manifest, evidence.Signatures);
+        ReleaseJson.Validate(evidence.Manifest, ReleaseJson.ManifestLimit);
+        using var document = JsonDocument.Parse(evidence.Manifest);
+        var root = document.RootElement;
+        var version = root.GetProperty(OfferVersion).GetString() ?? string.Empty;
+        ParseVersion(version);
+        var sequence = root.GetProperty(OfferSequence).GetInt64();
+        if (root.GetProperty(OfferDocumentType).GetString() != ReleaseDocument || root.GetProperty(OfferRepository).GetString() != Repository
+            || root.GetProperty(OfferChannel).GetString() != Stable || sequence <= 0 || (expectedVersion is not null && version != expectedVersion))
+        {
+            throw new InvalidDataException(UpdaterText.SetupVersionsMissingMetadata);
+        }
+
+        return new ReleaseOffer(version, sequence, ReadOfferNotes(root, version));
+    }
+
+    /// <summary>
+    /// Reads optional release notes independently of the update offer's required identity fields.
+    /// </summary>
+    /// <param name="root">The authenticated release document.</param>
+    /// <param name="version">The authenticated tracker release version.</param>
+    /// <returns>A supported notes asset, or null when the notes are unavailable to this tracker.</returns>
+    private static ReleaseAsset? ReadOfferNotes(JsonElement root, string version)
+    {
+        if (!root.TryGetProperty(OfferNotes, out var reference) || reference.ValueKind != JsonValueKind.String || reference.GetString() is not { } name
+            || !root.TryGetProperty(OfferAssets, out var assets) || assets.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        try
+        {
+            ValidateAssetName(name);
+            var entry = assets.EnumerateArray().SingleOrDefault(item => item.ValueKind == JsonValueKind.Object && item.TryGetProperty(AssetName, out var field) && field.ValueKind == JsonValueKind.String && field.GetString() == name);
+            if (entry.ValueKind == JsonValueKind.Undefined)
+                return null;
+
+            var notes = ReleaseJson.Parse<ReleaseAsset>(Encoding.UTF8.GetBytes(entry.GetRawText()), ReleaseJson.ManifestLimit);
+            return notes.Role == NotesRole && notes.Url == AssetUrl(version, notes.Container?.Name ?? name) && notes.Container is null or { Name: ReleaseMetadata.Name } ? notes : null;
+        }
+        catch (Exception error) when (error is InvalidDataException or InvalidOperationException or JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Verifies exact bytes against the installed public keys before callers decode their specific document types.
+    /// </summary>
+    /// <param name="manifestBytes">The signed bytes.</param>
+    /// <param name="signatureBytes">The detached signature document.</param>
+    internal void VerifySignature(byte[] manifestBytes, byte[] signatureBytes)
+    {
         if (manifestBytes.Length == 0 || manifestBytes.Length > ReleaseJson.ManifestLimit || _keys.Count == 0)
             throw new InvalidDataException(UpdaterText.ReleaseVerifierNoTrustedUpdaterSignatureIsAvailableForThisRelease);
 
@@ -71,10 +148,6 @@ public sealed class ReleaseVerifier
 
         if (!verified)
             throw new InvalidDataException(UpdaterText.ReleaseVerifierTheUpdateManifestHasNoValidSignatureFromAn);
-
-        var manifest = ReleaseJson.Parse<ReleaseManifest>(manifestBytes, ReleaseJson.ManifestLimit);
-        ValidateManifest(manifest, expectedTag);
-        return manifest;
     }
 
     /// <summary>

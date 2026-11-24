@@ -22,6 +22,7 @@ public sealed partial class ReleaseDiscovery : IUpdateReleaseProvider, IDisposab
     private readonly ReleaseVerifier _verifier;
     private readonly TimeProvider _clock;
     private readonly string _cachePath;
+    private readonly bool _offerOnly;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private ReleaseDiscoveryResult? _startupObservation;
 
@@ -33,10 +34,24 @@ public sealed partial class ReleaseDiscovery : IUpdateReleaseProvider, IDisposab
     /// <param name="cacheDirectory">The caller-owned user cache outside the game.</param>
     /// <param name="clock">The cache and retry clock.</param>
     public ReleaseDiscovery(ReleaseHttpClient http, ReleaseVerifier verifier, string cacheDirectory, TimeProvider? clock = null)
+        : this(http, verifier, cacheDirectory, false, clock)
+    {
+    }
+
+    /// <summary>
+    /// Creates discovery for a tracker that delegates installation review to an independent updater.
+    /// </summary>
+    /// <param name="http">The bounded public release transport.</param>
+    /// <param name="verifier">The independently configured updater trust.</param>
+    /// <param name="cacheDirectory">The caller-owned user cache outside the game.</param>
+    /// <param name="offerOnly">Whether discovery understands only the stable release offer fields.</param>
+    /// <param name="clock">The cache and retry clock.</param>
+    public ReleaseDiscovery(ReleaseHttpClient http, ReleaseVerifier verifier, string cacheDirectory, bool offerOnly, TimeProvider? clock = null)
     {
         _http = http;
         _verifier = verifier;
         _clock = clock ?? TimeProvider.System;
+        _offerOnly = offerOnly;
         _cachePath = PlainPaths.Child(PlainPaths.Full(cacheDirectory), CacheName);
         _testCachePath = PlainPaths.Child(PlainPaths.Full(cacheDirectory), TestCacheName);
         _preferencesPath = PlainPaths.Child(PlainPaths.Full(cacheDirectory), PreferencesName);
@@ -77,7 +92,7 @@ public sealed partial class ReleaseDiscovery : IUpdateReleaseProvider, IDisposab
             try
             {
                 cache = ReadCache();
-                var previous = cache?.Release is null ? null : _verifier.Verify(cache.Release.Manifest, cache.Release.Signatures);
+                var previous = cache?.Release is null ? null : ReadIdentity(cache.Release);
                 if (cache is not null && (cache.SchemaVersion != 1 || cache.HighestSequence != (previous?.ReleaseSequence ?? 0)))
                     throw new InvalidDataException(UpdaterText.ReleaseDiscoveryTheReleaseCacheWatermarkDoesNotMatchItsAuthenticated);
 
@@ -101,11 +116,11 @@ public sealed partial class ReleaseDiscovery : IUpdateReleaseProvider, IDisposab
                     testRelease = isTestRelease;
                     var manifest = await _http.ReadAsync(new Uri(ReleaseProtocol.AssetUrl(version, ReleaseProtocol.ManifestName)), ReleaseJson.ManifestLimit, cancellationToken: deadline.Token).ConfigureAwait(false);
                     var signature = await _http.ReadAsync(new Uri(ReleaseProtocol.AssetUrl(version, ReleaseProtocol.SignatureName)), ReleaseJson.SignatureLimit, cancellationToken: deadline.Token).ConfigureAwait(false);
-                    _verifier.Verify(manifest.Bytes, signature.Bytes, TagPrefix + version);
                     evidence = new ReleaseEvidence(manifest.Bytes, signature.Bytes, []);
+                    ReadIdentity(evidence, version);
                 }
 
-                var verified = _verifier.Verify(evidence.Manifest, evidence.Signatures);
+                var verified = ReadIdentity(evidence);
                 if (previous is not null && (verified.ReleaseSequence < previous.ReleaseSequence || ReleaseProtocol.ParseVersion(verified.IronmonVersion) < ReleaseProtocol.ParseVersion(previous.IronmonVersion) || verified.ReleaseSequence == previous.ReleaseSequence && TransactionStorage.Hash(evidence.Manifest) != TransactionStorage.Hash(cache!.Release!.Manifest)))
                     throw new InvalidDataException(UpdaterText.ReleaseDiscoveryTheReleaseFeedAttemptedToRollBackOrReplace);
 
@@ -178,7 +193,22 @@ public sealed partial class ReleaseDiscovery : IUpdateReleaseProvider, IDisposab
     /// </summary>
     /// <returns>A catalog using the same fixed transport and independently configured trust.</returns>
     public SetupReleaseCatalog CreateSetupCatalog()
-        => new(_http, _verifier);
+        => new(_http, _verifier, _offerOnly);
+
+    /// <summary>
+    /// Reads the authenticated identity used to enforce the existing channel watermark.
+    /// </summary>
+    /// <param name="evidence">The signed release evidence.</param>
+    /// <param name="expectedVersion">The known version from public discovery, when available.</param>
+    /// <returns>The stable display version and signed sequence.</returns>
+    private ReleaseOffer ReadIdentity(ReleaseEvidence evidence, string? expectedVersion = null)
+    {
+        if (_offerOnly)
+            return _verifier.VerifyOffer(evidence, expectedVersion);
+
+        var release = _verifier.Verify(evidence.Manifest, evidence.Signatures, expectedVersion is null ? null : TagPrefix + expectedVersion);
+        return new ReleaseOffer(release.IronmonVersion, release.ReleaseSequence, release.Assets.Single(asset => asset.Role == ReleaseProtocol.NotesRole));
+    }
 
     /// <summary>
     /// Records the one automatic observation while allowing explicit checks to refresh it.
@@ -213,7 +243,7 @@ public sealed partial class ReleaseDiscovery : IUpdateReleaseProvider, IDisposab
                 return null;
 
             var cache = ReleaseJson.Parse<DiscoveryCache>(TransactionStorage.ReadBytes(CachePath), 4 * ReleaseJson.ManifestLimit);
-            var manifest = cache.Release is null ? null : _verifier.Verify(cache.Release.Manifest, cache.Release.Signatures);
+            var manifest = cache.Release is null ? null : ReadIdentity(cache.Release);
             if (cache.SchemaVersion != 1 || cache.HighestSequence != (manifest?.ReleaseSequence ?? 0))
                 return manifest is null ? null : new DiscoveryCache(1, DateTimeOffset.MinValue, null, null, manifest.ReleaseSequence, cache.Release, cache.IsTestRelease);
 

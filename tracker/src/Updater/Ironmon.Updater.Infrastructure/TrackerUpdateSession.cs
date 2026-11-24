@@ -42,8 +42,11 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
     private readonly TrackerUpdatePreparation _preparation = preparation;
     private readonly ReleaseDownloadStore _downloads = downloads;
     private readonly ITrackerUpdateHost _host = host;
+    private readonly IStandaloneUpdater? _standalone;
     private readonly HashSet<string> _approvals = new(StringComparer.Ordinal);
     private ReleaseEvidence? _release;
+    private string? _standaloneNotes;
+    private StandaloneUpdateTarget? _standaloneTarget;
     private CancellationTokenSource? _cancellation;
     private int _busy;
     private bool _started;
@@ -51,6 +54,20 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
     private bool _latestIsTestRelease;
     private bool _disposed;
     private long _lastProgressTick;
+
+    /// <summary>
+    /// Creates a tracker session that delegates review and staging to an authenticated standalone updater.
+    /// </summary>
+    /// <param name="discovery">The signed offer discovery service.</param>
+    /// <param name="verifier">The independently configured release trust.</param>
+    /// <param name="preparation">The retained recovery path for interrupted older transactions.</param>
+    /// <param name="downloads">The authenticated delivery cache.</param>
+    /// <param name="host">The running tracker's installation and lifecycle adapter.</param>
+    /// <param name="releaseCatalog">The optional published offer catalog.</param>
+    /// <param name="standalone">The independently published updater launcher.</param>
+    public TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVerifier verifier, TrackerUpdatePreparation preparation, ReleaseDownloadStore downloads, ITrackerUpdateHost host, SetupReleaseCatalog? releaseCatalog, IStandaloneUpdater standalone)
+        : this(discovery, verifier, preparation, downloads, host, releaseCatalog)
+        => _standalone = standalone;
 
     /// <summary>
     /// Notifies the new updater interface of observable state changes.
@@ -148,6 +165,11 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
     public TrackerUpdateReview? Review { get; private set; }
 
     /// <summary>
+    /// Gets authenticated Markdown for the selected release offer.
+    /// </summary>
+    public string? Notes => _standaloneNotes ?? Review?.Notes;
+
+    /// <summary>
     /// Gets the actionable error without altering the normal tracker's connection state.
     /// </summary>
     public string? Error { get; private set; }
@@ -170,7 +192,8 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
     /// <summary>
     /// Gets whether all exact replaceable conflicts are approved and the Update action is available.
     /// </summary>
-    public bool CanUpdate => !IsBusy && !NeedsRecovery && Error is null && Review is { } review && review.Plan.Entries.Where(entry => entry.Action == Core.FilePlanAction.Conflict).All(entry => entry.CanReplaceAfterBackup && _approvals.Contains(entry.Path));
+    public bool CanUpdate => !IsBusy && !NeedsRecovery && Error is null && (_standaloneTarget is not null
+        || Review is { } review && review.Plan.Entries.Where(entry => entry.Action == Core.FilePlanAction.Conflict).All(entry => entry.CanReplaceAfterBackup && _approvals.Contains(entry.Path)));
 
     /// <summary>
     /// Starts one non-disruptive check while leaving the tracker on its normal view.
@@ -353,7 +376,23 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
     /// <returns>The workflow up to independent window acknowledgement and tracker shutdown.</returns>
     public Task UpdateAsync()
     {
-        if (!CanUpdate || Review is not { } review)
+        if (!CanUpdate)
+            return Task.CompletedTask;
+
+        if (_standalone is not null && _standaloneTarget is { } target)
+        {
+            return RunAsync(TrackerUpdatePhase.Preparing, async token =>
+            {
+                var observation = _host.Observe();
+                if (!string.Equals(observation.InstallationRoot, target.InstallationRoot, StringComparison.OrdinalIgnoreCase) || observation.CurrentVersion != CurrentVersion)
+                    throw new InvalidOperationException(UpdaterText.SetupVersionsReleaseChanged);
+
+                await _standalone.LaunchAsync(target, token).ConfigureAwait(false);
+                IsOpen = false;
+            });
+        }
+
+        if (Review is not { } review)
             return Task.CompletedTask;
 
         string[] approvals = [.. _approvals];
@@ -461,7 +500,7 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
             return;
         }
 
-        var installed = _preparation.ReadCurrentRelease(observation.InstallationRoot, observation.CurrentVersion);
+        var installed = _standalone is null ? _preparation.ReadCurrentRelease(observation.InstallationRoot, observation.CurrentVersion) : null;
         if (installed is not null)
         {
             var current = _verifier.Verify(installed.Manifest, installed.Signatures);
@@ -477,12 +516,22 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
         AvailableVersion = null;
         if (_release is not null)
         {
-            var manifest = _verifier.Verify(_release.Manifest, _release.Signatures);
             CheckedAt = found.CheckedAt;
-            if (manifest.Game.PreferredCommit == observation.GameCommit)
-                CurrentGameVersion = manifest.Game.VersionLabel;
-            if (ReleaseProtocol.ParseVersion(manifest.IronmonVersion) > ReleaseProtocol.ParseVersion(observation.CurrentVersion))
-                LatestVersion = AvailableVersion = manifest.IronmonVersion;
+            string version;
+            if (_standalone is not null)
+            {
+                version = _verifier.VerifyOffer(_release).IronmonVersion;
+            }
+            else
+            {
+                var manifest = _verifier.Verify(_release.Manifest, _release.Signatures);
+                if (manifest.Game.PreferredCommit == observation.GameCommit)
+                    CurrentGameVersion = manifest.Game.VersionLabel;
+                version = manifest.IronmonVersion;
+            }
+
+            if (ReleaseProtocol.ParseVersion(version) > ReleaseProtocol.ParseVersion(observation.CurrentVersion))
+                LatestVersion = AvailableVersion = version;
         }
 
         if (_manualCheckPending)
@@ -550,6 +599,8 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
     private void ResetReview()
     {
         Review = null;
+        _standaloneNotes = null;
+        _standaloneTarget = null;
         _approvals.Clear();
     }
 
@@ -566,9 +617,39 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
         Phase = TrackerUpdatePhase.Reviewing;
         Changed?.Invoke();
         var observation = _host.Observe();
+        if (_standalone is not null)
+        {
+            var offer = _verifier.VerifyOffer(_release, AvailableVersion);
+            _standaloneTarget = new StandaloneUpdateTarget(observation.InstallationRoot, offer.IronmonVersion, TransactionStorage.Hash(_release.Manifest));
+            _standaloneNotes = await ReadOfferNotesAsync(offer.Notes, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
         var current = _preparation.ReadCurrentRelease(observation.InstallationRoot, observation.CurrentVersion);
         Review = await _preparation.ReviewAsync(observation, _release, current, cancellationToken).ConfigureAwait(false);
         _approvals.Clear();
+    }
+
+    /// <summary>
+    /// Loads verified display notes without making their availability a prerequisite for updating.
+    /// </summary>
+    /// <param name="notes">The optional authenticated notes asset.</param>
+    /// <param name="cancellationToken">The current offer cancellation token.</param>
+    /// <returns>The verified Markdown, or null when the notes cannot be loaded.</returns>
+    private async Task<string?> ReadOfferNotesAsync(ReleaseAsset? notes, CancellationToken cancellationToken)
+    {
+        if (notes is null || notes.Bytes is <= 0 or > TrackerUpdatePreparation.NotesLimit)
+            return null;
+
+        try
+        {
+            var path = await _downloads.GetAsync(notes, cancellationToken).ConfigureAwait(false);
+            return await File.ReadAllTextAsync(path, System.Text.Encoding.UTF8, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception error) when (!cancellationToken.IsCancellationRequested && error is IOException or InvalidDataException or UnauthorizedAccessException or System.Net.Http.HttpRequestException)
+        {
+            return null;
+        }
     }
 
     /// <summary>

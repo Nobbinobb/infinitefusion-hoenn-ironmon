@@ -29,14 +29,15 @@ internal static class TrackerUpdateRegistration
         services.AddSingleton(_ => UpdaterTrust.CreateVerifier());
         services.AddSingleton<ITrackerRuntimeCompatibility, TrackerRuntimeCompatibility>();
         services.AddSingleton(services => new ReleaseDownloadStore(CachePath(DownloadsDirectory), services.GetRequiredService<ReleaseHttpClient>()));
-        services.AddSingleton(services => new ReleaseDiscovery(services.GetRequiredService<ReleaseHttpClient>(), services.GetRequiredService<ReleaseVerifier>(), CachePath(DiscoveryDirectory)));
+        services.AddSingleton(services => new ReleaseDiscovery(services.GetRequiredService<ReleaseHttpClient>(), services.GetRequiredService<ReleaseVerifier>(), CachePath(DiscoveryDirectory), offerOnly: true));
         services.AddSingleton(services => new MinGitCache(CachePath(GitDirectory), services.GetRequiredService<GitHubArtifactSource>()));
         services.AddSingleton(_ => new RepositoryPolicy(new Uri(GameRepository), GameBranch));
         services.AddSingleton(services => new CombinedGamePreparation(services.GetRequiredService<MinGitCache>(), services.GetRequiredService<RepositoryPolicy>(), CachePath(GameStaging)));
         services.AddSingleton(services => new CombinedGitVerification(services.GetRequiredService<MinGitCache>(), services.GetRequiredService<RepositoryPolicy>(), CachePath(GitHome)));
         services.AddSingleton<ProtectedUpdateClient>();
         services.AddSingleton<TrackerUpdatePreparation>();
-        services.AddSingleton<TrackerUpdateSession>();
+        services.AddSingleton<IStandaloneUpdater, StandaloneUpdater>();
+        services.AddSingleton(services => new TrackerUpdateSession(services.GetRequiredService<ReleaseDiscovery>(), services.GetRequiredService<ReleaseVerifier>(), services.GetRequiredService<TrackerUpdatePreparation>(), services.GetRequiredService<ReleaseDownloadStore>(), services.GetRequiredService<ITrackerUpdateHost>(), null, services.GetRequiredService<IStandaloneUpdater>()));
     }
 
     /// <summary>

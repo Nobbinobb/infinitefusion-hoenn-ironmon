@@ -1,0 +1,103 @@
+name: Prepare standalone updater
+on:
+  workflow_dispatch:
+    inputs:
+      source_commit:
+        description: Approved main commit to build (40-character SHA)
+        required: true
+        type: string
+      worker_version:
+        description: New standalone updater version (major.minor.patch)
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: standalone-updater-preparation
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate and check out the approved main commit
+        shell: pwsh
+        env:
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          WORKER_VERSION: ${{ inputs.worker_version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          if ($env:SOURCE_COMMIT -cnotmatch '^[0-9a-f]{40}$' -or $env:WORKER_VERSION -cnotmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') { throw 'Invalid standalone updater request.' }
+          git merge-base --is-ancestor $env:SOURCE_COMMIT origin/main
+          git checkout --detach $env:SOURCE_COMMIT
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: 11.0.100
+      - name: Verify and build the self-contained updater
+        shell: pwsh
+        env:
+          WORKER_VERSION: ${{ inputs.worker_version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $build = Join-Path $env:RUNNER_TEMP 'standalone-updater-build'
+          $candidate = Join-Path $env:GITHUB_WORKSPACE 'standalone-updater-candidate'
+          dotnet test tracker/tests/Ironmon.Updater.Tests/Ironmon.Updater.Tests.csproj -c Release --settings tracker/tests/Full.runsettings --filter 'FullyQualifiedName~Standalone' --maxcpucount:1 -p:UpdaterMetadataOnly=true -p:UseSharedCompilation=false
+          dotnet test tracker/tests/Ironmon.Setup.Tests/Ironmon.Setup.Tests.csproj -c Release --settings tracker/tests/Full.runsettings --maxcpucount:1 -p:UpdaterMetadataOnly=true -p:UseSharedCompilation=false
+          dotnet publish tracker/src/Setup/Ironmon.Setup/Ironmon.Setup.csproj -c Release -r win-x64 --self-contained true "-p:Version=$env:WORKER_VERSION" -p:UpdaterMetadataOnly=true -p:UseSharedCompilation=false -o $build
+          $exe = Join-Path $build 'Ironmon Setup.exe'
+          $info = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
+          if ("$($info.FileMajorPart).$($info.FileMinorPart).$($info.FileBuildPart)" -cne $env:WORKER_VERSION) { throw 'Published worker version differs from the release request.' }
+          dotnet run --project tracker/tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj -c Release -- worker-create $candidate $exe $env:WORKER_VERSION
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: standalone-updater-candidate
+          path: standalone-updater-candidate/
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
+  sign:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release
+    concurrency:
+      group: production-publication
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: write
+    steps:
+      - name: Check out trusted publication tools
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: standalone-updater-candidate
+          path: candidate
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: 11.0.100
+      - name: Build trusted release tooling before exposing the signing secret
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          dotnet publish tracker/tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj -c Release -p:UpdaterMetadataOnly=true -p:UseSharedCompilation=false -o (Join-Path $env:RUNNER_TEMP 'release-tools')
+      - name: Sign and prepare a private worker draft
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IRONMON_UPDATER_SIGNING_KEY: ${{ secrets.IRONMON_UPDATER_SIGNING_KEY }}
+          IRONMON_UPDATER_SIGNING_KEY_ID: ${{ vars.IRONMON_UPDATER_SIGNING_KEY_ID }}
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          WORKER_VERSION: ${{ inputs.worker_version }}
+        run: ./tools/ci/Prepare-StandaloneUpdater.ps1 -SourceCommit $env:SOURCE_COMMIT -Version $env:WORKER_VERSION -UpdateTool (Join-Path $env:RUNNER_TEMP 'release-tools/Ironmon.ReleaseTool.dll')

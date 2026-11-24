@@ -30,6 +30,35 @@ save preservation in that owned runtime. The former PowerShell runtime fixtures
 are removed; C# test success does not establish those game acceptance cases.
 Retain evidence for the following rehearsal separately.
 
+## Release upgrade acceptance
+
+Start with the actual published stable tracker and its supported game on a
+disposable Windows installation. Repeat for both package variants. For a game
+change, cover an existing launcher or Setup-managed Git checkout with its
+original Git settings and a supported installation without Git metadata.
+
+1. Record the starting and target release asset hashes, game commits, and hashes
+   of test saves and settings. Opt into test releases in the installed tracker.
+2. Run the normal tracker update through review, the game and tracker shutdown,
+   application, and relaunch. Verify the target game commit and tracker version.
+   Compare the preserved files with their recorded hashes, then open a saved game.
+3. If the shipped tracker blocks the upgrade, reproduce the failure from the
+   untouched baseline. Test a signed Setup upgrade as a recovery path. For an
+   in-app bridge, install it using the original tracker, then install the target
+   using the bridge tracker. Record both hops against their exact artifacts.
+   Repeat discovery on the original tracker after the target becomes visible,
+   to verify that players who skipped the bridge can still reach the target.
+
+Fixture tests and a fresh Setup install leave the in-tracker acceptance pending.
+Repeat this check when a mutable candidate's signed artifacts change.
+
+For the standalone flow, rehearse the one-time Setup update from 0.10.1 and
+then launch **Update** from the resulting tracker. Verify that the standalone
+updater opens before planning game files. Publish a newer worker in the test
+feed and confirm the same installed tracker fetches it for the same target
+release. Change a mutable target between review and installation and confirm
+the updater asks the player to return to the tracker for a fresh selection.
+
 ## Native Windows rehearsal
 
 Use full player payloads with synthetic versions and dedicated test trust on a

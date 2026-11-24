@@ -116,6 +116,11 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
     public string? SelectedReleaseVersion { get; private set; }
 
     /// <summary>
+    /// Gets the exact installed root and release selected in the tracker when launched as an updater.
+    /// </summary>
+    public StandaloneUpdateTarget? UpdateTarget { get; private set; }
+
+    /// <summary>
     /// Gets the last current availability observations; these are checked again before review and installation.
     /// </summary>
     public IReadOnlyList<SetupReleaseChoice> ReleaseChoices { get; private set; } = [];
@@ -123,7 +128,20 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
     /// <summary>
     /// Gets whether latest is selected or the explicit target remains enabled in the most recent availability list.
     /// </summary>
-    public bool CanReviewReleaseSelection => SelectedReleaseVersion is null || ReleaseChoices.Any(choice => choice.Version == SelectedReleaseVersion && choice.CanInstall);
+    public bool CanReviewReleaseSelection => UpdateTarget is not null || SelectedReleaseVersion is null || ReleaseChoices.Any(choice => choice.Version == SelectedReleaseVersion && choice.CanInstall);
+
+    /// <summary>
+    /// Pins a tracker launch to an existing installation and the exact release it offered.
+    /// </summary>
+    /// <param name="target">The requested local installation and signed release identity.</param>
+    public void BindUpdateTarget(StandaloneUpdateTarget target)
+    {
+        if (UpdateTarget is not null || IsBusy || SetupPreparation.InspectDestination(target.InstallationRoot).InstalledFlavor is null)
+            throw new InvalidOperationException(UpdaterText.SetupSessionReviewTheInstallationFolderFirst);
+
+        UpdateTarget = target;
+        SelectedReleaseVersion = target.Version;
+    }
 
     /// <summary>
     /// Refreshes advanced installer choices without writing into the selected game folder.
@@ -145,7 +163,7 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
     /// <param name="version">The available stable version, or null for latest.</param>
     public void SelectReleaseVersion(string? version)
     {
-        if (IsBusy)
+        if (IsBusy || UpdateTarget is not null)
             return;
 
         if (version is not null && !ReleaseChoices.Any(choice => choice.Version == version && choice.CanInstall))
@@ -307,6 +325,12 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
         OptionalIncomplete = false;
         _approvals.Clear();
         InstallationRoot = Path.GetFullPath(destination);
+        if (UpdateTarget is { } target && (!string.Equals(InstallationRoot, target.InstallationRoot, StringComparison.OrdinalIgnoreCase)
+            || SetupPreparation.InspectDestination(InstallationRoot).InstalledFlavor is null))
+        {
+            throw new InvalidOperationException(UpdaterText.SetupSessionReviewTheInstallationFolderFirst);
+        }
+
         RecoveryId = Directory.Exists(InstallationRoot) ? UpdateTransaction.ReadActiveId(InstallationRoot) : null;
         if (RecoveryId is not null)
         {
@@ -577,7 +601,9 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
         var version = SelectedReleaseVersion ?? throw new InvalidOperationException(UpdaterText.SetupVersionsSelectAvailable);
         try
         {
-            return await _releaseCatalog.ReadAsync(version, cancellationToken).ConfigureAwait(false);
+            return UpdateTarget is { } target
+                ? await _releaseCatalog.ReadForUpdateAsync(target, cancellationToken).ConfigureAwait(false)
+                : await _releaseCatalog.ReadAsync(version, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception error) when (!cancellationToken.IsCancellationRequested && error is IOException or InvalidDataException or InvalidOperationException or System.Net.Http.HttpRequestException or System.Text.Json.JsonException or System.Security.Cryptography.CryptographicException or OperationCanceledException)
         {
