@@ -1,0 +1,36 @@
+name: Check published WPF window
+description: Launch a packaged Ironmon executable and verify that its WPF window opens.
+inputs:
+  executable:
+    description: Path to the published executable
+    required: true
+  title:
+    description: Expected title of the application's main window
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: pwsh
+      env:
+        IRONMON_SMOKE_EXECUTABLE: ${{ inputs.executable }}
+        IRONMON_SMOKE_TITLE: ${{ inputs.title }}
+      run: |
+        $ErrorActionPreference = 'Stop'
+        Add-Type -AssemblyName UIAutomationClient
+        $exe = (Resolve-Path -LiteralPath $env:IRONMON_SMOKE_EXECUTABLE).Path
+        $extract = Join-Path $env:RUNNER_TEMP "ironmon-wpf-smoke-$(New-Guid)"
+        $process = Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -WindowStyle Hidden -PassThru -Environment @{DOTNET_BUNDLE_EXTRACT_BASE_DIR = $extract}
+        try {
+          $deadline = [DateTime]::UtcNow.AddSeconds(30)
+          do {
+            if ($process.WaitForExit(200)) { throw "$(Split-Path $exe -Leaf) exited before opening its window ($($process.ExitCode))." }
+            $process.Refresh()
+          } until ($process.MainWindowTitle -ceq $env:IRONMON_SMOKE_TITLE -or [DateTime]::UtcNow -ge $deadline)
+          if ($process.MainWindowTitle -cne $env:IRONMON_SMOKE_TITLE) { throw "$(Split-Path $exe -Leaf) did not open its expected window." }
+          $window = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
+          if ($window.Current.ClassName -cne 'Window') { throw "$(Split-Path $exe -Leaf) opened a dialog in place of its WPF window." }
+          "Opened the packaged $($process.MainWindowTitle) window."
+        } finally {
+          if (-not $process.HasExited) { Stop-Process -Id $process.Id }
+          $process.Dispose()
+        }

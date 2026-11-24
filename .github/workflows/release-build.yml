@@ -81,6 +81,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: ./tools/Build-TrackerRelease.ps1 -GenerationCacheDirectory (Join-Path $PWD 'data/ci/generated-cache') *>&1 | Tee-Object -FilePath (Join-Path $env:RUNNER_TEMP 'release-gate.log')
+      - name: Open the packaged Setup window
+        if: steps.reuse.outputs.reused != 'true'
+        uses: ./game/Ironmon/.github/actions/check-published-wpf-window
+        with:
+          executable: game/Ironmon/release/Ironmon-Setup-win-x64.exe
+          title: Ironmon Setup
+      - name: Open the packaged recovery helper window
+        if: steps.reuse.outputs.reused != 'true'
+        uses: ./game/Ironmon/.github/actions/check-published-wpf-window
+        with:
+          executable: game/Ironmon/dist/Ironmon Tracker/Updater/Ironmon.Updater.exe
+          title: Ironmon update
       - name: Audit fusion membership changes against the previous stable release
         if: steps.reuse.outputs.reused != 'true'
         shell: pwsh
