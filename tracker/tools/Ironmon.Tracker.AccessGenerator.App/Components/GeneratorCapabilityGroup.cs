@@ -39,5 +39,5 @@ public sealed class GeneratorCapabilityGroup(string resourceKey, IReadOnlyList<s
     /// <summary>
     /// Gets the capability identifiers in display order.
     /// </summary>
-    public IReadOnlyList<string> Capabilities { get; } = [.. capabilities ?? throw new ArgumentNullException(nameof(capabilities))];
+    public IReadOnlyList<string> Capabilities { get; } = Array.AsReadOnly<string>([.. capabilities ?? throw new ArgumentNullException(nameof(capabilities))]);
 }

@@ -1,4 +1,7 @@
 <Project>
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
   <Target Name="RejectQuickTestPublication" BeforeTargets="Publish" Condition="'$(IronmonQuickTests)' == 'true'">
     <Error Text="Quick-test builds omit generated game catalogs and cannot be published. Build without IronmonQuickTests for player artifacts." />
   </Target>

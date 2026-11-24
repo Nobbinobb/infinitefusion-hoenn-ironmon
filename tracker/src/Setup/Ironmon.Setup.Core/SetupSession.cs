@@ -192,9 +192,12 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
     public bool NeedsWebView => !_platform.WebViewAvailable;
 
     /// <summary>
-    /// Gets whether the runtime-required package can be selected on this machine.
+    /// Gets whether Setup can offer the runtime-required package for the current release selection.
     /// </summary>
-    public bool TrackerRuntimeAvailable => _platform.TrackerRuntimeAvailable;
+    /// <remarks>
+    /// Explicit versions may target a different runtime from Setup. Verified preparation checks their exact requirements.
+    /// </remarks>
+    public bool CanSelectRuntimeRequired => SelectedReleaseVersion is not null || _platform.TrackerRuntimeAvailable;
 
     /// <summary>
     /// Gets the full prerequisite download size observed during review, when available.
@@ -312,8 +315,8 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
         }
 
         var selectedFlavor = SetupPreparation.InspectDestination(InstallationRoot).InstalledFlavor ?? flavor;
-        if (selectedFlavor == ReleaseProtocol.RuntimeRequired && !TrackerRuntimeAvailable)
-            throw new InvalidOperationException(UpdaterText.SetupTrackerRuntimeUnavailable);
+        if (selectedFlavor == ReleaseProtocol.RuntimeRequired && !CanSelectRuntimeRequired)
+            throw new InvalidOperationException(TrackerRuntimeCompatibility.TrackerRuntimeUnavailable);
 
         Status = SelectedReleaseVersion is null ? UpdaterText.SetupSessionCheckingTheLatestReleaseAndYourInstallation : UpdaterText.SetupVersionsLoading;
         Changed?.Invoke();
@@ -391,17 +394,8 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
                     throw new InvalidDataException(UpdaterText.SetupVersionsReleaseChanged);
             }
 
-            if (NeedsWebView)
-            {
-                if (!installWebView)
-                    throw new InvalidOperationException(UpdaterText.SetupSessionSelectTheMicrosoftWebView2PrerequisiteBeforeInstallingTheTracker);
-
-                Status = UpdaterText.SetupSessionInstallingMicrosoftWebView2WindowsMayAskForPermission;
-                Changed?.Invoke();
-                await _platform.InstallWebViewAsync(token).ConfigureAwait(false);
-                if (NeedsWebView)
-                    throw new InvalidOperationException(UpdaterText.SetupSessionMicrosoftWebView2CouldNotBeDetectedAfterInstallationRetry);
-            }
+            if (NeedsWebView && !installWebView)
+                throw new InvalidOperationException(UpdaterText.SetupSessionSelectTheMicrosoftWebView2PrerequisiteBeforeInstallingTheTracker);
 
             PreparedIronmonUpdate? prepared = null;
             var applying = false;
@@ -410,6 +404,18 @@ public sealed class SetupSession(ReleaseDiscovery discovery, SetupPreparation pr
                 Status = UpdaterText.SetupSessionDownloadingAndVerifyingYourInstallation;
                 Changed?.Invoke();
                 prepared = await _preparation.PrepareAsync(review, approvals, token).ConfigureAwait(false);
+                if (NeedsWebView)
+                {
+                    if (!installWebView)
+                        throw new InvalidOperationException(UpdaterText.SetupSessionSelectTheMicrosoftWebView2PrerequisiteBeforeInstallingTheTracker);
+
+                    Status = UpdaterText.SetupSessionInstallingMicrosoftWebView2WindowsMayAskForPermission;
+                    Changed?.Invoke();
+                    await _platform.InstallWebViewAsync(token).ConfigureAwait(false);
+                    if (NeedsWebView)
+                        throw new InvalidOperationException(UpdaterText.SetupSessionMicrosoftWebView2CouldNotBeDetectedAfterInstallationRetry);
+                }
+
                 Status = UpdaterText.SetupSessionClosingTheGameAndTrackerCompleteAnyGameSave;
                 Progress = null;
                 Download = null;

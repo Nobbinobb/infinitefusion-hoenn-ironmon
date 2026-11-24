@@ -6,9 +6,15 @@ namespace Ironmon.Updater.Core;
 public static partial class UpdaterText
 {
     /// <summary>
-    /// Gets the missing .NET Runtime explanation and restart instructions.
+    /// Formats the missing .NET Runtime explanation and retry instructions.
     /// </summary>
-    public static string SetupTrackerRuntimeUnavailable => Get(nameof(SetupTrackerRuntimeUnavailable));
+    /// <param name="version">The current runtime family.</param>
+    /// <param name="previousVersion">The previous runtime family.</param>
+    /// <param name="downloadPage">The Microsoft download page for the current family.</param>
+    /// <param name="previousDownloadPage">The Microsoft download page for the previous family.</param>
+    /// <returns>The localized prerequisite message.</returns>
+    public static string SetupTrackerRuntimeUnavailable(object? version, object? previousVersion, object? downloadPage, object? previousDownloadPage)
+        => string.Format(System.Globalization.CultureInfo.CurrentCulture, Get(nameof(SetupTrackerRuntimeUnavailable)), version, previousVersion, downloadPage, previousDownloadPage);
 
     /// <summary>
     /// Gets the accessible runtime help action name and dialog title.

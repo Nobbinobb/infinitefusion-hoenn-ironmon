@@ -4,9 +4,10 @@ $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if (-not $GenerateOnly) {
+  . (Join-Path $PSScriptRoot 'ci/UpdateArtifacts.ps1')
   & dotnet build (Join-Path $projectRoot 'tracker/tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj') -c Release -p:UpdaterMetadataOnly=true -p:UseSharedCompilation=false
   if ($LASTEXITCODE -ne 0) { throw 'Release metadata tools failed to build.' }
-  $updateTool = Join-Path $projectRoot 'tracker/tools/Ironmon.ReleaseTool/bin/Release/net10.0/Ironmon.ReleaseTool.dll'
+  $updateTool = Get-UpdateCandidateToolPath $projectRoot
   & dotnet $updateTool trust (Join-Path $projectRoot 'resources/updater/trusted-keys.json')
   if ($LASTEXITCODE -ne 0) { throw 'Configure dedicated updater public trust before release generation.' }
   if ($env:GITHUB_ACTIONS -eq 'true' -and -not $UpdateHistoryDirectory) {

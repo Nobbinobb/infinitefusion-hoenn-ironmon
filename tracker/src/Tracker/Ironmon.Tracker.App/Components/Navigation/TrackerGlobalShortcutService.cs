@@ -753,12 +753,20 @@ public sealed partial class TrackerGlobalShortcutService
             return false;
 
         GetWindowThreadProcessId(GetForegroundWindow(), out uint processId);
+        if (processId is 0 or > int.MaxValue)
+            return false;
+
         try
         {
-            using Process process = Process.GetProcessById((int)processId);
-            string? executable = process.MainModule?.FileName;
-            string? directory = executable is null ? null : Path.GetDirectoryName(executable);
-            return string.Equals(directory, Path.TrimEndingDirectorySeparator(Path.GetFullPath(gameRoot)), StringComparison.OrdinalIgnoreCase);
+            if (!Process.TryGetProcessById((int)processId, out Process? process))
+                return false;
+
+            using (process)
+            {
+                string? executable = process.MainModule?.FileName;
+                string? directory = executable is null ? null : Path.GetDirectoryName(executable);
+                return string.Equals(directory, Path.TrimEndingDirectorySeparator(Path.GetFullPath(gameRoot)), StringComparison.OrdinalIgnoreCase);
+            }
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
         {

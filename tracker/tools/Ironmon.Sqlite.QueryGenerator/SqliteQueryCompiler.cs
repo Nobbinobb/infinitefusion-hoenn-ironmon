@@ -435,7 +435,7 @@ internal sealed class SqliteQueryCompiler
         }
         else if (_semantic.GetConstantValue(expression) is { HasValue: true } constant)
         {
-            source = constant.Value is null ? SyntaxFacts.GetText(SyntaxKind.NullKeyword) : Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatPrimitive(constant.Value, true, false);
+            source = FormatConstant(constant.Value);
             key = source + ':' + type?.ToDisplayString();
         }
         else
@@ -451,6 +451,17 @@ internal sealed class SqliteQueryCompiler
         }
 
         return _parameterPrefix + index.ToString(CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Formats a compiler constant as a C# literal for generated code.
+    /// </summary>
+    /// <param name="value">The compiler-resolved constant value.</param>
+    /// <returns>The C# literal for the constant.</returns>
+    internal static string FormatConstant(object? value)
+    {
+        string? literal = value is null ? SyntaxFacts.GetText(SyntaxKind.NullKeyword) : Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatPrimitive(value, true, false);
+        return literal ?? throw new InvalidOperationException("The query constant cannot be emitted as a C# literal.");
     }
 
     /// <summary>

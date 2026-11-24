@@ -54,7 +54,6 @@ New-Item -ItemType Directory -Path $resolvedOutput -Force | Out-Null
   --runtime win-x64 `
   --self-contained $selfContainedArgument `
   --output $resolvedOutput `
-  --no-restore `
   --nologo `
   --disable-build-servers `
   -m:1 `

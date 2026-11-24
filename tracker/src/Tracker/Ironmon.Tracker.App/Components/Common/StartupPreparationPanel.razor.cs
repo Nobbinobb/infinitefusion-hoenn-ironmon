@@ -95,7 +95,15 @@ public partial class StartupPreparationPanel : IDisposable
         if (_disposed || _dialogShown == show || Services.GetService(typeof(IJSRuntime)) is not IJSRuntime javaScript)
             return;
 
-        await javaScript.InvokeVoidAsync(show ? _showFunction : _closeFunction, _dialog);
+        try
+        {
+            await javaScript.InvokeVoidAsync(show ? _showFunction : _closeFunction, _dialog);
+        }
+        catch (JSDisconnectedException)
+        {
+            return;
+        }
+
         _dialogShown = show;
         if (!_disposed && IsVisible != show)
             StateHasChanged();

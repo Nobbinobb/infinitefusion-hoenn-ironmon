@@ -29,7 +29,7 @@ references. See [`LOCALIZATION.md`](LOCALIZATION.md) for translated UI text.
 
 ## Build and run
 
-Run these commands from the repository root on Windows with the .NET 10 SDK
+Run these commands from the repository root on Windows with the .NET 11 SDK
 and `maui-windows` workload installed:
 
 ```powershell

@@ -50,8 +50,16 @@ public partial class GeneratorDialog
     /// <returns>The browser initialization task.</returns>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (!firstRender)
+            return;
+
+        try
+        {
             await JavaScript.InvokeVoidAsync(_openFunction, _element);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
     }
 
     /// <summary>
@@ -60,7 +68,14 @@ public partial class GeneratorDialog
     /// <returns>The dismissal task.</returns>
     private async Task CloseAsync()
     {
-        await JavaScript.InvokeVoidAsync(_closeFunction, _element);
+        try
+        {
+            await JavaScript.InvokeVoidAsync(_closeFunction, _element);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+
         await Closed.InvokeAsync();
     }
 

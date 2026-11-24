@@ -380,24 +380,18 @@ internal sealed class FusionEvolutionAssignmentWorker
         {
             List<ConceptualBranch[]> subsets = [.. Combinations(branches, expansionCount)];
             subsets.Sort((left, right) => CompareExpansionSubsets(left, right, plans));
-            foreach (ConceptualBranch[] subset in subsets)
+            trySubset: foreach (ConceptualBranch[] subset in subsets)
             {
                 HashSet<string> expanded = [.. subset.Select(branch => branch.Identity)];
                 Dictionary<string, IReadOnlyList<CandidatePlan>> filtered = new(StringComparer.Ordinal);
-                bool valid = true;
                 foreach (ConceptualBranch branch in branches)
                 {
                     TargetData[] candidates = [.. plans[branch.Identity].Candidates.Where(candidate => !candidate.Upward || expanded.Contains(branch.Identity)).Select(candidate => candidate.Target)];
                     if (candidates.Length == 0)
-                    {
-                        valid = false;
-                        break;
-                    }
+                        continue trySubset;
 
                     filtered[branch.Identity] = [new CandidatePlan(TargetBucket.UpwardExpansion, candidates)];
                 }
-                if (!valid)
-                    continue;
 
                 Dictionary<string, TargetData>? assignment = FindPlanAssignment(branches, filtered);
                 if (assignment is not null)

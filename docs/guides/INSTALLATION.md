@@ -44,9 +44,12 @@ requires a different game revision.
 Start Setup and the tracker normally. A verified helper requests administrator
 permission when a protected folder requires it; the tracker itself continues
 under your Windows account. Setup offers to install WebView2 when needed.
-The runtime-required package additionally needs the Windows x64 .NET 10 Runtime.
-The standard Runtime is sufficient; the Desktop Runtime, SDK, and MAUI workload
-are unnecessary. Setup and Updater include their own runtimes.
+The runtime-required package needs the Windows x64 .NET Runtime listed in its
+release notes. New builds use the [.NET 11 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/11.0#runtime-11.0.0).
+The Ironmon 0.10.0 and 0.10.1 runtime-required packages use .NET 10. The standard
+Runtime is sufficient. Setup and Updater include their own runtimes. All .NET 11
+builds, including **Runtime included**, require an x64 processor that meets the
+[.NET 11 hardware baseline](https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-11/runtime#x86x64-requirements).
 
 Progress bars describe the current stage, not the entire installation. Sprite
 sheets download after the core installation succeeds; cancelling or failing that
@@ -100,6 +103,13 @@ Expand **Advanced: Ironmon version** to select an available version newer than
 your installation and no newer than latest. **Refresh versions** checks availability
 again. Changing the target requires a fresh review and file approvals; a target
 that disappears or changes stops the update instead of selecting another version.
+
+The updater keeps your installed tracker package type. A **Runtime included**
+installation receives the bundled .NET 11 runtime with its first .NET 11 update.
+If you installed **Runtime required**, install the [.NET 11 Runtime for Windows x64](https://dotnet.microsoft.com/en-us/download/dotnet/11.0#runtime-11.0.0)
+before applying that update. .NET 10 and .NET 11 can be installed side by side.
+If the required runtime is missing, verification stops the update before replacing
+the installed files. Install the runtime, then retry from the tracker.
 
 Save your game, review the release notes and any replaceable local-file
 conflicts, then choose **Update**. Preparation downloads and verifies files.

@@ -24,7 +24,7 @@ $request = [ordered]@{
 }
 $path = Join-Path $projectRoot 'data/updater/release-request.json'
 $request | ConvertTo-Json -Depth 8 -Compress | Set-Content -LiteralPath $path -Encoding utf8NoBOM
-$tool = Join-Path $projectRoot 'tracker/tools/Ironmon.ReleaseTool/bin/Release/net10.0/Ironmon.ReleaseTool.dll'
+$tool = Get-UpdateCandidateToolPath $projectRoot
 Invoke-UpdateCandidateTool $tool @('create', $path)
 foreach ($asset in Get-ChildItem -LiteralPath $release -File | Where-Object { -not $_.Name.EndsWith('.sha256.txt') }) {
   $hash = (Get-FileHash -LiteralPath $asset.FullName -Algorithm SHA256).Hash.ToLowerInvariant()

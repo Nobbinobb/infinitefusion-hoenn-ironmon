@@ -40,7 +40,7 @@ public sealed class SetupSessionTests
         var platform = new Platform { TrackerRuntimeAvailable = false };
         using var session = Create(fixture, sprites, platform);
         await session.ReviewAsync(fixture.Release.Root, ReleaseProtocol.RuntimeRequired, true);
-        Assert.Equal(UpdaterText.SetupTrackerRuntimeUnavailable, session.Error);
+        Assert.Equal(TrackerRuntimeCompatibility.TrackerRuntimeUnavailable, session.Error);
         Assert.Null(session.Review);
         Assert.False(session.CanInstall);
         Assert.Empty(fixture.Release.Requests);
@@ -390,20 +390,51 @@ public sealed class SetupSessionTests
         PrepareGame(fixture);
         using var versions = await SetupReleaseCatalogFixture.CreateAsync(fixture.Release);
         using var sprites = new CustomSpriteSheetInstaller();
-        using var session = Create(fixture, sprites, new Platform(), versions);
+        using var session = Create(fixture, sprites, new Platform { TrackerRuntimeAvailable = false }, versions);
         Assert.Null(session.SelectedReleaseVersion);
+        Assert.False(session.CanSelectRuntimeRequired);
         await session.LoadReleaseChoicesAsync();
         Assert.Null(session.Error);
         session.SelectReleaseVersion(SignedReleaseFixture.VersionB);
+        Assert.True(session.CanSelectRuntimeRequired);
         await session.ReviewAsync(fixture.Release.Root, null, true);
         Assert.Null(session.Error);
         Assert.Equal(SignedReleaseFixture.VersionB, session.Review!.Manifest.IronmonVersion);
+        Assert.Equal(ReleaseProtocol.RuntimeRequired, session.Review.Authorization.Request.Flavor);
         Assert.DoesNotContain(versions.Requests, uri => uri.AbsoluteUri == ReleaseProtocol.LatestReleaseUrl);
         session.SelectReleaseVersion(null);
         Assert.Null(session.Review);
         Assert.False(session.CanInstall);
         Assert.Null(session.SelectedReleaseVersion);
+        Assert.False(session.CanSelectRuntimeRequired);
         Assert.Throws<InvalidOperationException>(() => session.SelectReleaseVersion(SetupReleaseCatalogFixture.LegacyVersion));
+    }
+
+    /// <summary>
+    /// Checks the selected release's exact runtime before changing the installation or installing WebView2.
+    /// </summary>
+    [Fact]
+    public async Task ExplicitRuntimeMismatchBlocksSetupBeforePrerequisiteInstallation()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        PrepareGame(fixture);
+        using var versions = await SetupReleaseCatalogFixture.CreateAsync(fixture.Release);
+        using var sprites = new CustomSpriteSheetInstaller();
+        var platform = new Platform { WebViewAvailable = false };
+        var runtime = new TrackerRuntimeCompatibility(_ => [new Version(11, 0, 0)]);
+        using var session = Create(fixture, sprites, platform, versions, runtime);
+        await session.LoadReleaseChoicesAsync();
+        session.SelectReleaseVersion(SignedReleaseFixture.VersionB);
+        await session.ReviewAsync(fixture.Release.Root, null, true);
+        Assert.True(session.CanInstall, session.Error);
+        var before = await InstallationFileSnapshot.ReadAsync(fixture.Release.Root);
+        await session.InstallAsync(false, false, true);
+        Assert.Contains("https://dotnet.microsoft.com/download/dotnet/10.0", session.Error, StringComparison.Ordinal);
+        Assert.False(session.CoreInstalled);
+        Assert.Equal(0, platform.PrerequisiteInstalls);
+        Assert.Equal(0, platform.Closures);
+        Assert.Equal(before, await InstallationFileSnapshot.ReadAsync(fixture.Release.Root));
+        Assert.Null(UpdateTransaction.ReadActiveId(fixture.Release.Root));
     }
 
     /// <summary>
@@ -485,8 +516,9 @@ public sealed class SetupSessionTests
     /// <param name="sprites">The shared real sprite service.</param>
     /// <param name="platform">The recorded platform effects.</param>
     /// <param name="versions">The optional genuine historical-release and availability fixture.</param>
+    /// <param name="runtime">The optional framework availability for this machine.</param>
     /// <returns>The production Setup session.</returns>
-    private static SetupSession Create(TrackerUpdateTestFixture fixture, CustomSpriteSheetInstaller sprites, Platform platform, SetupReleaseCatalogFixture? versions = null)
+    private static SetupSession Create(TrackerUpdateTestFixture fixture, CustomSpriteSheetInstaller sprites, Platform platform, SetupReleaseCatalogFixture? versions = null, TrackerRuntimeCompatibility? runtime = null)
     {
         var release = fixture.Release;
         var downloads = new ReleaseDownloadStore(release.Cache, versions is null ? fixture : versions);
@@ -494,8 +526,9 @@ public sealed class SetupSessionTests
         var policy = new RepositoryPolicy(new Uri(ReleaseProtocol.GameRepository), ReleaseProtocol.GameBranch);
         var game = new CombinedGamePreparation(cache, policy, Path.Combine(release.Cache, Staging));
         var verification = new CombinedGitVerification(cache, policy, Path.Combine(release.Cache, Home));
-        var preparation = new SetupPreparation(release.Verifier, downloads, SignedReleaseFixture.Runtime(), game, verification, _ => SignedReleaseFixture.VersionA);
-        return new SetupSession(versions?.Discovery ?? fixture.Discovery, preparation, (_, progress) => new UpdateTransaction(new SignedIronmonAuthority(release.Verifier, SignedReleaseFixture.Runtime(), verification), _ => Task.CompletedTask, progress), sprites, platform, downloads, releaseCatalog: versions?.Catalog);
+        runtime ??= SignedReleaseFixture.Runtime();
+        var preparation = new SetupPreparation(release.Verifier, downloads, runtime, game, verification, _ => SignedReleaseFixture.VersionA);
+        return new SetupSession(versions?.Discovery ?? fixture.Discovery, preparation, (_, progress) => new UpdateTransaction(new SignedIronmonAuthority(release.Verifier, runtime, verification), _ => Task.CompletedTask, progress), sprites, platform, downloads, releaseCatalog: versions?.Catalog);
     }
 
     /// <summary>

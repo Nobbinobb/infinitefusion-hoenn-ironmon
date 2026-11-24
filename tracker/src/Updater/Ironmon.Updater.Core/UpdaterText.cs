@@ -2355,13 +2355,14 @@ public static partial class UpdaterText
         => Get(nameof(TrackerRuntimeCompatibilityTheTrackerDeclaresAnUnsupportedFrameworkSet));
 
     /// <summary>
-    /// Gets the localized text: This tracker requires {0} {1} for Windows x64. Install that runtime or choose the self-contained package before updating.
+    /// Formats instructions for obtaining the required Windows x64 framework before retrying.
     /// </summary>
     /// <param name="value0">The value for resource placeholder 0.</param>
     /// <param name="value1">The value for resource placeholder 1.</param>
+    /// <param name="value2">The Microsoft download page for the required version.</param>
     /// <returns>The localized message with culture-formatted values.</returns>
-    public static string TrackerRuntimeCompatibilityThisTrackerRequiresForWindowsX64InstallThatRuntime(object? value0, object? value1)
-        => string.Format(CultureInfo.CurrentCulture, Get(nameof(TrackerRuntimeCompatibilityThisTrackerRequiresForWindowsX64InstallThatRuntime)), value0, value1);
+    public static string TrackerRuntimeCompatibilityThisTrackerRequiresForWindowsX64InstallThatRuntime(object? value0, object? value1, object? value2)
+        => string.Format(CultureInfo.CurrentCulture, Get(nameof(TrackerRuntimeCompatibilityThisTrackerRequiresForWindowsX64InstallThatRuntime)), value0, value1, value2);
 
     /// <summary>
     /// Gets the localized text: This tracker runtime policy requires a newer verified installer.

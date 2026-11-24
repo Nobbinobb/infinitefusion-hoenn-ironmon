@@ -79,13 +79,19 @@ public partial class PokemonSearchField : IDisposable
     /// <returns>A task representing browser interaction.</returns>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-            await JavaScript.InvokeVoidAsync(_initializeFunction, _input);
-
-        if (_scrollActive)
+        try
         {
-            _scrollActive = false;
-            await JavaScript.InvokeVoidAsync(_scrollFunction, _input);
+            if (firstRender)
+                await JavaScript.InvokeVoidAsync(_initializeFunction, _input);
+
+            if (_scrollActive)
+            {
+                _scrollActive = false;
+                await JavaScript.InvokeVoidAsync(_scrollFunction, _input);
+            }
+        }
+        catch (JSDisconnectedException)
+        {
         }
     }
 

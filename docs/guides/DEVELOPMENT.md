@@ -43,8 +43,16 @@ Keep `wwwroot/index.html` linked to `obsidian-startup.css` and the URL-safe
 `tracker-components.styles.css` bundle. Run `TrackerStylesheetPackagingTests`
 when changing stylesheet packaging.
 
-Use Windows, the .NET 10 SDK, the Windows MAUI workload, and PowerShell 7 for the
+Use Windows, the .NET 11 SDK, the Windows MAUI workload, and PowerShell 7 for the
 repository scripts. The CI workflows specify the SDK version used for releases.
+On a clean .NET 11.0.100 SDK, load the matching workload set before installing
+Windows MAUI.
+
+```powershell
+dotnet workload update --version 11.0.100
+dotnet workload install maui-windows --skip-manifest-update
+```
+
 Generated catalogs must match the selected game revision. When regeneration is
 needed, `tools/Build-TrackerRelease.ps1 -GenerateOnly` prepares catalogs and the
 distribution using the game checkout above this repository, without packaging a

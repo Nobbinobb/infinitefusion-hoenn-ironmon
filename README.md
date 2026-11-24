@@ -52,7 +52,11 @@ Choose **one** download:
 | --- | --- |
 | `Ironmon-Setup-win-x64.exe` | Recommended. Downloads and installs the game and Ironmon, or updates a supported existing installation. |
 | `Ironmon-vX.Y.Z-win-x64.zip` | Manual installation into an existing game folder; includes the required .NET runtime. |
-| `Ironmon-vX.Y.Z-win-x64-runtime-required.zip` | Smaller manual package; requires the Windows x64 .NET 10 Runtime. |
+| `Ironmon-vX.Y.Z-win-x64-runtime-required.zip` | Smaller manual package. Install the Windows x64 .NET Runtime listed in that release's notes. |
+
+New builds use .NET 11. Install the [.NET 11 Runtime for Windows x64](https://dotnet.microsoft.com/en-us/download/dotnet/11.0#runtime-11.0.0)
+before updating a runtime-required installation to one of these builds. The
+Ironmon 0.10.0 and 0.10.1 runtime-required packages use .NET 10.
 
 ## Installation
 

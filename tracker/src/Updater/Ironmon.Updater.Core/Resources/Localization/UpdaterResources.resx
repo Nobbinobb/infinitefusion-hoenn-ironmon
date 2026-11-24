@@ -1165,7 +1165,7 @@
     <value>The tracker declares an unsupported framework set.</value>
   </data>
   <data name="TrackerRuntimeCompatibilityThisTrackerRequiresForWindowsX64InstallThatRuntime" xml:space="preserve">
-    <value>This tracker requires {0} {1} for Windows x64. Install that runtime or choose the self-contained package before updating.</value>
+    <value>The selected tracker requires {0} {1} for Windows x64. Install the matching x64 runtime from Microsoft, then check again. {2}</value>
   </data>
   <data name="TrackerRuntimeCompatibilityThisTrackerRuntimePolicyRequiresANewerVerifiedInstaller" xml:space="preserve">
     <value>This tracker runtime policy requires a newer verified installer.</value>
@@ -1633,7 +1633,7 @@
     <value>Close Infinite Fusion, the tracker, and the Infinite Fusion launcher or installer. This operation will continue automatically.</value>
   </data>
   <data name="SetupTrackerRuntimeUnavailable" xml:space="preserve">
-    <value>Microsoft .NET 10 Runtime for Windows x64 was not found. Choose Runtime included, or install the x64 .NET 10 Runtime yourself and restart Setup to enable this smaller package. The Desktop Runtime also includes the required runtime. The x86 runtime and other major versions do not meet this requirement.</value>
+    <value>Setup couldn't find a Microsoft .NET {0} or {1} Runtime for Windows x64. Choose Runtime included for a new installation, or install the x64 .NET Runtime required by your selected release and check again. Get .NET {0} at {2} or .NET {1} at {3}</value>
   </data>
   <data name="SetupTrackerRuntimeHelp" xml:space="preserve">
     <value>Why is Runtime required unavailable?</value>

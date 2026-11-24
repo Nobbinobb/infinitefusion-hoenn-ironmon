@@ -111,20 +111,20 @@ public partial class TrackerUpdatePanel : IAsyncDisposable
     /// <returns>The dialog focus transition.</returns>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            _ = Session.StartAsync();
-            var scroll = Navigation.TakeScroll();
-            if (scroll.ValueKind != System.Text.Json.JsonValueKind.Undefined)
-                await JavaScript.InvokeVoidAsync(RestoreScroll, scroll);
-        }
-
         if (_dialogTransition)
             return;
 
         _dialogTransition = true;
         try
         {
+            if (firstRender)
+            {
+                _ = Session.StartAsync();
+                var scroll = Navigation.TakeScroll();
+                if (scroll.ValueKind != System.Text.Json.JsonValueKind.Undefined)
+                    await JavaScript.InvokeVoidAsync(RestoreScroll, scroll);
+            }
+
             if (DialogVisible && _dialogHandle is null)
                 _dialogHandle = await JavaScript.InvokeAsync<int>(AttachDialog, _root);
 
@@ -134,12 +134,17 @@ public partial class TrackerUpdatePanel : IAsyncDisposable
                 await JavaScript.InvokeVoidAsync(DetachDialog, handle);
             }
         }
+        catch (JSDisconnectedException)
+        {
+            return;
+        }
         finally
         {
             _dialogTransition = false;
-            if (!_disposed && DialogVisible != (_dialogHandle is not null))
-                StateHasChanged();
         }
+
+        if (!_disposed && DialogVisible != (_dialogHandle is not null))
+            StateHasChanged();
     }
 
     /// <summary>
@@ -184,8 +189,14 @@ public partial class TrackerUpdatePanel : IAsyncDisposable
         var result = string.Empty;
         await InvokeAsync(async () =>
         {
-            var scroll = await JavaScript.InvokeAsync<System.Text.Json.JsonElement>(CaptureScroll);
-            result = Navigation.Export(scroll);
+            try
+            {
+                var scroll = await JavaScript.InvokeAsync<System.Text.Json.JsonElement>(CaptureScroll);
+                result = Navigation.Export(scroll);
+            }
+            catch (JSDisconnectedException)
+            {
+            }
         });
         return result;
     }
@@ -212,7 +223,13 @@ public partial class TrackerUpdatePanel : IAsyncDisposable
         if (_dialogHandle is { } handle)
         {
             _dialogHandle = null;
-            await JavaScript.InvokeVoidAsync(DetachDialog, handle);
+            try
+            {
+                await JavaScript.InvokeVoidAsync(DetachDialog, handle);
+            }
+            catch (JSDisconnectedException)
+            {
+            }
         }
     }
 }

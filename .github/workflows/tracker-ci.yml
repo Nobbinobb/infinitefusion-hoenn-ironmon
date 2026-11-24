@@ -83,7 +83,7 @@ jobs:
       - run: python3 -m unittest discover -s tools/sprites -p 'test_*.py'
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
-          dotnet-version: 10.0.400
+          dotnet-version: 11.0.100
       - name: Build sprite measurement tool without generated installer data
         run: dotnet build tracker/tools/Ironmon.SpriteSizeTool -c Release -p:UpdaterMetadataOnly=true
 
@@ -102,7 +102,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
-          dotnet-version: 10.0.400
+          dotnet-version: 11.0.100
       - name: Core Quick tests
         run: dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj -c Release --settings tracker/tests/Quick.runsettings --filter Category!=BundledRuby --maxcpucount:1 -p:UseSharedCompilation=false -p:NuGetAudit=false -p:IronmonQuickTests=true
       - name: Updater Quick tests
@@ -118,10 +118,15 @@ jobs:
         with:
           persist-credentials: false
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/ironmon-dotnet
         with:
-          dotnet-version: 10.0.400
+          dotnet-version: 11.0.100
       - name: Install Windows MAUI workload
-        run: dotnet workload install maui-windows --skip-manifest-update
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          dotnet workload update --version 11.0.100
+          dotnet workload install maui-windows --skip-manifest-update
       - name: App Quick tests
         run: dotnet test tracker/tests/Ironmon.Tracker.App.Tests/Ironmon.Tracker.App.Tests.csproj -c Release --settings tracker/tests/Quick.runsettings --maxcpucount:1 -p:UseSharedCompilation=false -p:NuGetAudit=false -p:IronmonQuickTests=true
       - name: Overlay Quick tests
@@ -184,7 +189,7 @@ jobs:
           key: windows-ruby-smoke-v1-${{ needs.inputs.outputs.game_commit }}-mesa26.2.0
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
-          dotnet-version: 10.0.400
+          dotnet-version: 11.0.100
       - name: Run the native Ruby entry point through xUnit
         working-directory: source
         run: dotnet test tracker/tests/Ironmon.Tracker.Tests/Ironmon.Tracker.Tests.csproj -c Release --settings tracker/tests/Quick.runsettings --filter Category=BundledRuby --maxcpucount:1 -p:UseSharedCompilation=false -p:NuGetAudit=false -p:IronmonQuickTests=true
@@ -224,15 +229,20 @@ jobs:
         shell: pwsh
         run: ./game/Ironmon/tools/ci/Initialize-HostedGame.ps1 -SnapshotDirectory upstream-inputs
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/ironmon-dotnet
         with:
-          dotnet-version: 10.0.400
+          dotnet-version: 11.0.100
       - name: Reuse or generate catalogs for these exact inputs
         uses: ./game/Ironmon/.github/actions/generated-catalogs
         with:
           project-root: game/Ironmon
           snapshot-directory: upstream-inputs
       - name: Install Windows MAUI workload
-        run: dotnet workload install maui-windows --skip-manifest-update
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          dotnet workload update --version 11.0.100
+          dotnet workload install maui-windows --skip-manifest-update
       - name: Provision the pinned Git dependency
         shell: bash
         working-directory: game/Ironmon

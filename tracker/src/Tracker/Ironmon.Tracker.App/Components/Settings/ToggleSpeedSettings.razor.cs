@@ -62,7 +62,13 @@ public partial class ToggleSpeedSettings : IAsyncDisposable
 
         _reference = DotNetObjectReference.Create(this);
         Dictionary<string, string> labels = _labelNames.ToDictionary(name => char.ToLowerInvariant(name[0]) + name[1..], name => Text[ResourcePrefix + name].Value, StringComparer.Ordinal);
-        await JavaScript.InvokeVoidAsync(AttachFunction, _root, TrackerJson.SerializePayload(Options.ToggleSpeed), _reference, labels);
+        try
+        {
+            await JavaScript.InvokeVoidAsync(AttachFunction, _root, TrackerJson.SerializePayload(Options.ToggleSpeed), _reference, labels);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
     }
 
     /// <summary>

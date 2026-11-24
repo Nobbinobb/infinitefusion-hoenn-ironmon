@@ -45,7 +45,13 @@ public partial class MoveAccessTabs
             return;
 
         _scrollToTop = false;
-        await JavaScript.InvokeVoidAsync(_scrollPage, _element);
+        try
+        {
+            await JavaScript.InvokeVoidAsync(_scrollPage, _element);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
     }
 
     /// <summary>

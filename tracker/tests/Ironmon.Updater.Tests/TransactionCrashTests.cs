@@ -8,13 +8,6 @@ namespace Ironmon.Updater.Tests;
 /// </summary>
 public sealed class TransactionCrashTests
 {
-    private const string HostPath = "../../../../Ironmon.Updater.CrashHost/bin/";
-#if DEBUG
-    private const string Configuration = "Debug";
-#else
-    private const string Configuration = "Release";
-#endif
-    private const string HostBinary = "/net10.0/Ironmon.Updater.CrashHost.exe";
     private const string ApplyMode = "apply";
     private const string RecoverMode = "recover";
     private const string BoundaryReady = "BOUNDARY";
@@ -121,7 +114,7 @@ public sealed class TransactionCrashTests
     /// <returns>The exact process the fixture owns and may terminate.</returns>
     private static Process Start(TransactionFixture fixture, string mode, TransactionPhase phase, int operation, TransactionBoundary boundary)
     {
-        var executable = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, HostPath + Configuration + HostBinary));
+        var executable = SignedReleaseFixture.CrashHostPath;
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true, WorkingDirectory = fixture.Root };
         foreach (var argument in new[] { mode, fixture.Root, fixture.Description.TransactionId.ToString(TransactionStorage.GuidFormat), fixture.AuthorizedHash, phase.ToString(), operation.ToString(System.Globalization.CultureInfo.InvariantCulture), boundary.ToString() })
             start.ArgumentList.Add(argument);

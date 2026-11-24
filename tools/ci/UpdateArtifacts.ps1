@@ -67,6 +67,19 @@ function Write-ReleaseChecksums([string]$Directory, [IO.FileInfo[]]$Files) {
   return Get-Item -LiteralPath $path
 }
 
+function Get-UpdateCandidateToolPath([string]$ProjectRoot) {
+  <#
+  .SYNOPSIS
+  Locates the already-built metadata tool using its evaluated build output path.
+  #>
+  $project = Join-Path $ProjectRoot 'tracker/tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj'
+  $tool = & dotnet msbuild $project --disable-build-servers -nologo -p:Configuration=Release -p:UpdaterMetadataOnly=true -getProperty:TargetPath
+  if ($LASTEXITCODE -ne 0 -or -not $tool -or -not (Test-Path -LiteralPath $tool -PathType Leaf)) {
+    throw 'Cannot locate the built release metadata tool.'
+  }
+  return $tool
+}
+
 function Invoke-UpdateCandidateTool([string]$Tool, [string[]]$Arguments) {
   <#
   .SYNOPSIS
@@ -100,6 +113,9 @@ function Assert-ReleaseArchives {
   if (-not $AssetDirectory) { $AssetDirectory = Join-Path $ProjectRoot 'release' }
   [xml]$project = Get-Content (Join-Path $ProjectRoot 'tracker/src/Tracker/Ironmon.Tracker.App/Ironmon.Tracker.App.csproj') -Raw
   $version = [string]$project.Project.PropertyGroup.ApplicationDisplayVersion
+  $trackerFramework = ([string]$project.Project.PropertyGroup.TargetFramework).Split('-')[0]
+  if ($trackerFramework -cnotmatch '^net(?<version>\d+\.\d+)$') { throw 'Cannot determine the tracker runtime version.' }
+  $trackerRuntimeVersion = [version]$Matches.version
   $sourceManifest = Get-Content (Join-Path $ProjectRoot 'src/load_order.json') -Raw | ConvertFrom-Json
   $receipts = @()
   $sharedData = $null
@@ -119,6 +135,29 @@ function Assert-ReleaseArchives {
       if (@($names | Sort-Object -Unique).Count -ne $names.Count) { throw 'Duplicate archive paths.' }
       foreach ($required in 'README.md', 'INSTALLATION.md', 'RELEASE_NOTES.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'OPEN-SANS-LICENSE.txt', 'Ironmon Tracker/Ironmon Tracker.exe', 'Ironmon Tracker/Updater/Ironmon.Updater.exe', 'Ironmon Tracker/Updater/trusted-keys.json', 'Ironmon Tracker/Updater/THIRD_PARTY_NOTICES.md', 'Ironmon Tracker/update-package.json') {
         if ($required -cnotin $names) { throw "Missing release file: $required." }
+      }
+      $runtimeConfig = $zip.GetEntry('Ironmon Tracker/Ironmon Tracker.runtimeconfig.json')
+      if (-not $runtimeConfig) { throw "Missing tracker runtime configuration in $name." }
+      $reader = [IO.StreamReader]::new($runtimeConfig.Open())
+      try { $runtime = ($reader.ReadToEnd() | ConvertFrom-Json).runtimeOptions } finally { $reader.Dispose() }
+      $selfContained = -not $name.EndsWith('-runtime-required.zip', [StringComparison]::Ordinal)
+      if ($selfContained) {
+        if ($runtime.framework -or $runtime.frameworks) { throw "$name depends on a system runtime." }
+        $frameworks = @($runtime.includedFrameworks)
+      } else {
+        if ($runtime.includedFrameworks) { throw "$name declares a bundled runtime." }
+        $frameworks = @($runtime.framework) + @($runtime.frameworks)
+      }
+      $coreFramework = @($frameworks | Where-Object { $_.name -ceq 'Microsoft.NETCore.App' })
+      if ($runtime.tfm -cne $trackerFramework -or $coreFramework.Count -ne 1 -or
+          -not [version]::TryParse($coreFramework[0].version, [ref]$null) -or
+          ([version]$coreFramework[0].version).ToString(2) -cne $trackerRuntimeVersion.ToString(2)) {
+        throw "$name does not target the expected .NET $trackerRuntimeVersion runtime."
+      }
+      foreach ($hostFile in 'coreclr.dll', 'hostfxr.dll', 'hostpolicy.dll') {
+        if (("Ironmon Tracker/$hostFile" -in $names) -ne $selfContained) {
+          throw "$name has incorrect runtime files for its deployment mode."
+        }
       }
       $notesReader = [IO.StreamReader]::new($zip.GetEntry('RELEASE_NOTES.md').Open())
       try { $packagedNotes = $notesReader.ReadToEnd().Replace("`r`n", "`n") } finally { $notesReader.Dispose() }
@@ -154,7 +193,7 @@ function Assert-ReleaseArchives {
   }
   New-Item -ItemType Directory -Force -Path (Join-Path $ProjectRoot 'data') | Out-Null
   $receipts | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $ProjectRoot 'data/release-archives.audit.json') -Encoding utf8NoBOM
-  Write-Output 'Both player archives verified: all entries readable, checksums, source scripts, required documents, sensitive-file exclusions and shared Data parity.'
-  $tool = Join-Path $ProjectRoot 'tracker/tools/Ironmon.ReleaseTool/bin/Release/net10.0/Ironmon.ReleaseTool.dll'
+  Write-Output 'Verified both player archives for readability, checksums, source scripts, required documents, tracker runtime and deployment mode, sensitive-file exclusions, and shared Data parity.'
+  $tool = Get-UpdateCandidateToolPath $ProjectRoot
   Invoke-UpdateCandidateTool $tool @('verify', $AssetDirectory, (Join-Path $ProjectRoot 'resources/updater/trusted-keys.json'), 'unsigned')
 }

@@ -9,14 +9,6 @@ namespace Ironmon.Updater.Tests;
 /// </summary>
 public sealed class UpdaterHandoffTests
 {
-    private const string HostPath = "../../../../Ironmon.Updater.CrashHost/bin/";
-#if DEBUG
-    private const string Configuration = "Debug";
-#else
-    private const string Configuration = "Release";
-#endif
-    private const string HostFolder = "/net10.0";
-    private const string HostFile = "Ironmon.Updater.CrashHost.exe";
     private const string HelperPath = ".ironmon-update/recovery/1/Ironmon.Updater.exe";
     private const string ParentMode = "handoff-parent";
     private const string HandoffLog = ".ironmon-update/handoff-fixture.log";
@@ -133,13 +125,14 @@ public sealed class UpdaterHandoffTests
     /// <param name="relativeExecutable">The fixed tracker or helper path being tested.</param>
     private static void CopyHost(string root, string relativeExecutable)
     {
-        var source = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, HostPath + Configuration + HostFolder));
+        var host = SignedReleaseFixture.CrashHostPath;
+        var source = Path.GetDirectoryName(host)!;
         var executable = Path.Combine(root, relativeExecutable);
         var destination = Path.GetDirectoryName(executable)!;
         Directory.CreateDirectory(destination);
         foreach (var path in Directory.EnumerateFiles(source))
             File.Copy(path, Path.Combine(destination, Path.GetFileName(path)));
 
-        File.Copy(Path.Combine(source, HostFile), executable);
+        File.Copy(host, executable);
     }
 }

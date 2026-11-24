@@ -41,7 +41,9 @@ public sealed class TrackerRuntimeCompatibility : ITrackerRuntimeCompatibility
     private const string SharedDirectory = "shared";
     private const string KnownFrameworks = "Microsoft.NETCore.App|Microsoft.WindowsDesktop.App|Microsoft.AspNetCore.App";
     private const string TrackerFramework = "Microsoft.NETCore.App";
-    private static readonly Version _trackerRuntime = new(10, 0, 0);
+    private const string RuntimeDownloads = "https://dotnet.microsoft.com/download/dotnet/";
+    private static readonly Version _trackerRuntime = new(11, 0, 0);
+    private static readonly Version _previousTrackerRuntime = new(10, 0, 0);
     private static readonly HashSet<string> _frameworkNames = new(KnownFrameworks.Split('|'), StringComparer.Ordinal);
     private readonly Func<string, IReadOnlyList<Version>> _installed;
 
@@ -63,10 +65,10 @@ public sealed class TrackerRuntimeCompatibility : ITrackerRuntimeCompatibility
     }
 
     /// <summary>
-    /// Gets whether the registered x64 core framework meets the current tracker publication baseline of .NET 10.0.
+    /// Gets whether a registered x64 core framework can support the current or previous tracker publication baseline.
     /// </summary>
     /// <remarks>
-    /// This early choice check does not replace verification of the selected package's signed runtime configuration.
+    /// A Setup build can be newer than the latest stable tracker. Verify the selected package's exact signed runtime configuration separately.
     /// An unreadable installation is treated as unavailable so the bundled-runtime choice remains usable.
     /// </remarks>
     public bool TrackerRuntimeAvailable
@@ -75,7 +77,7 @@ public sealed class TrackerRuntimeCompatibility : ITrackerRuntimeCompatibility
         {
             try
             {
-                return _installed(TrackerFramework).Any(version => version.Major == _trackerRuntime.Major && version.Minor == _trackerRuntime.Minor && version >= _trackerRuntime);
+                return _installed(TrackerFramework).Any(version => MatchesBaseline(version, _trackerRuntime) || MatchesBaseline(version, _previousTrackerRuntime));
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
             {
@@ -83,6 +85,20 @@ public sealed class TrackerRuntimeCompatibility : ITrackerRuntimeCompatibility
             }
         }
     }
+
+    /// <summary>
+    /// Gets installation instructions for the runtime families offered by Setup's early choice.
+    /// </summary>
+    public static string TrackerRuntimeUnavailable => UpdaterText.SetupTrackerRuntimeUnavailable(_trackerRuntime.ToString(2), _previousTrackerRuntime.ToString(2), DownloadPage(_trackerRuntime), DownloadPage(_previousTrackerRuntime));
+
+    /// <summary>
+    /// Checks whether an installed framework can satisfy a supported publication baseline.
+    /// </summary>
+    /// <param name="installed">The registered framework version.</param>
+    /// <param name="baseline">The lowest supported runtime version in its family.</param>
+    /// <returns>Whether the major and minor match with a sufficient patch.</returns>
+    private static bool MatchesBaseline(Version installed, Version baseline)
+        => installed.Major == baseline.Major && installed.Minor == baseline.Minor && installed >= baseline;
 
     /// <summary>
     /// Checks flavor consistency and conservatively requires the declared framework major/minor with a compatible patch.
@@ -123,12 +139,20 @@ public sealed class TrackerRuntimeCompatibility : ITrackerRuntimeCompatibility
         {
             var name = requirement.GetProperty(Name).GetString() ?? throw new InvalidDataException(UpdaterText.TrackerRuntimeCompatibilityATrackerFrameworkNameIsMissing);
             var required = ReleaseProtocol.ParseVersion(requirement.GetProperty(VersionProperty).GetString()!);
-            if (!_frameworkNames.Contains(name) || !_installed(name).Any(version => version.Major == required.Major && version.Minor == required.Minor && (rollForward == Disable ? version == required : version >= required)))
-                throw new InvalidOperationException(UpdaterText.TrackerRuntimeCompatibilityThisTrackerRequiresForWindowsX64InstallThatRuntime(name, required));
+            if (!_frameworkNames.Contains(name) || !_installed(name).Any(version => rollForward == Disable ? version == required : MatchesBaseline(version, required)))
+                throw new InvalidOperationException(UpdaterText.TrackerRuntimeCompatibilityThisTrackerRequiresForWindowsX64InstallThatRuntime(name, required, DownloadPage(required)));
         }
 
         return Task.CompletedTask;
     }
+
+    /// <summary>
+    /// Gets Microsoft's download page for the runtime's major and minor version.
+    /// </summary>
+    /// <param name="version">The required framework version.</param>
+    /// <returns>The download page for the compatible runtime family.</returns>
+    private static string DownloadPage(Version version) 
+        => RuntimeDownloads + version.ToString(2);
 
     /// <summary>
     /// Reads stable framework directories beneath the registered x64 .NET installation.

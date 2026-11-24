@@ -59,11 +59,16 @@ jobs:
           snapshot-directory: upstream-inputs
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         if: steps.reuse.outputs.reused != 'true'
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/ironmon-dotnet
         with:
-          dotnet-version: 10.0.400
+          dotnet-version: 11.0.100
       - name: Install Windows MAUI workload
         if: steps.reuse.outputs.reused != 'true'
-        run: dotnet workload install maui-windows --skip-manifest-update
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          dotnet workload update --version 11.0.100
+          dotnet workload install maui-windows --skip-manifest-update
       - name: Provision the pinned Git dependency
         if: steps.reuse.outputs.reused != 'true'
         shell: bash

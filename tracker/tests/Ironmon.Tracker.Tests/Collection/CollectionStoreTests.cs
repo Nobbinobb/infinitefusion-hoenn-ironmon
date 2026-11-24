@@ -45,7 +45,7 @@ public sealed partial class CollectionStoreTests
     private const string _storageProperty = "storage";
     private const string _tablesProperty = "tables";
     private const string _versionProperty = "sqlite_version";
-    private const string _pinnedNativeVersion = "3.53.3";
+    private const string _pinnedNativeVersion = "3.53.4";
     private const string _firstSequence = "1";
     private const string _secondSequence = "2";
     private const string _familiesTable = "aggregate_families";
