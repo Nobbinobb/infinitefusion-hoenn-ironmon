@@ -1,4 +1,8 @@
-# Ironmon 0.10.1
+# Ironmon 0.10.2
+
+This is a mutable test release. Use it at your own risk and back up your saves.
+Replacement builds with the same version require rerunning Setup or
+reinstalling the complete matching ZIP.
 
 This distribution targets Pokémon Infinite Fusion 2: Hoenn 1.3.2 (engine 6.9.1).
 

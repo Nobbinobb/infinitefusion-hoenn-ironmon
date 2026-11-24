@@ -3,7 +3,7 @@
 #===============================================================================
 
 module Ironmon
-  VERSION = "0.10.1"
+  VERSION = "0.10.2"
   SUPPORTED_GAME_VERSION = "6.9.1".freeze
   SUPPORTED_HOENN_VERSION = "1.3.2".freeze
   RESET_KEY = Input::F7
