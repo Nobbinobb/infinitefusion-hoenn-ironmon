@@ -39,6 +39,7 @@ module Ironmon
     ]
     return true if metadata.compact.empty?
     catalog = evolution_catalog
+    catalog = catalog.for_method_fingerprint(recipe["evolution_method_fingerprint"]) || catalog
     fusion_pool = custom_fusion_pool_info
     expected = [
       NormalEvolutionGenerator::SCHEMA_VERSION,
@@ -383,8 +384,12 @@ module Ironmon
     ]
     cached = @tracker_fusion_evolution_generators[key]
     return cached if cached
+    catalog = evolution_catalog.for_method_fingerprint(recipe["evolution_method_fingerprint"])
+    if !catalog
+      raise TrackerLookupError.new("incompatible_evolutions", "The evolution source data no longer matches this run.")
+    end
     generator = FusionEvolutionGenerator.new(
-      recipe["seed"], evolution_catalog, custom_fusion_pool,
+      recipe["seed"], catalog, custom_fusion_pool,
       custom_fusion_pool_info,
       base_stat_generator_for(
         recipe["seed"], recipe["evolution_base_stat_source_fingerprint"]

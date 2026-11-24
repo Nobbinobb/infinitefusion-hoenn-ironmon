@@ -30,6 +30,9 @@ options. After this migration, use **Update** in the tracker again.
   6.9.1). Setup and the combined updater install the matching game revision.
 - Updates Ironmon's battle collection, save loading, and encounter handling for
   Hoenn 1.3.2. The game enables 576 base species for fusion.
+- Restores older Hoenn saves that have their original generation profile.
+  Active attempts keep their seeded evolutions. New attempts use the current
+  evolution catalog.
 - Moves Ironmon Tracker, Setup, and the updater to **.NET 11**.
 - Fixes a .NET 11 packaging crash that could close Setup or the updater before
   its window opened. Download Setup again if you tried an earlier v0.10.2 build.
