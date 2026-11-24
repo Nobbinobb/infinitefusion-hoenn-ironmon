@@ -1,7 +1,7 @@
 # Installing Ironmon
 
-The current source tree targets **Pokémon Infinite Fusion 2: Hoenn 1.3.2**
-(engine 6.9.1) on Windows x64. See the compatibility table for published
+The **Ironmon 0.10.2 test release** targets **Pokémon Infinite Fusion 2: Hoenn
+1.3.2** (engine 6.9.1) on Windows x64. See the compatibility table for earlier
 versions. Use the game scripts and tracker from the same Ironmon release.
 
 ## Install with Setup
@@ -33,9 +33,10 @@ or disappears. Existing installations cannot be downgraded. Older versioned Setu
 downloads always select latest; use a versioned ZIP and matching game for releases
 without supported signed installer metadata.
 
-For a mutable test release, download Setup from that release and explicitly select
-its entry labeled **Test release**. To install a replacement build of the same
-version, rerun Setup and repeat selection and review. Changed program files may
+For the [0.10.2 test release](https://github.com/Nobbinobb/infinitefusion-hoenn-ironmon/releases/tag/v0.10.2),
+download Setup from that release and explicitly select **0.10.2 (Test release)**.
+To install a replacement build of the same version, download the current Setup
+and repeat selection and review. Changed program files may
 need confirmation and backup. Tracker update checks default to stable versions;
 enable **Include test releases** in the update panel to receive newer published
 prereleases through the same update flow. The choice survives updates. Same-version
@@ -62,9 +63,9 @@ optional download does not undo the installed game. You can finish it later from
 1. Install the supported game version, fully close the game and tracker, and back
    up saves you care about.
 2. Download one package:
-   - `Ironmon-v0.10.1-win-x64.zip` includes the .NET runtime.
-   - `Ironmon-v0.10.1-win-x64-runtime-required.zip` requires the Windows x64
-     .NET 10 Runtime; the SDK and MAUI workload are unnecessary.
+   - `Ironmon-v0.10.2-win-x64.zip` includes the .NET runtime.
+   - `Ironmon-v0.10.2-win-x64-runtime-required.zip` requires the Windows x64
+     .NET 11 Runtime.
 3. Extract the **complete archive** into the directory containing
    `InfiniteFusion2.exe`. Merge its `Data` directory with the existing one.
 4. Start `Ironmon Tracker/Ironmon Tracker.exe`, then use **Play** to create or
@@ -156,6 +157,7 @@ backups; automatic cleanup is not implemented.
 
 | Ironmon | Infinite Fusion 2 |
 | --- | --- |
+| 0.10.2 test release | Hoenn 1.3.2 (engine 6.9.1) |
 | 0.10.1 | 6.8.2 |
 | 0.10.0 | 6.8.2 |
 | 0.8.15 | 6.8.2 |
