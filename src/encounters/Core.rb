@@ -97,7 +97,7 @@ module Ironmon
 
   def self.encounter_environment(encounter_type)
     value = encounter_type.to_s
-    return :grass if value.start_with?("Land") || value == "TallGrass"
+    return :grass if value.start_with?("Land") || value == "TallGrass" || value == "Puddle"
     return :cave if value.start_with?("Cave")
     return :water if value.start_with?("Water")
     return :fishing if value.end_with?("Rod")

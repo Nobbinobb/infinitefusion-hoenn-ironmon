@@ -23,7 +23,16 @@ begin
     false
   )
   raise "The native graphics/input runtime is missing" if !defined?(Graphics) || !defined?(Input)
+  raise "The selected Hoenn release is not supported" if !Ironmon.compatible?
   raise "Compiled species data is empty" if GameData::Species.keys.empty?
+  raise "Hoenn boss trainer recognition failed" if !Ironmon.gym_leader_types.include?(:LEADER_Wattson) ||
+    !Ironmon.boss_trainer_types.include?(:RIVAL2)
+  land_encounters_supported = [:Land4, :Puddle].all? do |encounter_type|
+    GameData::EncounterType.exists?(encounter_type) && Ironmon.overworld_encounter_environment?(encounter_type)
+  end
+  raise "Hoenn land encounter recognition failed" if !land_encounters_supported
+  raise "Startup preparation cannot reach native input" if
+    Ironmon::StartupPreparation.native_input_update.owner != Input.singleton_class
   raise "The current battle Run hook was not loaded" if !Ironmon.respond_to?(:battle_cancel_run_hotkey?)
   cases << { "name" => "source startup", "status" => "passed",
     "seconds" => Process.clock_gettime(Process::CLOCK_MONOTONIC) - started }

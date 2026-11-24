@@ -6,7 +6,7 @@ module Ironmon
   LEGACY_GYM_LEADER_SCHEMA_VERSION = 1
   BOSS_TRAINER_SCHEMA_VERSION = 2
   GYM_LEADER_TYPES_BY_GAME_VERSION = {
-    "6.8.2" => [
+    SUPPORTED_GAME_VERSION => [
       :LEADER_Roxanne,
       :LEADER_Brawly,
       :LEADER_Wattson,
@@ -20,7 +20,7 @@ module Ironmon
     ].freeze
   }.freeze
   BOSS_TRAINER_TYPES_BY_GAME_VERSION = {
-    "6.8.2" => [
+    SUPPORTED_GAME_VERSION => [
       :RIVAL2,
       :LEADER_Roxanne,
       :LEADER_Brawly,

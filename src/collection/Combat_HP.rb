@@ -4,18 +4,18 @@ module Ironmon
       RETALIATION_FUNCTIONS = ["071", "072", "073"]
       NATIVE_HP_CALLSITES = {
         "006_Battle_Action_Switching.rb" => {
-          :sha256 => "ae1fde7ab579b1a55ff6f3f4f5c1691b809b3693ff6bf5a242152cb9da541f36",
-          :lines => { 340 => ["position", "HealingWish"], 348 => ["position", "LunarDance"], 362 => ["side", "StealthRock"], 375 => ["side", "Spikes"] }
+          :sha256 => "6e7dc5fcc6519f39a12234b22242e474f90fb38411223d7eab0e8555836e31e0",
+          :lines => { 341 => ["position", "HealingWish"], 349 => ["position", "LunarDance"], 363 => ["side", "StealthRock"], 376 => ["side", "Spikes"] }
         },
         "012_Battle_Phase_EndOfRound.rb" => {
-          :sha256 => "51ea059b09f937d131311a9325ad8b877928223e3483c5dd0df0d4b4d75d52d7",
+          :sha256 => "3cd9b0d912b77a62243d13187ba15579f7068884418ff9b672d44a5055f0fadc",
           :lines => {
             84 => ["weather", "Sandstorm"], 91 => ["weather", "Hail"], 98 => ["weather", "ShadowSky"],
-            256 => ["position", "Wish"], 271 => ["side", "SeaOfFire"], 284 => ["ability", "DRYSKIN"],
-            298 => ["battler", "AquaRing"], 307 => ["battler", "Ingrain"], 319 => ["battler", "LeechSeed"],
-            333 => ["self", "HyperMode"], 350 => ["ability", "POISONHEAL"],
-            383 => ["battler", "Nightmare"], 393 => ["battler", "Curse"],
-            423 => ["battler", "Trapping"], 488 => ["battler", "PerishSong"]
+            219 => ["position", "Wish"], 234 => ["side", "SeaOfFire"], 247 => ["ability", "DRYSKIN"],
+            261 => ["battler", "AquaRing"], 270 => ["battler", "Ingrain"], 282 => ["battler", "LeechSeed"],
+            296 => ["self", "HyperMode"], 313 => ["ability", "POISONHEAL"],
+            346 => ["battler", "Nightmare"], 356 => ["battler", "Curse"],
+            386 => ["battler", "Trapping"], 451 => ["battler", "PerishSong"]
           }
         }
       }
@@ -37,7 +37,7 @@ module Ironmon
         end
         @verified_native_sources ||= {}
         verified = @verified_native_sources.fetch(source_path) do
-          @verified_native_sources[source_path] = File.file?(source_path) && Digest::SHA256.hexdigest(File.binread(source_path)) == registry[:sha256]
+          @verified_native_sources[source_path] = File.file?(source_path) && NativeEvidence.source_digest(File.binread(source_path)) == registry[:sha256]
         end
         return { "source_evidence_coverage" => "unsupported_revision" } if !verified
         scope, name = entry

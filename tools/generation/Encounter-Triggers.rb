@@ -1,7 +1,8 @@
 module IronmonEncounterTriggers
   LAND_TERRAINS = {
     :Grass_alt1 => "Land1", :Grass_alt2 => "Land2",
-    :Grass_alt3 => "Land3", :TallGrass => "TallGrass"
+    :Grass_alt3 => "Land3", :Grass_alt4 => "Land4",
+    :TallGrass => "TallGrass", :Puddle => "Puddle"
   }.freeze
 
   def self.for_map(map, tileset)

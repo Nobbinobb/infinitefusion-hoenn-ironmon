@@ -4,7 +4,8 @@
 
 module Ironmon
   VERSION = "0.10.1"
-  SUPPORTED_GAME_VERSIONS = ["6.8.2"].freeze
+  SUPPORTED_GAME_VERSION = "6.9.1".freeze
+  SUPPORTED_HOENN_VERSION = "1.3.2".freeze
   RESET_KEY = Input::F7
   FULL_RANDOM_BST_RANGE = 999
   TRAINER_CUSTOM_SPRITES_SWITCH = 600
@@ -34,8 +35,10 @@ module Ironmon
   end
 
   def self.compatible?
-    return false if !defined?(Settings::GAME_VERSION_NUMBER)
-    return SUPPORTED_GAME_VERSIONS.include?(Settings::GAME_VERSION_NUMBER)
+    return false if !defined?(Settings::HOENN) || !Settings::HOENN
+    return false if !defined?(Settings::HOENN_VERSION_NUMBER) || !defined?(Settings::GAME_VERSION_NUMBER)
+    return Settings::HOENN_VERSION_NUMBER == SUPPORTED_HOENN_VERSION &&
+      Settings::GAME_VERSION_NUMBER == SUPPORTED_GAME_VERSION
   end
 
   def self.check_compatibility
@@ -45,7 +48,8 @@ module Ironmon
                    else
                      "unknown"
                    end
-    echoln "Ironmon #{VERSION} warning: game version #{game_version} is not supported. Supported version: #{SUPPORTED_GAME_VERSIONS.join(', ')}."
+    hoenn_version = defined?(Settings::HOENN_VERSION_NUMBER) ? Settings::HOENN_VERSION_NUMBER : "unknown"
+    echoln "Ironmon #{VERSION} warning: unsupported game (Hoenn #{hoenn_version}, engine #{game_version}). Expected Hoenn #{SUPPORTED_HOENN_VERSION} with engine #{SUPPORTED_GAME_VERSION}."
     return false
   end
 

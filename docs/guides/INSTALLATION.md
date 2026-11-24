@@ -1,7 +1,8 @@
 # Installing Ironmon
 
-Ironmon **0.10.1** supports **Pokémon Infinite Fusion 2: Hoenn 6.8.2** on
-Windows x64. Use the game scripts and tracker from the same release.
+The current source tree targets **Pokémon Infinite Fusion 2: Hoenn 1.3.2**
+(engine 6.9.1) on Windows x64. See the compatibility table for published
+versions. Use the game scripts and tracker from the same Ironmon release.
 
 ## Install with Setup
 
