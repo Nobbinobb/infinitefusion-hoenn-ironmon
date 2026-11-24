@@ -402,16 +402,18 @@ module IronmonCalculationPacingTests
     assert(previous[:proofs] == sliced[:proofs] && previous[:plans] == sliced[:plans],
       "slicing the cold closure handoff preserves every derived-fusion and unfusion proof")
     assert(typed_tree_equal?(previous[:catalog], sliced[:catalog]),
-      "native profile parsing preserves every catalog string byte and numeric type")
-    ["{\"text\":\"before\\u0000after\"}", "{\"value\":1.0}",
-     "{\"value\":1e2}", "{\"value\":9007199254740993}"].each do |unsafe|
-      assert(!Ironmon.generation_profile_native_json_safe?(unsafe),
-        "native profile parsing preserves NUL text, floating-point values and large integers through its original parser")
-    end
-    assert(Ironmon.generation_profile_native_json_safe?("{\"text\":\"1.5 and 1e2\",\"value\":42}"),
-      "numeric-looking text does not disable safe native parsing")
+      "cooperative profile parsing preserves every catalog string byte and numeric type")
+    assert(sliced[:measurement]["native_parse_ms"].empty?,
+      "cold fusion-name loading never submits the full catalog to an indivisible parser")
+    long_text = "é1.5 and 1e2" * 200
+    input = '{"text":"' + long_text + '\u0000\ud83d\ude80", "numbers":[1.0,1e2,9007199254740993,null]}'
+    checkpoints = 0
+    parsed = Ironmon::GameplayCollection::JsonReader.new(input, proc { checkpoints += 1 }).parse
+    expected = { "text" => long_text + "\u0000\u{1F680}", "numbers" => [1.0, 100.0, 9_007_199_254_740_993, nil] }
+    assert(typed_tree_equal?(parsed, expected) && checkpoints >= 3,
+      "cooperative parsing yields inside a long string and preserves escaped text and exact numeric types")
     assert(sliced[:measurement]["maximum_chunk_ms"] < 100,
-      "the cold fusion-name handoff retains only a bounded native parser operation (#{sliced[:measurement]["maximum_chunk_ms"]})")
+      "the cold fusion-name handoff keeps each runtime slice below 100 ms (#{sliced[:measurement]["maximum_chunk_ms"]})")
     service = Ironmon::TrackerObtainabilityService.new(current_recipe, true)
     previous_edges = [7]
     previous_words = [9]
