@@ -31,6 +31,8 @@ options. After this migration, use **Update** in the tracker again.
 - Updates Ironmon's battle collection, save loading, and encounter handling for
   Hoenn 1.3.2. The game enables 576 base species for fusion.
 - Moves Ironmon Tracker, Setup, and the updater to **.NET 11**.
+- Fixes a .NET 11 packaging crash that could close Setup or the updater before
+  its window opened. Download Setup again if you tried an earlier v0.10.2 build.
 - Opens a separately signed updater from the tracker. It handles installation
   review and game file preparation, and can receive fixes independently of the
   game and tracker. The update archive uses the signed game file bytes on Windows.
