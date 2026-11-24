@@ -96,12 +96,13 @@ releases, recovery, and troubleshooting.
 ## Updating
 
 The tracker checks for updates at startup. Choose **Update** when offered, or
-use **Check for updates** beside the Settings heading.
+use **Check for updates** beside the Settings heading. The tracker shows the
+release notes and opens the standalone updater for review and installation.
 
 Save your game before applying an update. If the update requires a finished
 Ironmon run, complete that run first; closing the game does not finish it.
-For older trackers without an updater, use Setup or follow the manual
-installation instructions.
+If you are on 0.10.1 or earlier, download the new Setup once and point it at
+your existing game folder. Future updates start from the tracker.
 
 ## Documentation
 

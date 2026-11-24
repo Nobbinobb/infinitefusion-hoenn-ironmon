@@ -29,10 +29,12 @@ public sealed class CombinedGamePreparation(MinGitCache cache, RepositoryPolicy 
     private const string Reset = "reset";
     private const string Mixed = "--mixed";
     private const string Config = "config";
+    private const string ConfigOption = "-c";
     private const string BranchPrefix = "branch.";
     private const string RemoteSuffix = ".remote";
     private const string MergeSuffix = ".merge";
     private const string Autocrlf = "core.autocrlf";
+    private const string DisableAutocrlf = Autocrlf + "=false";
     private const string True = "true";
     private const string Archive = "archive";
     private const string ZipFormat = "--format=zip";
@@ -153,7 +155,8 @@ public sealed class CombinedGamePreparation(MinGitCache cache, RepositoryPolicy 
             await VerifyTreeAsync(git, workspace, target, cancellationToken).ConfigureAwait(false);
             InstallationProgressScope.Report(new(InstallationStage.PreparingGame));
             var archive = PlainPaths.Child(workspace, ArchiveName);
-            await RequireAsync(git, workspace, [Archive, ZipFormat, NoCompression, Output + archive, target.GameCommit], cancellationToken).ConfigureAwait(false);
+            // The signed inventory describes Git blob bytes. The copied checkout config can expand LF to CRLF.
+            await RequireAsync(git, workspace, [ConfigOption, DisableAutocrlf, Archive, ZipFormat, NoCompression, Output + archive, target.GameCommit], cancellationToken).ConfigureAwait(false);
             var payload = PlainPaths.Child(workspace, PayloadName);
             await ReleaseArchive.ExtractAsync(archive, await TransactionStorage.ContentAsync(archive, cancellationToken).ConfigureAwait(false), payload, target.Files, cancellationToken).ConfigureAwait(false);
             InstallationProgressScope.Report(new(InstallationStage.VerifyingGame));

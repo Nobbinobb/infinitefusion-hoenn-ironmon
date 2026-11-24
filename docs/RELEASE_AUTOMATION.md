@@ -146,6 +146,12 @@ clean-machine acceptance distinct from automated build checks.
 
 ### Freeze and promote the accepted build
 
+Record a completed in-tracker upgrade from the last immutable stable release to
+the exact candidate for each package variant before promotion. Use the
+[upgrade acceptance checklist](guides/UPDATER_ACCEPTANCE.md#release-upgrade-acceptance).
+If the shipped updater cannot install the candidate, qualify an in-app bridge
+and repeat the check through both hops before promoting the target.
+
 After explicit testing approval, retain the exact seven tested asset digests.
 Remove the accepted tag's testing exception from **Immutable release tags**.
 Enable repository immutability, temporarily unpublish the mutable prerelease,

@@ -11,6 +11,9 @@ internal static class Program
     private const string Create = "create";
     private const string Verify = "verify";
     private const string Sign = "sign";
+    private const string CreateWorker = "worker-create";
+    private const string VerifyWorker = "worker-verify";
+    private const string SignWorker = "worker-sign";
     private const string Package = "package";
     private const string HelperVersion = "helper-version";
     private const string Trust = "trust";
@@ -58,7 +61,15 @@ internal static class Program
             {
                 ReleaseBundle.ValidateInputs(gameInventory, gameManifest, gameVersion, previous == NoHistory ? null : previous, trustedKeys);
             }
-            else if (args is [Sign, var candidate, var keys])
+            else if (args is [CreateWorker, var workerDirectory, var updaterExecutable, var workerVersion])
+            {
+                StandaloneUpdaterBundle.Create(workerDirectory, updaterExecutable, workerVersion);
+            }
+            else if (args is [VerifyWorker, var workerCandidate, var workerTrust])
+            {
+                StandaloneUpdaterBundle.Verify(workerCandidate, workerTrust, true);
+            }
+            else if (args is [var signing, var candidate, var keys] && signing is Sign or SignWorker)
             {
                 var encoded = Environment.GetEnvironmentVariable(ReleaseSigning.KeyVariable) ?? throw new InvalidOperationException("The dedicated updater signing secret is missing.");
                 Environment.SetEnvironmentVariable(ReleaseSigning.KeyVariable, null);
@@ -66,7 +77,10 @@ internal static class Program
                 var bytes = Convert.FromBase64String(encoded);
                 try
                 {
-                    ReleaseSigning.Sign(candidate, keys, id, bytes);
+                    if (signing == SignWorker)
+                        ReleaseSigning.SignWorker(candidate, keys, id, bytes);
+                    else
+                        ReleaseSigning.Sign(candidate, keys, id, bytes);
                 }
                 finally
                 {
@@ -82,7 +96,7 @@ internal static class Program
         }
         catch (Exception error) when (error is IOException or InvalidDataException or InvalidOperationException or ArgumentException or CryptographicException or System.Text.Json.JsonException)
         {
-            Console.Error.WriteLine(args.FirstOrDefault() == Sign ? "Release signing failed. Check the verified candidate and dedicated key configuration." : error.Message);
+            Console.Error.WriteLine(args.FirstOrDefault() is Sign or SignWorker ? "Release signing failed. Check the verified candidate and dedicated key configuration." : error.Message);
             return 1;
         }
     }

@@ -28,6 +28,16 @@ public sealed class SetupReleaseCatalog(ReleaseHttpClient http, ReleaseVerifier 
     private const string _shaProperty = "sha";
     private const string _ahead = "ahead";
     private const string _identical = "identical";
+    private readonly bool _offerOnly;
+
+    /// <summary>
+    /// Selects the lightweight catalog used by a tracker that delegates installation decisions.
+    /// </summary>
+    /// <param name="http">The bounded public release transport.</param>
+    /// <param name="verifier">The independently configured release trust.</param>
+    /// <param name="offerOnly">Whether the catalog should authenticate offers without checking game availability.</param>
+    internal SetupReleaseCatalog(ReleaseHttpClient http, ReleaseVerifier verifier, bool offerOnly) : this(http, verifier)
+        => _offerOnly = offerOnly;
 
     /// <summary>
     /// Lists published stable and test releases for explicit selection, disabling unverifiable targets.
@@ -76,6 +86,12 @@ public sealed class SetupReleaseCatalog(ReleaseHttpClient http, ReleaseVerifier 
             try
             {
                 var evidence = await ReadVerifiedAsync(entry.Key, entry.Value, token).ConfigureAwait(false);
+                if (_offerOnly)
+                {
+                    choices[index] = new SetupReleaseChoice(entry.Key, null, null, null, entry.Value.GetProperty(_prereleaseProperty).GetBoolean());
+                    return;
+                }
+
                 manifest = verifier.Verify(evidence.Manifest, evidence.Signatures);
                 await RequireAvailableAsync(manifest, games, token).ConfigureAwait(false);
                 choices[index] = new SetupReleaseChoice(entry.Key, manifest.Game.VersionLabel, manifest.Game.PreferredCommit, null, entry.Value.GetProperty(_prereleaseProperty).GetBoolean());
@@ -96,13 +112,40 @@ public sealed class SetupReleaseCatalog(ReleaseHttpClient http, ReleaseVerifier 
     /// <returns>Fresh authenticated evidence; unavailable targets never fall back to latest.</returns>
     public async Task<ReleaseEvidence> ReadAsync(string version, CancellationToken cancellationToken)
     {
-        ReleaseProtocol.ParseVersion(version);
-        var response = await http.ReadAsync(new Uri(ReleaseProtocol.ReleaseTagUrl + version), ReleaseJson.ManifestLimit, cancellationToken: cancellationToken).ConfigureAwait(false);
-        using var document = JsonDocument.Parse(response.Bytes);
-        var evidence = await ReadVerifiedAsync(version, document.RootElement, cancellationToken).ConfigureAwait(false);
+        var evidence = await ReadPublishedAsync(version, cancellationToken).ConfigureAwait(false);
+        if (_offerOnly)
+            return evidence;
+
         var manifest = verifier.Verify(evidence.Manifest, evidence.Signatures);
         await RequireAvailableAsync(manifest, new ConcurrentDictionary<string, Lazy<Task<bool>>>(StringComparer.Ordinal), cancellationToken).ConfigureAwait(false);
         return evidence;
+    }
+
+    /// <summary>
+    /// Resolves the standalone tracker's exact offer so Setup can inspect the actual installation and package flavor.
+    /// </summary>
+    /// <param name="target">The exact release selection passed to the worker.</param>
+    /// <param name="cancellationToken">The caller cancellation token.</param>
+    /// <returns>The freshly authenticated pinned release.</returns>
+    public async Task<ReleaseEvidence> ReadForUpdateAsync(StandaloneUpdateTarget target, CancellationToken cancellationToken)
+    {
+        var release = await ReadPublishedAsync(target.Version, cancellationToken).ConfigureAwait(false);
+        target.RequireMatch(release);
+        return release;
+    }
+
+    /// <summary>
+    /// Reauthenticates a single exact public release independently of package and game availability checks.
+    /// </summary>
+    /// <param name="version">The canonical displayed release version.</param>
+    /// <param name="cancellationToken">The caller cancellation token.</param>
+    /// <returns>The signed public release evidence.</returns>
+    private async Task<ReleaseEvidence> ReadPublishedAsync(string version, CancellationToken cancellationToken)
+    {
+        ReleaseProtocol.ParseVersion(version);
+        var response = await http.ReadAsync(new Uri(ReleaseProtocol.ReleaseTagUrl + version), ReleaseJson.ManifestLimit, cancellationToken: cancellationToken).ConfigureAwait(false);
+        using var document = JsonDocument.Parse(response.Bytes);
+        return await ReadVerifiedAsync(version, document.RootElement, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -128,7 +171,14 @@ public sealed class SetupReleaseCatalog(ReleaseHttpClient http, ReleaseVerifier 
         var signature = await http.ReadAsync(new Uri(ReleaseProtocol.AssetUrl(version, ReleaseProtocol.SignatureName)), ReleaseJson.SignatureLimit, cancellationToken: cancellationToken).ConfigureAwait(false);
         try
         {
-            verifier.Verify(manifest.Bytes, signature.Bytes, _tagPrefix + version);
+            if (_offerOnly)
+            {
+                verifier.VerifyOffer(new ReleaseEvidence(manifest.Bytes, signature.Bytes, []), version);
+            }
+            else
+            {
+                verifier.Verify(manifest.Bytes, signature.Bytes, _tagPrefix + version);
+            }
         }
         catch (Exception error) when (error is InvalidDataException or JsonException or CryptographicException or FormatException)
         {

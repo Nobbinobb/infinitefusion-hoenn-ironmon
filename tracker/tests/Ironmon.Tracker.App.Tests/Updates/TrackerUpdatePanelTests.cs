@@ -19,7 +19,22 @@ namespace Ironmon.Tracker.App.Tests.Updates;
 public sealed partial class TrackerUpdatePanelTests
 {
     private const string ResourceName = "Ironmon.Tracker.App.Resources.Localization.TrackerResources";
-    private const string ScriptNotes = "<script>alert('release notes')</script>\nA quieter tracker update.";
+    private const string MarkdownNotes = """
+        # Tracker update
+
+        > [!IMPORTANT]
+        > This is a test release.
+
+        - **Smoother** *updates* with `less waiting`.
+        - [Runtime download](https://example.com/runtime)
+
+        https://example.com/notes
+
+        <script>alert('release notes')</script>
+
+        [Unsafe link](javascript:alert%281%29) <javascript:alert%281%29>
+        ![Remote image](https://example.com/preview.png)
+        """;
     private const string KeyHandler = "HandleKeyDown";
     private const string EscapeKey = "Escape";
     private const string LocalModification = "my edited script";
@@ -59,13 +74,13 @@ public sealed partial class TrackerUpdatePanelTests
     }
 
     /// <summary>
-    /// Renders the invitation on startup and returns with Escape while retaining the real review session.
+    /// Renders signed Markdown safely in the real update review and returns to the origin with Escape.
     /// </summary>
     [Fact]
     public async Task InvitationOpensEscapedReleaseNotesAndEscapeReturnsToTheOrigin()
     {
         using var fixture = new TrackerUpdateTestFixture();
-        fixture.Release.UseNotes(ScriptNotes);
+        fixture.Release.UseNotes(MarkdownNotes);
         await fixture.Session.StartAsync();
         await RenderAsync(fixture, async (component, html) =>
         {
@@ -75,14 +90,90 @@ public sealed partial class TrackerUpdatePanelTests
             Assert.DoesNotContain("tracker-update-footer", html());
             await fixture.Session.OpenAsync();
             Assert.Contains("role=\"dialog\"", html());
+            Assert.Contains("<h3>Tracker update</h3>", html());
+            Assert.Contains("markdown-alert-important", html());
+            Assert.Contains("<li><strong>Smoother</strong> <em>updates</em> with <code>less waiting</code>.", html());
+            Assert.Contains("href=\"https://example.com/runtime\" target=\"_blank\"", html());
+            Assert.Contains("href=\"https://example.com/notes\" target=\"_blank\"", html());
             Assert.Contains("&lt;script&gt;", html());
             Assert.DoesNotContain("<script>", html());
+            Assert.DoesNotContain("href=\"javascript:", html());
+            Assert.Contains("Unsafe link", html());
+            Assert.DoesNotContain("src=\"https://example.com/preview.png\"", html());
+            Assert.Contains("Remote image", html());
             Assert.Contains("Save your game", html());
             Assert.DoesNotContain("Continue", html());
             typeof(TrackerUpdatePanel).GetMethod(KeyHandler, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(component, [new KeyboardEventArgs { Key = EscapeKey }]);
             Assert.False(fixture.Session.IsOpen);
             Assert.DoesNotContain("role=\"dialog\"", html());
         });
+    }
+
+    /// <summary>
+    /// Opens an authenticated newer-schema update while leaving installation planning to the standalone executable.
+    /// </summary>
+    [Fact]
+    public async Task StandaloneUpdateRendersNotesAndHandsOffTheExactOfferBeforePlanning()
+    {
+        using var fixture = new TrackerUpdateTestFixture { ActiveRun = true };
+        fixture.Release.UseNotes(MarkdownNotes);
+        fixture.Release.RequireNewInstallationEngine();
+        var updater = new RecordedUpdater();
+        fixture.UseStandaloneUpdater(updater);
+        await fixture.Session.OpenAsync();
+        await RenderAsync(fixture, async (_, html) =>
+        {
+            Assert.Null(fixture.Session.Review);
+            Assert.True(fixture.Session.CanUpdate, fixture.Session.Error);
+            Assert.Contains("<h3>Tracker update</h3>", html());
+            await fixture.Session.UpdateAsync();
+            Assert.Equal(fixture.Release.Root, updater.Target?.InstallationRoot);
+            Assert.Equal(SignedReleaseFixture.VersionB, updater.Target?.Version);
+            Assert.Equal(TransactionStorage.Hash(fixture.Release.Evidence.Manifest), updater.Target?.ManifestSha256);
+            Assert.False(fixture.ArchiveStarted.Task.IsCompleted);
+            Assert.Null(fixture.Handoff);
+            Assert.Null(UpdateTransaction.ReadActiveId(fixture.Release.Root));
+        });
+    }
+
+    /// <summary>
+    /// Allows an authenticated release to launch even when the display-only notes cannot be fetched.
+    /// </summary>
+    [Fact]
+    public async Task UnavailableNotesDoNotBlockTheStandaloneUpdater()
+    {
+        using var fixture = new TrackerUpdateTestFixture { NotesUnavailable = true };
+        var updater = new RecordedUpdater();
+        fixture.UseStandaloneUpdater(updater);
+        await fixture.Session.OpenAsync();
+        Assert.Null(fixture.Session.Notes);
+        Assert.True(fixture.Session.CanUpdate, fixture.Session.Error);
+        await fixture.Session.UpdateAsync();
+        Assert.Equal(SignedReleaseFixture.VersionB, updater.Target?.Version);
+    }
+
+    /// <summary>
+    /// Records the launch requested by the production tracker session without opening a process.
+    /// </summary>
+    private sealed class RecordedUpdater : IStandaloneUpdater
+    {
+        /// <summary>
+        /// Gets the exact target passed to the independent updater.
+        /// </summary>
+        internal StandaloneUpdateTarget? Target { get; private set; }
+
+        /// <summary>
+        /// Captures the requested launch.
+        /// </summary>
+        /// <param name="target">The selected installation and signed release fingerprint.</param>
+        /// <param name="cancellationToken">The prelaunch cancellation token.</param>
+        /// <returns>The completed fixture launch.</returns>
+        public Task LaunchAsync(StandaloneUpdateTarget target, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Target = target;
+            return Task.CompletedTask;
+        }
     }
 
     /// <summary>

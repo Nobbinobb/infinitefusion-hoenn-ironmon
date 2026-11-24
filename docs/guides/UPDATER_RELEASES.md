@@ -30,7 +30,61 @@ After testing is accepted, freeze and promote the exact tested assets without
 rebuilding. See the [publication and promotion procedure](../RELEASE_AUTOMATION.md#publication-and-recovery)
 for repository policy transitions and required verification.
 
-## Published artifacts
+## Standalone updater releases
+
+The tracker can authenticate an offer and show its Markdown notes while the
+game is closed. **Update** opens a separately downloaded self-contained updater
+for the exact installation and release. The updater independently checks the
+signed release, reviews changed files, checks prerequisites, and prepares and
+applies the transaction. For a game change it asks the player to confirm their
+run is finished before proceeding. Existing transactions retain their own
+versioned recovery helper.
+
+For the first release with this flow, publish and verify an independent updater
+before offering the tracker that uses it. Players on 0.10.1 use the new signed
+Setup once and select their existing game folder. When testing a prerelease,
+select it under Setup's advanced version options. The installed tracker then
+uses the standalone updater on future updates.
+
+Run **Prepare standalone updater** (`standalone-updater.yml`) on `main` with
+the approved source commit and a new increasing numeric worker version. The
+workflow builds and tests the self-contained Windows updater and signs its
+candidate in the protected release environment. It leaves a private
+`vupdater-<version>` draft with three verified assets. Inspect the draft before
+publishing it. A published worker version cannot be reused by this workflow.
+
+For a local packaging rehearsal, build the updater independently of the game
+and tracker packages.
+
+```powershell
+$version = '1.0.0'
+$build = Join-Path $PWD "data/standalone-updater/$version/build"
+$candidate = Join-Path $PWD "data/standalone-updater/$version/candidate"
+$tool = 'tracker/tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj'
+$trust = Join-Path $PWD 'resources/updater/trusted-keys.json'
+dotnet publish tracker/src/Setup/Ironmon.Setup/Ironmon.Setup.csproj -c Release -r win-x64 --self-contained true "-p:Version=$version" -p:UpdaterMetadataOnly=true -o $build
+dotnet run --project $tool -c Release -- worker-create $candidate (Join-Path $build 'Ironmon Setup.exe') $version
+```
+
+For a signing rehearsal with independent test trust, pass the test key
+identifier and key through `IRONMON_UPDATER_SIGNING_KEY_ID` and
+`IRONMON_UPDATER_SIGNING_KEY`, then sign and verify the reviewed candidate. Set
+`$trust` to the test public keys for that rehearsal.
+
+```powershell
+dotnet run --project $tool -c Release -- worker-sign $candidate $trust
+dotnet run --project $tool -c Release -- worker-verify $candidate $trust
+```
+
+Attach all three candidate files to `vupdater-<version>` in the Ironmon
+repository. Publish the worker release with GitHub's prerelease flag so the
+ordinary stable tracker feed continues to identify a game release. The tracker
+discovers the highest numeric published worker from this tag namespace and
+verifies the signed descriptor and executable hash before launch. Keep the
+published worker files immutable. A worker fix gets a new worker tag and can
+serve the same signed game and tracker release.
+
+## Published game and tracker artifacts
 
 Publication exposes seven files, in addition to GitHub's automatic source
 archives:

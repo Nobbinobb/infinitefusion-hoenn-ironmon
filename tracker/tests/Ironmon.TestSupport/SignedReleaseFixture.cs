@@ -200,6 +200,15 @@ internal sealed class SignedReleaseFixture : IArtifactSource, IDisposable
     }
 
     /// <summary>
+    /// Signs a payload schema that needs a newer installation engine while keeping its offer fields stable.
+    /// </summary>
+    internal void RequireNewInstallationEngine()
+    {
+        Manifest = Manifest with { SchemaVersion = 3 };
+        Evidence = Sign(Manifest, Evidence.Inventories);
+    }
+
+    /// <summary>
     /// Authenticates selected executable bytes as the helper for isolated administrator-worker tests.
     /// </summary>
     /// <param name="bytes">The actual fixture host bytes, never a production signing key.</param>

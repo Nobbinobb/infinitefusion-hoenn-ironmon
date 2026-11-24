@@ -25,8 +25,9 @@ internal static class Program
     /// <summary>
     /// Composes the same trusted release, transaction and sprite services used by the installed tracker.
     /// </summary>
+    /// <param name="args">Optional exact update selection passed by the tracker.</param>
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
         var application = new Application();
         try
@@ -50,6 +51,9 @@ internal static class Program
             var preparation = new SetupPreparation(verifier, downloads, runtime, game, verification, protectedUpdates);
             var authority = new SignedIronmonAuthority(verifier, runtime, verification);
             using var session = new SetupSession(new ReleaseDiscovery(http, verifier, Path.Combine(cache, Discovery)), preparation, (root, progress) => new UpdateTransaction(authority, token => UpdateProcessIdentity.EnsureInstallationIdleAsync(root, UpdaterHandoff.TrackerRelativePath, token), progress), sprites, platform, downloads, protectedUpdates, (commit, token) => SpriteDownloadEstimates.ReadAsync(estimates, commit, token));
+            if (StandaloneUpdateTarget.ReadArguments(args) is { } target)
+                session.BindUpdateTarget(target);
+
             application.Run(new SetupWindow(session));
         }
         catch (Exception error)

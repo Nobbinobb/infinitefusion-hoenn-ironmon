@@ -97,8 +97,13 @@ For run rules, resets, profiles and control bindings, see
 
 The tracker performs a fresh update check at each startup, including after an
 update relaunch. **Later** dismisses an available update for that launch;
-**Update** opens its review. You can also use **Check for updates** beside the
-Settings heading.
+**Update** opens the release notes. From there, choose **Update** to open the
+standalone updater for installation review. You can also use **Check for
+updates** beside the Settings heading.
+
+On 0.10.1 or earlier, use the new signed Setup once and point it at your
+existing game folder. During prerelease testing, choose the new release under
+Setup's advanced version options.
 
 Updates default directly to latest; intermediate releases are unnecessary.
 Expand **Advanced: Ironmon version** to select an available version newer than
@@ -113,15 +118,11 @@ before applying that update. .NET 10 and .NET 11 can be installed side by side.
 If the required runtime is missing, verification stops the update before replacing
 the installed files. Install the runtime, then retry from the tracker.
 
-Save your game, review the release notes and any replaceable local-file
-conflicts, then choose **Update**. Preparation downloads and verifies files.
-Progress and the current operation stay in the fixed footer beside **Cancel**
-while details scroll; narrow windows place progress above the button.
-The updater then closes the game and tracker and shows progress in its own
-window. Close the official launcher if the updater asks; it continues
-automatically. A successful update relaunches the tracker and game, then closes
-the updater after the launch and administrator-session cleanup succeed. Errors,
-rollback, recovery, or a failed restart keep the updater visible.
+Save your game and review the release notes in the tracker. In the standalone
+updater, review any replaceable local-file conflicts and choose **Install**.
+The updater downloads and verifies the files, then closes the game and tracker
+before applying them. Close the official launcher if prompted. After the update
+finishes, choose **Open Tracker** to return to the game.
 
 Ironmon scripts and tracker update together. A game-changing update requires the
 active Ironmon attempt to finish first; closing the game does not finish it.

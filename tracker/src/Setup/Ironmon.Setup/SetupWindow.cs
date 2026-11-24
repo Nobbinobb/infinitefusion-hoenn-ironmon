@@ -83,7 +83,17 @@ internal sealed class SetupWindow : Window
         FontFamily = new FontFamily(FontName);
         FontSize = 13;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        _destination.Text = session.Destination?.Root ?? session.InstallationRoot ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), DefaultDirectory);
+        _destination.Text = session.UpdateTarget?.InstallationRoot ?? session.Destination?.Root ?? session.InstallationRoot ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), DefaultDirectory);
+        if (session.UpdateTarget is not null)
+        {
+            _page = 2;
+            Loaded += async (_, _) =>
+            {
+                await _session.SelectDestinationAsync(_destination.Text);
+                if (_session.Error is null)
+                    await ReviewAsync();
+            };
+        }
         AutomationProperties.SetName(_destination, UpdaterText.SetupWindowInstallationFolder);
         var layout = new DockPanel { Background = Background };
         var header = new StackPanel { Margin = new Thickness(24, 16, 24, 0) };
@@ -252,8 +262,12 @@ internal sealed class SetupWindow : Window
                 Card(new TextBlock { Text = reviewError, ToolTip = reviewError, Foreground = Brush(WarningResource), TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.CharacterEllipsis, MaxHeight = 180 });
             }
 
-            _back = Action(UpdaterText.SetupWindowBack, BackFromReview);
-            _actions.Children.Add(_back);
+            if (_session.UpdateTarget is null)
+            {
+                _back = Action(UpdaterText.SetupWindowBack, BackFromReview);
+                _actions.Children.Add(_back);
+            }
+
             if (!_showConflicts)
             {
                 _retry = AsyncAction(UpdaterText.SetupWindowCheckAgain, ReviewAsync, _install is null);

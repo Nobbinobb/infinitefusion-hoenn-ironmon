@@ -32,6 +32,8 @@ public sealed class CombinedUpdateTests(PinnedGitFixture tool) : IClassFixture<P
     private const string Mixed = "--mixed";
     private const string Hard = "--hard";
     private const string Config = "config";
+    private const string Autocrlf = "core.autocrlf";
+    private const string True = "true";
     private const string BranchRemote = "branch.releases.remote";
     private const string BranchMerge = "branch.releases.merge";
     private const string Heads = "refs/heads/releases";
@@ -648,6 +650,8 @@ public sealed class CombinedUpdateTests(PinnedGitFixture tool) : IClassFixture<P
         var result = await engine.ApplyAsync(release.Root, prepared.TransactionId);
         Assert.Equal(TransactionPhase.Committed, result.Phase);
         Assert.Equal(game.Target, await game.RunAsync(release.Root, Revision, Head));
+        Assert.Equal(ZipGameFixture.TextB, await File.ReadAllTextAsync(Path.Combine(release.Root, ZipGameFixture.TextFile)));
+        Assert.Equal(True, await game.RunAsync(release.Root, Config, Autocrlf));
         Assert.DoesNotContain(ZipGameFixture.ObsoleteFile, await game.RunAsync(release.Root, ListFiles), StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(release.Root, ZipGameFixture.ObsoleteFile)));
         Assert.Equal(SignedReleaseFixture.VersionB, await File.ReadAllTextAsync(Path.Combine(release.Root, SignedReleaseFixture.Script)));
@@ -763,6 +767,7 @@ public sealed class CombinedUpdateTests(PinnedGitFixture tool) : IClassFixture<P
         await game.RunAsync(release.Root, Reset, Mixed, game.Baseline.Commit);
         await game.RunAsync(release.Root, Config, BranchRemote, Origin);
         await game.RunAsync(release.Root, Config, BranchMerge, Heads);
+        await game.RunAsync(release.Root, Config, Autocrlf, True);
     }
 
     /// <summary>
