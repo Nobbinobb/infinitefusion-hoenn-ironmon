@@ -10,6 +10,7 @@ module Ironmon
     RULES_VERSION = 1
     FIRST_STAGE_FALLBACK_LEVEL = 25
     INTERMEDIATE_FALLBACK_LEVEL = 35
+    LATER_UNUSED_METHOD = :ReversersLevel
     PRESERVED_METHODS = [
       :Level, :LevelMale, :LevelFemale, :LevelDay, :LevelNight,
       :LevelMorning, :LevelAfternoon, :LevelEvening, :LevelNoWeather,
@@ -118,6 +119,14 @@ module Ironmon
 
     def fingerprints_for_rules(rules_version)
       return fingerprints_for(rules_version, true)
+    end
+
+    def for_method_fingerprint(saved_fingerprint)
+      return self if saved_fingerprint == @method_fingerprint
+      return nil if !saved_fingerprint
+      previous = catalog_before_reversers_level
+      return previous if previous && saved_fingerprint == previous.method_fingerprint
+      return nil
     end
 
     def required_target_types(source, branch)
@@ -381,25 +390,6 @@ module Ironmon
           entry[:outgoing]
         ])
       end
-      method_values = [
-        SCHEMA_VERSION, rules_version, FIRST_STAGE_FALLBACK_LEVEL,
-        INTERMEDIATE_FALLBACK_LEVEL, PRESERVED_METHODS.sort_by(&:to_s),
-        CONVERTED_METHODS.sort_by(&:to_s)
-      ]
-      @method_catalog.each do |entry|
-        method_values.concat([
-          entry[:method], entry[:policy], entry[:used_entries]
-        ])
-      end
-      @branch_catalog.each do |branch|
-        method_values << branch[:identity]
-        branch[:effective_methods].each do |method|
-          method_values.concat([
-            method[:method], method[:parameter], method[:converted],
-            method[:original_methods]
-          ])
-        end
-      end
       target_values = [SCHEMA_VERSION, rules_version]
       @normal_target_catalog.each do |target|
         entries = [
@@ -412,9 +402,47 @@ module Ironmon
       return {
         :source => fingerprint(source_values),
         :taxonomy => fingerprint(taxonomy_values),
-        :method => fingerprint(method_values),
+        :method => method_fingerprint_for(rules_version, @method_catalog),
         :target => fingerprint(target_values)
       }
+    end
+
+    def method_fingerprint_for(rules_version, methods)
+      values = [
+        SCHEMA_VERSION, rules_version, FIRST_STAGE_FALLBACK_LEVEL,
+        INTERMEDIATE_FALLBACK_LEVEL, PRESERVED_METHODS.sort_by(&:to_s),
+        CONVERTED_METHODS.sort_by(&:to_s)
+      ]
+      methods.each do |entry|
+        values.concat([entry[:method], entry[:policy], entry[:used_entries]])
+      end
+      @branch_catalog.each do |branch|
+        values << branch[:identity]
+        branch[:effective_methods].each do |method|
+          values.concat([
+            method[:method], method[:parameter], method[:converted],
+            method[:original_methods]
+          ])
+        end
+      end
+      return fingerprint(values)
+    end
+
+    def catalog_before_reversers_level
+      return @catalog_before_reversers_level if defined?(@catalog_before_reversers_level)
+      @catalog_before_reversers_level = nil
+      entry = @method_catalog.find { |method| method[:method] == LATER_UNUSED_METHOD }
+      return nil if !entry || entry[:policy] != :unused || entry[:used_entries] != 0
+
+      # Hoenn 1.3.2 added this registration outside the pinned profile. Older
+      # runs must still use the exact method fingerprint as their generator input.
+      methods = @method_catalog.reject { |method| method.equal?(entry) }.freeze
+      previous = dup
+      previous.instance_variable_set(:@method_catalog, methods)
+      previous.instance_variable_set(:@unused_registered_methods,
+        (@unused_registered_methods - [LATER_UNUSED_METHOD]).freeze)
+      previous.instance_variable_set(:@method_fingerprint, method_fingerprint_for(RULES_VERSION, methods))
+      return @catalog_before_reversers_level = previous
     end
 
     def merge_effective_methods(source, destination, source_role, originals)
@@ -770,6 +798,15 @@ module Ironmon
   def self.evolution_catalog
     @evolution_catalog ||= EvolutionCatalog.new
     return @evolution_catalog
+  end
+
+  def self.evolution_catalog_for_saved_method
+    catalog = evolution_catalog
+    fingerprint = $PokemonGlobal&.ironmon_evolution_method_fingerprint
+    return catalog if !fingerprint
+    selected = catalog.for_method_fingerprint(fingerprint)
+    raise EvolutionRandomizationError, "the saved evolution method catalog is incompatible" if !selected
+    return selected
   end
 
   def self.validate_evolution_catalogs

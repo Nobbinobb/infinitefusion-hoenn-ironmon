@@ -117,7 +117,7 @@ module Ironmon
 
   def self.evolution_generator
     seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0
-    catalog = evolution_catalog
+    catalog = evolution_catalog_for_saved_method
     key = [
       seed, catalog.source_fingerprint, catalog.taxonomy_fingerprint,
       catalog.method_fingerprint, catalog.normal_target_fingerprint,
@@ -135,6 +135,7 @@ module Ironmon
 
   def self.evolution_generator_for(seed, source_fingerprint, taxonomy_fingerprint, method_fingerprint, target_fingerprint, stat_version, stat_fingerprint)
     catalog = evolution_catalog
+    catalog = catalog.for_method_fingerprint(method_fingerprint) || catalog
     checks = [
       ["source catalog", source_fingerprint, catalog.source_fingerprint],
       ["taxonomy catalog", taxonomy_fingerprint,
@@ -183,6 +184,7 @@ module Ironmon
 
   def self.evolution_metadata_mismatch
     catalog = evolution_catalog
+    catalog = catalog.for_method_fingerprint($PokemonGlobal.ironmon_evolution_method_fingerprint) || catalog
     fusion_pool = custom_fusion_pool_info
     expected = evolution_metadata_values(catalog, fusion_pool)
     checks = [

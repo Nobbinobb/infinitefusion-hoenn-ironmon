@@ -55,6 +55,7 @@ begin
     "stage_transitions" => "Speed-Stage-Transitions.rb",
     "calculation_pacing" => "Calculation-Pacing.rb",
     "player_fusion_pacing" => "Player-Fusion-Pacing.rb",
+    "archived_evolution_compatibility" => "Archived-Evolution-Compatibility.rb",
     "startup_preparation" => "Startup-Preparation.rb",
     "startup_transport" => "Startup-Transport.rb",
     "run_transitions" => "Run-Transitions.rb",

@@ -1874,17 +1874,17 @@ module Ironmon
   def self.fusion_evolution_generator
     seed = $PokemonGlobal ? $PokemonGlobal.ironmon_seed : 0
     info = custom_fusion_pool_info
+    catalog = evolution_catalog_for_saved_method
     key = [
-      seed, evolution_catalog.source_fingerprint,
-      evolution_catalog.taxonomy_fingerprint,
-      evolution_catalog.method_fingerprint, info[:schema_version], info[:size],
+      seed, catalog.source_fingerprint, catalog.taxonomy_fingerprint,
+      catalog.method_fingerprint, info[:schema_version], info[:size],
       info[:fingerprint], BaseStatGenerator::SCHEMA_VERSION,
       base_stat_source_fingerprint
     ]
     if !@fusion_evolution_generator || @fusion_evolution_generator_key != key
       @fusion_evolution_generator_key = key
       @fusion_evolution_generator = FusionEvolutionGenerator.new(
-        seed, evolution_catalog, custom_fusion_pool, info, base_stat_generator
+        seed, catalog, custom_fusion_pool, info, base_stat_generator
       )
     end
     return @fusion_evolution_generator
