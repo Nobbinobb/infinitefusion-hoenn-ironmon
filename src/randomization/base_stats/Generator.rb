@@ -17,6 +17,8 @@ module Ironmon
     HEAD_DOMINANT_STATS = [
       :HP, :SPECIAL_ATTACK, :SPECIAL_DEFENSE
     ].freeze
+    DEFAULT_INHERITANCE_RATIO = [2, 3].freeze
+    INHERITANCE_HASH_NAMESPACE = "analysis_fusion_inheritance".freeze
     INHERITANCE_GROUPS = [[1, 2, 5], [0, 3, 4]].freeze
     INHERITANCE_RATIOS = [[9, 10], [4, 5], [2, 3]].freeze
     INHERITANCE_RATIOS_V3 = [[17, 20], [3, 4], [2, 3]].freeze
@@ -34,6 +36,7 @@ module Ironmon
       if ![1, 2, 3].include?(@fusion_formula_version)
         raise BaseStatRandomizationError, "the fusion stat formula version is unsupported"
       end
+      @inheritance_hash_prefix = Ironmon.fnv1a_64_joined([1, @seed, INHERITANCE_HASH_NAMESPACE, ""])
       @stat_cache = {}
       @fusion_cache = {}
     end
@@ -91,31 +94,43 @@ module Ironmon
     end
 
     def fuse(body_stats, head_stats, fusion_id = nil)
-      ratios = {}
+      result = {}
+      each_fused_stat(body_stats, head_stats, fusion_id) { |stat, value| result[stat] = value }
+      return result
+    end
+
+    def fusion_bst(body_stats, head_stats, fusion_id)
+      total = 0
+      each_fused_stat(body_stats, head_stats, fusion_id) { |_stat, value| total += value }
+      return total
+    end
+
+    def each_fused_stat(body_stats, head_stats, fusion_id)
+      ratios = nil
       if fusion_id && @fusion_formula_version >= 2
+        ratios = []
         inheritance_ratios = @fusion_formula_version >= 3 ?
           INHERITANCE_RATIOS_V3 : INHERITANCE_RATIOS
+        hash_prefix = Ironmon.fnv1a_64("#{fusion_id}|", @inheritance_hash_prefix)
         INHERITANCE_GROUPS.each do |group|
-          hash = Ironmon.fnv1a_64_joined([
-            1, @seed, "analysis_fusion_inheritance", fusion_id, group[0]
-          ])
+          hash = Ironmon.fnv1a_64(group[0].to_s, hash_prefix)
           order = INHERITANCE_ORDERS[Ironmon.fusion_choice_hash(hash) % 6]
           order.each_with_index do |position, index|
-            ratios[STAT_ORDER[group[position]]] = inheritance_ratios[index]
+            ratios[group[position]] = inheritance_ratios[index]
           end
         end
       end
-      result = {}
-      STAT_ORDER.each do |stat|
+      STAT_ORDER.each_with_index do |stat, index|
         head_dominant = HEAD_DOMINANT_STATS.include?(stat)
         dominant = head_dominant ? head_stats[stat] : body_stats[stat]
         other = head_dominant ? body_stats[stat] : head_stats[stat]
-        numerator, denominator = ratios[stat] || [2, 3]
-        result[stat] = numerator * dominant.to_i / denominator +
+        numerator, denominator = ratios ? ratios[index] : DEFAULT_INHERITANCE_RATIO
+        value = numerator * dominant.to_i / denominator +
           (denominator - numerator) * other.to_i / denominator
+        yield stat, value
       end
-      return result
     end
+    private :each_fused_stat
 
     def validate_source(identity, original_stats)
       total = STAT_ORDER.inject(0) do |sum, stat|

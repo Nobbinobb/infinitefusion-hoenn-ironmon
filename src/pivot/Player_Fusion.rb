@@ -17,6 +17,7 @@ module Ironmon
     MATERIAL_ID_BITS = 10
     MATERIAL_ID_MASK = (1 << MATERIAL_ID_BITS) - 1
     PAIRING_BST_STEP = 5
+    TARGET_DATA_CHECKPOINT_INTERVAL = 8
 
     attr_reader :preparation_stage
     attr_reader :pairing_bst_limit
@@ -155,7 +156,7 @@ module Ironmon
       if @imported_pairing
         @preparation_stage = :target_data
         @fusion_pool_ids.each_with_index do |species_id, index|
-          @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+          @work_checkpoint.call if @work_checkpoint && (index % TARGET_DATA_CHECKPOINT_INTERVAL).zero?
           prepare_target_data(species_id)
         end
       end
@@ -419,9 +420,9 @@ module Ironmon
     def normal_fusion_bst(body, head)
       body_stats = normal_stats(body)
       head_stats = normal_stats(head)
-      return @base_stat_generator.fuse(
+      return @base_stat_generator.fusion_bst(
         body_stats, head_stats, body.id_number * NB_POKEMON + head.id_number
-      ).values.inject(0, :+)
+      )
     end
 
     def normal_stats(species)
@@ -448,9 +449,7 @@ module Ironmon
       head = GameData::Species.get(head_id)
       body_stats = normal_stats(body)
       head_stats = normal_stats(head)
-      bst = @base_stat_generator.fuse(
-        body_stats, head_stats, species_id
-      ).values.inject(0, :+)
+      bst = @base_stat_generator.fusion_bst(body_stats, head_stats, species_id)
       type1 = if head.type1 == :NORMAL && head.type2 == :FLYING
                 head.type2
               else
@@ -458,9 +457,7 @@ module Ironmon
               end
       type2 = body.type2 == type1 ? body.type1 : body.type2
       @target_bsts[species_id] = bst
-      @target_type_masks[species_id] = type_mask(
-        [type1, type2].compact.uniq
-      )
+      @target_type_masks[species_id] = type_bit(type1) | type_bit(type2)
     end
 
     def target_bst(species_id)
@@ -474,14 +471,17 @@ module Ironmon
     end
 
     def type_mask(types)
-      return types.inject(0) do |mask, type|
-        code = @type_codes[type]
-        if !code
-          code = @type_codes.length
-          @type_codes[type] = code
-        end
-        mask | (1 << code)
+      return types.inject(0) { |mask, type| mask | type_bit(type) }
+    end
+
+    def type_bit(type)
+      return 0 if type.nil?
+      code = @type_codes[type]
+      if !code
+        code = @type_codes.length
+        @type_codes[type] = code
       end
+      return 1 << code
     end
 
     def update_deterministic_hash(value, input)
@@ -555,7 +555,7 @@ module Ironmon
       maximum_bst = nil
       @preparation_stage = :target_data
       @fusion_pool_ids.each_with_index do |species_id, index|
-        @work_checkpoint.call if @work_checkpoint && (index % 32).zero?
+        @work_checkpoint.call if @work_checkpoint && (index % TARGET_DATA_CHECKPOINT_INTERVAL).zero?
         bst = target_bst(species_id)
         minimum_bst = bst if !minimum_bst || bst < minimum_bst
         maximum_bst = bst if !maximum_bst || bst > maximum_bst

@@ -138,6 +138,15 @@ module IronmonPlayerFusionPacingTests
 
   def self.run
     test_wall_clock_background
+    order = Ironmon::BaseStatGenerator::STAT_ORDER
+    body = order.zip([45, 49, 49, 65, 65, 45]).to_h
+    head = order.zip([125, 99, 80, 89, 92, 80]).to_h
+    [[98, 65, 58, 80, 82, 56], [98, 65, 55, 86, 86, 48], [98, 65, 56, 84, 85, 50]].each_with_index do |expected, index|
+      generator = Ironmon::BaseStatGenerator.new(1_187_411_801, nil, index + 1)
+      assert(generator.fuse(body, head, 3456) == order.zip(expected).to_h &&
+        generator.fusion_bst(body, head, 3456) == expected.inject(0, :+),
+        "formula #{index + 1} preserves the seeded stat vector and its total")
+    end
     profile_id = ENV["IRONMON_PLAYER_FUSION_PROFILE"]
     result = profile_id ? Ironmon.with_generation_profile(profile_id) { test_native_mapper } : test_native_mapper
     result["generation_profile_id"] = profile_id if profile_id

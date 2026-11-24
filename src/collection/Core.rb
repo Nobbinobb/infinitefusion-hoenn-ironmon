@@ -15,10 +15,17 @@ module Ironmon
     @capture_suspended = ENV["IRONMON_GAMEPLAY_COLLECTION_TEST_MODE"] == "suspended"
 
     class JsonReader
-      def initialize(bytes)
+      WHITESPACE = [9, 10, 13, 32].freeze
+      STRING_ESCAPES = { 34 => 34, 92 => 92, 47 => 47, 98 => 8, 102 => 12, 110 => 10, 114 => 13, 116 => 9 }.freeze
+      LITERALS = { "true" => true, "false" => false, "null" => nil }.freeze
+      CHECKPOINT_BYTES = 1024
+
+      def initialize(bytes, work_checkpoint = nil)
         @bytes = bytes.dup.force_encoding(Encoding::UTF_8)
         raise "Invalid UTF-8 in collection JSON." if !@bytes.valid_encoding?
         @offset = 0
+        @work_checkpoint = work_checkpoint
+        @next_checkpoint = 0
       end
 
       def parse
@@ -29,7 +36,10 @@ module Ironmon
       end
 
       def whitespace
-        @offset += 1 while [9, 10, 13, 32].include?(@bytes.getbyte(@offset))
+        while WHITESPACE.include?(@bytes.getbyte(@offset))
+          checkpoint if @work_checkpoint && @offset >= @next_checkpoint
+          @offset += 1
+        end
       end
 
       def take(byte)
@@ -40,6 +50,7 @@ module Ironmon
       end
 
       def value(depth)
+        checkpoint if @work_checkpoint && @offset >= @next_checkpoint
         raise "Collection JSON nesting is too deep." if depth > 128
         whitespace
         byte = @bytes.getbyte(@offset)
@@ -69,14 +80,17 @@ module Ironmon
             raise "Collection JSON array is missing a comma." if !take(44)
           end
         end
-        { "true" => true, "false" => false, "null" => nil }.each do |literal, parsed|
+        LITERALS.each do |literal, parsed|
           if @bytes.byteslice(@offset, literal.bytesize) == literal
             @offset += literal.bytesize
             return parsed
           end
         end
         start = @offset
-        @offset += 1 while @bytes.getbyte(@offset) && "-+0123456789.eE".include?(@bytes.getbyte(@offset).chr)
+        while @bytes.getbyte(@offset) && "-+0123456789.eE".include?(@bytes.getbyte(@offset).chr)
+          checkpoint if @work_checkpoint && @offset >= @next_checkpoint
+          @offset += 1
+        end
         number = @bytes.byteslice(start, @offset - start)
         raise "Invalid collection JSON value." if !/\A-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\z/.match?(number)
         return Integer(number, 10) if !number.include?(".") && !number.match?(/[eE]/)
@@ -88,16 +102,20 @@ module Ironmon
       def string
         @offset += 1
         result = "".b
+        segment = @offset
         loop do
+          checkpoint if @work_checkpoint && @offset >= @next_checkpoint
           byte = @bytes.getbyte(@offset)
           raise "Unterminated collection JSON string." if !byte
           @offset += 1
           if byte == 34
+            result << @bytes.byteslice(segment, @offset - 1 - segment).b
             result.force_encoding(Encoding::UTF_8)
             raise "Invalid UTF-8 collection JSON string." if !result.valid_encoding?
             return result
           end
           if byte == 92
+            result << @bytes.byteslice(segment, @offset - 1 - segment).b
             escaped = @bytes.getbyte(@offset)
             @offset += 1
             if escaped == 117
@@ -113,13 +131,13 @@ module Ironmon
               end
               result << [point].pack("U").b
             else
-              replacement = { 34 => 34, 92 => 92, 47 => 47, 98 => 8, 102 => 12, 110 => 10, 114 => 13, 116 => 9 }[escaped]
+              replacement = STRING_ESCAPES[escaped]
               raise "Invalid collection JSON escape." if !replacement
               result << replacement.chr(Encoding::BINARY)
             end
-          else
-            raise "Unescaped collection JSON control character." if byte < 32
-            result << byte.chr(Encoding::BINARY)
+            segment = @offset
+          elsif byte < 32
+            raise "Unescaped collection JSON control character."
           end
         end
       end
@@ -129,6 +147,13 @@ module Ironmon
         raise "Invalid collection JSON unicode escape." if !digits || !/\A[0-9a-fA-F]{4}\z/.match?(digits)
         @offset += 4
         return digits.to_i(16)
+      end
+
+      private
+
+      def checkpoint
+        @work_checkpoint.call
+        @next_checkpoint = @offset + CHECKPOINT_BYTES
       end
     end
 
