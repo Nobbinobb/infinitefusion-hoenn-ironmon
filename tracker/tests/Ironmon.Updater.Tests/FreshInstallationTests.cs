@@ -23,11 +23,6 @@ public sealed class FreshInstallationTests(ITestOutputHelper output)
     private const string BoundaryReady = "BOUNDARY";
     private const string ApplyMode = "apply";
     private const string RecoverMode = "recover";
-#if DEBUG
-    private const string Host = "../../../../Ironmon.Updater.CrashHost/bin/Debug/net10.0/Ironmon.Updater.CrashHost.exe";
-#else
-    private const string Host = "../../../../Ironmon.Updater.CrashHost/bin/Release/net10.0/Ironmon.Updater.CrashHost.exe";
-#endif
     private static readonly string[] _files = [DataFile, OtherDataFile, GameFile, SpriteFile];
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(30);
 
@@ -238,7 +233,7 @@ public sealed class FreshInstallationTests(ITestOutputHelper output)
     /// <returns>The exact test process that may be terminated.</returns>
     private static Process Start(TransactionFixture fixture, string mode, TransactionPhase phase, int cursor, TransactionBoundary boundary, int occurrence)
     {
-        var start = new ProcessStartInfo(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, Host))) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true, WorkingDirectory = fixture.Root };
+        var start = new ProcessStartInfo(SignedReleaseFixture.CrashHostPath) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true, WorkingDirectory = fixture.Root };
         foreach (var argument in new[] { mode, fixture.Root, fixture.Description.TransactionId.ToString(TransactionStorage.GuidFormat), fixture.AuthorizedHash, phase.ToString(), cursor.ToString(System.Globalization.CultureInfo.InvariantCulture), boundary.ToString(), occurrence.ToString(System.Globalization.CultureInfo.InvariantCulture) })
             start.ArgumentList.Add(argument);
 

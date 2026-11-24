@@ -421,13 +421,12 @@ internal sealed class PlayerFusionMappingWorker
     private static TargetPair[] BuildTargetPairs(long seed, int generatorVersion, IReadOnlyList<TargetData> targets, int maximumPairDifference, bool retryStrengthFailures, CancellationToken cancellationToken)
     {
         int bestMaximumBstDifference = int.MaxValue;
-        for (int attempt = 0; attempt < 16; attempt++)
+        pairingAttempt: for (int attempt = 0; attempt < 16; attempt++)
         {
             TargetData[] ordered = [.. targets
                 .OrderBy(target => target.Bst)
                 .ThenBy(target => DeterministicValue(generatorVersion, seed, "player_fusion", "pairing_rank", attempt, target.Id))];
             List<TargetPair> pairs = [];
-            bool failed = false;
             for (int position = 0; position < ordered.Length; position += 2)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -443,20 +442,17 @@ internal sealed class PlayerFusionMappingWorker
                     if (repaired)
                         continue;
 
-                    failed = true;
-                    break;
+                    continue pairingAttempt;
                 }
 
                 (ordered[position + 1], ordered[partner]) = (ordered[partner], ordered[position + 1]);
                 pairs.Add(new TargetPair(ordered[position], ordered[position + 1]));
             }
-            if (!failed)
-            {
-                int maximumBstDifference = pairs.Max(pair => Math.Abs(pair.First.Bst - pair.Second.Bst));
-                bestMaximumBstDifference = Math.Min(bestMaximumBstDifference, maximumBstDifference);
-                if (maximumBstDifference <= maximumPairDifference)
-                    return [.. pairs];
-            }
+
+            int maximumBstDifference = pairs.Max(pair => Math.Abs(pair.First.Bst - pair.Second.Bst));
+            bestMaximumBstDifference = Math.Min(bestMaximumBstDifference, maximumBstDifference);
+            if (maximumBstDifference <= maximumPairDifference)
+                return [.. pairs];
         }
 
         throw StrengthPairingFailure($"The custom fusion pool could not form strength-matched reverse pairs; the best maximum difference was {bestMaximumBstDifference} BST.", retryStrengthFailures);

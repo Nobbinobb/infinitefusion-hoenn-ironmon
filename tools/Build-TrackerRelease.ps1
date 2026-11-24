@@ -4,9 +4,11 @@ $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if (-not $GenerateOnly) {
+  . (Join-Path $PSScriptRoot 'ci/UpdateArtifacts.ps1')
+  . (Join-Path $PSScriptRoot 'ci/UpstreamInputs.ps1')
   & dotnet build (Join-Path $projectRoot 'tracker/tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj') -c Release -p:UpdaterMetadataOnly=true -p:UseSharedCompilation=false
   if ($LASTEXITCODE -ne 0) { throw 'Release metadata tools failed to build.' }
-  $updateTool = Join-Path $projectRoot 'tracker/tools/Ironmon.ReleaseTool/bin/Release/net10.0/Ironmon.ReleaseTool.dll'
+  $updateTool = Get-UpdateCandidateToolPath $projectRoot
   & dotnet $updateTool trust (Join-Path $projectRoot 'resources/updater/trusted-keys.json')
   if ($LASTEXITCODE -ne 0) { throw 'Configure dedicated updater public trust before release generation.' }
   if ($env:GITHUB_ACTIONS -eq 'true' -and -not $UpdateHistoryDirectory) {
@@ -403,10 +405,9 @@ if ($GenerateOnly) {
 }
 
 $settings = Get-Content -LiteralPath (Join-Path $gameRoot 'Data/Scripts/001_Settings.rb') -Raw
-$gameVersionMatch = [regex]::Match($settings, '(?m)^\s*GAME_VERSION_NUMBER\s*=\s*["''](?<version>\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)["'']')
-if (-not $gameVersionMatch.Success) { throw 'The selected game version is unavailable.' }
+$gameVersion = Get-RubyStringConstant $settings 'HOENN_VERSION_NUMBER'
 $historyArgument = if ($UpdateHistoryDirectory) { $UpdateHistoryDirectory } else { '-' }
-& dotnet $updateTool validate-inputs (Join-Path $projectRoot 'data/updater/baselines/hoenn.json.gz') (Join-Path $projectRoot 'data/updater/baselines/hoenn.manifest.json') $gameVersionMatch.Groups['version'].Value $historyArgument (Join-Path $projectRoot 'resources/updater/trusted-keys.json')
+& dotnet $updateTool validate-inputs (Join-Path $projectRoot 'data/updater/baselines/hoenn.json.gz') (Join-Path $projectRoot 'data/updater/baselines/hoenn.manifest.json') $gameVersion $historyArgument (Join-Path $projectRoot 'resources/updater/trusted-keys.json')
 if ($LASTEXITCODE -ne 0) { throw 'Generated game or historical release metadata is invalid; release tests and packaging were not started.' }
 
 foreach ($testProject in 'Ironmon.Tracker.Tests', 'Ironmon.Tracker.App.Tests', 'Ironmon.Updater.Tests', 'Ironmon.Setup.Tests', 'Ironmon.Tracker.AchievementOverlay.Tests') {

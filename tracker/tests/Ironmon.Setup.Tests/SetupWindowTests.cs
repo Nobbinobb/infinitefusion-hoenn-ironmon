@@ -96,12 +96,12 @@ public sealed class SetupWindowTests
             else
             {
                 Assert.True(ToolTipService.GetShowOnDisabled(required));
-                Assert.Equal(UpdaterText.SetupTrackerRuntimeUnavailable, required.ToolTip);
-                Assert.Equal(UpdaterText.SetupTrackerRuntimeUnavailable, AutomationProperties.GetHelpText(required));
+                Assert.Equal(TrackerRuntimeCompatibility.TrackerRuntimeUnavailable, required.ToolTip);
+                Assert.Equal(TrackerRuntimeCompatibility.TrackerRuntimeUnavailable, AutomationProperties.GetHelpText(required));
                 var help = Buttons(window).Single(button => AutomationProperties.GetName(button) == UpdaterText.SetupTrackerRuntimeHelp);
                 Assert.True(help.IsEnabled);
                 Assert.True(help.Focusable);
-                Assert.Equal(UpdaterText.SetupTrackerRuntimeUnavailable, help.ToolTip);
+                Assert.Equal(TrackerRuntimeCompatibility.TrackerRuntimeUnavailable, help.ToolTip);
             }
 
             Assert.True(Buttons(window).Single(button => Equals(button.Content, UpdaterText.SetupWindowReviewInstallation)).IsEnabled);

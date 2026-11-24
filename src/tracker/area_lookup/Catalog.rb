@@ -57,7 +57,7 @@ module Ironmon
     return methods.include?("Water") if value.start_with?("Water")
     return methods.include?("Cave") if value.start_with?("Cave")
     if value.match?(/\ALand(?:Rain|Sunny|Wind|Fog|Storm|Snow)\z/)
-      return methods.any? { |method| method.start_with?("Land") || method == "TallGrass" }
+      return methods.any? { |method| encounter_environment(method) == :grass }
     end
     base = value.sub(/(?:Morning|Day|Afternoon|Evening|Night)\z/, "")
     return methods.include?(base)

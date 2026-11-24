@@ -22,6 +22,11 @@ module Ironmon
       return method
     end
 
+    def self.native_input_update
+      name = Input.respond_to?(:update_KGC_ScreenCapture) ? :update_KGC_ScreenCapture : :update
+      return native_method(name, Input)
+    end
+
     def self.pump_connection
       connection = Ironmon.tracker_connection
       connection.update_loading if connection.respond_to?(:update_loading)
@@ -68,7 +73,7 @@ module Ironmon
     end
 
     def self.drain_input
-      native_input = native_method(:update_KGC_ScreenCapture, Input)
+      native_input = native_input_update
       Ironmon::ResponsiveInput.reset
       2.times do
         native_input.call
@@ -147,7 +152,7 @@ module Ironmon
       def open
         @native_update = StartupPreparation.native_method(:update_KGC_SpecialTransition)
         @native_transition = StartupPreparation.native_method(:transition_KGC_SpecialTransition)
-        @native_input = StartupPreparation.native_method(:update_KGC_ScreenCapture, Input)
+        @native_input = StartupPreparation.native_input_update
         @native_rate = Ironmon::SpeedUp::NATIVE_RATE.call
         @frameskip = Graphics.frameskip
         @brightness = Graphics.brightness

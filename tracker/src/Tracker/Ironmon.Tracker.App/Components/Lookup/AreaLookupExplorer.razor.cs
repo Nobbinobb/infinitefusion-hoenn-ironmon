@@ -158,7 +158,13 @@ public partial class AreaLookupExplorer : IDisposable
 
         string key = _pendingScrollKey;
         _pendingScrollKey = null;
-        await JavaScript.InvokeVoidAsync(_scrollFunction, _lookupElement, key);
+        try
+        {
+            await JavaScript.InvokeVoidAsync(_scrollFunction, _lookupElement, key);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
     }
 
     /// <summary>

@@ -31,6 +31,7 @@ internal sealed class SignedReleaseFixture : IArtifactSource, IDisposable
     internal const string ThirdPartyDocument = "THIRD_PARTY_NOTICES.md";
     internal const string RuntimeJson = "{\"runtimeOptions\":{\"framework\":{\"name\":\"Microsoft.NETCore.App\",\"version\":\"10.0.0\"}}}";
     private const string SelfContainedJson = "{\"runtimeOptions\":{\"includedFrameworks\":[{\"name\":\"Microsoft.NETCore.App\",\"version\":\"10.0.0\"}]}}";
+    private const string LegacyRuntimeVersion = "10.0.0";
     private const string CoreRuntime = "Ironmon Tracker/coreclr.dll";
     private const string ArchivePrefix = "tracker-";
     private const string InventoryPrefix = "files-";
@@ -44,13 +45,7 @@ internal sealed class SignedReleaseFixture : IArtifactSource, IDisposable
     private const string PreviousGameInventoryName = "game-before.json";
     private const string RootName = "installation";
     private const string CacheName = "downloads";
-    internal const string HostRelativePath = "../../../../Ironmon.Updater.CrashHost/bin/";
-#if DEBUG
-    internal const string BuildConfiguration = "Debug";
-#else
-    internal const string BuildConfiguration = "Release";
-#endif
-    internal const string HostSuffix = "/net10.0/Ironmon.Updater.CrashHost.exe";
+    private const string CrashHostRelativePath = "updater-crash-host/Ironmon.Updater.CrashHost.exe";
     private const string TrackerDirectory = "Ironmon Tracker/";
     private const string EmbeddedHelper = TrackerDirectory + "Updater/Ironmon.Updater.exe";
     private readonly TestWorkspace _workspace = new();
@@ -108,12 +103,18 @@ internal sealed class SignedReleaseFixture : IArtifactSource, IDisposable
     internal static IReadOnlyList<string> DistributionDocuments { get; } = [ReadmeDocument, InstallationDocument, LicenseDocument, FontLicenseDocument, ReleaseNotesDocument, ThirdPartyDocument];
 
     /// <summary>
+    /// Gets the exact child executable supplied by the updater test build.
+    /// </summary>
+    internal static string CrashHostPath => Path.Combine(AppContext.BaseDirectory, CrashHostRelativePath);
+
+    /// <summary>
     /// Creates a real planner-compatible installation and complete synthetic signed release.
     /// </summary>
     /// <param name="flavor">The initial package flavor.</param>
     /// <param name="runnableTracker">Whether to include the actual fixture host as the installed tracker.</param>
     /// <param name="distributionDocuments">Whether packages include the root documents shipped in real releases.</param>
-    internal SignedReleaseFixture(string flavor = ReleaseProtocol.RuntimeRequired, bool runnableTracker = false, bool distributionDocuments = false)
+    /// <param name="targetRuntimeVersion">The target framework version when testing upgrades across runtime families.</param>
+    internal SignedReleaseFixture(string flavor = ReleaseProtocol.RuntimeRequired, bool runnableTracker = false, bool distributionDocuments = false, string? targetRuntimeVersion = null)
     {
         var assets = new List<ReleaseAsset>();
         var inventories = new List<InventoryEvidence>();
@@ -122,6 +123,12 @@ internal sealed class SignedReleaseFixture : IArtifactSource, IDisposable
         {
             var before = Package(VersionA, item, runnableTracker);
             var after = Package(VersionB, item, runnableTracker);
+            if (targetRuntimeVersion is not null)
+            {
+                var config = item == ReleaseProtocol.SelfContained ? SelfContainedJson : RuntimeJson;
+                after[TrackerRuntimeCompatibility.ConfigurationPath] = Encoding.UTF8.GetBytes(config.Replace(LegacyRuntimeVersion, targetRuntimeVersion, StringComparison.Ordinal));
+            }
+
             if (distributionDocuments)
             {
                 foreach (var document in DistributionDocuments)
@@ -356,7 +363,7 @@ internal sealed class SignedReleaseFixture : IArtifactSource, IDisposable
 
         if (runnableTracker)
         {
-            var host = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, HostRelativePath + BuildConfiguration + HostSuffix));
+            var host = CrashHostPath;
             foreach (var path in Directory.EnumerateFiles(Path.GetDirectoryName(host)!))
                 files[TrackerDirectory + Path.GetFileName(path)] = File.ReadAllBytes(path);
 

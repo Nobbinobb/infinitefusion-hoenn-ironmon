@@ -8,13 +8,6 @@ namespace Ironmon.Updater.Tests;
 /// </summary>
 public sealed class UpdateProcessTests
 {
-    private const string HostPath = "../../../../Ironmon.Updater.CrashHost/bin/";
-#if DEBUG
-    private const string Configuration = "Debug";
-#else
-    private const string Configuration = "Release";
-#endif
-    private const string HostBinary = "/net10.0/Ironmon.Updater.CrashHost.exe";
     private const string WaitMode = "wait";
     private const string BoundaryReady = "BOUNDARY";
     private const string DifferentExecutable = "different.exe";
@@ -33,7 +26,7 @@ public sealed class UpdateProcessTests
     {
         using var workspace = new TestWorkspace();
         using var unrelated = new TestWorkspace();
-        var host = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, HostPath + Configuration + HostBinary));
+        var host = SignedReleaseFixture.CrashHostPath;
         foreach (var file in Directory.EnumerateFiles(Path.GetDirectoryName(host)!))
             File.Copy(file, PlainPaths.Child(workspace.Root, Path.GetFileName(file)));
 
@@ -182,7 +175,7 @@ public sealed class UpdateProcessTests
     /// <returns>The exact process owned by this fixture.</returns>
     private static Process Start()
     {
-        var executable = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, HostPath + Configuration + HostBinary));
+        var executable = SignedReleaseFixture.CrashHostPath;
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true };
         start.ArgumentList.Add(WaitMode);
         return Process.Start(start) ?? throw new IOException("The process identity fixture could not start.");

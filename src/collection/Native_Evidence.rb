@@ -261,7 +261,7 @@ module Ironmon
           if drain && drain[:queries].any? { |query| query[:method] == :hasActiveAbility? && query[:arguments][0] == :LIQUIDOOZE && query[:result] }
             answer.merge!("source_kind" => "ability", "source_id" => "LIQUIDOOZE", "source_actor" => Combat.actor_ref(drain[:target]), "initiating_actor" => Combat.actor_ref(drain[:target]), "loss_kind" => "retaliation")
           end
-        elsif entry["owner"] == "PokeBattle_Move_160" && site.lineno == 1979
+        elsif entry["owner"] == "PokeBattle_Move_160" && site.lineno == 1989
           invocation = Combat.current_move(battler.battle)
           actor = invocation && invocation[:targets].first
           answer.merge!("source_kind" => "ability", "source_id" => "LIQUIDOOZE", "source_actor" => actor, "initiating_actor" => actor)
@@ -269,7 +269,7 @@ module Ironmon
           index = Combat.effect(battler, :DestinyBondTarget)
           source = index && battler.battle.battlers[index]
           answer.merge!("source_kind" => "volatile", "source_id" => "DestinyBond", "source_actor" => Combat.actor_ref(source), "initiating_actor" => Combat.actor_ref(source), "loss_kind" => "linked_faint")
-        elsif entry["method"] == "pbUseMove" && site.lineno == 332
+        elsif entry["method"] == "pbUseMove" && site.lineno == 333
           retained = Combat.state(battler.battle)[:effect_provenance][Combat.effect_provenance_key("battler", battler, PBEffects::Powder)] || {}
           answer.merge!("source_kind" => "volatile", "source_id" => "Powder", "source_actor" => retained["source_actor"], "initiating_actor" => retained["initiating_actor"], "loss_kind" => "residual")
         end

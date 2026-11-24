@@ -4,9 +4,9 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
     <Using Include="Xunit" />
     <Using Include="Ironmon.TestSupport" />
     <ProjectReference Include="../Ironmon.TestSupport/Ironmon.TestSupport.csproj" />
@@ -15,6 +15,14 @@
     <ProjectReference Include="../../src/Setup/Ironmon.Setup.Core/Ironmon.Setup.Core.csproj" />
     <ProjectReference Include="../../src/Updater/Ironmon.Updater.Core/Ironmon.Updater.Core.csproj" />
     <ProjectReference Include="../../src/Updater/Ironmon.Updater.Infrastructure/Ironmon.Updater.Infrastructure.csproj" />
-    <ProjectReference Include="../Ironmon.Updater.CrashHost/Ironmon.Updater.CrashHost.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../Ironmon.Updater.CrashHost/Ironmon.Updater.CrashHost.csproj" ReferenceOutputAssembly="false" OutputItemType="_UpdaterCrashHost" />
   </ItemGroup>
+  <Target Name="CopyUpdaterCrashHost" AfterTargets="CopyFilesToOutputDirectory">
+    <ItemGroup>
+      <_UpdaterCrashHostFiles Include="%(_UpdaterCrashHost.RootDir)%(_UpdaterCrashHost.Directory)*" Condition="'@(_UpdaterCrashHost)' != ''" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_UpdaterCrashHostFiles)" DestinationFolder="$(OutDir)updater-crash-host" SkipUnchangedFiles="true">
+      <Output TaskParameter="CopiedFiles" ItemName="FileWrites" />
+    </Copy>
+  </Target>
 </Project>

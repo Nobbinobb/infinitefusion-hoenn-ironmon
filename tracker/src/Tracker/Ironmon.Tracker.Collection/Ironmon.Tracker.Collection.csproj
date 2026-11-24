@@ -8,8 +8,8 @@
     <ProjectReference Include="../../../tools/Ironmon.Sqlite.QueryGenerator/Ironmon.Sqlite.QueryGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
-    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="11.0.0" />
+    <PackageReference Include="SQLite" Version="3.53.4" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Ironmon.Tracker.Tests" />

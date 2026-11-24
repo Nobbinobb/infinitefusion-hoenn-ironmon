@@ -27,9 +27,8 @@
         }
     </select>
     <div class="tracker-controls-categories" role="tablist" aria-label="Control categories">
-        @for (int index = 0; index < ControlCatalog.Groups.Count; index++)
+        @foreach (int category in Enumerable.Range(0, ControlCatalog.Groups.Count))
         {
-            int category = index;
             <button id="@CategoryId(category)" type="button" role="tab" aria-controls="@_actionsPanelId" aria-selected="@((_selectedGroup == category).ToString().ToLowerInvariant())" tabindex="@(_selectedGroup == category ? 0 : -1)" @ref="_categoryButtons[category]" @onclick="() => SelectCategory(category)" @onkeydown="args => HandleCategoryKey(args, category)">@ControlCatalog.Groups[category].Label</button>
         }
     </div>
@@ -58,9 +57,8 @@
                 {
                     <tr @key="action.Id" class="@(!FeatureEnabled(action.Id) ? "tracker-control-disabled" : null)">
                         <th scope="row">@action.Label</th>
-                        @for (int index = 0; index < 2; index++)
+                        @foreach (int slot in Enumerable.Range(0, 2))
                         {
-                            int slot = index;
                             <td>
                                 <button class="tracker-control-binding" type="button" disabled="@(!FeatureEnabled(action.Id) || (_controllerIdentity is not null && !IsConnected(_controllerIdentity)))" aria-label="@BindingAccessibleLabel(action, slot)" title="@BindingAccessibleLabel(action, slot)" @onclick="() => BeginCapture(action.Id, slot)">
                                     <ControlBindingChip Keyboard="@KeyboardChord(action, slot)" Controller="@ControllerChord(action, slot)" PlayStation="@IsPlayStation" />

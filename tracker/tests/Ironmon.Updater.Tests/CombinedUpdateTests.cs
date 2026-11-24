@@ -609,7 +609,7 @@ public sealed class CombinedUpdateTests(PinnedGitFixture tool) : IClassFixture<P
     /// <returns>The exact process owned by the caller.</returns>
     private Process StartHelper(ZipGameFixture game, SignedReleaseFixture release, Guid transaction, string mode)
     {
-        var executable = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, SignedReleaseFixture.HostRelativePath + SignedReleaseFixture.BuildConfiguration + SignedReleaseFixture.HostSuffix));
+        var executable = SignedReleaseFixture.CrashHostPath;
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, WorkingDirectory = release.Root };
         foreach (var argument in new[] { mode, release.Root, transaction.ToString(TransactionStorage.GuidFormat), release.PublicKey, tool.Cache.Root, game.Policy.Remote, Path.Combine(release.Cache, Home) })
             start.ArgumentList.Add(argument);

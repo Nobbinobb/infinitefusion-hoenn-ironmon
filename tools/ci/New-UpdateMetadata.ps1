@@ -6,15 +6,15 @@ param([Parameter(Mandatory)][string]$Version, [Parameter(Mandatory)][string]$Gam
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 . (Join-Path $PSScriptRoot 'UpdateArtifacts.ps1')
+. (Join-Path $PSScriptRoot 'UpstreamInputs.ps1')
 $settings = git --no-replace-objects -C (Split-Path -Parent $projectRoot) show "${GameCommit}:Data/Scripts/001_Settings.rb" | Out-String
 if ($LASTEXITCODE -ne 0) { throw 'Cannot read the selected game version.' }
-$match = [regex]::Match($settings, '(?m)^\s*GAME_VERSION_NUMBER\s*=\s*["''](?<version>\d+\.\d+\.\d+)["'']')
-if (-not $match.Success) { throw 'The selected game has no supported version label.' }
+$gameVersion = Get-RubyStringConstant $settings 'HOENN_VERSION_NUMBER'
 $release = Join-Path $projectRoot 'release'
 $gameDownloadBytes = & (Join-Path $PSScriptRoot 'Get-GameDownloadEstimate.ps1') -Repository (Split-Path -Parent $projectRoot) -Commit $GameCommit
 [IO.File]::Copy((Join-Path $projectRoot "docs/releases/RELEASE_NOTES_$Version.md"), (Join-Path $release 'update-notes.md'), $false)
 $request = [ordered]@{
-  directory=$release; version=$Version; gameVersion=$match.Groups['version'].Value; gameCommit=$GameCommit
+  directory=$release; version=$Version; gameVersion=$gameVersion; gameCommit=$GameCommit
   gameInventory=(Join-Path $projectRoot 'data/updater/baselines/hoenn.json.gz')
   gameManifest=(Join-Path $projectRoot 'data/updater/baselines/hoenn.manifest.json')
   gameDownloadBytes=$gameDownloadBytes
@@ -24,7 +24,7 @@ $request = [ordered]@{
 }
 $path = Join-Path $projectRoot 'data/updater/release-request.json'
 $request | ConvertTo-Json -Depth 8 -Compress | Set-Content -LiteralPath $path -Encoding utf8NoBOM
-$tool = Join-Path $projectRoot 'tracker/tools/Ironmon.ReleaseTool/bin/Release/net10.0/Ironmon.ReleaseTool.dll'
+$tool = Get-UpdateCandidateToolPath $projectRoot
 Invoke-UpdateCandidateTool $tool @('create', $path)
 foreach ($asset in Get-ChildItem -LiteralPath $release -File | Where-Object { -not $_.Name.EndsWith('.sha256.txt') }) {
   $hash = (Get-FileHash -LiteralPath $asset.FullName -Algorithm SHA256).Hash.ToLowerInvariant()

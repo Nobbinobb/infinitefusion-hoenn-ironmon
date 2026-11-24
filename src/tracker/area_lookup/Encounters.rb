@@ -21,7 +21,7 @@ module Ironmon
   def self.tracker_area_encounter_condition(encounter_type)
     value = encounter_type.to_s
     prefix = case tracker_area_encounter_environment(value)
-             when "grass" then value == "TallGrass" ? value : "Land"
+             when "grass" then value.start_with?("Land") ? "Land" : value
              when "cave" then "Cave"
              when "water" then "Water"
              else ""

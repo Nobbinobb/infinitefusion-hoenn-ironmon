@@ -1,6 +1,6 @@
 # Ironmon 0.10.1
 
-This distribution targets Pokemon Infinite Fusion 2 version 6.8.2.
+This distribution targets Pokémon Infinite Fusion 2: Hoenn 1.3.2 (engine 6.9.1).
 
 Copy the included `Data` directory into the game directory and merge it with
 the existing `Data` directory. Ironmon's main Ruby scripts are installed beneath

@@ -440,22 +440,48 @@ public partial class EvolutionGraph : IAsyncDisposable
     /// Increases graph magnification around the viewport center.
     /// </summary>
     /// <returns>A task representing the browser transform.</returns>
-    private Task ZoomInAsync()
-        => JavaScript.InvokeVoidAsync("ironmonEvolutionGraph.zoom", _viewport, _zoomStep).AsTask();
+    private Task ZoomInAsync() 
+        => ZoomAsync(_zoomStep);
 
     /// <summary>
     /// Decreases graph magnification around the viewport center.
     /// </summary>
     /// <returns>A task representing the browser transform.</returns>
     private Task ZoomOutAsync()
-        => JavaScript.InvokeVoidAsync("ironmonEvolutionGraph.zoom", _viewport, 1 / _zoomStep).AsTask();
+        => ZoomAsync(1 / _zoomStep);
+
+    /// <summary>
+    /// Applies a relative zoom to the rendered graph.
+    /// </summary>
+    /// <param name="factor">The multiplier for the current magnification.</param>
+    /// <returns>A task representing the browser transform.</returns>
+    private async Task ZoomAsync(double factor)
+    {
+        const string zoomFunction = "ironmonEvolutionGraph.zoom";
+        try
+        {
+            await JavaScript.InvokeVoidAsync(zoomFunction, _viewport, factor);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
 
     /// <summary>
     /// Centers the selected node and returns the graph to its default readable scale.
     /// </summary>
     /// <returns>A task representing viewport measurement.</returns>
-    private Task ResetViewAsync()
-        => JavaScript.InvokeVoidAsync("ironmonEvolutionGraph.reset", _viewport).AsTask();
+    private async Task ResetViewAsync()
+    {
+        const string resetFunction = "ironmonEvolutionGraph.reset";
+        try
+        {
+            await JavaScript.InvokeVoidAsync(resetFunction, _viewport);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
 
     /// <summary>
     /// Releases browser event handlers when the graph leaves the render tree.

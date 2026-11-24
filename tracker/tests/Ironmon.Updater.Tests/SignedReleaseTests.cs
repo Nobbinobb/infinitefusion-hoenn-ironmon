@@ -86,15 +86,37 @@ public sealed class SignedReleaseTests
     }
 
     /// <summary>
-    /// Detects missing future runtime prerequisites before replacing any installed files.
+    /// Requires the signed .NET 11 runtime for the smaller package while continuing to allow bundled updates.
     /// </summary>
-    [Fact]
-    public async Task MissingRuntimePreservesVersionA()
+    /// <param name="flavor">The installed and selected deployment flavor.</param>
+    /// <param name="hasDotNet11">Whether the registered x64 runtime includes the required .NET 11 version.</param>
+    [Theory]
+    [InlineData(ReleaseProtocol.RuntimeRequired, false)]
+    [InlineData(ReleaseProtocol.RuntimeRequired, true)]
+    [InlineData(ReleaseProtocol.SelfContained, false)]
+    public async Task DotNet10ToDotNet11UsesTheSelectedPackageRuntime(string flavor, bool hasDotNet11)
     {
-        using var fixture = new SignedReleaseFixture();
+        const string requiredVersion = "11.0.0";
+        using var fixture = new SignedReleaseFixture(flavor, targetRuntimeVersion: requiredVersion);
+        var runtime = new TrackerRuntimeCompatibility(_ => hasDotNet11 ? [new Version(10, 0, 1), new Version(11, 0, 1)] : [new Version(10, 0, 1)]);
+        var coordinator = new IronmonOnlyUpdate(fixture.Verifier, new ReleaseDownloadStore(fixture.Cache, fixture), runtime);
         var before = await InstallationFileSnapshot.ReadAsync(fixture.Root);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.Coordinator(true).PrepareAsync(fixture.Request(), fixture.Evidence));
-        Assert.Equal(before, await InstallationFileSnapshot.ReadAsync(fixture.Root));
+        var request = fixture.Request(flavor);
+        if (flavor == ReleaseProtocol.RuntimeRequired && !hasDotNet11)
+        {
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() => coordinator.PrepareAsync(request, fixture.Evidence));
+            Assert.Contains(requiredVersion, error.Message, StringComparison.Ordinal);
+            Assert.Contains("https://dotnet.microsoft.com/download/dotnet/11.0", error.Message, StringComparison.Ordinal);
+            Assert.Equal(before, await InstallationFileSnapshot.ReadAsync(fixture.Root));
+            Assert.Null(UpdateTransaction.ReadActiveId(fixture.Root));
+            return;
+        }
+
+        var prepared = await coordinator.PrepareAsync(request, fixture.Evidence);
+        var result = await new UpdateTransaction(new SignedIronmonAuthority(fixture.Verifier, runtime), _ => Task.CompletedTask).ApplyAsync(fixture.Root, prepared.TransactionId);
+        Assert.Equal(TransactionPhase.Committed, result.Phase);
+        var receipt = ReleaseJson.Parse<IronmonInstalledReceipt>(await File.ReadAllBytesAsync(Path.Combine(fixture.Root, IronmonOnlyUpdate.ReceiptPath)), ReleaseJson.ManifestLimit);
+        Assert.Equal(flavor, receipt.Flavor);
     }
 
     /// <summary>
@@ -272,7 +294,7 @@ public sealed class SignedReleaseTests
         using var fixture = new SignedReleaseFixture(runnableTracker: true);
         fixture.Write(TransactionFixture.FixtureMarker, [1]);
         var prepared = await fixture.Coordinator().PrepareAsync(fixture.Request(), fixture.Evidence);
-        var host = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, SignedReleaseFixture.HostRelativePath + SignedReleaseFixture.BuildConfiguration + SignedReleaseFixture.HostSuffix));
+        var host = SignedReleaseFixture.CrashHostPath;
         var applied = await RunOwnedProcessAsync(host, [SignedApplyMode, fixture.Root, prepared.TransactionId.ToString(), fixture.PublicKey]);
         Assert.Contains(nameof(TransactionPhase.Committed), applied, StringComparison.Ordinal);
         var started = await RunOwnedProcessAsync(Path.Combine(fixture.Root, UpdaterHandoff.TrackerRelativePath), [ReleaseProbeMode]);

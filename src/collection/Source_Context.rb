@@ -494,7 +494,7 @@ module IronmonCollectionDrainSource
   def pbRecoverHPFromDrain(amount, target, *args)
     collection = Ironmon::GameplayCollection
     site = caller_locations(1, 1)[0]
-    origin = if site && File.basename(site.path) == "012_Battle_Phase_EndOfRound.rb" && site.lineno == 320
+    origin = if site && File.basename(site.path) == "012_Battle_Phase_EndOfRound.rb" && site.lineno == 283
       retained = collection::Combat.state(@battle)&.dig(:effect_provenance, collection::Combat.effect_provenance_key("battler", target, PBEffects::LeechSeed)) || {}
       { "source_kind" => "volatile", "source_id" => "LeechSeed", "source_actor" => retained["source_actor"], "initiating_actor" => retained["initiating_actor"] }
     else

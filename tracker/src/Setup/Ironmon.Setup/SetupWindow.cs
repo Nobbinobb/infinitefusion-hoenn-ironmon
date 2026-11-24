@@ -172,7 +172,7 @@ internal sealed class SetupWindow : Window
         }
         else if (_page == 1)
         {
-            if (!_session.TrackerRuntimeAvailable)
+            if (!_session.CanSelectRuntimeRequired)
                 _flavor = ReleaseProtocol.SelfContained;
 
             Heading(UpdaterText.SetupWindowMakeItYours);
@@ -722,15 +722,16 @@ internal sealed class SetupWindow : Window
             if (choice.IsEnabled)
                 _flavor = flavor;
         };
-        if (flavor != ReleaseProtocol.RuntimeRequired || _session.TrackerRuntimeAvailable)
+        if (flavor != ReleaseProtocol.RuntimeRequired || _session.CanSelectRuntimeRequired)
             return choice;
 
         choice.IsEnabled = false;
-        choice.ToolTip = UpdaterText.SetupTrackerRuntimeUnavailable;
+        var runtimeUnavailable = TrackerRuntimeCompatibility.TrackerRuntimeUnavailable;
+        choice.ToolTip = runtimeUnavailable;
         ToolTipService.SetShowOnDisabled(choice, true);
-        AutomationProperties.SetHelpText(choice, UpdaterText.SetupTrackerRuntimeUnavailable);
-        var help = Action(HelpSymbol, () => MessageBox.Show(this, UpdaterText.SetupTrackerRuntimeUnavailable, UpdaterText.SetupTrackerRuntimeHelp, MessageBoxButton.OK, MessageBoxImage.Information));
-        help.ToolTip = UpdaterText.SetupTrackerRuntimeUnavailable;
+        AutomationProperties.SetHelpText(choice, runtimeUnavailable);
+        var help = Action(HelpSymbol, () => MessageBox.Show(this, runtimeUnavailable, UpdaterText.SetupTrackerRuntimeHelp, MessageBoxButton.OK, MessageBoxImage.Information));
+        help.ToolTip = runtimeUnavailable;
         help.Width = 24;
         help.MinWidth = 24;
         help.MinHeight = 24;

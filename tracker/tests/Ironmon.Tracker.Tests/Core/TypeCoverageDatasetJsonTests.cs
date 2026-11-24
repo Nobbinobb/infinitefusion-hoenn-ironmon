@@ -10,7 +10,7 @@ namespace Ironmon.Tracker.Tests.Core;
 public sealed class TypeCoverageDatasetJsonTests
 {
     private const string _coverageFileName = "type_coverage.json";
-    private const string _expectedGameVersion = "6.8.2";
+    private const string _expectedGameVersion = "6.9.1";
     private const string _gameVersionEnvironmentVariable = "IRONMON_EXPECTED_GAME_VERSION";
     private const string _fingerprintFormat = "x16";
     private const string _fusionBodyPrefix = "B";

@@ -51,6 +51,14 @@ Both tracker ZIPs contain the signed helper payload under `Ironmon Tracker/Updat
 and an `update-package.json` inventory. Helper versions and paths are immutable;
 Setup and tracker binary versions must match the release version.
 
+For the first release built on .NET 11, include the Windows x64 .NET 11 Runtime
+requirement in that version's `docs/releases/RELEASE_NOTES_<version>.md`. Include
+`https://dotnet.microsoft.com/en-us/download/dotnet/11.0#runtime-11.0.0` as a
+copyable URL because the update review in 0.10.1 displays release notes as plain
+text. Tell **Runtime required** users to install the runtime before updating and
+explain that **Runtime included** users receive it with their update. Both
+packages require the [.NET 11 x64 hardware baseline](https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-11/runtime#x86x64-requirements).
+
 Setup defaults to the newest stable signed release and its matching game revision.
 Advanced selection offers older releases only while signed metadata, matching game
 history, and required downloads can be verified. Explicit choices are rechecked

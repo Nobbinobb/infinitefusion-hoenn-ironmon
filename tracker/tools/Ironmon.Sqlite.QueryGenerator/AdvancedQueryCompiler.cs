@@ -622,7 +622,7 @@ internal sealed class AdvancedQueryCompiler
         }
         else if (_semantic.GetConstantValue(expression) is { HasValue: true } constant)
         {
-            source = constant.Value is null ? SyntaxFacts.GetText(SyntaxKind.NullKeyword) : Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatPrimitive(constant.Value, true, false);
+            source = SqliteQueryCompiler.FormatConstant(constant.Value);
             key = source + ':' + type?.ToDisplayString();
         }
         else

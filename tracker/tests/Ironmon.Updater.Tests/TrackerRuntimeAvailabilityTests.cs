@@ -8,16 +8,17 @@ namespace Ironmon.Updater.Tests;
 public sealed class TrackerRuntimeAvailabilityTests
 {
     private const string DesktopFramework = "Microsoft.WindowsDesktop.App";
-    private const string BaselineVersion = "10.0.0";
-    private const string ServicedVersion = "10.0.12";
-    private const string EarlierPatchVersion = "10.0.10";
+    private const string BaselineVersion = "11.0.0";
+    private const string ServicedVersion = "11.0.12";
+    private const string EarlierPatchVersion = "11.0.10";
+    private const string PreviousSupportedVersion = "10.0.12";
     private const string OlderMajorVersion = "9.0.12";
-    private const string NewerMajorVersion = "11.0.0";
-    private const string NewerMinorVersion = "10.1.0";
+    private const string NewerMajorVersion = "12.0.0";
+    private const string NewerMinorVersion = "11.1.0";
     private const string LegacyDesktopConfiguration = "{\"runtimeOptions\":{\"frameworks\":[{\"name\":\"Microsoft.NETCore.App\",\"version\":\"10.0.0\"},{\"name\":\"Microsoft.WindowsDesktop.App\",\"version\":\"10.0.0\"}]}}";
 
     /// <summary>
-    /// Accepts the core-only runtime and serviced patches without accepting a different major or minor.
+    /// Accepts the current and previous core runtime families without requiring Desktop or accepting unrelated versions.
     /// </summary>
     /// <param name="core">The registered core version, or null when absent.</param>
     /// <param name="desktop">The registered desktop version, or null when absent.</param>
@@ -27,6 +28,7 @@ public sealed class TrackerRuntimeAvailabilityTests
     [InlineData(ServicedVersion, null, true)]
     [InlineData(null, ServicedVersion, false)]
     [InlineData(OlderMajorVersion, OlderMajorVersion, false)]
+    [InlineData(PreviousSupportedVersion, null, true)]
     [InlineData(NewerMajorVersion, NewerMajorVersion, false)]
     [InlineData(NewerMinorVersion, NewerMinorVersion, false)]
     [InlineData(BaselineVersion, BaselineVersion, true)]
@@ -58,8 +60,9 @@ public sealed class TrackerRuntimeAvailabilityTests
     {
         using var fixture = new SignedReleaseFixture(ReleaseProtocol.RuntimeRequired);
         fixture.Write(TrackerRuntimeCompatibility.ConfigurationPath, System.Text.Encoding.UTF8.GetBytes(LegacyDesktopConfiguration));
-        var runtime = new TrackerRuntimeCompatibility(name => name == DesktopFramework ? [] : [Version.Parse(ServicedVersion)]);
+        var runtime = new TrackerRuntimeCompatibility(name => name == DesktopFramework ? [] : [Version.Parse(PreviousSupportedVersion), Version.Parse(ServicedVersion)]);
         Assert.True(runtime.TrackerRuntimeAvailable);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => runtime.EnsureAsync(fixture.Root, ReleaseProtocol.RuntimeRequired, CancellationToken.None));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => runtime.EnsureAsync(fixture.Root, ReleaseProtocol.RuntimeRequired, CancellationToken.None));
+        Assert.Contains(DesktopFramework, error.Message, StringComparison.Ordinal);
     }
 }

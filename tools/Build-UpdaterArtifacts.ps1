@@ -11,7 +11,7 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 $projectRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'ci/UpdateArtifacts.ps1')
-$tool = Join-Path $projectRoot 'tracker/tools/Ironmon.ReleaseTool/bin/Release/net10.0/Ironmon.ReleaseTool.dll'
+$tool = Get-UpdateCandidateToolPath $projectRoot
 $trust = Join-Path $projectRoot 'resources/updater/trusted-keys.json'
 Invoke-UpdateCandidateTool $tool @('trust', $trust)
 $history = if ($HistoryDirectory) { $HistoryDirectory } else { '-' }

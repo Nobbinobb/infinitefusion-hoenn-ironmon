@@ -47,7 +47,7 @@ and protected signing are documented in
   file hashes and never skips tests or package validation.
 - `Publish-Tracker.ps1` publishes the self-contained tracker application by
   default. Pass `-DeploymentMode RuntimeRequired` for the smaller package
-  that requires the Windows x64 .NET 10 Runtime.
+  that requires the Windows x64 .NET 11 Runtime.
 
 The [updater acceptance checklist](../docs/guides/UPDATER_ACCEPTANCE.md) records
 automated coverage and the remaining native/clean-Windows checks. Put acceptance

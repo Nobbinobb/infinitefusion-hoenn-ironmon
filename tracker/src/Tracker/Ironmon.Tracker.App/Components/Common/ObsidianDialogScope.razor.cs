@@ -39,8 +39,16 @@ public partial class ObsidianDialogScope : IAsyncDisposable
     /// <returns>A task representing browser focus initialization.</returns>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (!firstRender)
+            return;
+
+        try
+        {
             _focusHandle = await JavaScript.InvokeAsync<int>(_attachFunction, _element);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
     }
 
     /// <summary>

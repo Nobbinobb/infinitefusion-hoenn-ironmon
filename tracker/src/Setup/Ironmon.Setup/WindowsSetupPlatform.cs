@@ -34,7 +34,7 @@ internal sealed class WindowsSetupPlatform : ISetupPlatform
     private readonly WebViewPackageDownload _webViewDownload = new();
 
     /// <summary>
-    /// Gets whether the registered Windows x64 .NET frameworks support the runtime-required tracker package.
+    /// Gets whether a registered Windows x64 .NET framework can support a current or previous tracker build.
     /// </summary>
     public bool TrackerRuntimeAvailable => new TrackerRuntimeCompatibility().TrackerRuntimeAvailable;
 
