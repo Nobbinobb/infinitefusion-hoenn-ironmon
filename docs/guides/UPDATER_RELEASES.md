@@ -63,7 +63,7 @@ $candidate = Join-Path $PWD "data/standalone-updater/$version/candidate"
 $tool = 'tracker/tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj'
 $trust = Join-Path $PWD 'resources/updater/trusted-keys.json'
 dotnet publish tracker/src/Setup/Ironmon.Setup/Ironmon.Setup.csproj -c Release -r win-x64 --self-contained true "-p:Version=$version" -p:UpdaterMetadataOnly=true -o $build
-dotnet run --project $tool -c Release -- worker-create $candidate (Join-Path $build 'Ironmon Setup.exe') $version
+dotnet run --project $tool -c Release -p:UpdaterMetadataOnly=true -- worker-create $candidate (Join-Path $build 'Ironmon Setup.exe') $version
 ```
 
 For a signing rehearsal with independent test trust, pass the test key
@@ -72,8 +72,8 @@ identifier and key through `IRONMON_UPDATER_SIGNING_KEY_ID` and
 `$trust` to the test public keys for that rehearsal.
 
 ```powershell
-dotnet run --project $tool -c Release -- worker-sign $candidate $trust
-dotnet run --project $tool -c Release -- worker-verify $candidate $trust
+dotnet run --project $tool -c Release -p:UpdaterMetadataOnly=true -- worker-sign $candidate $trust
+dotnet run --project $tool -c Release -p:UpdaterMetadataOnly=true -- worker-verify $candidate $trust
 ```
 
 Attach all three candidate files to `vupdater-<version>` in the Ironmon
