@@ -55,7 +55,7 @@ jobs:
           $exe = Join-Path $build 'Ironmon Setup.exe'
           $info = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
           if ("$($info.FileMajorPart).$($info.FileMinorPart).$($info.FileBuildPart)" -cne $env:WORKER_VERSION) { throw 'Published worker version differs from the release request.' }
-          dotnet run --project tracker/tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj -c Release -- worker-create $candidate $exe $env:WORKER_VERSION
+          dotnet run --project tracker/tools/Ironmon.ReleaseTool/Ironmon.ReleaseTool.csproj -c Release -p:UpdaterMetadataOnly=true -- worker-create $candidate $exe $env:WORKER_VERSION
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: standalone-updater-candidate
