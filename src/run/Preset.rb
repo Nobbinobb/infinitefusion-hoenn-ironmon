@@ -115,6 +115,7 @@ module Ironmon
   def self.apply_preset(context = :new_run, seed_override = nil, start_tracker = true, expected_compatibility_fingerprint = nil)
     return false if !$PokemonGlobal || !$game_switches || !$game_variables
     transaction = preset_transaction_snapshot
+    activate_run_generation_profile(current_generation_profile_id) if context == :f7_reset
     @preset_generation_error_message = nil
     @ability_randomization_error_message = nil
     @base_stat_randomization_error_message = nil
@@ -153,7 +154,7 @@ module Ironmon
       !prepare_item_randomization
     return rollback_preset_transaction(transaction) if
       !prepare_species_mappings
-    prepare_rival_lab_resources
+    prepare_rival_lab_resources if context != :f7_reset
     if expected_compatibility_fingerprint &&
        tracker_compatibility_fingerprint != expected_compatibility_fingerprint
       @seed_import_error_message = _INTL(

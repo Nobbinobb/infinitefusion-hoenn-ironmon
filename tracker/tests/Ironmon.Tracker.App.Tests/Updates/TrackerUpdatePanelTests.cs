@@ -121,6 +121,7 @@ public sealed partial class TrackerUpdatePanelTests
         var updater = new RecordedUpdater();
         fixture.UseStandaloneUpdater(updater);
         await fixture.Session.OpenAsync();
+        Assert.Equal(fixture.Release.Manifest.Game.VersionLabel, fixture.Session.CurrentGameVersion);
         await RenderAsync(fixture, async (_, html) =>
         {
             Assert.Null(fixture.Session.Review);
@@ -227,10 +228,22 @@ public sealed partial class TrackerUpdatePanelTests
     /// <summary>
     /// Shows installed versions and a confirmed current result without a bottom action bar.
     /// </summary>
-    [Fact]
-    public async Task CurrentReleaseHasVersionRowsAndInlineRetry()
+    /// <param name="standalone">Whether the tracker delegates installation to the standalone updater.</param>
+    /// <param name="matchingGame">Whether the installed game matches the signed revision.</param>
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    public async Task CurrentReleaseHasVersionRowsAndInlineRetry(bool standalone, bool matchingGame)
     {
-        using var fixture = new TrackerUpdateTestFixture { ObservedVersion = SignedReleaseFixture.VersionB };
+        using var fixture = new TrackerUpdateTestFixture
+        {
+            ObservedVersion = SignedReleaseFixture.VersionB,
+            ObservedGameCommit = matchingGame ? null : new string('2', 40)
+        };
+        if (standalone)
+            fixture.UseStandaloneUpdater(new RecordedUpdater());
+
         await fixture.Session.OpenFromSettingsAsync();
         await RenderAsync(fixture, (_, html) =>
         {
@@ -238,11 +251,39 @@ public sealed partial class TrackerUpdatePanelTests
             Assert.Contains("tracker-update-result-current", html());
             Assert.Contains("Ironmon tracker", html());
             Assert.Contains("Infinite Fusion", html());
-            Assert.Contains(fixture.Release.Manifest.Game.VersionLabel, html());
+            var gameVersion = matchingGame ? fixture.Release.Manifest.Game.VersionLabel : "Not available";
+            Assert.Contains($"<dd>{gameVersion}</dd>", html());
             Assert.Contains("Last checked", html());
             Assert.DoesNotContain("tracker-update-actions", html());
             return Task.CompletedTask;
         });
+    }
+
+    /// <summary>
+    /// Uses the installed signed game identity offline and falls back to matching signed discovery after a damaged receipt.
+    /// </summary>
+    [Fact]
+    public async Task StandaloneGameVersionUsesInstalledEvidenceAndAllowsDiscoveryWhenReceiptIsUnreadable()
+    {
+        using var fixture = new TrackerUpdateTestFixture();
+        var prepared = await fixture.Release.Coordinator().PrepareAsync(fixture.Release.Request(), fixture.Release.Evidence);
+        var transaction = new UpdateTransaction(new SignedIronmonAuthority(fixture.Release.Verifier, SignedReleaseFixture.Runtime()), _ => Task.CompletedTask);
+        var result = await transaction.ApplyAsync(fixture.Release.Root, prepared.TransactionId);
+        Assert.Equal(TransactionPhase.Committed, result.Phase);
+        fixture.ObservedVersion = SignedReleaseFixture.VersionB;
+        fixture.Offline = true;
+        fixture.UseStandaloneUpdater(new RecordedUpdater());
+
+        await fixture.Session.OpenFromSettingsAsync();
+        Assert.Equal(fixture.Release.Manifest.Game.VersionLabel, fixture.Session.CurrentGameVersion);
+        Assert.NotNull(fixture.Session.Error);
+
+        await File.WriteAllTextAsync(Path.Combine(fixture.Release.Root, IronmonOnlyUpdate.ReceiptPath), "{");
+        fixture.Offline = false;
+        await fixture.Session.CheckAsync();
+        Assert.Null(fixture.Session.Error);
+        Assert.NotNull(fixture.Session.CheckedAt);
+        Assert.Equal(fixture.Release.Manifest.Game.VersionLabel, fixture.Session.CurrentGameVersion);
     }
 
     /// <summary>

@@ -304,26 +304,29 @@ module Ironmon
     end
 
     def build_pool(work_checkpoint = nil)
-      identities = CustomFusionComponent.identities(File.binread(@path), work_checkpoint)
+      component = CustomFusionComponent.decode(File.binread(@path), work_checkpoint)
+      bitset = component["bitset"]
+      species_count = component["normal_species_count"]
       accepted = {}
-      identities.each_with_index do |identity, index|
-        work_checkpoint.call if work_checkpoint && index % 128 == 0
-        match = /\AB(\d+)H(\d+)\z/.match(identity.to_s)
-        dex_number = (match[1].to_i * NB_POKEMON) + match[2].to_i
-        accepted[dex_number] = identity
+      CustomFusionComponent.each_eligible_index(bitset, work_checkpoint) do |index|
+        body_id = index / species_count + 1
+        head_id = index % species_count + 1
+        accepted[(body_id * NB_POKEMON) + head_id] = "B#{body_id}H#{head_id}".to_sym
       end
-      numbers = accepted.keys.sort.freeze
-      membership = Ironmon.pack_custom_fusion_pool_membership(numbers, work_checkpoint)
+      # Installed and archived profiles use the runtime's species count. Keep
+      # the existing dex-number representation for older component widths.
+      numbers = species_count == NB_POKEMON ? accepted.keys : accepted.keys.sort
+      membership = species_count == NB_POKEMON ? bitset : Ironmon.pack_custom_fusion_pool_membership(numbers, work_checkpoint)
       pool = numbers.each_with_index.map do |number, index|
         work_checkpoint.call if work_checkpoint && index % 128 == 0
-        accepted[number]
+        accepted.fetch(number)
       end.freeze
       fingerprint = Ironmon.species_pool_fingerprint(pool, work_checkpoint)
       @build_count += 1
-      @source_entry_count = identities.length
+      @source_entry_count = component["eligible_count"]
       @accepted_by_number = accepted.freeze
-      @numbers = numbers
-      @packed_pool_membership = membership
+      @numbers = numbers.freeze
+      @packed_pool_membership = membership.freeze
       @fingerprint = fingerprint
       @pool = pool
     rescue Exception => exception

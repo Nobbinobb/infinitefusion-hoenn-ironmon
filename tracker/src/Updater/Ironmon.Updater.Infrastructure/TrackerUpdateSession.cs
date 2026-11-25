@@ -500,13 +500,7 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
             return;
         }
 
-        var installed = _standalone is null ? _preparation.ReadCurrentRelease(observation.InstallationRoot, observation.CurrentVersion) : null;
-        if (installed is not null)
-        {
-            var current = _verifier.Verify(installed.Manifest, installed.Signatures);
-            if (current.Game.PreferredCommit == observation.GameCommit)
-                CurrentGameVersion = current.Game.VersionLabel;
-        }
+        CurrentGameVersion = ReadInstalledGameVersion(observation);
 
         var found = await _discovery.CheckAsync(manual, cancellationToken).ConfigureAwait(false);
         RetryAt = found.RetryAt;
@@ -520,7 +514,11 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
             string version;
             if (_standalone is not null)
             {
-                version = _verifier.VerifyOffer(_release).IronmonVersion;
+                var offer = _verifier.VerifyOffer(_release);
+                if (CurrentGameVersion is null && offer.GameVersion is { } game && game.Commit == observation.GameCommit)
+                    CurrentGameVersion = game.Version;
+
+                version = offer.IronmonVersion;
             }
             else
             {
@@ -558,6 +556,28 @@ public sealed class TrackerUpdateSession(ReleaseDiscovery discovery, ReleaseVeri
 
         if (reviewSelection && IsOpen && AvailableVersion is not null)
             await ReviewCoreAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Finds the game version recorded by Setup when it matches the observed revision.
+    /// </summary>
+    /// <param name="observation">The running tracker and installed game revisions.</param>
+    /// <returns>The authenticated local game version, or null when unavailable for display.</returns>
+    private string? ReadInstalledGameVersion(IronmonUpdateRequest observation)
+    {
+        try
+        {
+            var installed = _preparation.ReadCurrentRelease(observation.InstallationRoot, observation.CurrentVersion);
+            if (installed is null)
+                return null;
+
+            var game = _verifier.Verify(installed.Manifest, installed.Signatures).Game;
+            return game.PreferredCommit == observation.GameCommit ? game.VersionLabel : null;
+        }
+        catch (Exception error) when (_standalone is not null && error is (IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or FormatException or InvalidDataException or System.Text.Json.JsonException or System.Security.Cryptography.CryptographicException))
+        {
+            return null;
+        }
     }
 
     /// <summary>

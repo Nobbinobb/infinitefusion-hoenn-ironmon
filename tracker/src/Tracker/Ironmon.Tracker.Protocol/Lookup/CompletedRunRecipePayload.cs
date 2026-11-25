@@ -60,6 +60,12 @@ public sealed class CompletedRunRecipePayload : RunReproductionRecipePayload
     public OpeningRivalContextPayload? OpeningRivalContext { get; init; }
 
     /// <summary>
+    /// Gets or initializes whether an opening loss keeps lookup preparation behind user interaction.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool DeferAutomaticPreparation { get; init; }
+
+    /// <summary>
     /// Gets or initializes authoritative attempt statistics when the recipe provides them.
     /// </summary>
     public RunStatisticsPayload? Statistics { get; init; }

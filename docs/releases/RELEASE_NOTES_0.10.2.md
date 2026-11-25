@@ -38,6 +38,10 @@ options. After this migration, use **Update** in the tracker again.
   its window opened. Download Setup again if you tried an earlier v0.10.2 build.
 - Reduces pauses during cold fusion pairing and archived fusion-name loading
   while preserving seeded fusion results.
+- Shortens the reset after an opening loss. The Archive summary opens without
+  starting lookup calculations until you select the run or a lookup tab.
+- Shows the installed Infinite Fusion version in tracker settings when the
+  signed version record matches the installed game revision.
 - Opens a separately signed updater from the tracker. It handles installation
   review and game file preparation, and can receive fixes independently of the
   game and tracker. The update archive uses the signed game file bytes on Windows.

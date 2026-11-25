@@ -24,16 +24,19 @@
             <RunStatistics @key="selectedRecipe.RunId" Statistics="selectedRecipe.Statistics" />
             <ArchivePokemonHistory Recipe="selectedRecipe" GameRoot="@GameRoot" PokemonSelected="OpenHistoryPokemon" />
         </div>
-        <div class="obsidian-archive-content archive-run-content" role="tabpanel" aria-label="@GetSectionName(ArchiveSection.Areas)" hidden="@(_selectedSection != ArchiveSection.Areas)">
-            <CascadingValue Name="@nameof(PokemonLookupExplorer.ForegroundPreparation)" Value="@(_selectedSection == ArchiveSection.Areas && ForegroundPreparationRequested)">
-                <AreaLookupExplorer @key="selectedRecipe.RunId" SourceKey="@($"archive:{selectedRecipe.RunId}")" RunId="@selectedRecipe.RunId" Recipe="selectedRecipe" GameRoot="@GameRoot" />
-            </CascadingValue>
-        </div>
-        <div class="obsidian-archive-content archive-run-content" role="tabpanel" aria-label="@GetSectionName(ArchiveSection.Pokemon)" hidden="@(_selectedSection != ArchiveSection.Pokemon)">
-            <CascadingValue Name="@nameof(PokemonLookupExplorer.ForegroundPreparation)" Value="@(_selectedSection == ArchiveSection.Pokemon && ForegroundPreparationRequested)">
-                <PokemonLookupExplorer @key="(selectedRecipe.RunId, _historyLookupVersion)" Recipe="selectedRecipe" GameRoot="@GameRoot" RequestedSpeciesId="@_historySpeciesId" />
-            </CascadingValue>
-        </div>
+        @if (!LookupPreparationDeferred)
+        {
+            <div class="obsidian-archive-content archive-run-content" role="tabpanel" aria-label="@GetSectionName(ArchiveSection.Areas)" hidden="@(_selectedSection != ArchiveSection.Areas)">
+                <CascadingValue Name="@nameof(PokemonLookupExplorer.ForegroundPreparation)" Value="@(_selectedSection == ArchiveSection.Areas && ForegroundPreparationRequested)">
+                    <AreaLookupExplorer @key="selectedRecipe.RunId" SourceKey="@($"archive:{selectedRecipe.RunId}")" RunId="@selectedRecipe.RunId" Recipe="selectedRecipe" GameRoot="@GameRoot" />
+                </CascadingValue>
+            </div>
+            <div class="obsidian-archive-content archive-run-content" role="tabpanel" aria-label="@GetSectionName(ArchiveSection.Pokemon)" hidden="@(_selectedSection != ArchiveSection.Pokemon)">
+                <CascadingValue Name="@nameof(PokemonLookupExplorer.ForegroundPreparation)" Value="@(_selectedSection == ArchiveSection.Pokemon && ForegroundPreparationRequested)">
+                    <PokemonLookupExplorer @key="(selectedRecipe.RunId, _historyLookupVersion)" Recipe="selectedRecipe" GameRoot="@GameRoot" RequestedSpeciesId="@_historySpeciesId" />
+                </CascadingValue>
+            </div>
+        }
     }
     else
     {

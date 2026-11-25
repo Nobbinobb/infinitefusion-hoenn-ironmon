@@ -248,7 +248,7 @@ module Ironmon
 end
 
 Ironmon.register_game_load_hook(:rival_lab_resources, nil, proc do |_save_data, _result|
-  Ironmon.prepare_rival_lab_resources if Ironmon.active?
+  Ironmon.prepare_rival_lab_resources if Ironmon.active? && !Ironmon.checkpoint_reset_loading?
 end)
 
 class Ironmon::RivalLabFusionScene < PokemonFusionScene
