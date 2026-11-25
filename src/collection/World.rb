@@ -555,8 +555,8 @@ module IronmonCollectionRunLifecycleHooks
     return super
   end
 
-  def start_checkpoint_reset(automatic)
-    result = super
+  def start_checkpoint_reset(automatic, **options)
+    result = super(automatic, **options)
     if result
       Ironmon::GameplayCollection::World.observe do
         Ironmon::GameplayCollection::World.stage_transition(automatic ? "automatic_reset" : "manual_reset", @reset_transaction)

@@ -296,11 +296,31 @@ module Ironmon
     return true
   end
 
+  def self.with_opening_battle_presentation(early_battle)
+    previous = @opening_battle_presentation
+    @opening_battle_presentation = early_battle ? :battle : nil
+    return yield
+  ensure
+    @opening_battle_presentation = previous
+  end
+
+  def self.discard_opening_battle_return(decision)
+    return if @opening_battle_presentation != :battle || ![2, 5].include?(decision)
+    return if !active? || tracker_auto_revive_enabled?
+    return if !existing_checkpoint_path($Trainer&.save_slot)
+
+    @opening_battle_presentation = :discarded_return
+  end
+
+  def self.discarding_opening_battle_return?
+    return @opening_battle_presentation == :discarded_return
+  end
+
   def self.finish_queued_early_game_loss_reset
     return false if !@early_game_loss_reset_queued
     return false if pbMapInterpreterRunning?
     @early_game_loss_reset_queued = false
-    return start_checkpoint_reset(true)
+    return start_checkpoint_reset(true, opening_loss: true)
   end
 
   def self.run_first_rival_lab_sequence
@@ -594,11 +614,6 @@ def pbPokemonMart(stock, speech_welcome = nil, cantsell = false,
     stock, speech_welcome, cantsell, speech_bye, speech_what_else
   )
 end
-
-Ironmon.register_graphics_update_hook(
-  :early_game_loss_reset,
-  proc { Ironmon.finish_queued_early_game_loss_reset }
-)
 
 Events.onMapCreate += proc do |_sender, event|
   map_id = event[0]

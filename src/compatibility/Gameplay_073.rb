@@ -112,7 +112,9 @@ alias ironmon_073_original_pb_wild_battle pbWildBattle
 def pbWildBattle(*args)
   starter_encounter = Ironmon.starter_rescue_battle_pending? ||
     Ironmon.starter_encounter_event?
-  won = ironmon_073_original_pb_wild_battle(*args)
+  won = Ironmon.with_opening_battle_presentation(starter_encounter) do
+    ironmon_073_original_pb_wild_battle(*args)
+  end
   Ironmon.finish_starter_rescue_battle if starter_encounter
   reset_started = Ironmon.reset_after_early_game_loss(
     won, starter_encounter
@@ -149,9 +151,9 @@ end
 alias ironmon_073_original_hoenn_rival_battle hoennRivalBattle
 def hoennRivalBattle(loseDialog = "...", canLose = false, items = [])
   first_battle = Ironmon.first_rival_battle_active?
-  won = ironmon_073_original_hoenn_rival_battle(
-    loseDialog, canLose, items
-  )
+  won = Ironmon.with_opening_battle_presentation(first_battle) do
+    ironmon_073_original_hoenn_rival_battle(loseDialog, canLose, items)
+  end
   reset_started = Ironmon.reset_after_early_game_loss(won, first_battle)
   Ironmon.abort_current_early_game_event if !won && first_battle
   Ironmon.heal_after_first_rival_victory(won, first_battle)

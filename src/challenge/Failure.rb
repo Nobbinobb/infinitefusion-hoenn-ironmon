@@ -21,9 +21,11 @@ end
 
 alias ironmon_failure_original_after_battle pbAfterBattle
 def pbAfterBattle(decision, canLose)
-  return Ironmon.with_defeat_start_over_suppressed(decision) do
+  result = Ironmon.with_defeat_start_over_suppressed(decision) do
     ironmon_failure_original_after_battle(decision, canLose)
   end
+  Ironmon.discard_opening_battle_return(decision)
+  return result
 end
 
 alias ironmon_failure_original_start_over pbStartOver

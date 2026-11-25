@@ -13,8 +13,16 @@ class Scene_Map
   def createSpritesets
     Ironmon.pause_tracker_obtainability_for_map
     ironmon_original_create_spritesets
-    Ironmon.finish_pending_reset
+    opening_loss = Ironmon.opening_loss_checkpoint_reset?
+    completed = Ironmon.finish_pending_reset
+    @opening_loss_reveal = opening_loss && completed
     Ironmon.refresh_pending_static_events
+  end
+
+  def consume_opening_loss_reveal
+    reveal = @opening_loss_reveal
+    @opening_loss_reveal = false
+    return reveal
   end
 
   alias ironmon_original_update update

@@ -201,6 +201,10 @@ module Ironmon
     return @checkpoint_reset_loading == true
   end
 
+  def self.opening_loss_checkpoint_reset?
+    return @reset_in_progress && @reset_transaction && @reset_transaction["opening_loss"] == true
+  end
+
   def self.show_pending_reset_notice
     return false if !@reset_notice
     notice = @reset_notice
@@ -269,7 +273,7 @@ module Ironmon
     return true
   end
 
-  def self.start_checkpoint_reset(automatic)
+  def self.start_checkpoint_reset(automatic, opening_loss: false)
     return false if @reset_in_progress
 
     slot = $Trainer ? $Trainer.save_slot : nil
@@ -299,6 +303,7 @@ module Ironmon
         "source_sequence" => completion["source_sequence"],
         "save_slot" => slot,
         "automatic" => automatic,
+        "opening_loss" => opening_loss,
         "seed_to_avoid" => seed_to_avoid
       }
       @reset_in_progress = true
