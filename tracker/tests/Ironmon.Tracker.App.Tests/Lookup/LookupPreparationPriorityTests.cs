@@ -78,6 +78,39 @@ public sealed partial class LookupPreparationPriorityTests
     }
 
     /// <summary>
+    /// An automatically opened opening loss waits for a lookup choice, including recipes saved before the deferral field.
+    /// </summary>
+    /// <param name="legacy">Whether to use the existing opening-rival context without the new field.</param>
+    /// <returns>Completion after verifying the first preparation request represents explicit lookup navigation.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OpeningLossSummaryDefersPreparationUntilLookupNavigation(bool legacy)
+    {
+        using PriorityConnection connection = new();
+        var recipe = CreateRecipe(deferAutomaticPreparation: !legacy, openingContext: legacy ? new() : null);
+        ArchiveView view = CreateArchive(connection.Requests, false, recipe);
+        try
+        {
+            Invoke(view, _restart);
+            Assert.False(connection.Requests.ArchiveObtainabilityPrecalculationSelected);
+
+            Invoke(view, _selectSection, ArchiveSection.Summary);
+            Assert.False(connection.Requests.ArchiveObtainabilityPrecalculationSelected);
+
+            Invoke(view, _selectSection, ArchiveSection.Pokemon);
+            var request = Payload(await connection.Stream.ReadRequestAsync());
+            Assert.True(request.Foreground);
+            Assert.Equal(!legacy, request.Recipe.DeferAutomaticPreparation);
+            Assert.Equal(legacy, request.Recipe.OpeningRivalContext is not null);
+        }
+        finally
+        {
+            Invoke(view, _stop);
+        }
+    }
+
+    /// <summary>
     /// Verifies entering Archive through the user's primary tab immediately prioritizes its unprepared selected run.
     /// </summary>
     /// <returns>Completion after inspecting the outgoing production request.</returns>
@@ -182,13 +215,14 @@ public sealed partial class LookupPreparationPriorityTests
     /// </summary>
     /// <param name="requests">The controlled production request client.</param>
     /// <param name="automatic">Whether reset navigation opened the archive automatically.</param>
+    /// <param name="recipe">The recipe selected for the test, or null for a normal completed run.</param>
     /// <returns>The initialized Archive coordinator.</returns>
-    private static ArchiveView CreateArchive(TrackerRequestClient requests, bool automatic)
+    private static ArchiveView CreateArchive(TrackerRequestClient requests, bool automatic, CompletedRunRecipePayload? recipe = null)
     {
         ArchiveView view = new();
         ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(ArchiveView.AutomaticSelection)] = automatic }).SetParameterProperties(view);
         typeof(ArchiveView).GetProperty(_connection, _members)!.SetValue(view, requests);
-        SetField(view, _recipes, new[] { CreateRecipe() });
+        SetField(view, _recipes, new[] { recipe ?? CreateRecipe() });
         SetField(view, _connectionStatus, TrackerConnectionStatus.Connected);
         ArchiveRunSelectionState selection = (ArchiveRunSelectionState)typeof(ArchiveView).GetField(_selection, _members)!.GetValue(view)!;
         selection.Refresh([_runId]);
@@ -228,10 +262,13 @@ public sealed partial class LookupPreparationPriorityTests
     /// <summary>
     /// Creates isolated valid reconstruction metadata without reading personal saves.
     /// </summary>
+    /// <param name="deferAutomaticPreparation">Whether the recipe requests lookup preparation only on demand.</param>
+    /// <param name="openingContext">The optional legacy opening-rival record.</param>
     /// <returns>The test-owned completed run.</returns>
-    private static CompletedRunRecipePayload CreateRecipe() => new()
+    private static CompletedRunRecipePayload CreateRecipe(bool deferAutomaticPreparation = false, OpeningRivalContextPayload? openingContext = null) => new()
     {
         RunId = _runId, Result = _runId, GenerationProfileId = _profile, GameVersion = _version, IronmonVersion = _version,
+        DeferAutomaticPreparation = deferAutomaticPreparation, OpeningRivalContext = openingContext,
         Configuration = new() { SchemaVersion = 1, WildPolicy = _policy, TrainerPolicy = _policy, UnfusionSetting = _policy },
         SpeciesGenerator = new() { Version = 1, PoolFingerprint = _profile }, AbilityGenerator = new() { Version = 1, PoolSize = 1, PoolFingerprint = _profile }, PlayerFusionGenerator = new() { Version = 1, PoolSize = 1, PoolFingerprint = _profile }
     };

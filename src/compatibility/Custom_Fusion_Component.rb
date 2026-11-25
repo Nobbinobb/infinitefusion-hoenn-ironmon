@@ -3,7 +3,9 @@ module Ironmon
     MAGIC = "IFCFPOOL".b.freeze
     SCHEMA_VERSION = 1
     HEADER_BYTES = 20
-    BYTE_POPULATION_COUNTS = Array.new(256) { |byte| byte.to_s(2).count("1") }.freeze
+    BYTE_SET_BITS = Array.new(256) do |byte|
+      (0...8).select { |bit| (byte & (1 << bit)) != 0 }.freeze
+    end.freeze
 
     def self.encode(normal_species_count, identities)
       validate_species_count(normal_species_count)
@@ -59,7 +61,7 @@ module Ironmon
       actual_count = 0
       bitset.each_byte.with_index do |byte, index|
         work_checkpoint.call if work_checkpoint && index % 256 == 0
-        actual_count += BYTE_POPULATION_COUNTS[byte]
+        actual_count += BYTE_SET_BITS[byte].length
       end
       if actual_count != eligible_count
         raise ArgumentError, "custom fusion eligibility count does not match its bitset"
@@ -75,18 +77,23 @@ module Ironmon
     def self.identities(bytes, work_checkpoint = nil)
       component = decode(bytes, work_checkpoint)
       normal_species_count = component["normal_species_count"]
-      bitset = component["bitset"]
       result = []
-      (1..normal_species_count).each do |body_id|
-        (1..normal_species_count).each do |head_id|
-          work_checkpoint.call if work_checkpoint && head_id % 128 == 0
-          index = bit_index(body_id, head_id, normal_species_count)
-          byte = bitset.getbyte(index >> 3)
-          next if (byte & (1 << (index & 7))) == 0
-          result << "B#{body_id}H#{head_id}".to_sym
-        end
+      each_eligible_index(component["bitset"], work_checkpoint) do |index|
+        body_id = index / normal_species_count + 1
+        head_id = index % normal_species_count + 1
+        result << "B#{body_id}H#{head_id}".to_sym
       end
       return result
+    end
+
+    def self.each_eligible_index(bitset, work_checkpoint = nil)
+      bitset.each_byte.with_index do |byte, byte_index|
+        work_checkpoint.call if work_checkpoint && byte_index % 16 == 0
+        offset = byte_index << 3
+        BYTE_SET_BITS[byte].each do |bit|
+          yield offset + bit
+        end
+      end
     end
 
     def self.include?(bytes, body_id, head_id)

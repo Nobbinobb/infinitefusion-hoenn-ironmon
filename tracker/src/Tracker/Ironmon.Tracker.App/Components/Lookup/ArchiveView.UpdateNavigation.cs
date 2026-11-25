@@ -33,6 +33,7 @@ public partial class ArchiveView
 
         _selection.SetExpanded(saved.Expanded);
         _showHistory = saved.History;
+        _explicitPreparationRequested = saved.Expanded && !saved.History && saved.Section != ArchiveSection.Summary;
     }
 
     /// <summary>

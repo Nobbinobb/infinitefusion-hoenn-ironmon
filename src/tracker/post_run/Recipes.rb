@@ -71,6 +71,10 @@ module Ironmon
       "statistics" => tracker_attempt_statistics(current_run_attempt)
     })
     recipe["opening_rival_context"] = opening if opening
+    if result.to_s == "lost" && $game_switches &&
+       !$game_switches[EARLY_GAME_SWITCH_FIRST_RIVAL_WON]
+      recipe["defer_automatic_preparation"] = true
+    end
     recipe["collection_attempt_ids"] = tracker_owned_iv_attempt_ids(recipe, true)
     return recipe
   end

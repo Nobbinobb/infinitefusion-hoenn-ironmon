@@ -171,7 +171,13 @@ public sealed record ReleaseEvidence(byte[] Manifest, byte[] Signatures, Invento
 /// <param name="IronmonVersion">The display version from signed release metadata.</param>
 /// <param name="ReleaseSequence">The signed monotonic release identity.</param>
 /// <param name="Notes">The authenticated Markdown asset, when available in a format the tracker understands.</param>
-internal sealed record ReleaseOffer(string IronmonVersion, long ReleaseSequence, ReleaseAsset? Notes);
+internal sealed record ReleaseOffer(string IronmonVersion, long ReleaseSequence, ReleaseAsset? Notes)
+{
+    /// <summary>
+    /// Gets the signed game revision and display version when supplied in a recognized format.
+    /// </summary>
+    internal (string Commit, string Version)? GameVersion { get; init; }
+}
 
 /// <summary>
 /// Stores an inventory without turning its cache location into authority.

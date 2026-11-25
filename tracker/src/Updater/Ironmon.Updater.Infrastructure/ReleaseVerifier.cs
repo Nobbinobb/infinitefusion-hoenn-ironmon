@@ -20,6 +20,9 @@ public sealed class ReleaseVerifier
     private const string OfferChannel = "channel";
     private const string OfferNotes = "releaseNotesAsset";
     private const string OfferAssets = "assets";
+    private const string OfferGame = "game";
+    private const string OfferGameCommit = "preferredCommit";
+    private const string OfferGameVersionLabel = "versionLabel";
     private const string AssetName = "name";
     private const string DownloadedSettingsPath = "Data/Scripts/DownloadedSettings.rb";
     private const string RequiredGameExtensions = ".rb|.rxdata|.dat|.dll|.exe|.ini|.so";
@@ -81,7 +84,33 @@ public sealed class ReleaseVerifier
             throw new InvalidDataException(UpdaterText.SetupVersionsMissingMetadata);
         }
 
-        return new ReleaseOffer(version, sequence, ReadOfferNotes(root, version));
+        return new ReleaseOffer(version, sequence, ReadOfferNotes(root, version)) { GameVersion = ReadOfferGameVersion(root) };
+    }
+
+    /// <summary>
+    /// Reads the display-only game identity without needing the worker's full installation manifest.
+    /// </summary>
+    /// <param name="root">The already authenticated release document.</param>
+    /// <returns>The game version bound to its preferred revision, or null when it cannot be displayed.</returns>
+    private static (string Commit, string Version)? ReadOfferGameVersion(JsonElement root)
+    {
+        if (!root.TryGetProperty(OfferGame, out var game) || game.ValueKind != JsonValueKind.Object
+            || !game.TryGetProperty(OfferGameCommit, out var commitField) || commitField.ValueKind != JsonValueKind.String || commitField.GetString() is not { } commit
+            || !game.TryGetProperty(OfferGameVersionLabel, out var versionField) || versionField.ValueKind != JsonValueKind.String || versionField.GetString() is not { } version)
+        {
+            return null;
+        }
+
+        try
+        {
+            ValidateCommit(commit);
+            ParseVersion(version);
+            return (commit, version);
+        }
+        catch (InvalidDataException)
+        {
+            return null;
+        }
     }
 
     /// <summary>

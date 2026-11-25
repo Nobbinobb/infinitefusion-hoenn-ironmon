@@ -62,6 +62,13 @@ public partial class ArchiveView : IDisposable
     private bool ForegroundPreparationRequested => !AutomaticSelection || _explicitPreparationRequested;
 
     /// <summary>
+    /// Gets whether the opening-loss summary is waiting for an explicit lookup selection.
+    /// </summary>
+    private bool LookupPreparationDeferred => !_explicitPreparationRequested
+        && GetSelectedRecipe() is { } recipe
+        && (recipe.DeferAutomaticPreparation || recipe.OpeningRivalContext is not null);
+
+    /// <summary>
     /// Loads available recipes and subscribes to archive changes.
     /// </summary>
     protected override void OnInitialized()
@@ -145,7 +152,8 @@ public partial class ArchiveView : IDisposable
     private void SelectSection(ArchiveSection section)
     {
         _selectedSection = section;
-        RequestForegroundPreparation();
+        if (section != ArchiveSection.Summary || !LookupPreparationDeferred)
+            RequestForegroundPreparation();
     }
 
     /// <summary>
@@ -153,9 +161,9 @@ public partial class ArchiveView : IDisposable
     /// </summary>
     private void RequestForegroundPreparation()
     {
-        bool alreadyForeground = ForegroundPreparationRequested;
+        bool restart = LookupPreparationDeferred || !ForegroundPreparationRequested;
         _explicitPreparationRequested = true;
-        if (!alreadyForeground)
+        if (restart)
             RestartObtainabilityPrecalculation();
     }
 
@@ -220,6 +228,7 @@ public partial class ArchiveView : IDisposable
         CompletedRunRecipePayload? recipe = GetSelectedRecipe();
         bool prepare = !_showHistory && _selection.IsExpanded && recipe is not null
             && _connectionStatus == TrackerConnectionStatus.Connected
+            && !LookupPreparationDeferred
             && !Connection.ObtainabilityProgress.HasCompletedPreparation(recipe.RunId);
         if (prepare && _obtainabilityPrecalculationCancellation is { IsCancellationRequested: false }
             && string.Equals(_obtainabilityPrecalculationRunId, recipe!.RunId, StringComparison.Ordinal))

@@ -80,6 +80,7 @@ begin
   Ironmon.complete_run(:lost)
   elapsed = Ironmon.tracker_uptime_seconds - started
   recipe = Ironmon.run_ledger["last_completed_recipe"]
+  raise "Opening loss requested automatic archive preparation" if recipe["defer_automatic_preparation"] != true
   raise "Opening loss eagerly prepared future teams" if !recipe["story_trainer_previews"].empty?
   raise "Opening context missing" if recipe["opening_rival_context"]["starter_species_ids"] != replay.last["species"]
   before = (Ironmon.instance_variable_get(:@tracker_obtainability_services) || {}).length
@@ -203,6 +204,9 @@ begin
   reset_finished = Ironmon.tracker_uptime_seconds
   raise "Owned checkpoint reset failed: #{Ironmon.instance_variable_get(:@reset_notice).inspect}" if Ironmon.instance_variable_get(:@reset_in_progress) ||
     Ironmon.current_run_attempt["result"] != "active" || $PokemonGlobal.ironmon_seed == row["seed"]
+  raise "Replacement attempt did not prepare the installed generation profile" if
+    Ironmon.pinned_generation_profile_id != Ironmon.current_generation_profile_id ||
+    !Ironmon.custom_fusion_pool_service.is_a?(Ironmon::ProfileCustomFusionPool)
   mode = $PokemonEncounters.getEncounterMode
   data = mode.get($game_map.map_id, $PokemonGlobal.encounter_version) ||
     GameData::Encounter.get($game_map.map_id, $PokemonGlobal.encounter_version)
