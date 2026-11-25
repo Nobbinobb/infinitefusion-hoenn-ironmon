@@ -288,8 +288,8 @@ module IronmonEarlyGameRuntimeTests
       locked = true if result == :lost
       true
     end
-    singleton.send(:define_method, :start_checkpoint_reset) do |automatic|
-      resets << automatic
+    singleton.send(:define_method, :start_checkpoint_reset) do |automatic, opening_loss: false|
+      resets << [automatic, opening_loss]
       true
     end
 
@@ -311,7 +311,7 @@ module IronmonEarlyGameRuntimeTests
       Ironmon.finish_queued_early_game_loss_reset,
       "the queued reset starts after the event interpreter yields"
     )
-    assert(resets == [true], "the deferred early reset is automatic")
+    assert(resets == [[true, true]], "the deferred early reset is automatic and reveals the replacement map directly")
   ensure
     if singleton && singleton.method_defined?(
       :early_game_original_failed_run_locked

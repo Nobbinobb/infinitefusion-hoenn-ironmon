@@ -40,8 +40,18 @@ module Ironmon
     end
 
     module GraphicsTransitions
+      def update
+        # Hoenn still iterates the return fade after the opening attempt is lost.
+        return if Ironmon.discarding_opening_battle_return?
+        return if Ironmon.finish_queued_early_game_loss_reset
+        return super
+      end
+
       def transition(duration = 8, filename = "", vague = 20)
-        return Ironmon::SpeedTransitions.with_visual_speed { super }
+        if filename == "" && $scene.is_a?(Scene_Map) && $scene.consume_opening_loss_reveal
+          duration = 0
+        end
+        return Ironmon::SpeedTransitions.with_visual_speed { super(duration, filename, vague) }
       end
 
       def transition_KGC_SpecialTransition(duration = 8, filename = "", vague = 20)
@@ -63,6 +73,11 @@ module Ironmon
 
     module BattleTransitions
       private
+
+      def pbUpdateSceneMap
+        return if Ironmon.discarding_opening_battle_return?
+        return super
+      end
 
       def pbBattleAnimation(*args, &block)
         return Ironmon::SpeedTransitions.with_visual_speed do

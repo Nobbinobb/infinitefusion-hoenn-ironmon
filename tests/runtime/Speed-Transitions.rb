@@ -113,6 +113,61 @@ module IronmonSpeedTransitionsTests
     Graphics.update
   end
 
+  def self.test_opening_loss_presentation
+    original_scene = $scene
+    names = [:active?, :tracker_auto_revive_enabled?, :existing_checkpoint_path]
+    original = names.map { |name| [name, Ironmon.method(name)] }.to_h
+    checkpoint = "owned-opening-checkpoint"
+    revive = false
+    Ironmon.define_singleton_method(:active?) { true }
+    Ironmon.define_singleton_method(:tracker_auto_revive_enabled?) { revive }
+    Ironmon.define_singleton_method(:existing_checkpoint_path) { |*_args| checkpoint }
+    set_speed(1)
+
+    Ironmon.with_opening_battle_presentation(true) do
+      Ironmon.discard_opening_battle_return(1)
+      assert(!Ironmon.discarding_opening_battle_return?, "the opening victory keeps the ordinary return fade")
+      Ironmon.discard_opening_battle_return(2)
+      assert(Ironmon.discarding_opening_battle_return?, "an opening loss with a checkpoint discards the old map's fade")
+      before = Ironmon::SpeedClock.raw_frame_count
+      Graphics.update
+      assert(Ironmon::SpeedClock.raw_frame_count == before, "the discarded return does not render another frame")
+    end
+    assert(!Ironmon.discarding_opening_battle_return?, "the discarded return is scoped to the opening battle")
+
+    Ironmon.with_opening_battle_presentation(false) do
+      Ironmon.discard_opening_battle_return(2)
+      assert(!Ironmon.discarding_opening_battle_return?, "a later loss keeps the ordinary return fade")
+    end
+    Ironmon.with_opening_battle_presentation(true) do
+      revive = true
+      Ironmon.discard_opening_battle_return(2)
+      assert(!Ironmon.discarding_opening_battle_return?, "a revived attempt keeps the battle's return fade")
+      revive = false
+      checkpoint = nil
+      Ironmon.discard_opening_battle_return(5)
+      assert(!Ironmon.discarding_opening_battle_return?, "a missing checkpoint leaves the original map visible")
+    end
+
+    $scene = Scene_Map.new
+    $scene.instance_variable_set(:@opening_loss_reveal, true)
+    judge = Graphics.method(:judge_special_transition)
+    durations = []
+    Graphics.define_singleton_method(:judge_special_transition) do |duration, filename|
+      durations << duration
+      judge.call(duration, filename)
+    end
+    2.times do
+      Graphics.freeze
+      Graphics.transition(20)
+    end
+    assert(durations == [0, 20], "the replacement checkpoint skips its fade once")
+  ensure
+    Graphics.define_singleton_method(:judge_special_transition, judge) if judge
+    $scene = original_scene
+    original.each { |name, method| Ironmon.define_singleton_method(name, method) } if original
+  end
+
   def self.battle_scene
     pokemon = Pokemon.new(:BULBASAUR, 20, nil, false)
     enemy = Pokemon.new(:PIDGEY, 20, nil, false)
@@ -218,6 +273,7 @@ module IronmonSpeedTransitionsTests
       end
     end
     if defined?(Ironmon::SpeedTransitions)
+      test_opening_loss_presentation
       test_scopes
       service.define_singleton_method(:native_update_limit) { 120 }
       encounter = test_encounter

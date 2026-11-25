@@ -38,6 +38,7 @@ module IronmonRuntimeHookTests
         :species_randomization,
         :difficulty_enforcement,
         :diagnostics,
+        :rival_lab_resources,
         :tracker,
         :cosmetics,
         :gameplay_collection
@@ -52,7 +53,6 @@ module IronmonRuntimeHookTests
       Ironmon.graphics_update_hook_names == [
         :run_lifecycle,
         :challenge_statistics,
-        :early_game_loss_reset,
         :tracker,
         :starter_bst_reset,
         :status_overlays,
