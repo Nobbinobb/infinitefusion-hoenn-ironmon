@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Get started with Ironmon for Pokémon Infinite Fusion 2: Hoenn. Install with Setup or find the right ZIP for your game version.">
+  <meta name="theme-color" content="#090d12">
+  <title>Get started · Ironmon</title>
+  <link rel="icon" type="image/png" href="tracker-icon.png">
+  <link rel="stylesheet" href="downloads.css">
+  <link rel="stylesheet" href="get-started.css">
+  <script src="downloads.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#get-started">Skip to main content</a>
+  <header class="site-header">
+    <div class="page-width topbar">
+      <a class="wordmark" href="./"><img class="brand-mark" src="tracker-icon.png" width="34" height="34" alt="">Ironmon</a>
+      <nav class="site-nav" aria-label="Project">
+        <a href="https://github.com/Nobbinobb/infinitefusion-hoenn-ironmon">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-width" id="get-started">
+    <h1 class="page-title">Get started</h1>
+    <div class="player-intro">
+      <p>Ironmon adds a randomized challenge to <strong>Pokémon Infinite Fusion 2: Hoenn</strong>. Play with one Pokémon at a time, share seeds with friends, and use the tracker to see live battle information and review past runs.</p>
+      <p class="alpha-goal">The current alpha challenge ends when you defeat <strong>Wattson</strong>.</p>
+    </div>
+
+    <aside class="project-disclosure" aria-label="Project and AI disclosure">
+      <p><strong>Ironmon is an independent fan-made add-on.</strong> The Pokémon Infinite Fusion team develops the base game separately.</p>
+      <p>Ironmon includes AI-generated code and artwork. This disclosure applies only to the Ironmon add-on.</p>
+    </aside>
+
+    <section class="featured" aria-labelledby="setup-title">
+      <div class="featured-info">
+        <h2 id="setup-title">Install with Setup</h2>
+        <p>Setup gets a compatible Hoenn build and installs the Ironmon add-on. It can also update an existing installation.</p>
+      </div>
+      <div class="featured-actions">
+        <a class="button setup-button" id="setup-download" href="https://github.com/Nobbinobb/infinitefusion-hoenn-ironmon/releases/latest">Get Setup on GitHub</a>
+        <span class="platform">Windows x64</span>
+      </div>
+    </section>
+
+    <section class="release-panel install-guide" id="installation" aria-labelledby="installation-title">
+      <header class="panel-heading"><h2 id="installation-title">Installation guide</h2></header>
+      <ol class="install-steps" role="list">
+        <li>
+          <span class="step-number" aria-hidden="true">1</span>
+          <div>
+            <h3>Run Setup</h3>
+            <p>Open the downloaded installer. Setup gets the compatible Hoenn game and selects the latest stable Ironmon release by default.</p>
+            <button type="button" class="guide-help" id="windows-warning-button" aria-haspopup="dialog">Windows warning?</button>
+          </div>
+        </li>
+        <li>
+          <span class="step-number" aria-hidden="true">2</span>
+          <div><h3>Choose a folder and install</h3><p>Pick a folder. Review the versions and final location, then select <strong>Install</strong>. Fresh installs include the .NET runtime by default.</p></div>
+        </li>
+        <li>
+          <span class="step-number" aria-hidden="true">3</span>
+          <div>
+            <h3>Open the tracker and play</h3>
+            <p>Open <strong>Ironmon Tracker.exe</strong> to start the game. At the game’s title screen or main menu, select <strong>Play</strong> in the tracker.</p>
+            <p class="tracker-connection">Keep the tracker connected. If it disconnects, your run pauses until it reconnects.</p>
+          </div>
+        </li>
+      </ol>
+      <details class="install-paths" id="install-paths">
+        <summary id="install-paths-title">Other install options</summary>
+        <div class="choice-layout">
+          <div class="choice-picker" role="radiogroup" aria-labelledby="install-paths-title">
+            <input type="radio" name="install-path" id="install-update" aria-controls="install-update-guide" checked>
+            <label for="install-update">Update Ironmon</label>
+            <input type="radio" name="install-path" id="install-zip" aria-controls="install-zip-guide">
+            <label for="install-zip">Install from a ZIP</label>
+            <input type="radio" name="install-path" id="install-test" aria-controls="install-test-guide">
+            <label for="install-test">Try a test release</label>
+          </div>
+          <div class="choice-content">
+            <section class="path-panel" id="install-update-guide" aria-labelledby="install-update-title">
+              <h4 id="install-update-title">Update an existing installation</h4>
+              <dl class="update-paths">
+                <div>
+                  <dt>v0.10.1 or earlier</dt>
+                  <dd>When upgrading to a newer release, back up your saves and run the <a href="#setup-title">current Setup</a> once. Point it at your existing game folder.</dd>
+                </div>
+                <div>
+                  <dt>v0.10.2 or later</dt>
+                  <dd>In the tracker, open <strong>Settings → Check for updates</strong>. If an update is available, read the release notes and select <strong>Update</strong> to review the installation.</dd>
+                </div>
+              </dl>
+              <p class="path-note">Finish your active run before installing an update that changes the game version.</p>
+            </section>
+            <section class="path-panel" id="install-zip-guide" aria-labelledby="install-zip-title">
+              <h4 id="install-zip-title">Install into an existing Hoenn game</h4>
+              <div class="zip-match">
+                <div class="zip-match-field">
+                  <div>
+                    <label for="zip-game-version">Your Hoenn version</label>
+                    <p id="zip-version-help">Look in the top-right corner of the game’s title screen.</p>
+                  </div>
+                  <select id="zip-game-version" aria-describedby="zip-version-help" disabled>
+                    <option value="">Choose a version</option>
+                    <option value="1.3.2">Hoenn 1.3.2 (engine 6.9.1)</option>
+                    <option value="1.2.2">Hoenn 1.2.2 (engine 6.8.2)</option>
+                    <option value="6.8.0">Legacy engine 6.8.0</option>
+                    <option value="other">My version isn’t listed</option>
+                  </select>
+                </div>
+                <div class="zip-match-result" id="zip-match-result" hidden>
+                  <p id="zip-match-status" role="status"></p>
+                  <a class="button" id="zip-match-downloads" href="#ironmon" hidden>View matching ZIPs</a>
+                  <a id="zip-match-setup" href="#setup-title" hidden>Go to Setup</a>
+                </div>
+              </div>
+              <ol>
+                <li>Choose <strong>Runtime included</strong> if you’re unsure. Choose <strong>Runtime required</strong> if the listed Windows x64 .NET Runtime is already installed.</li>
+                <li>Back up your saves and close the game and tracker. Extract the full ZIP beside <strong>InfiniteFusion2.exe</strong>, merge the <strong>Data</strong> folder, then open <strong>Ironmon Tracker.exe</strong>.</li>
+              </ol>
+            </section>
+            <section class="path-panel" id="install-test-guide" aria-labelledby="install-test-title">
+              <h4 id="install-test-title">Install a prerelease with Setup</h4>
+              <ol>
+                <li>Open the <a href="#setup-title">current Setup</a> and choose a separate folder to keep your stable game available.</li>
+                <li>Expand <strong>Advanced: Ironmon version</strong>, choose a version labeled <strong>Test release</strong>, then review and install.</li>
+              </ol>
+              <p class="path-note path-note-test"><strong>Experimental build.</strong> Test releases can change and may have regressions. To get a refreshed build with the same release number, download Setup again and select that version.</p>
+            </section>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <dialog class="windows-warning" id="windows-warning" aria-labelledby="windows-warning-title">
+      <h2 id="windows-warning-title">If Windows shows a warning</h2>
+      <p>Microsoft Defender SmartScreen may show <strong>Windows protected your PC</strong> when it doesn’t recognize a download. If available, use <strong>More info</strong> to see the app details.</p>
+      <p>Check that you got <strong>Ironmon-Setup-win-x64.exe</strong> using <strong>Download Setup</strong> above. Stop if Windows reports a threat or if you’re unsure where the file came from.</p>
+      <form method="dialog"><button class="button" autofocus>Close</button></form>
+    </dialog>
+    <script>
+      document.querySelector("#windows-warning-button").addEventListener("click", () => {
+        document.querySelector("#windows-warning").showModal();
+      });
+    </script>
+
+    <section class="release-panel player-controls" id="controls" aria-labelledby="controls-title">
+      <header class="panel-heading">
+        <h2 id="controls-title">Controls</h2>
+        <p>Change these default bindings in <strong>Ironmon Tracker → Settings → Controls</strong>.</p>
+      </header>
+      <div class="choice-layout control-layout">
+        <div class="choice-picker" role="radiogroup" aria-label="Input device">
+          <input type="radio" name="control-device" id="device-keyboard" aria-controls="keyboard-bindings" checked>
+          <label id="keyboard-device-label" for="device-keyboard">Keyboard</label>
+          <input type="radio" name="control-device" id="device-xbox" aria-controls="xbox-bindings">
+          <label id="xbox-device-label" for="device-xbox">Xbox</label>
+          <input type="radio" name="control-device" id="device-playstation" aria-controls="playstation-bindings">
+          <label id="playstation-device-label" for="device-playstation">PlayStation</label>
+        </div>
+        <div class="choice-content">
+          <section class="path-panel device-bindings" aria-labelledby="keyboard-device-label" id="keyboard-bindings">
+            <dl>
+              <div><dt>Move</dt><dd><kbd>Arrow keys</kbd></dd></div>
+              <div><dt>Interact or confirm</dt><dd><kbd>C</kbd> or <kbd>Enter</kbd></dd></div>
+              <div><dt>Back or pause</dt><dd><kbd>X</kbd> or <kbd>Esc</kbd></dd></div>
+              <div><dt>Run in the field</dt><dd><kbd>Z</kbd> or <kbd>Shift</kbd></dd></div>
+              <div><dt>Change speed</dt><dd><kbd>A</kbd></dd></div>
+              <div><dt>Reset attempt</dt><dd><kbd>F7</kbd></dd></div>
+            </dl>
+          </section>
+          <section class="path-panel device-bindings" aria-labelledby="xbox-device-label" id="xbox-bindings">
+            <dl>
+              <div><dt>Move</dt><dd><kbd>Left stick</kbd> or <kbd>D-pad</kbd></dd></div>
+              <div><dt>Interact or confirm</dt><dd><kbd class="pad-button">A</kbd></dd></div>
+              <div><dt>Back or pause</dt><dd><kbd class="pad-button">B</kbd></dd></div>
+              <div><dt>Run in the field</dt><dd><kbd class="pad-button">X</kbd></dd></div>
+              <div><dt>Change speed</dt><dd><kbd class="pad-button">Y</kbd></dd></div>
+              <div><dt>Reset attempt</dt><dd><kbd>LT</kbd> + <kbd>RT</kbd> + <kbd>Start</kbd></dd></div>
+            </dl>
+          </section>
+          <section class="path-panel device-bindings" aria-labelledby="playstation-device-label" id="playstation-bindings">
+            <dl>
+              <div><dt>Move</dt><dd><kbd>Left stick</kbd> or <kbd>D-pad</kbd></dd></div>
+              <div><dt>Interact or confirm</dt><dd><kbd class="pad-button" title="Cross"><span class="ps-symbol ps-cross" aria-hidden="true"></span><span class="pad-label">Cross</span></kbd></dd></div>
+              <div><dt>Back or pause</dt><dd><kbd class="pad-button" title="Circle"><span class="ps-symbol ps-circle" aria-hidden="true"></span><span class="pad-label">Circle</span></kbd></dd></div>
+              <div><dt>Run in the field</dt><dd><kbd class="pad-button" title="Square"><span class="ps-symbol ps-square" aria-hidden="true"></span><span class="pad-label">Square</span></kbd></dd></div>
+              <div><dt>Change speed</dt><dd><kbd class="pad-button" title="Triangle"><span class="ps-symbol ps-triangle" aria-hidden="true"></span><span class="pad-label">Triangle</span></kbd></dd></div>
+              <div><dt>Reset attempt</dt><dd><kbd>L2</kbd> + <kbd>R2</kbd> + <kbd>Options</kbd></dd></div>
+            </dl>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section class="release-panel" id="ironmon" aria-labelledby="ironmon-title">
+      <header class="panel-heading">
+        <h2 id="ironmon-title" tabindex="-1">Manual ZIP downloads</h2>
+        <p>For an existing Hoenn installation. <a href="#install-zip-guide" id="find-matching-zip">Find ZIPs for your game version</a> or expand a release to check its .NET requirement.</p>
+      </header>
+      <div class="release-feed-status" id="saved-release-feed" hidden>
+        <p role="status">Showing saved releases while the live list is unavailable.</p>
+        <a href="https://github.com/Nobbinobb/infinitefusion-hoenn-ironmon/releases">See current releases on GitHub</a>
+      </div>
+      <div class="release-feed-status" id="request-error" hidden>
+        <p role="status">The release lists are temporarily unavailable. <a href="https://github.com/Nobbinobb/infinitefusion-hoenn-ironmon/releases">Open releases on GitHub</a>.</p>
+        <button class="guide-help" id="retry" type="button">Try again</button>
+      </div>
+      <noscript><p class="release-feed-status">Enable JavaScript to load the release lists, or <a href="https://github.com/Nobbinobb/infinitefusion-hoenn-ironmon/releases">open releases on GitHub</a>.</p></noscript>
+      <div class="zip-filter" id="zip-filter" hidden>
+        <p id="zip-filter-label"></p>
+        <button type="button" class="guide-help" id="show-all-zips">Show all versions</button>
+      </div>
+      <p class="list-status" id="ironmon-status" role="status" hidden></p>
+      <ul class="release-list" id="ironmon-releases" role="list"></ul>
+      <details class="release-history" id="ironmon-history" hidden>
+        <summary></summary>
+        <ul class="release-list" role="list"></ul>
+      </details>
+    </section>
+
+    <details class="updater-history" id="standalone-updater">
+      <summary>Standalone updater release history</summary>
+      <p class="updater-note">Ironmon Tracker fetches the updater when you click <strong>Update</strong>.</p>
+      <p class="list-status" id="updater-status" role="status" hidden></p>
+      <div id="updater-releases"></div>
+    </details>
+  </main>
+
+  <footer class="page-width">
+    <a href="https://github.com/Nobbinobb/infinitefusion-hoenn-ironmon/releases">View all releases on GitHub</a>
+  </footer>
+
+  <template id="release-row">
+    <li class="release-entry">
+      <div class="release-row">
+        <button class="release-toggle" type="button" aria-expanded="false">
+          <span class="release-disclosure" aria-hidden="true"></span>
+          <span class="release-summary">
+            <span class="release-version"><span class="release-name"></span><span class="channel" hidden></span></span>
+            <time></time>
+          </span>
+        </button>
+        <div class="release-packages" hidden>
+          <a class="button package-link" data-flavor="self-contained" hidden>Runtime included</a>
+          <a class="button package-link" data-flavor="runtime-required" hidden>Runtime required</a>
+        </div>
+      </div>
+      <div class="release-notes" hidden>
+        <div class="release-notes-body"></div>
+        <a class="release-source">View release on GitHub</a>
+      </div>
+    </li>
+  </template>
+  <template id="updater-series">
+    <div class="updater-series">
+      <h3></h3>
+      <ul class="release-list" role="list"></ul>
+    </div>
+  </template>
+</body>
+</html>
