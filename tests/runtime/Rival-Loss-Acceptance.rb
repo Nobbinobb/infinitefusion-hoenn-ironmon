@@ -146,6 +146,33 @@ begin
   normal_preview = Ironmon.tracker_archived_opening_rival_preview(normal_recipe, later_entry)
   raise "Normal-only archive lost its rival team: #{normal_preview.inspect}" if !normal_preview || normal_preview.empty? ||
     normal_preview.any? { |member| member["species_id"].start_with?("B") && /\AB\d+H\d+:/.match?(member["species_id"]) }
+
+  original_configuration = Ironmon.configuration
+  begin
+    $PokemonGlobal.ironmon_configuration = Ironmon::Configuration.from(
+      original_configuration.to_h.merge(:schema_version => Ironmon::Configuration::LEGACY_SCHEMA_VERSION,
+        :trainer_policy => :custom_fusions_only))
+    raise "Legacy test needs the pre-lab rival rules" if Ironmon.rival_lab_choice_enabled?
+    phases.clear
+    legacy_recipe = trace.enable { Ironmon.tracker_completed_run_recipe(:lost) }
+    built_previews = phases.any? { |phase| phase["method"] == "tracker_current_story_trainer_previews" }
+    raise "Legacy opening loss built future teams before reset" if built_previews
+    raise "Legacy opening loss did not defer archive preparation" if legacy_recipe["defer_automatic_preparation"] != true
+    raise "Legacy opening loss has no replay context" if !legacy_recipe["opening_rival_context"] ||
+      legacy_recipe["opening_rival_context"].key?("lab_species_id")
+    legacy_expected = Ironmon.tracker_current_story_trainer_previews
+    legacy_flat = Ironmon.tracker_flatten_completed_recipe(legacy_recipe)
+    entries.each do |entry|
+      expected_party = legacy_expected.fetch(entry["entry_id"])
+      replayed_party = Ironmon.tracker_archived_opening_rival_preview(legacy_flat, entry)
+      raise "Legacy archived rival stage #{entry['story_stage']} differs" if expected_party.empty? ||
+        replayed_party != expected_party
+    end
+  ensure
+    $PokemonGlobal.ironmon_configuration = original_configuration
+    Ironmon.reset_species_generator_cache
+  end
+
   File.binwrite(Ironmon.checkpoint_path, File.binread(File.join(output_root, "Checkpoint-G.rxdata")))
   load_phases = []
   original_wild_mapping = Ironmon.method(:wild_species_for)
@@ -172,14 +199,15 @@ begin
    [$PokemonMap.class, :updateMap], [PokemonEncounters, :setup],
    [$MapFactory.class, :setMapChanged], [$MapFactory.class, :setup],
    [Game.singleton_class, :load_secret_bases], [Object, :pbUpdateVehicle]].each do |owner, name|
-    original = owner.instance_method(name)
-    owner.send(:define_method, name) do |*arguments|
-      phase_started = Ironmon.tracker_uptime_seconds
-      value = original.bind(self).call(*arguments)
-      load_phases << { "hook" => name.to_s, "phase" => "base_game",
-        "milliseconds" => (Ironmon.tracker_uptime_seconds - phase_started) * 1000 }
-      value
-    end
+    owner.prepend(Module.new do
+      define_method(name) do |*arguments, **keywords, &block|
+        phase_started = Ironmon.tracker_uptime_seconds
+        value = super(*arguments, **keywords, &block)
+        load_phases << { "hook" => name.to_s, "phase" => "base_game",
+          "milliseconds" => (Ironmon.tracker_uptime_seconds - phase_started) * 1000 }
+        value
+      end
+    end)
   end
   Ironmon.instance_variable_get(:@game_load_hooks).each do |hook|
     [:before, :after].each do |phase|
@@ -199,7 +227,9 @@ begin
   reset_queued = Ironmon.tracker_uptime_seconds
   $scene.main
   checkpoint_loaded = Ironmon.tracker_uptime_seconds
-  raise "Checkpoint did not load a map scene" if !$scene.is_a?(Scene_Map)
+  if !$scene.is_a?(Scene_Map)
+    raise "Checkpoint did not load a map scene: #{Ironmon.instance_variable_get(:@reset_notice).inspect}"
+  end
   $scene.createSpritesets
   reset_finished = Ironmon.tracker_uptime_seconds
   raise "Owned checkpoint reset failed: #{Ironmon.instance_variable_get(:@reset_notice).inspect}" if Ironmon.instance_variable_get(:@reset_in_progress) ||
@@ -238,7 +268,7 @@ begin
     "warm_loss_and_reset_ms" => (warm_finished - warm_started) * 1000,
     "load_phases" => load_phases
   }))
-  File.binwrite(File.join(output_root, "result.txt"), "Passed native starter replay, fast loss completion, paused lookup, and isolated live/title archive replay.\n")
+  File.binwrite(File.join(output_root, "result.txt"), "Passed native starter replay, legacy and current-rule loss completion, paused lookup, isolated archive replay, and checkpoint reset.\n")
   exit!(0)
 rescue Exception => error
   File.binwrite(File.join(output_root, "result.txt"), "#{error.class}: #{error.message}\n#{error.backtrace.join("\n")}")

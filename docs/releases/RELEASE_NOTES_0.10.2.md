@@ -39,8 +39,9 @@ options. After this migration, use **Update** in the tracker again.
 - Reduces pauses during cold fusion pairing and archived fusion-name loading
   while preserving seeded fusion results.
 - Shortens the reset after an opening loss and reveals the starter map directly
-  after the battle. The Archive summary opens without starting lookup
-  calculations until you select the run or a lookup tab.
+  after the battle, including on saves using older starter rules. The Archive
+  summary opens without starting lookup calculations until you select the run
+  or a lookup tab.
 - Shows the installed Infinite Fusion version in tracker settings when the
   signed version record matches the installed game revision.
 - Opens a separately signed updater from the tracker. It handles installation

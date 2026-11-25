@@ -1,13 +1,8 @@
 module Ironmon
   def self.tracker_opening_rival_context(result)
-    return nil if result.to_s != "lost" || !rival_lab_choice_enabled? ||
+    return nil if result.to_s != "lost" || !rival_story_generation_enabled? ||
       !$Trainer || !$game_variables || !$game_switches || $game_switches[EARLY_GAME_SWITCH_FIRST_RIVAL_WON]
     offers = rival_starter_offers
-    counter, remaining = rival_starter_slots
-    decision = rival_lab_decision(offers[counter], offers[remaining], false)
-    if decision[:action] == :fuse && player_fusion_pairing_ready?
-      decision[:species] = player_fusion_mapper.preview_species(offers[counter], offers[remaining])
-    end
     context = {
       "schema_version" => 1,
       "chosen_starter_index" => $game_variables[VAR_HOENN_CHOSEN_STARTER_INDEX].to_i,
@@ -17,6 +12,13 @@ module Ironmon
       "lowest_difficulty" => $Trainer.lowest_difficulty,
       "starter_species_ids" => offers.map(&:to_s)
     }
+    return context if !rival_lab_choice_enabled?
+
+    counter, remaining = rival_starter_slots
+    decision = rival_lab_decision(offers[counter], offers[remaining], false)
+    if decision[:action] == :fuse && player_fusion_pairing_ready?
+      decision[:species] = player_fusion_mapper.preview_species(offers[counter], offers[remaining])
+    end
     context["lab_species_id"] = decision[:species].to_s if decision[:species]
     return context
   end
@@ -54,7 +56,8 @@ module Ironmon
     tracker_validate_opening_rival_context(context)
     @tracker_archived_rival_preview_cache ||= {}
     key = [recipe["run_id"], recipe["seed"], recipe["generation_profile_id"],
-      recipe["configuration"], recipe["data_mode"], context, entry["entry_id"]]
+      recipe["configuration"], recipe["data_mode"], recipe["evolution_method_fingerprint"],
+      context, entry["entry_id"]]
     return @tracker_archived_rival_preview_cache[key] if @tracker_archived_rival_preview_cache.key?(key)
     originals = [$PokemonGlobal, $Trainer, $game_variables, $game_switches]
     runtime = instance_variables.to_h { |name| [name, instance_variable_get(name)] }
@@ -79,6 +82,7 @@ module Ironmon
       $PokemonGlobal.ironmon_generation_profile_id = recipe["generation_profile_id"]
       $PokemonGlobal.ironmon_configuration = Configuration.from(recipe["configuration"])
       $PokemonGlobal.ironmon_species_generator_version = recipe["species_generator_version"]
+      $PokemonGlobal.ironmon_evolution_method_fingerprint = recipe["evolution_method_fingerprint"]
       $PokemonGlobal.ironmon_starter_species = context["starter_species_ids"].map(&:to_sym)
       $PokemonGlobal.battledTrainers = {}
       @tracker_story_trainer_preview_cache = {}
@@ -90,7 +94,7 @@ module Ironmon
       reset_move_access_generator_cache
       @ability_randomization_ready = @base_stat_randomization_ready = true
       @evolution_randomization_ready = @move_access_randomization_ready = true
-      if entry["story_stage"].to_i > 1
+      if entry["story_stage"].to_i > 1 && rival_lab_choice_enabled?
         counter, remaining = rival_starter_slots
         offers = rival_starter_offers
         decision = rival_lab_decision(offers[counter], offers[remaining], false)
