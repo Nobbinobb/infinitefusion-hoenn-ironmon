@@ -352,6 +352,11 @@ gate, and publish reviewed packages. See [Release automation](../RELEASE_AUTOMAT
 for the workflow and [Updater release production](UPDATER_RELEASES.md) for package
 and signing requirements.
 
+The [Get started page](../get-started/index.html) is a static page for GitHub Pages.
+Configure **Settings > Pages** to deploy from `main` and `/docs`. The page reads
+published releases from GitHub and links to their original assets. A bundled
+release snapshot is available when the live feed cannot be reached.
+
 ## C# XML documentation
 
 Document every class, constructor, method, and property, including private members

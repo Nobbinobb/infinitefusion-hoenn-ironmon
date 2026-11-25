@@ -45,8 +45,10 @@ tracker minimized**. Ordinary non-Ironmon play does not require the tracker.
 
 ## Download
 
-Get the latest version from
-[GitHub Releases](https://github.com/Nobbinobb/infinitefusion-hoenn-ironmon/releases/latest).
+Get Setup or browse version-specific ZIP downloads on the
+[Get started](https://nobbinobb.github.io/infinitefusion-hoenn-ironmon/get-started/).
+Setup defaults to the [latest stable release](https://github.com/Nobbinobb/infinitefusion-hoenn-ironmon/releases/latest)
+and lets you choose another supported version under **Advanced**.
 Choose **one** download:
 
 | Package | Use |
